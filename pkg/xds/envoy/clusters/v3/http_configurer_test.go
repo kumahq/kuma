@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("HttpConfigurer", func() {
-
 	It("should generate proper Envoy config", func() {
 		// given
 		expected := `

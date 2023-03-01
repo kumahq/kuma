@@ -20,8 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
-type zoneIngressStaticTokenIssuer struct {
-}
+type zoneIngressStaticTokenIssuer struct{}
 
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
@@ -30,7 +29,6 @@ func (z *zoneIngressStaticTokenIssuer) Generate(ctx context.Context, identity zo
 }
 
 var _ = Describe("Zone Ingress Tokens Client", func() {
-
 	var server *httptest.Server
 
 	BeforeEach(func() {

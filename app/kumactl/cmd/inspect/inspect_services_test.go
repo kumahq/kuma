@@ -39,7 +39,6 @@ func (c *testServiceOverviewClient) List(_ context.Context, mesh string) (*core_
 var _ resources.ServiceOverviewClient = &testServiceOverviewClient{}
 
 var _ = Describe("kumactl inspect services", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	rootTime, _ := time.ParseInLocation(time.RFC3339, "2008-04-27T16:05:36.995Z", time.UTC)
@@ -103,7 +102,8 @@ var _ = Describe("kumactl inspect services", func() {
 			// given
 			rootCmd.SetArgs(append([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"inspect", "services"}, given.outputFormat))
+				"inspect", "services",
+			}, given.outputFormat))
 
 			// when
 			err := rootCmd.Execute()

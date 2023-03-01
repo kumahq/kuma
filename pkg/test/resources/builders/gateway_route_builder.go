@@ -41,10 +41,12 @@ func (gr *GatewayRouteBuilder) WithName(name string) *GatewayRouteBuilder {
 }
 
 func (gr *GatewayRouteBuilder) WithGateway(gatewayName string) *GatewayRouteBuilder {
-	gr.res.Spec.Selectors = []*mesh_proto.Selector{{
-		Match: map[string]string{
-			mesh_proto.ServiceTag: gatewayName,
-		}},
+	gr.res.Spec.Selectors = []*mesh_proto.Selector{
+		{
+			Match: map[string]string{
+				mesh_proto.ServiceTag: gatewayName,
+			},
+		},
 	}
 	return gr
 }

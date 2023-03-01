@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get proxytemplates", func() {
-
 	var sampleProxyTemplates []*core_mesh.ProxyTemplateResource
 
 	BeforeEach(func() {
@@ -52,7 +51,6 @@ var _ = Describe("kumactl get proxytemplates", func() {
 	})
 
 	Describe("GetProxyTemplatesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

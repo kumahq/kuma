@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("ExternalService", func() {
-
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
@@ -331,5 +330,4 @@ var _ = Describe("ExternalService", func() {
                   message: data source cannot be empty`,
 		}),
 	)
-
 })

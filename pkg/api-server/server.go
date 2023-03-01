@@ -45,9 +45,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
-var (
-	log = core.Log.WithName("api-server")
-)
+var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
 	mux    *http.ServeMux
@@ -179,7 +177,8 @@ func NewApiServer(
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
 	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{
-		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma})
+		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -31,6 +31,5 @@ var _ = Describe("kubeconfigTemplate", func() {
 
 		// then
 		Expect(result).To(Equal(expectedKubeconfig))
-
 	})
 })

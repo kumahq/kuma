@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Lb", func() {
-
 	type testCase struct {
 		clusterName string
 		lb          *mesh_proto.TrafficRoute_LoadBalancer

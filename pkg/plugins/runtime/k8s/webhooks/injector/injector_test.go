@@ -24,7 +24,6 @@ import (
 )
 
 var _ = Describe("Injector", func() {
-
 	systemNamespace := "kuma-system"
 
 	caCertPath := filepath.Join(

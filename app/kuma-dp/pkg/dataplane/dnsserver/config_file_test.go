@@ -12,7 +12,6 @@ import (
 
 var _ = Describe("Config File", func() {
 	Describe("GenerateConfigFile(..)", func() {
-
 		var configDir string
 
 		BeforeEach(func() {

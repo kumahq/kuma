@@ -14,7 +14,6 @@ func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
 		&clientcmd.ConfigOverrides{},
 	).ClientConfig()
-
 	if err != nil {
 		log.Error(err, "failed setting up kubernetes client with kubeconfig", "kubeconfig", kubeconfig)
 		return nil, err

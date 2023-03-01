@@ -35,7 +35,6 @@ import (
 )
 
 var _ = Describe("Bootstrap Server", func() {
-
 	var stop chan struct{}
 	var resManager manager.ResourceManager
 	var baseURL string
@@ -292,7 +291,6 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(422))
 		Expect(string(bytes)).To(Equal("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
-
 	})
 
 	It("should publish metrics", func() {

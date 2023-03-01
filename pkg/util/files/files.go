@@ -23,7 +23,7 @@ func FileEmpty(path string) (bool, error) {
 // to dir. It returns nil if dir is writable.
 func IsDirWriteable(dir string) error {
 	f := filepath.Join(dir, ".touch")
-	perm := 0600
+	perm := 0o600
 	if err := os.WriteFile(f, []byte(""), fs.FileMode(perm)); err != nil {
 		return err
 	}

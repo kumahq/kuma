@@ -28,8 +28,7 @@ var TestSecretsInfo = &secrets.Info{
 	SupportedBackends: []string{"ca-1"},
 }
 
-type TestSecrets struct {
-}
+type TestSecrets struct{}
 
 func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret) {
 	identitySecret := &core_xds.IdentitySecret{

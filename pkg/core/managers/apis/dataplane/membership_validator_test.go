@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Membership validator", func() {
-
 	type testCase struct {
 		mesh *mesh_proto.Mesh
 		dp   *mesh_proto.Dataplane

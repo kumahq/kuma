@@ -12,10 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
-var (
-	// overridable by unit tests
-	NewSelfSignedCert = tls.NewSelfSignedCert
-)
+// overridable by unit tests
+var NewSelfSignedCert = tls.NewSelfSignedCert
 
 type generateCertificateContext struct {
 	*kumactl_cmd.RootContext
@@ -72,7 +70,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if ctx.args.key == "-" {
 				_, err = cmd.OutOrStdout().Write(keyPair.KeyPEM)
 			} else {
-				err = os.WriteFile(ctx.args.key, keyPair.KeyPEM, 0400)
+				err = os.WriteFile(ctx.args.key, keyPair.KeyPEM, 0o400)
 			}
 			if err != nil {
 				return errors.Wrap(err, "could not write the key file")
@@ -81,7 +79,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if ctx.args.cert == "-" {
 				_, err = cmd.OutOrStdout().Write(keyPair.CertPEM)
 			} else {
-				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0600)
+				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0o600)
 			}
 			if err != nil {
 				return errors.Wrap(err, "could not write the cert file")

@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl get meshes", func() {
-
 	sampleMeshes := []*mesh.MeshResource{
 		{
 			Spec: &mesh_proto.Mesh{
@@ -125,7 +124,6 @@ var _ = Describe("kumactl get meshes", func() {
 	}
 
 	Describe("GetMeshesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -196,5 +194,4 @@ var _ = Describe("kumactl get meshes", func() {
 			}),
 		)
 	})
-
 })

@@ -17,6 +17,7 @@ func UpdateEverything() UpdateKinds {
 		OtherMeshChange: {},
 	}
 }
+
 func (kinds UpdateKinds) HasType(kind ChangeKind) bool {
 	_, ok := kinds[kind]
 	return ok

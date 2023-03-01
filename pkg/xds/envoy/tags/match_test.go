@@ -19,7 +19,6 @@ func strictMatch(re *regexp.Regexp, s string) bool {
 }
 
 var _ = Describe("MatchingRegex", func() {
-
 	type testCase struct {
 		serviceTags mesh_proto.MultiValueTagSet
 		selector    mesh_proto.SingleValueTagSet
@@ -143,7 +142,6 @@ var _ = Describe("MatchingRegex", func() {
 })
 
 var _ = Describe("RegexOR", func() {
-
 	type testCase struct {
 		servicesTags []mesh_proto.MultiValueTagSet
 		selectors    []mesh_proto.SingleValueTagSet

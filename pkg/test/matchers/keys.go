@@ -75,7 +75,6 @@ func (m *allKeysMatcher) matchKeys(actual interface{}) []error {
 
 			return nil
 		}()
-
 		if err != nil {
 			errs = append(errs, errors.Nest(fmt.Sprintf(".%#v", key), err))
 		}

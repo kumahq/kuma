@@ -99,8 +99,7 @@ func (p *postgresLeaderElector) IsLeader() bool {
 	return atomic.LoadInt32(&(p.leader)) == 1
 }
 
-type KumaPqLockLogger struct {
-}
+type KumaPqLockLogger struct{}
 
 func (k *KumaPqLockLogger) Println(msgParts ...interface{}) {
 	stringParts := make([]string, len(msgParts))

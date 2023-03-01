@@ -26,7 +26,6 @@ import (
 )
 
 var _ = Describe("Builtin CA Manager", func() {
-
 	var secretManager manager.ResourceManager
 	var caManager core_ca.Manager
 

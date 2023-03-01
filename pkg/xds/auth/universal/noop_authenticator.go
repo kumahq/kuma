@@ -14,8 +14,7 @@ func NewNoopAuthenticator() auth.Authenticator {
 	return &noopAuthenticator{}
 }
 
-type noopAuthenticator struct {
-}
+type noopAuthenticator struct{}
 
 var _ auth.Authenticator = &noopAuthenticator{}
 

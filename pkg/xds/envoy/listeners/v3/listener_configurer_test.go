@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Miscellaneous Listener configurers", func() {
-
 	type testCase struct {
 		opt      ListenerBuilderOpt
 		expected string
@@ -63,5 +62,4 @@ var _ = Describe("Miscellaneous Listener configurers", func() {
 			expected: "freebind: false",
 		}),
 	)
-
 })

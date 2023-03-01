@@ -141,6 +141,7 @@ func DefaultInstallCpContext() InstallCpContext {
 		HELMValuesPrefix: "",
 	}
 }
+
 func ExcludeGatewayAPICRDs(file data.File) bool {
 	return file.Name != "kuma.io_meshgatewayconfigs.yaml"
 }

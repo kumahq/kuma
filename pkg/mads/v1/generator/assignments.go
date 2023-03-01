@@ -12,8 +12,7 @@ var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
 
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
-type MonitoringAssignmentsGenerator struct {
-}
+type MonitoringAssignmentsGenerator struct{}
 
 // Generate implements mads.ResourceGenerator
 func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_xds.Resource, error) {

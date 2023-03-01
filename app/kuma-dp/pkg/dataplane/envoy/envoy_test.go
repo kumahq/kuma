@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Envoy", func() {
-
 	var configDir string
 
 	BeforeEach(func() {

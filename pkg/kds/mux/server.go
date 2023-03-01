@@ -27,9 +27,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	muxServerLog = core.Log.WithName("kds-mux-server")
-)
+var muxServerLog = core.Log.WithName("kds-mux-server")
 
 type Filter interface {
 	InterceptSession(session Session) error
@@ -53,9 +51,7 @@ type server struct {
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
-var (
-	_ component.Component = &server{}
-)
+var _ component.Component = &server{}
 
 func NewServer(
 	callbacks Callbacks,

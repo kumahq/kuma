@@ -47,7 +47,6 @@ func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map
 var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 
 var _ = Describe("kumactl inspect dataplanes", func() {
-
 	var now, t1, t2 time.Time
 	var sampleDataplaneOverview []*core_mesh.DataplaneOverviewResource
 
@@ -400,7 +399,6 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 	})
 
 	Describe("InspectDataplanesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -435,7 +433,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes"}, given.outputFormat))
+					"inspect", "dataplanes",
+				}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -471,7 +470,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--tag", "kuma.io/service=mobile", "--tag", "version=v1"})
+					"inspect", "dataplanes", "--tag", "kuma.io/service=mobile", "--tag", "version=v1",
+				})
 
 				// when
 				err := rootCmd.Execute()
@@ -488,7 +488,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--gateway"})
+					"inspect", "dataplanes", "--gateway",
+				})
 
 				// when
 				err := rootCmd.Execute()
@@ -504,7 +505,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--ingress"})
+					"inspect", "dataplanes", "--ingress",
+				})
 
 				// when
 				err := rootCmd.Execute()

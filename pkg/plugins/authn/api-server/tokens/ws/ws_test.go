@@ -27,15 +27,13 @@ import (
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-type noopGenerateUserTokenAccess struct {
-}
+type noopGenerateUserTokenAccess struct{}
 
 func (n *noopGenerateUserTokenAccess) ValidateGenerate(user.User) error {
 	return nil
 }
 
 var _ = Describe("Auth Tokens WS", func() {
-
 	var userTokenClient client.UserTokenClient
 	var userTokenValidator issuer.UserTokenValidator
 	var httpClient util_http.Client

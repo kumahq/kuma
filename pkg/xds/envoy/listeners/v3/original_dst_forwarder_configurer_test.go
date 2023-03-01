@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerAddress  string
@@ -67,5 +66,4 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 `,
 		}),
 	)
-
 })

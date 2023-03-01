@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("DynamicMetadataOperator", func() {
-
 	Describe("String()", func() {
 		type testCase struct {
 			filterNamespace string
@@ -26,7 +25,6 @@ var _ = Describe("DynamicMetadataOperator", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%DYNAMIC_METADATA()%", testCase{
 				expected: `%DYNAMIC_METADATA()%`,

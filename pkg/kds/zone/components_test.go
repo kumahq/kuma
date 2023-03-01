@@ -29,7 +29,6 @@ import (
 )
 
 var _ = Describe("Zone Sync", func() {
-
 	zoneName := "zone-1"
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, configs map[string]bool) kds_client.KDSSink {

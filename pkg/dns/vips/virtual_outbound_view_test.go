@@ -14,8 +14,8 @@ var _ = Describe("Virtual outbound", func() {
 		thenChanges          []vips.Change
 		thenVirtualOutbounds map[vips.HostnameEntry]vips.VirtualOutbound
 	}
-	var exampleA = map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "a"}}}}}
-	var exampleB = map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("bar"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "b"}}}}}
+	exampleA := map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "a"}}}}}
+	exampleB := map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("bar"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "b"}}}}}
 	DescribeTable("Update",
 		func(tc updateTestCase) {
 			// Given

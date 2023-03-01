@@ -33,8 +33,10 @@ func RegisterBootstrapCluster(c string) string {
 	return c
 }
 
-var adsClusterName = RegisterBootstrapCluster("ads_cluster")
-var accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
+var (
+	adsClusterName           = RegisterBootstrapCluster("ads_cluster")
+	accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
+)
 
 func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool) (*envoy_bootstrap_v3.Bootstrap, error) {
 	staticClusters, err := buildStaticClusters(parameters, enableReloadableTokens)
@@ -310,7 +312,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			fileAccessLog := &access_loggers_file.FileAccessLog{
 				Path: parameters.AdminAccessLogPath,
 			}
-			var marshaled, err = util_proto.MarshalAnyDeterministic(fileAccessLog)
+			marshaled, err := util_proto.MarshalAnyDeterministic(fileAccessLog)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 			}

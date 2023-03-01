@@ -42,7 +42,8 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
 					Address: address,
-				}},
+				},
+			},
 		}
 		if ep.Weight > 0 {
 			lbEndpoint.LoadBalancingWeight = &proto_wrappers.UInt32Value{

@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Generate Public Key", func() {
-
 	It("should generate public key", func() {
 		// setup
 		ctx := cmd.DefaultRootContext()

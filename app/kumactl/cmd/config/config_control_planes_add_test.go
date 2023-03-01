@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl config control-planes add", func() {
-
 	var configFile *os.File
 
 	BeforeEach(func() {
@@ -55,11 +54,12 @@ var _ = Describe("kumactl config control-planes add", func() {
 	})
 
 	Describe("error cases", func() {
-
 		It("should require name", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add"})
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
+				"config", "control-planes", "add",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -71,9 +71,11 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 		It("should require API Server URL", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
 				"config", "control-planes", "add",
-				"--name", "example"})
+				"--name", "example",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -85,11 +87,13 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 		It("should not allow invalid auth-type", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
 				"config", "control-planes", "add",
 				"--address", "http://localhost:1234",
 				"--auth-type", "unknown",
-				"--name", "example"})
+				"--name", "example",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -102,10 +106,12 @@ var _ = Describe("kumactl config control-planes add", func() {
 			defer server.Close()
 
 			// given
-			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("testdata", "config-control-planes-add.01.golden.yaml"),
 				"config", "control-planes", "add",
 				"--name", "example",
-				"--address", fmt.Sprintf("http://localhost:%d", port)})
+				"--address", fmt.Sprintf("http://localhost:%d", port),
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -123,7 +129,8 @@ var _ = Describe("kumactl config control-planes add", func() {
 			defer server.Close()
 
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
 				"--api-timeout", "100ms",
 				"config", "control-planes", "add",
 				"--name", "example",
@@ -148,10 +155,12 @@ var _ = Describe("kumactl config control-planes add", func() {
 			defer server.Close()
 
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
 				"config", "control-planes", "add",
 				"--name", "example",
-				"--address", fmt.Sprintf("http://localhost:%d", port)})
+				"--address", fmt.Sprintf("http://localhost:%d", port),
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -163,7 +172,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 	})
 
 	Describe("happy path", func() {
-
 		type testCase struct {
 			configFile  string
 			goldenFile  string
@@ -177,14 +185,15 @@ var _ = Describe("kumactl config control-planes add", func() {
 				// setup
 				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = os.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0o600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// setup cp index server for validation to pass
 				server, port := setupCpIndexServer()
 				defer server.Close()
 
-				args := []string{"--config-file", configFile.Name(),
+				args := []string{
+					"--config-file", configFile.Name(),
 					"config", "control-planes", "add",
 					"--name", "example",
 					"--address", fmt.Sprintf("http://localhost:%d", port),

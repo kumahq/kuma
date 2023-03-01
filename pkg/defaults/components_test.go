@@ -19,9 +19,7 @@ import (
 )
 
 var _ = Describe("Defaults Component", func() {
-
 	Describe("when skip mesh creation is set to false", func() {
-
 		var component core_component.Component
 		var manager core_manager.ResourceManager
 
@@ -75,7 +73,6 @@ var _ = Describe("Defaults Component", func() {
 	})
 
 	Describe("when skip mesh creation is set to true", func() {
-
 		var component core_component.Component
 		var manager core_manager.ResourceManager
 

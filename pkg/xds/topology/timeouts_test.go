@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("Timeout", func() {
-
 	var ctx context.Context
 	var rm core_manager.ResourceManager
 	var dataplane *core_mesh.DataplaneResource
@@ -43,7 +42,6 @@ var _ = Describe("Timeout", func() {
 	})
 
 	Context("GetTimeouts()", func() {
-
 		It("should pick Timeout which matches sources and apply to right outbound", func() {
 			timeoutsFrontendV1ToRedis := &core_mesh.TimeoutResource{
 				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeouts-redis"},

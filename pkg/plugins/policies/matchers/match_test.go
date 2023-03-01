@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Match", func() {
-
 	readDPP := func(file string) *core_mesh.DataplaneResource {
 		dppYaml, err := os.ReadFile(file)
 		Expect(err).ToNot(HaveOccurred())
@@ -67,7 +66,6 @@ var _ = Describe("Match", func() {
 	}
 
 	Describe("MatchedPolicies", func() {
-
 		type testCase struct {
 			dppFile      string
 			policiesFile string
@@ -164,5 +162,4 @@ var _ = Describe("Match", func() {
 			generateTableEntries(filepath.Join("testdata", "match", "meshgateways")),
 		)
 	})
-
 })

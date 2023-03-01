@@ -28,9 +28,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds"
 )
 
-var (
-	runLog = controlPlaneLog.WithName("run")
-)
+var runLog = controlPlaneLog.WithName("run")
 
 const gracefullyShutdownDuration = 3 * time.Second
 

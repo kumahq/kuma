@@ -146,8 +146,10 @@ type GenericOption struct {
 	App  AppOptionFunc
 }
 
-var _ KumaDeploymentOption = &GenericOption{}
-var _ AppDeploymentOption = &GenericOption{}
+var (
+	_ KumaDeploymentOption = &GenericOption{}
+	_ AppDeploymentOption  = &GenericOption{}
+)
 
 func (o *GenericOption) ApplyApp(opts *appDeploymentOptions) {
 	o.App(opts)

@@ -18,9 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-var (
-	diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
-)
+var diagnosticsServerLog = core.Log.WithName("xds-server").WithName("diagnostics")
 
 type diagnosticsServer struct {
 	config  *diagnostics_config.DiagnosticsConfig

@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Metered Store", func() {
-
 	var metrics core_metrics.Metrics
 	var store core_store.ResourceStore
 

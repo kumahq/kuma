@@ -204,6 +204,7 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 
 	return nil
 }
+
 func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",

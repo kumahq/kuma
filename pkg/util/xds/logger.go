@@ -26,6 +26,7 @@ func (l logger) Warnf(format string, args ...interface{}) {
 func (l logger) Infof(format string, args ...interface{}) {
 	l.log.V(1).Info(fmt.Sprintf(format, args...))
 }
+
 func (l logger) Errorf(format string, args ...interface{}) {
 	l.log.Error(fmt.Errorf(format, args...), "")
 }

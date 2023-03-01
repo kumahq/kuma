@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Metadata()", func() {
-
 	It("should handle `nil` map of tags", func() {
 		// when
 		metadata := EndpointMetadata(nil)

@@ -18,9 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
-var (
-	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
-)
+var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
 
 type DNSServer struct {
 	opts *Opts

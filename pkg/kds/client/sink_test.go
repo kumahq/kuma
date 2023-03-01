@@ -21,7 +21,6 @@ const (
 )
 
 var _ = Describe("KDS Sink", func() {
-
 	var tc kds_verifier.TestContext
 
 	BeforeEach(func() {
@@ -59,5 +58,4 @@ var _ = Describe("KDS Sink", func() {
 
 		close(tc.Stop())
 	})
-
 })

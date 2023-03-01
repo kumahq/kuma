@@ -17,9 +17,7 @@ import (
 	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
-var (
-	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
-)
+var DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 
 type CertType string
 

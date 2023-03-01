@@ -41,8 +41,7 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validF
 	return j.issuer.Generate(ctx, claims, validFor)
 }
 
-type DisabledIssuer struct {
-}
+type DisabledIssuer struct{}
 
 var _ TokenIssuer = &DisabledIssuer{}
 

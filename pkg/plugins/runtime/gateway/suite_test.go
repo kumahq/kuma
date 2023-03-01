@@ -316,7 +316,8 @@ func (d *DataplaneGenerator) generate(
 					mesh_proto.ServiceTag:  serviceName,
 					mesh_proto.ProtocolTag: "http",
 				},
-			}},
+			},
+		},
 	}
 
 	for i := 0; i < len(tags); i += 2 {

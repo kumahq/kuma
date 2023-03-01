@@ -21,8 +21,7 @@ import (
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 )
 
-type staticTokenIssuer struct {
-}
+type staticTokenIssuer struct{}
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
@@ -31,7 +30,6 @@ func (s *staticTokenIssuer) Generate(ctx context.Context, identity issuer.Datapl
 }
 
 var _ = Describe("Tokens Client", func() {
-
 	var server *httptest.Server
 
 	BeforeEach(func() {

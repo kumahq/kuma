@@ -44,8 +44,7 @@ func (i *jwtTokenIssuer) Generate(ctx context.Context, identity DataplaneIdentit
 	return i.issuers(identity.Mesh).Generate(ctx, claims, validFor)
 }
 
-type DisabledIssuer struct {
-}
+type DisabledIssuer struct{}
 
 var _ DataplaneTokenIssuer = &DisabledIssuer{}
 

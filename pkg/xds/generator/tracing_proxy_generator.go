@@ -18,8 +18,7 @@ import (
 // OriginTracing is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginTracing = "tracing"
 
-type TracingProxyGenerator struct {
-}
+type TracingProxyGenerator struct{}
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 

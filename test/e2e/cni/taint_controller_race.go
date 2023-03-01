@@ -29,7 +29,7 @@ metadata:
 		strings.ToLower(random.UniqueId()),
 	)
 
-	var setup = func() {
+	setup := func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		cluster = k8sCluster.
 			WithTimeout(6 * time.Second).

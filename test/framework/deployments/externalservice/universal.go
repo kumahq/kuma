@@ -39,16 +39,23 @@ var UniversalEchoServer = func(port int, tls bool) Command {
 	}
 	return args
 }
-var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
-var UniversalAppHttpsEchoServer = Command([]string{"ncat",
-	"-lk", "-p", "443",
-	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
-	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
+
+var (
+	UniversalAppEchoServer      = ExternalServiceCommand(80, "Echo 80")
+	UniversalAppHttpsEchoServer = Command([]string{
+		"ncat",
+		"-lk", "-p", "443",
+		"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
+		"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'",
+	})
+)
 var UniversalTCPSink = Command([]string{"ncat", "-lk", "9999", ">", "/nc.out"})
 
 var ExternalServiceCommand = func(port uint32, message string) Command {
-	return []string{"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
-		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message)}
+	return []string{
+		"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
+		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message),
+	}
 }
 
 func (u *UniversalDeployment) Name() string {

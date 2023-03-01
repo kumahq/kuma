@@ -40,7 +40,6 @@ const defaultNetworkingSection = `networking:
         "kuma.io/service": "web"`
 
 var _ = Describe("kumactl apply", func() {
-
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
@@ -118,8 +117,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml"),
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -156,8 +155,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-dataplane.yaml"),
+		})
 
 		// when
 		err = rootCmd.Execute()
@@ -172,8 +171,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml"),
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -195,8 +194,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-secret.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-secret.yaml"),
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -241,8 +240,8 @@ var _ = Describe("kumactl apply", func() {
 
 		// given
 		rootCmd.SetArgs([]string{
-			"apply", "-f", testurl},
-		)
+			"apply", "-f", testurl,
+		})
 
 		// when
 		err = rootCmd.Execute()
@@ -259,8 +258,8 @@ var _ = Describe("kumactl apply", func() {
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 			"apply", "-f", filepath.Join("testdata", "apply-mesh-template.yaml"),
-			"-v", "name=meshinit", "-v", "type=Mesh"},
-		)
+			"-v", "name=meshinit", "-v", "type=Mesh",
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -282,8 +281,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-same-type.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-same-type.yaml"),
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -303,8 +302,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-different-type.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-different-type.yaml"),
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -325,7 +324,6 @@ var _ = Describe("kumactl apply", func() {
 
 		Expect(secret.Meta.GetName()).To(Equal("sample"))
 		Expect(secret.Meta.GetMesh()).To(Equal("default"))
-
 	})
 
 	It("should return kuma api server error", func() {
@@ -354,8 +352,8 @@ var _ = Describe("kumactl apply", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml")},
-		)
+			"apply", "-f", filepath.Join("testdata", "apply-mesh.yaml"),
+		})
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 		rootCmd.SetErr(buf)
@@ -427,8 +425,8 @@ networking:
 		// given
 		rootCmd.SetArgs([]string{
 			"apply", "-f", filepath.Join("testdata", "apply-dataplane-template-dots.yaml"),
-			"-v", "var.with.dots.in.the.name=2.2.2.2"},
-		)
+			"-v", "var.with.dots.in.the.name=2.2.2.2",
+		})
 
 		// when
 		err := rootCmd.Execute()
@@ -474,8 +472,8 @@ networking:
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"apply", "-f", "-"},
-			)
+				"apply", "-f", "-",
+			})
 			rootCmd.SetIn(strings.NewReader(given.resource))
 
 			// when

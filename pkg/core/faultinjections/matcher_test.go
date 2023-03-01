@@ -141,7 +141,8 @@ var _ = Describe("Match", func() {
 						},
 					}),
 				},
-			}}),
+			},
+		}),
 		Entry("should apply policy only to the first inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{

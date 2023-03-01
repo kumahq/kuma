@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("ResourceSet", func() {
-
 	It("empty set should return empty list", func() {
 		// when
 		resources := NewResourceSet()
@@ -115,9 +114,7 @@ var _ = Describe("ResourceSet", func() {
 })
 
 var _ = Describe("ResourceList", func() {
-
 	Describe("ToIndex()", func() {
-
 		type testCase struct {
 			input    ResourceList
 			expected map[string]ResourcePayload

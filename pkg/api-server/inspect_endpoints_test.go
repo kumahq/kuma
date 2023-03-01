@@ -61,7 +61,6 @@ func serviceSelector(name, protocol string) *mesh_proto.Selector {
 }
 
 var _ = Describe("Inspect WS", func() {
-
 	type testCase struct {
 		path        string
 		matcher     types.GomegaMatcher

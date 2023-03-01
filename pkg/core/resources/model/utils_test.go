@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Resource Utils", func() {
-
 	Describe("ToJSON", func() {
 		It("should marshal empty slice to '[]'", func() {
 			// given
@@ -50,7 +49,6 @@ var _ = Describe("Resource Utils", func() {
 	})
 
 	Describe("IsEmpty", func() {
-
 		It("should return true if ResourceSpec is empty", func() {
 			// given
 			var spec core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{}
@@ -73,7 +71,6 @@ var _ = Describe("Resource Utils", func() {
 	})
 
 	Describe("FullName", func() {
-
 		It("should return joined package path and type name", func() {
 			// given
 			var spec core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{}
@@ -82,11 +79,9 @@ var _ = Describe("Resource Utils", func() {
 			// then
 			Expect(name).To(Equal("github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1/MeshTrafficPermission"))
 		})
-
 	})
 
 	Describe("Equal", func() {
-
 		It("should return true if specs are equal", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{

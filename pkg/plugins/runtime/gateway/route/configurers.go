@@ -461,7 +461,8 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 					WeightedClusters: &envoy_config_route.WeightedCluster{
 						Clusters:    weights,
 						TotalWeight: util_proto.UInt32(total),
-					}},
+					},
+				},
 			},
 		}
 

@@ -50,7 +50,6 @@ func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) boo
 	constraint, err := semver.NewConstraint(
 		fmt.Sprintf(">= %d.%d, <= %d.%d", kumaVersion.Major(), minMinor, kumaVersion.Major(), maxMinor),
 	)
-
 	if err != nil {
 		// Programmer error
 		panic(err)

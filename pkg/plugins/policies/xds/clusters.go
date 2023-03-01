@@ -15,9 +15,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var (
-	splitClusterRegex = regexp.MustCompile("(.*)(-_[0-9+]_$)")
-)
+var splitClusterRegex = regexp.MustCompile("(.*)(-_[0-9+]_$)")
 
 type Clusters struct {
 	Inbound       map[string]*envoy_cluster.Cluster

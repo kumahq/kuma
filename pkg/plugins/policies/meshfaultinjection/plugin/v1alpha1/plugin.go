@@ -20,8 +20,7 @@ import (
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
-type plugin struct {
-}
+type plugin struct{}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

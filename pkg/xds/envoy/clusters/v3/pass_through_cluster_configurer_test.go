@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("PassThroughClusterConfigurer", func() {
-
 	It("should generate proper Envoy config", func() {
 		// given
 		clusterName := "test:cluster"

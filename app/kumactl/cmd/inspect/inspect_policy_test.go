@@ -31,7 +31,6 @@ func (t *testPolicyInspectClient) Inspect(ctx context.Context, policyDesc model.
 var _ resources.PolicyInspectClient = &testPolicyInspectClient{}
 
 var _ = Describe("kumactl inspect POLICY", func() {
-
 	type testCase struct {
 		goldenFile         string
 		serverResponseFile string

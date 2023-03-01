@@ -15,9 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
-var (
-	gcLog = core.Log.WithName("dataplane-gc")
-)
+var gcLog = core.Log.WithName("dataplane-gc")
 
 type collector struct {
 	rm         manager.ResourceManager

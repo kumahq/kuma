@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("printer", func() {
-
 	var printer table.Printer
 	var buf *bytes.Buffer
 

@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("TransparentProxyGenerator", func() {
-
 	type testCase struct {
 		proxy    *model.Proxy
 		expected string

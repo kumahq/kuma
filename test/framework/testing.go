@@ -15,7 +15,6 @@ func NewTestingT() *TestingT {
 }
 
 func (i *TestingT) Helper() {
-
 }
 
 func (i *TestingT) Name() string {

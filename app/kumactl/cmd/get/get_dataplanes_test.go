@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get dataplanes", func() {
-
 	var dataplanes []*core_mesh.DataplaneResource
 	BeforeEach(func() {
 		// setup
@@ -81,7 +80,6 @@ var _ = Describe("kumactl get dataplanes", func() {
 	})
 
 	Describe("GetDataplanesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

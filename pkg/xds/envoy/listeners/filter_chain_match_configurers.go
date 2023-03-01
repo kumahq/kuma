@@ -49,8 +49,7 @@ func MatchApplicationProtocols(alpn ...string) FilterChainBuilderOpt {
 				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
 			}
 
-			chain.FilterChainMatch.ApplicationProtocols =
-				append(chain.FilterChainMatch.ApplicationProtocols, alpn...)
+			chain.FilterChainMatch.ApplicationProtocols = append(chain.FilterChainMatch.ApplicationProtocols, alpn...)
 		}),
 	)
 }

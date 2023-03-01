@@ -16,9 +16,7 @@ import (
 )
 
 var _ = Describe("MonitoringAssignmentsGenerator", func() {
-
 	Describe("Generate()", func() {
-
 		type testCase struct {
 			meshes     []*core_mesh.MeshResource
 			dataplanes []*core_mesh.DataplaneResource

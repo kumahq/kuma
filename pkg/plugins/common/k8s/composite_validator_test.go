@@ -17,8 +17,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-type denyingValidator struct {
-}
+type denyingValidator struct{}
 
 var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
@@ -36,7 +35,6 @@ func (d *denyingValidator) Supports(req kube_admission.Request) bool {
 }
 
 var _ = Describe("Composite Validator", func() {
-
 	var handler kube_admission.Handler
 	var kubeTypes k8s_registry.TypeRegistry
 

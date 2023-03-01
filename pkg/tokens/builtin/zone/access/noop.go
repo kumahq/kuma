@@ -2,8 +2,7 @@ package access
 
 import "github.com/kumahq/kuma/pkg/core/user"
 
-type NoopZoneTokenAccess struct {
-}
+type NoopZoneTokenAccess struct{}
 
 var _ ZoneTokenAccess = NoopZoneTokenAccess{}
 

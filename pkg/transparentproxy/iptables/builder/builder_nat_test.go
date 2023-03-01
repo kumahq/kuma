@@ -40,7 +40,6 @@ var _ = Describe("Builder nat", func() {
 			for _, rule := range expect {
 				Expect(table).To(ContainSubstring(rule))
 			}
-
 		},
 		Entry("ipv4 not verbose",
 			[]string{"docker:1.2.3.4/24", "br+:127.0.0.0/32"},

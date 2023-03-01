@@ -8,8 +8,7 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
-type NoopCallbacks struct {
-}
+type NoopCallbacks struct{}
 
 func (c *NoopCallbacks) OnFetchRequest(context.Context, *envoy_sd.DiscoveryRequest) error {
 	return nil

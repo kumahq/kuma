@@ -59,7 +59,8 @@ var _ = DescribeTable("kumactl inspect meshgateway",
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"inspect", "meshgateway", "meshgateway-1"})
+			"inspect", "meshgateway", "meshgateway-1",
+		})
 
 		// when
 		err = rootCmd.Execute()

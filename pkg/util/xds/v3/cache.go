@@ -29,7 +29,6 @@ import (
 )
 
 type Snapshot interface {
-
 	// GetSupportedTypes returns a list of xDS types supported by this snapshot.
 	GetSupportedTypes() []string
 

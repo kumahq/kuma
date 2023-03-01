@@ -183,6 +183,7 @@ type Annotations map[string]string
 func (a Annotations) GetEnabled(keys ...string) (bool, bool, error) {
 	return a.GetEnabledWithDefault(false, keys...)
 }
+
 func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool, error) {
 	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		switch value {
@@ -203,6 +204,7 @@ func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool
 func (a Annotations) GetUint32(keys ...string) (uint32, bool, error) {
 	return a.GetUint32WithDefault(0, keys...)
 }
+
 func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, bool, error) {
 	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
 		u, err := strconv.ParseUint(value, 10, 32)
@@ -220,6 +222,7 @@ func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, b
 func (a Annotations) GetString(keys ...string) (string, bool) {
 	return a.GetStringWithDefault("", keys...)
 }
+
 func (a Annotations) GetStringWithDefault(def string, keys ...string) (string, bool) {
 	v, exists, _ := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
 		return value, nil
@@ -240,6 +243,7 @@ func (a Annotations) GetDurationWithDefault(def time.Duration, keys ...string) (
 func (a Annotations) GetList(keys ...string) ([]string, bool) {
 	return a.GetListWithDefault(nil, keys...)
 }
+
 func (a Annotations) GetListWithDefault(def []string, keys ...string) ([]string, bool) {
 	defCopy := []string{}
 	defCopy = append(defCopy, def...)
@@ -260,6 +264,7 @@ func (a Annotations) GetListWithDefault(def []string, keys ...string) ([]string,
 func (a Annotations) GetMap(keys ...string) (map[string]string, bool, error) {
 	return a.GetMapWithDefault(map[string]string{}, keys...)
 }
+
 func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (map[string]string, bool, error) {
 	defCopy := make(map[string]string, len(def))
 	for k, v := range def {

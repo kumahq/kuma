@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("RoutesConfigurer", func() {
-
 	type testCase struct {
 		routes   envoy_common.Routes
 		expected string

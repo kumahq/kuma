@@ -6,19 +6,17 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-var (
-	// protocolStack is a mapping between a protocol and its full protocol stack, e.g.
-	// HTTP has a protocol stack [HTTP, TCP],
-	// GRPC has a protocol stack [GRPC, HTTP2, TCP],
-	// TCP  has a protocol stack [TCP].
-	protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
-		core_mesh.ProtocolGRPC:  {core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
-		core_mesh.ProtocolHTTP2: {core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
-		core_mesh.ProtocolHTTP:  {core_mesh.ProtocolHTTP, core_mesh.ProtocolTCP},
-		core_mesh.ProtocolKafka: {core_mesh.ProtocolKafka, core_mesh.ProtocolTCP},
-		core_mesh.ProtocolTCP:   {core_mesh.ProtocolTCP},
-	}
-)
+// protocolStack is a mapping between a protocol and its full protocol stack, e.g.
+// HTTP has a protocol stack [HTTP, TCP],
+// GRPC has a protocol stack [GRPC, HTTP2, TCP],
+// TCP  has a protocol stack [TCP].
+var protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
+	core_mesh.ProtocolGRPC:  {core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
+	core_mesh.ProtocolHTTP2: {core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
+	core_mesh.ProtocolHTTP:  {core_mesh.ProtocolHTTP, core_mesh.ProtocolTCP},
+	core_mesh.ProtocolKafka: {core_mesh.ProtocolKafka, core_mesh.ProtocolTCP},
+	core_mesh.ProtocolTCP:   {core_mesh.ProtocolTCP},
+}
 
 // getCommonProtocol returns a common protocol between given two.
 //

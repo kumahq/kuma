@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("TracingProxyGenerator", func() {
-
 	type testCase struct {
 		ctx      xds_context.Context
 		proxy    *core_xds.Proxy

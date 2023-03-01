@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Default config", func() {
-
 	It("should be check against the kuma-cp.defaults.yaml file", func() {
 		backupEnvVars := os.Environ()
 		os.Clearenv()
@@ -20,7 +19,6 @@ var _ = Describe("Default config", func() {
 				parts := strings.SplitN(envVar, "=", 2)
 				Expect(os.Setenv(parts[0], parts[1])).To(Succeed())
 			}
-
 		}()
 		// given
 		cfg := Config{}

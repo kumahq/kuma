@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
-
 	type Opt = VirtualHostBuilderOpt
 	type testCase struct {
 		opts     []Opt

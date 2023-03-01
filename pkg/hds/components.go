@@ -20,9 +20,7 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-var (
-	hdsServerLog = core.Log.WithName("hds-server")
-)
+var hdsServerLog = core.Log.WithName("hds-server")
 
 func Setup(rt core_runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Global {
@@ -71,8 +69,7 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) 
 	}, nil
 }
 
-type hasher struct {
-}
+type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
 	return node.Id

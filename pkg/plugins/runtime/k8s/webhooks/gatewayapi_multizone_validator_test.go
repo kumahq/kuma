@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Gateway API mutlizone validation webhook", func() {
-
 	type testCase struct {
 		cpMode       config_core.CpMode
 		gatewayClass gatewayapi.GatewayClass

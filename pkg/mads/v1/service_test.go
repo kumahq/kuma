@@ -36,11 +36,10 @@ import (
 )
 
 var _ = Describe("MADS http service", func() {
-
 	var url string
 	var monitoringAssignmentPath string
 
-	var pbMarshaller = &jsonpb.Marshaler{OrigName: true}
+	pbMarshaller := &jsonpb.Marshaler{OrigName: true}
 
 	var resManager core_manager.ResourceManager
 
@@ -146,7 +145,7 @@ var _ = Describe("MADS http service", func() {
 			return err
 		}
 
-		var mesh = &core_mesh.MeshResource{
+		mesh := &core_mesh.MeshResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "test",
 			},
@@ -163,7 +162,7 @@ var _ = Describe("MADS http service", func() {
 			},
 		}
 
-		var dp1 = &core_mesh.DataplaneResource{
+		dp1 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-1",
 				Mesh: mesh.GetMeta().GetName(),
@@ -181,7 +180,7 @@ var _ = Describe("MADS http service", func() {
 			},
 		}
 
-		var dp2 = &core_mesh.DataplaneResource{
+		dp2 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-2",
 				Mesh: mesh.GetMeta().GetName(),

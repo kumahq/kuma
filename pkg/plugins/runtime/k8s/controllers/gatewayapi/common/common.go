@@ -23,6 +23,7 @@ func ServiceTagForGateway(name kube_types.NamespacedName) map[string]string {
 		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
 	}
 }
+
 func GetGatewayClass(ctx context.Context, client kube_client.Client, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
 	class := &gatewayapi.GatewayClass{}
 	classObjectKey := kube_types.NamespacedName{Name: string(name)}

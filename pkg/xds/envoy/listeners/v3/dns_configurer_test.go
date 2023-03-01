@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("DNSConfigurer", func() {
-
 	type testCase struct {
 		vips         map[string][]string
 		emptyDnsPort uint32

@@ -13,7 +13,7 @@ import (
 )
 
 func Policy() {
-	var meshName = "mtls-test"
+	meshName := "mtls-test"
 	E2EAfterEach(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())

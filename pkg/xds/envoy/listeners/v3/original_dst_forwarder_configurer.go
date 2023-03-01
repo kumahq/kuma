@@ -6,8 +6,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type OriginalDstForwarderConfigurer struct {
-}
+type OriginalDstForwarderConfigurer struct{}
 
 var _ ListenerConfigurer = &OriginalDstForwarderConfigurer{}
 

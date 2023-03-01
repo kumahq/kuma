@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("kumactl config view", func() {
-
 	It("should display configuration from a given file", func() {
 		// setup
 		rootCmd := test.DefaultTestingRootCmd()
@@ -22,7 +21,8 @@ var _ = Describe("kumactl config view", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("testdata", "config-view.config.yaml"),
-			"config", "view"})
+			"config", "view",
+		})
 
 		// when
 		err := rootCmd.Execute()

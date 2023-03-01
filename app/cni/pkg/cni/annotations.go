@@ -17,20 +17,18 @@ const (
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
-var (
-	annotationRegistry = map[string]*annotationParam{
-		"inject":               {"kuma.io/sidecar-injection", "", alwaysValidFunc},
-		"ports":                {"kuma.io/envoy-admin-port", "", validatePortList},
-		"excludeInboundPorts":  {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
-		"excludeOutboundPorts": {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
-		"inboundPort":          {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
-		"inboundPortV6":        {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
-		"outboundPort":         {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
-		"isGateway":            {"kuma.io/gateway", "false", alwaysValidFunc},
-		"builtinDNS":           {"kuma.io/builtindns", "false", alwaysValidFunc},
-		"builtinDNSPort":       {"kuma.io/builtindnsport", defaultBuiltinDNSPort, validatePortList},
-	}
-)
+var annotationRegistry = map[string]*annotationParam{
+	"inject":               {"kuma.io/sidecar-injection", "", alwaysValidFunc},
+	"ports":                {"kuma.io/envoy-admin-port", "", validatePortList},
+	"excludeInboundPorts":  {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
+	"excludeOutboundPorts": {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
+	"inboundPort":          {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
+	"inboundPortV6":        {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
+	"outboundPort":         {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
+	"isGateway":            {"kuma.io/gateway", "false", alwaysValidFunc},
+	"builtinDNS":           {"kuma.io/builtindns", "false", alwaysValidFunc},
+	"builtinDNSPort":       {"kuma.io/builtindnsport", defaultBuiltinDNSPort, validatePortList},
+}
 
 type IntermediateConfig struct {
 	targetPort           string

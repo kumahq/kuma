@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("kumactl install tracing", func() {
-
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 
@@ -52,7 +51,6 @@ var _ = Describe("kumactl install tracing", func() {
 
 			// then
 			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty())
-
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs:  nil,

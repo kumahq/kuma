@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Migrate", func() {
-
 	var cfg postgres.PostgresStoreConfig
 
 	BeforeEach(func() {

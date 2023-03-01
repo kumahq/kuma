@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("kumactl config control-planes remove", func() {
-
 	var configFile *os.File
 
 	BeforeEach(func() {
@@ -46,11 +45,12 @@ var _ = Describe("kumactl config control-planes remove", func() {
 	})
 
 	Describe("error cases", func() {
-
 		It("should require name", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "remove"})
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
+				"config", "control-planes", "remove",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -62,9 +62,11 @@ var _ = Describe("kumactl config control-planes remove", func() {
 
 		It("should fail to remove unknown Control Plane", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-remove.01.initial.yaml"),
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("testdata", "config-control-planes-remove.01.initial.yaml"),
 				"config", "control-planes", "remove",
-				"--name", "example"})
+				"--name", "example",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -76,7 +78,6 @@ var _ = Describe("kumactl config control-planes remove", func() {
 	})
 
 	Describe("happy path", func() {
-
 		type testCase struct {
 			configFile  string
 			goldenFile  string
@@ -88,13 +89,15 @@ var _ = Describe("kumactl config control-planes remove", func() {
 				// setup
 				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = os.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0o600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// given
-				rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				rootCmd.SetArgs([]string{
+					"--config-file", configFile.Name(),
 					"config", "control-planes", "remove",
-					"--name", "example"})
+					"--name", "example",
+				})
 				// when
 				err = rootCmd.Execute()
 				// then

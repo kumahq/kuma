@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Virtual Host modifications", func() {
-
 	type testCase struct {
 		routeCfgs     []string
 		modifications []string
@@ -75,7 +74,8 @@ var _ = Describe("Virtual Host modifications", func() {
                         name: outbound:backend
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 virtualHost:
                    operation: add
                    value: |
@@ -150,7 +150,8 @@ var _ = Describe("Virtual Host modifications", func() {
                 trafficDirection: INBOUND
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 virtualHost:
                    operation: remove
                    match:
@@ -208,7 +209,8 @@ var _ = Describe("Virtual Host modifications", func() {
                 trafficDirection: INBOUND
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 virtualHost:
                    operation: patch
                    match:
@@ -282,7 +284,8 @@ var _ = Describe("Virtual Host modifications", func() {
                 trafficDirection: INBOUND
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 virtualHost:
                    operation: patch
                    match:

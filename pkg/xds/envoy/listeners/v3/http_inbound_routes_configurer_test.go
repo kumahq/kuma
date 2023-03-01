@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("HttpInboundRouteConfigurer", func() {
-
 	routeWithRateLimiter := func(rateLimit *v1alpha1.RateLimit) envoy_common.Route {
 		route := envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
 			envoy_common.WithService("localhost:8080"),

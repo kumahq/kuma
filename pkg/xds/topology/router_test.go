@@ -25,7 +25,6 @@ import (
 )
 
 var _ = Describe("TrafficRoute", func() {
-
 	var ctx context.Context
 	var rm core_manager.ResourceManager
 
@@ -35,7 +34,6 @@ var _ = Describe("TrafficRoute", func() {
 	})
 
 	Describe("GetRoutes()", func() {
-
 		It("should pick the best matching Route for each outbound interface", func() {
 			// given
 			mesh := &core_mesh.MeshResource{ // mesh that is relevant to this test case
@@ -607,19 +605,22 @@ var _ = Describe("TrafficRoute", func() {
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
-							Sources: []*mesh_proto.Selector{{
-								Match: mesh_proto.MatchAnyService(),
+							Sources: []*mesh_proto.Selector{
+								{
+									Match: mesh_proto.MatchAnyService(),
+								},
 							},
-							},
-							Destinations: []*mesh_proto.Selector{{
-								Match: mesh_proto.MatchAnyService(),
-							},
+							Destinations: []*mesh_proto.Selector{
+								{
+									Match: mesh_proto.MatchAnyService(),
+								},
 							},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      util_proto.UInt32(100),
-									Destination: mesh_proto.MatchAnyService(),
-								},
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      util_proto.UInt32(100),
+										Destination: mesh_proto.MatchAnyService(),
+									},
 								},
 							},
 						},
@@ -702,19 +703,22 @@ var _ = Describe("TrafficRoute", func() {
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
-							Sources: []*mesh_proto.Selector{{
-								Match: mesh_proto.MatchAnyService(),
+							Sources: []*mesh_proto.Selector{
+								{
+									Match: mesh_proto.MatchAnyService(),
+								},
 							},
-							},
-							Destinations: []*mesh_proto.Selector{{
-								Match: mesh_proto.MatchAnyService(),
-							},
+							Destinations: []*mesh_proto.Selector{
+								{
+									Match: mesh_proto.MatchAnyService(),
+								},
 							},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      util_proto.UInt32(100),
-									Destination: mesh_proto.MatchAnyService(),
-								},
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      util_proto.UInt32(100),
+										Destination: mesh_proto.MatchAnyService(),
+									},
 								},
 							},
 						},

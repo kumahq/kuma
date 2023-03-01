@@ -9,9 +9,7 @@ import (
 )
 
 var _ = Describe("xDS", func() {
-
 	Describe("ParseProxyId(..)", func() {
-
 		Context("valid input", func() {
 			type testCase struct {
 				nodeID   string

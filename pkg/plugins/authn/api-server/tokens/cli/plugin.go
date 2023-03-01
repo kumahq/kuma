@@ -14,8 +14,7 @@ const (
 	TokenKey = "token"
 )
 
-type TokenAuthnPlugin struct {
-}
+type TokenAuthnPlugin struct{}
 
 var _ plugins.AuthnPlugin = &TokenAuthnPlugin{}
 

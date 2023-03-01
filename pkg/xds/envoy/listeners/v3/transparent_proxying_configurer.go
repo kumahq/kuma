@@ -6,8 +6,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type TransparentProxyingConfigurer struct {
-}
+type TransparentProxyingConfigurer struct{}
 
 func (c *TransparentProxyingConfigurer) Configure(l *envoy_listener.Listener) error {
 	l.BindToPort = util_proto.Bool(false)

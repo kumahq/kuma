@@ -76,7 +76,7 @@ spec:
 		admin, err := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
 		Expect(err).ToNot(HaveOccurred())
 
-		var lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
+		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {
 			s, err := admin.GetStats("cluster.test-server.grpc.failure")
 			g.Expect(err).ToNot(HaveOccurred())
