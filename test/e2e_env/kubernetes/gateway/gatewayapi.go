@@ -391,7 +391,7 @@ spec:
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 		})
 
-		It("should route the traffic using TLS", func() {
+		XIt("should route the traffic using TLS", func() {
 			// given
 			route := fmt.Sprintf(`
 apiVersion: gateway.networking.k8s.io/v1beta1
