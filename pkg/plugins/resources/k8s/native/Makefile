@@ -2,15 +2,19 @@
 
 TOPDIR := ../../../../..
 
-CI_TOOLS_DIR ?= $(HOME)/bin
+CI_TOOLS_VERSION = $(word 6, $(shell ${TOPDIR}/tools/releases/version.sh))
+PROJECT_NAME ?= kuma
+
+CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+CI_TOOLS_BIN_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+export PATH := $(CI_TOOLS_BIN_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
 # This environment variable sets where the kubebuilder envtest framework looks
 # for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
-# target guaranteed to link these tools into $CI_TOOLS_DIR.
-export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
+# target guaranteed to link these tools into $CI_TOOLS_BIN_DIR.
+export KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
 RESOURCE_GEN := go run -mod=mod $(TOPDIR)/tools/resource-gen/main.go

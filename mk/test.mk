@@ -12,8 +12,8 @@ COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
 
 # This environment variable sets where the kubebuilder envtest framework looks
 # for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
-# target guaranteed to link these tools into $CI_TOOLS_DIR.
-export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
+# target guaranteed to link these tools into $CI_TOOLS_BIN_DIR.
+export KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
 
 .PHONY: test
 test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
