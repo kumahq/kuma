@@ -38,8 +38,8 @@ var (
 	accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
 )
 
-func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
-	staticClusters, err := buildStaticClusters(parameters, useTokenPath)
+func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool) (*envoy_bootstrap_v3.Bootstrap, error) {
+	staticClusters, err := buildStaticClusters(parameters, enableReloadableTokens)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					buildGrpcService(parameters, useTokenPath),
+					buildGrpcService(parameters, enableReloadableTokens),
 				},
 			},
 		},
@@ -225,7 +225,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				buildGrpcService(parameters, useTokenPath),
+				buildGrpcService(parameters, enableReloadableTokens),
 			},
 		}
 	}
@@ -275,7 +275,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 		}
 	}
 
-	if (!useTokenPath || parameters.DataplaneTokenPath == "") && parameters.DataplaneToken != "" {
+	if (!enableReloadableTokens || parameters.DataplaneTokenPath == "") && parameters.DataplaneToken != "" {
 		if res.HdsConfig != nil {
 			for _, n := range res.HdsConfig.GrpcServices {
 				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
@@ -428,7 +428,7 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 	}
 }
 
-func buildStaticClusters(parameters configParameters, useTokenPath bool) ([]*envoy_cluster_v3.Cluster, error) {
+func buildStaticClusters(parameters configParameters, enableReloadableTokens bool) ([]*envoy_cluster_v3.Cluster, error) {
 	accessLogSink := &envoy_cluster_v3.Cluster{
 		// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
 		Name:           accessLogSinkClusterName,
@@ -467,7 +467,7 @@ func buildStaticClusters(parameters configParameters, useTokenPath bool) ([]*env
 
 	clusters := []*envoy_cluster_v3.Cluster{accessLogSink}
 
-	if parameters.DataplaneTokenPath == "" || !useTokenPath {
+	if parameters.DataplaneTokenPath == "" || !enableReloadableTokens {
 		adsCluster := &envoy_cluster_v3.Cluster{
 			Name:           adsClusterName,
 			ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),

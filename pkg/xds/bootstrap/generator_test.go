@@ -42,6 +42,12 @@ var defaultVersion = types.Version{
 var _ = Describe("bootstrapGenerator", func() {
 	var resManager core_manager.ResourceManager
 
+	authEnabled := map[string]bool{
+		string(mesh_proto.DataplaneProxyType): true,
+		string(mesh_proto.IngressProxyType):   true,
+		string(mesh_proto.EgressProxyType):    true,
+	}
+
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 		core.Now = func() time.Time {
@@ -96,7 +102,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		serverConfig       *bootstrap_config.BootstrapServerConfig
 		proxyConfig        *xds_config.Proxy
 		dataplane          func() *core_mesh.DataplaneResource
-		dpAuthEnabled      bool
+		dpAuthForProxyType map[string]bool
 		useTokenPath       bool
 		request            types.BootstrapRequest
 		expectedConfigFile string
@@ -113,7 +119,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				proxyConfig = *given.proxyConfig
 			}
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.useTokenPath, given.hdsEnabled, 0, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -128,7 +134,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 		},
 		Entry("default config with minimal request", testCase{
-			dpAuthEnabled: false,
+			dpAuthForProxyType: map[string]bool{},
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -145,7 +151,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 		}),
 		Entry("default config", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -169,7 +175,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 		}),
 		Entry("custom config with minimal request", testCase{
-			dpAuthEnabled: false,
+			dpAuthForProxyType: map[string]bool{},
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
@@ -195,7 +201,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 		}),
 		Entry("custom config", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				return &bootstrap_config.BootstrapServerConfig{
 					Params: &bootstrap_config.BootstrapParamsConfig{
@@ -247,7 +253,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 		}),
 		Entry("default config, kubernetes", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -269,7 +275,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         false,
 		}),
 		Entry("default config, kubernetes with IPv6", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "fd00:a123::1"
@@ -291,7 +297,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         false,
 		}),
 		Entry("default config, kubernetes with application metrics", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -325,7 +331,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         false,
 		}),
 		Entry("backwards compatibility, adminPort both in bootstrapRequest and in DPP resource", testCase{ // https://github.com/kumahq/kuma/issues/4002
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -349,7 +355,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 		}),
 		Entry("default config with useTokenPath", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -375,7 +381,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			useTokenPath:       true,
 		}),
 		Entry("gateway settings", testCase{
-			dpAuthEnabled: true,
+			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
@@ -431,7 +437,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 			proxyCfg := xds_config.DefaultProxyConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -569,7 +575,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -664,7 +670,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

@@ -50,6 +50,8 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	zone2 "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -168,11 +170,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 
-	builder.WithTokenIssuers(builtin.TokenIssuers{
-		DataplaneToken:   builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-		ZoneToken:        builtin.NewZoneTokenIssuer(builder.ResourceManager()),
-	})
+	initializeTokenIssuers(builder)
 
 	if err := initializeMeshCache(builder); err != nil {
 		return nil, err
@@ -490,4 +488,21 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 
 	builder.WithMeshCache(meshSnapshotCache)
 	return nil
+}
+
+func initializeTokenIssuers(builder *core_runtime.Builder) {
+	issuers := builtin.TokenIssuers{
+		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
+	}
+	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
+		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
+	} else {
+		issuers.DataplaneToken = issuer.DisabledIssuer{}
+	}
+	if builder.Config().DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer {
+		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
+	} else {
+		issuers.ZoneToken = zone2.DisabledIssuer{}
+	}
+	builder.WithTokenIssuers(issuers)
 }

@@ -40,6 +40,12 @@ var _ = Describe("Bootstrap Server", func() {
 	var baseURL string
 	var metrics core_metrics.Metrics
 
+	authEnabled := map[string]bool{
+		string(mesh_proto.DataplaneProxyType): true,
+		string(mesh_proto.IngressProxyType):   true,
+		string(mesh_proto.EgressProxyType):    true,
+	}
+
 	version := `
 	"version": {
 	  "kumaDp": {
@@ -85,7 +91,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, true, 0, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,

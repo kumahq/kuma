@@ -241,6 +241,9 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			descriptor:     definition,
 			resourceAccess: resourceAccess,
 		}
+		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
+			endpoints.zoneName = cfg.Multizone.Zone.Name
+		}
 		switch defType {
 		case mesh.ServiceInsightType:
 			// ServiceInsight is a bit different

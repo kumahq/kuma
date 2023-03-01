@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -48,9 +49,15 @@ var _ = Describe("Authentication flow", func() {
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
 
 		dpTokenIssuer = builtin.NewDataplaneTokenIssuer(resManager)
-		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore)
+		dataplaneValidator, err := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore, dp_server.DpTokenValidatorConfig{
+			UseSecrets: true,
+		})
+		Expect(err).ToNot(HaveOccurred())
 		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager, store_config.MemoryStore)
-		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager, config_core.Global, store_config.MemoryStore)
+		zoneTokenValidator, err := builtin.NewZoneTokenValidator(resManager, config_core.Global, store_config.MemoryStore, dp_server.ZoneTokenValidatorConfig{
+			UseSecrets: true,
+		})
+		Expect(err).ToNot(HaveOccurred())
 		adaptedValidator := zoneingress.NewZoneValidatorAdapter(zoneIngressValidator, zoneTokenValidator)
 		authenticator = universal.NewAuthenticator(dataplaneValidator, adaptedValidator, "zone-1")
 
@@ -59,7 +66,7 @@ var _ = Describe("Authentication flow", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
+		err = resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -87,7 +87,9 @@ var _ = Describe("Token issuer", func() {
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
 				core.Log.WithName("test"),
-				tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix),
+				[]tokens.SigningKeyAccessor{
+					tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix),
+				},
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
 				store_config.MemoryStore,
 			)
@@ -186,7 +188,9 @@ var _ = Describe("Token issuer", func() {
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
 				core.Log.WithName("test"),
-				tokens.NewMeshedSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix, core_model.DefaultMesh),
+				[]tokens.SigningKeyAccessor{
+					tokens.NewMeshedSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix, core_model.DefaultMesh),
+				},
 				tokens.NewRevocations(secretManager, TokenRevocationsSecretKey(core_model.DefaultMesh)),
 				store_config.MemoryStore,
 			)

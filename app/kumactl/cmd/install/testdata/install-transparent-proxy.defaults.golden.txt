@@ -6,11 +6,11 @@
 -A PREROUTING -p tcp -j (.*)_INBOUND
 -A OUTPUT -p tcp -j (.*)_OUTBOUND
 -A (.*)_INBOUND -p tcp -j (.*)_INBOUND_REDIRECT
--A (.*)_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN
--A (.*)_OUTBOUND -p tcp -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 0 -j (.*)_INBOUND_REDIRECT
--A (.*)_OUTBOUND -p tcp -o lo -m owner ! --uid-owner 0 -j RETURN
+-A (.*)_OUTBOUND -s (.*) -o (.*) -j RETURN
+-A (.*)_OUTBOUND -p tcp -o (.*) ! -d (.*) -m owner --uid-owner 0 -j (.*)_INBOUND_REDIRECT
+-A (.*)_OUTBOUND -p tcp -o (.*) -m owner ! --uid-owner 0 -j RETURN
 -A (.*)_OUTBOUND -m owner --uid-owner 0 -j RETURN
--A (.*)_OUTBOUND -d 127.0.0.1/32 -j RETURN
+-A (.*)_OUTBOUND -d (.*) -j RETURN
 -A (.*)_OUTBOUND -j (.*)_OUTBOUND_REDIRECT
--A (.*)_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15006
+-A (.*)_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports (15006|15010)
 -A (.*)_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001

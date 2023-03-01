@@ -22,6 +22,122 @@ import (
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 )
 
+var _ = Describe("Resource Endpoints Zone", func() {
+	var apiServer *api_server.ApiServer
+	var resourceStore store.ResourceStore
+	var client resourceApiClient
+	stop := func() {}
+
+	const mesh = "default"
+
+	BeforeEach(func() {
+		resourceStore = store.NewPaginationStore(memory.NewStore())
+		apiServer, _, stop = StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(resourceStore).
+				WithZone("custom-long-zone-name-to-check-if-name-length-check-works"),
+		)
+		client = resourceApiClient{
+			address: apiServer.Address(),
+			path:    "/meshes/" + mesh + "/dataplanes",
+		}
+	})
+
+	AfterEach(func() {
+		stop()
+	})
+
+	BeforeEach(func() {
+		// create default mesh
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	Describe("On PUT", func() {
+		It("should create a resource when one does not exist", func() {
+			// given
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
+					Name: "new-resource",
+					Mesh: mesh,
+					Type: string(core_mesh.DataplaneType),
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address:           "192.168.1.1",
+						AdvertisedAddress: "192.168.1.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8000,
+								ServicePort: 8080,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "service-1",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			// when
+			response := client.put(res)
+
+			// then
+			Expect(response.StatusCode).To(Equal(201))
+		})
+
+		It("should return 400 when resource name is too long", func() {
+			// given
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
+					Name: "super-long-resource-name-that-exceed-the-length-of-the-resource" +
+						"-that-can-be-created-on-the-global-control-plane" +
+						"we-want-to-check-if-resource-prefixed-with-zone-and-suffixed-with-namespace" +
+						"can-fit-into-global-control-plane",
+					Mesh: mesh,
+					Type: string(core_mesh.DataplaneType),
+				},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address:           "192.168.1.1",
+						AdvertisedAddress: "192.168.1.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port:        8000,
+								ServicePort: 8080,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "service-1",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			// when
+			response := client.put(res)
+
+			// then
+			Expect(response.StatusCode).To(Equal(400))
+
+			// and
+			bytes, err := io.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(MatchJSON(`
+			{
+				"title": "Could not process a resource",
+				"details": "Resource is not valid",
+				"causes": [
+					{
+						"field": "name",
+						"message": "the length of the name must be shorter"
+					}
+				]
+			  }`))
+		})
+	})
+})
+
 var _ = Describe("Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore

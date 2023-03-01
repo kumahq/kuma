@@ -15,15 +15,20 @@ type XDSRuntimeContext struct {
 }
 
 func Default(ctx components.Context) (XDSRuntimeContext, error) {
-	auth, err := components.DefaultAuthenticator(ctx)
+	dpProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.DpProxy.Type)
+	if err != nil {
+		return XDSRuntimeContext{}, err
+	}
+
+	zoneProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.ZoneProxy.Type)
 	if err != nil {
 		return XDSRuntimeContext{}, err
 	}
 
 	return XDSRuntimeContext{
 		Hooks:                  &xds_hooks.Hooks{},
-		DpProxyAuthenticator:   auth,
-		ZoneProxyAuthenticator: auth,
+		DpProxyAuthenticator:   dpProxyAuth,
+		ZoneProxyAuthenticator: zoneProxyAuth,
 	}, nil
 }
 

@@ -134,6 +134,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
+			Expect(cfg.ApiServer.Authn.Tokens.EnableIssuer).To(BeFalse())
+			Expect(cfg.ApiServer.Authn.Tokens.Validator.UseSecrets).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 			Expect(cfg.ApiServer.BasePath).To(Equal("/api"))
 			Expect(cfg.ApiServer.RootUrl).To(Equal("https://foo.com"))
@@ -225,6 +227,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
+			Expect(cfg.Multizone.Global.KDS.TlsEnabled).To(Equal(false))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
@@ -270,6 +273,13 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
 			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
+			Expect(cfg.DpServer.Authn.DpProxy.Type).To(Equal("dpToken"))
+			Expect(cfg.DpServer.Authn.DpProxy.DpToken.EnableIssuer).To(BeFalse())
+			Expect(cfg.DpServer.Authn.DpProxy.DpToken.Validator.UseSecrets).To(BeFalse())
+			Expect(cfg.DpServer.Authn.ZoneProxy.Type).To(Equal("zoneToken"))
+			Expect(cfg.DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer).To(BeFalse())
+			Expect(cfg.DpServer.Authn.ZoneProxy.ZoneToken.Validator.UseSecrets).To(BeFalse())
+			Expect(cfg.DpServer.Authn.EnableReloadableTokens).To(BeTrue())
 			Expect(cfg.DpServer.Port).To(Equal(9876))
 			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
@@ -375,6 +385,9 @@ apiServer:
     localhostIsAdmin: false
     tokens:
       bootstrapAdminToken: false
+      enableIssuer: false
+      validator:
+        useSecrets: false
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -487,6 +500,7 @@ multizone:
       grpcPort: 1234
       refreshInterval: 2s
       zoneInsightFlushInterval: 5s
+      tlsEnabled: false
       tlsCertFile: /cert
       tlsKeyFile: /key
       tlsMinVersion: TLSv1_3
@@ -545,6 +559,20 @@ dpServer:
   port: 9876
   auth:
     type: dpToken
+  authn:
+    dpProxy:
+      type: dpToken
+      dpToken:
+        enableIssuer: false
+        validator:
+          useSecrets: false
+    zoneProxy:
+      type: zoneToken
+      zoneToken:
+        enableIssuer: false
+        validator:
+          useSecrets: false
+    enableReloadableTokens: true
   hds:
     enabled: false
     interval: 11s
@@ -647,6 +675,8 @@ proxy:
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
+				"KUMA_API_SERVER_AUTHN_TOKENS_ENABLE_ISSUER":                                               "false",
+				"KUMA_API_SERVER_AUTHN_TOKENS_VALIDATOR_USE_SECRETS":                                       "false",
 				"KUMA_API_SERVER_ROOT_URL":                                                                 "https://foo.com",
 				"KUMA_API_SERVER_BASE_PATH":                                                                "/api",
 				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
@@ -727,6 +757,7 @@ proxy:
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED":                                                    "false",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION":                                                "TLSv1_3",
@@ -770,6 +801,13 @@ proxy:
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
 				"KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH":                                                       "true",
+				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
+				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
+				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
+				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_TYPE":                                                     "zoneToken",
+				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_ENABLE_ISSUER":                                 "false",
+				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_VALIDATOR_USE_SECRETS":                         "false",
+				"KUMA_DP_SERVER_AUTHN_ENABLE_RELOADABLE_TOKENS":                                            "true",
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
 				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",
 				"KUMA_DP_SERVER_HDS_INTERVAL":                                                              "11s",

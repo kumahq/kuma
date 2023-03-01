@@ -200,6 +200,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 					"--ca-cert-file", "/tmp/ca-cert.pem",
 					"--client-cert-file", "/tmp/client.cert.pem",
 					"--client-key-file", "/tmp/client.key.pem",
+					"--skip-check",
 				}
 				if given.overwrite {
 					args = append(args, "--overwrite")
