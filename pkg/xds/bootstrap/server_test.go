@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -61,7 +61,7 @@ var _ = Describe("Bootstrap Server", func() {
 	}`
 
 	ca := x509.NewCertPool()
-	cert, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+	cert, err := os.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
 	if err != nil {
 		panic(err)
 	}
