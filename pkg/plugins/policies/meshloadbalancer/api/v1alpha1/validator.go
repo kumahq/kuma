@@ -8,7 +8,7 @@ import (
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
-func (r *MeshLoadBalancingResource) validate() error {
+func (r *MeshLoadBalancerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))

@@ -3,7 +3,7 @@ properties:
     description: 'the type of the resource'
     type: string
     enum:
-      - MeshLoadBalancing
+      - MeshLoadBalancer
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
     type: string
@@ -12,7 +12,7 @@ properties:
     description: 'Name of the Kuma resource'
     type: string
   spec:
-    description: Spec is the specification of the Kuma MeshLoadBalancing resource.
+    description: Spec is the specification of the Kuma MeshLoadBalancer resource.
     properties:
       targetRef:
         description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.

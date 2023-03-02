@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancing/api/v1alpha1"
+	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancer/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -18,32 +18,32 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
-type MeshLoadBalancing struct {
+type MeshLoadBalancer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec is the specification of the Kuma MeshLoadBalancing resource.
+	// Spec is the specification of the Kuma MeshLoadBalancer resource.
 	// +kubebuilder:validation:Optional
-	Spec *policy.MeshLoadBalancing `json:"spec,omitempty"`
+	Spec *policy.MeshLoadBalancer `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
-type MeshLoadBalancingList struct {
+type MeshLoadBalancerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []MeshLoadBalancing `json:"items"`
+	Items           []MeshLoadBalancer `json:"items"`
 }
 
-func (cb *MeshLoadBalancing) GetObjectMeta() *metav1.ObjectMeta {
+func (cb *MeshLoadBalancer) GetObjectMeta() *metav1.ObjectMeta {
 	return &cb.ObjectMeta
 }
 
-func (cb *MeshLoadBalancing) SetObjectMeta(m *metav1.ObjectMeta) {
+func (cb *MeshLoadBalancer) SetObjectMeta(m *metav1.ObjectMeta) {
 	cb.ObjectMeta = *m
 }
 
-func (cb *MeshLoadBalancing) GetMesh() string {
+func (cb *MeshLoadBalancer) GetMesh() string {
 	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
@@ -51,35 +51,35 @@ func (cb *MeshLoadBalancing) GetMesh() string {
 	}
 }
 
-func (cb *MeshLoadBalancing) SetMesh(mesh string) {
+func (cb *MeshLoadBalancer) SetMesh(mesh string) {
 	if cb.ObjectMeta.Labels == nil {
 		cb.ObjectMeta.Labels = map[string]string{}
 	}
 	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
-func (cb *MeshLoadBalancing) GetSpec() (core_model.ResourceSpec, error) {
+func (cb *MeshLoadBalancer) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
 
-func (cb *MeshLoadBalancing) SetSpec(spec core_model.ResourceSpec) {
+func (cb *MeshLoadBalancer) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*policy.MeshLoadBalancing); !ok {
+	if _, ok := spec.(*policy.MeshLoadBalancer); !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = spec.(*policy.MeshLoadBalancing)
+	cb.Spec = spec.(*policy.MeshLoadBalancer)
 }
 
-func (cb *MeshLoadBalancing) Scope() model.Scope {
+func (cb *MeshLoadBalancer) Scope() model.Scope {
 	return model.ScopeNamespace
 }
 
-func (l *MeshLoadBalancingList) GetItems() []model.KubernetesObject {
+func (l *MeshLoadBalancerList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {
 		result[i] = &l.Items[i]
@@ -88,17 +88,17 @@ func (l *MeshLoadBalancingList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshLoadBalancing{}, &MeshLoadBalancingList{})
-	registry.RegisterObjectType(&policy.MeshLoadBalancing{}, &MeshLoadBalancing{
+	SchemeBuilder.Register(&MeshLoadBalancer{}, &MeshLoadBalancerList{})
+	registry.RegisterObjectType(&policy.MeshLoadBalancer{}, &MeshLoadBalancer{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "MeshLoadBalancing",
+			Kind:       "MeshLoadBalancer",
 		},
 	})
-	registry.RegisterListType(&policy.MeshLoadBalancing{}, &MeshLoadBalancingList{
+	registry.RegisterListType(&policy.MeshLoadBalancer{}, &MeshLoadBalancerList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "MeshLoadBalancingList",
+			Kind:       "MeshLoadBalancerList",
 		},
 	})
 }

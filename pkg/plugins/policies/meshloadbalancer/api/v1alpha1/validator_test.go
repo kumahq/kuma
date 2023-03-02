@@ -4,13 +4,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancing/api/v1alpha1"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/MeshLoadBalancer/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources"
 )
 
 var _ = Describe("validation", func() {
 	resources.DescribeErrorCases(
-		api.NewMeshLoadBalancingResource,
+		api.NewMeshLoadBalancerResource,
 		resources.ErrorCases(
 			"spec errors",
 			[]validators.Violation{
@@ -24,7 +24,7 @@ var _ = Describe("validation", func() {
 				},
 			},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -39,7 +39,7 @@ to: []
 				Message: "value is not supported",
 			}},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -69,7 +69,7 @@ to:
 				},
 			},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -131,7 +131,7 @@ to:
 				},
 			},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -159,7 +159,7 @@ to:
 				Message: "must be an absolute path",
 			}},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -201,7 +201,7 @@ to:
 				},
 			},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -229,7 +229,7 @@ to:
 				Message: "must be an absolute path",
 			}},
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:
@@ -252,11 +252,11 @@ to:
 `))
 
 	resources.DescribeValidCases(
-		api.NewMeshLoadBalancingResource,
+		api.NewMeshLoadBalancerResource,
 		Entry(
 			"full spec",
 			`
-type: MeshLoadBalancing
+type: MeshLoadBalancer
 mesh: mesh-1
 name: route-1
 targetRef:

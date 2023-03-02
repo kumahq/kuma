@@ -5,16 +5,16 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
-  name: meshloadbalancings.kuma.io
+  name: meshloadbalancers.kuma.io
 spec:
   group: kuma.io
   names:
     categories:
     - kuma
-    kind: MeshLoadBalancing
-    listKind: MeshLoadBalancingList
-    plural: meshloadbalancings
-    singular: meshloadbalancing
+    kind: MeshLoadBalancer
+    listKind: MeshLoadBalancerList
+    plural: meshloadbalancers
+    singular: meshloadbalancer
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma MeshLoadBalancing resource.
+            description: Spec is the specification of the Kuma MeshLoadBalancer resource.
             properties:
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
