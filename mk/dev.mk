@@ -1,9 +1,13 @@
 KUMA_DIR ?= .
 ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
+CHART_REPO_NAME ?= kuma
+PROJECT_NAME ?= kuma
 
-CI_TOOLS_DIR ?= ${HOME}/.kuma-dev
+CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
-	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
@@ -39,6 +43,7 @@ HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
+TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
 # Install all dependencies on tools and protobuf files
 # We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
@@ -46,7 +51,7 @@ TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 # it's important that everything lands in $(CI_TOOLS_DIR) to be able to cache this folder in CI and speed up the build.
 .PHONY: dev/tools
 dev/tools: ## Bootstrap: Install all development tools
-	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH)
+	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH) $(TOOLS_MAKEFILE)
 
 .PHONY: dev/tools/clean
 dev/tools/clean: ## Bootstrap: Remove all development tools
@@ -88,3 +93,7 @@ dev/sync-demo:
 	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/gateway.yaml
+
+.PHONY: dev/set-kuma-helm-repo
+dev/set-kuma-helm-repo:
+	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
