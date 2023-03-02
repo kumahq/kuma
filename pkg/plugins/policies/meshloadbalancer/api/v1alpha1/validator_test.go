@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/MeshLoadBalancer/api/v1alpha1"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancer/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources"
 )
 

@@ -280,7 +280,6 @@ func (cb *DataplaneInsight) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
-
 }
 
 func (cb *DataplaneInsight) Scope() model.Scope {

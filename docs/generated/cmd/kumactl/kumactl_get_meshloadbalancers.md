@@ -1,19 +1,19 @@
-## kumactl get meshloadbalancings
+## kumactl get meshloadbalancers
 
-Show MeshLoadBalancing
+Show MeshLoadBalancer
 
 ### Synopsis
 
-Show MeshLoadBalancing entities.
+Show MeshLoadBalancer entities.
 
 ```
-kumactl get meshloadbalancings [flags]
+kumactl get meshloadbalancers [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help            help for meshloadbalancings
+  -h, --help            help for meshloadbalancers
   -m, --mesh string     mesh to use (default "default")
       --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
