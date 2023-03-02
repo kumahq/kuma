@@ -11,7 +11,8 @@ build_info_fields := \
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
-EXTRA_GOENV=GOEXPERIMENT=boringcrypto
+#EXTRA_GOENV=GOEXPERIMENT=boringcrypto
+EXTRA_GOENV=
 GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
 
 TOP := $(shell pwd)
