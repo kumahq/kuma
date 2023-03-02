@@ -295,7 +295,7 @@ jobs:
       - run:
           name: "Setup Helm"
           command: |
-            helm repo add kuma https://kumahq.github.io/charts
+            make dev/set-kuma-helm-repo
       - when:
           condition: << parameters.ipv6 >>
           steps:
