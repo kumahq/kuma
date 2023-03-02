@@ -16,7 +16,7 @@ import (
 
 type UniversalControlPlane struct {
 	t            testing.TestingT
-	specLogsDir  string
+	logsPath     string
 	mode         core.CpMode
 	name         string
 	kumactl      *KumactlOptions
@@ -29,7 +29,7 @@ func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName 
 	kumactl := NewKumactlOptions(t, name, verbose)
 	ucp := &UniversalControlPlane{
 		t:            t,
-		specLogsDir:  universal_logs.GetPath(Config.UniversalE2ELogsPath, t.Name()),
+		logsPath:     universal_logs.GetPath(Config.UniversalE2ELogsPath, t.Name()),
 		mode:         mode,
 		name:         name,
 		kumactl:      kumactl,
@@ -82,7 +82,7 @@ func (c *UniversalControlPlane) GetAPIServerAddress() string {
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := ssh.NewApp(c.name, c.specLogsDir, c.verbose, c.cpNetworking.SshPort, nil, []string{
+		sshApp := ssh.NewApp(c.name, c.logsPath, c.verbose, c.cpNetworking.SshPort, nil, []string{
 			"curl",
 			"--fail", "--show-error",
 			"http://localhost:5680/metrics",
@@ -111,7 +111,7 @@ func (c *UniversalControlPlane) generateToken(
 		func() (string, error) {
 			sshApp := ssh.NewApp(
 				c.name,
-				c.specLogsDir,
+				c.logsPath,
 				c.verbose,
 				c.cpNetworking.SshPort,
 				nil,
@@ -145,7 +145,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 		func() (string, error) {
 			sshApp := ssh.NewApp(
 				c.name,
-				c.specLogsDir,
+				c.logsPath,
 				c.verbose, c.cpNetworking.SshPort, nil, []string{
 					"curl", "--fail", "--show-error",
 					"http://localhost:5681/global-secrets/admin-user-token",
