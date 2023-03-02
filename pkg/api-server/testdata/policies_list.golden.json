@@ -81,11 +81,11 @@
    "isExperimental": false
   },
   {
-   "name": "MeshLoadBalancing",
+   "name": "MeshLoadBalancingStrategy",
    "readOnly": false,
-   "path": "meshloadbalancings",
-   "singularDisplayName": "Mesh Load Balancing",
-   "pluralDisplayName": "Mesh Load Balancings",
+   "path": "meshloadbalancingstrategies",
+   "singularDisplayName": "Mesh Load Balancing Strategy",
+   "pluralDisplayName": "Mesh Load Balancing Strategies",
    "isExperimental": false
   },
   {
