@@ -1,5 +1,4 @@
 KUMA_DIR ?= .
-ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 GINKGO_VERSION := v2.1.3
 GOLANGCI_LINT_VERSION := v1.45.2
 GOLANG_PROTOBUF_VERSION := v1.5.2
@@ -21,28 +20,38 @@ CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
 # That's the version that comes from kubebuilder.
 CI_KUBE_APISERVER_VERSION ?= v1.16.4
+ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
+CHART_REPO_NAME ?= kuma
+PROJECT_NAME ?= kuma
 
-CI_TOOLS_DIR ?= $(HOME)/bin
+CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+ifdef XDG_DATA_HOME
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+endif
+CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
+
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+export PATH := $(CI_TOOLS_BIN_DIR):$(GOPATH_BIN_DIR):$(PATH)
 GOARCH := $(shell go env GOARCH)
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
-PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
-PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
-KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
-KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
-KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
-KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
-KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
-ETCD_PATH := $(CI_TOOLS_DIR)/etcd
-GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
-HELM_DOCS_PATH := $(CI_TOOLS_DIR)/helm-docs
-SHELLCHECK_PATH := $(CI_TOOLS_DIR)/shellcheck
+PROTOC_PATH := $(CI_TOOLS_BIN_DIR)/protoc
+PROTOBUF_WKT_DIR := $(CI_TOOLS_BIN_DIR)/protobuf.d
+KUBEBUILDER_DIR := $(CI_TOOLS_BIN_DIR)/kubebuilder.d
+KUBEBUILDER_PATH := $(CI_TOOLS_BIN_DIR)/kubebuilder
+KUSTOMIZE_PATH := $(CI_TOOLS_BIN_DIR)/kustomize
+KUBECTL_PATH := $(CI_TOOLS_BIN_DIR)/kubectl
+KUBE_APISERVER_PATH := $(CI_TOOLS_BIN_DIR)/kube-apiserver
+ETCD_PATH := $(CI_TOOLS_BIN_DIR)/etcd
+GOLANGCI_LINT_DIR := $(CI_TOOLS_BIN_DIR)
+HELM_DOCS_PATH := $(CI_TOOLS_BIN_DIR)/helm-docs
+SHELLCHECK_PATH := $(CI_TOOLS_BIN_DIR)/shellcheck
 
 TOOLS_DIR ?= $(shell pwd)/tools
 
@@ -127,7 +136,7 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& $(CURL_DOWNLOAD) -o /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
 		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
@@ -177,7 +186,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder, not all arch builds 
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH) \
-		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
+		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_BIN_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_BIN_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_BIN_DIR)/$${tool}" ; else echo "$(CI_TOOLS_BIN_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
 
@@ -194,7 +203,7 @@ dev/install/etcd: # Kubebuilder's package doesn't have etcd for all the distribu
 	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz \
 		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd --no-same-owner \
 		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz; fi
-	mkdir -p $(CI_TOOLS_DIR) \
+	mkdir -p $(CI_TOOLS_BIN_DIR) \
 	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
 	&& cp etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd $(ETCD_PATH) \
 	&& rm -rf etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
@@ -224,7 +233,7 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 		&& set -x \
 		&& $(CURL_DOWNLOAD) -O https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
 		&& chmod +x kubectl \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& mv kubectl $(KUBECTL_PATH) \
 		&& set +x \
 		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
@@ -236,7 +245,7 @@ dev/install/kube-apiserver: # Install kube-apiserver, not all os/arch kubebuilde
 	@if [ ! -e $(KUBE_APISERVER_PATH) ]; then \
 		echo "Installing kuba-apiserver $(CI_KUBE_APISERVER_VERSION) ..." \
 		&& set -x \
-		&& mkdir -p $(CI_TOOLS_DIR)/bin \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR)/bin \
 		&& $(CURL_DOWNLOAD) -o $(KUBE_APISERVER_PATH)  https://dl.k8s.io/$(CI_KUBE_APISERVER_VERSION)/bin/$(GOOS)/$(GOARCH)/kube-apiserver\
 		&& chmod +x $(KUBE_APISERVER_PATH) \
 		&& set +x \
@@ -251,7 +260,7 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 		&& set -x \
 		&& $(CURL_DOWNLOAD) -o kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
 		&& chmod +x kind \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& mv kind $(KIND_PATH) \
 		&& set +x \
 		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
@@ -259,15 +268,15 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 .PHONY: dev/install/k3d
 dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 	# see https://raw.githubusercontent.com/rancher/k3d/main/install.sh
-	@if [ ! -e $(CI_TOOLS_DIR)/k3d ] || [ `$(CI_TOOLS_DIR)/k3d version | head -1 | awk '{ print $$3 }'` != "$(CI_K3D_VERSION)" ]; then \
+	@if [ ! -e $(CI_TOOLS_BIN_DIR)/k3d ] || [ `$(CI_TOOLS_BIN_DIR)/k3d version | head -1 | awk '{ print $$3 }'` != "$(CI_K3D_VERSION)" ]; then \
 		echo "Installing K3d $(CI_K3D_VERSION) ..." \
 		&& set -x \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& $(CURL_DOWNLOAD) https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
-		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
+		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_BIN_DIR)" bash \
 		&& set +x \
-		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(CI_TOOLS_DIR)/k3d" ; \
-	else echo "K3d version: \"$$( $(CI_TOOLS_DIR)/k3d version )\" is already installed at $(CI_TOOLS_DIR)/k3d"; fi
+		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(CI_TOOLS_BIN_DIR)/k3d" ; \
+	else echo "K3d version: \"$$( $(CI_TOOLS_BIN_DIR)/k3d version )\" is already installed at $(CI_TOOLS_BIN_DIR)/k3d"; fi
 
 .PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
@@ -284,7 +293,7 @@ dev/install/shellcheck:
 		&& $(CURL_DOWNLOAD) -o shellcheck.tar.xz https://github.com/koalaman/shellcheck/releases/download/$(SHELLCHECK_VERSION)/$(SHELLCHECK_ARCHIVE) \
 		&& tar -xf shellcheck.tar.xz shellcheck-$(SHELLCHECK_VERSION)/shellcheck \
 		&& rm shellcheck.tar.xz \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& mv shellcheck-$(SHELLCHECK_VERSION)/shellcheck $(SHELLCHECK_PATH) \
 		&& chmod +x $(SHELLCHECK_PATH) \
 		&& rmdir shellcheck-$(SHELLCHECK_VERSION) \
@@ -298,7 +307,7 @@ dev/install/yq:
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
-		env HELM_INSTALL_DIR=$(CI_TOOLS_DIR) DESIRED_VERSION=$(HELM_VERSION) USE_SUDO=false bash
+		env HELM_INSTALL_DIR=$(CI_TOOLS_BIN_DIR) DESIRED_VERSION=$(HELM_VERSION) USE_SUDO=false bash
 
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs
@@ -310,7 +319,7 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz helm-docs \
 		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& chmod +x helm-docs \
-		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_BIN_DIR) \
 		&& mv helm-docs $(HELM_DOCS_PATH) \
 		&& set +x \
 		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
@@ -334,7 +343,7 @@ $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 # KUBECONFIG currently has, and stores CI tooling in .tools.
 .PHONY: dev/enrc
 dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
-	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
+	@echo 'export CI_TOOLS_BIN_DIR=$$(expand_path .tools)' > .envrc
 	@for c in $(patsubst %,$(KUBECONFIG_DIR)/kind-%-config,kuma $(K8SCLUSTERS)) $(KUBECONFIG_DIR)/kind-kuma-current ; do \
 		echo "path_add KUBECONFIG $$c" ; \
 	done >> .envrc
@@ -342,7 +351,7 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@for prog in $(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES) ; do \
 		echo "PATH_add $(BUILD_ARTIFACTS_DIR)/$$prog" ; \
 	done >> .envrc
-	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_DIR}' >> .envrc
+	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_BIN_DIR}' >> .envrc
 	@direnv allow
 
 .PHONY: dev/sync-demo
@@ -352,3 +361,7 @@ dev/sync-demo:
 		sed 's/"local"/"{{ .Zone }}"/g' | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/demo.yaml
+
+.PHONY: dev/set-kuma-helm-repo
+dev/set-kuma-helm-repo:
+	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
