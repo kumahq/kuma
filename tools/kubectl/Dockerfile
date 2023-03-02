@@ -6,7 +6,7 @@ RUN set -x \
  && wget -q -O /bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_RELEASE}/bin/linux/${ARCH}/kubectl \
  && chmod +x /bin/kubectl
 
-USER nobody
+USER 65534
 
 ENTRYPOINT ["kubectl"]
 CMD ["--help"]
