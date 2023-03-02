@@ -84,7 +84,7 @@ func WriteLogsIfFailed(ctx SpecContext) {
 				}
 
 				GinkgoWriter.Printf("%sLogs from: %s\n%s", spacer, logFilePath, spacer)
-				Expect(GinkgoWriter.Write(bs)).To(Succeed())
+				Expect(GinkgoWriter.Write(bs)).Error().ToNot(HaveOccurred())
 			}
 		}
 	}
