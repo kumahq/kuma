@@ -199,3 +199,5 @@ require (
 )
 
 replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230103091850-88eacfd00eb4
+
+replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview
