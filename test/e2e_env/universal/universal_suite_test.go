@@ -46,6 +46,9 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
+var _ = BeforeEach(universal.RememberSpecID)
+var _ = AfterSuite(universal.WriteLogsIfFailed)
+var _ = AfterEach(universal.WriteLogsIfFailed)
 
 var (
 	_ = Describe("User Auth", auth.UserAuth)

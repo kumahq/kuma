@@ -29,7 +29,7 @@ type App struct {
 	logFile *os.File
 }
 
-func NewApp(appName string, verbose bool, port string, envMap map[string]string, args []string) *App {
+func NewApp(appName string, logDirName string, verbose bool, port string, envMap map[string]string, args []string) *App {
 	app := &App{
 		port: port,
 	}
@@ -40,11 +40,10 @@ func NewApp(appName string, verbose bool, port string, envMap map[string]string,
 		"root@localhost", "-p", port,
 	}
 	for k, v := range envMap {
-		sshArgs = append(sshArgs, fmt.Sprintf("%s='%s'", k, utils.ShellEscape(v)))
+		sshArgs = append(sshArgs, fmt.Sprintf("%s=%s", k, utils.ShellEscape(v)))
 	}
 	sshArgs = append(sshArgs, args...)
 	app.cmd = exec.Command("ssh", sshArgs...)
-	logDirName := "/tmp/e2e"
 	err := os.MkdirAll(logDirName, os.ModePerm)
 	if err != nil {
 		panic(errors.Wrap(err, "could not create /tmp/e2e"))

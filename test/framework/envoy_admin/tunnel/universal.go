@@ -15,18 +15,20 @@ import (
 type UniversalTunnel struct {
 	t testing.TestingT
 
-	port string
+	logsPath string
+	port     string
 
 	verbose bool
 }
 
 var _ envoy_admin.Tunnel = &UniversalTunnel{}
 
-func NewUniversalEnvoyAdminTunnel(t testing.TestingT, port string, verbose bool) (envoy_admin.Tunnel, error) {
+func NewUniversalEnvoyAdminTunnel(t testing.TestingT, logsPath string, port string, verbose bool) (envoy_admin.Tunnel, error) {
 	return &UniversalTunnel{
-		t:       t,
-		port:    port,
-		verbose: verbose,
+		t:        t,
+		logsPath: logsPath,
+		port:     port,
+		verbose:  verbose,
 	}, nil
 }
 
@@ -37,7 +39,7 @@ func (t *UniversalTunnel) GetStats(name string) (*stats.Stats, error) {
 		"curl", "--silent", "--max-time", "3", "--fail", url,
 	}
 
-	app := ssh.NewApp("tunnel", t.verbose, t.port, nil, sshArgs)
+	app := ssh.NewApp("tunnel", t.logsPath, t.verbose, t.port, nil, sshArgs)
 
 	if err := app.Run(); err != nil {
 		return nil, err
@@ -61,7 +63,7 @@ func (t *UniversalTunnel) ResetCounters() error {
 		"'http://localhost:9901/reset_counters'",
 	}
 
-	app := ssh.NewApp("tunnel", t.verbose, t.port, nil, sshArgs)
+	app := ssh.NewApp("tunnel", t.logsPath, t.verbose, t.port, nil, sshArgs)
 
 	if err := app.Run(); err != nil {
 		return err
