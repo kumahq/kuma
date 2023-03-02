@@ -1,19 +1,19 @@
-## kumactl inspect meshloadbalancer
+## kumactl inspect meshloadbalancingstrategy
 
-Inspect MeshLoadBalancer
+Inspect MeshLoadBalancingStrategy
 
 ### Synopsis
 
-Inspect MeshLoadBalancer.
+Inspect MeshLoadBalancingStrategy.
 
 ```
-kumactl inspect meshloadbalancer NAME [flags]
+kumactl inspect meshloadbalancingstrategy NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for meshloadbalancer
+  -h, --help   help for meshloadbalancingstrategy
 ```
 
 ### Options inherited from parent commands

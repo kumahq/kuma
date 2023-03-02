@@ -1,19 +1,19 @@
-## kumactl get meshloadbalancer
+## kumactl get meshloadbalancingstrategy
 
-Show a single MeshLoadBalancer resource
+Show a single MeshLoadBalancingStrategy resource
 
 ### Synopsis
 
-Show a single MeshLoadBalancer resource.
+Show a single MeshLoadBalancingStrategy resource.
 
 ```
-kumactl get meshloadbalancer NAME [flags]
+kumactl get meshloadbalancingstrategy NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for meshloadbalancer
+  -h, --help          help for meshloadbalancingstrategy
   -m, --mesh string   mesh to use (default "default")
 ```
 
