@@ -26,6 +26,32 @@ function envoy_version() {
   set +o nounset
 }
 
+function base_branch_name() {
+  set -o errexit
+  set -o pipefail
+  set -o nounset
+  # The command finds the most recent tag that is reachable from a commit
+  describe=$(git describe --tags 2>/dev/null || echo "none")
+  highestMinorVersionTag=$(git tag -l --sort -version:refname | head -n 1  | awk -F'.' '{print $1"."$2}')
+  currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
+  # On master the closest tag is 2.0.0 so we are setting dev for master
+  if [[ ${describe} =~ ^v?[1-9]*\.[0-9]*\.0 && ${describe} =~ ^${highestMinorVersionTag} ]]
+  then
+    echo "master"
+  # If we are on the release branch use the branch name
+  elif [[ ${currentBranch} == release-* ]]
+  then
+    echo "${currentBranch}"
+  # Extract first 2 elements from the string
+  else
+    echo "${describe}" | awk -F "." '{printf "release-%s.%s", $1, $2}'
+  fi
+
+  set +o errexit
+  set +o pipefail
+  set +o nounset
+}
+
 function version_info() {
   # Kuma version info has the following format:
   # version git-tag git-commit build-date envoy-version
@@ -58,7 +84,9 @@ function version_info() {
     exactTag="no-git"
     describedTag="no-git"
     longHash="no-git"
+    baseBranchName="no-git"
   else
+    baseBranchName=$(base_branch_name)
     if [[ "$ciDeclared" == "true" ]] || git diff --quiet && git diff --cached --quiet; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
@@ -87,8 +115,7 @@ function version_info() {
       version="0.0.0-preview.v${shortHash}"
     fi
   fi
-
-  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion}"
+  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${baseBranchName}"
 }
 
 version_info

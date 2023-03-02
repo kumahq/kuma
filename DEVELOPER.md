@@ -41,9 +41,9 @@ make dev/tools
 
 You can install each commands individually if you prefer.
 
-ATTENTION: By default, development tools will be installed at `$HOME/bin`. Remember to include this directory into your `PATH`, 
-e.g. by adding `export PATH=$HOME/bin:$PATH` line to the `$HOME/.bashrc` file.
-This can be overridden by setting the env var CI_TOOLS_DIR but it isn't recommended.
+ATTENTION: By default, development tools will be installed at `$HOME/.kuma-dev/kuma-release-1.8/bin`. Remember to include this directory into your `PATH`,
+e.g. by adding `export PATH=$HOME/.kuma-dev/kuma-release-1.8/bin:$PATH` line to the `$HOME/.bashrc` file.
+This can be overridden by setting the env var CI_TOOLS_BIN_DIR but it isn't recommended.
 
 ## Code checks
 
