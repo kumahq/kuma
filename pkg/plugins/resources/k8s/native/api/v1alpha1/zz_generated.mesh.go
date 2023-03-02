@@ -270,7 +270,6 @@ func (cb *DataplaneInsight) GetSpec() (core_model.ResourceSpec, error) {
 func (cb *DataplaneInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Status = nil
-
 		return
 	}
 
