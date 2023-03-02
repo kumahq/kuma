@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancer/api/v1alpha1"
+	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -18,32 +18,32 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
-type MeshLoadBalancer struct {
+type MeshLoadBalancingStrategy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec is the specification of the Kuma MeshLoadBalancer resource.
+	// Spec is the specification of the Kuma MeshLoadBalancingStrategy resource.
 	// +kubebuilder:validation:Optional
-	Spec *policy.MeshLoadBalancer `json:"spec,omitempty"`
+	Spec *policy.MeshLoadBalancingStrategy `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
-type MeshLoadBalancerList struct {
+type MeshLoadBalancingStrategyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []MeshLoadBalancer `json:"items"`
+	Items           []MeshLoadBalancingStrategy `json:"items"`
 }
 
-func (cb *MeshLoadBalancer) GetObjectMeta() *metav1.ObjectMeta {
+func (cb *MeshLoadBalancingStrategy) GetObjectMeta() *metav1.ObjectMeta {
 	return &cb.ObjectMeta
 }
 
-func (cb *MeshLoadBalancer) SetObjectMeta(m *metav1.ObjectMeta) {
+func (cb *MeshLoadBalancingStrategy) SetObjectMeta(m *metav1.ObjectMeta) {
 	cb.ObjectMeta = *m
 }
 
-func (cb *MeshLoadBalancer) GetMesh() string {
+func (cb *MeshLoadBalancingStrategy) GetMesh() string {
 	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
@@ -51,35 +51,35 @@ func (cb *MeshLoadBalancer) GetMesh() string {
 	}
 }
 
-func (cb *MeshLoadBalancer) SetMesh(mesh string) {
+func (cb *MeshLoadBalancingStrategy) SetMesh(mesh string) {
 	if cb.ObjectMeta.Labels == nil {
 		cb.ObjectMeta.Labels = map[string]string{}
 	}
 	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
-func (cb *MeshLoadBalancer) GetSpec() (core_model.ResourceSpec, error) {
+func (cb *MeshLoadBalancingStrategy) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
 
-func (cb *MeshLoadBalancer) SetSpec(spec core_model.ResourceSpec) {
+func (cb *MeshLoadBalancingStrategy) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*policy.MeshLoadBalancer); !ok {
+	if _, ok := spec.(*policy.MeshLoadBalancingStrategy); !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = spec.(*policy.MeshLoadBalancer)
+	cb.Spec = spec.(*policy.MeshLoadBalancingStrategy)
 }
 
-func (cb *MeshLoadBalancer) Scope() model.Scope {
+func (cb *MeshLoadBalancingStrategy) Scope() model.Scope {
 	return model.ScopeNamespace
 }
 
-func (l *MeshLoadBalancerList) GetItems() []model.KubernetesObject {
+func (l *MeshLoadBalancingStrategyList) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {
 		result[i] = &l.Items[i]
@@ -88,17 +88,17 @@ func (l *MeshLoadBalancerList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	SchemeBuilder.Register(&MeshLoadBalancer{}, &MeshLoadBalancerList{})
-	registry.RegisterObjectType(&policy.MeshLoadBalancer{}, &MeshLoadBalancer{
+	SchemeBuilder.Register(&MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{})
+	registry.RegisterObjectType(&policy.MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategy{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "MeshLoadBalancer",
+			Kind:       "MeshLoadBalancingStrategy",
 		},
 	})
-	registry.RegisterListType(&policy.MeshLoadBalancer{}, &MeshLoadBalancerList{
+	registry.RegisterListType(&policy.MeshLoadBalancingStrategy{}, &MeshLoadBalancingStrategyList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "MeshLoadBalancerList",
+			Kind:       "MeshLoadBalancingStrategyList",
 		},
 	})
 }

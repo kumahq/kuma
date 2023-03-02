@@ -7,9 +7,9 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
-// MeshLoadBalancer is a policy that defines load balancing configuration for
+// MeshLoadBalancingStrategy is a policy that defines load balancing configuration for
 // between data planes proxies.
-type MeshLoadBalancer struct {
+type MeshLoadBalancingStrategy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.

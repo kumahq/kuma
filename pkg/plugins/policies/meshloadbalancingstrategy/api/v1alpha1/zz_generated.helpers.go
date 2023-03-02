@@ -9,7 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func (x *MeshLoadBalancer) GetTargetRef() common_api.TargetRef {
+func (x *MeshLoadBalancingStrategy) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
 
@@ -21,7 +21,7 @@ func (x *To) GetDefault() interface{} {
 	return x.Default
 }
 
-func (x *MeshLoadBalancer) GetToList() []core_xds.PolicyItem {
+func (x *MeshLoadBalancingStrategy) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
 	for i := range x.To {
 		item := x.To[i]
