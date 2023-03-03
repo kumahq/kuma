@@ -80,9 +80,10 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 	server := &http.Server{
-		Addr:      fmt.Sprintf(":%d", d.config.Port),
-		Handler:   http.HandlerFunc(d.handle),
-		TLSConfig: tlsConfig,
+		ReadHeaderTimeout: 2 * time.Second,
+		Addr:              fmt.Sprintf(":%d", d.config.Port),
+		Handler:           http.HandlerFunc(d.handle),
+		TLSConfig:         tlsConfig,
 	}
 
 	errChan := make(chan error)
