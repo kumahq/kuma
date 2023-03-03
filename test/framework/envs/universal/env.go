@@ -2,11 +2,15 @@ package universal
 
 import (
 	"encoding/json"
+	"os"
+	"path"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 var Cluster *framework.UniversalCluster
@@ -52,4 +56,43 @@ func RestoreState(bytes []byte) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(Cluster.AddNetworking(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 	Cluster.SetCp(cp)
+}
+
+// WriteLogsIfFailed will read files used to put logs from universal tests
+func WriteLogsIfFailed(ctx SpecContext) {
+	if ctx.SpecReport().Failed() {
+		logsPath := universal_logs.GetPath(
+			framework.Config.UniversalE2ELogsPath,
+			ctx.SpecReport().FullText(),
+		)
+		spacer := "------------------------------\n"
+
+		dir, err := os.ReadDir(logsPath)
+		if err != nil {
+			GinkgoWriter.Printf("Attaching component logs failed: %s", err)
+			return
+		}
+
+		for _, file := range dir {
+			if !file.IsDir() {
+				logFilePath := path.Join(logsPath, file.Name())
+
+				bs, err := os.ReadFile(logFilePath)
+				if err != nil {
+					GinkgoWriter.Printf("Attaching component logs for %s failed: %s", logFilePath, err)
+					continue
+				}
+
+				GinkgoWriter.Printf("%sLogs from: %s\n%s", spacer, logFilePath, spacer)
+				Expect(GinkgoWriter.Write(bs)).Error().ToNot(HaveOccurred())
+			}
+		}
+	}
+}
+
+func RememberSpecID(ctx SpecContext) {
+	universal_logs.GenAndSavePath(
+		framework.Config.UniversalE2ELogsPath,
+		ctx.SpecReport().FullText(),
+	)
 }
