@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"syscall"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -29,7 +30,7 @@ type App struct {
 	logFile *os.File
 }
 
-func NewApp(appName string, logDirName string, verbose bool, port string, envMap map[string]string, args []string) *App {
+func NewApp(appName string, logsPath string, verbose bool, port string, envMap map[string]string, args []string) *App {
 	app := &App{
 		port: port,
 	}
@@ -44,11 +45,11 @@ func NewApp(appName string, logDirName string, verbose bool, port string, envMap
 	}
 	sshArgs = append(sshArgs, args...)
 	app.cmd = exec.Command("ssh", sshArgs...)
-	err := os.MkdirAll(logDirName, os.ModePerm)
+	err := os.MkdirAll(logsPath, os.ModePerm)
 	if err != nil {
 		panic(errors.Wrap(err, "could not create /tmp/e2e"))
 	}
-	logFileName := logDirName + "/" + appName
+	logFileName := path.Join(logsPath, appName)
 	app.logFile, err = os.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
 	if err != nil {
 		panic(errors.Wrap(err, "could not create "+logFileName))

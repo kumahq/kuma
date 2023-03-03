@@ -20,10 +20,6 @@ func GenAndSavePath(logsPath, specName string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if paths == nil {
-		paths = map[string]string{}
-	}
-
 	// Let's be sure we won't exceed max filename length
 	fileName := strings.ShortenString(sanitize.Name(specName), 243)
 
