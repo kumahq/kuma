@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"time"
 
@@ -51,6 +52,7 @@ type E2eConfig struct {
 	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
+	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -246,8 +248,9 @@ var defaultConf = E2eConfig{
 			},
 		},
 	},
-	ZoneEgressApp:  "kuma-egress",
-	ZoneIngressApp: "kuma-ingress",
+	ZoneEgressApp:        "kuma-egress",
+	ZoneIngressApp:       "kuma-ingress",
+	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
 }
 
 func init() {
