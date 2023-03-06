@@ -80,20 +80,10 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 	server := &http.Server{
-		// Providing ReadHeaderTimeout value here just to satisfy gosec.
-		// It's configurable and overwritten few lines below. Pay attention that
-		// the default value (replicated in this line) is set to 5s, and not 1s
-		// like in the other servers. In rare cases, when Kuma CP was restarting,
-		// 1s was insufficient and DPs were failing to reconnect (we observed
-		// this in Projected Service Account Tokens e2e tests, which started
-		// flaking a lot after explicitly setting this value to 1s)
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: d.config.ReadHeaderTimeout.Duration,
 		Addr:              fmt.Sprintf(":%d", d.config.Port),
 		Handler:           http.HandlerFunc(d.handle),
 		TLSConfig:         tlsConfig,
-	}
-	if server.ReadHeaderTimeout, err = time.ParseDuration(d.config.ReadHeaderTimeout); err != nil {
-		return err
 	}
 
 	errChan := make(chan error)

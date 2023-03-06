@@ -284,7 +284,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
-			Expect(cfg.DpServer.ReadHeaderTimeout).To(Equal("11s"))
+			Expect(cfg.DpServer.ReadHeaderTimeout.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.DpServer.Hds.RefreshInterval.Duration).To(Equal(12 * time.Second))

@@ -37,7 +37,7 @@ type DpServerConfig struct {
 	// were failing to reconnect (we observed this in Projected Service Account
 	// Tokens e2e tests, which started flaking a lot after introducing explicit
 	// 1s timeout)
-	ReadHeaderTimeout string `json:"readHeaderTimeout" envconfig:"kuma_dp_server_read_header_timeout"`
+	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_dp_server_read_header_timeout"`
 	// Auth defines an authentication configuration for the DP Server
 	// Deprecated: use "authn" section.
 	Auth DpServerAuthConfig `json:"auth"`
@@ -95,8 +95,8 @@ func (a *DpServerConfig) Validate() error {
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	if _, err := time.ParseDuration(a.ReadHeaderTimeout); err != nil {
-		errs = multierr.Append(errs, errors.Wrap(err, ".ReadHeaderTimeout is invalid"))
+	if a.ReadHeaderTimeout.Duration < 0 {
+		return errors.New("ReadHeaderTimeout must be greater or equal 0s")
 	}
 	return errs
 }
@@ -251,7 +251,7 @@ func DefaultDpServerConfig() *DpServerConfig {
 		// was restarting, 1s was insufficient and DPs were failing to reconnect
 		// (we observed this in Projected Service Account Tokens e2e tests,
 		// which started flaking a lot after introducing this 1s timeout)
-		ReadHeaderTimeout: "5s",
+		ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
 	}
 }
 
