@@ -2106,6 +2106,76 @@ _kumactl_get_meshhttproutes()
     noun_aliases=()
 }
 
+_kumactl_get_meshloadbalancingstrategies()
+{
+    last_command="kumactl_get_meshloadbalancingstrategies"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshloadbalancingstrategy()
+{
+    last_command="kumactl_get_meshloadbalancingstrategy"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_meshproxypatch()
 {
     last_command="kumactl_get_meshproxypatch"
@@ -3471,6 +3541,8 @@ _kumactl_get()
     commands+=("meshhealthchecks")
     commands+=("meshhttproute")
     commands+=("meshhttproutes")
+    commands+=("meshloadbalancingstrategies")
+    commands+=("meshloadbalancingstrategy")
     commands+=("meshproxypatch")
     commands+=("meshproxypatches")
     commands+=("meshratelimit")
@@ -3905,6 +3977,36 @@ _kumactl_inspect_meshhealthcheck()
 _kumactl_inspect_meshhttproute()
 {
     last_command="kumactl_inspect_meshhttproute"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_inspect_meshloadbalancingstrategy()
+{
+    last_command="kumactl_inspect_meshloadbalancingstrategy"
 
     command_aliases=()
 
@@ -4558,6 +4660,7 @@ _kumactl_inspect()
     commands+=("meshgateway")
     commands+=("meshhealthcheck")
     commands+=("meshhttproute")
+    commands+=("meshloadbalancingstrategy")
     commands+=("meshproxypatch")
     commands+=("meshratelimit")
     commands+=("meshretry")

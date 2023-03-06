@@ -185,6 +185,7 @@ rules:
       - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
+      - meshloadbalancingstrategies
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -408,7 +409,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: aec0f89f48f1852775a87cd695d5a7033d774b4940ded38f1f380108e4b6633a
+        checksum/tls-secrets: abac59589c4ca4987ebcfc82191fd461b0bd3b7392c1ef39d505d6c052d44ad4
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -828,6 +829,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -872,6 +874,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -998,6 +1001,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
