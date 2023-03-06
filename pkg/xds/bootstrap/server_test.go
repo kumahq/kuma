@@ -18,6 +18,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/pkg/core"
@@ -83,9 +84,10 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
-			Port:        port,
-			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
-			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			Port:              port,
+			TlsCertFile:       filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
 		}
 		dpServer := server.NewDpServer(dpServerCfg, metrics)
 
