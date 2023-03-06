@@ -85,6 +85,7 @@ type LeastRequest struct {
 	// ChoiceCount is the number of random healthy hosts from which the host with
 	// the fewest active requests will be chosen. Defaults to 2 so that Envoy performs
 	// two-choice selection if the field is not set.
+	// +kubebuilder:validation:Minimum=2
 	ChoiceCount *uint32 `json:"choiceCount,omitempty"`
 }
 

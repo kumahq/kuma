@@ -91,6 +91,7 @@ spec:
                                     so that Envoy performs two-choice selection if
                                     the field is not set.
                                   format: int32
+                                  minimum: 2
                                   type: integer
                               type: object
                             maglev:
