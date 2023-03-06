@@ -38,7 +38,6 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-
 	type testCase struct {
 		resources []core_xds.Resource
 		toRules   core_xds.ToRules

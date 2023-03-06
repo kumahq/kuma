@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("HashPolicyConfigurer", func() {
-
 	type testCase struct {
 		hashPolicies []api.HashPolicy
 		expected     string

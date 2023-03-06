@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("LBConfigurer", func() {
-
 	type testCase struct {
 		conf     api.LoadBalancer
 		expected string

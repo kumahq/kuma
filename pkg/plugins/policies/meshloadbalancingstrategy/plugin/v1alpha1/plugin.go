@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -19,10 +18,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-var (
-	_   core_plugins.PolicyPlugin = &plugin{}
-	log                           = core.Log.WithName("MeshLoadBalancingStrategy")
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
