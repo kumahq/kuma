@@ -69,4 +69,4 @@ check: format helm-lint golangci-lint shellcheck kube-lint ## Dev: Run code chec
 
 .PHONY: update-vulnerable-dependencies
 update-vulnerable-dependencies:
-	@./tools/ci/update-vulnerable-dependencies.sh
+	@$(KUMA_DIR)/tools/ci/update-vulnerable-dependencies.sh
