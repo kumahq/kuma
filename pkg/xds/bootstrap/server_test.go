@@ -83,9 +83,10 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
-			Port:        port,
-			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
-			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			Port:              port,
+			TlsCertFile:       filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			ReadHeaderTimeout: "5s",
 		}
 		dpServer := server.NewDpServer(dpServerCfg, metrics)
 
