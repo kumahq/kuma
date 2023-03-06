@@ -43,6 +43,38 @@ func (a *adapterCallbacks) OnStreamResponse(ctx context.Context, streamID int64,
 	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
 }
 
+// delta callbacks
+
+type adapterDeltaCallbacks struct {
+	NoopCallbacks
+	callbacks xds.DeltaCallbacks
+}
+
+// AdaptDeltaCallbacks translate Kuma callbacks to real go-control-plane Callbacks
+func AdaptDeltaCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
+	return &adapterCallbacks{
+		callbacks: callbacks,
+	}
+}
+
+var _ envoy_xds.Callbacks = &adapterDeltaCallbacks{}
+
+func (a *adapterDeltaCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
+	return a.callbacks.OnDeltaStreamOpen(ctx, streamID, typeURL)
+}
+
+func (a *adapterDeltaCallbacks) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
+	a.callbacks.OnDeltaStreamClosed(streamID)
+}
+
+func (a *adapterDeltaCallbacks) OnStreamDeltaRequest(streamID int64, request *envoy_sd.DeltaDiscoveryRequest) error {
+	return a.callbacks.OnStreamDeltaRequest(streamID, &deltaDiscoveryRequest{request})
+}
+
+func (a *adapterDeltaCallbacks) OnStreamDeltaResponse(streamID int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
+	a.callbacks.OnStreamDeltaResponse(streamID, &deltaDiscoveryRequest{request}, &deltaDiscoveryResponse{response})
+}
+
 // rest callbacks
 
 type adapterRestCallbacks struct {
@@ -145,4 +177,48 @@ type discoveryResponse struct {
 
 func (d *discoveryResponse) VersionInfo() string {
 	return d.GetVersionInfo()
+}
+
+type deltaDiscoveryRequest struct {
+	*envoy_sd.DeltaDiscoveryRequest
+}
+
+func (d *deltaDiscoveryRequest) Metadata() *structpb.Struct {
+	return d.GetNode().GetMetadata()
+}
+
+func (d *deltaDiscoveryRequest) NodeId() string {
+	return d.GetNode().GetId()
+}
+
+func (d *deltaDiscoveryRequest) Node() interface{} {
+	return d.GetNode()
+}
+
+func (d *deltaDiscoveryRequest) HasErrors() bool {
+	return d.ErrorDetail != nil
+}
+
+func (d *deltaDiscoveryRequest) ErrorMsg() string {
+	return d.GetErrorDetail().GetMessage()
+}
+
+func (d *deltaDiscoveryRequest) ResourceNames() []string {
+	return d.GetResourceNamesSubscribe()
+}
+
+func (d *deltaDiscoveryRequest) GetInitialResourceVersions() map[string]string {
+	return d.InitialResourceVersions
+}
+
+var _ xds.DeltaDiscoveryRequest = &deltaDiscoveryRequest{}
+
+type deltaDiscoveryResponse struct {
+	*envoy_sd.DeltaDiscoveryResponse
+}
+
+var _ xds.DeltaDiscoveryResponse = &deltaDiscoveryResponse{}
+
+func (d *deltaDiscoveryResponse) GetTypeUrl() string {
+	return d.TypeUrl
 }

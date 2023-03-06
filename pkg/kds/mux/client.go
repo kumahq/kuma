@@ -30,12 +30,14 @@ var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks           Callbacks
+	callbacksV2         CallbacksV2
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
+	deltaInitState      map[string]map[string]string
 }
 
 func NewClient(
@@ -43,6 +45,7 @@ func NewClient(
 	globalURL string,
 	clientID string,
 	callbacks Callbacks,
+	callbacksV2 CallbacksV2,
 	config multizone.KdsClientConfig,
 	metrics metrics.Metrics,
 	envoyAdminProcessor service.EnvoyAdminProcessor,
@@ -50,11 +53,13 @@ func NewClient(
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
+		callbacksV2:         callbacksV2,
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
+		deltaInitState:      make(map[string]map[string]string),
 	}
 }
 
@@ -103,10 +108,15 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
-	go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
+	if c.config.UseExperimentalKDSSync {
+		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
+	} else {
+		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+	}
 
 	select {
 	case <-stop:
@@ -143,6 +153,41 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 		errorCh <- err
 	case err = <-session.Error():
 		log.Error(err, "KDS stream failed prematurely, will restart in background")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+		errorCh <- err
+		return
+	}
+}
+
+func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources")
+	stream, err := kdsClient.GlobalToZoneSync(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+	processingErrorsCh := make(chan error)
+	if err := c.callbacksV2.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
+		log.Error(err, "closing KDS stream after callback error")
+		errorCh <- err
+		return
+	}
+	select {
+	case <-stop:
+		log.Info("Global to Zone Sync rpc stream stopped")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+	case err := <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "Global to Zone Sync failed, because Global CP does not implement this rpc. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			return
+		}
+		log.Error(err, "Envoy Admin rpc stream failed prematurely, will restart in background")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}

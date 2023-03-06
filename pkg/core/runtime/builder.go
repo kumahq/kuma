@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	kds_context_v2 "github.com/kumahq/kuma/pkg/kds/v2/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
@@ -51,6 +52,7 @@ type BuilderContext interface {
 	DpServer() *dp_server.DpServer
 	ResourceValidators() ResourceValidators
 	KDSContext() *kds_context.Context
+	KDSContextV2() *kds_context_v2.Context
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
 	TokenIssuers() builtin.TokenIssuers
@@ -83,6 +85,7 @@ type Builder struct {
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
+	kdsctxv2       *kds_context_v2.Context
 	rv             ResourceValidators
 	au             authn.Authenticator
 	acc            Access
@@ -222,6 +225,11 @@ func (b *Builder) WithKDSContext(kdsctx *kds_context.Context) *Builder {
 	return b
 }
 
+func (b *Builder) WithKDSContextV2(kdsctxv2 *kds_context_v2.Context) *Builder {
+	b.kdsctxv2 = kdsctxv2
+	return b
+}
+
 func (b *Builder) WithXDS(xds xds_runtime.XDSRuntimeContext) *Builder {
 	b.xds = xds
 	return b
@@ -306,6 +314,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.kdsctx == nil {
 		return nil, errors.Errorf("KDSContext has not been configured")
 	}
+	if b.kdsctxv2 == nil {
+		return nil, errors.Errorf("KDSContextV2 has not been configured")
+	}
 	if b.rv == (ResourceValidators{}) {
 		return nil, errors.Errorf("ResourceValidators have not been configured")
 	}
@@ -346,6 +357,7 @@ func (b *Builder) Build() (Runtime, error) {
 			cap:            b.cap,
 			dps:            b.dps,
 			kdsctx:         b.kdsctx,
+			kdsctxv2:       b.kdsctxv2,
 			rv:             b.rv,
 			au:             b.au,
 			acc:            b.acc,
@@ -433,6 +445,10 @@ func (b *Builder) DpServer() *dp_server.DpServer {
 
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
+}
+
+func (b *Builder) KDSContextV2() *kds_context_v2.Context {
+	return b.kdsctxv2
 }
 
 func (b *Builder) ResourceValidators() ResourceValidators {

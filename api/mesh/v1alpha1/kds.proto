@@ -39,6 +39,11 @@ service GlobalKDSService {
   rpc StreamClusters(stream ClustersResponse) returns (stream ClustersRequest);
 }
 
+service KDSSyncService {
+  rpc GlobalToZoneSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+     returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
+}
+
 // XDSConfigRequest is a request for XDS Config Dump that is executed on Zone
 // CP.
 message XDSConfigRequest {

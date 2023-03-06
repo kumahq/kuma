@@ -26,3 +26,9 @@ func (c *typeAdjustCallbacks) OnStreamResponse(_ context.Context, streamID int64
 		res.TypeUrl = kds.KumaResource
 	}
 }
+
+func (c *typeAdjustCallbacks) OnStreamDeltaResponse(streamID int64, req *envoy_sd.DeltaDiscoveryRequest, resp *envoy_sd.DeltaDiscoveryResponse) {
+	for _, res := range resp.GetResources() {
+		res.Resource.TypeUrl = kds.KumaResource
+	}
+}

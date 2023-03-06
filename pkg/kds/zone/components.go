@@ -3,6 +3,7 @@ package zone
 import (
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -19,6 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
+	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -85,11 +88,33 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
+
+	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error {
+		log := kdsZoneLog.WithValues("kds-version", "v2")
+		sink := kds_client_v2.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewKDSStream(stream, zone, string(cfgJson), initStateMap),
+			sync_store_v2.Callbacks(
+				rt.KDSContext().Configs,
+				sync_store_v2.NewResourceSyncer(kdsZoneLog, rt.ResourceStore()),
+				rt.Config().Store.Type == store.KubernetesStore,
+				zone,
+				kubeFactory,
+				rt.Config().Store.Kubernetes.SystemNamespace,
+			),
+		)
+		go func() {
+			if err := sink.Receive(); err != nil {
+				log.Error(err, "KDSSink finished with an error")
+			}
+		}()
+		return nil
+	})
+
 	muxClient := mux.NewClient(
 		rt.KDSContext().ZoneClientCtx,
 		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		onSessionStarted,
+		onGlobalToZoneSyncStarted,
 		*rt.Config().Multizone.Zone.KDS,
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(

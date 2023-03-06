@@ -14,6 +14,11 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
+type ResourceAndVersion struct {
+	ResourceName string
+	Version      string
+}
+
 func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
@@ -24,6 +29,24 @@ func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceLis
 		krs = append(krs, kr)
 	}
 	return toResources(model.ResourceType(response.TypeUrl), krs)
+}
+
+func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.ResourceList, []ResourceAndVersion, error) {
+	krs := []*mesh_proto.KumaResource{}
+	resourceVersions := []ResourceAndVersion{}
+	for _, r := range response.Resources {
+		kr := &mesh_proto.KumaResource{}
+		if err := util_proto.UnmarshalAnyTo(r.GetResource(), kr); err != nil {
+			return nil, nil, err
+		}
+		krs = append(krs, kr)
+		resourceVersions = append(resourceVersions, ResourceAndVersion{
+			ResourceName: kr.GetMeta().GetName(),
+			Version:      r.Version,
+		})
+	}
+	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
+	return list, resourceVersions, err
 }
 
 func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
