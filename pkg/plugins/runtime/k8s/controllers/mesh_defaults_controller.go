@@ -48,6 +48,8 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
 
+	r.Log.Info("marking mesh that default resources were generated", "mesh", req.Name)
+
 	if err := r.ResourceManager.Update(ctx, mesh); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not mark Mesh that default resources were generated")
 	}
