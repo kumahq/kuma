@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### K8s
+
+- `kuma.io/sidecar-injection` is no longer supported as an annotation, you should use it as a label.
+
 ### Helm
 
 There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.

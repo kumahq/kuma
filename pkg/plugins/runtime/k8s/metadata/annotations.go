@@ -114,7 +114,7 @@ var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation(KumaBuiltinDNSPortDeprecated, KumaBuiltinDNSPort),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
-		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar",
+		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 	},
 }
 

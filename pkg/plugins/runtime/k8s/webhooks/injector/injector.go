@@ -196,19 +196,6 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		return enabled, nil
 	}
 
-	// support annotations for backwards compatibility
-	// https://github.com/kumahq/kuma/issues/4005
-	enabled, exist, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" annotation`)
-		}
-		return enabled, nil
-	}
-
 	enabled, exist, err = metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err
@@ -219,20 +206,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		}
 		return enabled, nil
 	}
-
-	// support annotations for backwards compatibility
-	// https://github.com/kumahq/kuma/issues/4005
-	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" annotation`)
-		}
-		return enabled, nil
-	}
-	return false, nil
+	return false, err
 }
 
 func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
