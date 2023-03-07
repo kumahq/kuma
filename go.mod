@@ -40,15 +40,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
-<<<<<<< HEAD
 	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v0.39.1
 	github.com/sethvargo/go-retry v0.2.3
-=======
-	github.com/prometheus/common v0.40.0
-	github.com/sethvargo/go-retry v0.2.4
-	github.com/shopspring/decimal v1.3.1
->>>>>>> 0a72af785 (chore(deps): remove dependency on github.com/prometheus/prometheus (#6204))
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.6.1
@@ -120,13 +113,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-<<<<<<< HEAD
-	github.com/grafana/regexp v0.0.0-20220304095617-2e8d9baf4ac2 // indirect
-=======
-	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
-	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
->>>>>>> 0a72af785 (chore(deps): remove dependency on github.com/prometheus/prometheus (#6204))
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
