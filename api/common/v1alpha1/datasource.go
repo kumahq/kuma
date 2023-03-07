@@ -2,8 +2,9 @@
 package v1alpha1
 
 import (
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
 // DataSource defines the source of bytes to use.
