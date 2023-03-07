@@ -85,6 +85,8 @@ kumactl install control-plane --set "legacy.transparentProxy=true" | kubectl app
 The deprecated options `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS` and
 `defaults.enableLocalhostInboundClusters` were removed.
 
+This change affects only applications using transparent proxy.
+
 Applications that are binding to `localhost` won't be reachable anymore.
 This is the default behaviour from Kuma 1.8.0. Until now, it was possible to set
 a deprecated kuma-cp configurations `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
