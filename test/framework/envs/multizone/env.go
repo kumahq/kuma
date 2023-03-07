@@ -66,6 +66,7 @@ func SetupAndGetState() []byte {
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+			WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
@@ -109,6 +110,7 @@ func SetupAndGetState() []byte {
 		[]framework.KumaDeploymentOption{
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+			WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
 		},

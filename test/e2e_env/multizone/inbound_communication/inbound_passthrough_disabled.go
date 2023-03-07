@@ -66,6 +66,12 @@ func InboundPassthroughDisabled() {
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
+				testserver.WithName("k8s-test-server-localhost"),
+				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", localhostAddress),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(mesh),
 				testserver.WithName("k8s-test-server-wildcard"),
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
 			)).
@@ -101,10 +107,26 @@ func InboundPassthroughDisabled() {
 				}).Should(Succeed())
 			},
 			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-localhost"),
 			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh", "uni-bound-localhost"),
 			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
+		)
+		DescribeTable("should fail when application",
+			func(url string) {
+				Consistently(func(g Gomega) {
+					// when
+					_, err := client.CollectResponse(
+						multizone.KubeZone2, "demo-client", url,
+						client.FromKubernetesPod(namespace, "demo-client"),
+					)
+
+					// then
+					g.Expect(err).To(HaveOccurred())
+				}).Should(Succeed())
+			},
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh"),
 		)
 	})
 
@@ -121,10 +143,23 @@ func InboundPassthroughDisabled() {
 				}).Should(Succeed())
 			},
 			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh", "uni-bound-localhost"),
 			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
 			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
-			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh", "uni-bound-containerip"),
-			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-pod"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-localhost"),
+		)
+		DescribeTable("should fail when application",
+			func(url string) {
+				Consistently(func(g Gomega) {
+					// when
+					_, err := client.CollectResponse(multizone.UniZone2, "uni-demo-client", url)
+
+					// then
+					Expect(err).To(HaveOccurred())
+				}).Should(Succeed())
+			},
+			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh"),
 		)
 	})
 }
