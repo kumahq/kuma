@@ -94,7 +94,7 @@ Current implementation of synchornization allows the smooth transition from the 
 
 ### Handshake
 
-We do not need a handshake because we can always ensure that global control-plane runs in the newest version.
+It's not possible for the zone CP to be newer than global CP. This is because we can always guarantee that it's the newest. There is an information in docs about upgrade path that mentions order of upgrades.
 
 ### Multitenant
 
