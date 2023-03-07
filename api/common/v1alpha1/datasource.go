@@ -2,9 +2,8 @@
 package v1alpha1
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
-
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // DataSource defines the source of bytes to use.
@@ -22,7 +21,7 @@ func (ds *DataSource) ConvertToProto() *system_proto.DataSource {
 	case ds.Secret != nil:
 		return &system_proto.DataSource{Type: &system_proto.DataSource_Secret{Secret: *ds.Secret}}
 	case ds.Inline != nil:
-		return &system_proto.DataSource{Type: &system_proto.DataSource_Inline{Inline: &wrappers.BytesValue{Value: *ds.Inline}}}
+		return &system_proto.DataSource{Type: &system_proto.DataSource_Inline{Inline: &wrapperspb.BytesValue{Value: *ds.Inline}}}
 	case ds.InlineString != nil:
 		return &system_proto.DataSource{Type: &system_proto.DataSource_InlineString{InlineString: *ds.InlineString}}
 	}
