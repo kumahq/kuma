@@ -85,8 +85,8 @@ func SetupAndGetState() []byte {
 	UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 	uniZone1Options := append(
 		[]framework.KumaDeploymentOption{
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
 		},
