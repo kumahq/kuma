@@ -93,7 +93,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,

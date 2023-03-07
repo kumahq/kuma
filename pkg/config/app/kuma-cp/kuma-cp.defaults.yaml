@@ -347,10 +347,6 @@ runtime:
 defaults:
   # If true, it skips creating the default Mesh
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
-  # If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
-  # Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
-  # be removed in the future.
-  enableLocalhostInboundClusters: false #ENV: KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS
 
 # Metrics configuration
 metrics:
