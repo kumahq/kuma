@@ -740,6 +740,7 @@ plugins:
     meshfaultinjections: {}
     meshhealthchecks: {}
     meshhttproutes: {}
+    meshloadbalancingstrategies: {}
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}

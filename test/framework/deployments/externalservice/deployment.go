@@ -35,19 +35,17 @@ func Install(name string, commands ...Command) framework.InstallFunc {
 		if len(commands) < 1 {
 			return errors.New("command list can't be empty")
 		}
-		switch cluster.(type) {
+		switch c := cluster.(type) {
 		case *framework.K8sCluster:
 			deployment = &k8SDeployment{
 				name: name,
 				cmd:  commands[0],
 			}
 		case *framework.UniversalCluster:
-			deployment = &UniversalDeployment{
-				name:     name,
-				commands: commands,
-				ports:    map[uint32]uint32{},
-				verbose:  cluster.Verbose(),
-			}
+			deployment = NewUniversalDeployment(c.LogsPath()).
+				WithName(name).
+				WithCommands(commands...).
+				WithVerbose(cluster.Verbose())
 		default:
 			return errors.New("invalid cluster")
 		}

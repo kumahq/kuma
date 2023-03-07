@@ -17,7 +17,7 @@ func ProjectedServiceAccountToken() {
 		universal = NewUniversalCluster(NewTestingT(), "kuma-psat", Silent)
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Standalone,
-				WithEnv("KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH", "true"),
+				WithEnv("KUMA_DP_SERVER_AUTHN_ENABLE_RELOADABLE_TOKENS", "true"),
 			)).
 			Install(DemoClientUniversal("demo-client", "default")).
 			Setup(universal)).To(Succeed())

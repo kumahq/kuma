@@ -12,7 +12,8 @@ import (
 
 var _ config.Config = &DpServerConfig{}
 
-// Dataplane Server configuration that servers API like Bootstrap/XDS.
+// DpServerConfig defines the data plane Server configuration that serves API
+// like Bootstrap/XDS.
 type DpServerConfig struct {
 	// Port of the DP Server
 	Port int `json:"port" envconfig:"kuma_dp_server_port"`
@@ -26,6 +27,17 @@ type DpServerConfig struct {
 	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_dp_server_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_dp_server_tls_cipher_suites"`
+	// ReadHeaderTimeout defines the amount of time DP server will be
+	// allowed to read request headers. The connection's read deadline is reset
+	// after reading the headers and the Handler can decide what is considered
+	// too slow for the body. If ReadHeaderTimeout is zero there is no timeout.
+	//
+	// The timeout is configurable as in rare cases, when Kuma CP was restarting,
+	// 1s which is explicitly set in other servers was insufficient and DPs
+	// were failing to reconnect (we observed this in Projected Service Account
+	// Tokens e2e tests, which started flaking a lot after introducing explicit
+	// 1s timeout)
+	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_dp_server_read_header_timeout"`
 	// Auth defines an authentication configuration for the DP Server
 	// Deprecated: use "authn" section.
 	Auth DpServerAuthConfig `json:"auth"`
@@ -82,6 +94,9 @@ func (a *DpServerConfig) Validate() error {
 	}
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
+	}
+	if a.ReadHeaderTimeout.Duration < 0 {
+		return errors.New("ReadHeaderTimeout must be greater or equal 0s")
 	}
 	return errs
 }
@@ -231,6 +246,12 @@ func DefaultDpServerConfig() *DpServerConfig {
 		Hds:             DefaultHdsConfig(),
 		TlsMinVersion:   "TLSv1_2",
 		TlsCipherSuites: []string{},
+		// Pay attention that the default value is set to 5s and not 1s
+		// like in the other parts of the code. In rare cases, when Kuma CP
+		// was restarting, 1s was insufficient and DPs were failing to reconnect
+		// (we observed this in Projected Service Account Tokens e2e tests,
+		// which started flaking a lot after introducing this 1s timeout)
+		ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
 	}
 }
 

@@ -3,10 +3,9 @@ package mads
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
-
-	prom_util "github.com/prometheus/prometheus/util/strutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -44,17 +43,17 @@ func DataplaneLabels(dataplane *core_mesh.DataplaneResource, meshGateways []*cor
 			value = values[0]
 		}
 		// while in general case a tag might have multiple values, we want to optimize for a single-value scenario
-		labels[prom_util.SanitizeLabelName(key)] = value
+		labels[sanitizeLabelName(key)] = value
 		// additionally, we also support a multi-value scenario by automatically pluralizing label name,
 		// e.g. `service => services`, `version => versions`, etc.
 		// if it happens that a user defined both `service` and `services` tags,
 		// user-defined `services` tag will override auto-generated one (since keys are iterated in a sorted order)
 		plural := fmt.Sprintf("%ss", key)
-		labels[prom_util.SanitizeLabelName(plural)] = MultiValue(values)
+		labels[sanitizeLabelName(plural)] = MultiValue(values)
 	}
 	// then, we turn name extensions into labels
 	for key, value := range dataplane.GetMeta().GetNameExtensions() {
-		labels[prom_util.SanitizeLabelName(key)] = value
+		labels[sanitizeLabelName(key)] = value
 	}
 
 	if dataplane.Spec.IsBuiltinGateway() {
@@ -72,4 +71,13 @@ func DataplaneLabels(dataplane *core_mesh.DataplaneResource, meshGateways []*cor
 func DataplaneAssignmentName(dataplane *core_mesh.DataplaneResource) string {
 	// unique name, e.g. REST API uri
 	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
+}
+
+var invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+
+// SanitizeLabelName replaces anything that doesn't match
+// client_label.LabelNameRE with an underscore.
+// taken from: https://github.com/prometheus/prometheus/blob/d437f0bb6b53ec8594a43b871f92252980b13ddd/util/strutil/strconv.go#L40-L47
+func sanitizeLabelName(name string) string {
+	return invalidLabelCharRE.ReplaceAllString(name, "_")
 }
