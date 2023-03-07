@@ -80,6 +80,24 @@ helm upgrade --install --create-namespace --namespace kuma-system \
 kumactl install control-plane --set "legacy.transparentProxy=true" | kubectl apply -f-
 ```
 
+### Removal of deprecated options to reach applications bound to `localhost`
+
+The deprecated options `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS` and
+`defaults.enableLocalhostInboundClusters` were removed.
+
+This change affects only applications using transparent proxy.
+
+Applications that are binding to `localhost` won't be reachable anymore.
+This is the default behaviour from Kuma 1.8.0. Until now, it was possible to set
+a deprecated kuma-cp configurations `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
+or `defaults.enableLocalhostInboundClusters` to `true`, which was allowing to
+still reach these applications.
+
+One of the options to upgrade change address which the application is
+listening on, to `0.0.0.0`.
+Other option is to define `dataplane.networking.inbound[].serviceAddress`
+to the address which service is binding to.
+
 ## Upgrade to `2.1.x`
 
 ### **Breaking changes**

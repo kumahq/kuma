@@ -12,10 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// To remove in the future.
-// TODO: https://github.com/kumahq/kuma/issues/4772
-var EnableLocalhostInboundClusters bool
-
 const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
@@ -162,12 +158,7 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
-		switch EnableLocalhostInboundClusters {
-		case true:
-			iface.WorkloadIP = "127.0.0.1"
-		default:
-			iface.WorkloadIP = iface.DataplaneIP
-		}
+		iface.WorkloadIP = iface.DataplaneIP
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort
