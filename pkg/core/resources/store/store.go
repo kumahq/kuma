@@ -147,6 +147,10 @@ func IsResourcePreconditionFailed(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Resource precondition failed")
 }
 
+func IsResourceAlreadyExists(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Resource already exists")
+}
+
 type PreconditionError struct {
 	Reason string
 }
