@@ -73,8 +73,6 @@ var _ = Describe("kubernetes", func() {
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						metadata.KumaBuiltinDNSDeprecated:                       metadata.AnnotationEnabled,
-						metadata.KumaBuiltinDNSPortDeprecated:                   "25053",
 						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
 						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
 						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
@@ -94,8 +92,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
 				"--skip-resolv-conf",
-				"--redirect-all-dns-traffic",
-				"--redirect-dns-port", "25053",
 			},
 		}),
 
