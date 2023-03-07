@@ -115,12 +115,12 @@ spec:
       {{- end }}
       restartPolicy: OnFailure
       securityContext:
-      {{- toYaml (mergeOverwrite (dict "runAsNonRoot" true) .Values.hooks.podSecurityContext) | trim | nindent 8 }}
+      {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: pre-upgrade-job
           image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
           securityContext:
-          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534 "readOnlyRootFilesystem" true) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:
              requests:
                cpu: "100m"
@@ -141,7 +141,7 @@ spec:
         - name: pre-upgrade-job-init
           image: {{ include "kuma.formatImage" (dict "image" .Values.kumactl.image "root" $) | quote }}
           securityContext:
-          {{- toYaml (mergeOverwrite (dict "readOnlyRootFilesystem" true) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
+          {{- toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           resources:
              requests:
                cpu: "100m"
