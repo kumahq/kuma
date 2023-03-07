@@ -9,14 +9,25 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b
+<<<<<<< HEAD
 	github.com/emicklei/go-restful/v3 v3.9.0
+=======
+	github.com/containerd/cgroups v1.1.0
+	github.com/containernetworking/cni v1.1.2
+	github.com/containernetworking/plugins v1.1.1
+	github.com/emicklei/go-restful/v3 v3.10.1
+>>>>>>> bba7487de (chore(deps): bump gorestful and jwt (#6203))
 	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
+<<<<<<< HEAD
 	github.com/golang-jwt/jwt/v4 v4.4.1
+=======
+	github.com/golang-jwt/jwt/v4 v4.4.3
+>>>>>>> bba7487de (chore(deps): bump gorestful and jwt (#6203))
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.9
