@@ -38,12 +38,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
-<<<<<<< HEAD
 	github.com/prometheus/common v0.39.0
-	github.com/prometheus/prometheus v0.41.0
-=======
-	github.com/prometheus/common v0.40.0
->>>>>>> 0a72af785 (chore(deps): remove dependency on github.com/prometheus/prometheus (#6204))
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
