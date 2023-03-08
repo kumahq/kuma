@@ -667,9 +667,11 @@ hooks:
   # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
   ebpfCleanup:
     # -- Security context at the pod level for crd/webhook/cleanup-ebpf
-    podSecurityContext: {}
+    podSecurityContext:
+      runAsNonRoot: false
     # -- Security context at the container level for crd/webhook/cleanup-ebpf
-    containerSecurityContext: {}
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
 
 experimental:
   # -- If true, it installs experimental Gateway API support
