@@ -44,7 +44,7 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 		return nil
 	}
 
-	resources := s.GetResourcesAndTtl(typ)
+	resources := s.GetResourcesAndTTL(typ)
 	if resources == nil {
 		return nil
 	}
@@ -56,7 +56,7 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	return withoutTtl
 }
 
-func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTTL {
+func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
 	if s == nil {
 		return nil
 	}
@@ -94,10 +94,6 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot 
 		}
 	}
 	return s
-}
-
-func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
-	panic("not implemented")
 }
 
 // GetVersionMap will return the internal version map of the currently applied snapshot.

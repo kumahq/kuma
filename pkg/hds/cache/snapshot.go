@@ -47,10 +47,6 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	return withoutTtl
 }
 
-func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
-	panic("not implemented")
-}
-
 func (s *Snapshot) GetVersion(typ string) string {
 	if s == nil || typ != HealthCheckSpecifierType {
 		return ""
@@ -70,6 +66,17 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot 
 		Items:   s.HealthChecks.Items,
 	}
 	return &Snapshot{HealthChecks: n}
+}
+
+func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
+	if s == nil {
+		return nil
+	}
+	switch typ {
+	case HealthCheckSpecifierType:
+		return s.HealthChecks.Items
+	}
+	return nil
 }
 
 func (s *Snapshot) GetVersionMap(typeURL string) map[string]string {
