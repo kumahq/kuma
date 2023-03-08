@@ -273,6 +273,12 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
+			// The Pod is being deleted, if we can't convert it anymore its
+			// owner is likely missing. We shouldn't print and error or modify
+			// its Dataplane object.
+			if pod.ObjectMeta.DeletionTimestamp != nil {
+				return nil
+			}
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
