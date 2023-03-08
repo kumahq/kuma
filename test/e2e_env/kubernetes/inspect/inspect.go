@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
@@ -18,7 +19,7 @@ func Inspect() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
 			Install(MeshKubernetes(meshName)).
-			Install(DemoClientK8s(meshName, nsName)).
+			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
