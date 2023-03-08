@@ -121,15 +121,9 @@ docker/load/kumactl: ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
 docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 
-<<<<<<< HEAD
 .PHONY: docker/load/kuma-prometheus-sd
 docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
-=======
-.PHONY: docker/load/kuma-cni
-docker/load/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
-	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
->>>>>>> f7643c481 (ci(docker): quietly load docker images (#6229))
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
 
 .PHONY: docker/load/kuma-universal
 docker/load/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
