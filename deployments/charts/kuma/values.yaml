@@ -665,6 +665,8 @@ hooks:
     readOnlyRootFilesystem: true
 
   # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
+  # Changing below values will potentially break ebpf cleanup completely,
+  # so be cautious when doing so.
   ebpfCleanup:
     # -- Security context at the pod level for crd/webhook/cleanup-ebpf
     podSecurityContext:
