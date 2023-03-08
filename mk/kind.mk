@@ -40,7 +40,7 @@ endef
 CI_KIND_VERSION ?= v0.11.1
 CI_KUBERNETES_VERSION ?= v1.20.7@sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
 
-KIND_PATH := $(CI_TOOLS_DIR)/kind
+KIND_PATH := $(CI_TOOLS_BIN_DIR)/kind
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
