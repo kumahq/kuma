@@ -29,11 +29,6 @@ type Snapshot struct {
 
 var _ util_xds_v3.Snapshot = &Snapshot{}
 
-// GetSupportedTypes returns a list of xDS types supported by this snapshot.
-func (s *Snapshot) GetSupportedTypes() []string {
-	return []string{v1.MonitoringAssignmentType}
-}
-
 // Consistent check verifies that the dependent resources are exactly listed in the
 // snapshot.
 func (s *Snapshot) Consistent() error {
@@ -99,4 +94,18 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot 
 		}
 	}
 	return s
+}
+
+func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
+	panic("not implemented")
+}
+
+// GetVersionMap will return the internal version map of the currently applied snapshot.
+func (s *Snapshot) GetVersionMap(typeURL string) map[string]string {
+	panic("not implemented")
+}
+
+// ConstructVersionMap will construct a version map based on the current state of a snapshot
+func (s *Snapshot) ConstructVersionMap() error {
+	panic("not implemented")
 }

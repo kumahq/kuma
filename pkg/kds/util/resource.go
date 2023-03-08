@@ -14,6 +14,14 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
+func GetSupportedTypes() []string {
+	var types []string
+	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled()) {
+		types = append(types, string(def))
+	}
+	return types
+}
+
 func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {

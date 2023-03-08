@@ -27,7 +27,7 @@ func NewVersioner() util_xds_v3.SnapshotVersioner {
 	return util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 }
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache,
 	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner,
 ) mads_reconcile.Reconciler {
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
@@ -78,10 +78,10 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 	})
 }
 
-func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
+func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
+	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct{}

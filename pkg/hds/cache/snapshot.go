@@ -27,9 +27,7 @@ type Snapshot struct {
 	HealthChecks cache.Resources
 }
 
-func (s *Snapshot) GetSupportedTypes() []string {
-	return []string{HealthCheckSpecifierType}
-}
+var _ util_xds_v3.Snapshot = &Snapshot{}
 
 func (s *Snapshot) Consistent() error {
 	if s == nil {
@@ -47,6 +45,10 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 		withoutTtl[name] = res.Resource
 	}
 	return withoutTtl
+}
+
+func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.ResourceWithTTL {
+	panic("not implemented")
 }
 
 func (s *Snapshot) GetVersion(typ string) string {
@@ -68,4 +70,13 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot 
 		Items:   s.HealthChecks.Items,
 	}
 	return &Snapshot{HealthChecks: n}
+}
+
+func (s *Snapshot) GetVersionMap(typeURL string) map[string]string {
+	panic("not implemented")
+}
+
+// ConstructVersionMap will construct a version map based on the current state of a snapshot
+func (s *Snapshot) ConstructVersionMap() error {
+	panic("not implemented")
 }

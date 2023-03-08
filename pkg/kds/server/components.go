@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	util_kds "github.com/kumahq/kuma/pkg/kds/util"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -33,7 +34,7 @@ func New(
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
-	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
+	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID, SupportedTypes: util_kds.GetSupportedTypes()}
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
 	if err != nil {
 		return nil, err
@@ -114,10 +115,10 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
+	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct{}

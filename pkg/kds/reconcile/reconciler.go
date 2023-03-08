@@ -2,12 +2,14 @@ package reconcile
 
 import (
 	"context"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	util_kds "github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
@@ -16,7 +18,7 @@ var log = core.Log.WithName("kds").WithName("reconcile")
 
 func NewReconciler(
 	hasher envoy_cache.NodeHash,
-	cache util_xds_v3.SnapshotCache,
+	cache envoy_cache.SnapshotCache,
 	generator SnapshotGenerator,
 	versioner util_xds_v3.SnapshotVersioner,
 	mode config_core.CpMode,
@@ -34,20 +36,28 @@ func NewReconciler(
 
 type reconciler struct {
 	hasher         envoy_cache.NodeHash
-	cache          util_xds_v3.SnapshotCache
+	cache          envoy_cache.SnapshotCache
 	generator      SnapshotGenerator
 	versioner      util_xds_v3.SnapshotVersioner
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
+
+	lock sync.Mutex
 }
 
 func (r *reconciler) Clear(node *envoy_core.Node) {
 	id := r.hasher.ID(node)
-	snapshot := r.cache.ClearSnapshot(id)
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	// return error that there isn't snapshot for the node
+	snapshot, _ := r.cache.GetSnapshot(id)
 	if snapshot == nil {
 		return
 	}
-	for _, typ := range snapshot.GetSupportedTypes() {
+	r.cache.ClearSnapshot(id)
+	for _, typ := range util_kds.GetSupportedTypes() {
 		r.statsCallbacks.DiscardConfig(snapshot.GetVersion(typ))
 	}
 }
@@ -65,11 +75,11 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	new = r.versioner.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
-	return r.cache.SetSnapshot(id, new)
+	return r.cache.SetSnapshot(ctx, id, new)
 }
 
-func (r *reconciler) logChanges(new util_xds_v3.Snapshot, old util_xds_v3.Snapshot, node *envoy_core.Node) {
-	for _, typ := range new.GetSupportedTypes() {
+func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, node *envoy_core.Node) {
+	for _, typ := range util_kds.GetSupportedTypes() {
 		if old != nil && old.GetVersion(typ) != new.GetVersion(typ) {
 			client := node.Id
 			if r.mode == config_core.Zone {
@@ -81,8 +91,8 @@ func (r *reconciler) logChanges(new util_xds_v3.Snapshot, old util_xds_v3.Snapsh
 	}
 }
 
-func (r *reconciler) meterConfigReadyForDelivery(new util_xds_v3.Snapshot, old util_xds_v3.Snapshot) {
-	for _, typ := range new.GetSupportedTypes() {
+func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot) {
+	for _, typ := range util_kds.GetSupportedTypes() {
 		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
 		}

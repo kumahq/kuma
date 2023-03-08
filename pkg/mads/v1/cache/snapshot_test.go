@@ -12,20 +12,6 @@ import (
 var _ = Describe("Snapshot", func() {
 	expectedType := "type.googleapis.com/kuma.observability.v1.MonitoringAssignment"
 
-	Describe("GetSupportedTypes()", func() {
-		It("should always return ['type.googleapis.com/kuma.observability.v1alpha1.MonitoringAssignment']", func() {
-			// when
-			var snapshot *Snapshot
-			// then
-			Expect(snapshot.GetSupportedTypes()).To(Equal([]string{expectedType}))
-
-			// when
-			snapshot = &Snapshot{}
-			// then
-			Expect(snapshot.GetSupportedTypes()).To(Equal([]string{expectedType}))
-		})
-	})
-
 	Describe("Consistent()", func() {
 		It("should handle `nil`", func() {
 			// when

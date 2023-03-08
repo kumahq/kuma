@@ -2,26 +2,28 @@ package v3
 
 import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
 )
 
 // SnapshotVersioner assigns versions to xDS resources in a new Snapshot.
 type SnapshotVersioner interface {
-	Version(new, old Snapshot) Snapshot
+	Version(new Snapshot, old envoy_cache.ResourceSnapshot) Snapshot
 }
 
 // SnapshotAutoVersioner assigns versions to xDS resources in a new Snapshot
 // by reusing if possible a version from the old snapshot and
 // generating a new version (UUID) otherwise.
 type SnapshotAutoVersioner struct {
-	UUID func() string
+	UUID           func() string
+	SupportedTypes []string
 }
 
-func (v SnapshotAutoVersioner) Version(new, old Snapshot) Snapshot {
+func (v SnapshotAutoVersioner) Version(new Snapshot, old envoy_cache.ResourceSnapshot) Snapshot {
 	if new == nil {
 		return nil
 	}
-	for _, typ := range new.GetSupportedTypes() {
+	for _, typ := range v.SupportedTypes {
 		version := new.GetVersion(typ)
 		if version != "" {
 			// favor a version assigned by resource generator

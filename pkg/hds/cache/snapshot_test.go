@@ -15,20 +15,6 @@ import (
 var _ = Describe("Snapshot", func() {
 	expectedType := "envoy.service.health.v3.HealthCheckSpecifier"
 
-	Describe("GetSupportedTypes()", func() {
-		It("should always return ['envoy.service.health.v3.HealthCheckSpecifier']", func() {
-			// when
-			var snapshot *cache.Snapshot
-			// then
-			Expect(snapshot.GetSupportedTypes()).To(Equal([]string{expectedType}))
-
-			// when
-			snapshot = &cache.Snapshot{}
-			// then
-			Expect(snapshot.GetSupportedTypes()).To(Equal([]string{expectedType}))
-		})
-	})
-
 	Describe("Consistent()", func() {
 		It("should handle `nil`", func() {
 			// when
