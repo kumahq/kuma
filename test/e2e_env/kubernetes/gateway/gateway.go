@@ -185,7 +185,7 @@ spec:
 
 		It("should rate limit", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectFailure(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/rt",
 					client.WithHeader("host", "example.kuma.io"),
@@ -195,7 +195,7 @@ spec:
 				)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Received.StatusCode).To(Equal(429))
+				g.Expect(response.ResponseCode).To(Equal(429))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
