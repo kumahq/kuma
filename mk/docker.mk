@@ -119,19 +119,19 @@ docker/load/test: docker/load/kuma-universal
 
 .PHONY: docker/load/kuma-cp
 docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
 
 .PHONY: docker/load/kuma-dp
 docker/load/kuma-dp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-dp.tar
 
 .PHONY: docker/load/kumactl
 docker/load/kumactl: ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
 
 .PHONY: docker/load/kuma-init
 docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 
 .PHONY: docker/load/kuma-prometheus-sd
 docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
@@ -139,11 +139,11 @@ docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.ta
 
 .PHONY: docker/load/kuma-cni
 docker/load/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
 
 .PHONY: docker/load/kuma-universal
 docker/load/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
 
 .PHONY: docker/tag/kuma-cp
 docker/tag/kuma-cp:
