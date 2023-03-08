@@ -6,7 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 func UniversalCompatibility() {
@@ -34,7 +34,7 @@ func UniversalCompatibility() {
 
 	It("client should access server", func() {
 		Eventually(func(g Gomega) {
-			_, err := CollectResponse(cluster, "demo-client", "test-server.mesh")
+			_, err := client.CollectResponse(cluster, "demo-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "20s", "250ms").Should(Succeed())
 	})

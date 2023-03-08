@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
@@ -67,7 +68,9 @@ func Tracing() {
 
 		Eventually(func() ([]string, error) {
 			// when client sends requests to server
-			_, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+			)
 			if err != nil {
 				return nil, err
 			}

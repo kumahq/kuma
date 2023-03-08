@@ -7,7 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -25,6 +27,7 @@ func PluginTest() {
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
@@ -38,10 +41,11 @@ func PluginTest() {
 		By("check requests take over 5s")
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithHeader("x-set-response-delay-ms", "3000"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*3))
 		}).Should(Succeed())
 
@@ -50,10 +54,12 @@ func PluginTest() {
 
 		By("eventually requests timeout consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "test-server.mesh")
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithHeader("x-set-response-delay-ms", "3000"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
+			g.Expect(response.ResponseCode).To(Equal(504))
 		}).WithTimeout(15 * time.Second).Should(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`

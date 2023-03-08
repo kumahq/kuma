@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -16,8 +17,6 @@ func ExternalServices() {
 	meshName := "external-services"
 	namespace := "external-services"
 	clientNamespace := "client-external-services"
-
-	var clientPodName string
 
 	mesh := `
 apiVersion: kuma.io/v1alpha1
@@ -46,9 +45,6 @@ spec:
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(DemoClientK8s(meshName, clientNamespace)).
 			Setup(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "demo-client", clientNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-external-services")
@@ -90,11 +86,6 @@ spec:
     - match:
         kuma.io/service: external-service
 `
-		trafficBlocked := func() error {
-			_, _, err := kubernetes.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
-			return err
-		}
 
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -105,44 +96,61 @@ spec:
 		})
 
 		It("should route to external-service", func() {
-			// given working communication outside of the mesh with passthrough enabled and no traffic permission
+			// given working communication outside the mesh with passthrough enabled and no traffic permission
 			Eventually(func(g Gomega) {
-				_, stderr, err := kubernetes.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
+				_, err := client.CollectResponse(
+					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-			}).Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 
 			// when passthrough is disabled on the Mesh
 			Expect(kubernetes.Cluster.Install(YamlK8s(meshPassthroughDisabled))).To(Succeed())
 
 			// then accessing the external service is no longer possible
-			Eventually(trafficBlocked, "30s", "1s").Should(HaveOccurred())
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+			}, "30s", "1s").Should(Succeed())
 
 			// when apply external service
 			Expect(kubernetes.Cluster.Install(YamlK8s(externalService))).To(Succeed())
 
 			// then traffic is still blocked because of lack of the traffic permission
-			Consistently(trafficBlocked, "5s", "1s").Should(HaveOccurred())
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
 
 			// when TrafficPermission is added
 			Expect(kubernetes.Cluster.Install(YamlK8s(trafficPermission))).To(Succeed())
 
 			// then you can access external service again
 			Eventually(func(g Gomega) {
-				_, stderr, err := kubernetes.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
+				_, err := client.CollectResponse(
+					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-			}).Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 
 			// and you can also use .mesh on port of the provided host
 			Eventually(func(g Gomega) {
-				_, stderr, err := kubernetes.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:80")
+				_, err := client.CollectResponse(
+					kubernetes.Cluster, "demo-client", "external-service.mesh",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-			}).Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 
@@ -194,11 +202,12 @@ spec:
 
 		It("should access tls external service", func() {
 			Eventually(func(g Gomega) {
-				_, stderr, err := kubernetes.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "http://tls-external-service.mesh:80")
+				_, err := client.CollectResponse(
+					kubernetes.Cluster, "demo-client", "tls-external-service.mesh",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-			}).Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 }

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -29,23 +30,23 @@ func ReachableServices() {
 	It("should be able to connect to reachable services", func() {
 		Eventually(func(g Gomega) {
 			// when
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "first-test-server.mesh")
-
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "first-test-server.mesh",
+			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 	})
 
 	It("should not be able to non reachable services", func() {
 		Consistently(func(g Gomega) {
 			// when
-			_, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "second-test-server.mesh")
-
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "second-test-server.mesh",
+			)
 			// then
-			g.Expect(err).To(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Equal(6))
 		}).Should(Succeed())
 	})
 }

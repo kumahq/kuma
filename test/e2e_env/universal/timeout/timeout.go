@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -65,34 +66,30 @@ conf:
 	})
 
 	It("should reset the connection by timeout", func() {
-		By("Checking requests succeed")
-		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "test-server.mesh")
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		}).Should(Succeed())
-
 		By("check requests take over 5s")
-		start := time.Now()
-		_, _, err := universal.Cluster.Exec("", "", "demo-client",
-			"curl", "-v", "--fail", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		}).Should(Succeed())
 
 		By("apply a new policy")
 		Expect(universal.Cluster.Install(YamlUniversal(timeout))).To(Succeed())
 
 		By("eventually requests timeout consistently")
-		Eventually(func() string {
-			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "test-server.mesh")
-			return stdout
-		}).Should(ContainSubstring("upstream request timeout"))
-		Consistently(func() string {
-			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "test-server.mesh")
-			return stdout
-		}).Should(ContainSubstring("upstream request timeout"))
+		expectation := func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}
+		Eventually(expectation).Should(Succeed())
+		Consistently(expectation).Should(Succeed())
 	})
 }

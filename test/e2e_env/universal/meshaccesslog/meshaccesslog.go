@@ -13,6 +13,7 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
@@ -113,8 +114,9 @@ spec:
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {
-			_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
 		src, dst := expectTrafficLogged(makeRequest)
@@ -153,8 +155,9 @@ spec:
 		var src, dst string
 		sinkDeployment := universal.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 		Eventually(func(g Gomega) {
-			_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
@@ -201,9 +204,11 @@ spec:
 
 		// 52 is empty response but the TCP connection succeeded
 		makeRequest := func(g Gomega) {
-			_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", externalServiceDockerName)
-			g.Expect(err).To(ContainSubstring("exit status 52"))
+			response, err := client.CollectFailure(
+				universal.Cluster, AppModeDemoClient, externalServiceDockerName,
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Equal(52))
 		}
 		src, dst := expectTrafficLogged(makeRequest)
 
@@ -246,9 +251,11 @@ spec:
 
 		// 52 is empty response but the TCP connection succeeded
 		makeRequest := func(g Gomega) {
-			_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", "ext-service.mesh")
-			g.Expect(err).To(ContainSubstring("exit status 52"))
+			response, err := client.CollectFailure(
+				universal.Cluster, AppModeDemoClient, "ext-service.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Equal(52))
 		}
 		src, dst := expectTrafficLogged(makeRequest)
 
@@ -279,8 +286,9 @@ spec:
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {
-			_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}
 		src, dst := expectTrafficLogged(makeRequest)

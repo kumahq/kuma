@@ -11,7 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -99,7 +99,7 @@ conf:
 		Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -132,7 +132,7 @@ conf:
 		Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -172,7 +172,7 @@ conf:
 		Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -215,7 +215,7 @@ tags:
 `, esHttpHostPort)))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -273,16 +273,16 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version1")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version2")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version3")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -329,16 +329,16 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(universal.Cluster)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v1"))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v1"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v2"))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v2"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v3"))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v3"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -382,7 +382,7 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(universal.Cluster)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -392,7 +392,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -442,7 +442,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -452,7 +452,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -501,7 +501,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
 				if err != nil {
 					return err
 				}
@@ -512,7 +512,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")
 				if err != nil {
 					return err
 				}
@@ -564,7 +564,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")
 				if err != nil {
 					return err
 				}
@@ -576,7 +576,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")
 				if err != nil {
 					return err
 				}
@@ -624,9 +624,9 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
-					WithHeader("header-to-remove", "abc"),
-					WithHeader("x-multiple-values", "abc"),
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
+					client.WithHeader("header-to-remove", "abc"),
+					client.WithHeader("x-multiple-values", "abc"),
 				)
 				if err != nil {
 					return err
@@ -647,7 +647,7 @@ conf:
 
 			// "add" should replace existing headers
 			Eventually(func() error {
-				resp, err := CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
+				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", client.WithHeader("x-custom-header", "abc"))
 				if err != nil {
 					return err
 				}
@@ -698,7 +698,7 @@ tags:
 `, esHttpHostPort)))).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),

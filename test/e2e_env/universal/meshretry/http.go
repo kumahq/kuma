@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -65,17 +66,18 @@ spec:
 
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			// --max-time 8 to wait for 8 seconds to beat the default 5s connect timeout
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(8),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		})
 
 		By("Adding a faulty dataplane")
@@ -85,7 +87,10 @@ spec:
 		var errs []error
 		for i := 0; i < 50; i++ {
 			time.Sleep(time.Millisecond * 100)
-			_, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(8),
+			)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -97,17 +102,19 @@ spec:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(8),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			// --max-time 8 to wait for 8 seconds to beat the default 5s connect timeout
+			_, err := client.CollectResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.WithMaxTime(8),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		})
 	})
 }

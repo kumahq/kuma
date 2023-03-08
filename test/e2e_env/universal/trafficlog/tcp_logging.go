@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
@@ -64,8 +65,9 @@ destinations:
 			// given traffic between apps with invalid logging backend
 			Expect(universal.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
 			Eventually(func(g Gomega) {
-				_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-					"curl", "-v", "--fail", "test-server.mesh")
+				_, err := client.CollectResponse(
+					universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}).Should(Succeed())
 
@@ -76,8 +78,9 @@ destinations:
 			var startTimeStr, src, dst string
 			sinkDeployment := universal.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
 			Eventually(func(g Gomega) {
-				_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
-					"curl", "-v", "--fail", "test-server.mesh")
+				_, err := client.CollectResponse(
+					universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")

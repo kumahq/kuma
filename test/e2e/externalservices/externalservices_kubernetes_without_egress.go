@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -46,7 +47,6 @@ spec:
 	const externalServicesNamespace = "external-services"
 
 	var cluster *K8sCluster
-	var clientPodName string
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -61,9 +61,6 @@ spec:
 				testserver.WithName("external-service"),
 			)).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		clientPodName, err = PodNameOfApp(cluster, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -81,12 +78,13 @@ spec:
 		// when external service is defined without passthrough and zone routing
 		Expect(cluster.Install(YamlK8s(externalService))).To(Succeed())
 
-		// then communication outside of the Mesh works, because it goes directly from the client to a service
+		// then communication outside the Mesh works, because it goes directly from the client to a service
 		Eventually(func(g Gomega) {
-			_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "external-service.external-services.svc.cluster.local:80")
+			_, err := client.CollectResponse(
+				cluster, "demo-client", "external-service.external-services.svc.cluster.local:80",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}, "30s", "1s").Should(Succeed())
 
 		// when passthrough is disabled on the Mesh and zone egress enabled
@@ -94,9 +92,12 @@ spec:
 
 		// then accessing the external service is no longer possible, because zone egress is not deployed
 		Eventually(func(g Gomega) {
-			_, _, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "external-service.external-services.svc.cluster.local:80")
-			g.Expect(err).To(HaveOccurred())
+			response, err := client.CollectFailure(
+				cluster, "demo-client", "external-service.external-services.svc.cluster.local:80",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

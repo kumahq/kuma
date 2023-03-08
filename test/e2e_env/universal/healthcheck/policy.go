@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -58,8 +59,9 @@ conf:
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"curl", "--fail", "test-server.mesh/content"}
-				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				stdout, _, err := client.CollectRawResponse(
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
 			}).Should(Succeed())
@@ -77,10 +79,11 @@ conf:
 
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
-				cmd := []string{"curl", "test-server.mesh/content"}
-				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				response, err := client.CollectFailure(
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
+				g.Expect(response.ResponseCode).To(Equal(503))
 			}).Should(Succeed())
 		})
 	}, Ordered)

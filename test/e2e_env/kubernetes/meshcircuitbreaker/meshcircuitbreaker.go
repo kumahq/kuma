@@ -9,7 +9,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -50,13 +50,13 @@ func MeshCircuitBreaker() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcbs).To(HaveLen(0))
 
-		Eventually(func() ([]FailureResponse, error) {
-			return CollectResponsesAndFailures(
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
-				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(10),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithNumberOfRequests(10),
 			)
 		}, "30s", "1s").Should(And(
 			HaveLen(10),
@@ -67,16 +67,16 @@ func MeshCircuitBreaker() {
 		Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) ([]FailureResponse, error) {
-			return CollectResponsesAndFailures(
+		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
-				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(10),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithNumberOfRequests(10),
 				// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
-				WithHeader("x-set-response-delay-ms", "1000"),
-				WithoutRetries(),
+				client.WithHeader("x-set-response-delay-ms", "1000"),
+				client.WithoutRetries(),
 			)
 		}, "30s", "1s").Should(And(
 			HaveLen(10),

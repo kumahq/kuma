@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -93,7 +93,7 @@ conf:
 		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -126,7 +126,7 @@ conf:
 		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -166,7 +166,7 @@ conf:
 		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			res, err := CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(200))
+			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res).To(And(
 				HaveLen(2),
@@ -225,16 +225,16 @@ conf:
 			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version2")
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version3")
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -279,7 +279,7 @@ conf:
 			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -289,7 +289,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -324,7 +324,7 @@ conf:
 
 		It("should loadbalance all requests equally by default", func() {
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(4),
@@ -356,7 +356,7 @@ routing:
 `, meshName))(multizone.Global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(1),

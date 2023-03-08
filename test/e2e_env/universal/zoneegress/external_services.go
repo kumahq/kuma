@@ -10,6 +10,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
@@ -113,8 +114,10 @@ func ExternalServices() {
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-					"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
+				stdout, _, err := client.CollectRawResponse(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithVerbose(),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
@@ -151,8 +154,11 @@ conf:
      percentage: 100`)(universal.Cluster)).To(Succeed())
 
 			Eventually(func() bool {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-					"curl", "-v", "-m", "8", "external-service.mesh")
+				stdout, _, err := client.CollectRawResponse(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithVerbose(),
+					client.WithMaxTime(8),
+				)
 				if err != nil {
 					return false
 				}
@@ -187,9 +193,11 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("429"))
+				g.Expect(response.ResponseCode).To(Equal(429))
 			}).Should(Succeed())
 		})
 	})

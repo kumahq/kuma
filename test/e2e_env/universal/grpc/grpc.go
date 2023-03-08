@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -35,8 +36,9 @@ func GRPC() {
 
 	It("should emit stats from the server", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-server",
-				"curl", "-v", "--fail", "http://localhost:9901/stats?format=prometheus")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-server", "http://localhost:9901/stats?format=prometheus",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
@@ -45,8 +47,9 @@ func GRPC() {
 
 	It("should emit stats from the client", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-client",
-				"curl", "-v", "--fail", "http://localhost:9901/stats?format=prometheus")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-client", "http://localhost:9901/stats?format=prometheus",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="test-server"}`))
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="test-server"}`))

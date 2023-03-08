@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
@@ -30,17 +31,12 @@ spec:
       passthrough: %s
 `
 
-	var clientPodName string
-
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
 			Setup(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -54,13 +50,16 @@ spec:
 		serviceAccount := "/var/run/secrets/kubernetes.io/serviceaccount"
 		token := fmt.Sprintf("$(cat %s/token)", serviceAccount)
 		caCert := fmt.Sprintf("%s/ca.crt", serviceAccount)
-		header := fmt.Sprintf("Authorization: Bearer %s", token)
 		url := fmt.Sprintf("%s/api", apiServer)
-		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
 
 		// given Mesh with passthrough enabled then communication with API Server works
 		Eventually(func(g Gomega) {
-			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := client.CollectRawResponse(
+				kubernetes.Cluster, "demo-client", url,
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithCACert(caCert),
+				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Equal("200"))
 		}).Should(Succeed())
@@ -71,7 +70,12 @@ spec:
 
 		// then communication with API Server still works
 		Eventually(func(g Gomega) {
-			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := client.CollectRawResponse(
+				kubernetes.Cluster, "demo-client", url,
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithCACert(caCert),
+				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Equal("200"))
 		}).Should(Succeed())

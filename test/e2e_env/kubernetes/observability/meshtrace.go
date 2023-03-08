@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -63,13 +64,11 @@ func PluginTest() {
 		err := YamlK8s(traceAllK8s(mesh, obsClient.ZipkinCollectorURL()))(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// when client sends requests to server
-		clientPod, err := PodNameOfApp(kubernetes.Cluster, "demo-client", ns)
-		Expect(err).ToNot(HaveOccurred())
-
 		Eventually(func(g Gomega) {
-			_, _, err := kubernetes.Cluster.Exec(ns, clientPod, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server")
+			_, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", "test-server",
+				client.FromKubernetesPod(ns, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			srvs, err := obsClient.TracedServices()
 			g.Expect(err).ToNot(HaveOccurred())

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -76,8 +77,10 @@ networking:
 
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "test-server.mesh")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
 		}, "30s", "500ms").Should(Succeed())
 	})

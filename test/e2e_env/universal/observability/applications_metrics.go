@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -149,8 +150,9 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-server",
-				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-server", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency",
+			)
 
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
@@ -170,8 +172,9 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-server-override-mesh",
-				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-server-override-mesh", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency",
+			)
 
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
@@ -201,8 +204,10 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-server-dp-metrics",
-				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-server-dp-metrics", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency",
+				client.WithVerbose(),
+			)
 
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
@@ -229,8 +234,10 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "test-server-dp-metrics-localhost",
-				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
+			stdout, _, err := client.CollectRawResponse(
+				universal.Cluster, "test-server-dp-metrics-localhost", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency",
+				client.WithVerbose(),
+			)
 
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
