@@ -166,6 +166,9 @@ A Helm chart for the Kuma Control Plane
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
+| hooks.ebpfCleanup | object | `{"containerSecurityContext":{},"podSecurityContext":{}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs |
+| hooks.ebpfCleanup.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
+| hooks.ebpfCleanup.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/cleanup-ebpf |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
