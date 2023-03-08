@@ -135,7 +135,7 @@ docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 
 .PHONY: docker/load/kuma-prometheus-sd
 docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
-	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
+	docker load --quiet --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
 
 .PHONY: docker/load/kuma-cni
 docker/load/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
