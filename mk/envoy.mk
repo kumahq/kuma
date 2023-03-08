@@ -1,9 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
-<<<<<<< HEAD
 ENVOY_TAG ?= v1.22.7
-=======
-ENVOY_TAG ?= v1.22.1
->>>>>>> 8198e762f (chore: fetch Envoy from Github artifacts (#5329))
 ENVOY_ARTIFACT_EXT ?=
 
 ifeq ($(GOOS),linux)
