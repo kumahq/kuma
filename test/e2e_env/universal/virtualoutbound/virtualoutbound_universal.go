@@ -83,7 +83,7 @@ conf:
 				universal.Cluster, "demo-client", "test-server.2:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response).To(ContainSubstring("srv-2"))
+			g.Expect(response.Instance).To(Equal("srv-2"))
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {

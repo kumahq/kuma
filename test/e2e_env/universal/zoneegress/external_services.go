@@ -3,7 +3,6 @@ package zoneegress
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -153,17 +152,14 @@ conf:
      httpStatus: 401
      percentage: 100`)(universal.Cluster)).To(Succeed())
 
-			Eventually(func() bool {
-				stdout, _, err := client.CollectRawResponse(
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
 					universal.Cluster, "demo-client", "external-service.mesh",
-					client.WithVerbose(),
 					client.WithMaxTime(8),
 				)
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "401 Unauthorized")
-			}, "30s", "1s").Should(BeTrue())
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(401))
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 

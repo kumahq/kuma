@@ -77,11 +77,11 @@ networking:
 
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
+			g.Expect(response.ResponseCode).To(Equal(503))
 		}, "30s", "500ms").Should(Succeed())
 	})
 }
