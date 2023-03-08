@@ -418,7 +418,7 @@ workflows:
             - check
       - e2e:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+#          <<: *work_branch_workflow_filter
           name: test/e2e-ipv6
           requires:
             - build
