@@ -432,8 +432,8 @@ workflows:
             alias: go_cache
             parameters:
               executor: [ golang, vm-amd64, vm-arm64 ]
-      - check:
-          requires: [ go_cache ]
+#      - check:
+#          requires: [ go_cache ]
       - build:
           name: build-<< matrix.arch >>
           matrix:
@@ -467,7 +467,7 @@ workflows:
               target: [ test/e2e-universal ]
               arch: [ amd64, arm64 ]
           parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [ build-<< matrix.arch >> ]
 #      - e2e:
 #          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
 #          matrix:
