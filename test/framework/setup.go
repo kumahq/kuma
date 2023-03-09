@@ -26,48 +26,6 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
-const (
-	demoClientDeployment = `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: demo-client
-  namespace: %s
-  labels:
-    app: demo-client
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: demo-client
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: demo-client
-    spec:
-      containers:
-        - name: demo-client
-          image: %s
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 3000
-          command: [ "ncat" ]
-          args:
-            - -lk
-            - -p
-            - "3000"
-          resources:
-            limits:
-              cpu: 50m
-              memory: 64Mi
-`
-)
-
 type InstallFunc func(cluster Cluster) error
 
 var Serializer *k8sjson.Serializer
@@ -357,27 +315,6 @@ func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFun
 	}
 
 	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
-}
-
-func DemoClientK8sWithAffinity(mesh string, namespace string) InstallFunc {
-	affinity := `      nodeSelector:
-        second: "true"
-`
-
-	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment+affinity)
-}
-
-func DemoClientK8s(mesh string, namespace string) InstallFunc {
-	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment)
-}
-
-func DemoClientK8sCustomized(mesh string, namespace string, deploymentYaml string) InstallFunc {
-	const name = "demo-client"
-	return Combine(
-		YamlK8s(fmt.Sprintf(deploymentYaml, namespace, mesh, Config.GetUniversalImage())),
-		WaitNumPods(namespace, 1, name),
-		WaitPodsAvailable(namespace, name),
-	)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {

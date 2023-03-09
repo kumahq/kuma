@@ -9,6 +9,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -101,7 +102,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(mesh, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
