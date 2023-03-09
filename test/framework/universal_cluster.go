@@ -8,6 +8,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -39,7 +40,6 @@ type UniversalNetworkingState struct {
 
 type UniversalCluster struct {
 	t              testing.TestingT
-	logsPath       string
 	name           string
 	controlplane   *UniversalControlPlane
 	apps           map[string]*UniversalApp
@@ -58,7 +58,6 @@ var _ Cluster = &UniversalCluster{}
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
 		t:              t,
-		logsPath:       universal_logs.GetPath(Config.UniversalE2ELogsPath, t.Name()),
 		name:           name,
 		apps:           map[string]*UniversalApp{},
 		verbose:        verbose,
@@ -71,7 +70,7 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 }
 
 func (c *UniversalCluster) LogsPath() string {
-	return c.logsPath
+	return universal_logs.GetPath(Config.UniversalE2ELogsPath, ginkgo.GinkgoT().Name())
 }
 
 func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
@@ -160,7 +159,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, c.logsPath, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, c.LogsPath(), "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
 	if err != nil {
 		return err
 	}
@@ -297,7 +296,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, c.logsPath, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, c.LogsPath(), opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
 	if err != nil {
 		return err
 	}
@@ -424,7 +423,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := ssh.NewApp(app.containerName, c.logsPath, c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(app.containerName, c.LogsPath(), c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -502,7 +501,7 @@ func (c *UniversalCluster) addIngressEnvoyTunnel() error {
 }
 
 func (c *UniversalCluster) createEnvoyTunnel(name string) error {
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.logsPath, c.networking[name].ApiServerPort, c.verbose)
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.LogsPath(), c.networking[name].ApiServerPort, c.verbose)
 	if err != nil {
 		return err
 	}

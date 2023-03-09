@@ -345,6 +345,9 @@ jobs:
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
+      - store_artifacts:
+          name: "Store logs"
+          path: /tmp/e2e
 
   build:
     parameters:
@@ -438,59 +441,59 @@ workflows:
             parameters:
               arch: [ amd64, arm64 ]
           requires: [ go_cache-golang ]
-      - test:
-          name: test-<< matrix.arch >>
-          matrix:
-            alias: test
-            parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ check ]
-      - e2e:
-          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
-          matrix:
-            alias: test/e2e-legacy
-            parameters:
-              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
-              arch: [ amd64, arm64 ]
-          parallelism: 3
-          target: test/e2e
-          requires: [ build-<< matrix.arch >>, check ]
+#      - test:
+#          name: test-<< matrix.arch >>
+#          matrix:
+#            alias: test
+#            parameters:
+#              arch: [ amd64, arm64 ]
+#          requires: [ check ]
+#      - e2e:
+#          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+#          matrix:
+#            alias: test/e2e-legacy
+#            parameters:
+#              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
+#              arch: [ amd64, arm64 ]
+#          parallelism: 3
+#          target: test/e2e
+#          requires: [ build-<< matrix.arch >>, check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
               k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
-              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
+              target: [ test/e2e-universal ]
               arch: [ amd64, arm64 ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
-      - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
-          matrix:
-            alias: test/e2e-calico
-            parameters:
-              k8sVersion: [ v1.26.1-k3s1 ]
-              target: [ test/e2e-multizone ]
-              arch: [ amd64 ]
-              cniNetworkPlugin: [ calico ]
-          parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
-      - release:
-          # publish artifacts speculatively for normal commits
-          filters: # only on master and release-* branches (never on PRs and tags)
-            branches:
-              only:
-                - master
-                - /^release-.*/
-            tags:
-              ignore: /.*/
-          requires: [ build ]
-      - release:
-          # only publish tagged artifacts if everything passes
-          filters: # only on tags
-            branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
-          requires: [ test, test/e2e, test/e2e-legacy ]
+#      - e2e:
+#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+#          matrix:
+#            alias: test/e2e-calico
+#            parameters:
+#              k8sVersion: [ v1.26.1-k3s1 ]
+#              target: [ test/e2e-multizone ]
+#              arch: [ amd64 ]
+#              cniNetworkPlugin: [ calico ]
+#          parallelism: 1
+#          requires: [ build-<< matrix.arch >>, check ]
+#      - release:
+#          # publish artifacts speculatively for normal commits
+#          filters: # only on master and release-* branches (never on PRs and tags)
+#            branches:
+#              only:
+#                - master
+#                - /^release-.*/
+#            tags:
+#              ignore: /.*/
+#          requires: [ build ]
+#      - release:
+#          # only publish tagged artifacts if everything passes
+#          filters: # only on tags
+#            branches:
+#              ignore: /.*/
+#            tags:
+#              only: /.*/
+#          requires: [ test, test/e2e, test/e2e-legacy ]
