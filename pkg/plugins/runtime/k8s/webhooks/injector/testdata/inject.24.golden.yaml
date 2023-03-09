@@ -6,8 +6,6 @@ metadata:
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/builtin-dns: enabled
     kuma.io/builtin-dns-port: "25053"
-    kuma.io/builtindns: enabled
-    kuma.io/builtindnsport: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123

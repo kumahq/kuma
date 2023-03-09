@@ -20,7 +20,7 @@ jobs:
       - name: check-maintainer
         run:  |
           # Ensure the commenter is a maintainer
-          if [[ `gh api  /repos/${{ github.repository }}/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep ${{ github.event.comment.user.login }}` ]]; then
+          if [[ `gh api  '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep ${{ github.event.comment.user.login }}` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
           else
             gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
