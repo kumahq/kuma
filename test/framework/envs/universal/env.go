@@ -60,32 +60,38 @@ func RestoreState(bytes []byte) {
 
 // WriteLogsIfFailed will read files used to put logs from universal tests
 func WriteLogsIfFailed(ctx SpecContext) {
-	if ctx.SpecReport().Failed() {
-		logsPath := universal_logs.GetPath(
-			framework.Config.UniversalE2ELogsPath,
-			ctx.SpecReport().FullText(),
-		)
-		spacer := "------------------------------\n"
+	logsPath := universal_logs.GetPath(
+		framework.Config.UniversalE2ELogsPath,
+		ctx.SpecReport().FullText(),
+	)
 
-		dir, err := os.ReadDir(logsPath)
-		if err != nil {
-			GinkgoWriter.Printf("Attaching component logs failed: %s", err)
+	dir, err := os.ReadDir(logsPath)
+	if err != nil {
+		GinkgoWriter.Printf("Attaching component logs failed: %s", err)
+		return
+	}
+
+	if !ctx.SpecReport().Failed() {
+		if err := os.RemoveAll(logsPath); err != nil {
+			GinkgoWriter.Printf("Failed to remove log dir: %s", err)
 			return
 		}
+	}
 
-		for _, file := range dir {
-			if !file.IsDir() {
-				logFilePath := path.Join(logsPath, file.Name())
+	spacer := "------------------------------\n"
 
-				bs, err := os.ReadFile(logFilePath)
-				if err != nil {
-					GinkgoWriter.Printf("Attaching component logs for %s failed: %s", logFilePath, err)
-					continue
-				}
+	for _, file := range dir {
+		if !file.IsDir() {
+			logFilePath := path.Join(logsPath, file.Name())
 
-				GinkgoWriter.Printf("%sLogs from: %s\n%s", spacer, logFilePath, spacer)
-				Expect(GinkgoWriter.Write(bs)).Error().ToNot(HaveOccurred())
+			bs, err := os.ReadFile(logFilePath)
+			if err != nil {
+				GinkgoWriter.Printf("Attaching component logs for %s failed: %s", logFilePath, err)
+				continue
 			}
+
+			GinkgoWriter.Printf("%sLogs from: %s\n%s", spacer, logFilePath, spacer)
+			Expect(GinkgoWriter.Write(bs)).Error().ToNot(HaveOccurred())
 		}
 	}
 }
