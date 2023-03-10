@@ -146,6 +146,8 @@ spec:
         - name: migration
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
@@ -172,6 +174,12 @@ spec:
             - up
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 500m
+              memory: 256Mi
           volumeMounts:
             - name: postgres-client-certs
               mountPath: /var/run/secrets/kuma.io/postgres-client-certs
