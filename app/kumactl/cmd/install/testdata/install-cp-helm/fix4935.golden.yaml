@@ -499,6 +499,10 @@ apiVersion: apps/v1
 metadata:
   name: kuma-cni-node
   namespace: kube-system
+  annotations:
+    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
+    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
   labels:
     app: kuma-cni
     app.kubernetes.io/name: kuma
