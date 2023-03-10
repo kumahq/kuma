@@ -1,6 +1,18 @@
 checks:
-  doNotAutoAddDefaults: true
-  include:
-    - "privileged-container"
+  exclude:
+    - "unset-cpu-requirements"
 
 customChecks:
+- name: "unset-cpu-requests"
+  description: "Indicates when containers do not have CPU requests set."
+  scope:
+    objectKinds:
+      - DeploymentLike
+  remediation: >-
+    Set CPU requests for your container based on its requirements.
+    Refer to https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits for details.
+  template: "cpu-requirements"
+  params:
+    requirementsType: "request"
+    lowerBoundMillis: 0
+    upperBoundMillis: 0

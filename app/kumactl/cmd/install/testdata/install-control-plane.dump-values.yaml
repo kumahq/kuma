@@ -158,14 +158,12 @@ controlPlane:
   automountServiceAccountToken: true
 
   # -- Optionally override the resource spec
-  # @default -- the resources will be chosen based on the mode
   resources:
     requests:
-  #    cpu: 100m
-  #    memory: 256Mi
+       cpu: 500m
+       memory: 256Mi
     limits:
-  #    cpu: 250m
-  #    memory: 512Mi
+       memory: 256Mi
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)

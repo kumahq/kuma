@@ -54,7 +54,7 @@ format: fmt format/common
 
 .PHONY: kube-lint
 kube-lint:
-	$(KUBE_LINTER) lint .
+	$(KUBE_LINTER) lint deployments/charts/kuma
 
 .PHONY: hadolint
 hadolint:
