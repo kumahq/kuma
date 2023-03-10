@@ -13,6 +13,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 )
 
 // Ensure that the upstream Kuma help repository is configured
@@ -110,7 +111,7 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("demo"))
 
 		// when new resources is created on Zone
-		err = DemoClientK8s("default", TestNamespace)(zoneCluster)
+		err = democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))(zoneCluster)
 
 		// then resource is synchronized to Global
 		Expect(err).ToNot(HaveOccurred())
