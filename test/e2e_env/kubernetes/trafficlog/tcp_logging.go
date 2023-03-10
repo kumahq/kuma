@@ -12,6 +12,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -118,7 +119,7 @@ spec:
 				Install(YamlK8s(trafficLog.String())).
 				Install(NamespaceWithSidecarInjection(trafficNamespace)).
 				Install(Namespace(tcpSinkNamespace)).
-				Install(DemoClientK8s(meshName, trafficNamespace)).
+				Install(democlient.Install(democlient.WithNamespace(trafficNamespace), democlient.WithMesh(meshName))).
 				Install(YamlK8s(tcpSink.String())).
 				Install(WaitPodsAvailable(tcpSinkNamespace, tcpSinkAppName)).
 				Install(testserver.Install(
