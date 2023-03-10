@@ -10,6 +10,9 @@ does not have any particular instructions.
 
 ### K8s
 
+### Removed deprecated annotations
+
+- `kuma.io/builtindns` and `kuma.io/builtindnsport` are removed in favour of `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port` introduced in 1.8.0. If you are using the legacy CNI you main need to set these old annotations manually in your pod definition.
 - `kuma.io/sidecar-injection` is no longer supported as an annotation, you should use it as a label.
 
 ### Helm

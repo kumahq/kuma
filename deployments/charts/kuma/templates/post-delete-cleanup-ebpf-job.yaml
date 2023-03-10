@@ -37,14 +37,14 @@ rules:
     resources:
       - pods
     verbs:
-      - watch 
+      - watch
       - delete
       - deletecollection
   - apiGroups: ["batch"]
     resources:
       - jobs
     verbs:
-      - watch 
+      - watch
       - create
       - delete
       - deletecollection
@@ -97,16 +97,16 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
-      {{- if .Values.hooks.podSecurityContext }}
+      {{- if .Values.hooks.ebpfCleanup.podSecurityContext }}
       securityContext:
-      {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      {{ toYaml .Values.hooks.ebpfCleanup.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       containers:
         - name: post-delete-job
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
-          {{- if .Values.hooks.containerSecurityContext }}
+          {{- if .Values.hooks.ebpfCleanup.containerSecurityContext }}
           securityContext:
-          {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
+          {{ toYaml .Values.hooks.ebpfCleanup.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
           resources:
              requests:
