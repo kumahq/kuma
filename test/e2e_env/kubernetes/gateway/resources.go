@@ -8,6 +8,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -83,8 +84,8 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(waitingClientNamespace)).
 			Install(Namespace(curlingClientNamespace)).
-			Install(DemoClientK8s(meshName, waitingClientNamespace)).
-			Install(DemoClientK8s(meshName, curlingClientNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName))).
+			Install(democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName))).
 			Install(YamlK8s(meshGatewayWithoutLimit)).
 			Install(YamlK8s(MkGatewayInstance(gatewayName, namespace, meshName))).
 			Install(YamlK8s(httpRoute)).

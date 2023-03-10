@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -18,7 +19,7 @@ func VirtualOutbound() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(meshName, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Install(testserver.Install(
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),

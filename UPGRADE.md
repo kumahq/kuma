@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Removed deprecated annotations
+
+- `kuma.io/builtindns` and `kuma.io/builtindnsport` are removed in favour of `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port` introduced in 1.8.0
+
+### Helm
+
+There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.
+
 ### Gateway API
 
 We now support version `v0.6.0` of the Gateway API. See the [upstream API

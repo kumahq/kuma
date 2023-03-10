@@ -26,8 +26,8 @@ var annotationRegistry = map[string]*annotationParam{
 	"inboundPortV6":        {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
 	"outboundPort":         {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":            {"kuma.io/gateway", "false", alwaysValidFunc},
-	"builtinDNS":           {"kuma.io/builtindns", "false", alwaysValidFunc},
-	"builtinDNSPort":       {"kuma.io/builtindnsport", defaultBuiltinDNSPort, validatePortList},
+	"builtinDNS":           {"kuma.io/builtin-dns", "false", alwaysValidFunc},
+	"builtinDNSPort":       {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
 }
 
 type IntermediateConfig struct {

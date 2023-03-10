@@ -538,11 +538,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		}
 	}
 
-	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
+	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
 	}
-	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPortDeprecated, metadata.KumaBuiltinDNSPort)
+	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPort)
 	if err != nil {
 		return nil, err
 	}
@@ -551,9 +551,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		portVal := strconv.Itoa(int(port))
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
 		annotations[metadata.KumaBuiltinDNSPort] = portVal
-		// TODO remove deprecation issue
-		annotations[metadata.KumaBuiltinDNSDeprecated] = metadata.AnnotationEnabled
-		annotations[metadata.KumaBuiltinDNSPortDeprecated] = portVal
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
