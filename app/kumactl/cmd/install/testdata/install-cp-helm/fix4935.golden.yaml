@@ -814,6 +814,10 @@ spec:
                   - kuma-egress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-egress
       nodeSelector:
       
@@ -822,6 +826,8 @@ spec:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -877,6 +883,8 @@ spec:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -884,6 +892,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -937,6 +947,10 @@ spec:
                   - kuma-ingress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-ingress
       nodeSelector:
       
@@ -946,6 +960,8 @@ spec:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -1002,6 +1018,8 @@ spec:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -1009,6 +1027,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
