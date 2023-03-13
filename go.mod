@@ -21,7 +21,7 @@ require (
 	github.com/go-logr/zapr v1.2.3
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
@@ -35,7 +35,7 @@ require (
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.9.0
-	github.com/onsi/gomega v1.27.2
+	github.com/onsi/gomega v1.27.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
