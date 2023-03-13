@@ -153,21 +153,8 @@ spec:
               path: /ready
               port: 5680
           resources:
-            {{- if .Values.controlPlane.resources.requests }}
-            requests:
-            {{ .Values.controlPlane.resources.requests | toYaml | nindent 14 }}
-            {{- else if eq .Values.controlPlane.mode "global" }}
-            requests:
-              cpu: 500m
-              memory: 256Mi
-            {{- else }}
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            {{- end }}
-            {{- if .Values.controlPlane.resources.limits }}
-            limits:
-            {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
+            {{- if .Values.controlPlane.resources }}
+            {{- .Values.controlPlane.resources | toYaml | nindent 12 }}
             {{- end }}
           {{ with .Values.controlPlane.lifecycle }}
           lifecycle: {{ . | toYaml | nindent 14 }}
