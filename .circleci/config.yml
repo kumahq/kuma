@@ -28,7 +28,6 @@ commands:
     steps:
     - run:
         # `unzip`    is necessary to install `protoc`
-        # `gcc`      is necessary to run `go test -race`
         # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
         # `xz-utils` is necessary to decompress xz files
         name: "Install basic tools"
@@ -42,7 +41,7 @@ commands:
             fi
 
             sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip xz-utils
             ;;
           esac
     - run:
@@ -183,7 +182,7 @@ jobs:
     - run:
         name: "Run tests"
         command: |
-          make << parameters.target >>
+          make EXTRA_GOENV='CGO_ENABLED=1' << parameters.target >>
     - run:
         # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
         name: "Push coverage to Codecov"
@@ -367,7 +366,8 @@ jobs:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
-        command: make build
+        command: |
+          make build
     - run:
         name: Build Docker images
         command: |

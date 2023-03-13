@@ -21,6 +21,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 GINKGO_TEST:=$(EXTRA_GOENV) $(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
+test: EXTRA_GOENV=CGO_ENABLED=1
 test: build/ebpf
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(EXTRA_GOENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "pkg/transparentproxy/istio/tools")
 
