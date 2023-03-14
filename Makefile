@@ -18,6 +18,7 @@ include mk/dev.mk
 include mk/api.mk
 include mk/build.mk
 include mk/check.mk
+include mk/deps.mk
 include mk/test.mk
 include mk/generate.mk
 include mk/docker.mk
