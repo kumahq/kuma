@@ -22,21 +22,17 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
-	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v
 
 .PHONY: golangci-lint-fmt
 golangci-lint-fmt:
-	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v \
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
 		--disable-all \
 		--enable gofumpt
 
 .PHONY: helm-lint
 helm-lint:
-	for c in ./deployments/charts/*; do \
-  		if [ -d $$c ]; then \
-			$(HELM) lint --strict $$c; \
-		fi \
-	done
+	find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(HELM) lint --strict {} \;
 
 .PHONY: ginkgo/unfocus
 ginkgo/unfocus:
@@ -54,7 +50,7 @@ format: fmt format/common
 
 .PHONY: kube-lint
 kube-lint:
-	$(KUBE_LINTER) lint deployments/charts/kuma
+	find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(KUBE_LINTER) lint {} \;
 
 .PHONY: hadolint
 hadolint:
