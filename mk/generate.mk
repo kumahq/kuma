@@ -128,4 +128,4 @@ generate/test-server:
 # _DELETE_GO_EMBED_WORKAROUND_ part after generation
 .PHONY: generate/fix-embed
 generate/fix-embed:
-	find $(POLICIES_DIR) -name zz_generated.resource.go -type f -exec $(SHELL) -c "sed -i.bak 's/_DELETE_GO_EMBED_WORKAROUND_//g' {} && rm {}.bak" \;
+	find $(POLICIES_DIR) -name zz_generated.resource.go -type f -exec $(SHELL) -c "sed -i.bak 's/ _DELETE_GO_EMBED_WORKAROUND_//g' {} && rm {}.bak" \;

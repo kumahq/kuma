@@ -18,7 +18,8 @@ func GenerateRandomPortsSlice(num uint, restrictedPort ...uint16) []uint16 {
 }
 
 func GenerateRandomPorts(num uint, restrictedPort ...uint16) map[uint16]struct{} {
-	rand.Seed(ginkgo.GinkgoRandomSeed())
+	// #nosec G404 -- used just for tests
+	r := rand.New(rand.NewSource(ginkgo.GinkgoRandomSeed()))
 	randomPorts := map[uint16]struct{}{}
 	restrictedPorts := map[uint16]struct{}{}
 
@@ -28,8 +29,7 @@ func GenerateRandomPorts(num uint, restrictedPort ...uint16) map[uint16]struct{}
 
 	for len(randomPorts) < int(num) {
 		// Draw a port in the range of <1,65535>
-		// #nosec G404 -- used just for tests
-		drawn := uint16(rand.Intn(math.MaxUint16-1) + 1)
+		drawn := uint16(r.Intn(math.MaxUint16-1) + 1)
 
 		if _, ok := restrictedPorts[drawn]; ok {
 			continue

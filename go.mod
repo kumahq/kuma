@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma
 
-go 1.18
+go 1.20
 
 require (
 	cirello.io/pglock v1.11.0
@@ -123,7 +123,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect
+	github.com/google/pprof v0.0.0-20230228050547-1710fef4ab10 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
@@ -198,3 +198,5 @@ require (
 )
 
 replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230103091850-88eacfd00eb4
+
+replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview

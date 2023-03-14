@@ -696,8 +696,8 @@ github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38/go.mod h1:kpwsk12EmLe
 github.com/google/pprof v0.0.0-20210601050228-01bbb1931b22/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
 github.com/google/pprof v0.0.0-20210609004039-a478d1d731e9/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
 github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
-github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b h1:8htHrh2bw9c7Idkb7YNac+ZpTqLMjRpI+FWu51ltaQc=
-github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b/go.mod h1:dDKJzRmX4S37WGHujM7tX//fmj1uioxKzKxz3lo4HJo=
+github.com/google/pprof v0.0.0-20230228050547-1710fef4ab10 h1:CqYfpuYIjnlNxM3msdyPRKabhXZWbKjf3Q8BWROFBso=
+github.com/google/pprof v0.0.0-20230228050547-1710fef4ab10/go.mod h1:79YE0hCXdHag9sBkw2o+N/YnZtTkXi0UT9Nnixa5eYk=
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
@@ -738,8 +738,6 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFb
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0/go.mod h1:hgWBS7lorOAVIJEQMi4ZsPv9hVvWI6+ch50m39Pf2Ks=
 github.com/gruntwork-io/go-commons v0.8.0 h1:k/yypwrPqSeYHevLlEDmvmgQzcyTwrlZGRaxEM6G0ro=
 github.com/gruntwork-io/go-commons v0.8.0/go.mod h1:gtp0yTtIBExIZp7vyIV9I0XQkVwiQZze678hvDXof78=
-github.com/gruntwork-io/terratest v0.41.15 h1:od3neRQRBuf+Zwz5SSByrf3F90iyqFanV9nFF/86uuM=
-github.com/gruntwork-io/terratest v0.41.15/go.mod h1:a9QNOPa3/nbsLy1ufNGT33X9sMRknun7qsf4bIVEbPo=
 github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed/go.mod h1:tMWxXQ9wFIaZeTI9F+hmhFiGpFmhOHzyShyFUhRm0H4=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/sdk v0.1.1/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
@@ -920,6 +918,8 @@ github.com/kumahq/gateway-api v0.0.0-20230103091850-88eacfd00eb4 h1:99N/dgBk01im
 github.com/kumahq/gateway-api v0.0.0-20230103091850-88eacfd00eb4/go.mod h1:gM4qVev3d46v3Oe+pIA3Isj9m+V/oYfdLzUzkFrobyg=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1 h1:tY2dGQJTYVGkhxAHN154fddcWDRy55Pl4+oLT+FhsHo=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
+github.com/lahabana/terratest v0.42.0-preview h1:67gUui/cTYaOo8VNqj16c32kjOIl9B6oLEJvyr+V7Rc=
+github.com/lahabana/terratest v0.42.0-preview/go.mod h1:qH1xkPTTGx30XkMHw8jAVIbzqheSjIa5IyiTwSV2vKI=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.1.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
