@@ -252,6 +252,7 @@ func tlsConfig(rootCaFile string) (*tls.Config, error) {
 	if rootCaFile == "" {
 		return &tls.Config{
 			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS12,
 		}, nil
 	}
 	roots := x509.NewCertPool()
