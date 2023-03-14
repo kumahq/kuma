@@ -741,8 +741,6 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFb
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0/go.mod h1:hgWBS7lorOAVIJEQMi4ZsPv9hVvWI6+ch50m39Pf2Ks=
 github.com/gruntwork-io/go-commons v0.8.0 h1:k/yypwrPqSeYHevLlEDmvmgQzcyTwrlZGRaxEM6G0ro=
 github.com/gruntwork-io/go-commons v0.8.0/go.mod h1:gtp0yTtIBExIZp7vyIV9I0XQkVwiQZze678hvDXof78=
-github.com/gruntwork-io/terratest v0.41.9 h1:jyygu23iLcEFjGQhlvRx4R0EJVqOoriP+Ire4U9cZA0=
-github.com/gruntwork-io/terratest v0.41.9/go.mod h1:qH1xkPTTGx30XkMHw8jAVIbzqheSjIa5IyiTwSV2vKI=
 github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed/go.mod h1:tMWxXQ9wFIaZeTI9F+hmhFiGpFmhOHzyShyFUhRm0H4=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/sdk v0.1.1/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
@@ -919,6 +917,8 @@ github.com/kumahq/kuma-net v0.8.10 h1:0Hd6dNYPbsSCe6YQFGG6796tFUB6gw0QiCOXqSDGZA
 github.com/kumahq/kuma-net v0.8.10/go.mod h1:kFh8+bzRAUMdMVCfXU8apDMcBxwWDzOxImlEEJ/4cy4=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1 h1:tY2dGQJTYVGkhxAHN154fddcWDRy55Pl4+oLT+FhsHo=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
+github.com/lahabana/terratest v0.42.0-preview h1:67gUui/cTYaOo8VNqj16c32kjOIl9B6oLEJvyr+V7Rc=
+github.com/lahabana/terratest v0.42.0-preview/go.mod h1:qH1xkPTTGx30XkMHw8jAVIbzqheSjIa5IyiTwSV2vKI=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.1.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
