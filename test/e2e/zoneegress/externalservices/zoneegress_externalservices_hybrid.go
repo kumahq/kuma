@@ -10,6 +10,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -106,7 +107,7 @@ conf:
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh))).
 			Install(testserver.Install(
 				testserver.WithName("es-test-server"),
 				testserver.WithNamespace("default"),

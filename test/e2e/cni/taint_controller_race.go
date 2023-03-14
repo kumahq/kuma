@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -78,12 +79,8 @@ metadata:
 
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Install(testserver.Install(func(opts *testserver.DeploymentOpts) {
-					opts.NodeSelector = map[string]string{
-						"second": "true",
-					}
-				})).
-				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
+				Install(testserver.Install(testserver.WithNodeSelector(map[string]string{"second": "true"}))).
+				Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithNodeSelector(map[string]string{"second": "true"}))).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 

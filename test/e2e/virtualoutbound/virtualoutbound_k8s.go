@@ -7,6 +7,8 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -21,7 +23,7 @@ func VirtualOutboundOnK8s() {
 				WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
 			Setup(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())

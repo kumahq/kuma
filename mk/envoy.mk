@@ -1,5 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
-ENVOY_TAG ?= v1.22.7
+ENVOY_TAG ?= v$(ENVOY_VERSION)
 ENVOY_ARTIFACT_EXT ?=
 
 ifeq ($(GOOS),linux)
@@ -43,7 +43,7 @@ ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	ENVOY_TAG=$(ENVOY_TAG) \
 	SOURCE_DIR=${SOURCE_DIR} \
 	KUMA_DIR=${KUMA_DIR} \
-	BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS} \
+	BAZEL_BUILD_EXTRA_OPTIONS="${BAZEL_BUILD_EXTRA_OPTIONS}" \
 	BINARY_PATH=$@ $(BUILD_ENVOY_SCRIPT)
 else
 	ENVOY_TAG=$(ENVOY_TAG) \
@@ -52,7 +52,15 @@ else
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 endif
 
+build/envoy/$(GOOS)-$(GOARCH)/%/envoy:
+	GOOS=$(GOOS) \
+	GOARCH=$(GOARCH) \
+	ENVOY_TARGET=$* \
+	ENVOY_TAG=$(ENVOY_TAG) \
+	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
+
 .PHONY: clean/envoy
 clean/envoy:
 	rm -rf ${SOURCE_DIR}
 	rm -rf build/artifacts-${GOOS}-${GOARCH}/envoy/
+	rm -rf build/envoy/
