@@ -299,7 +299,6 @@ func zoneRelatedResource(
 			cluster.GetTesting(),
 			uniCluster.name,
 			dpName,
-			uniCluster.LogsPath(),
 			"",
 			appType,
 			Config.IPV6,

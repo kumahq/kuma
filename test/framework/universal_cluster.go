@@ -8,7 +8,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 type UniversalNetworking struct {
@@ -67,10 +65,6 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		envoyTunnels:   map[string]envoy_admin.Tunnel{},
 		networking:     map[string]UniversalNetworking{},
 	}
-}
-
-func (c *UniversalCluster) LogsPath() string {
-	return universal_logs.GetPath(Config.UniversalE2ELogsPath, ginkgo.GinkgoT().Name())
 }
 
 func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
@@ -159,7 +153,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, c.LogsPath(), "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
 	if err != nil {
 		return err
 	}
@@ -296,7 +290,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, c.LogsPath(), opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
 	if err != nil {
 		return err
 	}
@@ -379,7 +373,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 		return errors.New("missing public port: 22")
 	}
 
-	app := ssh.NewApp(kumaCP.containerName, kumaCP.logsPath, kumaCP.verbose, sshPort, envVars, args)
+	app := ssh.NewApp(kumaCP.containerName, "", kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -423,7 +417,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := ssh.NewApp(app.containerName, c.LogsPath(), c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(app.containerName, "", c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -501,7 +495,7 @@ func (c *UniversalCluster) addIngressEnvoyTunnel() error {
 }
 
 func (c *UniversalCluster) createEnvoyTunnel(name string) error {
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.LogsPath(), c.networking[name].ApiServerPort, c.verbose)
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.networking[name].ApiServerPort, c.verbose)
 	if err != nil {
 		return err
 	}
@@ -552,3 +546,37 @@ func (c *UniversalCluster) Install(fn InstallFunc) error {
 func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 	c.controlplane = cp
 }
+
+//func LogsPath(s ...ginkgo.SpecReport) string {
+//	var sr ginkgo.SpecReport
+//	if len(s) == 0 {
+//		sr = ginkgo.CurrentSpecReport()
+//	} else {
+//		sr = s[0]
+//	}
+//
+//	if len(sr.SpecEvents) == 0 {
+//		return Config.UniversalE2ELogsPath
+//	}
+//
+//	logsPath := sr.ContainerHierarchyTexts
+//	lastEvent := sr.SpecEvents[len(sr.SpecEvents)-1]
+//
+//	//println("DEBUG LogsPath", lastEvent)
+//	println("DEBUG LogsPath", lastEvent.NodeType.String(), lastEvent.NodeType)
+//
+//	switch lastEvent.NodeType {
+//	case types.NodeTypeIt, types.NodeTypeBeforeEach:
+//		println("DEBUG LogsPath HERE", types.NodeTypeIt, types.NodeTypeBeforeEach)
+//		logsPath = append(logsPath, sr.LeafNodeText)
+//	}
+//
+//	println("DEBUG LogsPath", strings2.Join(logsPath, "/"))
+//
+//	sanitizedPath := []string{}
+//	for _, p := range logsPath {
+//		sanitizedPath = append(sanitizedPath, strings.ShortenString(sanitize.Name(p), 243))
+//	}
+//
+//	return path.Join(append([]string{Config.UniversalE2ELogsPath}, sanitizedPath...)...)
+//}

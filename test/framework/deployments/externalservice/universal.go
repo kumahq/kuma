@@ -13,10 +13,10 @@ import (
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 type UniversalDeployment struct {
-	logsPath  string
 	container string
 	ip        string
 	ports     map[uint32]uint32
@@ -29,10 +29,9 @@ type UniversalDeployment struct {
 
 var _ Deployment = &UniversalDeployment{}
 
-func NewUniversalDeployment(logsPath string) *UniversalDeployment {
+func NewUniversalDeployment() *UniversalDeployment {
 	return &UniversalDeployment{
-		logsPath: logsPath,
-		ports:    map[uint32]uint32{},
+		ports: map[uint32]uint32{},
 	}
 }
 
@@ -129,19 +128,19 @@ func (u *UniversalDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	err = ssh.NewApp(u.name, u.logsPath, u.verbose, port, nil, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = ssh.NewApp(u.name, "", u.verbose, port, nil, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = ssh.NewApp(u.name, u.logsPath, u.verbose, port, nil, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = ssh.NewApp(u.name, "", u.verbose, port, nil, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	u.cert = cert
 	for _, arg := range u.commands {
-		u.app = ssh.NewApp(u.name, u.logsPath, u.verbose, port, nil, arg)
+		u.app = ssh.NewApp(u.name, universal_logs.LogsPath(framework.Config.UniversalE2ELogsPath), u.verbose, port, nil, arg)
 		err = u.app.Start()
 		if err != nil {
 			return err
@@ -153,7 +152,7 @@ func (u *UniversalDeployment) Deploy(cluster framework.Cluster) error {
 
 func (u *UniversalDeployment) Exec(cmd ...string) (string, string, error) {
 	port := strconv.Itoa(int(u.ports[22]))
-	sshApp := ssh.NewApp(u.name, u.logsPath, u.verbose, port, nil, cmd)
+	sshApp := ssh.NewApp(u.name, "", u.verbose, port, nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }

@@ -5,39 +5,70 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/kennygrant/sanitize"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	"k8s.io/utils/strings"
 )
 
 var (
 	timePrefix = time.Now().Local().Format("060102_150405")
-	paths      = map[string]string{}
+	pathSet    = map[string]struct{}{}
 	mutex      sync.RWMutex
 )
 
-func GenAndSavePath(logsPath, specName string) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	// Let's be sure we won't exceed max filename length
-	fileName := strings.ShortenString(sanitize.Name(specName), 243)
-
-	paths[specName] = path.Join(
-		logsPath,
-		timePrefix,
-		fileName+"-"+random.UniqueId(),
-	)
+func UniversalLogPath(basePath string) string {
+	return path.Join(basePath, timePrefix)
 }
 
-func GetPath(logsPath, specName string) string {
-	mutex.RLock()
-	defer mutex.RUnlock()
+func LogsPath(basePath string) string {
+	sr := ginkgo.CurrentSpecReport()
 
-	id, ok := paths[specName]
-	if !ok {
-		return path.Join(logsPath, timePrefix)
+	if len(sr.SpecEvents) == 0 {
+		p := UniversalLogPath(basePath)
+		addPath(p)
+		return p
 	}
 
-	return id
+	lastEvent := sr.SpecEvents[len(sr.SpecEvents)-1]
+
+	var logsPath []string
+
+	switch lastEvent.NodeType {
+	case types.NodeTypeBeforeAll:
+		idx, ok := find(sr.ContainerHierarchyTexts, lastEvent.Message)
+		if !ok {
+			panic("")
+		}
+		logsPath = append(sr.ContainerHierarchyTexts[:idx], lastEvent.Message)
+	default:
+		logsPath = append(sr.ContainerHierarchyTexts, sr.LeafNodeText)
+	}
+
+	sanitizedPath := []string{}
+	for _, p := range logsPath {
+		sanitizedPath = append(sanitizedPath, strings.ShortenString(sanitize.Name(p), 243))
+	}
+
+	p := path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
+	addPath(p)
+	return p
+}
+
+func find(slice []string, s string) (int, bool) {
+	for idx, ss := range slice {
+		if s == ss {
+			return idx, true
+		}
+	}
+	return 0, false
+}
+
+func addPath(path string) {
+	mutex.Lock()
+	if _, ok := pathSet[path]; !ok {
+		pathSet[path] = struct{}{}
+		ginkgo.AddReportEntry(path)
+	}
+	mutex.Unlock()
 }
