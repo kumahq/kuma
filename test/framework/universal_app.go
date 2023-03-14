@@ -208,7 +208,6 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
 	}
-	println("DEBUG NewUniversalApp", app.logsPath, dpName, mode)
 	if containerName != "" {
 		app.containerName = containerName
 	}

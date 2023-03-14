@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -59,15 +60,13 @@ var (
 
 			if !sr.Failed() && len(sr.ContainerHierarchyTexts) != 0 {
 				for _, re := range sr.ReportEntries {
-					println("DEBUG Remove", re.Name)
-					//_ = os.RemoveAll(re.Name)
+					_ = os.RemoveAll(re.Name)
 				}
 			}
 		}
 
 		if !suiteFailed {
-			println("DEBUG Remove", universal_logs.UniversalLogPath(framework.Config.UniversalE2ELogsPath))
-			//_ = os.RemoveAll(universal_logs.UniversalLogPath(framework.Config.UniversalE2ELogsPath))
+			_ = os.RemoveAll(universal_logs.UniversalLogPath(framework.Config.UniversalE2ELogsPath))
 		}
 	})
 )

@@ -546,37 +546,3 @@ func (c *UniversalCluster) Install(fn InstallFunc) error {
 func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 	c.controlplane = cp
 }
-
-//func LogsPath(s ...ginkgo.SpecReport) string {
-//	var sr ginkgo.SpecReport
-//	if len(s) == 0 {
-//		sr = ginkgo.CurrentSpecReport()
-//	} else {
-//		sr = s[0]
-//	}
-//
-//	if len(sr.SpecEvents) == 0 {
-//		return Config.UniversalE2ELogsPath
-//	}
-//
-//	logsPath := sr.ContainerHierarchyTexts
-//	lastEvent := sr.SpecEvents[len(sr.SpecEvents)-1]
-//
-//	//println("DEBUG LogsPath", lastEvent)
-//	println("DEBUG LogsPath", lastEvent.NodeType.String(), lastEvent.NodeType)
-//
-//	switch lastEvent.NodeType {
-//	case types.NodeTypeIt, types.NodeTypeBeforeEach:
-//		println("DEBUG LogsPath HERE", types.NodeTypeIt, types.NodeTypeBeforeEach)
-//		logsPath = append(logsPath, sr.LeafNodeText)
-//	}
-//
-//	println("DEBUG LogsPath", strings2.Join(logsPath, "/"))
-//
-//	sanitizedPath := []string{}
-//	for _, p := range logsPath {
-//		sanitizedPath = append(sanitizedPath, strings.ShortenString(sanitize.Name(p), 243))
-//	}
-//
-//	return path.Join(append([]string{Config.UniversalE2ELogsPath}, sanitizedPath...)...)
-//}
