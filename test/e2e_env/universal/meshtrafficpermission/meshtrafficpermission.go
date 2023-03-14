@@ -83,9 +83,6 @@ spec:
 
 		// then
 		trafficAllowed()
-
-		// todo: remove intentional fail
-		Expect(true).To(BeFalse())
 	})
 
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
