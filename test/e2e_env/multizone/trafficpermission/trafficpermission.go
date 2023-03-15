@@ -7,6 +7,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -52,18 +53,23 @@ func TrafficPermission() {
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, _, err := multizone.KubeZone1.Exec(namespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "demo-client", "test-server.mesh",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 	}
 
 	trafficBlocked := func() {
-		Eventually(func() error {
-			_, _, err := multizone.KubeZone1.Exec(namespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			return err
-		}).Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				multizone.KubeZone1, "demo-client", "test-server.mesh",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}).Should(Succeed())
 	}
 
 	It("should allow the traffic with default traffic permission", func() {

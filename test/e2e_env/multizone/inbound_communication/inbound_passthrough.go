@@ -103,7 +103,7 @@ func InboundPassthrough() {
 			func(url string, expectedInstance string) {
 				// when
 				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
+					response, err := client.CollectEchoResponse(
 						multizone.KubeZone1, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -122,7 +122,7 @@ func InboundPassthrough() {
 		DescribeTable("should fail when application",
 			func(url string) {
 				Consistently(func(g Gomega) {
-					_, err := client.CollectResponse(
+					_, err := client.CollectEchoResponse(
 						multizone.KubeZone1, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -141,7 +141,7 @@ func InboundPassthrough() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(multizone.UniZone1, "uni-demo-client", url)
+					response, err := client.CollectEchoResponse(multizone.UniZone1, "uni-demo-client", url)
 
 					// then
 					g.Expect(err).ToNot(HaveOccurred())
@@ -158,7 +158,7 @@ func InboundPassthrough() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(multizone.UniZone1, "uni-demo-client", url)
+					_, err := client.CollectEchoResponse(multizone.UniZone1, "uni-demo-client", url)
 					// then
 					Expect(err).To(HaveOccurred())
 				}).Should(Succeed())

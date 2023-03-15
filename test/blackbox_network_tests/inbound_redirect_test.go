@@ -2,7 +2,7 @@ package blackbox_network_tests_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,8 +43,8 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
-				RuntimeStderr: ioutil.Discard,
+				RuntimeStdout: io.Discard,
+				RuntimeStderr: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -123,7 +123,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -200,7 +200,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 			peerAddress := ns.Veth().PeerAddress()
 
@@ -290,7 +290,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 			peerAddress := ns.Veth().PeerAddress()
 
@@ -380,7 +380,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 			peerAddress := ns.Veth().PeerAddress()
 
@@ -472,7 +472,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 			peerAddress := ns.Veth().PeerAddress()
 
@@ -563,7 +563,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -639,7 +639,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(

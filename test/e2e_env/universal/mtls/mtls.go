@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -18,22 +19,25 @@ func Policy() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
-	curlAddr := func(addr string, opts ...string) (string, string, error) {
-		cmd := append([]string{"curl", "-v", addr}, opts...)
-		return universal.Cluster.Exec("", "", "demo-client", cmd...)
+	curlAddr := func(addr string, fn ...client.CollectResponsesOptsFn) (string, string, error) {
+		fn = append(fn, client.WithVerbose())
+
+		return client.CollectResponse(
+			universal.Cluster, "demo-client", addr, fn...,
+		)
 	}
-	trafficAllowed := func(addr string, opts ...string) {
+	trafficAllowed := func(addr string, fn ...client.CollectResponsesOptsFn) {
 		expectation := func(g Gomega) {
-			stdout, _, err := curlAddr(addr, opts...)
+			stdout, _, err := curlAddr(addr, fn...)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}
 		Eventually(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 20).Should(Succeed())
 		Consistently(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 2).Should(Succeed())
 	}
-	trafficBlocked := func(addr string, opts ...string) {
+	trafficBlocked := func(addr string, fn ...client.CollectResponsesOptsFn) {
 		expectation := func(g Gomega) {
-			_, _, err := curlAddr(addr, opts...)
+			_, _, err := curlAddr(addr, fn...)
 			g.Expect(err).To(HaveOccurred())
 		}
 		Eventually(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 20).Should(Succeed())
@@ -82,22 +86,26 @@ mtls:
 		It("PERMISSIVE server with TLS", func() {
 			setupTest("PERMISSIVE")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh", "--cacert", "/kuma/server.crt")
+			trafficAllowed("test-server.mesh", client.WithCACert("/kuma/server.crt"))
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
 			host := universal.Cluster.GetApp("test-server").GetIP()
-			trafficAllowed(publicAddress(), "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))
+			trafficAllowed(publicAddress(),
+				client.WithCACert("/kuma/server.crt"),
+				client.Resolve("test-server.mesh:80", fmt.Sprintf("[%s]", host)))
 		})
 		It("STRICT server with TLS", func() {
 			setupTest("STRICT")
 			By("Check inside-mesh communication")
-			trafficAllowed("test-server.mesh", "--cacert", "/kuma/server.crt")
+			trafficAllowed("test-server.mesh", client.WithCACert("/kuma/server.crt"))
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
 			host := universal.Cluster.GetApp("test-server").GetIP()
-			trafficBlocked(publicAddress(), "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))
+			trafficBlocked(publicAddress(),
+				client.WithCACert("/kuma/server.crt"),
+				client.Resolve("test-server.mesh:80", fmt.Sprintf("[%s]", host)))
 		})
 	})
 	It("enabling PERMISSIVE with no failed requests", func() {
@@ -164,7 +172,7 @@ mtls:
 			Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			By("Can't access test-server")
-			trafficBlocked("test-server.mesh", "--fail")
+			trafficBlocked("test-server.mesh")
 
 			By("When adding traffic-permission")
 			perm := fmt.Sprintf(`
