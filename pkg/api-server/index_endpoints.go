@@ -49,6 +49,6 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 		}
 	}
 	ws.Route(ws.GET("/").To(healthHandler))
-	ws.Route(ws.GET("/health/up").To(healthHandler))
+	ws.Route(ws.GET("/health").To(healthHandler))
 	return nil
 }
