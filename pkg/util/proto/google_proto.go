@@ -70,6 +70,10 @@ var ReplaceMergeFn MergeFunction = func(dst, src protoreflect.Message) {
 	})
 }
 
+func Replace(dst, src proto.Message) {
+	ReplaceMergeFn(dst.ProtoReflect(), src.ProtoReflect())
+}
+
 func Merge(dst, src proto.Message) {
 	duration := &durationpb.Duration{}
 	merge(dst, src, MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn))

@@ -5,6 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -19,25 +20,36 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 			return err
 		}
 	}
+
 	switch c.Operation {
 	case api.ModOpAdd:
 		c.add(resources, clusterMod)
 	case api.ModOpRemove:
 		c.remove(resources)
 	case api.ModOpPatch:
-		c.patch(resources, clusterMod)
+		return c.patch(resources, clusterMod)
 	default:
 		return errors.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }
 
-func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) {
+func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) error {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
+			if len(c.JsonPatches) > 0 {
+				if err := common_api.MergeJsonPatch(cluster.Resource, c.JsonPatches); err != nil {
+					return err
+				}
+
+				continue
+			}
+
 			util_proto.Merge(cluster.Resource, clusterMod)
 		}
 	}
+
+	return nil
 }
 
 func (c *clusterModificator) remove(resources *core_xds.ResourceSet) {

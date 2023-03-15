@@ -77,7 +77,7 @@ func validateClusterMod(mod ClusterMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_cluster_v3.Cluster{}))
 	case ModOpPatch:
-		verr.Add(validatePatchValue(path.Field("value"), mod.Value, &envoy_cluster_v3.Cluster{}))
+		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_cluster_v3.Cluster{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -98,7 +98,7 @@ func validateListenerMod(mod ListenerMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_listener_v3.Listener{}))
 	case ModOpPatch:
-		verr.Add(validatePatchValue(path.Field("value"), mod.Value, &envoy_listener_v3.Listener{}))
+		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_listener_v3.Listener{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -119,7 +119,7 @@ func validateVirtualHostMod(mod VirtualHostMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_route_v3.VirtualHost{}))
 	case ModOpPatch:
-		verr.Add(validatePatchValue(path.Field("value"), mod.Value, &envoy_route_v3.VirtualHost{}))
+		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_route_v3.VirtualHost{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -150,7 +150,7 @@ func validateHTTPFilterMod(mod HTTPFilterMod) validators.ValidationError {
 		if mod.Match == nil || mod.Match.Name == nil {
 			verr.AddViolationAt(path.Field("match").Field("name"), validators.MustBeDefined)
 		}
-		verr.Add(validatePatchValue(path.Field("value"), mod.Value, &envoy_hcm_v3.HttpFilter{}))
+		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_hcm_v3.HttpFilter{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -181,7 +181,7 @@ func validateNetworkFilterMod(mod NetworkFilterMod) validators.ValidationError {
 		if mod.Match == nil || mod.Match.Name == nil {
 			verr.AddViolationAt(path.Field("match").Field("name"), validators.MustBeDefined)
 		}
-		verr.Add(validatePatchValue(path.Field("value"), mod.Value, &envoy_listener_v3.Filter{}))
+		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_listener_v3.Filter{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -204,14 +204,19 @@ func validateResourceValue(path validators.PathBuilder, value *string, res proto
 	return verr
 }
 
-func validatePatchValue(path validators.PathBuilder, value *string, res proto.Message) validators.ValidationError {
+func validatePatch(path validators.PathBuilder, value *string, jsonPatches []common_api.JsonPatchBlock, res proto.Message) validators.ValidationError {
 	var verr validators.ValidationError
+
 	if value != nil {
-		if err := mesh.ValidateAnyResourceYAMLPatch(*value, res); err != nil {
-			verr.AddViolationAt(path, fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
+		if len(jsonPatches) > 0 {
+			verr.AddViolationAt(path, validators.MustHaveOnlyOne(path.String(), "value", "jsonPatches"))
+		} else if err := mesh.ValidateAnyResourceYAMLPatch(*value, res); err != nil {
+			verr.AddViolationAt(path.Field("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	} else {
-		verr.AddViolationAt(path, validators.MustBeDefined)
+		if len(jsonPatches) == 0 {
+			verr.AddViolationAt(path, validators.MustHaveOneOf(path.String(), "value", "jsonPatches"))
+		}
 	}
 	return verr
 }
