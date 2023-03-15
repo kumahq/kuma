@@ -69,7 +69,7 @@ func AppDeploymentWithHelmChart() {
 			Expect(cluster.(*K8sCluster).WaitApp(Config.KumaServiceName, Config.KumaNamespace, minReplicas)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -77,7 +77,7 @@ func AppDeploymentWithHelmChart() {
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -85,7 +85,7 @@ func AppDeploymentWithHelmChart() {
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)

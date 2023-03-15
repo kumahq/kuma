@@ -30,7 +30,7 @@ func ReachableServices() {
 	It("should be able to connect to reachable services", func() {
 		Eventually(func(g Gomega) {
 			// when
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "first-test-server.mesh",
 			)
 			// then

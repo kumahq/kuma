@@ -140,7 +140,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	It("should fail request when ingress is down", func() {
 		// when
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
@@ -159,7 +159,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 
 	It("should fail request when egress is down", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())

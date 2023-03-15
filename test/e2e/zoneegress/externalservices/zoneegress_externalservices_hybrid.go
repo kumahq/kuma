@@ -156,7 +156,7 @@ conf:
 
 		By("reaching external service from k8s")
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				zone1, "demo-client", "external-service-1.mesh",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
@@ -166,7 +166,7 @@ conf:
 
 		By("reaching external service from universal")
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				zone4, "zone4-demo-client", "external-service-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())

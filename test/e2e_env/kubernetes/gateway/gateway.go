@@ -124,7 +124,7 @@ spec:
 
 		It("should proxy to service via HTTP", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/",
 					client.WithHeader("host", "example.kuma.io"),
@@ -138,7 +138,7 @@ spec:
 
 		It("should proxy to service via HTTPS", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"https://simple-gateway.simple-gateway:8081/",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -232,7 +232,7 @@ spec:
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/external-service",
 					client.WithHeader("host", "example.kuma.io"),

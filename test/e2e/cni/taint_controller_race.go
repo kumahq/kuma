@@ -85,7 +85,7 @@ metadata:
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -93,7 +93,7 @@ metadata:
 			}, "10s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -101,7 +101,7 @@ metadata:
 			}, "10s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) { // should access a service with . instead of _
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)

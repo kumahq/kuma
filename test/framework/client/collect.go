@@ -176,7 +176,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 // cluster, and the deployment must have an "app" label that matches the
 // application parameter.
 //
-// Note that the caller of CollectResponse still needs to specify the
+// Note that the caller of CollectEchoResponse still needs to specify the
 // source container name within the Pod.
 func FromKubernetesPod(namespace string, application string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
@@ -253,7 +253,7 @@ func CollectTCPResponse(
 	return stdout, nil
 }
 
-func CollectRawResponse(
+func CollectResponse(
 	cluster framework.Cluster,
 	container string,
 	destination string,
@@ -277,13 +277,13 @@ func CollectRawResponse(
 	return cluster.Exec(opts.namespace, appPodName, container, cmd...)
 }
 
-func CollectResponse(
+func CollectEchoResponse(
 	cluster framework.Cluster,
 	container string,
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	stdout, stderr, err := CollectRawResponse(cluster, container, destination, fn...)
+	stdout, stderr, err := CollectResponse(cluster, container, destination, fn...)
 	if err != nil {
 		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", stderr, err)
 	}
@@ -470,7 +470,7 @@ func CollectResponsesAndFailures(
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
 	res, err := callConcurrently(destination, func() (interface{}, error) {
-		return CollectResponse(cluster, source, destination, fn...)
+		return CollectEchoResponse(cluster, source, destination, fn...)
 	}, fn...)
 	if err != nil {
 		return nil, err

@@ -65,7 +65,7 @@ destinations:
 			// given traffic between apps with invalid logging backend
 			Expect(universal.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					universal.Cluster, AppModeDemoClient, "test-server.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -78,7 +78,7 @@ destinations:
 			var startTimeStr, src, dst string
 			sinkDeployment := universal.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					universal.Cluster, AppModeDemoClient, "test-server.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())

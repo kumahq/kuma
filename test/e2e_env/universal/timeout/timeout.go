@@ -69,7 +69,7 @@ conf:
 		By("check requests take over 5s")
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithMaxTime(10),
 			)

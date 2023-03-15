@@ -67,7 +67,7 @@ spec:
 
 		// given Mesh with passthrough enabled then communication with API Server works
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithCACert(caCert),
@@ -83,7 +83,7 @@ spec:
 
 		// then communication with API Server still works
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithCACert(caCert),

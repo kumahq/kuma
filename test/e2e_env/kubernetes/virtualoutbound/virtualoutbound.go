@@ -63,7 +63,7 @@ spec:
 
 		// Succeed with virtual-outbound
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.foo:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -97,7 +97,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.test-server-0:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -106,7 +106,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.test-server-1:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)

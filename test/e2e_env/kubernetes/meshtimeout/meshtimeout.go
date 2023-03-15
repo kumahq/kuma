@@ -48,7 +48,7 @@ func MeshTimeout() {
 		Expect(mts).To(HaveLen(0))
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithHeader("x-set-response-delay-ms", "5000"),

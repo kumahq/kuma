@@ -57,7 +57,7 @@ spec:
 
 		// Succeed with virtual-outbound
 		Eventually(func(g Gomega) {
-			res, err := client.CollectResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.foo:8080",
+			res, err := client.CollectEchoResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.foo:8080",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -66,7 +66,7 @@ spec:
 
 		// Fails with built in vip (it's disabled in conf)
 		Consistently(func(g Gomega) {
-			_, err := client.CollectResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.mesh:80",
+			_, err := client.CollectEchoResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.mesh:80",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).To(HaveOccurred())

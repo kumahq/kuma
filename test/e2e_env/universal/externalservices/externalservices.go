@@ -90,7 +90,7 @@ networking:
 
 	checkSuccessfulRequest := func(url string, matcher types.GomegaMatcher) {
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "demo-client", url,
 				client.WithVerbose(),
 			)
@@ -188,7 +188,7 @@ networking:
 
 		// then
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(universal.Cluster, "demo-client", "testmtls.mesh")
+			stdout, _, err := client.CollectResponse(universal.Cluster, "demo-client", "testmtls.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(ContainSubstring("TLSv1.2 Authentication OK!"))

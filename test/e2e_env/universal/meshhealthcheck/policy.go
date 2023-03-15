@@ -62,7 +62,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				stdout, _, err := client.CollectRawResponse(
+				stdout, _, err := client.CollectResponse(
 					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -440,7 +440,7 @@ spec:
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
-				stdout, _, err := client.CollectRawResponse(
+				stdout, _, err := client.CollectResponse(
 					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())

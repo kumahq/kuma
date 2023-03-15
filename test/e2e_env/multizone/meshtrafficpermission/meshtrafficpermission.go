@@ -55,7 +55,7 @@ func MeshTrafficPermission() {
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "test-server.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)

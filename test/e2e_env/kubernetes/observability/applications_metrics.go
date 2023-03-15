@@ -152,7 +152,7 @@ func ApplicationsMetrics() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := client.CollectRawResponse(
+		stdout, _, err := client.CollectResponse(
 			kubernetes.Cluster, "test-server", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics",
 			client.FromKubernetesPod(namespace, "test-server"),
 		)
@@ -174,7 +174,7 @@ func ApplicationsMetrics() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := client.CollectRawResponse(
+		stdout, _, err := client.CollectResponse(
 			kubernetes.Cluster, "test-server-override-mesh", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics",
 			client.FromKubernetesPod(namespace, "test-server-override-mesh"),
 		)
@@ -206,7 +206,7 @@ func ApplicationsMetrics() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := client.CollectRawResponse(
+		stdout, _, err := client.CollectResponse(
 			kubernetes.Cluster, "test-server-dp-metrics", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics",
 			client.FromKubernetesPod(namespace, "test-server-dp-metrics"),
 		)
@@ -234,7 +234,7 @@ func ApplicationsMetrics() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := client.CollectRawResponse(
+		stdout, _, err := client.CollectResponse(
 			kubernetes.Cluster, "test-server-filter", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats",
 			client.FromKubernetesPod(namespace, "test-server-filter"),
 		)
@@ -253,7 +253,7 @@ func ApplicationsMetrics() {
 
 		// then
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "test-server-filter", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats",
 				client.FromKubernetesPod(namespace, "test-server-filter"),
 			)

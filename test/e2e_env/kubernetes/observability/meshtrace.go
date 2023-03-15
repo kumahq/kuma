@@ -66,7 +66,7 @@ func PluginTest() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server",
 				client.FromKubernetesPod(ns, "demo-client"),
 			)

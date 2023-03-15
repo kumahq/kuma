@@ -34,7 +34,7 @@ func UniversalCompatibility() {
 
 	It("client should access server", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(cluster, "demo-client", "test-server.mesh")
+			_, err := client.CollectEchoResponse(cluster, "demo-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "20s", "250ms").Should(Succeed())
 	})

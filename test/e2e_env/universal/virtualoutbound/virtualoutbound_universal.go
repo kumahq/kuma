@@ -70,7 +70,7 @@ conf:
 
 		// Check we can reach the first instance
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.1:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -79,7 +79,7 @@ conf:
 
 		// Check we can reach the second instance
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.2:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -87,7 +87,7 @@ conf:
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server:8080",
 			)
 			g.Expect(err).ToNot(HaveOccurred())

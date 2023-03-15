@@ -41,7 +41,7 @@ func PluginTest() {
 		By("check requests take over 5s")
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithHeader("x-set-response-delay-ms", "3000"),
 			)

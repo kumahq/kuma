@@ -143,7 +143,7 @@ spec:
 			tcpSinkPodName, err := PodNameOfApp(kubernetes.Cluster, tcpSinkAppName, tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, AppModeDemoClient, "test-server",
 					client.FromKubernetesPod(trafficNamespace, "demo-client"),
 				)

@@ -150,7 +150,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone1, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)
@@ -160,7 +160,7 @@ routing:
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone1, "demo-client", "kuma-es-4_externalservice-http-server:80",
 				client.WithVerbose(),
 			)
@@ -170,7 +170,7 @@ routing:
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone2, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)
@@ -180,7 +180,7 @@ routing:
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone2, "demo-client", "kuma-es-4_externalservice-http-server:80",
 				client.WithVerbose(),
 			)
@@ -213,7 +213,7 @@ routing:
 
 		// then accessing the secured external service succeeds
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone1, "demo-client", "http://kuma-es-4_externalservice-https-server:443",
 				client.WithVerbose(),
 			)
@@ -223,7 +223,7 @@ routing:
 		}, "1m", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				zone2, "demo-client", "http://kuma-es-4_externalservice-https-server:443",
 				client.WithVerbose(),
 			)

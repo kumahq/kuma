@@ -81,7 +81,7 @@ spec:
 
 		// then communication outside the Mesh works, because it goes directly from the client to a service
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				cluster, "demo-client", "external-service.external-services.svc.cluster.local:80",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)

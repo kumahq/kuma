@@ -41,7 +41,7 @@ func MeshTrafficPermissionUniversal() {
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
