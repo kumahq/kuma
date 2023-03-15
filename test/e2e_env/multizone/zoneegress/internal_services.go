@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
@@ -78,14 +79,6 @@ routing:
 	})
 
 	Context("when the client is from kubernetes cluster", func() {
-		var zone1ClientPodName string
-
-		BeforeAll(func() {
-			podName, err := PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
-			Expect(err).ToNot(HaveOccurred())
-			zone1ClientPodName = podName
-		})
-
 		It("should access internal service behind k8s zoneingress through zoneegress", func() {
 			filter := fmt.Sprintf(
 				"cluster.%s_%s_%s_svc_80.upstream_rq_total",
@@ -99,10 +92,11 @@ routing:
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, stderr, err := multizone.KubeZone1.Exec(namespace, zone1ClientPodName, "demo-client",
-					"curl", "--verbose", "--max-time", "3", "--fail", "test-server_ze-internal_svc_80.mesh")
+				_, err := client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client", "test-server_ze-internal_svc_80.mesh",
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -126,10 +120,10 @@ routing:
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := multizone.UniZone1.Exec("", "", "zone3-demo-client",
-					"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
+				_, err := client.CollectEchoResponse(
+					multizone.UniZone1, "zone3-demo-client", "zone4-test-server.mesh",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {

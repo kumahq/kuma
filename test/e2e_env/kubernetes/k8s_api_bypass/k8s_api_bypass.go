@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -30,7 +31,6 @@ spec:
     outbound:
       passthrough: %s
 `
-
 	var clientPodName string
 
 	BeforeAll(func() {
@@ -51,19 +51,31 @@ spec:
 	})
 
 	It("should be able to communicate with API Server", func() {
-		apiServer := "https://kubernetes.default.svc"
 		serviceAccount := "/var/run/secrets/kubernetes.io/serviceaccount"
-		token := fmt.Sprintf("$(cat %s/token)", serviceAccount)
 		caCert := fmt.Sprintf("%s/ca.crt", serviceAccount)
-		header := fmt.Sprintf("Authorization: Bearer %s", token)
-		url := fmt.Sprintf("%s/api", apiServer)
-		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
+
+		// read service account token
+		var token string
+		Eventually(func(g Gomega) {
+			stdout, _, err := kubernetes.Cluster.Exec(
+				namespace, clientPodName, "demo-client",
+				"cat", fmt.Sprintf("%s/token", serviceAccount),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			token = stdout
+		}).Should(Succeed())
 
 		// given Mesh with passthrough enabled then communication with API Server works
 		Eventually(func(g Gomega) {
-			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithCACert(caCert),
+				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Equal("200"))
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
+			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 
 		// when passthrough is disabled on the Mesh
@@ -72,9 +84,15 @@ spec:
 
 		// then communication with API Server still works
 		Eventually(func(g Gomega) {
-			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithCACert(caCert),
+				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Equal("200"))
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
+			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 	})
 }

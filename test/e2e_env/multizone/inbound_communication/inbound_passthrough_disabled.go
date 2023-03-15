@@ -97,7 +97,7 @@ func InboundPassthroughDisabled() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(
+					response, err := client.CollectEchoResponse(
 						multizone.KubeZone2, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -117,7 +117,7 @@ func InboundPassthroughDisabled() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(
+					_, err := client.CollectEchoResponse(
 						multizone.KubeZone2, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -136,7 +136,7 @@ func InboundPassthroughDisabled() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(multizone.UniZone2, "uni-demo-client", url)
+					response, err := client.CollectEchoResponse(multizone.UniZone2, "uni-demo-client", url)
 
 					// then
 					g.Expect(err).ToNot(HaveOccurred())
@@ -153,7 +153,7 @@ func InboundPassthroughDisabled() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(multizone.UniZone2, "uni-demo-client", url)
+					_, err := client.CollectEchoResponse(multizone.UniZone2, "uni-demo-client", url)
 
 					// then
 					Expect(err).To(HaveOccurred())
