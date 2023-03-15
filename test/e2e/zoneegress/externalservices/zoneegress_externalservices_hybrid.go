@@ -9,6 +9,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
@@ -77,7 +78,6 @@ conf:
 
 	var global, zone1 Cluster
 	var zone4 *UniversalCluster
-	var clientPodName string
 
 	BeforeAll(func() {
 		k8sClusters, err := NewK8sClusters(
@@ -114,9 +114,6 @@ conf:
 				testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
 			)).
 			Setup(zone1)).To(Succeed())
-
-		clientPodName, err = PodNameOfApp(zone1, "demo-client", TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
@@ -159,16 +156,21 @@ conf:
 
 		By("reaching external service from k8s")
 		Eventually(func(g Gomega) {
-			_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
+			response, err := client.CollectEchoResponse(
+				zone1, "demo-client", "external-service-1.mesh",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("es-test-server"))
 		}, "30s", "1s").Should(Succeed())
 
 		By("reaching external service from universal")
 		Eventually(func(g Gomega) {
-			_, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
+			response, err := client.CollectEchoResponse(
+				zone4, "zone4-demo-client", "external-service-2.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("es-test-server"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -176,17 +178,22 @@ conf:
 		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
 
 		By("not reaching external service from k8s when zone egress is down")
-		Eventually(func() error {
-			_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
-			return err
-		}, "30s", "1s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				zone1, "demo-client", "external-service-1.mesh",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+		}, "30s", "1s").Should(Succeed())
 
 		By("not reaching external service from universal when zone egress is down")
-		Eventually(func() error {
-			_, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
-			return err
-		}, "30s", "1s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				zone4, "zone4-demo-client", "external-service-2.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

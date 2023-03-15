@@ -152,7 +152,7 @@ spec:
 
 		It("should proxy simple HTTP requests", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://mtls-edge-gateway.gateway-mtls:8080/",
 					client.WithHeader("host", "example.kuma.io"),
@@ -168,7 +168,7 @@ spec:
 			return func() {
 				Specify("when the prefix is the entire path", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -181,7 +181,7 @@ spec:
 
 				Specify("when it's a non-trivial prefix", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle/tail", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -194,7 +194,7 @@ spec:
 
 				Specify("ignoring non-path-separated prefixes", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle_andmore", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -211,7 +211,7 @@ spec:
 			return func() {
 				Specify("when the prefix is the entire path", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -224,7 +224,7 @@ spec:
 
 				Specify("when it's a non-trivial prefix", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/tail", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -237,7 +237,7 @@ spec:
 
 				Specify("ignoring non-path-separated prefixes", func() {
 					Eventually(func(g Gomega) {
-						response, err := client.CollectResponse(
+						response, err := client.CollectEchoResponse(
 							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s_andmore", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),

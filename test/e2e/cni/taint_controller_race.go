@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
@@ -83,27 +84,29 @@ metadata:
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
-			// assert pods demo-client and testserver are available on the node
-			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					cluster, "demo-client", "test-server",
+					client.FromKubernetesPod(TestNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "10s", "1s").Should(Succeed())
 
-			Eventually(func() (string, error) {
-				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
+					client.FromKubernetesPod(TestNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "10s", "1s").Should(Succeed())
 
-			Eventually(func() (string, error) {
-				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
-
-			Eventually(func() (string, error) { // should access a service with . instead of _
-				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) { // should access a service with . instead of _
+				_, err := client.CollectEchoResponse(
+					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
+					client.FromKubernetesPod(TestNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "10s", "1s").Should(Succeed())
 		},
 	)
 }

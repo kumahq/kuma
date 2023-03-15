@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -72,11 +73,13 @@ spec:
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
-	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
+	requestRateLimited := func(container string, svc string, responseCode int) func(g Gomega) {
 		return func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			response, err := client.CollectFailure(
+				universal.Cluster, container, fmt.Sprintf("%s.mesh", svc),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).Should(ContainSubstring(status))
+			g.Expect(response.ResponseCode).Should(Equal(responseCode))
 		}
 	}
 	keepConnectionOpen := func() {
@@ -94,10 +97,10 @@ spec:
 
 	It("should limit all sources", func() {
 		By("demo-client to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("demo-client", "test-server", "429"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("demo-client", "test-server", 429), "10s", "100ms").Should(Succeed())
 
 		By("web to test-server should be rate limited by mesh-rate-limit-all-sources")
-		Eventually(requestRateLimited("web", "test-server", "429"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server", 429), "10s", "100ms").Should(Succeed())
 	})
 
 	It("should limit tcp connections", func() {
@@ -110,7 +113,7 @@ spec:
 		go keepConnectionOpen()
 
 		// should return 503 when number of connections is exceeded
-		Eventually(requestRateLimited("web", "test-server-tcp", "503"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server-tcp", 503), "10s", "100ms").Should(Succeed())
 		// and stats should increase
 		Expect(tcpRateLimitStats(admin)).To(stats.BeGreaterThanZero())
 	})

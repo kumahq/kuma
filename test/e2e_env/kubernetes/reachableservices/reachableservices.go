@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -12,8 +13,6 @@ import (
 func ReachableServices() {
 	meshName := "reachable-svc"
 	namespace := "reachable-svc"
-
-	var clientPodName string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -37,9 +36,6 @@ func ReachableServices() {
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "client-server", namespace)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
@@ -49,33 +45,35 @@ func ReachableServices() {
 
 	It("should be able to connect to reachable services", func() {
 		Eventually(func(g Gomega) {
-			// when
-			_, stderr, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
-				"curl", "-v", "-m", "3", "--fail", "first-test-server_reachable-svc_svc_80.mesh")
-
-			// then
+			_, err := client.CollectFailure(
+				kubernetes.Cluster, "client-server", "first-test-server_reachable-svc_svc_80.mesh",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		}).Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should not connect to non reachable service", func() {
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable services via Kuma DNS
-			_, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
-				"curl", "-v", "second-test-server_reachable-svc_svc_80.mesh")
-
+			response, err := client.CollectFailure(
+				kubernetes.Cluster, "client-server", "second-test-server_reachable-svc_svc_80.mesh",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
 			// then it fails because Kuma DP has no such DNS
-			g.Expect(err).To(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Equal(6))
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			_, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
-				"curl", "-v", "second-test-server")
-
+			response, err := client.CollectFailure(
+				kubernetes.Cluster, "client-server", "second-test-server",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
-			g.Expect(err).To(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
 		}).Should(Succeed())
 	})
 }
