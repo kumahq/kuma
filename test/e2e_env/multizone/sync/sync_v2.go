@@ -32,7 +32,7 @@ func SyncV2() {
 
 		wg := sync.WaitGroup{}
 		wg.Add(2)
-		
+
 		// Zone1 cluster
 		zone1 = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
 		go func() {
@@ -152,7 +152,7 @@ conf:
 				err := zone1.GetKumactlOptions().KumactlApplyFromString(policyUpdate)
 				Expect(err).To(HaveOccurred())
 			})
-			
+
 			It("should deny delete on Universal Zone CP", func() {
 				err := zone1.GetKumactlOptions().RunKumactl("delete", "traffic-route", name, "-m", meshName)
 				Expect(err).To(HaveOccurred())

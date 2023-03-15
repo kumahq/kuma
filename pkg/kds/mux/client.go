@@ -37,6 +37,9 @@ type client struct {
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
+	// stores map[typ]map[resource-name]version in case of reconnect
+	// sends these information in first request so server responds only
+	// with real changes
 	deltaInitState      map[string]map[string]string
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -26,8 +27,7 @@ import (
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	kds_global_server "github.com/kumahq/kuma/pkg/kds/v2/global/server"
-	stream_v2 "github.com/kumahq/kuma/pkg/kds/v2/stream"
-	zone_service "github.com/kumahq/kuma/pkg/kds/v2/zone/service"
+	global_service "github.com/kumahq/kuma/pkg/kds/v2/global/service"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -100,21 +100,21 @@ func Setup(rt runtime.Runtime) error {
 		return nil
 	})
 
-	onGlobalToZoneSyncConnect := zone_service.OnGlobalToZoneSyncConnectFunc(func(session stream_v2.Session) error {
-		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
-		go func() {
-			if err := kdsServerV2.GlobalToZoneSync(session.ServerStream()); err != nil {
-				log.Error(err, "GlobalToZoneSync finished with an error")
-			} else {
-				log.V(1).Info("GlobalToZoneSync finished gracefully")
-			}
-		}()
-		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
-			log.Error(err, "Global CP could not create a zone")
-			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
+	onGlobalToZoneSyncConnect := global_service.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
+		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		if err != nil {
+			errChan <- err
 		}
-
-		return nil
+		log := kdsGlobalLog.WithValues("peer-id", clientId)
+		if err := createZoneIfAbsent(clientId, rt.ResourceManager()); err != nil {
+			log.Error(err, "Global CP could not create a zone")
+			errChan <- err
+		}
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
+			errChan <- err
+		} else {
+			log.V(1).Info("GlobalToZoneSync finished gracefully")
+		}
 	})
 	return rt.Add(mux.NewServer(
 		onSessionStarted,
@@ -122,7 +122,7 @@ func Setup(rt runtime.Runtime) error {
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
-		zone_service.NewKDSSyncServiceServer(
+		global_service.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			rt.Config().Multizone.Global.KDS.MsgSendTimeout.Duration,
 			rt.KDSContextV2().GlobalServerFilters,

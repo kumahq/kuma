@@ -18,7 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/v2/context"
-	"github.com/kumahq/kuma/pkg/kds/v2/reconcile"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -30,7 +30,7 @@ import (
 var _ = Describe("Context", func() {
 	Describe("ZoneResourceMapper", func() {
 		var rm manager.ResourceManager
-		var mapper reconcile.ResourceMapper
+		var mapper reconcile_v2.ResourceMapper
 
 		type testCase struct {
 			resource model.Resource
@@ -219,7 +219,7 @@ var _ = Describe("Context", func() {
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
-		var predicate reconcile.ResourceFilter
+		var predicate reconcile_v2.ResourceFilter
 
 		clusterID := "cluster-id"
 		configs := map[string]bool{

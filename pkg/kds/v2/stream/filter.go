@@ -1,5 +1,7 @@
 package mux
 
+import mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 type Filter interface {
-	InterceptSession(session Session) error
+	InterceptSession(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error
 }

@@ -117,8 +117,8 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 	return nil
 }
 
-// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+// OnDeltaStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID int64, typ string) error {
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
@@ -130,7 +130,7 @@ func (cb *watchdogCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID int
 	return nil
 }
 
-// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+// OnDeltaStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 func (cb *watchdogCallbacks) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
@@ -142,8 +142,8 @@ func (cb *watchdogCallbacks) OnDeltaStreamClosed(streamID int64, node *envoy_cor
 	}
 }
 
-// OnStreamRequest is called once a request is received on a stream.
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+// OnDeltaStreamRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_discovery.DeltaDiscoveryRequest) error {
 	cb.mu.RLock() // read access to the map of all ADS streams
 	watchdog := cb.streams[streamID]

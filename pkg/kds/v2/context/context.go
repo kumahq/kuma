@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	"github.com/kumahq/kuma/pkg/kds/v2/reconcile"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	stream_v2 "github.com/kumahq/kuma/pkg/kds/v2/stream"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -32,14 +32,14 @@ var log = core.Log.WithName("kds")
 
 type Context struct {
 	ZoneClientCtx        context.Context
-	GlobalProvidedFilter reconcile.ResourceFilter
-	ZoneProvidedFilter   reconcile.ResourceFilter
+	GlobalProvidedFilter reconcile_v2.ResourceFilter
+	ZoneProvidedFilter   reconcile_v2.ResourceFilter
 	GlobalServerFilters  []stream_v2.Filter
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 
-	GlobalResourceMapper reconcile.ResourceMapper
-	ZoneResourceMapper   reconcile.ResourceMapper
+	GlobalResourceMapper reconcile_v2.ResourceMapper
+	ZoneResourceMapper   reconcile_v2.ResourceMapper
 }
 
 func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone string) *Context {
@@ -60,7 +60,7 @@ func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone s
 // CompositeResourceMapper combines the given ResourceMappers into
 // a single ResourceMapper which calls each in order. If an error
 // occurs, the first one is returned and no further mappers are executed.
-func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
+func CompositeResourceMapper(mappers ...reconcile_v2.ResourceMapper) reconcile_v2.ResourceMapper {
 	return func(r model.Resource) (model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
@@ -106,7 +106,7 @@ func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error)
 func MapZoneTokenSigningKeyGlobalToPublicKey(
 	_ context.Context,
 	_ manager.ResourceManager,
-) reconcile.ResourceMapper {
+) reconcile_v2.ResourceMapper {
 	return func(r model.Resource) (model.Resource, error) {
 		resType := r.Descriptor().Name
 		currentMeta := r.GetMeta()
@@ -142,7 +142,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
 // excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
-func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile_v2.ResourceFilter {
 	return func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
@@ -185,7 +185,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
 // that belongs to another zones
-func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
+func ZoneProvidedFilter(clusterName string) reconcile_v2.ResourceFilter {
 	return func(_ context.Context, _ string, _ kds.Features, r model.Resource) bool {
 		switch r.Descriptor().Name {
 		case mesh.DataplaneType:

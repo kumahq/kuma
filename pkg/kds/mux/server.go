@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	zone_service "github.com/kumahq/kuma/pkg/kds/v2/zone/service"
+	global_service "github.com/kumahq/kuma/pkg/kds/v2/global/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -61,7 +61,7 @@ type server struct {
 	filters              []Filter
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
-	kdsSyncServiceServer *zone_service.KDSSyncServiceServer
+	kdsSyncServiceServer *global_service.KDSSyncServiceServer
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -73,7 +73,7 @@ func NewServer(
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
-	kdsSyncServiceServer *zone_service.KDSSyncServiceServer,
+	kdsSyncServiceServer *global_service.KDSSyncServiceServer,
 ) component.Component {
 	return &server{
 		callbacks:            callbacks,
