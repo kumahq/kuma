@@ -74,6 +74,7 @@ spec:
 				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 
@@ -90,6 +91,7 @@ spec:
 				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 	})
