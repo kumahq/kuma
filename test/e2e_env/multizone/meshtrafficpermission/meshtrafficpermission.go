@@ -8,6 +8,7 @@ import (
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -34,7 +35,7 @@ func MeshTrafficPermission() {
 		// Kubernetes Zone 1
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(meshName, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -54,7 +55,7 @@ func MeshTrafficPermission() {
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "test-server.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)

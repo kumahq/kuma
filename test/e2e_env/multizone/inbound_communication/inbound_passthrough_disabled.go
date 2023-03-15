@@ -6,6 +6,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -62,7 +63,7 @@ func InboundPassthroughDisabled() {
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(mesh, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
@@ -96,7 +97,7 @@ func InboundPassthroughDisabled() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(
+					response, err := client.CollectEchoResponse(
 						multizone.KubeZone2, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -116,7 +117,7 @@ func InboundPassthroughDisabled() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(
+					_, err := client.CollectEchoResponse(
 						multizone.KubeZone2, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
@@ -135,7 +136,7 @@ func InboundPassthroughDisabled() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(multizone.UniZone2, "uni-demo-client", url)
+					response, err := client.CollectEchoResponse(multizone.UniZone2, "uni-demo-client", url)
 
 					// then
 					g.Expect(err).ToNot(HaveOccurred())
@@ -152,7 +153,7 @@ func InboundPassthroughDisabled() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(multizone.UniZone2, "uni-demo-client", url)
+					_, err := client.CollectEchoResponse(multizone.UniZone2, "uni-demo-client", url)
 
 					// then
 					Expect(err).To(HaveOccurred())

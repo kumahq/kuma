@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -23,7 +24,7 @@ func MeshTimeout() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(mesh, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -47,7 +48,7 @@ func MeshTimeout() {
 		Expect(mts).To(HaveLen(0))
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithHeader("x-set-response-delay-ms", "5000"),

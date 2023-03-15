@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -19,7 +20,7 @@ func VirtualOutbound() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(meshName, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Install(testserver.Install(
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
@@ -62,7 +63,7 @@ spec:
 
 		// Succeed with virtual-outbound
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.foo:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -96,7 +97,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.test-server-0:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -105,7 +106,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", "test-server_virtual-outbounds_svc_80.test-server-1:8080",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)

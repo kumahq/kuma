@@ -50,7 +50,7 @@ func MultizoneUniversal() {
 
 	has := func(resourceURI string) func() bool {
 		return func() bool {
-			stdout, _, err := client.CollectRawResponse(global, AppModeCP, "localhost:5681/"+resourceURI)
+			stdout, _, err := client.CollectResponse(global, AppModeCP, "localhost:5681/"+resourceURI)
 			Expect(err).ToNot(HaveOccurred())
 			return strings.Contains(stdout, `"total": 1`)
 		}

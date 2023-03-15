@@ -1,4 +1,4 @@
-package testserver
+package democlient
 
 import (
 	"github.com/pkg/errors"
@@ -7,30 +7,21 @@ import (
 )
 
 type DeploymentOpts struct {
-	Name               string
-	Namespace          string
-	Mesh               string
-	ReachableServices  []string
-	WithStatefulSet    bool
-	ServiceAccount     string
-	echoArgs           []string
-	healthcheckTCPArgs []string
-	Replicas           int32
-	WaitingToBeReady   bool
-	EnableProbes       bool
-	PodAnnotations     map[string]string
-	NodeSelector       map[string]string
+	Name             string
+	Namespace        string
+	Mesh             string
+	WaitingToBeReady bool
+	PodAnnotations   map[string]string
+	NodeSelector     map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
 	return DeploymentOpts{
 		Mesh:             "default",
-		Name:             "test-server",
+		Name:             "demo-client",
 		Namespace:        framework.TestNamespace,
-		Replicas:         1,
 		WaitingToBeReady: true,
 		PodAnnotations:   map[string]string{},
-		EnableProbes:     true,
 	}
 }
 
@@ -48,33 +39,9 @@ func WithName(name string) DeploymentOptsFn {
 	}
 }
 
-func WithReachableServices(services ...string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.ReachableServices = services
-	}
-}
-
 func WithNamespace(namespace string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Namespace = namespace
-	}
-}
-
-func WithReplicas(n int32) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.Replicas = n
-	}
-}
-
-func WithStatefulSet(apply bool) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.WithStatefulSet = apply
-	}
-}
-
-func WithServiceAccount(serviceAccountName string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.ServiceAccount = serviceAccountName
 	}
 }
 
@@ -84,27 +51,9 @@ func WithoutWaitingToBeReady() DeploymentOptsFn {
 	}
 }
 
-func WithEchoArgs(args ...string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.echoArgs = args
-	}
-}
-
-func WithHealthCheckTCPArgs(args ...string) DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.healthcheckTCPArgs = args
-	}
-}
-
 func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.PodAnnotations = annotations
-	}
-}
-
-func WithoutProbes() DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.EnableProbes = false
 	}
 }
 

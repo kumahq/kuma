@@ -8,6 +8,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
@@ -36,7 +37,7 @@ spec:
 		err := NewClusterSetup().
 			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(meshName, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -66,13 +67,14 @@ spec:
 
 		// given Mesh with passthrough enabled then communication with API Server works
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithCACert(caCert),
 				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 
@@ -82,13 +84,14 @@ spec:
 
 		// then communication with API Server still works
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", "https://kubernetes.default.svc/api",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithCACert(caCert),
 				client.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token)),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+			// we expect k8s resource 'meta/v1, Kind=APIVersions'
 			g.Expect(stdout).To(ContainSubstring(`"kind": "APIVersions"`))
 		}).Should(Succeed())
 	})

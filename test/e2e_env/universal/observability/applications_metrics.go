@@ -150,7 +150,7 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency",
 			)
 
@@ -172,7 +172,7 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server-override-mesh", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency",
 			)
 
@@ -204,7 +204,7 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server-dp-metrics", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency",
 				client.WithVerbose(),
 			)
@@ -234,7 +234,7 @@ metrics:
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server-dp-metrics-localhost", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency",
 				client.WithVerbose(),
 			)

@@ -9,6 +9,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -43,7 +44,7 @@ spec:
 			Install(YamlK8s(meshPassthroughEnabled)).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
-			Install(DemoClientK8s(meshName, clientNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -98,7 +99,7 @@ spec:
 		It("should route to external-service", func() {
 			// given working communication outside the mesh with passthrough enabled and no traffic permission
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client", "external-service.external-services",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
@@ -136,7 +137,7 @@ spec:
 
 			// then you can access external service again
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client", "external-service.external-services",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
@@ -145,7 +146,7 @@ spec:
 
 			// and you can also use .mesh on port of the provided host
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client", "external-service.mesh",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
@@ -202,7 +203,7 @@ spec:
 
 		It("should access tls external service", func() {
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client", "tls-external-service.mesh",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)

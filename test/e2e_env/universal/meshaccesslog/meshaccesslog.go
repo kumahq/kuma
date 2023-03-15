@@ -114,7 +114,7 @@ spec:
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -155,7 +155,7 @@ spec:
 		var src, dst string
 		sinkDeployment := universal.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -286,7 +286,7 @@ spec:
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())

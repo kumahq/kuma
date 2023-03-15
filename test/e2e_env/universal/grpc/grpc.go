@@ -36,7 +36,7 @@ func GRPC() {
 
 	It("should emit stats from the server", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server", "http://localhost:9901/stats?format=prometheus",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -47,7 +47,7 @@ func GRPC() {
 
 	It("should emit stats from the client", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-client", "http://localhost:9901/stats?format=prometheus",
 			)
 			g.Expect(err).ToNot(HaveOccurred())

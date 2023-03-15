@@ -64,14 +64,14 @@ conf:
 
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithMaxTime(8),
 			)
@@ -85,7 +85,7 @@ conf:
 		var errs []error
 		for i := 0; i < 50; i++ {
 			time.Sleep(time.Millisecond * 100)
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithMaxTime(8),
 			)
@@ -100,7 +100,7 @@ conf:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithMaxTime(8),
 			)
@@ -108,7 +108,7 @@ conf:
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 				client.WithMaxTime(8),
 			)

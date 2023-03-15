@@ -501,7 +501,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
 				if err != nil {
 					return err
 				}
@@ -512,7 +512,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")
 				if err != nil {
 					return err
 				}
@@ -564,7 +564,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")
 				if err != nil {
 					return err
 				}
@@ -576,7 +576,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")
 				if err != nil {
 					return err
 				}
@@ -624,7 +624,7 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
 					client.WithHeader("header-to-remove", "abc"),
 					client.WithHeader("x-multiple-values", "abc"),
 				)
@@ -647,7 +647,7 @@ conf:
 
 			// "add" should replace existing headers
 			Eventually(func() error {
-				resp, err := client.CollectResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", client.WithHeader("x-custom-header", "abc"))
+				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", client.WithHeader("x-custom-header", "abc"))
 				if err != nil {
 					return err
 				}

@@ -84,7 +84,7 @@ networking:
 
 		// then should reach external service
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectRawResponse(
+			stdout, _, err := client.CollectResponse(
 				cluster, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)

@@ -58,7 +58,7 @@ destinations:
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -72,7 +72,7 @@ destinations:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(503))
-		}, "30s", "1s").Should(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 	}
 
 	removeDefaultTrafficPermission := func() {

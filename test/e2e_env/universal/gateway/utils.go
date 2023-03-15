@@ -25,7 +25,7 @@ func successfullyProxyRequestToGateway(cluster Cluster, clientName, instance, ga
 			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 		)
 
-		response, err := client.CollectResponse(
+		response, err := client.CollectEchoResponse(
 			cluster, clientName, target,
 			opt...,
 		)
@@ -186,7 +186,7 @@ func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts .
 		target := fmt.Sprintf("http://%s/%s", gateway, path.Join(escaped...))
 
 		opts = append(opts, client.WithHeader("Host", host))
-		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
+		response, err := client.CollectEchoResponse(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(response.Instance).To(Equal(instance))
@@ -205,7 +205,7 @@ func proxySecureRequests(cluster Cluster, instance string, gateway string, opts 
 		opts = append(opts,
 			client.Insecure(),
 			client.WithHeader("Host", "example.kuma.io"))
-		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
+		response, err := client.CollectEchoResponse(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).To(Succeed())
 		g.Expect(response.Instance).To(Equal(instance))

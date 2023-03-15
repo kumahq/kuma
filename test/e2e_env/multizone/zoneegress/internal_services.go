@@ -8,6 +8,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -53,7 +54,7 @@ routing:
 		// Kubernetes Zone 1
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(meshName, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -91,7 +92,7 @@ routing:
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					multizone.KubeZone1, "demo-client", "test-server_ze-internal_svc_80.mesh",
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)
@@ -119,7 +120,7 @@ routing:
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					multizone.UniZone1, "zone3-demo-client", "zone4-test-server.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())

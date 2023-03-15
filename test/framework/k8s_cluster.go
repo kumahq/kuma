@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -996,10 +997,10 @@ func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions 
 	return options
 }
 
-func (c *K8sCluster) GetK8sVersion() (ClusterK8sVersion, error) {
+func (c *K8sCluster) GetK8sVersion() (*semver.Version, error) {
 	v, err := k8s.GetKubernetesClusterVersionWithOptionsE(c.GetTesting(), c.GetKubectlOptions())
 	if err != nil {
-		return ClusterK8sVersion{}, err
+		return nil, err
 	}
 
 	r := regexp.MustCompile(`^v?(?P<Major>\d+)\.(?P<Minor>\d+)\.(?P<Patch>\d+).*$`)
@@ -1010,18 +1011,14 @@ func (c *K8sCluster) GetK8sVersion() (ClusterK8sVersion, error) {
 		if i > 0 && i <= len(match) {
 			u64, err := strconv.ParseUint(match[i], 10, 32)
 			if err != nil {
-				return ClusterK8sVersion{}, errors.Wrapf(err, "parsing version %s failed", name)
+				return nil, errors.Wrapf(err, "parsing version %s failed", name)
 			}
 
 			paramsMap[name] = u64
 		}
 	}
 
-	return ClusterK8sVersion{
-		Major: paramsMap["Major"],
-		Minor: paramsMap["Minor"],
-		Patch: paramsMap["Patch"],
-	}, nil
+	return semver.New(paramsMap["Major"], paramsMap["Minor"], paramsMap["Patch"], "", ""), nil
 }
 
 func (c *K8sCluster) CreateNamespace(namespace string) error {
@@ -1274,4 +1271,13 @@ func (c *K8sCluster) KillAppPod(app, namespace string) error {
 	}
 
 	return c.WaitApp(app, namespace, 1)
+}
+
+// K8sVersionCompare compares the cluster's version with another version
+func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) (int, string) {
+	version, err := c.GetK8sVersion()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }

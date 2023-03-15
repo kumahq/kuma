@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -107,9 +108,9 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(Namespace(gatewayClientOutsideMesh)).
 			Install(echoServerApp(gatewayMesh)).
 			Install(echoServerApp(gatewayOtherMesh)).
-			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespaceOtherMesh)).
-			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
-			Install(DemoClientK8s(gatewayMesh, gatewayClientOutsideMesh)) // this will not be in the mesh
+			Install(democlient.Install(democlient.WithNamespace(gatewayClientNamespaceOtherMesh), democlient.WithMesh(gatewayOtherMesh))).
+			Install(democlient.Install(democlient.WithNamespace(gatewayClientNamespaceSameMesh), democlient.WithMesh(gatewayMesh))).
+			Install(democlient.Install(democlient.WithNamespace(gatewayClientOutsideMesh), democlient.WithMesh(gatewayMesh))) // this will not be in the mesh
 
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 

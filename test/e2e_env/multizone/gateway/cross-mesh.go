@@ -11,6 +11,7 @@ import (
 	k8s_gateway "github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -88,8 +89,8 @@ func CrossMeshGatewayOnMultizone() {
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
 			Install(echoServerApp(gatewayMesh)).
 			Install(echoServerApp(gatewayOtherMesh)).
-			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespaceOtherMesh)).
-			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
+			Install(democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh))).
+			Install(democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh))).
 			Install(YamlK8s(crossMeshGatewayInstanceYaml)).
 			Install(YamlK8s(edgeGatewayInstanceYaml))
 		Expect(gatewayZoneSetup.Setup(multizone.KubeZone1)).To(Succeed())
@@ -97,8 +98,8 @@ func CrossMeshGatewayOnMultizone() {
 		otherZoneSetup := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
-			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespaceOtherMesh)).
-			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh))
+			Install(democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh))).
+			Install(democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh)))
 		Expect(otherZoneSetup.Setup(multizone.KubeZone2)).To(Succeed())
 	})
 

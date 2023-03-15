@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -54,7 +55,7 @@ spec:
 			Install(Kuma(core.Standalone)).
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(Namespace(externalServicesNamespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(externalServicesNamespace),
@@ -80,7 +81,7 @@ spec:
 
 		// then communication outside the Mesh works, because it goes directly from the client to a service
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				cluster, "demo-client", "external-service.external-services.svc.cluster.local:80",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
@@ -97,7 +98,7 @@ spec:
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

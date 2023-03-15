@@ -10,6 +10,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -106,7 +107,7 @@ conf:
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh))).
 			Install(testserver.Install(
 				testserver.WithName("es-test-server"),
 				testserver.WithNamespace("default"),
@@ -155,7 +156,7 @@ conf:
 
 		By("reaching external service from k8s")
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				zone1, "demo-client", "external-service-1.mesh",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
@@ -165,7 +166,7 @@ conf:
 
 		By("reaching external service from universal")
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				zone4, "zone4-demo-client", "external-service-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -183,16 +184,16 @@ conf:
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
 		}, "30s", "1s").Should(Succeed())
 
 		By("not reaching external service from universal when zone egress is down")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				zone1, "zone4-demo-client", "external-service-2.mesh",
+				zone4, "zone4-demo-client", "external-service-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

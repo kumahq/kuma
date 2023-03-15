@@ -22,7 +22,7 @@ func Policy() {
 	curlAddr := func(addr string, fn ...client.CollectResponsesOptsFn) (string, string, error) {
 		fn = append(fn, client.WithVerbose())
 
-		return client.CollectRawResponse(
+		return client.CollectResponse(
 			universal.Cluster, "demo-client", addr, fn...,
 		)
 	}

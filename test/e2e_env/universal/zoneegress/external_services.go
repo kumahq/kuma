@@ -113,7 +113,7 @@ func ExternalServices() {
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := client.CollectRawResponse(
+				stdout, _, err := client.CollectResponse(
 					universal.Cluster, "demo-client", "external-service.mesh",
 					client.WithVerbose(),
 				)

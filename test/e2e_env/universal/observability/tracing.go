@@ -68,7 +68,7 @@ func Tracing() {
 
 		Eventually(func() ([]string, error) {
 			// when client sends requests to server
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			if err != nil {

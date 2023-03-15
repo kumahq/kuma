@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -78,17 +79,13 @@ metadata:
 
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Install(testserver.Install(func(opts *testserver.DeploymentOpts) {
-					opts.NodeSelector = map[string]string{
-						"second": "true",
-					}
-				})).
-				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
+				Install(testserver.Install(testserver.WithNodeSelector(map[string]string{"second": "true"}))).
+				Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithNodeSelector(map[string]string{"second": "true"}))).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -96,7 +93,7 @@ metadata:
 			}, "10s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server_kuma-test_svc_80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
@@ -104,7 +101,7 @@ metadata:
 			}, "10s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) { // should access a service with . instead of _
-				_, err := client.CollectResponse(
+				_, err := client.CollectEchoResponse(
 					cluster, "demo-client", "test-server.kuma-test.svc.80.mesh",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
