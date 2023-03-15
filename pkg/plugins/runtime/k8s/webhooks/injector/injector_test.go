@@ -140,7 +140,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -156,7 +156,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -172,7 +172,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -188,7 +188,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -204,7 +204,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -220,7 +220,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -241,7 +241,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -262,7 +262,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -283,7 +283,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -300,7 +300,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: disabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -317,8 +317,9 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled
+                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -335,8 +336,9 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled
+                annotations:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -353,7 +355,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -370,7 +372,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -387,7 +389,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -404,7 +406,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -421,7 +423,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ports.yaml",
 		}),
@@ -438,7 +440,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ports.yaml",
 		}),
@@ -455,7 +457,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.vp-disabled.config.yaml",
 		}),
@@ -472,7 +474,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.vp-disabled.config.yaml",
 		}),
@@ -489,7 +491,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -505,7 +507,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.env-vars.config.yaml",
 		}),
@@ -521,7 +523,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
 		}),
@@ -537,7 +539,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
 		}),
@@ -553,7 +555,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.high-resources.config.yaml",
 		}),
@@ -569,7 +571,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -585,7 +587,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -601,7 +603,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
@@ -617,7 +619,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
 		}),
@@ -633,7 +635,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.ebpf.config.yaml",
 		}),
@@ -706,12 +708,29 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
 		Entry("2. skip injection for label exception", testCase{
 			num: "2",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("3. skip injection when using annotations", testCase{
+			num: "3",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
@@ -762,7 +781,7 @@ spec:
               kind: Namespace
               metadata:
                 name: default
-                annotations:
+                labels:
                   kuma.io/sidecar-injection: enabled`)
 
 			// and create mesh

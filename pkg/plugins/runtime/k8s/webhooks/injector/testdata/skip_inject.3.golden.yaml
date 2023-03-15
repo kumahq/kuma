@@ -3,7 +3,6 @@ kind: Pod
 metadata:
   creationTimestamp: null
   labels:
-    kuma.io/sidecar-injection: disabled
     run: busybox
   name: busybox
 spec:

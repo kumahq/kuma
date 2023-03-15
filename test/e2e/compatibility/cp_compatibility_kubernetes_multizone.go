@@ -92,7 +92,7 @@ func CpCompatibilityMultizoneKubernetes() {
 					WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
 					WithHelmOpt("ingress.enabled", "true"))...,
 			)).
-			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			SetupWithRetries(zoneCluster, 3)
 		Expect(err).ToNot(HaveOccurred())
 
