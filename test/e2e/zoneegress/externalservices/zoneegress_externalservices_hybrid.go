@@ -190,7 +190,7 @@ conf:
 		By("not reaching external service from universal when zone egress is down")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				zone1, "zone4-demo-client", "external-service-2.mesh",
+				zone4, "zone4-demo-client", "external-service-2.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
