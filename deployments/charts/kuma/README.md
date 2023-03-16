@@ -141,6 +141,10 @@ A Helm chart for the Kuma Control Plane
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| egress.resources.requests.cpu | string | `"50m"` |  |
+| egress.resources.requests.memory | string | `"64Mi"` |  |
+| egress.resources.limits.cpu | string | `"1000m"` |  |
+| egress.resources.limits.memory | string | `"512Mi"` |  |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
