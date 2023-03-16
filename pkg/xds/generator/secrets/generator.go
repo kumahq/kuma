@@ -107,9 +107,13 @@ func (g Generator) Generate(
 	}
 
 	if usedIdentity || len(usedCas) > 0 {
-		otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
-		identity, meshCas, err := ctx.ControlPlane.Secrets.GetForDataPlane(proxy.Dataplane, ctx.Mesh.Resource, otherMeshes)
-
+		var otherMeshes []*core_mesh.MeshResource
+		for _, otherMesh := range ctx.Mesh.Resources.OtherMeshes().Items {
+			if _, ok := usedCas[otherMesh.GetMeta().GetName()]; ok {
+				otherMeshes = append(otherMeshes, otherMesh)
+			}
+		}
+		identity, generatedMeshCAs, err := ctx.ControlPlane.Secrets.GetForDataPlane(proxy.Dataplane, ctx.Mesh.Resource, otherMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}
@@ -118,7 +122,7 @@ func (g Generator) Generate(
 
 		var addedCas []string
 		for mesh := range usedCas {
-			if ca, ok := meshCas[mesh]; ok {
+			if ca, ok := generatedMeshCAs[mesh]; ok {
 				resources.Add(createCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), ca))
 			} else {
 				// We need to add _something_ here so that Envoy syncs the

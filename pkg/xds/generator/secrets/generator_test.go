@@ -111,6 +111,9 @@ var _ = Describe("SecretsGenerator", func() {
 			}
 			rs, err := (&secrets.Generator{}).Generate(given.ctx, given.proxy)
 
+			testSecrets := given.ctx.ControlPlane.Secrets.(*xds.TestSecrets)
+			Expect(testSecrets.GeneratedMeshCAs).To(Equal(given.usedCas))
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -167,6 +170,63 @@ var _ = Describe("SecretsGenerator", func() {
 				"default": {},
 			},
 			expected: "envoy-config-zipkin.golden.yaml",
+		}),
+		Entry("should skip generation of other Mesh CAs without a cross-mesh MeshGateway", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "mesh-1",
+						},
+						Spec: &mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "ca-1",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "ca-1",
+										Type: "builtin",
+									},
+								},
+							},
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							core_mesh.MeshType: &core_mesh.MeshResourceList{
+								Items: []*core_mesh.MeshResource{{
+									Spec: &mesh_proto.Mesh{
+										Mtls: &mesh_proto.Mesh_Mtls{
+											EnabledBackend: "ca-1",
+											Backends: []*mesh_proto.CertificateAuthorityBackend{
+												{
+													Name: "ca-1",
+													Type: "builtin",
+												},
+											},
+										},
+									},
+									Meta: &test_model.ResourceMeta{
+										Name: "mesh-2",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			identity: true,
+			usedCas: map[string]struct{}{
+				"mesh-1": {},
+			},
+			proxy: &core_xds.Proxy{
+				Id:             *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
+				SecretsTracker: envoy_common.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
+				APIVersion:     envoy_common.APIV3,
+			},
+			expected: "envoy-config-dataplane-no-cross-mesh.golden.yaml",
 		}),
 		Entry("should create multiple secrets when multiple meshes present (dataplane)", testCase{
 			ctx: xds_context.Context{
