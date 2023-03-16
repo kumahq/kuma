@@ -12,7 +12,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/kennygrant/sanitize"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 	k8s_strings "k8s.io/utils/strings"
 
