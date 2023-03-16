@@ -499,6 +499,10 @@ apiVersion: apps/v1
 metadata:
   name: kuma-cni-node
   namespace: kube-system
+  annotations:
+    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
+    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
   labels:
     app: kuma-cni
     app.kubernetes.io/name: kuma
@@ -728,8 +732,10 @@ spec:
               path: /ready
               port: 5680
           resources:
+            limits:
+              memory: 256Mi
             requests:
-              cpu: 100m
+              cpu: 500m
               memory: 256Mi
           
           volumeMounts:
@@ -812,6 +818,10 @@ spec:
                   - kuma-egress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-egress
       nodeSelector:
       
@@ -820,6 +830,8 @@ spec:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -864,17 +876,19 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
+          resources: 
             limits:
               cpu: 1000m
               memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -882,6 +896,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -935,6 +951,10 @@ spec:
                   - kuma-ingress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-ingress
       nodeSelector:
       
@@ -944,6 +964,8 @@ spec:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -1000,6 +1022,8 @@ spec:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -1007,6 +1031,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

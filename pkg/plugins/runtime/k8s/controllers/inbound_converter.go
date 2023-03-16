@@ -146,19 +146,20 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 
 func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
 	logger := converterLog.WithValues("pod", pod.Name, "namespace", pod.Namespace)
-	tags := util_k8s.CopyStringMap(pod.Labels)
-	for key, value := range tags {
-		if key == metadata.KumaSidecarInjectionAnnotation || value == "" {
-			delete(tags, key)
-		} else if strings.Contains(key, "kuma.io/") {
-			// we don't want to convert labels like
-			// kuma.io/sidecar-injection, kuma.io/service, k8s.kuma.io/namespace etc.
-			logger.Info("ignoring label when converting labels to tags, because it uses reserved Kuma prefix", "label", key)
-			delete(tags, key)
+	tags := map[string]string{}
+	var ignoredLabels []string
+	for key, value := range pod.Labels {
+		if value == "" {
+			continue
 		}
+		if strings.Contains(key, "kuma.io/") {
+			ignoredLabels = append(ignoredLabels, key)
+			continue
+		}
+		tags[key] = value
 	}
-	if tags == nil {
-		tags = make(map[string]string)
+	if len(ignoredLabels) > 0 {
+		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
 	tags[KubeNamespaceTag] = pod.Namespace
 	tags[KubeServiceTag] = svc.Name

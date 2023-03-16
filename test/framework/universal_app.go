@@ -490,6 +490,10 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, transparen
 	if builtindns {
 		args = append(args,
 			"--redirect-dns",
+		)
+	}
+	if builtindns && Config.OS != "darwin" {
+		args = append(args,
 			"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 		)
 	}

@@ -2,12 +2,12 @@ package matching
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -66,20 +66,20 @@ conf:
      httpStatus: 402
      percentage: 100`, mesh))(universal.Cluster)).To(Succeed())
 
-		Eventually(func() bool {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
-			if err != nil {
-				return false
-			}
-			return strings.Contains(stdout, "HTTP/1.1 401 Unauthorized")
-		}, "60s", "1s").Should(BeTrue())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client-1", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(401))
+		}, "60s", "1s").Should(Succeed())
 
-		Eventually(func() bool {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
-			if err != nil {
-				return false
-			}
-			return strings.Contains(stdout, "HTTP/1.1 402 Payment Required")
-		}, "60s", "1s").Should(BeTrue())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client-2", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(402))
+		}, "60s", "1s").Should(Succeed())
 	})
 }

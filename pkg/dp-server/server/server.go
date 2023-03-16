@@ -80,7 +80,7 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 	server := &http.Server{
-		ReadHeaderTimeout: time.Second,
+		ReadHeaderTimeout: d.config.ReadHeaderTimeout.Duration,
 		Addr:              fmt.Sprintf(":%d", d.config.Port),
 		Handler:           http.HandlerFunc(d.handle),
 		TLSConfig:         tlsConfig,

@@ -6,8 +6,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,6 +18,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/pkg/core"
@@ -61,7 +62,7 @@ var _ = Describe("Bootstrap Server", func() {
 	}`
 
 	ca := x509.NewCertPool()
-	cert, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+	cert, err := os.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
 	if err != nil {
 		panic(err)
 	}
@@ -83,9 +84,10 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
-			Port:        port,
-			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
-			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			Port:              port,
+			TlsCertFile:       filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+			ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
 		}
 		dpServer := server.NewDpServer(dpServerCfg, metrics)
 

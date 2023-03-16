@@ -33,10 +33,8 @@ spec:
       {{- with .Values.egress.topologySpreadConstraints }}
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
-      {{- if .Values.egress.podSecurityContext }}
       securityContext:
-      {{ toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
-      {{- end }}
+      {{- toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-egress
       {{- with .Values.egress.nodeSelector }}
       nodeSelector:
@@ -50,10 +48,8 @@ spec:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
-          {{- if .Values.egress.containerSecurityContext }}
           securityContext:
-          {{ toYaml .Values.egress.containerSecurityContext | trim | nindent 12 }}
-          {{- end }}
+          {{- toYaml .Values.egress.containerSecurityContext | trim | nindent 12 }}
           env:
             - name: POD_NAME
               valueFrom:
@@ -98,17 +94,13 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 1000m
-              memory: 512Mi
+          resources: {{ toYaml .Values.egress.resources | nindent 12 }}
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -116,4 +108,6 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
   {{- end }}

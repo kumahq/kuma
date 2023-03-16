@@ -71,9 +71,6 @@ const (
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
-	// Remove with: https://github.com/kumahq/kuma/issues/4675
-	KumaBuiltinDNSDeprecated     = "kuma.io/builtindns"
-	KumaBuiltinDNSPortDeprecated = "kuma.io/builtindnsport"
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
 	KumaBuiltinDNS     = "kuma.io/builtin-dns"
 	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
@@ -110,11 +107,11 @@ const (
 )
 
 var PodAnnotationDeprecations = []Deprecation{
-	NewReplaceByDeprecation(KumaBuiltinDNSDeprecated, KumaBuiltinDNS),
-	NewReplaceByDeprecation(KumaBuiltinDNSPortDeprecated, KumaBuiltinDNSPort),
+	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
+	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
-		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar",
+		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 	},
 }
 
@@ -123,10 +120,14 @@ type Deprecation struct {
 	Message string
 }
 
-func NewReplaceByDeprecation(old, new string) Deprecation {
+func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
+	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, new)
+	if removed {
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, new)
+	}
 	return Deprecation{
 		Key:     old,
-		Message: fmt.Sprintf("'%s' is being replaced by: '%s'", old, new),
+		Message: msg,
 	}
 }
 

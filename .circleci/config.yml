@@ -3,10 +3,10 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.18.10"
+    - &go_version "1.20.2"
 
   docker_images:
-    - &golang_image "cimg/go:1.18.10"
+    - &golang_image "cimg/go:1.20.2"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2204:2022.10.2"
@@ -384,6 +384,29 @@ jobs:
         - artifacts-linux-<<parameters.arch>>
         - ebpf-<<parameters.arch>>
 
+  distributions:
+    parameters:
+      publish:
+        description: Whether or not to publish packages
+        type: boolean
+        default: false
+    executor: vm-amd64
+    steps:
+      - install_build_tools
+      - checkout
+      - run:
+          name: Build distributions
+          command: make build/distributions
+      - run:
+          name: inspect created tars
+          command: for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+      - when:
+          condition: <<parameters.publish>>
+          steps:
+            - run:
+                name: Publish distributions to Pulp
+                command: make publish/pulp
+
   release:
     executor: vm-amd64
     steps:
@@ -494,3 +517,17 @@ workflows:
             tags:
               only: /.*/
           requires: [ test, test/e2e, test/e2e-legacy ]
+      - distributions:
+          publish: false
+          requires: [ build ]
+      - distributions:
+          publish: true
+          filters: # only on tags and release branches
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              only: /.*/
+          requires: [ test, test/e2e, test/e2e-legacy ]
+

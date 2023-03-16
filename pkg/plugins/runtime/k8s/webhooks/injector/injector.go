@@ -196,19 +196,6 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		return enabled, nil
 	}
 
-	// support annotations for backwards compatibility
-	// https://github.com/kumahq/kuma/issues/4005
-	enabled, exist, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" annotation`)
-		}
-		return enabled, nil
-	}
-
 	enabled, exist, err = metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err
@@ -219,20 +206,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		}
 		return enabled, nil
 	}
-
-	// support annotations for backwards compatibility
-	// https://github.com/kumahq/kuma/issues/4005
-	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" annotation`)
-		}
-		return enabled, nil
-	}
-	return false, nil
+	return false, err
 }
 
 func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
@@ -538,11 +512,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		}
 	}
 
-	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
+	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
 	}
-	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPortDeprecated, metadata.KumaBuiltinDNSPort)
+	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPort)
 	if err != nil {
 		return nil, err
 	}
@@ -551,9 +525,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		portVal := strconv.Itoa(int(port))
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
 		annotations[metadata.KumaBuiltinDNSPort] = portVal
-		// TODO remove deprecation issue
-		annotations[metadata.KumaBuiltinDNSDeprecated] = metadata.AnnotationEnabled
-		annotations[metadata.KumaBuiltinDNSPortDeprecated] = portVal
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {

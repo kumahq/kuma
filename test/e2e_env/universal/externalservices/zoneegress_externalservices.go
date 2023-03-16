@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
@@ -66,12 +67,6 @@ networking:
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	serviceUnreachable := func() error {
-		_, _, err := cluster.Exec("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
-		return err
-	}
-
 	It("should not access external service when zone egress is down", func() {
 		// given universal cluster
 		universalClusters, ok := cluster.(*UniversalCluster)
@@ -89,8 +84,10 @@ networking:
 
 		// then should reach external service
 		Eventually(func(g Gomega) {
-			stdout, _, err := cluster.Exec("", "", "demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
+			stdout, _, err := client.CollectResponse(
+				cluster, "demo-client", "external-service-1.mesh",
+				client.WithVerbose(),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}, "30s", "1s").Should(Succeed())
@@ -107,6 +104,12 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then traffic shouldn't reach external service
-		Eventually(serviceUnreachable, "30s", "1s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				cluster, "demo-client", "external-service-1.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

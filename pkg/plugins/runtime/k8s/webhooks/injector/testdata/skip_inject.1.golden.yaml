@@ -1,10 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  annotations:
-    kuma.io/sidecar-injection: disabled
   creationTimestamp: null
   labels:
+    kuma.io/sidecar-injection: disabled
     run: busybox
   name: busybox
 spec:

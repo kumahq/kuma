@@ -7,8 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -16,19 +19,17 @@ import (
 func MeshTimeout() {
 	namespace := "meshtimeout-namespace"
 	mesh := "meshtimeout"
-	var clientPodName string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(mesh, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "demo-client", namespace)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -47,21 +48,30 @@ func MeshTimeout() {
 		Expect(mts).To(HaveLen(0))
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, sterr, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "curl", "-v", "-H", "x-set-response-delay-ms: 5000", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace))
+			_, err := client.CollectEchoResponse(
+				kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithHeader("x-set-response-delay-ms", "5000"),
+				client.WithMaxTime(10),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(sterr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
-		}).WithTimeout(30 * time.Second).Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 
 		// when
 		Expect(YamlK8s(timeoutConfig)(kubernetes.Cluster)).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
-			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "curl", "-v", "-H", "x-set-response-delay-ms: 5000", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace))
+			response, err := client.CollectFailure(
+				kubernetes.Cluster, "demo-client", fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithHeader("x-set-response-delay-ms", "5000"),
+				client.WithMaxTime(10), // we don't want 'curl' to return early
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
-		}).WithTimeout(30 * time.Second).Should(Succeed())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "30s", "1s").Should(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1

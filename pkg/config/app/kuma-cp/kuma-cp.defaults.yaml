@@ -487,6 +487,16 @@ dpServer:
   tlsMaxVersion: # ENV: KUMA_DP_SERVER_TLS_MAX_VERSION
   # TlsCipherSuites the list of cipher suites
   tlsCipherSuites: [] # ENV: KUMA_DP_SERVER_TLS_CIPHER_SUITES
+  # ReadHeaderTimeout defines the amount of time DP server will be allowed
+  # to read request headers. The connection's read deadline is reset
+  # after reading the headers and the Handler can decide what is considered
+  # too slow for the body. If ReadHeaderTimeout is zero there is no timeout.
+  # The timeout is configurable as in rare cases, when Kuma CP was restarting,
+  # 1s which is explicitly set in other servers was insufficient and DPs
+  # were failing to reconnect (we observed this in Projected Service Account
+  # Tokens e2e tests, which started flaking a lot after introducing explicit
+  # 1s timeout)
+  readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
   # Auth defines an authentication configuration for the DP Server
   # DEPRECATED: use "authn" section.
   auth:

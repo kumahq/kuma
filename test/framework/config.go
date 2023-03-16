@@ -51,6 +51,7 @@ type E2eConfig struct {
 	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
 	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
+	OS                            string            `json:"os,omitempty" envconfig:"OS"`
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 
@@ -143,10 +144,14 @@ func (c E2eConfig) AutoConfigure() error {
 			return fmt.Errorf("you must set a supported KUMA_K8S_TYPE got:%s", Config.K8sType)
 		}
 	}
+
 	if Config.IPV6 && Config.CIDR == "" {
 		Config.CIDR = "fd00:fd00::/64"
 	}
+
 	Config.Arch = runtime.GOARCH
+	Config.OS = runtime.GOOS
+
 	return nil
 }
 
