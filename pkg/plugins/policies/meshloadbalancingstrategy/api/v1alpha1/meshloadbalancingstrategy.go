@@ -151,11 +151,13 @@ type HashPolicy struct {
 
 type Header struct {
 	// The name of the request header that will be used to obtain the hash key.
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 }
 
 type Cookie struct {
 	// The name of the cookie that will be used to obtain the hash key.
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
 	TTL *k8s.Duration `json:"ttl,omitempty"`
@@ -172,6 +174,7 @@ type QueryParameter struct {
 	// The name of the URL query parameter that will be used to obtain the hash key.
 	// If the parameter is not present, no hash will be produced. Query parameter names
 	// are case-sensitive.
+	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 }
 
@@ -179,6 +182,7 @@ type FilterState struct {
 	// The name of the Object in the per-request filterState, which is
 	// an Envoy::Hashable object. If there is no data associated with the key,
 	// or the stored object is not Envoy::Hashable, no hash will be produced.
+	// +kubebuilder:validation:MinLength=1
 	Key string `json:"key"`
 }
 
