@@ -56,6 +56,7 @@
             - `requestTimeout` (optional)
             
                 Timeout on request for to CA for root certificate chain.
+                If not specified, defaults to 10s.
 
 - `tracing` (optional)
 
@@ -250,6 +251,7 @@
     - `requestTimeout` (optional)
     
         Timeout on request for to CA for root certificate chain.
+        If not specified, defaults to 10s.
 ## Networking
 
 - `outbound` (optional)

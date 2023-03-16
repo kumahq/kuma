@@ -146,6 +146,7 @@ message CertificateAuthorityBackend {
   // RootChain defines settings related to CA root certificate chain.
   message RootChain {
     // Timeout on request for to CA for root certificate chain.
+    // If not specified, defaults to 10s.
     google.protobuf.Duration requestTimeout = 1;
   }
 
