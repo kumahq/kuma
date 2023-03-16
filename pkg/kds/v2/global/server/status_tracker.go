@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -31,7 +32,7 @@ type StatusAccessor interface {
 	GetStatus() (string, *system_proto.KDSSubscription)
 }
 
-type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) ZoneInsightSink
+type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) kds_server.ZoneInsightSink
 
 func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 	createStatusSink ZoneInsightSinkFactoryFunc, log logr.Logger,

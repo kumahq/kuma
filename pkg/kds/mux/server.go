@@ -34,7 +34,6 @@ type Filter interface {
 	InterceptSession(session Session) error
 }
 
-// //
 type Callbacks interface {
 	OnSessionStarted(session Session) error
 }
@@ -44,7 +43,6 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
-// //
 type CallbacksV2 interface {
 	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error
 }

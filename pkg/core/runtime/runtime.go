@@ -25,7 +25,6 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	kds_context_v2 "github.com/kumahq/kuma/pkg/kds/v2/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
@@ -70,7 +69,6 @@ type RuntimeContext interface {
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
-	KDSContextV2() *kds_context_v2.Context
 	APIServerAuthenticator() authn.Authenticator
 	ResourceValidators() ResourceValidators
 	Access() Access
@@ -157,7 +155,6 @@ type runtimeContext struct {
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
-	kdsctxv2       *kds_context_v2.Context
 	rv             ResourceValidators
 	au             authn.Authenticator
 	acc            Access
@@ -246,10 +243,6 @@ func (rc *runtimeContext) XDS() xds_runtime.XDSRuntimeContext {
 
 func (rc *runtimeContext) KDSContext() *kds_context.Context {
 	return rc.kdsctx
-}
-
-func (rc *runtimeContext) KDSContextV2() *kds_context_v2.Context {
-	return rc.kdsctxv2
 }
 
 func (rc *runtimeContext) ResourceValidators() ResourceValidators {

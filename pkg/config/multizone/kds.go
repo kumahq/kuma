@@ -84,8 +84,8 @@ type KdsClientConfig struct {
 	MsgSendTimeout config_types.Duration `json:"msgSendTimeout" envconfig:"kuma_multizone_zone_kds_msg_send_timeout"`
 	// Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane.
 	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_zone_kds_nack_backoff"`
-	// UseExperimentalKDSSync defines if using experimental KDS sync functionality
-	UseExperimentalKDSSync bool `json:"useExperimentalKDSSync" envconfig:"kuma_multizone_zone_kds_use_experimental_kds_sync"`
+	// DeltaEnabled defines if using KDS Sync with incremental xDS
+	DeltaEnabled bool `json:"deltaEnabled" envconfig:"kuma_multizone_zone_kds_delta_enabled"`
 }
 
 var _ config.Config = &KdsClientConfig{}

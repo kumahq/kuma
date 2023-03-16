@@ -46,7 +46,6 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	kds_context_v2 "github.com/kumahq/kuma/pkg/kds/v2/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -124,7 +123,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithCAProvider(caProvider)
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
-	builder.WithKDSContextV2(kds_context_v2.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {

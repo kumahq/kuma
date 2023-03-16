@@ -10,7 +10,7 @@ import (
 )
 
 type Callbacks struct {
-	OnResourcesReceived func(clusterID string, rs core_model.ResourceList, removedResources []string) error
+	OnResourcesReceived func(upstream UpstreamResponse) error
 }
 
 type KDSSink interface {
@@ -42,18 +42,18 @@ func (s *kdsSink) Receive() error {
 	}
 
 	for {
-		clusterID, rs, resourcesRemoved, err := s.kdsStream.Receive()
+		received, err := s.kdsStream.Receive()
 		if err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.V(1).Info("DiscoveryResponse received", "response", rs)
+		s.log.V(1).Info("DiscoveryResponse received", "response", received)
 
 		if s.callbacks == nil {
-			s.log.Info("no callback set, sending ACK", "type", string(rs.GetItemType()))
-			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
+			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
+			if err := s.kdsStream.ACK(string(received.Type)); err != nil {
 				if err == io.EOF {
 					return nil
 				}
@@ -61,17 +61,17 @@ func (s *kdsSink) Receive() error {
 			}
 			continue
 		}
-		if err := s.callbacks.OnResourcesReceived(clusterID, rs, resourcesRemoved); err != nil {
+		if err := s.callbacks.OnResourcesReceived(received); err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
-			if err := s.kdsStream.NACK(string(rs.GetItemType()), err); err != nil {
+			if err := s.kdsStream.NACK(string(received.Type), err); err != nil {
 				if err == io.EOF {
 					return nil
 				}
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 		} else {
-			s.log.V(1).Info("sending ACK", "type", string(rs.GetItemType()))
-			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
+			s.log.V(1).Info("sending ACK", "type", received.Type)
+			if err := s.kdsStream.ACK(string(received.Type)); err != nil {
 				if err == io.EOF {
 					return nil
 				}

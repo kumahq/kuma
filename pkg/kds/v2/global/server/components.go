@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -27,20 +29,20 @@ func New(
 	providedTypes []model.ResourceType,
 	serverID string,
 	refresh time.Duration,
-	filter reconcile_v2.ResourceFilter,
-	mapper reconcile_v2.ResourceMapper,
+	filter reconcile.ResourceFilter,
+	mapper reconcile.ResourceMapper,
 	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := cache_kds_v2.SnapshotAutoVersioner{UUID: core.NewUUID}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_global_to_zone")
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "delta_kds")
 	if err != nil {
 		return nil, err
 	}
 	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics(), "kds_global_to_zone")
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +61,8 @@ func New(
 }
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
-	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
-		return NewZoneInsightSink(
+	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
+		return kds_server.NewZoneInsightSink(
 			accessor,
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
@@ -69,14 +71,14 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
 			},
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
-			NewZonesInsightStore(rt.ResourceManager()),
+			kds_server.NewZonesInsightStore(rt.ResourceManager()),
 			l)
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics, dsType string) (envoy_xds.Callbacks, error) {
+func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
 	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       dsType + "kds_generation",
+		Name:       "delta_kds_generation",
 		Help:       "Summary of KDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
 	})
@@ -85,7 +87,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 	}
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
-		Name: dsType + "kds_generation_errors",
+		Name: "delta_kds_generation_errors",
 	})
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err

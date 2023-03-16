@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -33,7 +34,10 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var kdsGlobalLog = core.Log.WithName("kds-global")
+var (
+	kdsGlobalLog      = core.Log.WithName("kds-global")
+	kdsDeltaGlobalLog = core.Log.WithName("kds-delta-global")
+)
 
 func Setup(rt runtime.Runtime) error {
 	var err error
@@ -58,13 +62,13 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	kdsServerV2, err := kds_global_server.New(
-		kdsGlobalLog,
+		kdsDeltaGlobalLog,
 		rt,
 		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
 		"global",
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
-		rt.KDSContextV2().GlobalProvidedFilter,
-		rt.KDSContextV2().GlobalResourceMapper,
+		rt.KDSContext().GlobalProvidedFilter,
+		rt.KDSContext().GlobalResourceMapper,
 		true,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
 	)
@@ -85,7 +89,7 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
-		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(log, session.PeerID(), rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
@@ -105,8 +109,8 @@ func Setup(rt runtime.Runtime) error {
 		if err != nil {
 			errChan <- err
 		}
-		log := kdsGlobalLog.WithValues("peer-id", clientId)
-		if err := createZoneIfAbsent(clientId, rt.ResourceManager()); err != nil {
+		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		if err := createZoneIfAbsent(log, clientId, rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
 			errChan <- err
 		}
@@ -125,18 +129,18 @@ func Setup(rt runtime.Runtime) error {
 		global_service.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			rt.Config().Multizone.Global.KDS.MsgSendTimeout.Duration,
-			rt.KDSContextV2().GlobalServerFilters,
+			rt.KDSContext().GlobalServerFiltersV2,
 		),
 	))
 }
 
-func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
+func createZoneIfAbsent(log logr.Logger, name string, resManager manager.ResourceManager) error {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
-		kdsGlobalLog.Info("creating Zone", "name", name)
+		log.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
 				Enabled: util_proto.Bool(true),

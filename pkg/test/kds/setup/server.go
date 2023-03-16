@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/global/server"
-	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -55,7 +54,7 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
 
-func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile_v2.ResourceFilter, providedMapper reconcile_v2.ResourceMapper) (kds_server_v2.Server, error) {
+func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter, providedMapper reconcile.ResourceMapper) (kds_server_v2.Server, error) {
 	metrics, err := core_metrics.NewMetrics("Global")
 	if err != nil {
 		return nil, err
@@ -65,5 +64,5 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		cfg:     kuma_cp.Config{},
 		metrics: metrics,
 	}
-	return kds_server_v2.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
+	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

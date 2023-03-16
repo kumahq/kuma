@@ -8,11 +8,11 @@ import (
 )
 
 // We are using go-control-plane's server and cache for KDS exchange.
-// We are setting TypeURL for DiscoveryRequest/DiscoveryResponse for our resource name like "TrafficRoute" / "Mesh" etc.
+// We are setting TypeURL for DeltaDiscoveryRequest/DeltaDiscoveryResponse for our resource name like "TrafficRoute" / "Mesh" etc.
 // but the actual resource which we are sending is kuma.mesh.v1alpha1.KumaResource
 //
-// The function which is marshaling DiscoveryResponse
-// func (r *RawResponse) GetDiscoveryResponse() (*discovery.DeltaDiscoveryResponse, error)
+// The function which is marshaling DeltaDiscoveryResponse
+// func (r *RawDeltaResponse) GetDeltaDiscoveryResponse() (*discovery.DeltaDiscoveryResponse, error)
 // Ignores the TypeURL from marshaling operation and overrides it with TypeURL of the request.
 // If we pass wrong TypeURL in envoy_api.DeltaDiscoveryResponse#Resources we won't be able to unmarshall it, therefore we need to adjust the type.
 type typeAdjustCallbacks struct {

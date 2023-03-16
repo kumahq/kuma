@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	kds_context_v2 "github.com/kumahq/kuma/pkg/kds/v2/context"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
 	zone_client "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -66,7 +66,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 
-		kdsCtx := kds_context_v2.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), "global")
+		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), "global")
 		srv, err := setup.StartDeltaServer(globalStore, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
 		Expect(err).ToNot(HaveOccurred())
 		serverStream := grpc.NewMockDeltaServerStream()

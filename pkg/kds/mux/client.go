@@ -40,7 +40,7 @@ type client struct {
 	// stores map[typ]map[resource-name]version in case of reconnect
 	// sends these information in first request so server responds only
 	// with real changes
-	deltaInitState      map[string]map[string]string
+	deltaInitState map[string]map[string]string
 }
 
 func NewClient(
@@ -115,7 +115,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
-	if c.config.UseExperimentalKDSSync {
+	if c.config.DeltaEnabled {
 		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
 	} else {
 		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
@@ -166,7 +166,7 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 
 func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources")
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
 		errorCh <- err
@@ -187,10 +187,10 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			log.Error(err, "Global to Zone Sync failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			errorCh <- err
 			return
 		}
-		log.Error(err, "Envoy Admin rpc stream failed prematurely, will restart in background")
+		log.Error(err, "Global to Zone Sync failed prematurely, will restart in background")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}

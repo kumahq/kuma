@@ -11,13 +11,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-)
-
-type (
-	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
-	ResourceMapper func(r model.Resource) (model.Resource, error)
 )
 
 func NoopResourceMapper(r model.Resource) (model.Resource, error) {
@@ -28,7 +24,7 @@ func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []model.ResourceType, filter ResourceFilter, mapper ResourceMapper) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []model.ResourceType, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
 		resourceTypes:   types,
@@ -40,8 +36,8 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
 	resourceTypes   []model.ResourceType
-	resourceFilter  ResourceFilter
-	resourceMapper  ResourceMapper
+	resourceFilter  reconcile.ResourceFilter
+	resourceMapper  reconcile.ResourceMapper
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (envoy_cache.ResourceSnapshot, error) {

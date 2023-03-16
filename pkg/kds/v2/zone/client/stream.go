@@ -17,10 +17,18 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+type UpstreamResponse struct {
+	ControlPlaneId       string
+	Type                 model.ResourceType
+	AddedResources       model.ResourceList
+	RemovedResourceNames []string
+	IsInitialRequest     bool
+}
+
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
 type KDSStream interface {
 	DiscoveryRequest(resourceType model.ResourceType) error
-	Receive() (string, model.ResourceList, []string, error)
+	Receive() (UpstreamResponse, error)
 	ACK(typ string) error
 	NACK(typ string, err error) error
 }
@@ -87,17 +95,19 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 	return s.streamClient.Send(req)
 }
 
-func (s *stream) Receive() (string, model.ResourceList, []string, error) {
+func (s *stream) Receive() (UpstreamResponse, error) {
 	resp, err := s.streamClient.Recv()
 	if err != nil {
-		return "", nil, nil, err
+		return UpstreamResponse{}, err
 	}
 	rs, resourceAndVersion, err := util.ToDeltaCoreResourceList(resp)
 	if err != nil {
-		return "", nil, nil, err
+		return UpstreamResponse{}, err
 	}
 	s.latestReceived[string(rs.GetItemType())] = resp
 
+	// when map is empty that means we are doing the first request
+	isInitialRequest := len(s.initStateMap) == 0
 	typ := string(rs.GetItemType())
 	var versions map[string]string
 	if value, found := s.initStateMap[typ]; found {
@@ -109,7 +119,13 @@ func (s *stream) Receive() (string, model.ResourceList, []string, error) {
 		versions[item.ResourceName] = item.Version
 	}
 	s.initStateMap[typ] = versions
-	return resp.GetControlPlane().GetIdentifier(), rs, resp.RemovedResources, nil
+	return UpstreamResponse{
+		ControlPlaneId:       resp.GetControlPlane().GetIdentifier(),
+		Type:                 rs.GetItemType(),
+		AddedResources:       rs,
+		RemovedResourceNames: resp.RemovedResources,
+		IsInitialRequest:     isInitialRequest,
+	}, nil
 }
 
 func (s *stream) ACK(typ string) error {

@@ -25,14 +25,14 @@ import (
 // ResourceSyncer allows to synchronize resources in Store
 type ResourceSyncer interface {
 	// Sync method takes 'upstream' as a basis and synchronize underlying store.
-	// It deletes all resources that absent in 'upstream', creates new resources that
+	// It deletes resources that were removed in the upstream, creates new resources that
 	// are not represented in store yet and updates the rest.
 	// Using 'PrefilterBy' option Sync allows to select scope of resources that will be
 	// affected by Sync
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
-	Sync(upstream core_model.ResourceList, removedResources []string, fs ...SyncOptionFunc) error
+	Sync(upstream zone_client.UpstreamResponse, fs ...SyncOptionFunc) error
 }
 
 type SyncOption struct {
@@ -74,11 +74,12 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 	}
 }
 
-func (s *syncResourceStore) Sync(upstream core_model.ResourceList, removedResources []string, fs ...SyncOptionFunc) error {
+func (s *syncResourceStore) Sync(upstreamResponse zone_client.UpstreamResponse, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(context.TODO(), user.ControlPlane)
-	log := s.log.WithValues("type", upstream.GetItemType())
-	downstream, err := registry.Global().NewList(upstream.GetItemType())
+	log := s.log.WithValues("type", upstreamResponse.Type)
+	upstream := upstreamResponse.AddedResources
+	downstream, err := registry.Global().NewList(upstreamResponse.Type)
 	if err != nil {
 		return err
 	}
@@ -104,18 +105,30 @@ func (s *syncResourceStore) Sync(upstream core_model.ResourceList, removedResour
 	indexedDownstream := newIndexed(downstream)
 	indexedUpstream := newIndexed(upstream)
 
-	removed := getRemovedResourceKeys(removedResources)
-
-	// 1. delete resources which were removed from the upstream
 	onDelete := []core_model.Resource{}
-	for _, rk := range removed {
-		// check if we are adding and removing the resource at the same time
-		if r := indexedUpstream.get(rk); r != nil {
-			// it isn't remove but update
-			continue
+	// 1. delete resources which were removed from the upstream
+	// on the first request when the control-plane starts we want to sync
+	// whole the resources in the store. In this case we do not check removed
+	// resources because we want to make stores synced. When we already
+	// have resources in the map, we are going to receive only updates
+	// so we don't want to remove resources haven't changed.
+	if upstreamResponse.IsInitialRequest {
+		for _, r := range downstream.GetItems() {
+			if indexedUpstream.get(core_model.MetaToResourceKey(r.GetMeta())) == nil {
+				onDelete = append(onDelete, r)
+			}
 		}
-		if r := indexedDownstream.get(rk); r != nil {
-			onDelete = append(onDelete, r)
+	} else {
+		removed := getRemovedResourceKeys(upstreamResponse.RemovedResourceNames)
+		for _, rk := range removed {
+			// check if we are adding and removing the resource at the same time
+			if r := indexedUpstream.get(rk); r != nil {
+				// it isn't remove but update
+				continue
+			}
+			if r := indexedDownstream.get(rk); r != nil {
+				onDelete = append(onDelete, r)
+			}
 		}
 	}
 
@@ -224,31 +237,31 @@ func Callbacks(
 	systemNamespace string,
 ) *zone_client.Callbacks {
 	return &zone_client.Callbacks{
-		OnResourcesReceived: func(clusterID string, rs core_model.ResourceList, resourcesRemoved []string) error {
-			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType && rs.GetItemType() != system.GlobalSecretType {
+		OnResourcesReceived: func(upstream zone_client.UpstreamResponse) error {
+			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 				// System resources are not in the kubeFactory therefore we need explicit ifs for them
-				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
+				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.NewItem())
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
-					util.AddSuffixToNames(rs.GetItems(), systemNamespace)
+					util.AddSuffixToNames(upstream.AddedResources.GetItems(), systemNamespace)
 				}
 			}
-			if rs.GetItemType() == mesh.ZoneIngressType {
-				return syncer.Sync(rs, resourcesRemoved, PrefilterBy(func(r core_model.Resource) bool {
+			if upstream.Type == mesh.ZoneIngressType {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
 				}))
 			}
-			if rs.GetItemType() == system.ConfigType {
-				return syncer.Sync(rs, resourcesRemoved, PrefilterBy(func(r core_model.Resource) bool {
+			if upstream.Type == system.ConfigType {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return configToSync[r.GetMeta().GetName()]
 				}))
 			}
-			if rs.GetItemType() == system.GlobalSecretType {
-				return syncer.Sync(rs, resourcesRemoved, PrefilterBy(func(r core_model.Resource) bool {
+			if upstream.Type == system.GlobalSecretType {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
 						zoneingress.ZoneIngressSigningKeyPrefix,
@@ -256,7 +269,7 @@ func Callbacks(
 					)
 				}))
 			}
-			return syncer.Sync(rs, resourcesRemoved)
+			return syncer.Sync(upstream)
 		},
 	}
 }

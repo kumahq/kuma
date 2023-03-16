@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
-var log = core.Log.WithName("kds").WithName("reconcile")
+var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
 func NewReconciler(
 	hasher envoy_cache.NodeHash,

@@ -39,7 +39,7 @@ func New(
 		return nil, err
 	}
 	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics(), "kds")
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +73,9 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics, dsType string) (envoy_xds.Callbacks, error) {
+func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
 	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       dsType + "kds_generation",
+		Name:       "kds_generation",
 		Help:       "Summary of KDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
 	})
@@ -84,7 +84,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
-		Name: dsType + "kds_generation_errors",
+		Name: "kds_generation_errors",
 	})
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err
