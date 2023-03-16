@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -27,6 +28,8 @@ func RunE2ESpecs(t *testing.T, description string) {
 	gomega.SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
 	gomega.SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
 	gomega.SetDefaultEventuallyTimeout(time.Second * 30)
+	// Set MaxLength to larger value than default 4000, so we can print objects full like Pod on test failure
+	format.MaxLength = 100000
 	runSpecs(t, description)
 }
 
