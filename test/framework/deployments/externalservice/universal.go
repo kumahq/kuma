@@ -140,7 +140,7 @@ func (u *UniversalDeployment) Deploy(cluster framework.Cluster) error {
 
 	u.cert = cert
 	for _, arg := range u.commands {
-		u.app = ssh.NewApp(u.name, universal_logs.LogsPath(framework.Config.UniversalE2ELogsPath), u.verbose, port, nil, arg)
+		u.app = ssh.NewApp(u.name, universal_logs.CreateLogsPath(framework.Config.UniversalE2ELogsPath), u.verbose, port, nil, arg)
 		err = u.app.Start()
 		if err != nil {
 			return err

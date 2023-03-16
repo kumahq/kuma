@@ -1,6 +1,7 @@
 package universal_logs
 
 import (
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
-	"k8s.io/utils/strings"
+	k8s_strings "k8s.io/utils/strings"
 )
 
 var (
@@ -17,15 +18,34 @@ var (
 	mutex      sync.RWMutex
 )
 
-func UniversalLogPath(basePath string) string {
-	return path.Join(basePath, timePrefix)
-}
-
-func LogsPath(basePath string) string {
+// CreateLogsPath constructs a path for logs based on the Ginkgo node hierarchy.
+// If the CreateLogsPath function is called before the suite starts (like SyncBeforeSuite),
+// then the result is "/{basePath}/{timePrefix}".
+// If the function is called inside the suite, then the result is
+// a concatenation of the basePath, timePrefix, and the Ginkgo node hierarchy.
+//
+// For example, if the spec has the following hierarchy:
+//
+//	Describe("spec 1", func() {
+//	    Context("ctx 1", func() {
+//	        BeforeAll(func() {
+//	            lp := CreateLogsPath("/tmp") // lp == "/tmp/060102_150405/spec-1/ctx-1"
+//	        })
+//	        Context("ctx 2", func() {
+//	            It("it 1", func() {
+//	                lp := CreateLogsPath("/tmp") // lp == "/tmp/060102_150405/spec-1/ctx-1/ctx-2/it-1"
+//	            })
+//	        })
+//	    })
+//	})
+//
+// Additionally the function adds logs path to the Ginkgo report. Cleanup function is using this information
+// to remove logs for successfully passed tests.
+func CreateLogsPath(basePath string) string {
 	sr := ginkgo.CurrentSpecReport()
 
 	if len(sr.SpecEvents) == 0 {
-		p := UniversalLogPath(basePath)
+		p := withTimePrefix(basePath)
 		addPath(p)
 		return p
 	}
@@ -36,9 +56,12 @@ func LogsPath(basePath string) string {
 
 	switch lastEvent.NodeType {
 	case types.NodeTypeBeforeAll:
+		// BeforeAll is a special case from the SpecReport perspective it's similar to BeforeEach
+		// but executed only once before the first It(). That's why we want to take into account
+		// only nodes that surround the BeforeAll node.
 		idx, ok := find(sr.ContainerHierarchyTexts, lastEvent.Message)
 		if !ok {
-			panic("")
+			panic("ContainerHierarchyTexts doesn't contain BeforeAll node")
 		}
 		logsPath = append(sr.ContainerHierarchyTexts[:idx], lastEvent.Message)
 	default:
@@ -47,12 +70,32 @@ func LogsPath(basePath string) string {
 
 	sanitizedPath := []string{}
 	for _, p := range logsPath {
-		sanitizedPath = append(sanitizedPath, strings.ShortenString(sanitize.Name(p), 243))
+		sanitizedPath = append(sanitizedPath, k8s_strings.ShortenString(sanitize.Name(p), 243))
 	}
 
 	p := path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
 	addPath(p)
 	return p
+}
+
+func Cleanup(basePath string, report ginkgo.Report) {
+	suiteFailed := false
+
+	for _, sr := range report.SpecReports {
+		if sr.Failed() {
+			suiteFailed = true
+		}
+
+		if !sr.Failed() && len(sr.ContainerHierarchyTexts) != 0 {
+			for _, re := range sr.ReportEntries {
+				_ = os.RemoveAll(re.Name)
+			}
+		}
+	}
+
+	if !suiteFailed {
+		_ = os.RemoveAll(withTimePrefix(basePath))
+	}
 }
 
 func find(slice []string, s string) (int, bool) {
@@ -71,4 +114,8 @@ func addPath(path string) {
 		ginkgo.AddReportEntry(path)
 	}
 	mutex.Unlock()
+}
+
+func withTimePrefix(basePath string) string {
+	return path.Join(basePath, timePrefix)
 }

@@ -1,7 +1,6 @@
 package auth_test
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -51,23 +50,7 @@ func TestE2E(t *testing.T) {
 var (
 	_ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
-		suiteFailed := false
-
-		for _, sr := range report.SpecReports {
-			if sr.Failed() {
-				suiteFailed = true
-			}
-
-			if !sr.Failed() && len(sr.ContainerHierarchyTexts) != 0 {
-				for _, re := range sr.ReportEntries {
-					_ = os.RemoveAll(re.Name)
-				}
-			}
-		}
-
-		if !suiteFailed {
-			_ = os.RemoveAll(universal_logs.UniversalLogPath(framework.Config.UniversalE2ELogsPath))
-		}
+		universal_logs.Cleanup(framework.Config.UniversalE2ELogsPath, report)
 	})
 )
 

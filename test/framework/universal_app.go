@@ -202,7 +202,7 @@ type UniversalApp struct {
 func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
-		logsPath:      universal_logs.LogsPath(Config.UniversalE2ELogsPath),
+		logsPath:      universal_logs.CreateLogsPath(Config.UniversalE2ELogsPath),
 		ports:         map[string]string{},
 		verbose:       verbose,
 		mesh:          mesh,

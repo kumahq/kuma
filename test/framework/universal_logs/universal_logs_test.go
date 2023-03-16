@@ -14,19 +14,19 @@ func withTimePrefix(base, suffix string) types.GomegaMatcher {
 	return MatchRegexp(path.Join(base, "[0-9]{6}_[0-9]{6}", suffix))
 }
 
-var _ = PDescribe("before-all and it", Ordered, func() {
+var _ = Describe("before-all and it", Ordered, func() {
 
 	BeforeAll(func() {
-		Expect(universal_logs.LogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-and-it"))
+		Expect(universal_logs.CreateLogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-and-it"))
 	})
 
 	It("it 1", func() {})
 })
 
-var _ = PDescribe("before-all and context", Ordered, func() {
+var _ = Describe("before-all and context", Ordered, func() {
 
 	BeforeAll(func() {
-		Expect(universal_logs.LogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-and-context"))
+		Expect(universal_logs.CreateLogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-and-context"))
 	})
 
 	Context("ctx 1", func() {
@@ -34,11 +34,11 @@ var _ = PDescribe("before-all and context", Ordered, func() {
 	})
 })
 
-var _ = PDescribe("before-all inside the context", Ordered, func() {
+var _ = Describe("before-all inside the context", Ordered, func() {
 
 	Context("ctx 1", func() {
 		BeforeAll(func() {
-			Expect(universal_logs.LogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-inside-the-context/ctx-1"))
+			Expect(universal_logs.CreateLogsPath("/tmp")).To(withTimePrefix("/tmp", "/before-all-inside-the-context/ctx-1"))
 		})
 
 		Context("ctx 2", func() {
@@ -47,10 +47,10 @@ var _ = PDescribe("before-all inside the context", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("before-all and describe-table", Ordered, func() {
+var _ = Describe("before-all and describe-table", Ordered, func() {
 
 	BeforeAll(func() {
-		Expect(universal_logs.LogsPath("/tmp")).To(
+		Expect(universal_logs.CreateLogsPath("/tmp")).To(
 			withTimePrefix("/tmp", "/before-all-and-describe-table"),
 		)
 	})
@@ -68,13 +68,13 @@ var _ = FDescribe("before-all and describe-table", Ordered, func() {
 	)
 
 	AfterEach(func() {
-		Expect(universal_logs.LogsPath("/tmp")).To(
+		Expect(universal_logs.CreateLogsPath("/tmp")).To(
 			withTimePrefix("/tmp", "/before-all-and-describe-table/table-[0-9]{1}/entry-[0-9]{1}"),
 		)
 	})
 
 	AfterAll(func() {
-		Expect(universal_logs.LogsPath("/tmp")).To(
+		Expect(universal_logs.CreateLogsPath("/tmp")).To(
 			withTimePrefix("/tmp", "/before-all-and-describe-table"),
 		)
 	})

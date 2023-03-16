@@ -12,9 +12,9 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/kennygrant/sanitize"
-	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo"
 	"github.com/pkg/errors"
-	strings2 "k8s.io/utils/strings"
+	k8s_strings "k8s.io/utils/strings"
 
 	"github.com/kumahq/kuma/test/framework/utils"
 )
@@ -59,7 +59,7 @@ func NewApp(appName string, logsPath string, verbose bool, port string, envMap m
 
 	if logsPath != "" {
 		file, err := createLogsFile(logsPath,
-			strings2.ShortenString(appName+"_"+sanitize.BaseName(strings.Join(args, "_")), 243),
+			k8s_strings.ShortenString(appName+"_"+sanitize.BaseName(strings.Join(args, "_")), 243),
 		)
 		if err != nil {
 			panic(errors.Wrap(err, "failed to create log file"))
@@ -89,6 +89,9 @@ func createLogsFile(dir, fileName string) (*os.File, error) {
 }
 
 func (s *App) done() {
+	if s.logFile == nil {
+		return
+	}
 	if err := s.logFile.Close(); err != nil {
 		Logf("Failed to close log file: %v", err)
 	}
