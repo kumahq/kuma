@@ -13,6 +13,7 @@ E2E_ENV_VARS ?=
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
 E2E_DEPS_TARGETS+= docker/load
+E2E_ENV_VARS += CLEANUP_LOGS_ON_SUCCESS=true
 else
 E2E_DEPS_TARGETS+= build/kumactl images
 endif
@@ -140,7 +141,7 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
-test/e2e-universal: build/kumactl images/test k3d/network/create
+test/e2e-universal: #build/kumactl images/test k3d/network/create
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(UNIVERSAL_E2E_PKG_LIST)
 
 .PHONY: test/e2e-multizone

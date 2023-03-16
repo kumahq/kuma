@@ -73,12 +73,14 @@ func CreateLogsPath(basePath string) string {
 		sanitizedPath = append(sanitizedPath, k8s_strings.ShortenString(sanitize.Name(p), 243))
 	}
 
-	p := path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
-	addPath(p)
-	return p
+	// add only a root level ginkgo.Describe() directory for a cleanup,
+	// i.e "/tmp/060102_150405/mesh-traffic-permissions"
+	addPath(path.Join(append([]string{basePath, timePrefix}, sanitizedPath[:1]...)...))
+
+	return path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
 }
 
-func Cleanup(basePath string, report ginkgo.Report) {
+func CleanupIfSuccess(basePath string, report ginkgo.Report) {
 	suiteFailed := false
 
 	for _, sr := range report.SpecReports {

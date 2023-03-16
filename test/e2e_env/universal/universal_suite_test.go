@@ -38,7 +38,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/transparentproxy"
 	"github.com/kumahq/kuma/test/e2e_env/universal/virtualoutbound"
 	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
-	"github.com/kumahq/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
@@ -50,7 +50,9 @@ func TestE2E(t *testing.T) {
 var (
 	_ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
-		universal_logs.Cleanup(framework.Config.UniversalE2ELogsPath, report)
+		if Config.CleanupLogsOnSuccess {
+			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
+		}
 	})
 )
 
