@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestCommonAPI(t *testing.T) {
+func TestJsonPatchValidators(t *testing.T) {
 	test.RunSpecs(t, "JsonPatch Validators Suite")
 }
