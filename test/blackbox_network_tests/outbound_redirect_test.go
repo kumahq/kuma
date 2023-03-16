@@ -2,7 +2,7 @@ package blackbox_network_tests_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"strconv"
 
@@ -48,7 +48,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 						Port:    serverPort,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -127,7 +127,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -218,7 +218,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -334,7 +334,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -441,7 +441,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -541,7 +541,7 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -638,7 +638,7 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -733,7 +733,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -810,7 +810,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -905,7 +905,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -1013,7 +1013,7 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 						Networks: []string{"s-peer+:192.168.0.1/32"},
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -1104,7 +1104,7 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(

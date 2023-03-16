@@ -462,8 +462,10 @@ spec:
               path: /ready
               port: 5680
           resources:
+            limits:
+              memory: 256Mi
             requests:
-              cpu: 100m
+              cpu: 500m
               memory: 256Mi
           
           volumeMounts:

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -57,19 +58,21 @@ destinations:
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "test-server.mesh")
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 	}
 
 	trafficBlocked := func() {
-		Eventually(func() error {
-			_, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "test-server.mesh")
-			return err
-		}, "30s", "1s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "30s", "1s").Should(Succeed())
 	}
 
 	removeDefaultTrafficPermission := func() {

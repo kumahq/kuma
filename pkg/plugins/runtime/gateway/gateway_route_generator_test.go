@@ -1888,8 +1888,9 @@ conf:
 		DescribeTable("generating xDS resources",
 			func(goldenFileName string, fixtureResources ...string) {
 				// given
-				rand.Seed(GinkgoRandomSeed())
-				rand.Shuffle(len(fixtureResources), func(i, j int) {
+				// #nosec G404 -- used just for tests
+				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
+				r.Shuffle(len(fixtureResources), func(i, j int) {
 					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
 				})
 				for _, resource := range fixtureResources {

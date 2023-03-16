@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
@@ -90,7 +91,7 @@ stringData:
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(testserver.Install()).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -125,7 +126,7 @@ stringData:
 
 	It("communication in between apps in zone works", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

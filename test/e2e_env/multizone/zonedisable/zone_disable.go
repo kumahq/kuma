@@ -9,7 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 func ZoneDisable() {
@@ -84,7 +84,7 @@ func ZoneDisable() {
 		// given zone 'kuma-disable3' enabled
 		// then we should receive responses from both test-server instances
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -111,7 +111,7 @@ enabled: false
 
 		// and then responses only from the local service instance
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			return client.CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),

@@ -3,13 +3,13 @@ package zoneegress
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
@@ -113,8 +113,10 @@ func ExternalServices() {
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-					"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
+				stdout, _, err := client.CollectResponse(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithVerbose(),
+				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
@@ -150,14 +152,14 @@ conf:
      httpStatus: 401
      percentage: 100`)(universal.Cluster)).To(Succeed())
 
-			Eventually(func() bool {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-					"curl", "-v", "-m", "8", "external-service.mesh")
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "401 Unauthorized")
-			}, "30s", "1s").Should(BeTrue())
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithMaxTime(8),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(401))
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 
@@ -187,9 +189,11 @@ conf:
 			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("429"))
+				g.Expect(response.ResponseCode).To(Equal(429))
 			}).Should(Succeed())
 		})
 	})

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -92,53 +93,59 @@ spec:
 	})
 
 	type testCase struct {
-		client           string
-		address          string
-		expectedResponse string
+		client               string
+		address              string
+		expectedResponseCode int
 	}
 
 	DescribeTable("should be affected by fault and return",
 		func(given testCase) {
 			Eventually(func(g Gomega) {
-				stdout, _, err := universal.Cluster.Exec("", "", given.client, "curl", "-v", given.address)
+				response, err := client.CollectFailure(
+					universal.Cluster, given.client, given.address,
+				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring(given.expectedResponse))
+				g.Expect(response.ResponseCode).To(Equal(given.expectedResponseCode))
 			}, "30s", "1s").Should(Succeed())
 		},
 		Entry("402 when requests from the demo-client-blocked", testCase{
-			client:           "demo-client-blocked",
-			address:          "test-server.mesh",
-			expectedResponse: "HTTP/1.1 402 Payment Required",
+			client:               "demo-client-blocked",
+			address:              "test-server.mesh",
+			expectedResponseCode: 402,
 		}),
 		Entry("421 when requests from any client are blocked", testCase{
-			client:           "demo-client",
-			address:          "test-service-block-all-sources.mesh",
-			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+			client:               "demo-client",
+			address:              "test-service-block-all-sources.mesh",
+			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
-			client:           "demo-client-timeout",
-			address:          "test-service-block-all-sources.mesh",
-			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+			client:               "demo-client-timeout",
+			address:              "test-service-block-all-sources.mesh",
+			expectedResponseCode: 421,
 		}),
 		Entry("421 when requests from the demo-client-blocked", testCase{
-			client:           "demo-client-blocked",
-			address:          "test-service-block-all-sources.mesh",
-			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+			client:               "demo-client-blocked",
+			address:              "test-service-block-all-sources.mesh",
+			expectedResponseCode: 421,
 		}),
 	)
 
 	It("should not be affected by any fault", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "test-server.mesh")
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should delay responses for demo-client-timeout", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-server.mesh")
-			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client-timeout", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
