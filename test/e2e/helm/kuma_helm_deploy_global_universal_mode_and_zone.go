@@ -126,7 +126,7 @@ stringData:
 
 	It("communication in between apps in zone works", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+			_, err := client.CollectEchoResponse(zoneCluster, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

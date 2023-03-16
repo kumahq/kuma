@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -69,31 +70,28 @@ conf:
 
 		// Check we can reach the first instance
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.1:8080")
+			response, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.1:8080",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(ContainSubstring(`"instance":"srv-1"`))
+			g.Expect(response.Instance).To(Equal("srv-1"))
 		}).Should(Succeed())
 
 		// Check we can reach the second instance
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.2:8080")
+			response, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.2:8080",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(ContainSubstring(`"instance":"srv-2"`))
+			g.Expect(response.Instance).To(Equal("srv-2"))
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server:8080")
+			response, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server:8080",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(Or(ContainSubstring(`"instance":"srv-2"`), ContainSubstring(`"instance":"srv-1"`)))
+			g.Expect(response.Instance).To(Or(Equal("srv-2"), Equal("srv-1")))
 		}).Should(Succeed())
 	})
 }

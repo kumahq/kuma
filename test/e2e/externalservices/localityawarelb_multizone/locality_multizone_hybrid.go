@@ -9,6 +9,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 func meshMTLSOn(mesh string, zoneEgress string) string {
@@ -135,46 +136,43 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Expect(k8sCluster.StartZoneEgress()).To(Succeed())
 		Expect(k8sCluster.StartZoneIngress()).To(Succeed())
 	})
+
 	It("should fail request when ingress is down", func() {
 		// when
-		Eventually(func() string {
-			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-			if err != nil {
-				return ""
-			}
-			return stdout
-		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 
 		// when ingress is down
 		Expect(zone1.(*K8sCluster).StopZoneIngress()).To(Succeed())
 
 		// then service is unreachable
-		Eventually(func() error {
-			_, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-			return err
-		}, "30s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "30s").ShouldNot(HaveOccurred())
 	})
 
 	It("should fail request when egress is down", func() {
-		Eventually(func() string {
-			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-			if err != nil {
-				return ""
-			}
-			return stdout
-		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 
 		// when egress is down
 		Expect(zone1.(*K8sCluster).StopZoneEgress()).To(Succeed())
 
 		// then service is unreachable
-		Eventually(func() error {
-			_, _, err := zone4.Exec("", "", "zone4-demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-			return err
-		}, "30s").Should(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				zone4, "zone4-demo-client", "external-service-in-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "30s").ShouldNot(HaveOccurred())
 	})
 }

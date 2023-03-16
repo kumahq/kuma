@@ -57,6 +57,7 @@ func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_co
 }
 
 type shuffleStore struct {
+	r *rand.Rand
 	core_store.ResourceStore
 }
 
@@ -69,7 +70,7 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 		return err
 	}
 	resources := newList.GetItems()
-	rand.Shuffle(len(resources), func(i, j int) {
+	s.r.Shuffle(len(resources), func(i, j int) {
 		resources[i], resources[j] = resources[j], resources[i]
 	})
 	for i := range resources {
@@ -85,11 +86,13 @@ var _ = Describe("GenerateSnapshot", func() {
 	var gen *v3.TemplateSnapshotGenerator
 	var proxyBuilder *sync.DataplaneProxyBuilder
 	var mCtxBuilder xds_context.MeshContextBuilder
-
-	rand.Seed(GinkgoRandomSeed())
+	// #nosec G404 -- used just for tests
+	r := rand.New(rand.NewSource(GinkgoRandomSeed()))
 
 	BeforeEach(func() {
-		store = &shuffleStore{memory.NewStore()}
+		store = &shuffleStore{
+			ResourceStore: memory.NewStore(), r: r,
+		}
 		store = core_store.NewPaginationStore(store)
 
 		rm := manager.NewResourceManager(store)

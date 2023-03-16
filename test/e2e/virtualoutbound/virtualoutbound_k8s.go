@@ -6,7 +6,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
@@ -57,8 +57,8 @@ spec:
 
 		// Succeed with virtual-outbound
 		Eventually(func(g Gomega) {
-			res, err := CollectResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.foo:8080",
-				FromKubernetesPod(TestNamespace, "demo-client"),
+			res, err := client.CollectEchoResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.foo:8080",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res.Instance).To(Or(Equal("test-server-1"), Equal("test-server-0")))
@@ -66,8 +66,8 @@ spec:
 
 		// Fails with built in vip (it's disabled in conf)
 		Consistently(func(g Gomega) {
-			_, err := CollectResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.mesh:80",
-				FromKubernetesPod(TestNamespace, "demo-client"),
+			_, err := client.CollectEchoResponse(k8sCluster, "demo-client", "test-server_kuma-test_svc_80.mesh:80",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).To(HaveOccurred())
 		}, "2s", "250ms").Should(Succeed())

@@ -9,9 +9,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -140,28 +140,22 @@ spec:
 			var startTimeStr, src, dst string
 			var err error
 			var stdout string
-			clientPodName, err := PodNameOfApp(kubernetes.Cluster, "demo-client", trafficNamespace)
-			Expect(err).ToNot(HaveOccurred())
 			tcpSinkPodName, err := PodNameOfApp(kubernetes.Cluster, tcpSinkAppName, tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(func() error {
-				_, _, err = kubernetes.Cluster.Exec(trafficNamespace, clientPodName,
-					AppModeDemoClient, "curl", "-v", "--fail", "test-server")
-				if err != nil {
-					return err
-				}
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, AppModeDemoClient, "test-server",
+					client.FromKubernetesPod(trafficNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+
 				stdout, _, err = kubernetes.Cluster.Exec(tcpSinkNamespace, tcpSinkPodName,
 					"tcp-sink", "head", "-1", "/nc.out")
-				if err != nil {
-					return err
-				}
+				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
-				if len(parts) != 3 {
-					return errors.Errorf("unexpected number of fields in: %s", stdout)
-				}
+				g.Expect(parts).To(HaveLen(3))
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
-				return nil
-			}).ShouldNot(HaveOccurred())
+			}).Should(Succeed())
 			startTimeInt, err := strconv.Atoi(startTimeStr)
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)
