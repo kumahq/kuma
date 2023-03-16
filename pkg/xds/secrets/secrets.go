@@ -311,7 +311,7 @@ func (s *secrets) generateCerts(
 	}
 
 	if updateKinds.HasType(OwnMeshChange) {
-		caSecret, supportedBackends, err := s.caProvider.Get(ctx, mesh, nil)
+		caSecret, supportedBackends, err := s.caProvider.Get(ctx, mesh)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get mesh CA cert")
 		}
@@ -343,10 +343,7 @@ func (s *secrets) generateCerts(
 				continue
 			}
 
-			// We include this as a last resort to let providers from other
-			// meshes stop secret generation
-			timeout := 1 * time.Second
-			otherCa, _, err := s.caProvider.Get(ctx, otherMesh, &timeout)
+			otherCa, _, err := s.caProvider.Get(ctx, otherMesh)
 			if err != nil {
 				failedOtherMeshes = true
 				// The other CA is misconfigured but this can not affect

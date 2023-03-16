@@ -15,7 +15,7 @@ import (
 
 type CaProvider interface {
 	// Get returns all PEM encoded CAs, a list of CAs that were used to generate a secret and an error.
-	Get(context.Context, *core_mesh.MeshResource, *time.Duration) (*core_xds.CaSecret, []string, error)
+	Get(context.Context, *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error)
 }
 
 func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (CaProvider, error) {
@@ -38,24 +38,20 @@ type meshCaProvider struct {
 	latencyMetrics *prometheus.SummaryVec
 }
 
-func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource, timeout *time.Duration) (*core_xds.CaSecret, []string, error) {
+// Get retrieves the root CA for a given backend with a default timeout of 10
+// seconds.
+func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
 		return nil, nil, errors.New("CA backend is nil")
 	}
 
-	backendTimeout := backend.GetRootChain().GetRequestTimeout()
-	if backendTimeout != nil {
-		backendTimeout := backendTimeout.AsDuration()
-		if timeout == nil || backendTimeout < *timeout {
-			timeout = &backendTimeout
-		}
+	timeout := 10 * time.Second
+	if backendTimeout := backend.GetRootChain().GetRequestTimeout(); backendTimeout != nil {
+		timeout = backendTimeout.AsDuration()
 	}
-	if timeout != nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, *timeout)
-		defer cancel()
-	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
