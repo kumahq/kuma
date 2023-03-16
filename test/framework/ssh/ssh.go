@@ -47,7 +47,8 @@ func NewApp(appName string, logsPath string, verbose bool, port string, envMap m
 		sshArgs = append(sshArgs, fmt.Sprintf("%s=%s", k, utils.ShellEscape(v)))
 	}
 
-	app.cmd = exec.Command("ssh", append(sshArgs, args...)...)
+	sshArgs = append(sshArgs, args...)
+	app.cmd = exec.Command("ssh", sshArgs...)
 
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
