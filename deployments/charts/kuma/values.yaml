@@ -322,6 +322,13 @@ cni:
       # -- CNI experimental eBPF image tag
       tag: "0.8.5"
 
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      memory: 100Mi
+
   # -- Security context at the pod level for cni
   podSecurityContext: {}
 #    # The values below are examples. More values can be added as needed, since the field resolves as free form.
