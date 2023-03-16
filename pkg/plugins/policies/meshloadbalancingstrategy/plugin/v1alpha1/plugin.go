@@ -39,6 +39,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
 
+	serviceConfs := map[string]api.Conf{}
+
 	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutbound() {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
@@ -56,12 +58,17 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			}
 		}
 
+		serviceConfs[serviceName] = conf
+	}
+
+	// when VIPs are enabled 2 listeners are pointing to the same cluster, that's why
+	// we configure clusters in a separate loop to avoid configuring the same cluster twice
+	for serviceName, conf := range serviceConfs {
 		if cluster, ok := clusters.Outbound[serviceName]; ok {
 			if err := p.generateCDS(cluster, conf.LoadBalancer); err != nil {
 				return err
 			}
 		}
-
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
 			if err := p.generateCDS(cluster, conf.LoadBalancer); err != nil {
 				return err
