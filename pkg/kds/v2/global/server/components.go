@@ -37,7 +37,7 @@ func New(
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := cache_kds_v2.SnapshotAutoVersioner{UUID: core.NewUUID}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "delta_kds")
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 
 func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
 	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "delta_kds_generation",
+		Name:       "kds_delta_generation",
 		Help:       "Summary of KDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
 	})
@@ -87,7 +87,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 	}
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
-		Name: "delta_kds_generation_errors",
+		Name: "kds_delta_generation_errors",
 	})
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err

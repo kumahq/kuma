@@ -44,13 +44,13 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type CallbacksV2 interface {
-	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error
+	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error
 }
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error
 
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error {
-	return f(session, initStateMap)
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error {
+	return f(session, deltaInitState)
 }
 
 type server struct {

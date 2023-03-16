@@ -67,15 +67,15 @@ type Callbacks interface {
 }
 
 type DeltaCallbacks interface {
-	// OnStreamOpen is called once an xDS stream is opened with a stream ID and the type URL (or "" for ADS).
-	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	// OnDeltaStreamOpen is called once an xDS stream is opened with a stream ID and the type URL (or "" for ADS).
+	// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 	OnDeltaStreamOpen(context.Context, int64, string) error
-	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+	// OnDeltaStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 	OnDeltaStreamClosed(int64)
-	// OnStreamRequest is called once a request is received on a stream.
-	// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+	// OnStreamDeltaRequest is called once a request is received on a stream.
+	// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 	OnStreamDeltaRequest(int64, DeltaDiscoveryRequest) error
-	// OnStreamResponse is called immediately prior to sending a response on a stream.
+	// OnStreamDeltaResponse is called immediately prior to sending a response on a stream.
 	OnStreamDeltaResponse(int64, DeltaDiscoveryRequest, DeltaDiscoveryResponse)
 }
 

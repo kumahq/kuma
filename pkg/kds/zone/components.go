@@ -89,9 +89,9 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	})
 
-	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, initStateMap map[string]map[string]string) error {
+	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error {
 		log := kdsZoneLog.WithValues("kds-version", "v2")
-		sink := kds_client_v2.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewKDSStream(stream, zone, string(cfgJson), initStateMap),
+		sink := kds_client_v2.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewKDSStream(stream, zone, string(cfgJson), deltaInitState),
 			sync_store_v2.Callbacks(
 				rt.KDSContext().Configs,
 				sync_store_v2.NewResourceSyncer(kdsZoneLog, rt.ResourceStore()),

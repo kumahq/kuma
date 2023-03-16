@@ -174,7 +174,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	if err := c.callbacksV2.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
-		log.Error(err, "closing KDS stream after callback error")
+		log.Error(err, "closing Global to Zone Sync stream after callback error")
 		errorCh <- err
 		return
 	}
