@@ -120,9 +120,11 @@ func ApplicationsMetrics() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshNoAggregate),
 				testserver.WithName("test-server-dp-metrics"),
+				testserver.WithEchoArgs("--ip", "localhost"),
 				testserver.WithPodAnnotations(map[string]string{
 					"prometheus.metrics.kuma.io/aggregate-app-path":       "/my-app",
 					"prometheus.metrics.kuma.io/aggregate-app-port":       "80",
+					"prometheus.metrics.kuma.io/aggregate-app-address":    "localhost",
 					"prometheus.metrics.kuma.io/aggregate-other-app-path": "/other-app",
 					"prometheus.metrics.kuma.io/aggregate-other-app-port": "80",
 				}))).
