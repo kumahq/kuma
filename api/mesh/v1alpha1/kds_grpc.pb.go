@@ -411,10 +411,10 @@ var GlobalKDSService_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KDSSyncServiceClient interface {
-	// GlobalToZoneSync is logically a service exposed by global control-plane that allows
-	// zone control plane to connect and synchronize resources from the global control-plane
-	// to the zone control-plane. It uses delta xDS from go-control-plane and responds only
-	// with the changes to the resources.
+	// GlobalToZoneSync is logically a service exposed by global control-plane
+	// that allows zone control plane to connect and synchronize resources from
+	// the global control-plane to the zone control-plane. It uses delta xDS from
+	// go-control-plane and responds only with the changes to the resources.
 	GlobalToZoneSync(ctx context.Context, opts ...grpc.CallOption) (KDSSyncService_GlobalToZoneSyncClient, error)
 }
 
@@ -461,10 +461,10 @@ func (x *kDSSyncServiceGlobalToZoneSyncClient) Recv() (*v3.DeltaDiscoveryRespons
 // All implementations must embed UnimplementedKDSSyncServiceServer
 // for forward compatibility
 type KDSSyncServiceServer interface {
-	// GlobalToZoneSync is logically a service exposed by global control-plane that allows
-	// zone control plane to connect and synchronize resources from the global control-plane
-	// to the zone control-plane. It uses delta xDS from go-control-plane and responds only
-	// with the changes to the resources.
+	// GlobalToZoneSync is logically a service exposed by global control-plane
+	// that allows zone control plane to connect and synchronize resources from
+	// the global control-plane to the zone control-plane. It uses delta xDS from
+	// go-control-plane and responds only with the changes to the resources.
 	GlobalToZoneSync(KDSSyncService_GlobalToZoneSyncServer) error
 	mustEmbedUnimplementedKDSSyncServiceServer()
 }

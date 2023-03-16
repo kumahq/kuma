@@ -31,8 +31,8 @@ var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
 	initStateMap := map[string]map[string]string{}
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) zone_client.KDSSink {
-		return zone_client.NewKDSSink(
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) zone_client.KDSSyncClient {
+		return zone_client.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
 			zone_client.NewKDSStream(cs, zoneName, "", initStateMap),

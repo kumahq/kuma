@@ -13,19 +13,19 @@ type Callbacks struct {
 	OnResourcesReceived func(upstream UpstreamResponse) error
 }
 
-type KDSSink interface {
+type KDSSyncClient interface {
 	Receive() error
 }
 
-type kdsSink struct {
+type kdsSyncClient struct {
 	log           logr.Logger
 	resourceTypes []core_model.ResourceType
 	callbacks     *Callbacks
 	kdsStream     KDSStream
 }
 
-func NewKDSSink(log logr.Logger, rt []core_model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSink {
-	return &kdsSink{
+func NewKDSSyncClient(log logr.Logger, rt []core_model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSyncClient {
+	return &kdsSyncClient{
 		log:           log,
 		resourceTypes: rt,
 		kdsStream:     kdsStream,
@@ -33,7 +33,7 @@ func NewKDSSink(log logr.Logger, rt []core_model.ResourceType, kdsStream KDSStre
 	}
 }
 
-func (s *kdsSink) Receive() error {
+func (s *kdsSyncClient) Receive() error {
 	for _, typ := range s.resourceTypes {
 		s.log.V(1).Info("sending DiscoveryRequest", "type", typ)
 		if err := s.kdsStream.DiscoveryRequest(typ); err != nil {

@@ -39,17 +39,17 @@ type stream struct {
 	streamClient   mesh_proto.KDSSyncService_GlobalToZoneSyncClient
 	latestACKed    map[string]*envoy_sd.DeltaDiscoveryResponse
 	latestReceived map[string]*envoy_sd.DeltaDiscoveryResponse
-	initStateMap   map[string]map[string]string
+	deltaInitState map[string]map[string]string
 	clientId       string
 	cpConfig       string
 }
 
-func NewKDSStream(s mesh_proto.KDSSyncService_GlobalToZoneSyncClient, clientId string, cpConfig string, initStateMap map[string]map[string]string) KDSStream {
+func NewKDSStream(s mesh_proto.KDSSyncService_GlobalToZoneSyncClient, clientId string, cpConfig string, deltaInitState map[string]map[string]string) KDSStream {
 	return &stream{
 		streamClient:   s,
 		latestACKed:    make(map[string]*envoy_sd.DeltaDiscoveryResponse),
 		latestReceived: make(map[string]*envoy_sd.DeltaDiscoveryResponse),
-		initStateMap:   initStateMap,
+		deltaInitState: deltaInitState,
 		clientId:       clientId,
 		cpConfig:       cpConfig,
 	}
@@ -68,7 +68,7 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 		return err
 	}
 	initialResources := map[string]string{}
-	if value, found := s.initStateMap[string(resourceType)]; found {
+	if value, found := s.deltaInitState[string(resourceType)]; found {
 		initialResources = value
 	}
 
@@ -107,18 +107,11 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	s.latestReceived[string(rs.GetItemType())] = resp
 
 	// when map is empty that means we are doing the first request
-	isInitialRequest := len(s.initStateMap) == 0
+	// it has to be called before `getVersionMap`
+	isInitialRequest := len(s.deltaInitState) == 0
+
 	typ := string(rs.GetItemType())
-	var versions map[string]string
-	if value, found := s.initStateMap[typ]; found {
-		versions = value
-	} else {
-		versions = map[string]string{}
-	}
-	for _, item := range resourceAndVersion {
-		versions[item.ResourceName] = item.Version
-	}
-	s.initStateMap[typ] = versions
+	s.deltaInitState[typ] = s.updateVersionMap(typ, resourceAndVersion)
 	return UpstreamResponse{
 		ControlPlaneId:       resp.GetControlPlane().GetIdentifier(),
 		Type:                 rs.GetItemType(),
@@ -162,4 +155,17 @@ func (s *stream) NACK(typ string, err error) error {
 			Message: fmt.Sprintf("%s", err),
 		},
 	})
+}
+
+func (s *stream) updateVersionMap(typ string, resourceAndVersion []util.ResourceAndVersion) map[string]string {
+	var versions map[string]string
+	if value, found := s.deltaInitState[typ]; found {
+		versions = value
+	} else {
+		versions = map[string]string{}
+	}
+	for _, item := range resourceAndVersion {
+		versions[item.ResourceName] = item.Version
+	}
+	return versions
 }
