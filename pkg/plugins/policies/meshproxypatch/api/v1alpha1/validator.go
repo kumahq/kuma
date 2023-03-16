@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
@@ -214,10 +215,13 @@ func validatePatch(path validators.PathBuilder, value *string, jsonPatches []com
 			verr.AddViolationAt(path.Field("value"), fmt.Sprintf("native Envoy resource is not valid: %s", err.Error()))
 		}
 	} else {
-		if len(jsonPatches) == 0 {
-			verr.AddViolationAt(path, validators.MustHaveOneOf(path.String(), "value", "jsonPatches"))
+		if len(jsonPatches) > 0 {
+			return jsonpatch_validators.ValidateJsonPatchBlock(path.Field("jsonPatches"), jsonPatches)
 		}
+
+		verr.AddViolationAt(path, validators.MustHaveOneOf(path.String(), "value", "jsonPatches"))
 	}
+
 	return verr
 }
 

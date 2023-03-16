@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-const GoogleApisTypeUrl = "type.googleapis.com/"
+const googleApisTypeUrl = "type.googleapis.com/"
 
 // When saving Snapshot in SnapshotCache we generate version based on proto.Equal()
 // Therefore we need deterministic way of marshaling Any which is part of the Protobuf on which we execute Equal()
@@ -23,7 +23,7 @@ func MarshalAnyDeterministic(pb proto.Message) (*anypb.Any, error) {
 		return nil, err
 	}
 	name := string(protov1.MessageV2(pb).ProtoReflect().Descriptor().FullName())
-	return &anypb.Any{TypeUrl: GoogleApisTypeUrl + name, Value: bytes}, nil
+	return &anypb.Any{TypeUrl: googleApisTypeUrl + name, Value: bytes}, nil
 }
 
 func MustMarshalAny(pb proto.Message) *anypb.Any {
@@ -51,8 +51,7 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 		return nil, errors.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
 	}
 
-	msgTypeName := strings.ReplaceAll(dst.TypeUrl, GoogleApisTypeUrl, "") // TypeURL in Any contains type.googleapis.com/ prefix, but in Proto registry it does not have this prefix.
-	msgType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(msgTypeName))
+	msgType, err := FindMessageType(dst.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +68,13 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 
 	Merge(dstMsg, srcMsg)
 	return MarshalAnyDeterministic(dstMsg)
+}
+
+func FindMessageType(typeUrl string) (protoreflect.MessageType, error) {
+	// TypeURL in Any contains type.googleapis.com/ prefix, but in Proto
+	// registry it does not have this prefix.
+	msgTypeName := strings.ReplaceAll(typeUrl, googleApisTypeUrl, "")
+	fullName := protoreflect.FullName(msgTypeName)
+
+	return protoregistry.GlobalTypes.FindMessageByName(fullName)
 }

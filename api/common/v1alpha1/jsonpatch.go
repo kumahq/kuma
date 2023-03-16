@@ -2,16 +2,11 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
-	"strings"
 
-	jsonpatch "github.com/evanphx/json-patch/v5"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/evanphx/json-patch/v5"
+	"go.uber.org/multierr"
 )
 
 // JsonPatchBlock is one json patch operation block.
@@ -22,20 +17,31 @@ type JsonPatchBlock struct {
 	Op string `json:"op"`
 	// Path is a jsonpatch path string.
 	// +required
-	Path string `json:"path"`
+	Path *string `json:"path"`
 	// Value must be a valid json object used by replace and add operations.
 	Value json.RawMessage `json:"value,omitempty"`
 	// From is a jsonpatch from string, used by move and copy operations.
-	From string `json:"from,omitempty"`
+	From *string `json:"from,omitempty"`
 }
 
-func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {
+func ToJsonPatch(in []JsonPatchBlock) (jsonpatch.Patch, error) {
+	var errs error
 	var res []jsonpatch.Operation
 
 	for _, o := range in {
+		if o.Path == nil {
+			errs = multierr.Append(errs, fmt.Errorf("path must be defined"))
+			continue
+		}
+
+		var fromString string
+		if o.From != nil {
+			fromString = *o.From
+		}
+
 		op := json.RawMessage(strconv.Quote(o.Op))
-		path := json.RawMessage(strconv.Quote(o.Path))
-		from := json.RawMessage(strconv.Quote(o.From))
+		from := json.RawMessage(strconv.Quote(fromString))
+		path := json.RawMessage(strconv.Quote(*o.Path))
 		value := o.Value
 
 		res = append(res, jsonpatch.Operation{
@@ -46,70 +52,5 @@ func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {
 		})
 	}
 
-	return res
-}
-
-func MergeJsonPatch(message proto.Message, patchBlock []JsonPatchBlock) error {
-	resourceJson, err := util_proto.ToJSON(message)
-	if err != nil {
-		return err
-	}
-
-	options := jsonpatch.NewApplyOptions()
-	options.EnsurePathExistsOnAdd = true
-	options.AllowMissingPathOnRemove = true
-
-	patchedJson, err := ToJsonPatch(patchBlock).ApplyWithOptions(resourceJson, options)
-	if err != nil {
-		return err
-	}
-
-	mod := message.ProtoReflect().New().Interface()
-
-	if err := util_proto.FromJSON(patchedJson, mod); err != nil {
-		return err
-	}
-
-	util_proto.Replace(message, mod)
-
-	return nil
-}
-
-func MergeJsonPatchAny(dst *anypb.Any, patchBlock []JsonPatchBlock) (*anypb.Any, error) {
-	// TypeURL in Any contains type.googleapis.com/ prefix, but in Proto registry
-	// it does not have this prefix.
-	msgTypeName := strings.ReplaceAll(dst.TypeUrl, util_proto.GoogleApisTypeUrl, "")
-	msgType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(msgTypeName))
-	if err != nil {
-		return nil, err
-	}
-
-	dstMsg := msgType.New().Interface()
-	if err := proto.Unmarshal(dst.Value, dstMsg); err != nil {
-		return nil, err
-	}
-
-	resourceJson, err := util_proto.ToJSON(dstMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	options := jsonpatch.NewApplyOptions()
-	options.EnsurePathExistsOnAdd = true
-	options.AllowMissingPathOnRemove = true
-
-	patchedJson, err := ToJsonPatch(patchBlock).ApplyWithOptions(resourceJson, options)
-	if err != nil {
-		return nil, err
-	}
-
-	mod := msgType.New().Interface()
-
-	if err := util_proto.FromJSON(patchedJson, mod); err != nil {
-		return nil, err
-	}
-
-	util_proto.Replace(dstMsg, mod)
-
-	return util_proto.MarshalAnyDeterministic(dstMsg)
+	return res, errs
 }

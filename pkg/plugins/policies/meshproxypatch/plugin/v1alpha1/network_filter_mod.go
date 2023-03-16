@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -94,7 +94,7 @@ func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filt
 			var err error
 
 			if len(n.JsonPatches) > 0 {
-				merged, err = common_api.MergeJsonPatchAny(filter.GetTypedConfig(), n.JsonPatches)
+				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), n.JsonPatches)
 			} else {
 				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
 			}

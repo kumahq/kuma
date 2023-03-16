@@ -5,9 +5,9 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -39,7 +39,7 @@ func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPat
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
 			if len(l.JsonPatches) > 0 {
-				if err := common_api.MergeJsonPatch(listener.Resource, l.JsonPatches); err != nil {
+				if err := jsonpatch.MergeJsonPatch(listener.Resource, l.JsonPatches); err != nil {
 					return err
 				}
 

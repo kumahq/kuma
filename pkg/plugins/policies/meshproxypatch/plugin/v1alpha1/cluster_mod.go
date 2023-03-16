@@ -5,8 +5,8 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -38,7 +38,7 @@ func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
 			if len(c.JsonPatches) > 0 {
-				if err := common_api.MergeJsonPatch(cluster.Resource, c.JsonPatches); err != nil {
+				if err := jsonpatch.MergeJsonPatch(cluster.Resource, c.JsonPatches); err != nil {
 					return err
 				}
 
