@@ -36,6 +36,9 @@ default:
       description: "Built-in Kuma gateway support"
     # CI specific labels
     - color: 965E20
+      name: "ci/force-publish"
+      description: "PR: push artifacts even if we're on a PR (use very carefully)"
+    - color: 965E20
       name: "ci/run-full-matrix"
       description: "PR: Runs all possible e2e test combination (expensive use carefully)"
     - color: 965E20
