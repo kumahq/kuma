@@ -23,10 +23,8 @@ const (
 	Unknown Attachment = iota
 	// NotPermitted means the route isn't allowed to attach to the ref
 	NotPermitted
-	// Invalid means the route points to a nonexistent parent
-	// or is otherwise invalid
-	Invalid
 	NoHostnameIntersection
+	NoMatchingParent
 	// Allowed means we could successfully attach
 	Allowed
 )
@@ -60,17 +58,18 @@ func findRouteListenerAttachment(
 
 			if !selector.Matches(kube_labels.Set(routeNs.GetLabels())) {
 				listeners[l.Name] = NotPermitted
-				continue
+			} else {
+				listeners[l.Name] = Allowed
 			}
 		case gatewayapi.NamespacesFromSame:
 			if gateway.Namespace != routeNs.GetName() {
 				listeners[l.Name] = NotPermitted
-				continue
+			} else {
+				listeners[l.Name] = Allowed
 			}
 		case gatewayapi.NamespacesFromAll:
+			listeners[l.Name] = Allowed
 		}
-
-		return Allowed, nil
 	}
 
 	sectionName := ""
@@ -86,9 +85,9 @@ func findRouteListenerAttachment(
 		}
 	}
 
-	// If we don't find our listener, our ref is invalid
+	// If we don't find our listener, our ref has NoMatchingParent
 	if sectionName != "" {
-		return Invalid, nil
+		return NoMatchingParent, nil
 	}
 
 	// If we aren't attaching to a specific listener then

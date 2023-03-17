@@ -136,12 +136,11 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NotPermitted:
 				reason = string(gatewayapi.RouteReasonNotAllowedByListeners)
 				message = ""
-			case attachment.Invalid:
-				// TODO how to handle this case?
-				reason = "Refused"
-				message = "listener not found, reference to parent is invalid"
 			case attachment.NoHostnameIntersection:
 				reason = string(gatewayapi.RouteReasonNoMatchingListenerHostname)
+				message = ""
+			case attachment.NoMatchingParent:
+				reason = string(gatewayapi.RouteReasonNoMatchingParent)
 				message = ""
 			}
 
