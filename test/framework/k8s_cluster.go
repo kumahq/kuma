@@ -32,7 +32,6 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
-	"github.com/kumahq/kuma/test/framework/k8sutils"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -623,7 +622,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
-			err := k8sutils.UpdateObject(c.GetTesting(), c.GetKubectlOptions(), "mesh", name,
+			err := UpdateKubeObject(c.GetTesting(), c.GetKubectlOptions(), "mesh", name,
 				func(obj runtime.Object) runtime.Object {
 					mesh := core_mesh.NewMeshResource()
 
