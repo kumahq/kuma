@@ -7,9 +7,11 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
+	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -70,7 +72,7 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
-	var validUniqueListenerPorts []apis_gatewayapi.PortNumber
+	var validUniqueListenerPorts kubernetes.PortSet
 	for i := minNodePort; i <= maxNodePort; i++ {
 		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
 	}
@@ -84,15 +86,15 @@ func TestConformance(t *testing.T) {
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
-		SupportedFeatures: map[suite.SupportedFeature]bool{
-			suite.SupportHTTPRouteQueryParamMatching:        true,
-			suite.SupportHTTPRouteMethodMatching:            true,
-			suite.SupportHTTPResponseHeaderModification:     true,
-			suite.SupportHTTPRoutePortRedirect:              true,
-			suite.SupportHTTPRouteSchemeRedirect:            true,
-			suite.SupportHTTPRoutePathRedirect:              false, // not yet supported
-			suite.SupportGatewayClassObservedGenerationBump: true,
-		},
+		SupportedFeatures: sets.New(
+			suite.SupportHTTPRouteQueryParamMatching,
+			suite.SupportHTTPRouteMethodMatching,
+			suite.SupportHTTPResponseHeaderModification,
+			suite.SupportHTTPRoutePortRedirect,
+			suite.SupportHTTPRouteSchemeRedirect,
+			// not yet supported: suite.SupportHTTPRoutePathRedirect
+			suite.SupportGatewayClassObservedGenerationBump,
+		),
 	})
 
 	conformanceSuite.Setup(t)
@@ -105,7 +107,9 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
 			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName,
-			tests.HTTPRouteObservedGenerationBump.ShortName: // this passes but the test is written in a flaky way, waiting on upstream fix
+			tests.TLSRouteSimpleSameNamespace.ShortName,                     // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
+			tests.HTTPRouteInvalidParentRefNotMatchingSectionName.ShortName, // TODO
+			tests.HTTPRouteInvalidCrossNamespaceParentRef.ShortName:         // TODO
 			continue
 		}
 		passingTests = append(passingTests, test)

@@ -77,7 +77,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/controller-tools v0.11.3
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
-	sigs.k8s.io/gateway-api v0.5.1
+	sigs.k8s.io/gateway-api v0.6.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -171,7 +171,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/urfave/cli v1.22.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -197,6 +197,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230103091850-88eacfd00eb4
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230317112148-f5cca69bcb43
 
 replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview
