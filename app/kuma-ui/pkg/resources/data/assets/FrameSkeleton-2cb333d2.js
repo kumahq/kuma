@@ -1,0 +1,1 @@
+import{_ as o}from"./_plugin-vue_export-helper-c27b6911.js";import{o as r,h as t,Q as s}from"./runtime-dom.esm-bundler-9284044f.js";const n={},c={class:"component-frame"};function a(e,_){return r(),t("div",c,[s(e.$slots,"default")])}const l=o(n,[["render",a]]);export{l as F};
