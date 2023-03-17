@@ -32,7 +32,6 @@ func Policy() {
 	})
 
 	It("should use ring hash load balancing strategy", func() {
-
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectResponsesByInstance(
 				universal.Cluster, "demo-client", "test-server.mesh")
@@ -70,7 +69,5 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses).To(HaveLen(1))
 		}, "30s", "500ms").Should(Succeed())
-
 	})
-
 }
