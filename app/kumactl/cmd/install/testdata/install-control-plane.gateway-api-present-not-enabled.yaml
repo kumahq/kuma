@@ -2072,8 +2072,7 @@ spec:
                                   value:
                                     description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: string
-                                    type: string
+                                    x-kubernetes-preserve-unknown-fields: true
                                 required:
                                 - op
                                 - path
@@ -2151,8 +2150,7 @@ spec:
                                   value:
                                     description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: string
-                                    type: string
+                                    x-kubernetes-preserve-unknown-fields: true
                                 required:
                                 - op
                                 - path
@@ -2240,8 +2238,7 @@ spec:
                                   value:
                                     description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: string
-                                    type: string
+                                    x-kubernetes-preserve-unknown-fields: true
                                 required:
                                 - op
                                 - path
@@ -2322,8 +2319,7 @@ spec:
                                   value:
                                     description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: string
-                                    type: string
+                                    x-kubernetes-preserve-unknown-fields: true
                                 required:
                                 - op
                                 - path
@@ -2411,8 +2407,7 @@ spec:
                                   value:
                                     description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: string
-                                    type: string
+                                    x-kubernetes-preserve-unknown-fields: true
                                 required:
                                 - op
                                 - path

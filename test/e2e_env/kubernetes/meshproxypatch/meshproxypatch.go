@@ -80,4 +80,46 @@ spec:
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
 	})
+
+	It("should add a header using json patch", func() {
+		// given
+		meshProxyPatch := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1 
+kind: MeshProxyPatch
+metadata:
+  name: json-patch
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_mesh-proxy-patch_svc_80
+  default:
+    appendModifications:
+      - networkFilter:
+          operation: Patch
+          match:
+            name: envoy.filters.network.http_connection_manager
+            origin: outbound
+          jsonPatches:
+            - op: add
+              path: /routeConfig/requestHeadersToAdd/-
+              value:
+                header:
+                  key: X-Header
+                  value: test
+`, Config.KumaNamespace, meshName)
+
+		// when
+		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
+		}, "30s", "1s").Should(Succeed())
+	})
 }

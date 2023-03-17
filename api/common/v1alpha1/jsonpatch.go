@@ -20,8 +20,7 @@ type JsonPatchBlock struct {
 	Path *string `json:"path"`
 	// Value must be a valid json value used by replace and add operations.
 	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:validation:Type=string
-	// +kubebuilder:validation:Format=string
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Value json.RawMessage `json:"value,omitempty"`
 	// From is a jsonpatch from string, used by move and copy operations.
 	From *string `json:"from,omitempty"`
