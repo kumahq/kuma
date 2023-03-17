@@ -509,6 +509,13 @@ egress:
           target:
             type: Utilization
             averageUtilization: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
 
   service:
     # -- Whether to create the service object
