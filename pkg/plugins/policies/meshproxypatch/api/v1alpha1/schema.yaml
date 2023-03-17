@@ -45,8 +45,8 @@ properties:
                             description: Path is a jsonpatch path string.
                             type: string
                           value:
-                            description: Value must be a valid json object used by replace and add operations.
-                            format: byte
+                            description: Value must be a valid json value used by replace and add operations.
+                            format: string
                             type: string
                         required:
                           - op
@@ -100,8 +100,8 @@ properties:
                             description: Path is a jsonpatch path string.
                             type: string
                           value:
-                            description: Value must be a valid json object used by replace and add operations.
-                            format: byte
+                            description: Value must be a valid json value used by replace and add operations.
+                            format: string
                             type: string
                         required:
                           - op
@@ -166,8 +166,8 @@ properties:
                             description: Path is a jsonpatch path string.
                             type: string
                           value:
-                            description: Value must be a valid json object used by replace and add operations.
-                            format: byte
+                            description: Value must be a valid json value used by replace and add operations.
+                            format: string
                             type: string
                         required:
                           - op
@@ -226,8 +226,8 @@ properties:
                             description: Path is a jsonpatch path string.
                             type: string
                           value:
-                            description: Value must be a valid json object used by replace and add operations.
-                            format: byte
+                            description: Value must be a valid json value used by replace and add operations.
+                            format: string
                             type: string
                         required:
                           - op
@@ -292,8 +292,8 @@ properties:
                             description: Path is a jsonpatch path string.
                             type: string
                           value:
-                            description: Value must be a valid json object used by replace and add operations.
-                            format: byte
+                            description: Value must be a valid json value used by replace and add operations.
+                            format: string
                             type: string
                         required:
                           - op

@@ -2222,9 +2222,9 @@ spec:
                                     description: Path is a jsonpatch path string.
                                     type: string
                                   value:
-                                    description: Value must be a valid json object
+                                    description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: byte
+                                    format: string
                                     type: string
                                 required:
                                 - op
@@ -2301,9 +2301,9 @@ spec:
                                     description: Path is a jsonpatch path string.
                                     type: string
                                   value:
-                                    description: Value must be a valid json object
+                                    description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: byte
+                                    format: string
                                     type: string
                                 required:
                                 - op
@@ -2390,9 +2390,9 @@ spec:
                                     description: Path is a jsonpatch path string.
                                     type: string
                                   value:
-                                    description: Value must be a valid json object
+                                    description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: byte
+                                    format: string
                                     type: string
                                 required:
                                 - op
@@ -2472,9 +2472,9 @@ spec:
                                     description: Path is a jsonpatch path string.
                                     type: string
                                   value:
-                                    description: Value must be a valid json object
+                                    description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: byte
+                                    format: string
                                     type: string
                                 required:
                                 - op
@@ -2561,9 +2561,9 @@ spec:
                                     description: Path is a jsonpatch path string.
                                     type: string
                                   value:
-                                    description: Value must be a valid json object
+                                    description: Value must be a valid json value
                                       used by replace and add operations.
-                                    format: byte
+                                    format: string
                                     type: string
                                 required:
                                 - op
