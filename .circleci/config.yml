@@ -4,6 +4,8 @@ reusable:
 
   constants:
     - &go_version "1.20.2"
+    - &lastK8sVersion v1.26.1-k3s1
+    - &firstK8sVersion v1.20.15-k3s1
 
   docker_images:
     - &golang_image "cimg/go:1.20.2"
@@ -54,23 +56,57 @@ commands:
           # if GOPATH is not set, `golang-ci` fails with an obscure message
           # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
           echo 'export GOPATH=$HOME/go' >> $BASH_ENV
-  skip_on_branch:
-    description: "Skip the job on the branch"
+  halt_non_priority_job:
+    description: "don't run following steps if in PR and doesn't have a specific label"
+    parameters:
+      label:
+        type: string
+        description: a label to for running this (if empty no label override is allowed)
+        default: "ci/run-full-matrix"
     steps:
     - run:
-        name: "Skip the job on the branch"
+        name: maybe-halt
         command: |
-          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
-            circleci-agent step halt
+          if [[ "<< pipeline.git.branch >>" == "master" || "<< pipeline.git.branch >>" == "release-"*  ]]; then
+            echo "on a main branch so don't halt job"
             exit 0
           fi
-
+          if [[ "<< pipeline.git.tag >>" != "" ]]; then
+            echo "on a tag to don't halt job"
+            exit 0
+          fi
+          if [[ "<<parameters.label>>" != "" && $(${KUMA_DIR}/tools/ci/has_label.sh "<<parameters.label>>") == "true" ]]; then
+            echo "<<parameters.label>> label present on PR so don't halt job"
+            exit 0
+          fi
+          echo "halt running job"
+          circleci-agent step halt
+          exit 0
+  halt_job_if_labeled:
+    description: "don't run following steps if PR has a specific label"
+    parameters:
+      label:
+        type: string
+        description: a label to for running this (if empty no label override is allowed)
+        default: ""
+    steps:
+      - run:
+          name: maybe-halt
+          command: |
+            if [[ "<<parameters.label>>" != "" && $(${KUMA_DIR}/tools/ci/has_label.sh "<<parameters.label>>") == "true" ]]; then
+              echo "Not running as the PR has label: <<parameters.label>>"
+              circleci-agent step halt
+              exit 0
+            fi
+            echo "PR doesn't have label <<parameters.label>> keep running job"
+            exit 0
 executors:
   golang:
     resource_class: xlarge
     docker:
     - image: *golang_image
     environment:
+      KUMA_DIR: .
       GO_VERSION: *go_version
 
   vm-amd64:
@@ -78,6 +114,7 @@ executors:
     machine:
       image: *ubuntu_vm_image
     environment:
+      KUMA_DIR: .
       GO_VERSION: *go_version
 
   vm-arm64:
@@ -85,20 +122,7 @@ executors:
     machine:
       image: *ubuntu_vm_image
     environment:
-      GO_VERSION: *go_version
-
-  linux:
-    resource_class: large
-    machine:
-      image: *ubuntu_vm_image
-    environment:
-      GO_VERSION: *go_version
-
-  darwin:
-    resource_class: medium
-    macos:
-      xcode: "12.5.1"
-    environment:
+      KUMA_DIR: .
       GO_VERSION: *go_version
 
 jobs:
@@ -129,7 +153,6 @@ jobs:
         name: "Download Go modules"
         command: |
           go mod download -x
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
         key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
         paths:
@@ -164,16 +187,9 @@ jobs:
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
         steps:
-          - skip_on_branch
-    - run:
-        # Label based skip-test runs
-        name: "Check if skip"
-        command: |
-          if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
-            echo "Not running tests as the PR has label: ci/skip-test"
-            circleci-agent step halt
-            exit 0
-          fi
+          - halt_non_priority_job
+    - halt_job_if_labeled:
+        label: "ci/skip-test"
     - install_build_tools:
         go_arch: << parameters.arch >>
         go_os: linux
@@ -213,7 +229,7 @@ jobs:
         type: string
         default: v1.26.1-k3s1
       parallelism:
-        description: level of parallelisation
+        description: level of parallelization
         type: integer
         default: 8
       target:
@@ -233,10 +249,24 @@ jobs:
     parallelism: << parameters.parallelism >>
     steps:
       - checkout
+      - halt_job_if_labeled:
+          label: "ci/skip-test"
+      - halt_job_if_labeled:
+          label: "ci/skip-e2e-test"
+      - when:
+          condition:
+            or:
+              - {equal: [test/e2e, << parameters.target >>]}
+              - {equal: [calico, << parameters.cniNetworkPlugin >>]}
+              - {equal: [kindIpv6, << parameters.cniNetworkPlugin >>]}
+              - {equal: [arm64, << parameters.arch >>]}
+              - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
+          steps:
+            - halt_non_priority_job
       - run:
           # This works around circleci limitation by skipping tests for combinations that don't make sense
           # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
-          name: "Check if skip"
+          name: skip_invalid_parameter_combinations
           command: |
             echo "Running with: \
               k8s:<< parameters.k8sVersion >> \
@@ -250,14 +280,6 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-
-            # Handle skip tests on labels
-            if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
-              skip "Not running tests as the PR has label: ci/skip-test"
-            fi
-            if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
-              skip "Not running tests as the PR has label: ci/skip-e2e-test"
-            fi
             
             # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
@@ -266,22 +288,6 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            
-            # Handle force run tests on labels
-            if [[ $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
-              exit 0
-            fi
-            
-            # Handle legacy tests on branch
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.target >>" == "test/e2e" ]]; then
-                skip "we do not run legacy E2E on branch by default. To run them add ci/run-full-matrix label"
-              fi
-              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.20.15-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                  skip "Not running tests on PRs with kindIpv6, oldK8s, calico or arm64"
-              fi
-            fi
-
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
@@ -320,26 +326,18 @@ jobs:
               export KUMA_DEFAULT_RETRIES=60
               export KUMA_DEFAULT_TIMEOUT="6s"
             fi
-            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
-              export K8S_CLUSTER_TOOL=kind
-            fi
             if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
               export K3D_NETWORK_CNI=<< parameters.cniNetworkPlugin >>
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
               export MAKE_PARAMETERS="-j1"
-              export GINKGO_E2E_LABEL_FILTERS='!arm-not-supported'
             else
               export MAKE_PARAMETERS="-j2"
             fi
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
-              if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
-              else
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
-              fi
+              export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
             fi
             env
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
@@ -359,7 +357,7 @@ jobs:
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
         steps:
-          - skip_on_branch
+          - halt_non_priority_job
     - install_build_tools:
         go_arch: <<parameters.arch>>
     - restore_cache:
@@ -385,11 +383,6 @@ jobs:
         - ebpf-<<parameters.arch>>
 
   distributions:
-    parameters:
-      publish:
-        description: Whether or not to publish packages
-        type: boolean
-        default: false
     executor: vm-amd64
     steps:
       - install_build_tools
@@ -400,12 +393,11 @@ jobs:
       - run:
           name: inspect created tars
           command: for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
-      - when:
-          condition: <<parameters.publish>>
-          steps:
-            - run:
-                name: Publish distributions to Pulp
-                command: make publish/pulp
+      - halt_non_priority_job:
+          label: ci/force-publish
+      - run:
+          name: Publish distributions to Pulp
+          command: make publish/pulp
 
   release:
     executor: vm-amd64
@@ -431,15 +423,15 @@ jobs:
     - run:
         name: Build Docker
         command: |
-          ./tools/releases/docker.sh --build
+          ${KUMA_DIR}/tools/releases/docker.sh --build
     - run:
         name: Push Docker
         command: |
-          ./tools/releases/docker.sh --push
+          ${KUMA_DIR}/tools/releases/docker.sh --push
     - run:
         name: Create and Push multiarch manifest for Docker images
         command: |
-          ./tools/releases/docker.sh --manifest
+          ${KUMA_DIR}/tools/releases/docker.sh --manifest
 
 workflows:
   version: 2
@@ -483,7 +475,7 @@ workflows:
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1
@@ -493,7 +485,7 @@ workflows:
           matrix:
             alias: test/e2e-calico
             parameters:
-              k8sVersion: [ v1.26.1-k3s1 ]
+              k8sVersion: [ *lastK8sVersion ]
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
@@ -518,16 +510,5 @@ workflows:
               only: /.*/
           requires: [ test, test/e2e, test/e2e-legacy ]
       - distributions:
-          publish: false
-          requires: [ build ]
-      - distributions:
-          publish: true
-          filters: # only on tags and release branches
-            branches:
-              only:
-                - master
-                - /^release-.*/
-            tags:
-              only: /.*/
           requires: [ test, test/e2e, test/e2e-legacy ]
 

@@ -55,6 +55,10 @@ ifeq ($(CI_K3S_VERSION),v1.19.16-k3s1)
 GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!legacy-k3s-not-supported)
 endif
 
+ifeq ($(shell uname -m | sed -e s/aarch.*/arm64/),arm64)
+	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
+endif
+
 
 ifdef IPV6
 KIND_CONFIG_IPV6=-ipv6
