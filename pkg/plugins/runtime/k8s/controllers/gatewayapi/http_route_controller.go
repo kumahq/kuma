@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -121,6 +122,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		switch refAttachment {
 		case attachment.Unknown:
 			// We don't care about this ref
+			continue
 		case attachment.Allowed:
 			selectors = append(
 				selectors,
@@ -128,31 +130,27 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					Match: tagsForRef(route, ref),
 				},
 			)
-
-			conditions[ref] = routeConditions
 		default:
-			var reason, message string
+			var reason string
 			switch refAttachment {
 			case attachment.NotPermitted:
 				reason = string(gatewayapi.RouteReasonNotAllowedByListeners)
-				message = ""
 			case attachment.NoHostnameIntersection:
 				reason = string(gatewayapi.RouteReasonNoMatchingListenerHostname)
-				message = ""
 			case attachment.NoMatchingParent:
 				reason = string(gatewayapi.RouteReasonNoMatchingParent)
-				message = ""
 			}
 
-			conditions[ref] = []kube_meta.Condition{
-				{
-					Type:    string(gatewayapi.RouteConditionAccepted),
-					Status:  kube_meta.ConditionFalse,
-					Reason:  reason,
-					Message: message,
-				},
+			if !kube_apimeta.IsStatusConditionFalse(routeConditions, string(gatewayapi.RouteConditionAccepted)) {
+				kube_apimeta.SetStatusCondition(&routeConditions, kube_meta.Condition{
+					Type:   string(gatewayapi.RouteConditionAccepted),
+					Status: kube_meta.ConditionFalse,
+					Reason: reason,
+				})
 			}
 		}
+
+		conditions[ref] = routeConditions
 	}
 
 	var kumaRoute *mesh_proto.MeshGatewayRoute

@@ -107,8 +107,7 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
 			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName,
-			tests.TLSRouteSimpleSameNamespace.ShortName,                     // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
-			tests.HTTPRouteInvalidCrossNamespaceParentRef.ShortName:         // TODO
+			tests.TLSRouteSimpleSameNamespace.ShortName: // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
 			continue
 		}
 		passingTests = append(passingTests, test)
