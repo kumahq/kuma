@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/test/framework/k8sutils"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
