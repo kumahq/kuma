@@ -5,8 +5,6 @@ EXAMPLE_DATAPLANE_NAME ?= example
 EXAMPLE_DATAPLANE_INBOUND_PORT ?= 8000
 EXAMPLE_DATAPLANE_SERVICE_PORT ?= 10011
 EXAMPLE_DATAPLANE_SERVICE_TAG ?= echo-service
-EXAMPLE_DATAPLANE_TOKEN_VALID_FOR ?= 24h
-EXAMPLE_DATAPLANE_TOKEN_PATH ?= /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 ENVOY_ADMIN_PORT ?= 9901
 
 define EXAMPLE_DATAPLANE_RESOURCE
@@ -70,40 +68,16 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 .PHONY: run/example/envoy/universal
 run/example/envoy/universal: run/echo-server run/example/envoy
 
-.PHONY: run/example/frontend/universal
-run/example/frontend/universal: run/echo-server/frontend run/example/frontend
-
 .PHONY: run/example/envoy
 run/example/envoy: export KUMA_DATAPLANE_RUNTIME_RESOURCE=$(EXAMPLE_DATAPLANE_RESOURCE)
 run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
-	$(BUILD_KUMACTL_DIR)/kumactl generate dataplane-token \
-		--name=$(EXAMPLE_DATAPLANE_NAME) \
-		--mesh=$(EXAMPLE_DATAPLANE_MESH) \
-		--valid-for=$(EXAMPLE_DATAPLANE_TOKEN_VALID_FOR) \
-		> $(EXAMPLE_DATAPLANE_TOKEN_PATH)
-	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=$(EXAMPLE_DATAPLANE_TOKEN_PATH) \
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
+	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run --log-level=debug
-
-.PHONY: run/example/frontend
-run/example/frontend:
-	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token \
-		--name=frontend \
-		--mesh=$(EXAMPLE_DATAPLANE_MESH) \
-		--valid-for=$(EXAMPLE_DATAPLANE_TOKEN_VALID_FOR) \
-		> /tmp/kuma-dp-frontend-$(EXAMPLE_DATAPLANE_MESH)-token
-	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-frontend-$(EXAMPLE_DATAPLANE_MESH)-token \
-	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run \
-		--log-level=debug \
-		--dataplane-file='./tmp/frontend-dataplane.yaml' \
-		--cp-address='https://127.0.0.1:5678'
 
 .PHONY: config_dump/example/envoy
 config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
-	@curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump | jq 'del(.configs[].bootstrap.node.extensions)'
-
-.PHONY: config_dump/example/frontend
-config_dump/example/frontend: ## Dev: Dump effective configuration of example Frontend
-	@curl -s localhost:9902/config_dump | yq -P 'del(.configs[].bootstrap.node.extensions)'
+	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
 .PHONY: run/universal/memory
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
@@ -130,14 +104,10 @@ stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
 
 .PHONY: run/kuma-dp
 run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
-	$(BUILD_KUMACTL_DIR)/kumactl generate dataplane-token \
-		--name=$(EXAMPLE_DATAPLANE_NAME) \
-		--mesh=$(EXAMPLE_DATAPLANE_MESH) \
-		--valid-for=$(EXAMPLE_DATAPLANE_TOKEN_VALID_FOR) \
-		> $(EXAMPLE_DATAPLANE_TOKEN_PATH)
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
-	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=$(EXAMPLE_DATAPLANE_TOKEN_PATH) \
+	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
 .PHONY: run/xds-client
@@ -147,7 +117,3 @@ run/xds-client:
 .PHONY: run/echo-server
 run/echo-server:
 	go run test/server/main.go echo --port=$(EXAMPLE_DATAPLANE_SERVICE_PORT) &
-
-.PHONY: run/echo-server/frontend
-run/echo-server/frontend:
-	go run test/server/main.go echo --port=8888 &
