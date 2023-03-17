@@ -183,6 +183,9 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
+    - install_build_tools:
+        go_arch: << parameters.arch >>
+        go_os: linux
     - checkout
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
@@ -190,9 +193,6 @@ jobs:
           - halt_non_priority_job
     - halt_job_if_labeled:
         label: "ci/skip-test"
-    - install_build_tools:
-        go_arch: << parameters.arch >>
-        go_os: linux
     - restore_cache:
         keys:
         - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
@@ -248,6 +248,8 @@ jobs:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
     steps:
+      - install_build_tools:
+          go_arch: << parameters.arch >>
       - checkout
       - halt_job_if_labeled:
           label: "ci/skip-test"
@@ -289,8 +291,6 @@ jobs:
               skip "universal only runs on kind"
             fi
             echo "Continuing tests"
-      - install_build_tools:
-          go_arch: << parameters.arch >>
       - restore_cache:
           keys:
             - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
@@ -353,13 +353,13 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - install_build_tools:
+        go_arch: <<parameters.arch>>
     - checkout
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
         steps:
           - halt_non_priority_job
-    - install_build_tools:
-        go_arch: <<parameters.arch>>
     - restore_cache:
         keys:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
