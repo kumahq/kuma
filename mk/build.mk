@@ -48,28 +48,35 @@ build/release: $(patsubst %,build/%,$(BUILD_RELEASE_BINARIES)) ## Dev: Build all
 build/test: $(patsubst %,build/%,$(BUILD_TEST_BINARIES)) ## Dev: Build testing binaries
 
 .PHONY: build/linux-amd64
-build/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build
+build/linux-amd64: GOOS=linux
+build/linux-amd64: GOARCH=amd64
+build/linux-amd64: build
 
 .PHONY: build/linux-arm64
-build/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build
+build/linux-arm64: GOOS=linux
+build/linux-arm64: GOARCH=arm64
+build/linux-arm64: build
 
 .PHONY: build/release/linux-amd64
-build/release/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/release
+build/release/linux-amd64: GOOS=linux
+build/release/linux-amd64: GOARCH=amd64
+build/release/linux-amd64: build/release
 
 .PHONY: build/release/linux-arm64
-build/release/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/release
+build/release/linux-arm64: GOOS=linux
+build/release/linux-arm64: GOARCH=arm64
+build/release/linux-arm64: build/release
 
 .PHONY: build/test/linux-amd64
-build/test/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test
+build/test/linux-amd64: GOOS=linux
+build/test/linux-amd64: GOARCH=amd64
+build/test/linux-amd64: build/test
 
 .PHONY: build/test/linux-arm64
-build/test/linux-arm64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test
+build/test/linux-arm64: GOOS=linux
+build/test/linux-arm64: GOARCH=arm64
+build/test/linux-arm64: build/test
+
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
@@ -111,60 +118,74 @@ build/test-server: ## Dev: Build `test-server` binary
 	$(Build_Go_Application) ./test/server
 
 .PHONY: build/kuma-cni/linux-amd64
-build/kuma-cni/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cni
+build/kuma-cni/linux-amd64: GOOS=linux
+build/kuma-cni/linux-amd64: GOARCH=amd64
+build/kuma-cni/linux-amd64: build/kuma-cni
 
 .PHONY: build/kuma-cni/linux-arm64
-build/kuma-cni/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cni
+build/kuma-cni/linux-arm64: GOOS=linux
+build/kuma-cni/linux-arm64: GOARCH=arm64
+build/kuma-cni/linux-arm64: build/kuma-cni
 
 .PHONY: build/install-cni/linux-amd64
-build/install-cni/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/install-cni
+build/install-cni/linux-amd64: GOOS=linux
+build/install-cni/linux-amd64: GOARCH=amd64
+build/install-cni/linux-amd64: build/install-cni
 
 .PHONY: build/install-cni/linux-arm64
-build/install-cni/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/install-cni
+build/install-cni/linux-arm64: GOOS=linux
+build/install-cni/linux-arm64: GOARCH=arm64
+build/install-cni/linux-arm64: build/install-cni
 
 .PHONY: build/kuma-cp/linux-amd64
-build/kuma-cp/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
+build/kuma-cp/linux-amd64: GOOS=linux
+build/kuma-cp/linux-amd64: GOARCH=amd64
+build/kuma-cp/linux-amd64: build/kuma-cp
 
 .PHONY: build/kuma-cp/linux-arm64
-build/kuma-cp/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cp
+build/kuma-cp/linux-arm64: GOOS=linux
+build/kuma-cp/linux-arm64: GOARCH=arm64
+build/kuma-cp/linux-arm64: build/kuma-cp
 
 .PHONY: build/kuma-dp/linux-amd64
-build/kuma-dp/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-dp
+build/kuma-dp/linux-amd64: GOOS=linux
+build/kuma-dp/linux-amd64: GOARCH=amd64
+build/kuma-dp/linux-amd64: build/kuma-dp
 
 .PHONY: build/kuma-dp/linux-arm64
-build/kuma-dp/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-dp
+build/kuma-dp/linux-arm64: GOOS=linux
+build/kuma-dp/linux-arm64: GOARCH=arm64
+build/kuma-dp/linux-arm64: build/kuma-dp
 
 .PHONY: build/kumactl/linux-amd64
-build/kumactl/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kumactl
+build/kumactl/linux-amd64: GOOS=linux
+build/kumactl/linux-amd64: GOARCH=amd64
+build/kumactl/linux-amd64: build/kumactl
 
 .PHONY: build/kumactl/linux-arm64
-build/kumactl/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kumactl
+build/kumactl/linux-arm64: GOOS=linux
+build/kumactl/linux-arm64: GOARCH=arm64
+build/kumactl/linux-arm64: build/kumactl
 
 .PHONY: build/coredns/linux-amd64
-build/coredns/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/coredns
+build/coredns/linux-amd64: GOOS=linux
+build/coredns/linux-amd64: GOARCH=amd64
+build/coredns/linux-amd64: build/coredns
 
 .PHONY: build/coredns/linux-arm64
-build/coredns/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/coredns
+build/coredns/linux-arm64: GOOS=linux
+build/coredns/linux-arm64: GOARCH=arm64
+build/coredns/linux-arm64: build/coredns
 
 .PHONY: build/test-server/linux-amd64
-build/test-server/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test-server
+build/test-server/linux-amd64: GOOS=linux
+build/test-server/linux-amd64: GOARCH=amd64
+build/test-server/linux-amd64: build/test-server
 
 .PHONY: build/test-server/linux-arm64
-build/test-server/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/test-server
+build/test-server/linux-arm64: GOOS=linux
+build/test-server/linux-arm64: GOARCH=arm64
+build/test-server/linux-arm64: build/test-server
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean

@@ -1,16 +1,11 @@
 #!/bin/bash
 
 LABEL_TO_CHECK="$1"
-PR_NUMBER="${2:-$(basename "${CIRCLE_PULL_REQUEST}")}"
-CURL_OUTPUT=$(curl -s --fail -H "Accept: application/vnd.github+json" https://api.github.com/repos/kumahq/kuma/pulls/"$PR_NUMBER")
-
-if [[ $CURL_OUTPUT != "" ]]; then
-    LABELS=$(jq '.labels[].name' <<< "$CURL_OUTPUT")
-    if echo "$LABELS" | grep -q "$LABEL_TO_CHECK"; then
-        echo "true"
-    else
-        echo "false"
-    fi
-else
-    echo "curl call failed"
+# CIRCLE_PULL_REQUEST looks like: https://github.com/kumahq/kuma/pull/2949 the api is at: https://api.github.com/kumahq/kuma/pulls/2949
+URL=$(echo "${CIRCLE_PULL_REQUEST}" | sed 's:github.com:api.github.com/repos:' | sed 's:pull:pulls:')
+AUTH=""
+if [[ "$GITHUB_TOKEN" != "" ]]; then
+  AUTH="Authorization: bearer $GITHUB_TOKEN"
 fi
+
+curl -s --fail -H "$AUTH" -H "Accept: application/vnd.github+json" "$URL" | jq --arg l "$LABEL_TO_CHECK" '.labels | any(.name == $l)'

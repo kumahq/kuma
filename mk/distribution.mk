@@ -53,7 +53,11 @@ endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p build/distributions/out
+ifeq ($(shell uname),Darwin)
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
+else
+	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ .
+endif
 	shasum -a 256 $$@ > $$@.sha256
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
