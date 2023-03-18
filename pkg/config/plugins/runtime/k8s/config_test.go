@@ -55,9 +55,9 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.Resources.Limits.Memory).To(Equal("1512Mi"))
 		// and
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
-		Expect(cfg.Injector.CNIEnabled).To(Equal(true))
+		Expect(cfg.Injector.CNIEnabled).To(BeTrue())
 		// and
-		Expect(cfg.Injector.BuiltinDNS.Enabled).To(Equal(true))
+		Expect(cfg.Injector.BuiltinDNS.Enabled).To(BeTrue())
 		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
 		Expect(cfg.MarshalingCacheExpirationTime.Duration).To(Equal(1 * time.Second))

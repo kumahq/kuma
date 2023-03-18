@@ -22,7 +22,7 @@ var _ = Describe("MeshProxyPatch", func() {
 				verr := resource.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("cluster modifications", `
 targetRef:

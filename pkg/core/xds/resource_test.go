@@ -14,7 +14,7 @@ var _ = Describe("ResourceSet", func() {
 		// when
 		resources := NewResourceSet()
 		// then
-		Expect(len(resources.List())).To(Equal(0))
+		Expect(resources.List()).To(BeEmpty())
 	})
 
 	It("set of 1 element should return a list of 1 element", func() {

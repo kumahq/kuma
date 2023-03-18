@@ -130,7 +130,7 @@ var _ = Describe("Kubernetes Annotations", func() {
 
 			val, hasKey, err := metadata.Annotations(annotations).GetUint32("key1")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hasKey).To(Equal(true))
+			Expect(hasKey).To(BeTrue())
 			Expect(val).To(Equal(uint32(100)))
 		})
 
