@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 )
 
 // PgxListener will listen for NOTIFY commands on a channel.
