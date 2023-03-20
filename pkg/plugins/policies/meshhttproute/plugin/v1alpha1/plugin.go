@@ -32,7 +32,9 @@ type ToRouteRule struct {
 	Origin []core_model.ResourceMeta
 }
 
-type plugin struct{}
+type plugin struct {
+	core_plugins.UnimplementedPolicyPlugin
+}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

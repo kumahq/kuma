@@ -222,39 +222,17 @@ var pluginTemplate = template.Must(template.New("").Option("missingkey=error").P
 	`package {{ .version }}
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
-	api "{{ .package }}"
-	{{- end}}
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("{{.name}}")
 
 type plugin struct {
+	core_plugins.UnimplementedPolicyPlugin
 }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	{{- if not .generateTargetRef }}
-	panic("implement me")
-	{{- else }}
-	return matchers.MatchedPolicies(api.{{ .name }}Type, dataplane, resources)
-	{{- end }}
-}
-
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	log.Info("apply is not implemented")
-	return nil
 }
 `))
 

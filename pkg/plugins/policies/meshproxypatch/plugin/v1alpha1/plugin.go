@@ -17,7 +17,9 @@ type modificator interface {
 	apply(*core_xds.ResourceSet) error
 }
 
-type plugin struct{}
+type plugin struct {
+	core_plugins.UnimplementedPolicyPlugin
+}
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 

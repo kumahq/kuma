@@ -89,9 +89,22 @@ type AuthnAPIServerPlugin interface {
 // PolicyPlugin a plugin to add a Policy to Kuma
 type PolicyPlugin interface {
 	Plugin
-	// MatchedPolicies return all the policies of the plugins' type matching this dataplane. This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
+	// MatchedPolicies return all the policies of the plugins' type matching this dataplane.
+	// This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
 	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
 	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.
 	// You can access matching policies by using `proxy.Policies.Dynamic`.
 	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
+}
+
+var _ PolicyPlugin = &UnimplementedPolicyPlugin{}
+
+type UnimplementedPolicyPlugin struct{}
+
+func (u *UnimplementedPolicyPlugin) MatchedPolicies(*core_mesh.DataplaneResource, xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return core_xds.TypedMatchingPolicies{}, errors.New("method is not implemented")
+}
+
+func (u *UnimplementedPolicyPlugin) Apply(*core_xds.ResourceSet, xds_context.Context, *core_xds.Proxy) error {
+	return errors.New("method is not implemented")
 }

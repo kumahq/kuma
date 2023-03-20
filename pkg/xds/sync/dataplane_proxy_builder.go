@@ -159,7 +159,6 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:            map[core_model.ResourceType]core_xds.TypedMatchingPolicies{},
 	}
 	for name, p := range plugins.Plugins().PolicyPlugins() {
 		res, err := p.MatchedPolicies(dataplane, resources)
