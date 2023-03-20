@@ -2,6 +2,11 @@ package postgres
 
 import (
 	"context"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	postgres_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -10,9 +15,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"time"
 )
 
 var _ = Describe("Events", func() {
@@ -47,7 +49,7 @@ var _ = Describe("Events", func() {
 			pStore, err := NewStore(metrics, cfg)
 			Expect(err).ToNot(HaveOccurred())
 
-			time.Sleep(1*time.Second)
+			time.Sleep(1 * time.Second)
 			err = pStore.Create(context.Background(), mesh.NewMeshResource())
 			Expect(err).ToNot(HaveOccurred())
 
