@@ -15,7 +15,6 @@ import (
 
 // PgxListener will listen for NOTIFY commands on a channel.
 type PgxListener struct {
-	errCh           chan error
 	notificationsCh chan *Notification
 
 	logger logr.Logger
@@ -46,7 +45,6 @@ func NewPgxListener(config postgres.PostgresStoreConfig, logger logr.Logger) (Li
 		return nil, err
 	}
 	l := &PgxListener{
-		errCh:           make(chan error),
 		notificationsCh: make(chan *Notification, 32),
 		logger:          logger,
 		ctx:             ctx,
@@ -64,7 +62,6 @@ func NewPgxListener(config postgres.PostgresStoreConfig, logger logr.Logger) (Li
 	return l, nil
 }
 
-// Start will enable reconnections and messages.
 func (l *PgxListener) Start() {
 	l.logger.Info("started")
 
@@ -84,6 +81,12 @@ func (l *PgxListener) Start() {
 	l.running = true
 }
 
+func (l *PgxListener) Close() error {
+	l.stop()
+	close(l.notificationsCh)
+	return nil
+}
+
 func (l *PgxListener) run(ctx context.Context) {
 	for {
 		select {
@@ -97,13 +100,13 @@ func (l *PgxListener) run(ctx context.Context) {
 			err = nil
 		}
 		if err != nil {
-			l.errCh <- err
+			l.logger.Error(err, "error handling notification")
 		}
 	}
 }
 
-// Stop will end all current connections and stop reconnecting.
-func (l *PgxListener) Stop() {
+// stop will end all current connections and stop reconnecting.
+func (l *PgxListener) stop() {
 	l.logger.Info("stopped")
 	l.mx.Lock()
 	defer l.mx.Unlock()
@@ -118,20 +121,6 @@ func (l *PgxListener) Stop() {
 	l.running = false
 }
 
-// Close performs a shutdown with a background context.
-func (l *PgxListener) Close() error {
-	return l.Shutdown(context.Background())
-}
-
-// Shutdown will shut down the listener and returns after all connections have been completed.
-// It is not necessary to call Stop() before Close().
-func (l *PgxListener) Shutdown(context.Context) error {
-	l.Stop()
-	close(l.notificationsCh)
-	close(l.errCh)
-	return nil
-}
-
 func (l *PgxListener) handleNotifications(ctx context.Context) error {
 	defer l.disconnect()
 	t := time.NewTicker(3 * time.Second)
@@ -144,7 +133,7 @@ func (l *PgxListener) handleNotifications(ctx context.Context) error {
 		default:
 		}
 		if err != nil {
-			l.errCh <- err
+			l.logger.Error(err, "error connecting")
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -159,6 +148,8 @@ func (l *PgxListener) handleNotifications(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	l.logger.Info("event happened", "event", notification)
 
 	select {
 	// Writing to channel
@@ -175,11 +166,6 @@ func toBareNotification(notification *pgconn.Notification) *Notification {
 	}
 }
 
-// Errors will return a channel that will be fed errors from this listener.
-func (l *PgxListener) Errors() <-chan error { return l.errCh }
-
-// Notify returns the notification channel for this listener.
-// Nil values will not be returned until the listener is closed.
 func (l *PgxListener) Notify() chan *Notification { return l.notificationsCh }
 
 func (l *PgxListener) disconnect() {
