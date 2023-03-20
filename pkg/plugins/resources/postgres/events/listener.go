@@ -16,15 +16,15 @@ import (
 var log = core.Log.WithName("postgres-event-listener")
 
 type listener struct {
-	cfg postgres.PostgresStoreConfig
-	out events.Emitter
+	cfg    postgres.PostgresStoreConfig
+	out    events.Emitter
 	usePgx bool
 }
 
 func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter, usePgx bool) component.Component {
 	return &listener{
-		cfg: cfg,
-		out: out,
+		cfg:    cfg,
+		out:    out,
 		usePgx: usePgx,
 	}
 }

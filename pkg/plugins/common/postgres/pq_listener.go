@@ -10,7 +10,7 @@ import (
 )
 
 type pqListener struct {
-	listener *pq.Listener
+	listener      *pq.Listener
 	notifications chan *Notification
 }
 
@@ -51,7 +51,7 @@ func toListener(listener *pq.Listener) Listener {
 
 	go func() {
 		for {
-			pqNotification, more := <- pqNotificationCh
+			pqNotification, more := <-pqNotificationCh
 			if more {
 				notification := toNotification(pqNotification)
 				notificationCh <- notification

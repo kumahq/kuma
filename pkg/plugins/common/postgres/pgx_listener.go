@@ -2,9 +2,10 @@ package postgres
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"sync"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -19,10 +20,10 @@ type PgxListener struct {
 
 	logger logr.Logger
 
-	channel  string
+	channel string
 	conn    *pgxpool.Conn
-	ctx      context.Context
-	db       *pgxpool.Pool
+	ctx     context.Context
+	db      *pgxpool.Pool
 
 	stopFn    func()
 	stoppedCh chan struct{}
