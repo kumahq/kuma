@@ -51,9 +51,11 @@ func toListener(listener *pq.Listener) Listener {
 
 	go func() {
 		for {
-			pqNotification := <- pqNotificationCh
-			notification := toNotification(pqNotification)
-			notificationCh <- notification
+			pqNotification, more := <- pqNotificationCh
+			if more {
+				notification := toNotification(pqNotification)
+				notificationCh <- notification
+			}
 		}
 	}()
 

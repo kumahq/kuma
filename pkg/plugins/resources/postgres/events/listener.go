@@ -18,17 +18,26 @@ var log = core.Log.WithName("postgres-event-listener")
 type listener struct {
 	cfg postgres.PostgresStoreConfig
 	out events.Emitter
+	usePgx bool
 }
 
-func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter) component.Component {
+func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter, usePgx bool) component.Component {
 	return &listener{
 		cfg: cfg,
 		out: out,
+		usePgx: usePgx,
 	}
 }
 
 func (k *listener) Start(stop <-chan struct{}) error {
-	listener, err := common_postgres.NewListener(k.cfg, log)
+	var err error
+	var listener common_postgres.Listener
+	if k.usePgx {
+		listener, err = common_postgres.NewPgxListener(k.cfg, log)
+	} else {
+		listener, err = common_postgres.NewListener(k.cfg, log)
+	}
+
 	if err != nil {
 		return err
 	}

@@ -42,5 +42,5 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 }
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
-	return pc.ComponentManager().Add(postgres_events.NewListener(*pc.Config().Store.Postgres, out))
+	return pc.ComponentManager().Add(postgres_events.NewListener(*pc.Config().Store.Postgres, out, true))
 }
