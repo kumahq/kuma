@@ -2,56 +2,71 @@ package postgres
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 )
 
-// Listener will listen for NOTIFY commands on a set of channels.
-type Listener struct {
-	notifCh chan *pgconn.Notification
+// PgxListener will listen for NOTIFY commands on a channel.
+type PgxListener struct {
+	errCh           chan error
+	notificationsCh chan *Notification
 
-	logger *logr.Logger
+	logger logr.Logger
 
+	channel  string
+	conn    *pgxpool.Conn
 	ctx      context.Context
 	db       *pgxpool.Pool
-	channels []string
 
 	stopFn    func()
 	stoppedCh chan struct{}
-	errCh     chan error
 
 	mx      sync.Mutex
-	conn    *pgxpool.Conn
 	running bool
 }
 
-// NewPgxListener will create and initialize a Listener which will automatically reconnect and listen to the provided channels.
-func NewPgxListener(ctx context.Context, logger *logr.Logger, db *pgxpool.Pool, channels ...string) (*Listener, error) {
-	l := &Listener{
-		notifCh:  make(chan *pgconn.Notification, 32),
-		ctx:      ctx,
-		channels: channels,
-		db:       db,
-		errCh:    make(chan error),
-		logger:   logger,
-	}
+var _ Listener = (*PgxListener)(nil)
 
-	err := l.connect(ctx)
+// NewPgxListener will create and initialize a PgxListener which will automatically reconnect and listen to the provided channels.
+func NewPgxListener(config postgres.PostgresStoreConfig, logger logr.Logger) (Listener, error) {
+	ctx := context.Background()
+	connectionString, err := config.ConnectionString()
 	if err != nil {
 		return nil, err
 	}
+	db, err := pgxpool.New(context.Background(), connectionString)
+	if err != nil {
+		return nil, err
+	}
+	l := &PgxListener{
+		errCh:           make(chan error),
+		notificationsCh: make(chan *Notification, 32),
+		logger:          logger,
+		ctx:             ctx,
+		channel:         "resource_events",
+		db:              db,
+	}
+
+	err = l.connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Start()
 
 	return l, nil
 }
 
 // Start will enable reconnections and messages.
-func (l *Listener) Start() {
+func (l *PgxListener) Start() {
+	l.logger.Info("started")
+
 	l.mx.Lock()
 	defer l.mx.Unlock()
 
@@ -68,7 +83,7 @@ func (l *Listener) Start() {
 	l.running = true
 }
 
-func (l *Listener) run(ctx context.Context) {
+func (l *PgxListener) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -87,7 +102,8 @@ func (l *Listener) run(ctx context.Context) {
 }
 
 // Stop will end all current connections and stop reconnecting.
-func (l *Listener) Stop() {
+func (l *PgxListener) Stop() {
+	l.logger.Info("stopped")
 	l.mx.Lock()
 	defer l.mx.Unlock()
 
@@ -102,20 +118,20 @@ func (l *Listener) Stop() {
 }
 
 // Close performs a shutdown with a background context.
-func (l *Listener) Close() error {
+func (l *PgxListener) Close() error {
 	return l.Shutdown(context.Background())
 }
 
 // Shutdown will shut down the listener and returns after all connections have been completed.
 // It is not necessary to call Stop() before Close().
-func (l *Listener) Shutdown(context.Context) error {
+func (l *PgxListener) Shutdown(context.Context) error {
 	l.Stop()
-	close(l.notifCh)
+	close(l.notificationsCh)
 	close(l.errCh)
 	return nil
 }
 
-func (l *Listener) handleNotifications(ctx context.Context) error {
+func (l *PgxListener) handleNotifications(ctx context.Context) error {
 	defer l.disconnect()
 	t := time.NewTicker(3 * time.Second)
 	defer t.Stop()
@@ -145,21 +161,27 @@ func (l *Listener) handleNotifications(ctx context.Context) error {
 
 	select {
 	// Writing to channel
-	case l.notifCh <- notification:
+	case l.notificationsCh <- toBareNotification(notification):
 	default:
 	}
 
 	return nil
 }
 
+func toBareNotification(notification *pgconn.Notification) *Notification {
+	return &Notification{
+		Payload: notification.Payload,
+	}
+}
+
 // Errors will return a channel that will be fed errors from this listener.
-func (l *Listener) Errors() <-chan error { return l.errCh }
+func (l *PgxListener) Errors() <-chan error { return l.errCh }
 
-// Notifications returns the notification channel for this listener.
+// Notify returns the notification channel for this listener.
 // Nil values will not be returned until the listener is closed.
-func (l *Listener) Notifications() <-chan *pgconn.Notification { return l.notifCh }
+func (l *PgxListener) Notify() chan *Notification { return l.notificationsCh }
 
-func (l *Listener) disconnect() {
+func (l *PgxListener) disconnect() {
 	if l.conn == nil {
 		return
 	}
@@ -167,7 +189,7 @@ func (l *Listener) disconnect() {
 	l.conn = nil
 }
 
-func (l *Listener) connect(ctx context.Context) error {
+func (l *PgxListener) connect(ctx context.Context) error {
 	if l.conn != nil {
 		return nil
 	}
@@ -183,24 +205,18 @@ func (l *Listener) connect(ctx context.Context) error {
 
 	l.conn = conn
 
-	for _, name := range l.channels {
-		select {
-		case <-ctx.Done():
-			l.disconnect()
-			return ctx.Err()
-		default:
-		}
+	select {
+	case <-ctx.Done():
+		l.disconnect()
+		return ctx.Err()
+	default:
+	}
 
-		_, err = conn.Exec(ctx, "listen "+quoteID(name))
-		if err != nil {
-			l.disconnect()
-			return err
-		}
+	_, err = conn.Exec(ctx, "listen "+l.channel)
+	if err != nil {
+		l.disconnect()
+		return err
 	}
 
 	return nil
-}
-
-func quoteID(parts ...string) string {
-	return pgx.Identifier(parts).Sanitize()
 }
