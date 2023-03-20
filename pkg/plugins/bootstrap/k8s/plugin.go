@@ -182,7 +182,7 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	return nil
 }
 
-// Payload check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
+// Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
 var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-chan struct{}) error {
 	return nil
 })
