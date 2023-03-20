@@ -1,8 +1,10 @@
 package events
 
 import (
+	"context"
 	"encoding/json"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
@@ -28,20 +30,31 @@ func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter) component
 }
 
 func (k *listener) Start(stop <-chan struct{}) error {
-	listener, err := common_postgres.NewListener(k.cfg, log)
+	connectionString, err := k.cfg.ConnectionString()
 	if err != nil {
 		return err
 	}
+	pool, err := pgxpool.New(context.Background(), connectionString)
+	if err != nil {
+		return err
+	}
+	listener, err := common_postgres.NewPgxListener(context.Background(), &log, pool, "resource_events")
+	if err != nil {
+		return err
+	}
+	listener.Start()
 	defer func() {
 		if err := listener.Close(); err != nil {
 			log.Error(err, "error closing postgres listener")
 		}
 	}()
 
+	notifications := listener.Notifications()
+
 	log.Info("start monitoring")
 	for {
 		select {
-		case n := <-listener.Notify:
+		case n := <-notifications:
 			if n == nil {
 				continue
 			}
@@ -53,7 +66,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 					Type string `json:"type"`
 				}
 			}{}
-			if err := json.Unmarshal([]byte(n.Extra), obj); err != nil {
+			if err := json.Unmarshal([]byte(n.Payload), obj); err != nil {
 				log.Error(err, "unable to unmarshal event from PostgreSQL")
 				continue
 			}
