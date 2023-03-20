@@ -23,7 +23,7 @@ var _ = Describe("MeshTrace", func() {
 				verr := meshTrace.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("full zipkin example", `
 targetRef:

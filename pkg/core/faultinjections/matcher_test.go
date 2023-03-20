@@ -83,7 +83,7 @@ var _ = Describe("Match", func() {
 
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(len(bestMatched)).To(Equal(len(given.expected)))
+			Expect(bestMatched).To(HaveLen(len(given.expected)))
 			for key := range bestMatched {
 				elements := []interface{}{}
 				for _, expected := range given.expected[key] {

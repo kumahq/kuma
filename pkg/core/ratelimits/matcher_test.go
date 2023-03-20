@@ -92,7 +92,7 @@ var _ = Describe("Match", func() {
 			Expect(err).ToNot(HaveOccurred())
 			inboundMatched := allMatched.Inbound
 			for key := range inboundMatched {
-				Expect(len(inboundMatched[key])).To(Equal(len(given.expected.Inbound[key])))
+				Expect(inboundMatched[key]).To(HaveLen(len(given.expected.Inbound[key])))
 				for i, matched := range inboundMatched[key] {
 					Expect(matched.Spec).To(MatchProto(given.expected.Inbound[key][i].Spec))
 				}

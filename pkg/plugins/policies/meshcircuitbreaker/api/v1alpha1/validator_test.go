@@ -22,7 +22,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				verr := meshCircuitBreaker.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("full example", `
 targetRef:
