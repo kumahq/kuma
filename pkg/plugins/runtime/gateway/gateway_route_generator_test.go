@@ -281,6 +281,8 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 302
+          path:
+            replaceFull: /redirected
 `,
 		),
 
