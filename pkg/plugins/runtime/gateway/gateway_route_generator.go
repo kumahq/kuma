@@ -181,13 +181,24 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 	for _, f := range rule.GetFilters() {
 		if r := f.GetRedirect(); r != nil {
-			entry.Action.Redirect = &route.Redirection{
+			redirection := &route.Redirection{
 				Status:     r.GetStatusCode(),
 				Scheme:     r.GetScheme(),
 				Host:       r.GetHostname(),
 				Port:       r.GetPort(),
 				StripQuery: true,
 			}
+			if p := r.GetPath(); p != nil {
+				rewrite := &route.Rewrite{}
+				switch t := p.GetPath().(type) {
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull:
+					rewrite.ReplaceFullPath = &t.ReplaceFull
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch:
+					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
+				}
+				redirection.PathRewrite = rewrite
+			}
+			entry.Action.Redirect = redirection
 		} else if m := f.GetMirror(); m != nil {
 			entry.Mirror = &route.Mirror{
 				Percentage: m.GetPercentage().GetValue(),
