@@ -1,0 +1,15 @@
+resources:
+- name: cluster-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    lbPolicy: RANDOM
+    name: backend
+- name: cluster-payment
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    lbPolicy: RING_HASH
+    name: payment
+    ringHashLbConfig:
+      hashFunction: MURMUR_HASH_2
+      maximumRingSize: "1000"
+      minimumRingSize: "100"

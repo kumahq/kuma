@@ -16,7 +16,7 @@ func Inspect() {
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName)).
 			Setup(universal.Cluster)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())

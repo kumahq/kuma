@@ -35,7 +35,7 @@ var _ = Describe("Validation Error", func() {
 		// when
 		err := validationErr.OrNil()
 
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Append()", func() {

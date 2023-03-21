@@ -4,6 +4,7 @@ linters:
     - contextcheck
     - errcheck
     - gci
+    - ginkgolinter
     - gocritic
     - gofumpt
     - gomodguard
@@ -29,8 +30,9 @@ run:
   modules-download-mode: readonly
   skip-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
   skip-dirs:
-  - pkg/transparentproxy/istio/tools
-  - (^|/)vendored($|/)
+    - pkg/transparentproxy/istio/tools
+    - (^|/)vendored($|/)
+  timeout: 30m
 
 linters-settings:
   gocritic:
@@ -67,18 +69,23 @@ linters-settings:
   gomodguard:
     blocked:
       modules:
-      - github.com/go-errors/errors:
-          recommendations:
-          - github.com/pkg/errors
-      - github.com/ghodss/yaml:
-          recommendations:
-          - sigs.k8s.io/yaml
-      - gopkg.in/yaml.v2:
-          recommendations:
-          - sigs.k8s.io/yaml
-      - gopkg.in/yaml.v3:
-          recommendations:
-          - sigs.k8s.io/yaml
+        - github.com/go-errors/errors:
+            recommendations:
+              - github.com/pkg/errors
+        - github.com/ghodss/yaml:
+            recommendations:
+              - sigs.k8s.io/yaml
+        - gopkg.in/yaml.v2:
+            recommendations:
+              - sigs.k8s.io/yaml
+        - gopkg.in/yaml.v3:
+            recommendations:
+              - sigs.k8s.io/yaml
+        - io/ioutil:
+            recommandations:
+              - io
+              - os
+
   misspell:
     locale: US
     ignore-words:

@@ -78,8 +78,8 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(len(pod.Spec.InitContainers)).To(Equal(1))
-		Expect(len(pod.Spec.Containers)).To(Equal(2))
+		Expect(pod.Spec.InitContainers).To(HaveLen(1))
+		Expect(pod.Spec.Containers).To(HaveLen(2))
 		// and kuma-sidecar is the first container
 		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
 		// should have default value *int64 = 0
@@ -97,8 +97,8 @@ spec:
 		// then
 		pointerTrue := new(bool)
 		*pointerTrue = true
-		Expect(len(pod.Spec.InitContainers)).To(Equal(1))
-		Expect(len(pod.Spec.Containers)).To(Equal(2))
+		Expect(pod.Spec.InitContainers).To(HaveLen(1))
+		Expect(pod.Spec.Containers).To(HaveLen(2))
 		// and kuma-sidecar is the first container
 		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
 		// should doesn't have defined RunAsUser

@@ -1834,6 +1834,7 @@ spec:
                                     so that Envoy performs two-choice selection if
                                     the field is not set.
                                   format: int32
+                                  minimum: 2
                                   type: integer
                               type: object
                             maglev:
@@ -1863,6 +1864,7 @@ spec:
                                           name:
                                             description: The name of the cookie that
                                               will be used to obtain the hash key.
+                                            minLength: 1
                                             type: string
                                           path:
                                             description: The name of the path for
@@ -1885,6 +1887,7 @@ spec:
                                               is no data associated with the key,
                                               or the stored object is not Envoy::Hashable,
                                               no hash will be produced.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - key
@@ -1895,6 +1898,7 @@ spec:
                                             description: The name of the request header
                                               that will be used to obtain the hash
                                               key.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -1907,6 +1911,7 @@ spec:
                                               the hash key. If the parameter is not
                                               present, no hash will be produced. Query
                                               parameter names are case-sensitive.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -1992,6 +1997,7 @@ spec:
                                           name:
                                             description: The name of the cookie that
                                               will be used to obtain the hash key.
+                                            minLength: 1
                                             type: string
                                           path:
                                             description: The name of the path for
@@ -2014,6 +2020,7 @@ spec:
                                               is no data associated with the key,
                                               or the stored object is not Envoy::Hashable,
                                               no hash will be produced.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - key
@@ -2024,6 +2031,7 @@ spec:
                                             description: The name of the request header
                                               that will be used to obtain the hash
                                               key.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -2036,6 +2044,7 @@ spec:
                                               the hash key. If the parameter is not
                                               present, no hash will be produced. Query
                                               parameter names are case-sensitive.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name

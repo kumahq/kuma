@@ -43,7 +43,7 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 		bytes := []byte(rawResource)
 
 		res, err := rest_types.YAML.UnmarshalCore(bytes)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		switch res.Descriptor().Name {
 		case core_mesh.ZoneEgressType:

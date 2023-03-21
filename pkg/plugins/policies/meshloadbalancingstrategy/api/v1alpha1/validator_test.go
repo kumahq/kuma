@@ -53,60 +53,6 @@ to:
         version: v1
 `),
 		resources.ErrorCases(
-			"lb type errors",
-			[]validators.Violation{
-				{
-					Field:   "spec.to[1].default.loadBalancer.leastRequest",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[2].default.loadBalancer.ringHash",
-					Message: "must be defined",
-				},
-				{
-					Field:   "spec.to[4].default.loadBalancer.maglev",
-					Message: "must be defined",
-				},
-			},
-			`
-type: MeshLoadBalancingStrategy
-mesh: mesh-1
-name: route-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-to: 
-  - targetRef:
-      kind: MeshService
-      name: svc-2
-    default:
-      loadBalancer:
-        type: RoundRobin
-  - targetRef:
-      kind: MeshService
-      name: svc-3
-    default:
-      loadBalancer:
-        type: LeastRequest
-  - targetRef:
-      kind: MeshService
-      name: svc-4
-    default:
-      loadBalancer:
-        type: RingHash
-  - targetRef:
-      kind: MeshService
-      name: svc-5
-    default:
-      loadBalancer:
-        type: Random
-  - targetRef:
-      kind: MeshService
-      name: svc-6
-    default:
-      loadBalancer:
-        type: Maglev`),
-		resources.ErrorCases(
 			"ringHash error",
 			[]validators.Violation{
 				{

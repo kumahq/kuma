@@ -84,7 +84,7 @@ var _ = Describe("Dataplane Manager", func() {
 		actual := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(len(actual.Spec.Networking.Inbound[0].Tags)).To(Equal(1))
+		Expect(actual.Spec.Networking.Inbound[0].Tags).To(HaveLen(1))
 		_, ok := actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]
 		Expect(ok).To(BeFalse())
 
@@ -131,7 +131,7 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(2))
+		Expect(actual.Spec.Networking.Gateway.Tags).To(HaveLen(2))
 		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
@@ -162,7 +162,7 @@ var _ = Describe("Dataplane Manager", func() {
 		actual := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(1))
+		Expect(actual.Spec.Networking.Gateway.Tags).To(HaveLen(1))
 		_, ok := actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]
 		Expect(ok).To(BeFalse())
 
@@ -176,7 +176,7 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(2))
+		Expect(actual.Spec.Networking.Gateway.Tags).To(HaveLen(2))
 		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 

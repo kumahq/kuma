@@ -319,7 +319,7 @@ var _ = Describe("Retry", func() {
 				verr := retry.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("all protocols configuration provided", testCaseWithNoErrors{
 				retry: `
