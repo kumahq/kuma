@@ -18,24 +18,25 @@ var log = core.Log.WithName("postgres-event-listener")
 type listener struct {
 	cfg    postgres.PostgresStoreConfig
 	out    events.Emitter
-	usePgx bool
 }
 
-func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter, usePgx bool) component.Component {
+func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter) component.Component {
 	return &listener{
 		cfg:    cfg,
 		out:    out,
-		usePgx: usePgx,
 	}
 }
 
 func (k *listener) Start(stop <-chan struct{}) error {
 	var err error
 	var listener common_postgres.Listener
-	if k.usePgx {
+	switch k.cfg.DriverName {
+	case postgres.DriverNamePgx:
 		listener, err = common_postgres.NewPgxListener(k.cfg, log)
-	} else {
+	case postgres.DriverNamePq:
 		listener, err = common_postgres.NewListener(k.cfg, log)
+	default:
+		return errors.Errorf("unsupported driver name %s", k.cfg.DriverName)
 	}
 
 	if err != nil {

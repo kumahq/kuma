@@ -92,7 +92,11 @@ func (l *PgxListener) handleNotifications(ctx context.Context) error {
 		}
 
 		l.logger.V(1).Info("event happened", "event", notification)
-		l.notificationsCh <- toBareNotification(notification)
+		select {
+		case l.notificationsCh <- toBareNotification(notification):
+		default:
+			l.logger.V(1).Info("buffer full, event dropped", "event", notification)
+		}
 	}
 }
 
