@@ -97,6 +97,9 @@ A Helm chart for the Kuma Control Plane
 | cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
 | cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
 | cni.experimental.imageEbpf.tag | string | `"0.8.5"` | CNI experimental eBPF image tag |
+| cni.resources.requests.cpu | string | `"100m"` |  |
+| cni.resources.requests.memory | string | `"100Mi"` |  |
+| cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |

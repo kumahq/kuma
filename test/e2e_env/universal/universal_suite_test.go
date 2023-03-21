@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshloadbalancingstrategy"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
@@ -97,4 +98,5 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
+	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 )

@@ -41,12 +41,12 @@ var _ = Describe("Snapshot", func() {
 			// when
 			snapshot := cache.NewSnapshot("v1", nil)
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 
 			// when
 			snapshot = cache.NewSnapshot("v2", &envoy_service_health_v3.HealthCheckSpecifier{})
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 		})
 	})
 

@@ -38,7 +38,7 @@ var _ = Describe("Snapshot", func() {
 			// when
 			snapshot := NewSnapshot("v1", nil)
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 
 			// when
 			snapshot = NewSnapshot("v2", map[string]envoy_types.Resource{
@@ -48,7 +48,7 @@ var _ = Describe("Snapshot", func() {
 				},
 			})
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 		})
 	})
 

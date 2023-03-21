@@ -125,6 +125,8 @@ spec:
             - name: CNI_LOG_LEVEL
               value: "{{ .Values.cni.logLevel }}"
           {{- end }}
+          resources:
+          {{- toYaml .Values.cni.resources | trim | nindent 12 }}
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
