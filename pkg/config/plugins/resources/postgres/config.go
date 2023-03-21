@@ -11,8 +11,10 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
-const DriverNamePgx = "pgx"
-const DriverNamePq = "postgres"
+const (
+	DriverNamePgx = "pgx"
+	DriverNamePq  = "postgres"
+)
 
 var _ config.Config = &PostgresStoreConfig{}
 

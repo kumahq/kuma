@@ -3,6 +3,10 @@ package postgres
 import (
 	"context"
 	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	postgres_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,8 +17,6 @@ import (
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 	"github.com/kumahq/kuma/pkg/util/channels"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Events", func() {
@@ -57,7 +59,7 @@ var _ = Describe("Events", func() {
 
 			go func() {
 				defer GinkgoRecover()
-				for i:=0;!channels.IsClosed(listenerStopCh);i++ {
+				for i := 0; !channels.IsClosed(listenerStopCh); i++ {
 					err := pStore.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(fmt.Sprintf("mesh-%d", i), ""))
 					Expect(err).ToNot(HaveOccurred())
 				}
