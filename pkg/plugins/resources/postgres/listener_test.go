@@ -3,8 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -60,7 +58,7 @@ var _ = Describe("Events", func() {
 		},
 		Entry("When using pq", postgres_config.DriverNamePq),
 		Entry("When using pgx", postgres_config.DriverNamePgx),
-		)
+	)
 
 	DescribeTable("should continue handling notification after postgres recovery",
 		func(driverName string) {
@@ -99,7 +97,7 @@ var _ = Describe("Events", func() {
 		},
 		Entry("When using pq", postgres_config.DriverNamePq),
 		Entry("When using pgx", postgres_config.DriverNamePgx),
-		)
+	)
 })
 
 func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
