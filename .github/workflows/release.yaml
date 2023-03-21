@@ -16,8 +16,10 @@ on:
 
 env:
   CHARTS_REPO: "kumahq/charts"
-  BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
+  LEGACY_BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
+  BINARIES: "darwin-amd64,darwin-arm64,linux-amd64,linux-arm64"
   DOCKER_REPO: "kumahq"
+  PULP_URL: "https://download.konghq.com/kuma-binaries-release/"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check }}
@@ -29,7 +31,7 @@ jobs:
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.2.1
+          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.4.0
       - name: remove-cni
         # CNI was only introduced in 1.7 so versions before should remove
         if: startsWith(env.RELEASE, '1.7') || startsWith(env.RELEASE, '1.6')
@@ -46,12 +48,18 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ env.RELEASE }}
+      - name: check-pulp-legacy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        if: fromJSON(env.CHECK) && (startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
+        run: |
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.LEGACY_BINARIES }}
       - name: check-pulp
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: fromJSON(env.CHECK)
+        if: fromJSON(env.CHECK) && !(startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --url ${{ env.PULP_URL }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
