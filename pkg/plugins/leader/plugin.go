@@ -2,6 +2,7 @@ package leader
 
 import (
 	"time"
+
 	"cirello.io/pglock"
 	"github.com/pkg/errors"
 
