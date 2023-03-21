@@ -59,17 +59,13 @@ func (l *PgxListener) start(ctx context.Context) {
 }
 
 func (l *PgxListener) Close() error {
-	l.stopFn()
-	close(l.notificationsCh)
+	l.stopFn() // this closes the channel by canceling the context
 	l.logger.Info("stopped")
 	return nil
 }
 
 func (l *PgxListener) run(ctx context.Context) {
 	err := l.handleNotifications(ctx)
-	if errors.Is(err, context.Canceled) {
-		err = nil
-	}
 	if err != nil {
 		l.err = err
 		close(l.notificationsCh)
