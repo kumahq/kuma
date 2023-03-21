@@ -21,14 +21,8 @@ import (
 
 var _ = Describe("Events", func() {
 	var cfg postgres_config.PostgresStoreConfig
-	var listenerErrCh chan error
-	var listenerStopCh chan struct{}
-	var eventBusStopCh chan struct{}
 
 	BeforeEach(func() {
-		listenerStopCh = make(chan struct{})
-		listenerErrCh = make(chan error)
-		eventBusStopCh = make(chan struct{})
 		c, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 		cfg = *c
@@ -37,13 +31,14 @@ var _ = Describe("Events", func() {
 		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
 	})
 
-	AfterEach(func() {
-		close(eventBusStopCh)
-		close(listenerErrCh)
-	})
-
 	DescribeTable("should receive a notification from pq listener",
 		func(driverName string) {
+			listenerStopCh := make(chan struct{})
+			listenerErrCh := make(chan error)
+			eventBusStopCh := make(chan struct{})
+			defer close(eventBusStopCh)
+			defer close(listenerErrCh)
+
 			cfg.DriverName = driverName
 			eventsBus := kuma_events.NewEventBus()
 			listener := eventsBus.New()
