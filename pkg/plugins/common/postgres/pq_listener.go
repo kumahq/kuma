@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"sync"
+
 	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 
@@ -11,9 +13,12 @@ type pqListener struct {
 	listener      *pq.Listener
 	notifications chan *Notification
 	err           error
+	mu            sync.Mutex
 }
 
 func (p *pqListener) Error() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	return p.err
 }
 
@@ -24,7 +29,6 @@ func (p *pqListener) Notify() chan *Notification {
 }
 
 func (p *pqListener) Close() error {
-	defer close(p.notifications)
 	return p.listener.Close()
 }
 
@@ -41,8 +45,10 @@ func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (Listener, err
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
+			l.mu.Lock()
+			defer l.mu.Unlock()
 			l.err = err
-			close(l.notifications)
+			// notifications channel is already closed via Close()
 			return
 		}
 		log.V(1).Info("event happened", "event", ev)

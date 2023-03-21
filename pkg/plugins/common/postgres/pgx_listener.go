@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,6 +16,7 @@ import (
 type PgxListener struct {
 	notificationsCh chan *Notification
 	err             error
+	mu              sync.Mutex
 
 	logger logr.Logger
 
@@ -24,6 +26,8 @@ type PgxListener struct {
 }
 
 func (l *PgxListener) Error() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return l.err
 }
 
@@ -67,6 +71,8 @@ func (l *PgxListener) Close() error {
 func (l *PgxListener) run(ctx context.Context) {
 	err := l.handleNotifications(ctx)
 	if err != nil {
+		l.mu.Lock()
+		defer l.mu.Unlock()
 		l.err = err
 		close(l.notificationsCh)
 		return
