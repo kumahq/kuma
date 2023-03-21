@@ -36,7 +36,7 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 			)
 
 			// then
-			Expect(validationErr.OrNil()).To(BeNil())
+			Expect(validationErr.OrNil()).To(Succeed())
 		},
 		Entry("add", testCase{
 			patchBlocks: []string{
