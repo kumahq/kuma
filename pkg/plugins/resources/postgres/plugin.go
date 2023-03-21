@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"errors"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -42,5 +44,6 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 }
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
-	return pc.ComponentManager().Add(postgres_events.NewListener(*pc.Config().Store.Postgres, out, true))
+	postgresListener := postgres_events.NewListener(*pc.Config().Store.Postgres, out, true)
+	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener))
 }

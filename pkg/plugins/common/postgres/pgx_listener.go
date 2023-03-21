@@ -91,7 +91,7 @@ func (l *PgxListener) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			l.stoppedCh <- struct{}{}
+			close(l.stoppedCh)
 			return
 		default:
 		}
@@ -107,7 +107,6 @@ func (l *PgxListener) run(ctx context.Context) {
 
 // stop will end all current connections and stop reconnecting.
 func (l *PgxListener) stop() {
-	l.logger.Info("stopped")
 	l.mx.Lock()
 	defer l.mx.Unlock()
 
@@ -119,6 +118,7 @@ func (l *PgxListener) stop() {
 	<-l.stoppedCh
 
 	l.running = false
+	l.logger.Info("stopped")
 }
 
 func (l *PgxListener) handleNotifications(ctx context.Context) error {
@@ -150,12 +150,7 @@ func (l *PgxListener) handleNotifications(ctx context.Context) error {
 	}
 
 	l.logger.Info("event happened", "event", notification)
-
-	select {
-	// Writing to channel
-	case l.notificationsCh <- toBareNotification(notification):
-	default:
-	}
+	l.notificationsCh <- toBareNotification(notification)
 
 	return nil
 }
@@ -180,24 +175,12 @@ func (l *PgxListener) connect(ctx context.Context) error {
 	if l.conn != nil {
 		return nil
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
 	conn, err := l.db.Acquire(ctx)
 	if err != nil {
-		return errors.Wrap(err, "get connection")
+		return errors.Wrap(err, "error getting connection")
 	}
 
 	l.conn = conn
-
-	select {
-	case <-ctx.Done():
-		l.disconnect()
-		return ctx.Err()
-	default:
-	}
 
 	_, err = conn.Exec(ctx, "listen "+l.channel)
 	if err != nil {
