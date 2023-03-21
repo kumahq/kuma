@@ -15,7 +15,7 @@ require (
 	github.com/containernetworking/plugins v1.2.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.0
-	github.com/envoyproxy/protoc-gen-validate v0.10.0
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
