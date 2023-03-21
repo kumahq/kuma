@@ -197,6 +197,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230317112148-f5cca69bcb43
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230321154407-f8fe14635590
 
 replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview
