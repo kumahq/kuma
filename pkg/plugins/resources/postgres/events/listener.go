@@ -51,6 +51,9 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case n := <-listener.Notify():
+			if err := listener.Error(); err != nil {
+				return err
+			}
 			if n == nil {
 				continue
 			}

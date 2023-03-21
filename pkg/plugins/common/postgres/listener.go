@@ -2,6 +2,7 @@ package postgres
 
 type Listener interface {
 	Notify() chan *Notification
+	Error() error
 	Close() error
 }
 
@@ -10,3 +11,5 @@ type Notification struct {
 	// Payload, or the empty string if unspecified.
 	Payload string
 }
+
+const channelName = "resource_events"

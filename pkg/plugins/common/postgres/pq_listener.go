@@ -1,8 +1,6 @@
 package postgres
 
 import (
-	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/lib/pq"
 
@@ -12,6 +10,11 @@ import (
 type pqListener struct {
 	listener      *pq.Listener
 	notifications chan *Notification
+	err           error
+}
+
+func (p *pqListener) Error() error {
+	return p.err
 }
 
 var _ Listener = (*pqListener)(nil)
@@ -30,24 +33,27 @@ func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (Listener, err
 	if err != nil {
 		return nil, err
 	}
+
+	notificationCh := make(chan *Notification)
+	l := &pqListener{
+		notifications: notificationCh,
+	}
+
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			log.Error(err, "error occurred", "event", fmt.Sprintf("%v", ev))
+			l.err = err
+			close(l.notifications)
 			return
 		}
-		log.Info("event happened", "event", ev)
+		log.V(1).Info("event happened", "event", ev)
 	}
 	listener := pq.NewListener(connStr, cfg.MinReconnectInterval.Duration, cfg.MaxReconnectInterval.Duration, reportProblem)
-	if err := listener.Listen("resource_events"); err != nil {
+	if err := listener.Listen(channelName); err != nil {
 		return nil, err
 	}
 
-	return toListener(listener), nil
-}
-
-func toListener(listener *pq.Listener) Listener {
 	pqNotificationCh := listener.NotificationChannel()
-	notificationCh := make(chan *Notification)
+	l.listener = listener
 
 	go func() {
 		for {
@@ -59,10 +65,7 @@ func toListener(listener *pq.Listener) Listener {
 		}
 	}()
 
-	return &pqListener{
-		listener:      listener,
-		notifications: notificationCh,
-	}
+	return l, nil
 }
 
 func toNotification(pqNotification *pq.Notification) *Notification {
