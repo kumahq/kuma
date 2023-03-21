@@ -75,7 +75,6 @@ func (l *PgxListener) run(ctx context.Context) {
 		defer l.mu.Unlock()
 		l.err = err
 		close(l.notificationsCh)
-		return
 	}
 }
 

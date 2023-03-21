@@ -67,6 +67,8 @@ func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (Listener, err
 			if more {
 				notification := toNotification(pqNotification)
 				notificationCh <- notification
+			} else {
+				break
 			}
 		}
 	}()

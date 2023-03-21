@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
@@ -23,25 +22,12 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 		if err != nil {
 			return nil, errors.Wrap(err, "could not connect to postgres")
 		}
-		var client *pglock.Client
-		switch cfg.DriverName {
-		case postgres.DriverNamePgx:
-			client, err = pglock.UnsafeNew(db,
-				pglock.WithLeaseDuration(5*time.Second),
-				pglock.WithHeartbeatFrequency(1*time.Second),
-				pglock.WithOwner(b.GetInstanceId()),
-				pglock.WithLogger(&leader_postgres.KumaPqLockLogger{}),
-			)
-		case postgres.DriverNamePq:
-			client, err = pglock.New(db,
-				pglock.WithLeaseDuration(5*time.Second),
-				pglock.WithHeartbeatFrequency(1*time.Second),
-				pglock.WithOwner(b.GetInstanceId()),
-				pglock.WithLogger(&leader_postgres.KumaPqLockLogger{}),
-			)
-		default:
-			err = errors.Errorf("unknown driver %s", cfg.DriverName)
-		}
+		client, err := pglock.UnsafeNew(db,
+			pglock.WithLeaseDuration(5*time.Second),
+			pglock.WithHeartbeatFrequency(1*time.Second),
+			pglock.WithOwner(b.GetInstanceId()),
+			pglock.WithLogger(&leader_postgres.KumaPqLockLogger{}),
+		)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create postgres lock client")
 		}
