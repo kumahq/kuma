@@ -88,7 +88,7 @@ func TestConformance(t *testing.T) {
 			suite.SupportHTTPResponseHeaderModification,
 			suite.SupportHTTPRoutePortRedirect,
 			suite.SupportHTTPRouteSchemeRedirect,
-			// not yet supported: suite.SupportHTTPRoutePathRedirect
+			suite.SupportHTTPRoutePathRedirect,
 			suite.SupportGatewayClassObservedGenerationBump,
 		),
 	})
