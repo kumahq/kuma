@@ -95,6 +95,13 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
 				exactPathRewrite = &rewrite
 			}
+			var exactPathRedirectPathRewrite *string
+			if redir := e.Action.Redirect; redir != nil {
+				if rw := redir.PathRewrite; rw != nil && rw.ReplacePrefixMatch != nil {
+					rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+					exactPathRedirectPathRewrite = &rewrite
+				}
+			}
 
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
@@ -105,6 +112,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 			if exactPathRewrite != nil {
 				replace := *exactPathRewrite + "/"
 				e.Rewrite.ReplacePrefixMatch = &replace
+			}
+			if exactPathRedirectPathRewrite != nil {
+				replace := *exactPathRedirectPathRewrite + "/"
+				e.Action.Redirect.PathRewrite.ReplacePrefixMatch = &replace
 			}
 			entries = append(entries, e)
 
@@ -131,6 +142,17 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 					exactMatch.Rewrite = &route.Rewrite{
 						ReplaceFullPath: &path,
 					}
+				}
+				if exactPathRedirectPathRewrite != nil {
+					path := *exactPathRedirectPathRewrite
+					if path == "" {
+						path = "/"
+					}
+					redir := *exactMatch.Action.Redirect
+					redir.PathRewrite = &route.Rewrite{
+						ReplaceFullPath: &path,
+					}
+					exactMatch.Action.Redirect = &redir
 				}
 				exactEntries[exactPath] = append(exactEntries[exactPath], exactMatch)
 			}
