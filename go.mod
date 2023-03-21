@@ -15,7 +15,7 @@ require (
 	github.com/containernetworking/plugins v1.2.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.0
-	github.com/envoyproxy/protoc-gen-validate v0.10.0
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
@@ -67,7 +67,7 @@ require (
 	helm.sh/helm/v3 v3.11.2
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
 	k8s.io/api v0.26.3
-	k8s.io/apiextensions-apiserver v0.26.2
+	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.3
 	k8s.io/klog/v2 v2.90.1
