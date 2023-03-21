@@ -60,7 +60,7 @@ var _ = Describe("Events", func() {
 		},
 		Entry("When using pq", postgres_config.DriverNamePq),
 		Entry("When using pgx", postgres_config.DriverNamePgx),
-		Ordered)
+		)
 
 	DescribeTable("should continue handling notification after postgres recovery",
 		func(driverName string) {
@@ -99,7 +99,7 @@ var _ = Describe("Events", func() {
 		},
 		Entry("When using pq", postgres_config.DriverNamePq),
 		Entry("When using pgx", postgres_config.DriverNamePgx),
-		Ordered)
+		)
 })
 
 func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
