@@ -28,8 +28,23 @@ type PostgresContainer struct {
 	WithTLS   bool
 }
 
+func findRootIndex(path string) int {
+	splitIndex := strings.Index(path, "pkg")
+	appI := strings.Index(path, "app")
+	if splitIndex == -1 {
+		splitIndex = appI
+	}
+	return splitIndex
+}
+
 func resourceDir() string {
-	_, dir, _, _ := runtime.Caller(0)
+	dir, _ := os.Getwd()
+	_, file, _, _ := runtime.Caller(0)
+	fileSplitIndex := findRootIndex(file)
+	dirSplitIndex := findRootIndex(dir)
+	filePart := file[fileSplitIndex:]
+	dirPart := file[:dirSplitIndex-5] // 5 = "pkg/" or "app/" + one offset
+	dir = dirPart + filePart
 	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
 		dir = path.Dir(dir)
 	}
