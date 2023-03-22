@@ -351,7 +351,7 @@ default:
                 - field: spec.default.appendModifications[5].cluster.value
                   message: must be defined
                 - field: spec.default.appendModifications[6].cluster
-                  message: 'cluster must have one defined: value, jsonPatches'
+                  message: 'cluster must have exactly one defined: value, jsonPatches'
                 - field: spec.default.appendModifications[7].cluster
                   message: 'cluster must have only one type defined: value, jsonPatches'
                 `,
