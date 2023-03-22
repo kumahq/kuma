@@ -25,6 +25,8 @@ store:
     password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
     # Database name of the Postgres DB
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
+    # Driver to use, one of: pgx, postgres
+    driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
     # Maximum number of open connections to the database
