@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	util_files "github.com/kumahq/kuma/pkg/util/files"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo/v2"
