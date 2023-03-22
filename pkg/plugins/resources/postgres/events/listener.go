@@ -28,7 +28,17 @@ func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter) component
 }
 
 func (k *listener) Start(stop <-chan struct{}) error {
-	listener, err := common_postgres.NewListener(k.cfg, log)
+	var err error
+	var listener common_postgres.Listener
+	switch k.cfg.DriverName {
+	case postgres.DriverNamePgx:
+		listener, err = common_postgres.NewPgxListener(k.cfg, core.Log.WithName("postgres-event-listener-pgx"))
+	case postgres.DriverNamePq:
+		listener, err = common_postgres.NewListener(k.cfg, core.Log.WithName("postgres-event-listener-pq"))
+	default:
+		return errors.Errorf("unsupported driver name %s", k.cfg.DriverName)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -41,7 +51,10 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	log.Info("start monitoring")
 	for {
 		select {
-		case n := <-listener.Notify:
+		case n := <-listener.Notify():
+			if err := listener.Error(); err != nil {
+				return err
+			}
 			if n == nil {
 				continue
 			}
@@ -53,7 +66,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 					Type string `json:"type"`
 				}
 			}{}
-			if err := json.Unmarshal([]byte(n.Extra), obj); err != nil {
+			if err := json.Unmarshal([]byte(n.Payload), obj); err != nil {
 				log.Error(err, "unable to unmarshal event from PostgreSQL")
 				continue
 			}

@@ -23,7 +23,7 @@ var _ = Describe("MeshRetry", func() {
 				verr := mtp.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("full example", `
 targetRef:

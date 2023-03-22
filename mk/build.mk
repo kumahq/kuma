@@ -21,13 +21,9 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v $(GOFLAGS) $(LD_FLAGS)
-GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v
-
-COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
-COREDNS_VERSION ?= v1.10.1
-COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
-COREDNS_PLUGIN_CFG_PATH ?= $(TOOLS_DIR)/builds/coredns/templates/plugin.cfg
+# An optional extension to the coredns packages
+COREDNS_EXT ?=
+COREDNS_VERSION = v1.10.1
 
 # List of binaries that we have release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
@@ -36,7 +32,7 @@ BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install
 BUILD_TEST_BINARIES := test-server
 
 # Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
+Build_Go_Application = GOOS=$(GOOS) GOARCH=$(GOARCH) $(GOENV) go build -v $(GOFLAGS) $(LD_FLAGS) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
 
 .PHONY: build
 build: build/release build/test
@@ -100,18 +96,9 @@ build/install-cni: ## Dev: Build `install-cni` binary
 
 .PHONY: build/coredns
 build/coredns:
-ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
-	rm -rf "$(COREDNS_TMP_DIRECTORY)"
-	git clone --branch $(COREDNS_VERSION) --depth 1 $(COREDNS_GIT_REPOSITORY) $(COREDNS_TMP_DIRECTORY)
-	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
-	cd $(COREDNS_TMP_DIRECTORY) && \
-		GOOS= GOARCH= go generate coredns.go && \
-		go get github.com/coredns/alternate && \
-		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
-	rm -rf "$(COREDNS_TMP_DIRECTORY)"
-else
-	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
-endif
+	mkdir -p $(BUILD_ARTIFACTS_DIR)/coredns && \
+	[ -f $(BUILD_ARTIFACTS_DIR)/coredns/coredns ] || \
+	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(GOOS)_$(GOARCH)$(COREDNS_EXT).tar.gz | tar -C $(BUILD_ARTIFACTS_DIR)/coredns -xz
 
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary

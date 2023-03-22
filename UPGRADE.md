@@ -17,6 +17,7 @@ does not have any particular instructions.
 
 ### Helm
 
+All containers now have defaults for `resources.requests.{cpu,memory}` and `resources.limits.{memory}`.
 There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.
 
 ### Gateway API

@@ -11,6 +11,11 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
+const (
+	DriverNamePgx = "pgx"
+	DriverNamePq  = "postgres"
+)
+
 var _ config.Config = &PostgresStoreConfig{}
 
 // Postgres store configuration
@@ -25,6 +30,8 @@ type PostgresStoreConfig struct {
 	Password string `json:"password" envconfig:"kuma_store_postgres_password"`
 	// Database name of the Postgres DB
 	DbName string `json:"dbName" envconfig:"kuma_store_postgres_db_name"`
+	// Driver to use, one of: pgx, postgres
+	DriverName string `json:"driverName" envconfig:"kuma_store_postgres_driver_name"`
 	// Connection Timeout to the DB in seconds
 	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
 	// Maximum number of open connections to the database
@@ -181,6 +188,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		User:                 "kuma",
 		Password:             "kuma",
 		DbName:               "kuma",
+		DriverName:           "pgx",
 		ConnectionTimeout:    5,
 		MaxOpenConnections:   50, // 0 for unlimited
 		MaxIdleConnections:   50, // 0 for unlimited
