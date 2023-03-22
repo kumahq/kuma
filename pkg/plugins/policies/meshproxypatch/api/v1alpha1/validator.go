@@ -219,7 +219,7 @@ func validatePatch(path validators.PathBuilder, value *string, jsonPatches []com
 			return jsonpatch_validators.ValidateJsonPatchBlock(path.Field("jsonPatches"), jsonPatches)
 		}
 
-		verr.AddViolationAt(path, validators.MustHaveOneOf(path.String(), "value", "jsonPatches"))
+		verr.AddViolationAt(path, validators.MustHaveExactlyOneOf(path.String(), "value", "jsonPatches"))
 	}
 
 	return verr

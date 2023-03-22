@@ -48,55 +48,61 @@ func validateOp(op string) validators.ValidationError {
 // validateFrom checks if "op" field is valid ("move" or "copy") when "from"
 // field is provided
 func validateFrom(from *string, op string) validators.ValidationError {
-	var err validators.ValidationError
-
-	switch op {
-	case "move", "copy":
-		if from == nil {
-			err.Add(validators.MakeOneOfErr("from",
-				"op",
-				validators.MustNotBeEmpty,
-				[]string{"move", "copy"},
-			))
-		}
-	default:
-		if from != nil {
-			err.Add(validators.MakeOneOfErr("from",
-				"op",
-				"is allowed only",
-				[]string{"move", "copy"},
-			))
-		}
+	if op == "move" || op == "copy" {
+		return validateFromOpMoveCopy(from)
 	}
 
-	return err
+	if from != nil {
+		return validators.MakeOneOfErr("from",
+			"op",
+			"is allowed only",
+			[]string{"move", "copy"},
+		)
+	}
+
+	return validators.OK()
+}
+
+func validateFromOpMoveCopy(from *string) validators.ValidationError {
+	if from == nil {
+		return validators.MakeOneOfErr("from",
+			"op",
+			validators.MustNotBeEmpty,
+			[]string{"move", "copy"},
+		)
+	}
+
+	return validators.OK()
 }
 
 // validateValue checks if "op" field is valid ("add" or "replace") when "value"
 // field is provided
 func validateValue(value json.RawMessage, op string) validators.ValidationError {
-	var err validators.ValidationError
-
-	switch op {
-	case "add", "replace":
-		if value == nil {
-			err.Add(validators.MakeOneOfErr("value",
-				"op",
-				validators.MustNotBeEmpty,
-				[]string{"add", "replace"},
-			))
-		}
-	default:
-		if value != nil {
-			err.Add(validators.MakeOneOfErr("value",
-				"op",
-				"is allowed only",
-				[]string{"add", "replace"},
-			))
-		}
+	if op == "add" || op == "replace" {
+		return validateValueOpAddReplace(value)
 	}
 
-	return err
+	if value != nil {
+		return validators.MakeOneOfErr("value",
+			"op",
+			"is allowed only",
+			[]string{"add", "replace"},
+		)
+	}
+
+	return validators.OK()
+}
+
+func validateValueOpAddReplace(value json.RawMessage) validators.ValidationError {
+	if value == nil {
+		return validators.MakeOneOfErr("value",
+			"op",
+			validators.MustNotBeEmpty,
+			[]string{"add", "replace"},
+		)
+	}
+
+	return validators.OK()
 }
 
 func validatePath(path *string, op string) validators.ValidationError {
