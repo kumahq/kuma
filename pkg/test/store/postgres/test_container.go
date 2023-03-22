@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,7 @@ type PostgresContainer struct {
 }
 
 func resourceDir() string {
-	dir, _ := os.Getwd()
+	_, dir, _, _ := runtime.Caller(0)
 	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
 		dir = path.Dir(dir)
 	}

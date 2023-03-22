@@ -21,14 +21,14 @@ var _ = Describe("Migrate", func() {
 
 	It("should migrate DB", func() {
 		// when
-		ver, err := migrateDb(cfg)
+		ver, err := MigrateDb(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
 
 		// and when migrating again
-		ver, err = migrateDb(cfg)
+		ver, err = MigrateDb(cfg)
 
 		// then
 		Expect(err).To(Equal(plugins.AlreadyMigrated))
@@ -37,7 +37,7 @@ var _ = Describe("Migrate", func() {
 
 	It("should throw an error when trying to run migrations on newer migration version of DB than in Kuma", func() {
 		// setup
-		_, err := migrateDb(cfg)
+		_, err := MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		sql, err := common_postgres.ConnectToDb(cfg)
@@ -47,7 +47,7 @@ var _ = Describe("Migrate", func() {
 		Expect(res.RowsAffected()).To(Equal(int64(1)))
 
 		// when
-		_, err = migrateDb(cfg)
+		_, err = MigrateDb(cfg)
 
 		// then
 		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1677096751. Run newer version of Kuma"))
@@ -62,7 +62,7 @@ var _ = Describe("Migrate", func() {
 		Expect(migrated).To(BeFalse())
 
 		// when
-		_, err = migrateDb(cfg)
+		_, err = MigrateDb(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

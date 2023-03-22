@@ -18,7 +18,7 @@ var _ = Describe("PostgresStore template", func() {
 		metrics, err := core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = migrateDb(*cfg)
+		_, err = MigrateDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		pStore, err := NewStore(metrics, *cfg)
