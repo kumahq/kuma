@@ -24,8 +24,8 @@ func MustHaveOnlyOne(entity string, allowedValues ...string) string {
 	return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ", "))
 }
 
-func MustHaveOneOf(entity string, allowedValues ...string) string {
-	return fmt.Sprintf(`%s must have one defined: %s`, entity, strings.Join(allowedValues, ", "))
+func MustHaveExactlyOneOf(entity string, allowedValues ...string) string {
+	return fmt.Sprintf(`%s must have exactly one defined: %s`, entity, strings.Join(allowedValues, ", "))
 }
 
 func MustHaveAtLeastOne(allowedValues ...string) string {
