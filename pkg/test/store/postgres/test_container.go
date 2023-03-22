@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go/build"
 	"os"
 	"path"
 	"runtime"
@@ -37,14 +38,23 @@ func findRootIndex(path string) int {
 	return splitIndex
 }
 
+func getGopath() string {
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+	return gopath
+}
+
 func resourceDir() string {
 	dir, _ := os.Getwd()
+	gopath := getGopath()
 	_, file, _, _ := runtime.Caller(0)
-	fileSplitIndex := findRootIndex(file)
-	dirSplitIndex := findRootIndex(dir)
-	filePart := file[fileSplitIndex:]
-	dirPart := dir[:dirSplitIndex]
-	dir = dirPart + filePart
+	if strings.HasPrefix(file, "github.com") {
+		dir = path.Join(gopath, strings.TrimPrefix(file, "github.com"))
+	} else {
+		dir = file
+	}
 	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
 		dir = path.Dir(dir)
 	}
