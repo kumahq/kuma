@@ -42,9 +42,9 @@ func getProjectRootParent(file string) string {
 	return path.Dir(getProjectRoot(file))
 }
 
-func relativeToProjectRoot(path string) string {
-	root := getProjectRoot(path)
-	return strings.TrimPrefix(path, root)
+func relativeToPkgMod(file string) string {
+	root := path.Dir(path.Dir(path.Dir(getProjectRoot(file))))
+	return strings.TrimPrefix(file, root)
 }
 
 func relativeToProjectRootParent(path string) string {
@@ -65,12 +65,11 @@ func resourceDir() string {
 	_, cfile, _, _ := runtime.Caller(0)
 
 	projectRootParent := getProjectRootParent(cwd)
-	relativeParentPathToFile := relativeToProjectRootParent(cfile)
+	fileRelativeToProjectRootParent := relativeToProjectRootParent(cfile)
 
-	file := path.Join(projectRootParent, relativeParentPathToFile) // kuma ide, kuma cmd, km ide
-	if !util_files.FileExists(file) {
-		println("** 2") // km cmd
-		file = path.Join(getGopath(), "pkg", "mod", "github.com", "kumahq", relativeParentPathToFile)
+	file := path.Join(projectRootParent, fileRelativeToProjectRootParent) // kuma ide, kuma cmd, km ide
+	if !util_files.FileExists(file) { // for parent projects
+		file = path.Join(getGopath(), "pkg", "mod", relativeToPkgMod(cfile))
 	}
 
 	dir := getProjectRoot(file)
