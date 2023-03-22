@@ -65,34 +65,15 @@ func resourceDir() string {
 	_, cfile, _, _ := runtime.Caller(0)
 
 	projectRootParent := getProjectRootParent(cwd)
-	projectRootCfile := getProjectRoot(cwd)
-	projectRootWd := getProjectRoot(cwd)
 	relativeParentPathToFile := relativeToProjectRootParent(cfile)
-	relativeRootPathToFile := relativeToProjectRoot(cfile)
 
-	dir := path.Join(getGopath(), "pkg", "mod", projectRootCfile)
-	if !util_files.FileExists(dir) {
-		dir = path.Join(getGopath(), "pkg", "mod", "github.com", projectRootCfile)
-	}
-	if !util_files.FileExists(dir) {
-		dir = path.Join(getGopath(), "pkg", "mod", "github.com", "kumahq", relativeParentPathToFile)
-	}
-	if !util_files.FileExists(dir) {
-		dir = path.Join(getGopath(), "pkg", "mod", projectRootWd)
-	}
-	if !util_files.FileExists(dir) {
-		dir = path.Join(getGopath(), "pkg", "mod", "github.com", projectRootWd)
-	}
-	if !util_files.FileExists(dir) {
-		dir = path.Join(projectRootParent, relativeParentPathToFile)
-	}
-	if !util_files.FileExists(dir) {
-		dir = path.Join(projectRootWd, relativeRootPathToFile)
+	file := path.Join(projectRootParent, relativeParentPathToFile) // kuma ide, kuma cmd, km ide
+	if !util_files.FileExists(file) {
+		println("** 2") // km cmd
+		file = path.Join(getGopath(), "pkg", "mod", "github.com", "kumahq", relativeParentPathToFile)
 	}
 
-	dir = getProjectRoot(dir)
-	println("****", "project root wd:", projectRootWd, "cwd: ", cwd, "cfile: ", cfile, "relative path to file: ", relativeParentPathToFile, "dir: ", dir)
-
+	dir := getProjectRoot(file)
 	rDir := path.Join(dir, "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
