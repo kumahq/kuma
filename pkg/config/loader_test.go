@@ -240,7 +240,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
-			Expect(cfg.Multizone.Zone.KDS.DeltaEnabled).To(BeTrue())
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.EnableLocalhostInboundClusters).To(BeTrue())
@@ -320,6 +319,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
+			Expect(cfg.Experimental.DeltaEnabled).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -519,7 +519,6 @@ multizone:
       maxMsgSize: 2
       msgSendTimeout: 20s
       nackBackoff: 21s
-      deltaEnabled: true
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -623,6 +622,7 @@ experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
+  deltaEnabled: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -775,7 +775,7 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
-				"KUMA_MULTIZONE_ZONE_KDS_DELTA_ENABLED":                                                    "true",
+				"KUMA_EXPERIMENTAL_DELTA_ENABLED":                                                          "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",

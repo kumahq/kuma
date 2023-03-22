@@ -128,7 +128,6 @@ func Setup(rt runtime.Runtime) error {
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
 		global_service.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
-			rt.Config().Multizone.Global.KDS.MsgSendTimeout.Duration,
 			rt.KDSContext().GlobalServerFiltersV2,
 		),
 	))

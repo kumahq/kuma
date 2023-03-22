@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	global_service "github.com/kumahq/kuma/pkg/kds/v2/global/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
@@ -44,12 +45,12 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type CallbacksV2 interface {
-	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error
+	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error
 }
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error
 
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState map[string]map[string]string) error {
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error {
 	return f(session, deltaInitState)
 }
 

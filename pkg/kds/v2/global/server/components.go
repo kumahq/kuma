@@ -15,7 +15,6 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -36,12 +35,11 @@ func New(
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
-	versioner := cache_kds_v2.SnapshotAutoVersioner{UUID: core.NewUUID}
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -51,7 +49,7 @@ func New(
 		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
-		// util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)), todo(jakubdyszkiewicz) temporarily disable to see if it's a reason for E2E flakes.
+		util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
 		syncTracker,
 	}
 	if insight {

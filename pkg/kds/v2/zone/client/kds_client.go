@@ -21,10 +21,10 @@ type kdsSyncClient struct {
 	log           logr.Logger
 	resourceTypes []core_model.ResourceType
 	callbacks     *Callbacks
-	kdsStream     KDSStream
+	kdsStream     DeltaKDSStream
 }
 
-func NewKDSSyncClient(log logr.Logger, rt []core_model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSyncClient {
+func NewKDSSyncClient(log logr.Logger, rt []core_model.ResourceType, kdsStream DeltaKDSStream, cb *Callbacks) KDSSyncClient {
 	return &kdsSyncClient{
 		log:           log,
 		resourceTypes: rt,
@@ -35,8 +35,8 @@ func NewKDSSyncClient(log logr.Logger, rt []core_model.ResourceType, kdsStream K
 
 func (s *kdsSyncClient) Receive() error {
 	for _, typ := range s.resourceTypes {
-		s.log.V(1).Info("sending DiscoveryRequest", "type", typ)
-		if err := s.kdsStream.DiscoveryRequest(typ); err != nil {
+		s.log.V(1).Info("sending DeltaDiscoveryRequest", "type", typ)
+		if err := s.kdsStream.DeltaDiscoveryRequest(typ); err != nil {
 			return errors.Wrap(err, "discovering failed")
 		}
 	}
@@ -49,7 +49,7 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.V(1).Info("DiscoveryResponse received", "response", received)
+		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))

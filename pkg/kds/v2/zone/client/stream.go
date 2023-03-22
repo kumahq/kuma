@@ -11,8 +11,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -26,36 +28,34 @@ type UpstreamResponse struct {
 }
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
-type KDSStream interface {
-	DiscoveryRequest(resourceType model.ResourceType) error
+type DeltaKDSStream interface {
+	DeltaDiscoveryRequest(resourceType model.ResourceType) error
 	Receive() (UpstreamResponse, error)
 	ACK(typ string) error
 	NACK(typ string, err error) error
 }
 
-var _ KDSStream = &stream{}
+var _ DeltaKDSStream = &stream{}
 
 type stream struct {
 	streamClient   mesh_proto.KDSSyncService_GlobalToZoneSyncClient
-	latestACKed    map[string]*envoy_sd.DeltaDiscoveryResponse
-	latestReceived map[string]*envoy_sd.DeltaDiscoveryResponse
-	deltaInitState map[string]map[string]string
+	latestNonce    map[core_model.ResourceType]string
+	deltaInitState cache_v2.ResourceVersionMap
 	clientId       string
 	cpConfig       string
 }
 
-func NewKDSStream(s mesh_proto.KDSSyncService_GlobalToZoneSyncClient, clientId string, cpConfig string, deltaInitState map[string]map[string]string) KDSStream {
+func NewDeltaKDSStream(s mesh_proto.KDSSyncService_GlobalToZoneSyncClient, clientId string, cpConfig string, deltaInitState cache_v2.ResourceVersionMap) DeltaKDSStream {
 	return &stream{
 		streamClient:   s,
-		latestACKed:    make(map[string]*envoy_sd.DeltaDiscoveryResponse),
-		latestReceived: make(map[string]*envoy_sd.DeltaDiscoveryResponse),
+		latestNonce:    make(map[core_model.ResourceType]string),
 		deltaInitState: deltaInitState,
 		clientId:       clientId,
 		cpConfig:       cpConfig,
 	}
 }
 
-func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
+func (s *stream) DeltaDiscoveryRequest(resourceType model.ResourceType) error {
 	cpVersion, err := util_proto.ToStruct(&system_proto.Version{
 		KumaCp: &system_proto.KumaCpVersion{
 			Version:   kuma_version.Build.Version,
@@ -68,7 +68,7 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 		return err
 	}
 	initialResources := map[string]string{}
-	if value, found := s.deltaInitState[string(resourceType)]; found {
+	if value, found := s.deltaInitState[resourceType]; found {
 		initialResources = value
 	}
 
@@ -100,18 +100,17 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
-	rs, resourceAndVersion, err := util.ToDeltaCoreResourceList(resp)
+	rs, nameToVersion, err := util.ToDeltaCoreResourceList(resp)
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
-	s.latestReceived[string(rs.GetItemType())] = resp
+	s.latestNonce[rs.GetItemType()] = resp.Nonce
 
 	// when map is empty that means we are doing the first request
 	// it has to be called before `getVersionMap`
 	isInitialRequest := len(s.deltaInitState) == 0
 
-	typ := string(rs.GetItemType())
-	s.deltaInitState[typ] = s.updateVersionMap(typ, resourceAndVersion)
+	s.deltaInitState[rs.GetItemType()] = s.updateVersionMap(rs.GetItemType(), nameToVersion)
 	return UpstreamResponse{
 		ControlPlaneId:       resp.GetControlPlane().GetIdentifier(),
 		Type:                 rs.GetItemType(),
@@ -122,31 +121,28 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 }
 
 func (s *stream) ACK(typ string) error {
-	latestReceived := s.latestReceived[typ]
-	if latestReceived == nil {
+	latestNonce, found := s.latestNonce[core_model.ResourceType(typ)]
+	if !found {
 		return nil
 	}
 	err := s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
-		ResponseNonce: latestReceived.Nonce,
+		ResponseNonce: latestNonce,
 		Node: &envoy_core.Node{
 			Id: s.clientId,
 		},
 		TypeUrl: typ,
 	})
-	if err == nil {
-		s.latestACKed[typ] = latestReceived
-	}
 	return err
 }
 
 func (s *stream) NACK(typ string, err error) error {
-	latestReceived := s.latestReceived[typ]
-	if latestReceived == nil {
+	latestNonce, found := s.latestNonce[core_model.ResourceType(typ)]
+	if !found {
 		return nil
 	}
 	return s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
 		InitialResourceVersions: map[string]string{},
-		ResponseNonce:           latestReceived.Nonce,
+		ResponseNonce:           latestNonce,
 		TypeUrl:                 typ,
 		Node: &envoy_core.Node{
 			Id: s.clientId,
@@ -157,15 +153,15 @@ func (s *stream) NACK(typ string, err error) error {
 	})
 }
 
-func (s *stream) updateVersionMap(typ string, resourceAndVersion []util.ResourceAndVersion) map[string]string {
+func (s *stream) updateVersionMap(typ core_model.ResourceType, nameToVersion cache_v2.NameToVersion) cache_v2.NameToVersion {
 	var versions map[string]string
 	if value, found := s.deltaInitState[typ]; found {
 		versions = value
 	} else {
-		versions = map[string]string{}
+		return nameToVersion
 	}
-	for _, item := range resourceAndVersion {
-		versions[item.ResourceName] = item.Version
+	for name, version := range nameToVersion {
+		versions[name] = version
 	}
 	return versions
 }

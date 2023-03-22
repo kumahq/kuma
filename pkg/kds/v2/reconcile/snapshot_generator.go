@@ -47,7 +47,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		if err != nil {
 			return nil, err
 		}
-		builder = builder.With(string(typ), resources)
+		builder = builder.With(typ, resources)
 	}
 
 	return builder.Build(""), nil

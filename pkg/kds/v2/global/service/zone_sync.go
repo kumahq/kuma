@@ -1,8 +1,6 @@
 package v2
 
 import (
-	"time"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,16 +27,14 @@ func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_pro
 var clientLog = core.Log.WithName("kds-delta-client")
 
 type KDSSyncServiceServer struct {
-	timeout  time.Duration
 	callback Callbacks
 	filters  []Filter
 	mesh_proto.UnimplementedKDSSyncServiceServer
 }
 
-func NewKDSSyncServiceServer(callback Callbacks, timeout time.Duration, filters []Filter) *KDSSyncServiceServer {
+func NewKDSSyncServiceServer(callback Callbacks, filters []Filter) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
 		callback: callback,
-		timeout:  timeout,
 		filters:  filters,
 	}
 }

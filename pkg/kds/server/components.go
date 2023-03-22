@@ -48,7 +48,7 @@ func New(
 		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
 		util_xds_v3.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
-		// util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)), todo(jakubdyszkiewicz) temporarily disable to see if it's a reason for E2E flakes.
+		util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)),
 		syncTracker,
 	}
 	if insight {

@@ -39,7 +39,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			expected := map[string]envoy_types.Resource{
@@ -56,7 +56,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			Expect(snapshot.GetResources("UnsupportedType")).To(BeNil())
@@ -79,7 +79,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			Expect(snapshot.GetVersion(string(core_mesh.MeshType))).To(Equal("v1"))
@@ -93,7 +93,7 @@ var _ = Describe("Snapshot", func() {
 			}
 			// when
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 			// then
 			Expect(snapshot.GetVersion("unsupported type")).To(Equal(""))
@@ -115,7 +115,7 @@ var _ = Describe("Snapshot", func() {
 				Spec: mustMarshalAny(&mesh_proto.Mesh{}),
 			}
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 
 			// when
@@ -132,7 +132,7 @@ var _ = Describe("Snapshot", func() {
 				Spec: mustMarshalAny(&mesh_proto.Mesh{}),
 			}
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 
 			// when
@@ -160,7 +160,7 @@ var _ = Describe("Snapshot", func() {
 				}),
 			}
 			snapshot = cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 
 			// when
@@ -177,7 +177,7 @@ var _ = Describe("Snapshot", func() {
 				Spec: mustMarshalAny(&mesh_proto.Mesh{}),
 			}
 			snapshot := cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 
 			// when
@@ -195,7 +195,7 @@ var _ = Describe("Snapshot", func() {
 				Spec: mustMarshalAny(&mesh_proto.Mesh{}),
 			}
 			snapshot = cache.NewSnapshotBuilder().
-				With(string(core_mesh.MeshType), []envoy_types.Resource{resources}).
+				With(core_mesh.MeshType, []envoy_types.Resource{resources}).
 				Build("v1")
 
 			// when

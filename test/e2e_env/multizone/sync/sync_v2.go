@@ -40,7 +40,7 @@ func SyncV2() {
 			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
-					WithEnv("KUMA_MULTIZONE_ZONE_KDS_DELTA_ENABLED", "true"),
+					WithEnv("KUMA_EXPERIMENTAL_DELTA_ENABLED", "true"),
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
 					WithHDS(false),
 				)).
@@ -55,7 +55,7 @@ func SyncV2() {
 			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
-					WithEnv("KUMA_MULTIZONE_ZONE_KDS_DELTA_ENABLED", "true"),
+					WithEnv("KUMA_EXPERIMENTAL_DELTA_ENABLED", "true"),
 					WithGlobalAddress(globalCP.GetKDSServerAddress()),
 					WithHDS(false),
 				)).

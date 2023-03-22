@@ -7,17 +7,23 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+)
+
+type (
+	NameToVersion      map[string]string
+	ResourceVersionMap map[core_model.ResourceType]NameToVersion
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
 type Snapshot struct {
-	Resources map[string]envoy_cache.Resources
+	Resources map[core_model.ResourceType]envoy_cache.Resources
 
 	// VersionMap holds the current hash map of all resources in the snapshot.
 	// This field should remain nil until it is used, at which point should be
 	// instantiated by calling ConstructVersionMap().
 	// VersionMap is only to be used with delta xDS.
-	VersionMap map[string]map[string]string
+	VersionMap ResourceVersionMap
 }
 
 var _ envoy_cache.ResourceSnapshot = &Snapshot{}
@@ -43,7 +49,7 @@ func (s *Snapshot) GetResourcesAndTTL(typ string) map[string]envoy_types.Resourc
 	if s == nil {
 		return nil
 	}
-	if r, ok := s.Resources[typ]; ok {
+	if r, ok := s.Resources[core_model.ResourceType(typ)]; ok {
 		return r.Items
 	}
 	return nil
@@ -53,14 +59,14 @@ func (s *Snapshot) GetVersion(typ string) string {
 	if s == nil {
 		return ""
 	}
-	if r, ok := s.Resources[typ]; ok {
+	if r, ok := s.Resources[core_model.ResourceType(typ)]; ok {
 		return r.Version
 	}
 	return ""
 }
 
 func (s *Snapshot) GetVersionMap(typeURL string) map[string]string {
-	return s.VersionMap[typeURL]
+	return s.VersionMap[core_model.ResourceType(typeURL)]
 }
 
 // ConstructVersionMap will construct a version map based on the current state of a snapshot
@@ -74,11 +80,11 @@ func (s *Snapshot) ConstructVersionMap() error {
 		return nil
 	}
 
-	s.VersionMap = make(map[string]map[string]string)
+	s.VersionMap = make(ResourceVersionMap)
 
 	for typeURL, resources := range s.Resources {
 		if _, ok := s.VersionMap[typeURL]; !ok {
-			s.VersionMap[typeURL] = make(map[string]string)
+			s.VersionMap[typeURL] = make(NameToVersion)
 		}
 
 		for _, r := range resources.Items {

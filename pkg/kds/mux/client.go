@@ -18,11 +18,13 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -34,13 +36,14 @@ type client struct {
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
+	experimantalConfig  config.ExperimentalConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
 	// stores map[typ]map[resource-name]version in case of reconnect
 	// sends these information in first request so server responds only
 	// with real changes
-	deltaInitState map[string]map[string]string
+	deltaInitState cache_v2.ResourceVersionMap
 }
 
 func NewClient(
@@ -50,6 +53,7 @@ func NewClient(
 	callbacks Callbacks,
 	callbacksV2 CallbacksV2,
 	config multizone.KdsClientConfig,
+	experimantalConfig config.ExperimentalConfig,
 	metrics metrics.Metrics,
 	envoyAdminProcessor service.EnvoyAdminProcessor,
 ) component.Component {
@@ -60,9 +64,10 @@ func NewClient(
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
+		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
-		deltaInitState:      make(map[string]map[string]string),
+		deltaInitState:      cache_v2.ResourceVersionMap{},
 	}
 }
 
@@ -115,7 +120,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
-	if c.config.DeltaEnabled {
+	if c.experimantalConfig.DeltaEnabled {
 		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
 	} else {
 		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)

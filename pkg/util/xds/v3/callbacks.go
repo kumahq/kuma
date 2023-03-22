@@ -51,8 +51,8 @@ type adapterDeltaCallbacks struct {
 }
 
 // AdaptDeltaCallbacks translate Kuma callbacks to real go-control-plane Callbacks
-func AdaptDeltaCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
-	return &adapterCallbacks{
+func AdaptDeltaCallbacks(callbacks xds.DeltaCallbacks) envoy_xds.Callbacks {
+	return &adapterDeltaCallbacks{
 		callbacks: callbacks,
 	}
 }

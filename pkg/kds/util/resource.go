@@ -11,13 +11,9 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-type ResourceAndVersion struct {
-	ResourceName string
-	Version      string
-}
 
 func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
@@ -31,19 +27,16 @@ func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceLis
 	return toResources(model.ResourceType(response.TypeUrl), krs)
 }
 
-func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.ResourceList, []ResourceAndVersion, error) {
+func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.ResourceList, cache_v2.NameToVersion, error) {
 	krs := []*mesh_proto.KumaResource{}
-	resourceVersions := []ResourceAndVersion{}
+	resourceVersions := cache_v2.NameToVersion{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
 		if err := util_proto.UnmarshalAnyTo(r.GetResource(), kr); err != nil {
 			return nil, nil, err
 		}
 		krs = append(krs, kr)
-		resourceVersions = append(resourceVersions, ResourceAndVersion{
-			ResourceName: kr.GetMeta().GetName(),
-			Version:      r.Version,
-		})
+		resourceVersions[kr.GetMeta().GetName()] = r.Version
 	}
 	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
 	return list, resourceVersions, err

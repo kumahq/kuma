@@ -350,6 +350,8 @@ type ExperimentalConfig struct {
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
+	// DeltaEnabled defines if using KDS Sync with incremental xDS
+	DeltaEnabled bool `json:"deltaEnabled" envconfig:"KUMA_EXPERIMENTAL_DELTA_ENABLED"`
 }
 
 func (e ExperimentalConfig) Validate() error {

@@ -6,11 +6,14 @@ import (
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"google.golang.org/protobuf/proto"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -21,7 +24,6 @@ func NewReconciler(
 	hasher envoy_cache.NodeHash,
 	cache envoy_cache.SnapshotCache,
 	generator SnapshotGenerator,
-	versioner cache_kds_v2.SnapshotVersioner,
 	mode config_core.CpMode,
 	statsCallbacks xds.StatsCallbacks,
 ) Reconciler {
@@ -29,7 +31,6 @@ func NewReconciler(
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
-		versioner:      versioner,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
 	}
@@ -39,7 +40,6 @@ type reconciler struct {
 	hasher         envoy_cache.NodeHash
 	cache          envoy_cache.SnapshotCache
 	generator      SnapshotGenerator
-	versioner      cache_kds_v2.SnapshotVersioner
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
 
@@ -73,10 +73,58 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	}
 	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
-	new = r.versioner.Version(new, old)
+	new = r.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(ctx, id, new)
+}
+
+func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
+	if new == nil {
+		return nil
+	}
+	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
+	for _, typ := range util_kds_v2.GetSupportedTypes() {
+		version := new.GetVersion(typ)
+		if version != "" {
+			// favor a version assigned by resource generator
+			continue
+		}
+
+		if old != nil && r.equal(new.GetResources(typ), old.GetResources(typ)) {
+			version = old.GetVersion(typ)
+		}
+		if version == "" {
+			version = core.NewUUID()
+		}
+		if new == nil {
+			continue
+		}
+		if new.GetVersion(typ) == version {
+			continue
+		}
+
+		n := map[string]envoy_types.ResourceWithTTL{}
+		for k, v := range new.GetResourcesAndTTL(typ) {
+			n[k] = v
+		}
+		newResources[core_model.ResourceType(typ)] = envoy_cache.Resources{Version: version, Items: n}
+	}
+	return &cache_v2.Snapshot{
+		Resources: newResources,
+	}
+}
+
+func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
+	if len(new) != len(old) {
+		return false
+	}
+	for key, newValue := range new {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, node *envoy_core.Node) {
