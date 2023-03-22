@@ -118,7 +118,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(len(actual.Items)).To(Equal(len(upstream.Items)))
+		Expect(actual.Items).To(HaveLen(len(upstream.Items)))
 		for i, item := range actual.Items {
 			Expect(item.Spec).To(MatchProto(upstream.Items[i].Spec))
 		}
@@ -149,7 +149,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(len(actual.Items)).To(Equal(len(upstream.Items)))
+		Expect(actual.Items).To(HaveLen(len(upstream.Items)))
 		for i, item := range actual.Items {
 			Expect(item.Spec).To(MatchProto(upstream.Items[i].Spec))
 		}
