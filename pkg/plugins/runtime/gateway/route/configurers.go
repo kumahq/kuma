@@ -246,6 +246,26 @@ func RouteReplaceHostHeader(host string) RouteConfigurer {
 	})
 }
 
+func RouteSetAutoHostRewrite(value bool) RouteConfigurer {
+	if !value {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if r.GetAction() == nil {
+			return errors.New("cannot set the auto_host_rewrite before the route action")
+		}
+
+		if action := r.GetRoute(); action != nil {
+			action.HostRewriteSpecifier = &envoy_config_route.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: util_proto.Bool(value),
+			}
+		}
+
+		return nil
+	})
+}
+
 // RouteDeleteRequestHeader deletes the given header from the HTTP request.
 func RouteDeleteRequestHeader(name string) RouteConfigurer {
 	if name == "" {

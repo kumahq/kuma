@@ -44,6 +44,9 @@ spec:
         - secret: example-kuma-io-certificate
       tags:
         hostname: example.kuma.io
+    - port: 8082
+      protocol: HTTP
+      hostname: '*'
 `
 	httpsSecret := func() string {
 		cert, key, err := CreateCertsFor("example.kuma.io")
@@ -85,7 +88,7 @@ type: system.kuma.io/secret
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	route := func(name, path, destination string) string {
+	route := func(name, path, destination string, autoHostRewrite bool) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayRoute
@@ -103,9 +106,11 @@ spec:
         - path:
             match: PREFIX
             value: %s
+        filters:
+        - auto_host_rewrite: %t
         backends:
         - destination:
-            kuma.io/service: %s`, name, path, destination)
+            kuma.io/service: %s`, name, path, autoHostRewrite, destination)
 	}
 
 	Context("Mesh service", func() {
@@ -117,7 +122,7 @@ spec:
 					testserver.WithNamespace(namespace),
 					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
 				)).
-				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80"))).
+				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80", true))).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -149,6 +154,21 @@ spec:
 				g.Expect(response.Instance).To(Equal("echo-server"))
 			}, "30s", "1s").Should(Succeed())
 		})
+
+		It("should automatically set host header from service address", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8082/",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
+			}, "30s", "1s").Should(Succeed())
+		})
 	})
 
 	Context("Rate Limit", func() {
@@ -178,7 +198,7 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "rt-echo-server"),
 				)).
 				Install(YamlK8s(rt)).
-				Install(YamlK8s(route("rt-echo-server", "/rt", "rt-echo-server_simple-gateway_svc_80"))).
+				Install(YamlK8s(route("rt-echo-server", "/rt", "rt-echo-server_simple-gateway_svc_80", false))).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -227,7 +247,7 @@ spec:
 		})
 
 		It("should proxy to service via HTTP", func() {
-			route := route("es-echo-server", "/external-service", "external-service")
+			route := route("es-echo-server", "/external-service", "external-service", false)
 			setup := NewClusterSetup().Install(YamlK8s(route))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
@@ -241,6 +261,27 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(Equal("es-echo-server"))
+			}, "30s", "1s").Should(Succeed())
+
+			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
+		})
+
+		It("should automatically set host header from external service address", func() {
+			route := route("es-echo-server", "/external-service", "external-service", true)
+			setup := NewClusterSetup().Install(YamlK8s(route))
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/external-service",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElements("es-echo-server.client-simple-gateway.svc.cluster.local"))
 			}, "30s", "1s").Should(Succeed())
 
 			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())

@@ -163,7 +163,10 @@ func makeTcpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_TcpRoute_R
 	return entry
 }
 
-func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
+func makeHttpRouteEntry(
+	name string,
+	rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule,
+) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
@@ -242,6 +245,8 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 			}
 
 			entry.Rewrite = &rewrite
+		} else if f.GetAutoHostRewrite() {
+			entry.AutoHostRewrite = true
 		}
 	}
 
