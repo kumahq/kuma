@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
+	"go/build"
 	"os"
 	"path"
 	"runtime"
@@ -40,17 +42,57 @@ func getProjectRootParent(file string) string {
 	return path.Dir(getProjectRoot(file))
 }
 
+func relativeToProjectRoot(path string) string {
+	root := getProjectRoot(path)
+	return strings.TrimPrefix(path, root)
+}
+
 func relativeToProjectRootParent(path string) string {
 	root := getProjectRootParent(path)
 	return strings.TrimPrefix(path, root)
 }
 
+func getGopath() string {
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = build.Default.GOPATH
+	}
+	return gopath
+}
+
 func resourceDir() string {
 	cwd, _ := os.Getwd()
-	projectRootParent := getProjectRootParent(cwd)
 	_, cfile, _, _ := runtime.Caller(0)
-	relativePathToFile := relativeToProjectRootParent(cfile)
-	dir := getProjectRoot(path.Join(projectRootParent, relativePathToFile))
+
+	projectRootParent := getProjectRootParent(cwd)
+	projectRootCfile := getProjectRoot(cwd)
+	projectRootWd := getProjectRoot(cwd)
+	relativeParentPathToFile := relativeToProjectRootParent(cfile)
+	relativeRootPathToFile := relativeToProjectRoot(cfile)
+
+	dir := path.Join(getGopath(), "pkg", "mod", projectRootCfile)
+	if !util_files.FileExists(dir) {
+		dir = path.Join(getGopath(), "pkg", "mod", "github.com", projectRootCfile)
+	}
+	if !util_files.FileExists(dir) {
+		dir = path.Join(getGopath(), "pkg", "mod", "github.com", "kumahq", relativeParentPathToFile)
+	}
+	if !util_files.FileExists(dir) {
+		dir = path.Join(getGopath(), "pkg", "mod", projectRootWd)
+	}
+	if !util_files.FileExists(dir) {
+		dir = path.Join(getGopath(), "pkg", "mod", "github.com", projectRootWd)
+	}
+	if !util_files.FileExists(dir) {
+		dir = path.Join(projectRootParent, relativeParentPathToFile)
+	}
+	if !util_files.FileExists(dir) {
+		dir = path.Join(projectRootWd, relativeRootPathToFile)
+	}
+
+	dir = getProjectRoot(dir)
+	println("****", "project root wd:", projectRootWd, "cwd: ", cwd, "cfile: ", cfile, "relative path to file: ", relativeParentPathToFile, "dir: ", dir)
+
 	rDir := path.Join(dir, "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
