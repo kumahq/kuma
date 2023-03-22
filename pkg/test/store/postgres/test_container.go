@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	util_files "github.com/kumahq/kuma/pkg/util/files"
 	"go/build"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
+
+	util_files "github.com/kumahq/kuma/pkg/util/files"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
@@ -23,6 +24,7 @@ import (
 	pg_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
 
 type PostgresContainer struct {
@@ -68,7 +70,7 @@ func resourceDir() string {
 	fileRelativeToProjectRootParent := relativeToProjectRootParent(cfile)
 
 	file := path.Join(projectRootParent, fileRelativeToProjectRootParent) // kuma ide, kuma cmd, km ide
-	if !util_files.FileExists(file) { // for parent projects
+	if !util_files.FileExists(file) {                                     // for parent projects
 		file = path.Join(getGopath(), "pkg", "mod", relativeToPkgMod(cfile))
 	}
 
