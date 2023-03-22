@@ -158,14 +158,12 @@ controlPlane:
   automountServiceAccountToken: true
 
   # -- Optionally override the resource spec
-  # @default -- the resources will be chosen based on the mode
   resources:
     requests:
-  #    cpu: 100m
-  #    memory: 256Mi
+       cpu: 500m
+       memory: 256Mi
     limits:
-  #    cpu: 250m
-  #    memory: 512Mi
+       memory: 256Mi
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
@@ -275,39 +273,12 @@ controlPlane:
   hostNetwork: false
 
   # -- Security context at the pod level for control plane.
-  podSecurityContext: {}
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
-#    runAsNonRoot: true
-#    # -- The UID to run the entrypoint of the container process.
-#    runAsUser: 1000
-#    # -- The GID to run the entrypoint of the container process.
-#    runAsGroup: 3000
-#    # -- A special supplemental group that applies to all containers in a pod
-#    fsGroup: 2000
-#    fsGroupChangePolicy:
-#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+  podSecurityContext:
+    runAsNonRoot: true
 
   # -- Security context at the container level for control plane.
-  containerSecurityContext: {} #for overlapping securityContext between pod and container, the container's value take precedence
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    # -- Controls whether a process can gain more privileges than its parent process.
-#    allowPrivilegeEscalation: false
-#    # -- The capabilities to add/drop when running containers
-#    capabilities:
-#      drop:
-#        - all
-#    # -- Whether this container has a read-only root filesystem.
-#    readOnlyRootFilesystem: true
-#    # -- Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host.
-#    privileged: false
-#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
-#    runAsNonRoot: true
-#    # -- The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.
-#    runAsUser: 1000
-#    # -- The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.
-#    runAsGroup: 3000
-#    #to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+  containerSecurityContext:
+    readOnlyRootFilesystem: true
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container
@@ -350,6 +321,13 @@ cni:
       repository: "merbridge"
       # -- CNI experimental eBPF image tag
       tag: "0.8.5"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      memory: 100Mi
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -499,28 +477,14 @@ ingress:
   topologySpreadConstraints:
 
   # -- Security context at the pod level for ingress
-  podSecurityContext: {}
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    fsGroup: 2000
-#    fsGroupChangePolicy:
-#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 5678
+    runAsGroup: 5678
 
   # -- Security context at the container level for ingress
-  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    allowPrivilegeEscalation: false
-#    capabilities:
-#      drop:
-#        - all
-#    readOnlyRootFilesystem: true
-#    privileged: false
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+  containerSecurityContext:
+   readOnlyRootFilesystem: true
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
@@ -552,6 +516,13 @@ egress:
           target:
             type: Utilization
             averageUtilization: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
 
   service:
     # -- Whether to create the service object
@@ -610,28 +581,14 @@ egress:
   topologySpreadConstraints:
 
   # -- Security context at the pod level for egress
-  podSecurityContext: {}
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    fsGroup: 2000
-#    fsGroupChangePolicy:
-#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 5678
+    runAsGroup: 5678
 
   # -- Security context at the container level for egress
-  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    allowPrivilegeEscalation: false
-#    capabilities:
-#      drop:
-#        - all
-#    readOnlyRootFilesystem: true
-#    privileged: false
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+  containerSecurityContext:
+   readOnlyRootFilesystem: true
 
 kumactl:
   image:
@@ -657,28 +614,23 @@ hooks:
   # -- Tolerations for the HELM hooks
   tolerations: []
   # -- Security context at the pod level for crd/webhook/ns
-  podSecurityContext: {}
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    fsGroup: 2000
-#    fsGroupChangePolicy:
-#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+  podSecurityContext:
+    runAsNonRoot: true
 
   # -- Security context at the container level for crd/webhook/ns
-  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    allowPrivilegeEscalation: false
-#    capabilities:
-#      drop:
-#        - all
-#    readOnlyRootFilesystem: true
-#    privileged: false
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+  containerSecurityContext:
+    readOnlyRootFilesystem: true
+
+  # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
+  # Changing below values will potentially break ebpf cleanup completely,
+  # so be cautious when doing so.
+  ebpfCleanup:
+    # -- Security context at the pod level for crd/webhook/cleanup-ebpf
+    podSecurityContext:
+      runAsNonRoot: false
+    # -- Security context at the container level for crd/webhook/cleanup-ebpf
+    containerSecurityContext:
+      readOnlyRootFilesystem: false
 
 experimental:
   # -- If true, it installs experimental Gateway API support
@@ -740,6 +692,7 @@ plugins:
     meshfaultinjections: {}
     meshhealthchecks: {}
     meshhttproutes: {}
+    meshloadbalancingstrategies: {}
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}

@@ -81,6 +81,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshLoadBalancingStrategy",
+   "readOnly": false,
+   "path": "meshloadbalancingstrategies",
+   "singularDisplayName": "Mesh Load Balancing Strategy",
+   "pluralDisplayName": "Mesh Load Balancing Strategies",
+   "isExperimental": false
+  },
+  {
    "name": "MeshProxyPatch",
    "readOnly": false,
    "path": "meshproxypatches",

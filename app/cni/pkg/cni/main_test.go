@@ -14,7 +14,7 @@ var _ = Describe("shouldExcludePod", func() {
 		result := shouldExcludePod(excludeNamespaces, "my-excluded-namespace")
 
 		// then
-		Expect(result).To(Equal(true))
+		Expect(result).To(BeTrue())
 	})
 
 	It("should not exclude pods that are not present in excludedNamespaces", func() {
@@ -25,7 +25,7 @@ var _ = Describe("shouldExcludePod", func() {
 		result := shouldExcludePod(excludeNamespaces, "not-excluded-namespace")
 
 		// then
-		Expect(result).To(Equal(false))
+		Expect(result).To(BeFalse())
 	})
 })
 
@@ -38,7 +38,7 @@ var _ = Describe("isInitContainerPresent", func() {
 		result := isInitContainerPresent(initContainersMap)
 
 		// then
-		Expect(result).To(Equal(true))
+		Expect(result).To(BeTrue())
 	})
 
 	It("should not exclude pods that do not have init container", func() {
@@ -49,7 +49,7 @@ var _ = Describe("isInitContainerPresent", func() {
 		result := isInitContainerPresent(initContainersMap)
 
 		// then
-		Expect(result).To(Equal(false))
+		Expect(result).To(BeFalse())
 	})
 })
 
@@ -62,7 +62,7 @@ var _ = Describe("excludeByMissingSidecarInjectedAnnotation", func() {
 		result := excludeByMissingSidecarInjectedAnnotation(annotations)
 
 		// then
-		Expect(result).To(Equal(false))
+		Expect(result).To(BeFalse())
 	})
 
 	It("should exclude pods that do have sidecar injected annotation set to false", func() {
@@ -73,7 +73,7 @@ var _ = Describe("excludeByMissingSidecarInjectedAnnotation", func() {
 		result := excludeByMissingSidecarInjectedAnnotation(annotations)
 
 		// then
-		Expect(result).To(Equal(true))
+		Expect(result).To(BeTrue())
 	})
 
 	It("should exclude pods that do not have sidecar injected annotation set", func() {
@@ -84,6 +84,6 @@ var _ = Describe("excludeByMissingSidecarInjectedAnnotation", func() {
 		result := excludeByMissingSidecarInjectedAnnotation(annotations)
 
 		// then
-		Expect(result).To(Equal(true))
+		Expect(result).To(BeTrue())
 	})
 })

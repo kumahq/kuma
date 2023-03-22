@@ -182,6 +182,7 @@ rules:
       - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
+      - meshloadbalancingstrategies
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -368,7 +369,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 21a5bace63b1c95d7e656d0bc795976c19be030f3b5adeb65af66938586014cb
+        checksum/tls-secrets: 8b33f6add3742c9d13f3f702f098180757b459c6182e0aea62f9072022eb6111
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -474,8 +475,10 @@ spec:
               path: /ready
               port: 5680
           resources:
+            limits:
+              memory: 256Mi
             requests:
-              cpu: 100m
+              cpu: 500m
               memory: 256Mi
           
           volumeMounts:
@@ -547,6 +550,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -591,6 +595,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -718,6 +723,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries

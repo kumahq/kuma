@@ -20,7 +20,7 @@ func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string
 
 		Expect(actual).To(MatchYAML(expected[i]))
 	}
-	Expect(len(resources)).To(Equal(len(expected)))
+	Expect(resources).To(HaveLen(len(expected)))
 }
 
 type NameConfigurer struct {

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"

@@ -3,11 +3,12 @@ package ip
 import (
 	"math/rand"
 	"net"
-	"time"
+
+	"github.com/onsi/ginkgo/v2"
 )
 
 // #nosec G404 -- used just for tests
-var r = rand.New(rand.NewSource(time.Now().UnixNano()))
+var r = rand.New(rand.NewSource(ginkgo.GinkgoRandomSeed()))
 
 // ref. https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
 // ref. https://en.wikipedia.org/wiki/Reserved_IP_addresses#IPv4

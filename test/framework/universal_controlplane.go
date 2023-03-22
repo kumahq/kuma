@@ -143,23 +143,28 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			sshApp := ssh.NewApp(
-				c.name,
-				c.logsPath,
-				c.verbose, c.cpNetworking.SshPort, nil, []string{
-					"curl", "--fail", "--show-error",
-					"http://localhost:5681/global-secrets/admin-user-token",
-				},
-			)
-			if err := sshApp.Run(); err != nil {
+			out, stderr, err := c.Exec("curl", "--fail", "--show-error", "http://localhost:5681/global-secrets/admin-user-token")
+			if err != nil {
 				return "", err
 			}
-			if sshApp.Err() != "" {
-				return "", errors.New(sshApp.Err())
+			if stderr != "" {
+				return "", errors.New(stderr)
 			}
-			return ExtractSecretDataFromResponse(sshApp.Out())
+			return ExtractSecretDataFromResponse(out)
 		},
 	)
+}
+
+func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
+	sshApp := ssh.NewApp(
+		c.name,
+		c.logsPath,
+		c.verbose, c.cpNetworking.SshPort, nil, cmd,
+	)
+	if err := sshApp.Run(); err != nil {
+		return "", sshApp.Err(), err
+	}
+	return sshApp.Out(), sshApp.Err(), nil
 }
 
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {

@@ -9,6 +9,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -101,7 +102,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(DemoClientK8s(mesh, namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
@@ -147,7 +148,7 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// when
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(multizone.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
+			response, err := client.CollectEchoResponse(multizone.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
 		}, "30s", "1s").Should(Succeed())
@@ -174,7 +175,7 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// when request to external service in zone 1
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -206,7 +207,7 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// when doing requests to external service with tag zone1
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(multizone.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
+			response, err := client.CollectEchoResponse(multizone.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
 		}, "30s", "1s").Should(Succeed())

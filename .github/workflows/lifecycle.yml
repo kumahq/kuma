@@ -29,16 +29,16 @@ jobs:
           ref: master
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: "~1.18.9"
+          go-version: "~1.20.2"
       - name: refresh-active-branches
         run: |
           REPO="${{ github.repository }}"
           # Grab the first release X.Y.0 released less than a year ago (it's our support policy length)
-          EARLIEST_RELEASE=$(gh api /repos/${REPO}/releases --jq '[.[] | select(.name | endswith(".0")) | select(.published_at | fromdateiso8601 > (now - 3600 * 24 * 365)) | .name] | last')
+          EARLIEST_RELEASE=$(gh api /repos/${REPO}/releases --paginate --jq '[.[] | select(.name | endswith(".0")) | select(.published_at | fromdateiso8601 > (now - 3600 * 24 * 365)) | .name] | last')
           EARLIEST_BRANCH="release-$(echo ${EARLIEST_RELEASE} | cut -d '.' -f -2)"
-          ACTIVE_BRANCHES=$(gh api /repos/${REPO}/branches  | jq --arg earliestBranch ${EARLIEST_BRANCH} '[.[] | .name | select(. == "master" or (startswith("release-") and . >= $earliestBranch))]')
+          ACTIVE_BRANCHES=$(gh api /repos/${REPO}/branches --paginate | jq --arg earliestBranch ${EARLIEST_BRANCH} '[.[] | .name | select(. == "master" or (startswith("release-") and . >= $earliestBranch))]')
           echo ${ACTIVE_BRANCHES} > active-branches.json
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

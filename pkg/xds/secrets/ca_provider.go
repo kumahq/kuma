@@ -38,18 +38,20 @@ type meshCaProvider struct {
 	latencyMetrics *prometheus.SummaryVec
 }
 
+// Get retrieves the root CA for a given backend with a default timeout of 10
+// seconds.
 func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
 		return nil, nil, errors.New("CA backend is nil")
 	}
 
-	timeout := backend.GetRootChain().GetRequestTimeout()
-	if timeout != nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout.AsDuration())
-		defer cancel()
+	timeout := 10 * time.Second
+	if backendTimeout := backend.GetRootChain().GetRequestTimeout(); backendTimeout != nil {
+		timeout = backendTimeout.AsDuration()
 	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {

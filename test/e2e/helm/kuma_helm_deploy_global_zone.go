@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -72,7 +73,7 @@ interCp:
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
+			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(testserver.Install()).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
@@ -124,7 +125,7 @@ interCp:
 
 	It("communication in between apps in zone works", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(c2, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+			_, err := client.CollectEchoResponse(c2, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
 				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

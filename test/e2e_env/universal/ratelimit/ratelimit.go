@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
@@ -45,11 +46,13 @@ conf:
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
-	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
+	requestRateLimited := func(container string, svc string, responseCode int) func(g Gomega) {
 		return func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			response, err := client.CollectFailure(
+				universal.Cluster, container, fmt.Sprintf("%s.mesh", svc),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).Should(ContainSubstring(status))
+			g.Expect(response.ResponseCode).To(Equal(responseCode))
 		}
 	}
 
@@ -74,10 +77,10 @@ conf:
 		Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
-		Eventually(requestRateLimited("demo-client", "test-server", "400"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("demo-client", "test-server", 400), "10s", "100ms").Should(Succeed())
 
 		By("catch-all RateLimit works")
-		Eventually(requestRateLimited("web", "test-server", "429"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server", 429), "10s", "100ms").Should(Succeed())
 	})
 
 	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
@@ -115,9 +118,9 @@ conf:
 		Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
-		Eventually(requestRateLimited("demo-client", "external-service", "429"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("demo-client", "external-service", 429), "10s", "100ms").Should(Succeed())
 
 		By("RateLimit doesn't apply for other clients")
-		Consistently(requestRateLimited("web", "external-service", "429"), "10s", "100ms").ShouldNot(Succeed())
+		Consistently(requestRateLimited("web", "external-service", 429), "10s", "100ms").ShouldNot(Succeed())
 	})
 }

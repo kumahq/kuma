@@ -108,6 +108,12 @@ func WithoutProbes() DeploymentOptsFn {
 	}
 }
 
+func WithNodeSelector(selector map[string]string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.NodeSelector = selector
+	}
+}
+
 type TestServer interface{}
 
 type Deployment interface {

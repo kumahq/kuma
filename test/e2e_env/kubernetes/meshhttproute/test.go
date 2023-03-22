@@ -57,7 +57,7 @@ func Test() {
 
 	It("should use MeshHTTPRoute if any MeshHTTPRoutes are present", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			_, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).To(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 
@@ -82,7 +82,7 @@ spec:
 `, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			response, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("test-server"))
 		}, "30s", "1s").Should(Succeed())
@@ -138,14 +138,14 @@ spec:
 
 		// then receive responses from 'test-server_meshhttproute_svc_80'
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			response, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("test-server"))
 		}, "30s", "1s").Should(Succeed())
 
 		// and then receive responses from 'external-service'
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			response, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("external-service"))
 		}, "30s", "1s").Should(Succeed())
@@ -235,7 +235,7 @@ spec:
 
 		// then receive redirect response
 		Eventually(func(g Gomega) {
-			resp, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh/prefix/world", client.FromKubernetesPod(namespace, "test-client"))
+			resp, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh/prefix/world", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Received.Path).To(Equal("/hello/world"))
 		}, "30s", "1s").Should(Succeed())

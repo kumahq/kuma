@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -46,7 +45,7 @@ func main() {
 
 func replaceInFile(fileName string, marker string, content string) error {
 	out := bytes.Buffer{}
-	bytesRead, _ := ioutil.ReadFile(fileName)
+	bytesRead, _ := os.ReadFile(fileName)
 	fileContent := string(bytesRead)
 	lines := strings.Split(fileContent, "\n")
 	startMarkerIdx := slices.Index(lines, marker)

@@ -37,7 +37,7 @@ func AppDeploymentWithCniAndNoTaintController() {
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("cni.delayStartupSeconds", "40000"),
 				WithHelmOpt("experimental.cni", "false"),
-				WithCNIV1(),
+				WithCNI(CNIVersion1),
 			)).
 			Setup(cluster)
 		// here we could patch the "command" of the CNI, kubectl patch ...

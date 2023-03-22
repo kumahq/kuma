@@ -53,6 +53,8 @@ Show Kuma resources.
 * [kumactl get meshhealthchecks](kumactl_get_meshhealthchecks.md)	 - Show MeshHealthCheck
 * [kumactl get meshhttproute](kumactl_get_meshhttproute.md)	 - Show a single MeshHTTPRoute resource
 * [kumactl get meshhttproutes](kumactl_get_meshhttproutes.md)	 - Show MeshHTTPRoute
+* [kumactl get meshloadbalancingstrategies](kumactl_get_meshloadbalancingstrategies.md)	 - Show MeshLoadBalancingStrategy
+* [kumactl get meshloadbalancingstrategy](kumactl_get_meshloadbalancingstrategy.md)	 - Show a single MeshLoadBalancingStrategy resource
 * [kumactl get meshproxypatch](kumactl_get_meshproxypatch.md)	 - Show a single MeshProxyPatch resource
 * [kumactl get meshproxypatches](kumactl_get_meshproxypatches.md)	 - Show MeshProxyPatch
 * [kumactl get meshratelimit](kumactl_get_meshratelimit.md)	 - Show a single MeshRateLimit resource

@@ -23,7 +23,7 @@ var _ = Describe("MeshTrafficPermission", func() {
 				verr := mtp.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("allow or deny all possible kinds of clients", `
 targetRef:

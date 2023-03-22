@@ -304,6 +304,7 @@ func tlsConfig(rootCaFile string) (*tls.Config, error) {
 		// #nosec G402 -- we allow this when not specifying a CA
 		return &tls.Config{
 			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS12,
 		}, nil
 	}
 	roots := x509.NewCertPool()

@@ -33,7 +33,7 @@ var _ = Describe("Snapshot", func() {
 			// when
 			snapshot := cache.NewSnapshotBuilder().Build("v1")
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 
 			// when
 			snapshot = cache.NewSnapshotBuilder().
@@ -45,7 +45,7 @@ var _ = Describe("Snapshot", func() {
 				}).
 				Build("v2")
 			// then
-			Expect(snapshot.Consistent()).To(BeNil())
+			Expect(snapshot.Consistent()).To(Succeed())
 		})
 	})
 

@@ -4,7 +4,6 @@ metadata:
   name: busybox
   labels:
     run: busybox
-  annotations:
     kuma.io/sidecar-injection: disabled
 spec:
   volumes:

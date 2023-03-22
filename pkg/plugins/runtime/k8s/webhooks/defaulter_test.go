@@ -88,7 +88,7 @@ var _ = Describe("Defaulter", func() {
 			// then
 			Expect(resp.UID).To(Equal(kube_types.UID("12345")))
 			Expect(resp.Result.Message).To(Equal(""))
-			Expect(resp.Allowed).To(Equal(true))
+			Expect(resp.Allowed).To(BeTrue())
 
 			var actual []byte
 			if len(resp.Patch) == 0 {

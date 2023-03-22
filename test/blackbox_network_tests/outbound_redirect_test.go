@@ -2,7 +2,7 @@ package blackbox_network_tests_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"strconv"
 
@@ -27,7 +27,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -48,7 +48,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 						Port:    serverPort,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -105,7 +105,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -127,7 +127,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -185,17 +185,17 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("192.168.0.1/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("192.168.0.2/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -218,7 +218,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -296,17 +296,17 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("192.168.0.1/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("192.168.0.2/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -334,7 +334,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -408,17 +408,17 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("fd00::10:1:1/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("fd00::10:1:2/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -441,7 +441,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
 				},
@@ -518,7 +518,7 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -541,7 +541,7 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -615,7 +615,7 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -638,7 +638,7 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -712,7 +712,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -733,7 +733,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 						Enabled: true,
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -788,7 +788,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -810,7 +810,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -866,17 +866,17 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("fd00::10:1:1/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("fd00::10:1:2/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -905,7 +905,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -979,17 +979,17 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("192.168.0.1/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("192.168.0.2/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -1013,7 +1013,7 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 						Networks: []string{"s-peer+:192.168.0.1/32"},
 					},
 				},
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -1069,17 +1069,17 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("fd00::10:1:1/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("fd00::10:1:2/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -1104,7 +1104,7 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 					},
 				},
 				IPv6:          true,
-				RuntimeStdout: ioutil.Discard,
+				RuntimeStdout: io.Discard,
 			}
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(

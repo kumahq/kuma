@@ -7,6 +7,7 @@ import (
 	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancingstrategy_api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshproxypatch_api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -17,6 +18,7 @@ import (
 
 var Policies = []plugins.PluginName{
 	plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
+	plugins.PluginName(meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor.KumactlArg),

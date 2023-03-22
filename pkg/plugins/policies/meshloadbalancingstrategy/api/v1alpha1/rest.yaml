@@ -1,0 +1,129 @@
+openapi: 3.0.1
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /meshes/{mesh}/meshloadbalancingstrategies/{name}:
+    get:
+      summary: Returns MeshLoadBalancingStrategy entity
+      tags: [ "MeshLoadBalancingStrategy" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshLoadBalancingStrategy
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: 'schema.yaml'
+
+    put:
+      summary: Creates or Updates MeshLoadBalancingStrategy entity
+      tags: [ "MeshLoadBalancingStrategy" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshLoadBalancingStrategy
+      requestBody:
+        description: MeshLoadBalancingStrategy entity
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schema.yaml'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+
+    delete:
+      summary: Deletes MeshLoadBalancingStrategy entity
+      tags: [ "MeshLoadBalancingStrategy" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshLoadBalancingStrategy
+      responses:
+        '200':
+          description: Successful response
+
+
+  /meshes/{mesh}/meshloadbalancingstrategies:
+    get:
+      summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
+      tags: [ "MeshLoadBalancingStrategy" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page
+
+
+  /meshloadbalancingstrategies:
+    get:
+      summary: Returns a list of MeshLoadBalancingStrategy from all meshes
+      tags: [ "MeshLoadBalancingStrategy" ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page

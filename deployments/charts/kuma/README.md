@@ -53,7 +53,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
-| controlPlane.resources | object | the resources will be chosen based on the mode | Optionally override the resource spec |
+| controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
@@ -78,8 +78,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.hostNetwork | bool | `false` | Specifies if the deployment should be started in hostNetwork mode. |
-| controlPlane.podSecurityContext | object | `{}` | Security context at the pod level for control plane. |
-| controlPlane.containerSecurityContext | object | `{}` | Security context at the container level for control plane. |
+| controlPlane.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for control plane. |
+| controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -97,6 +97,9 @@ A Helm chart for the Kuma Control Plane
 | cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
 | cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
 | cni.experimental.imageEbpf.tag | string | `"0.8.5"` | CNI experimental eBPF image tag |
+| cni.resources.requests.cpu | string | `"100m"` |  |
+| cni.resources.requests.memory | string | `"100Mi"` |  |
+| cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
@@ -130,8 +133,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | ingress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-ingress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Ingress pods This is rendered as a template, so you can reference other helm variables or includes. |
 | ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
-| ingress.podSecurityContext | object | `{}` | Security context at the pod level for ingress |
-| ingress.containerSecurityContext | object | `{}` | Security context at the container level for ingress |
+| ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
+| ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
@@ -141,6 +144,10 @@ A Helm chart for the Kuma Control Plane
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| egress.resources.requests.cpu | string | `"50m"` |  |
+| egress.resources.requests.memory | string | `"64Mi"` |  |
+| egress.resources.limits.cpu | string | `"1000m"` |  |
+| egress.resources.limits.memory | string | `"512Mi"` |  |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -155,8 +162,8 @@ A Helm chart for the Kuma Control Plane
 | egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | egress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-egress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Egress pods. This is rendered as a template, so you can reference other helm variables or includes. |
 | egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
-| egress.podSecurityContext | object | `{}` | Security context at the pod level for egress |
-| egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
+| egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
+| egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
@@ -164,8 +171,11 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
-| hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
-| hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
+| hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
+| hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
+| hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
+| hooks.ebpfCleanup.podSecurityContext | object | `{"runAsNonRoot":false}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
+| hooks.ebpfCleanup.containerSecurityContext | object | `{"readOnlyRootFilesystem":false}` | Security context at the container level for crd/webhook/cleanup-ebpf |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |

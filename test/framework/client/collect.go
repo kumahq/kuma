@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,9 @@ import (
 type CollectResponsesOpts struct {
 	numberOfRequests      int
 	maxConcurrentRequests int
+	maxTime               int
+	verbose               bool
+	cacert                string
 	URL                   string
 	Method                string
 	Headers               map[string]string
@@ -43,12 +47,13 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 	return CollectResponsesOpts{
 		numberOfRequests:      10,
 		maxConcurrentRequests: 10,
+		maxTime:               5,
+		verbose:               false,
 		Method:                "GET",
 		Headers:               map[string]string{},
 		ShellEscaped:          utils.ShellEscape,
 		Flags: []string{
 			"--fail",
-			"--max-time", "5",
 		},
 	}
 }
@@ -58,6 +63,24 @@ type CollectResponsesOptsFn func(opts *CollectResponsesOpts)
 func WithNumberOfRequests(numberOfRequests int) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.numberOfRequests = numberOfRequests
+	}
+}
+
+func WithMaxTime(seconds int) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.maxTime = seconds
+	}
+}
+
+func WithVerbose() CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.verbose = true
+	}
+}
+
+func WithCACert(cacert string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.cacert = cacert
 	}
 }
 
@@ -153,7 +176,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 // cluster, and the deployment must have an "app" label that matches the
 // application parameter.
 //
-// Note that the caller of CollectResponse still needs to specify the
+// Note that the caller of CollectEchoResponse still needs to specify the
 // source container name within the Pod.
 func FromKubernetesPod(namespace string, application string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
@@ -188,6 +211,15 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 		cmd = append(cmd, "--header", opts.ShellEscaped(fmt.Sprintf("%s: %s", key, value)))
 	}
 
+	if opts.verbose {
+		cmd = append(cmd, "--verbose")
+	}
+
+	if opts.cacert != "" {
+		cmd = append(cmd, "--cacert", opts.cacert)
+	}
+
+	cmd = append(cmd, "--max-time", strconv.Itoa(opts.maxTime))
 	cmd = append(cmd, opts.Flags...)
 	cmd = append(cmd, args...)
 
@@ -226,7 +258,7 @@ func CollectResponse(
 	container string,
 	destination string,
 	fn ...CollectResponsesOptsFn,
-) (types.EchoResponse, error) {
+) (string, string, error) {
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
@@ -238,11 +270,20 @@ func CollectResponse(
 		var err error
 		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return types.EchoResponse{}, err
+			return "", "", err
 		}
 	}
 
-	stdout, stderr, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	return cluster.Exec(opts.namespace, appPodName, container, cmd...)
+}
+
+func CollectEchoResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	stdout, stderr, err := CollectResponse(cluster, container, destination, fn...)
 	if err != nil {
 		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", stderr, err)
 	}
@@ -250,6 +291,10 @@ func CollectResponse(
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
 		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
+	}
+
+	if response.Instance == "" {
+		return types.EchoResponse{}, errors.New("'instance' field is empty ")
 	}
 
 	return *response, nil
@@ -349,7 +394,6 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
-		"--max-time", "3",
 		"--silent",               // Suppress human-readable errors.
 		"--write-out", "%{json}", // Write JSON result. Requires curl 7.70.0, April 2020.
 		// Silence output so that we don't try to parse it. A future refactor could try to address this
@@ -426,7 +470,7 @@ func CollectResponsesAndFailures(
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
 	res, err := callConcurrently(destination, func() (interface{}, error) {
-		return CollectResponse(cluster, source, destination, fn...)
+		return CollectEchoResponse(cluster, source, destination, fn...)
 	}, fn...)
 	if err != nil {
 		return nil, err

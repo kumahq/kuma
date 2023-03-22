@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -16,13 +15,8 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 )
 
 type K8sControlPlane struct {
@@ -253,6 +247,11 @@ func (c *K8sControlPlane) GetMetrics() (string, error) {
 	panic("not implemented")
 }
 
+func (c *K8sControlPlane) Exec(cmd ...string) (string, string, error) {
+	pod := c.GetKumaCPPods()[0]
+	return c.cluster.Exec(pod.Namespace, pod.Name, "", cmd...)
+}
+
 func (c *K8sControlPlane) GetGlobalStatusAPI() string {
 	return c.GetAPIServerAddress() + "/status/zones"
 }
@@ -314,62 +313,4 @@ func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
 	data := fmt.Sprintf(`{"zone": "%s", "scope": ["egress"]}`, zone)
 
 	return c.generateToken("/zone", data)
-}
-
-// UpdateObject fetches an object and updates it after the update function is applied to it.
-func (c *K8sControlPlane) UpdateObject(
-	typeName string,
-	objectName string,
-	update func(object runtime.Object) runtime.Object,
-) error {
-	scheme, err := bootstrap_k8s.NewScheme()
-	if err != nil {
-		return err
-	}
-	codecs := serializer.NewCodecFactory(scheme)
-	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
-	if !ok {
-		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
-	}
-
-	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
-		out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
-		if err != nil {
-			return "", err
-		}
-
-		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-		into := map[string]interface{}{}
-
-		if err := decoder.Decode(&into); err != nil {
-			return "", err
-		}
-
-		u := unstructured.Unstructured{Object: into}
-		obj, err := scheme.New(u.GroupVersionKind())
-		if err != nil {
-			return "", err
-		}
-
-		if err := scheme.Convert(&u, obj, nil); err != nil {
-			return "", err
-		}
-
-		obj = update(obj)
-		encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
-		yml, err := runtime.Encode(encoder, obj)
-		if err != nil {
-			return "", err
-		}
-
-		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yml)); err != nil {
-			return "", err
-		}
-		return "", nil
-	})
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
-	}
-	return nil
 }

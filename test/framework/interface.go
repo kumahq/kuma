@@ -295,22 +295,28 @@ func WithEgressEnvoyAdminTunnel() KumaDeploymentOption {
 	})
 }
 
+type CNIVersion string
+
+const (
+	CNIVersion1 CNIVersion = "v1"
+	CNIVersion2 CNIVersion = "v2"
+)
+
 func WithEgress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneEgress = true
 	})
 }
 
-func WithCNI() KumaDeploymentOption {
+func WithCNI(version ...CNIVersion) KumaDeploymentOption {
+	if len(version) > 1 {
+		panic("only one arg is supported")
+	}
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-	})
-}
-
-func WithCNIV1() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.cni = true
-		o.cniV1 = true
+		if len(version) == 1 && version[0] == CNIVersion1 {
+			o.cniV1 = true
+		}
 	})
 }
 
@@ -516,12 +522,6 @@ type Deployment interface {
 	Delete(cluster Cluster) error
 }
 
-type ClusterK8sVersion struct {
-	Major uint64
-	Minor uint64
-	Patch uint64
-}
-
 type Cluster interface {
 	// Cluster
 	Name() string
@@ -545,7 +545,6 @@ type Cluster interface {
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
-	GetK8sVersion() (ClusterK8sVersion, error)
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
 	DeployApp(fs ...AppDeploymentOption) error
@@ -566,4 +565,5 @@ type ControlPlane interface {
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
+	Exec(cmd ...string) (string, string, error)
 }

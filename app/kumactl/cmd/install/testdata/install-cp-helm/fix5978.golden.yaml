@@ -185,6 +185,7 @@ rules:
       - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
+      - meshloadbalancingstrategies
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -408,7 +409,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: aec0f89f48f1852775a87cd695d5a7033d774b4940ded38f1f380108e4b6633a
+        checksum/tls-secrets: abac59589c4ca4987ebcfc82191fd461b0bd3b7392c1ef39d505d6c052d44ad4
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -517,8 +518,10 @@ spec:
               path: /ready
               port: 5680
           resources:
+            limits:
+              memory: 256Mi
             requests:
-              cpu: 100m
+              cpu: 500m
               memory: 256Mi
           
           volumeMounts:
@@ -601,6 +604,10 @@ spec:
                   - kuma-egress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-egress
       nodeSelector:
       
@@ -609,6 +616,8 @@ spec:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -653,17 +662,19 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
+          resources: 
             limits:
               cpu: 1000m
               memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -671,6 +682,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -721,6 +734,10 @@ spec:
                   - kuma-ingress
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
       serviceAccountName: kuma-ingress
       nodeSelector:
       
@@ -730,6 +747,8 @@ spec:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -786,6 +805,8 @@ spec:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: control-plane-ca
           secret:
@@ -793,6 +814,8 @@ spec:
             items:
               - key: ca.crt
                 path: ca.crt
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -828,6 +851,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -872,6 +896,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -998,6 +1023,7 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
+          - meshloadbalancingstrategies
           - meshproxypatches
           - meshratelimits
           - meshretries

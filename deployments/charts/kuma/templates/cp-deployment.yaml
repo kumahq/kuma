@@ -61,7 +61,7 @@ spec:
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
       securityContext:
-      {{- toYaml (mergeOverwrite (dict "runAsNonRoot" true) .Values.controlPlane.podSecurityContext) | trim | nindent 8 }}
+      {{- toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       automountServiceAccountToken: {{ .Values.controlPlane.automountServiceAccountToken }}
       {{- with .Values.controlPlane.nodeSelector }}
@@ -79,6 +79,8 @@ spec:
         - name: migration
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          securityContext:
+          {{- toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           env:
             {{- range $key, $value := $mergedEnv }}
             - name: {{ $key }}
@@ -96,6 +98,10 @@ spec:
             - up
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          resources:
+            {{- if .Values.controlPlane.resources }}
+            {{- .Values.controlPlane.resources | toYaml | nindent 12 }}
+            {{- end }}
           volumeMounts:
           {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
             - name: postgres-client-certs
@@ -111,7 +117,7 @@ spec:
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
           securityContext:
-          {{- toYaml (mergeOverwrite (dict "readOnlyRootFilesystem" true) .Values.controlPlane.containerSecurityContext) | trim | nindent 12 }}
+          {{- toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           env:
           {{- range $key, $value := $mergedEnv }}
             - name: {{ $key }}
@@ -153,21 +159,8 @@ spec:
               path: /ready
               port: 5680
           resources:
-            {{- if .Values.controlPlane.resources.requests }}
-            requests:
-            {{ .Values.controlPlane.resources.requests | toYaml | nindent 14 }}
-            {{- else if eq .Values.controlPlane.mode "global" }}
-            requests:
-              cpu: 500m
-              memory: 256Mi
-            {{- else }}
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            {{- end }}
-            {{- if .Values.controlPlane.resources.limits }}
-            limits:
-            {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
+            {{- if .Values.controlPlane.resources }}
+            {{- .Values.controlPlane.resources | toYaml | nindent 12 }}
             {{- end }}
           {{ with .Values.controlPlane.lifecycle }}
           lifecycle: {{ . | toYaml | nindent 14 }}
