@@ -241,6 +241,61 @@ var _ = Describe("AllowedRoutes support", func() {
 	})
 })
 
+var _ = Describe("NoMatchingParent support", func() {
+	simpleRef := *gatewayRef.DeepCopy()
+	simpleRef.Name = gatewayapi.ObjectName(gateway.Name)
+
+	var kubeClient kube_client.Client
+	BeforeEach(func() {
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sScheme).WithObjects(
+			gatewayClass,
+			gateway,
+			gatewayMultipleListeners,
+			defaultRouteNs,
+			otherRouteNs,
+		).Build()
+	})
+
+	It("allows no SectionName", func() {
+		res, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Allowed))
+	})
+
+	It("allows matching SectionName", func() {
+		simpleRef.SectionName = &simpleListenerName
+		res, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Allowed))
+	})
+
+	It("doesn't allow SectionName mismatches", func() {
+		someNonexistentSection := gatewayapi.SectionName("someNonexistentSection")
+		simpleRef.SectionName = &someNonexistentSection
+		res, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.NoMatchingParent))
+	})
+})
+
 var (
 	defaultNs       = "default"
 	otherNs         = "other"
