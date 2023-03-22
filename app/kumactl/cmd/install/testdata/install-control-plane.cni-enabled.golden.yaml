@@ -509,6 +509,12 @@ spec:
               value: "false"
             - name: CNI_LOG_LEVEL
               value: "info"
+          resources:
+            limits:
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir

@@ -1,9 +1,10 @@
 DISTRIBUTION_LICENSE_PATH ?= tools/releases/templates
 DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 # A list of all distributions
-# OS:ARCH:coredns:ENVOY_FLAVOUR:ENVOY_FLAVOUR
+# OS:ARCH:COREDNS:ENVOY_FLAVOUR:ENVOY_FLAVOUR
 # The second ENVOY_FLAVOUR is optional
-# If you don't want to include coredns just put an empty string
+# COREDNS is always coredns(CORDNS_EXT)
+# If you don't want to include just put skip
 DISTRIBUTION_LIST ?= linux:amd64:coredns:alpine-opt:centos-opt linux:arm64:coredns:alpine-opt darwin:amd64:coredns:darwin-opt darwin:arm64:coredns:darwin-opt
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
@@ -31,9 +32,9 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME):
 	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-# CoreDNS doesn't always need to be included
-ifeq ($(3),coredns)
-	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2)
+# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly empty)
+ifneq ($(3),skip)
+	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2) COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 # A first possible envoy to package

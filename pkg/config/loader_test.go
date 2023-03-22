@@ -96,6 +96,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
+			Expect(cfg.Store.Postgres.DriverName).To(Equal("postgres"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
@@ -336,6 +337,7 @@ store:
     user: kuma
     password: kuma
     dbName: kuma
+    driverName: postgres
     connectionTimeout: 10
     maxOpenConnections: 300
     maxIdleConnections: 300
@@ -644,6 +646,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_USER":                                                                 "kuma",
 				"KUMA_STORE_POSTGRES_PASSWORD":                                                             "kuma",
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
+				"KUMA_STORE_POSTGRES_DRIVER_NAME":                                                          "postgres",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
