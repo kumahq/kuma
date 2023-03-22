@@ -28,10 +28,30 @@ type PostgresContainer struct {
 	WithTLS   bool
 }
 
+func getProjectRoot(file string) string {
+	dir := file
+	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
+		dir = path.Dir(dir)
+	}
+	return path.Dir(dir)
+}
+
+func getProjectRootParent(file string) string {
+	return path.Dir(getProjectRoot(file))
+}
+
+func relativeToProjectRootParent(path string) string {
+	root := getProjectRootParent(path)
+	return strings.TrimPrefix(path, root)
+}
+
 func resourceDir() string {
-	_, file, _, _ := runtime.Caller(0)
-	dir := path.Dir(path.Dir(path.Dir(path.Dir(file)))) // 4 levels up
-	rDir := path.Join(path.Dir(dir), "tools/postgres")
+	cwd, _ := os.Getwd()
+	projectRootParent := getProjectRootParent(cwd)
+	_, cfile, _, _ := runtime.Caller(0)
+	relativePathToFile := relativeToProjectRootParent(cfile)
+	dir := getProjectRoot(path.Join(projectRootParent, relativePathToFile))
+	rDir := path.Join(dir, "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
 		panic(err)
