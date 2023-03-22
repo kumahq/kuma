@@ -42,6 +42,24 @@ default:
         connectTimeout: 5s
   - cluster:
       operation: Patch
+      jsonPatches:
+        - op: replace
+          path: /foo/bar
+          value: baz
+        - op: replace
+          path: /foo
+          value:
+            bar: baz
+  - cluster:
+      operation: Patch
+      jsonPatches:
+        - op: add
+          path: /foo/bar
+          value: baz
+        - op: remove
+          path: /foo
+  - cluster:
+      operation: Patch
       match:
         name: inbound:127.0.0.1:8080
       value: |
@@ -99,6 +117,16 @@ default:
         origin: inbound
       value: |
         address:
+          socketAddress:
+            portValue: 8080
+  - listener:
+      operation: Patch
+      match:
+        origin: inbound
+      jsonPatches:
+      - op: replace
+        path: /address
+        value:
           socketAddress:
             portValue: 8080
   - listener:
@@ -161,6 +189,15 @@ default:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
+      operation: Patch
+      match:
+        name: envoy.filters.network.tcp_proxy
+        listenerName: inbound:127.0.0.0:8080
+      jsonPatches:
+      - op: replace
+        path: /cluster
+        value: backend
+  - networkFilter:
       operation: Remove
     `),
 			Entry("http filter modifications", `
@@ -207,6 +244,15 @@ default:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           dynamicStats: false
+  - httpFilter:
+      operation: Patch
+      match:
+        name: envoy.filters.network.tcp_proxy
+        listenerName: inbound:127.0.0.0:8080
+      jsonPatches:
+      - op: replace
+        path: /dynamicStats
+        value: false
   - httpFilter:
       operation: Remove
     `),
@@ -283,6 +329,12 @@ default:
       operation: Add
   - cluster:
       operation: Patch
+  - cluster:
+      operation: Patch
+      value: '{}'
+      jsonPatches:
+      - op: remove
+        path: ""
 `,
 				expected: `
                 violations:
@@ -298,8 +350,11 @@ default:
                   message: must not be defined
                 - field: spec.default.appendModifications[5].cluster.value
                   message: must be defined
-                - field: spec.default.appendModifications[6].cluster.value
-                  message: must be defined`,
+                - field: spec.default.appendModifications[6].cluster
+                  message: 'cluster must have exactly one defined: value, jsonPatches'
+                - field: spec.default.appendModifications[7].cluster
+                  message: 'cluster must have only one type defined: value, jsonPatches'
+                `,
 			}),
 			Entry("invalid listener modifications", testCase{
 				inputYaml: `
@@ -329,6 +384,13 @@ default:
       operation: Remove
       value: |
         name: xyz
+  - listener:
+      operation: Patch
+      value: |
+        name: xyz
+      jsonPatches:
+      - op: remove
+        path: ""
 `,
 				expected: `
                 violations:
@@ -341,7 +403,10 @@ default:
                 - field: spec.default.appendModifications[3].listener.match
                   message: must not be defined
                 - field: spec.default.appendModifications[4].listener.value
-                  message: must not be defined`,
+                  message: must not be defined
+                - field: spec.default.appendModifications[5].listener
+                  message: 'listener must have only one type defined: value, jsonPatches'
+                `,
 			}),
 			Entry("invalid network filter operation", testCase{
 				inputYaml: `
@@ -366,6 +431,12 @@ default:
       value: '{'
   - networkFilter:
       operation: Add
+  - networkFilter:
+      operation: Patch
+      value: '{}'
+      jsonPatches:
+      - op: remove
+        path: ""
 `,
 				expected: `
                 violations:
@@ -386,7 +457,12 @@ default:
                 - field: spec.default.appendModifications[4].networkFilter.value
                   message: must not be defined
                 - field: spec.default.appendModifications[5].networkFilter.operation
-                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'`,
+                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'
+                - field: spec.default.appendModifications[6].networkFilter.match.name
+                  message: must be defined
+                - field: spec.default.appendModifications[6].networkFilter
+                  message: 'networkFilter must have only one type defined: value, jsonPatches'
+                `,
 			}),
 			Entry("invalid http filter operation", testCase{
 				inputYaml: `
@@ -411,6 +487,12 @@ default:
       value: '{'
   - httpFilter:
       operation: Add
+  - httpFilter:
+      operation: Patch
+      value: '{}'
+      jsonPatches:
+      - op: remove
+        path: ""
 `,
 				expected: `
                 violations:
@@ -431,7 +513,12 @@ default:
                 - field: spec.default.appendModifications[4].httpFilter.value
                   message: must not be defined
                 - field: spec.default.appendModifications[5].httpFilter.operation
-                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'`,
+                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'
+                - field: spec.default.appendModifications[6].httpFilter.match.name
+                  message: must be defined
+                - field: spec.default.appendModifications[6].httpFilter
+                  message: 'httpFilter must have only one type defined: value, jsonPatches'
+                `,
 			}),
 			Entry("invalid virtual host operation", testCase{
 				inputYaml: `
@@ -452,6 +539,12 @@ default:
   - virtualHost:
       operation: Remove
       value: '{'
+  - virtualHost:
+      operation: Patch
+      value: '{}'
+      jsonPatches:
+      - op: remove
+        path: ""
 `,
 				expected: `
                 violations:
@@ -464,7 +557,10 @@ default:
                 - field: spec.default.appendModifications[2].virtualHost.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: spec.default.appendModifications[3].virtualHost.value
-                  message: must not be defined`,
+                  message: must not be defined
+                - field: spec.default.appendModifications[4].virtualHost
+                  message: 'virtualHost must have only one type defined: value, jsonPatches'
+                `,
 			}),
 			Entry("invalid target ref", testCase{
 				inputYaml: `

@@ -24,6 +24,34 @@ properties:
                 cluster:
                   description: Cluster is a modification of Envoy's Cluster resource.
                   properties:
+                    jsonPatches:
+                      description: JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster resource
+                      items:
+                        description: JsonPatchBlock is one json patch operation block.
+                        properties:
+                          from:
+                            description: From is a jsonpatch from string, used by move and copy operations.
+                            type: string
+                          op:
+                            description: Op is a jsonpatch operation string.
+                            enum:
+                              - add
+                              - remove
+                              - replace
+                              - move
+                              - copy
+                            type: string
+                          path:
+                            description: Path is a jsonpatch path string.
+                            type: string
+                          value:
+                            description: Value must be a valid json value used by replace and add operations.
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                          - op
+                          - path
+                        type: object
+                      type: array
                     match:
                       description: Match is a set of conditions that have to be matched for modification operation to happen.
                       properties:
@@ -50,6 +78,34 @@ properties:
                 httpFilter:
                   description: HTTPFilter is a modification of Envoy HTTP Filter available in HTTP Connection Manager in a Listener resource.
                   properties:
+                    jsonPatches:
+                      description: JsonPatches specifies list of jsonpatches to apply to on Envoy's HTTP Filter available in HTTP Connection Manager in a Listener resource.
+                      items:
+                        description: JsonPatchBlock is one json patch operation block.
+                        properties:
+                          from:
+                            description: From is a jsonpatch from string, used by move and copy operations.
+                            type: string
+                          op:
+                            description: Op is a jsonpatch operation string.
+                            enum:
+                              - add
+                              - remove
+                              - replace
+                              - move
+                              - copy
+                            type: string
+                          path:
+                            description: Path is a jsonpatch path string.
+                            type: string
+                          value:
+                            description: Value must be a valid json value used by replace and add operations.
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                          - op
+                          - path
+                        type: object
+                      type: array
                     match:
                       description: Match is a set of conditions that have to be matched for modification operation to happen.
                       properties:
@@ -87,6 +143,34 @@ properties:
                 listener:
                   description: Listener is a modification of Envoy's Listener resource.
                   properties:
+                    jsonPatches:
+                      description: JsonPatches specifies list of jsonpatches to apply to on Envoy's Listener resource
+                      items:
+                        description: JsonPatchBlock is one json patch operation block.
+                        properties:
+                          from:
+                            description: From is a jsonpatch from string, used by move and copy operations.
+                            type: string
+                          op:
+                            description: Op is a jsonpatch operation string.
+                            enum:
+                              - add
+                              - remove
+                              - replace
+                              - move
+                              - copy
+                            type: string
+                          path:
+                            description: Path is a jsonpatch path string.
+                            type: string
+                          value:
+                            description: Value must be a valid json value used by replace and add operations.
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                          - op
+                          - path
+                        type: object
+                      type: array
                     match:
                       description: Match is a set of conditions that have to be matched for modification operation to happen.
                       properties:
@@ -118,6 +202,34 @@ properties:
                 networkFilter:
                   description: NetworkFilter is a modification of Envoy Listener's filter.
                   properties:
+                    jsonPatches:
+                      description: JsonPatches specifies list of jsonpatches to apply to on Envoy Listener's filter.
+                      items:
+                        description: JsonPatchBlock is one json patch operation block.
+                        properties:
+                          from:
+                            description: From is a jsonpatch from string, used by move and copy operations.
+                            type: string
+                          op:
+                            description: Op is a jsonpatch operation string.
+                            enum:
+                              - add
+                              - remove
+                              - replace
+                              - move
+                              - copy
+                            type: string
+                          path:
+                            description: Path is a jsonpatch path string.
+                            type: string
+                          value:
+                            description: Value must be a valid json value used by replace and add operations.
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                          - op
+                          - path
+                        type: object
+                      type: array
                     match:
                       description: Match is a set of conditions that have to be matched for modification operation to happen.
                       properties:
@@ -155,6 +267,34 @@ properties:
                 virtualHost:
                   description: VirtualHost is a modification of Envoy's VirtualHost referenced in HTTP Connection Manager in a Listener resource.
                   properties:
+                    jsonPatches:
+                      description: JsonPatches specifies list of jsonpatches to apply to on Envoy's VirtualHost resource
+                      items:
+                        description: JsonPatchBlock is one json patch operation block.
+                        properties:
+                          from:
+                            description: From is a jsonpatch from string, used by move and copy operations.
+                            type: string
+                          op:
+                            description: Op is a jsonpatch operation string.
+                            enum:
+                              - add
+                              - remove
+                              - replace
+                              - move
+                              - copy
+                            type: string
+                          path:
+                            description: Path is a jsonpatch path string.
+                            type: string
+                          value:
+                            description: Value must be a valid json value used by replace and add operations.
+                            x-kubernetes-preserve-unknown-fields: true
+                        required:
+                          - op
+                          - path
+                        type: object
+                      type: array
                     match:
                       description: Match is a set of conditions that have to be matched for modification operation to happen.
                       properties:

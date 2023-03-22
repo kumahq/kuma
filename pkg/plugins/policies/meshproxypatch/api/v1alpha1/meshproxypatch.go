@@ -73,6 +73,9 @@ type ClusterMod struct {
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
+	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster
+	// resource
+	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // ClusterMatch is a set of conditions on cluster resource.
@@ -105,6 +108,9 @@ type ListenerMod struct {
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
+	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Listener
+	// resource
+	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // ListenerMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -139,6 +145,9 @@ type NetworkFilterMod struct {
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
+	// JsonPatches specifies list of jsonpatches to apply to on Envoy Listener's
+	// filter.
+	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // NetworkFilterMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -176,6 +185,9 @@ type HTTPFilterMod struct {
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
+	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
+	// HTTP Filter available in HTTP Connection Manager in a Listener resource.
+	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // HTTPFilterMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -213,6 +225,9 @@ type VirtualHostMod struct {
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
+	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
+	// VirtualHost resource
+	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // VirtualHostMatch is a set of conditions that have to be matched for modification operation to happen.

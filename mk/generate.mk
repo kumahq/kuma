@@ -38,7 +38,7 @@ protoc/plugins:
 POLICIES_DIR := pkg/plugins/policies
 COMMON_DIR := api/common
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core -e matchers -e xds -e validation -e common | sort),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core -e matchers -e xds -e validation -e common -e jsonpatch | sort),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 

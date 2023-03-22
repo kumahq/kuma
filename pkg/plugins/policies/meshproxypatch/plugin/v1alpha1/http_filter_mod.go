@@ -5,9 +5,11 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -74,13 +76,21 @@ func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnecti
 func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filterPatch *envoy_hcm.HttpFilter) error {
 	for _, filter := range hcm.HttpFilters {
 		if h.filterMatches(filter) {
-			any, err := util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			var merged *anypb.Any
+			var err error
+
+			if len(h.JsonPatches) > 0 {
+				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), h.JsonPatches)
+			} else {
+				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
+			}
+
 			if err != nil {
 				return err
 			}
 
 			filter.ConfigType = &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: any,
+				TypedConfig: merged,
 			}
 		}
 	}
