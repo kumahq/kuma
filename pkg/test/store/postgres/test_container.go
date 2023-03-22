@@ -43,7 +43,7 @@ func resourceDir() string {
 	fileSplitIndex := findRootIndex(file)
 	dirSplitIndex := findRootIndex(dir)
 	filePart := file[fileSplitIndex:]
-	dirPart := file[:dirSplitIndex-5] // 5 = "pkg/" or "app/" + one offset
+	dirPart := dir[:dirSplitIndex]
 	dir = dirPart + filePart
 	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
 		dir = path.Dir(dir)
