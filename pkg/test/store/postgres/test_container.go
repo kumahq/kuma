@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"go/build"
 	"os"
 	"path"
 	"runtime"
@@ -29,35 +28,9 @@ type PostgresContainer struct {
 	WithTLS   bool
 }
 
-func findRootIndex(path string) int {
-	splitIndex := strings.Index(path, "pkg")
-	appI := strings.Index(path, "app")
-	if splitIndex == -1 {
-		splitIndex = appI
-	}
-	return splitIndex
-}
-
-func getGopath() string {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = build.Default.GOPATH
-	}
-	return gopath
-}
-
 func resourceDir() string {
-	dir, _ := os.Getwd()
-	gopath := getGopath()
 	_, file, _, _ := runtime.Caller(0)
-	if strings.HasPrefix(file, "github.com") {
-		dir = path.Join(gopath, strings.TrimPrefix(file, "github.com"))
-	} else {
-		dir = file
-	}
-	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
-		dir = path.Dir(dir)
-	}
+	dir := path.Dir(path.Dir(path.Dir(path.Dir(file)))) // 4 levels up
 	rDir := path.Join(path.Dir(dir), "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
