@@ -72,13 +72,13 @@ func resourceDir() string {
 	projectRootParent := getProjectRootParent(cwd)
 	fileRelativeToProjectRootParent := relativeToProjectRootParent(cfile)
 	projectRoot := getProjectRoot(cwd)
-	fileRelativeToProjectRoot:= relativeToProjectRoot(cfile)
+	fileRelativeToProjectRoot := relativeToProjectRoot(cfile)
 
-	file := path.Join(projectRootParent, fileRelativeToProjectRootParent) // kuma ide, kuma cmd, km ide
-	if !util_files.FileExists(file) {                                     // for parent projects
-		file = path.Join(projectRoot, fileRelativeToProjectRoot) // kuma ide, kuma cmd, km ide
+	file := path.Join(projectRootParent, fileRelativeToProjectRootParent)
+	if !util_files.FileExists(file) {
+		file = path.Join(projectRoot, fileRelativeToProjectRoot)
 	}
-	if !util_files.FileExists(file) {                                     // for parent projects
+	if !util_files.FileExists(file) {
 		file = path.Join(getGopath(), "pkg", "mod", relativeToPkgMod(cfile))
 	}
 
