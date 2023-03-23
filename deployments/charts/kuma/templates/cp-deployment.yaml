@@ -108,7 +108,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/postgres-client-root-ca/
               readOnly: true
           {{- end }}
-          {{- if .Values.postgres.tls.clientSecretName }}
+          {{- if .Values.postgres.tls.secretName }}
             - name: postgres-client-secrets
               mountPath: /var/run/secrets/kuma.io/postgres-client-secrets/
               readOnly: true
@@ -203,7 +203,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/postgres-client-root-ca/
               readOnly: true
           {{- end }}
-          {{- if .Values.postgres.tls.clientSecretName }}
+          {{- if .Values.postgres.tls.secretName }}
             - name: postgres-client-secrets
               mountPath: /var/run/secrets/kuma.io/postgres-client-secrets/
               readOnly: true
@@ -282,10 +282,10 @@ spec:
           secret:
             secretName: {{ .Values.postgres.tls.caSecretName }}
         {{- end }}
-        {{- if .Values.postgres.tls.clientSecretName }}
+        {{- if .Values.postgres.tls.secretName }}
         - name: postgres-client-secrets
           secret:
-            secretName: {{ .Values.postgres.tls.clientSecretName }}
+            secretName: {{ .Values.postgres.tls.secretName }}
         {{- end }}
         {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         - name: api-server-client-certs

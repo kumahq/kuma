@@ -331,7 +331,7 @@ env:
 {{- if empty .Values.postgres.tls.caSecretName }}
 {{ fail "if mode is 'verifyCa' or 'verifyFull' then you must provide .Values.postgres.tls.caSecretName" }}
 {{- end }}
-{{- if .Values.postgres.tls.clientSecretName }}
+{{- if .Values.postgres.tls.secretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
   value: /var/run/secrets/kuma.io/postgres-client-secrets/tls.crt
 - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
@@ -339,7 +339,7 @@ env:
 {{- end }}
 {{- if .Values.postgres.tls.caSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-root-ca/{{ .Values.postgres.tls.caSecretName }}
+  value: /var/run/secrets/kuma.io/postgres-client-root-ca/rootCA.crt
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}

@@ -684,7 +684,7 @@ postgres:
     # -- Secret name that contains the root CA bundle
     caSecretName:
     # -- Secret name that contains the client tls.crt, tls.key
-    clientSecretName:
+    secretName:
 
 # @ignored for helm-docs
 plugins:

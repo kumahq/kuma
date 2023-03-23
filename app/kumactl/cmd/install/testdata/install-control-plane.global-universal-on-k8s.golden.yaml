@@ -160,7 +160,7 @@ spec:
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-root-ca/postgres-root-ca"
+              value: "/var/run/secrets/kuma.io/postgres-client-root-ca/rootCA.crt"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
             - name: KUMA_STORE_TYPE
@@ -201,7 +201,7 @@ spec:
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-root-ca/postgres-root-ca"
+              value: "/var/run/secrets/kuma.io/postgres-client-root-ca/rootCA.crt"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
             - name: KUMA_STORE_TYPE

@@ -192,7 +192,7 @@ A Helm chart for the Kuma Control Plane
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |
 | postgres.tls.caSecretName | string | `nil` | Secret name that contains the root CA bundle |
-| postgres.tls.clientSecretName | string | `nil` | Secret name that contains the client tls.crt, tls.key |
+| postgres.tls.secretName | string | `nil` | Secret name that contains the client tls.crt, tls.key |
 
 ## Custom Resource Definitions
 
