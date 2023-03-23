@@ -333,9 +333,9 @@ env:
 {{- end }}
 {{- if .Values.postgres.tls.secretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-  value: /var/run/secrets/kuma.io/postgres-tls-certtls.crt
+  value: /var/run/secrets/kuma.io/postgres-tls-cert/tls.crt
 - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-  value: /var/run/secrets/kuma.io/postgres-tls-certtls.key
+  value: /var/run/secrets/kuma.io/postgres-tls-cert/tls.key
 {{- end }}
 {{- if .Values.postgres.tls.caSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
