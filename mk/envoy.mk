@@ -1,6 +1,6 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
 ENVOY_TAG ?= v$(ENVOY_VERSION)
-ENVOY_ARTIFACT_EXT ?=
+ENVOY_ARTIFACT_EXT ?= opt
 
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
@@ -52,15 +52,24 @@ else
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 endif
 
-build/envoy/$(GOOS)-$(GOARCH)/%/envoy:
-	GOOS=$(GOOS) \
-	GOARCH=$(GOARCH) \
-	ENVOY_TARGET=$* \
-	ENVOY_TAG=$(ENVOY_TAG) \
-	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
-
 .PHONY: clean/envoy
 clean/envoy:
 	rm -rf ${SOURCE_DIR}
-	rm -rf build/artifacts-${GOOS}-${GOARCH}/envoy/
+	rm -rf build/artifacts-*/envoy/
 	rm -rf build/envoy/
+
+# create targets to fetch envoy for each OS/ARCH combination
+define BUILD_ENVOY_TARGET
+build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-%/envoy:
+	GOOS=$(1) \
+	GOARCH=$(2) \
+	ENVOY_TARGET=$$* \
+	ENVOY_TAG=$(ENVOY_TAG) \
+	ENVOY_DISTRO=$$(firstword $$*) \
+	ENVOY_ARTIFACT_EXT=$$(lastword $$(subst -, ,$$*)) \
+	BINARY_PATH=$$@ ${KUMA_DIR}/tools/envoy/fetch.sh
+
+.PHONY: build/artifacts-$(1)-$(2)/envoy
+build/artifacts-$(1)-$(2)/envoy: build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$$(if $$(findstring linux,$(1)),alpine,$(1))-$$(ENVOY_ARTIFACT_EXT)/envoy
+endef
+$(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_ENVOY_TARGET,$(goos),$(goarch)))))
