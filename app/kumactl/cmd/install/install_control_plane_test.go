@@ -250,7 +250,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--set",
 				"postgres.tls.mode=verifyFull",
 				"--set",
-				"postgres.tls.caSecretName=postgres-root-ca",
+				"postgres.tls.caSecretName=postgres-ca",
 			},
 			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
 		}),

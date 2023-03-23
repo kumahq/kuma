@@ -252,7 +252,7 @@ spec:
       volumes:
         - name: postgres-tls-cert-ca
           secret:
-            secretName: postgres-root-ca
+            secretName: postgres-ca
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
