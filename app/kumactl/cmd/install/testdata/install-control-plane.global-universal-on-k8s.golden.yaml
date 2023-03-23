@@ -160,7 +160,7 @@ spec:
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt"
+              value: "/var/run/secrets/kuma.io/postgres-tls-cert/ca.crt"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
             - name: KUMA_STORE_TYPE
@@ -179,7 +179,7 @@ spec:
           volumeMounts:
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
@@ -202,7 +202,7 @@ spec:
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt"
+              value: "/var/run/secrets/kuma.io/postgres-tls-cert/ca.crt"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
             - name: KUMA_STORE_TYPE
@@ -245,7 +245,7 @@ spec:
               readOnly: true
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
               readOnly: true
             - name: tmp
               mountPath: /tmp

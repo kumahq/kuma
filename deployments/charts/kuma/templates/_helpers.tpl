@@ -339,7 +339,7 @@ env:
 {{- end }}
 {{- if .Values.postgres.tls.caSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-  value: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
+  value: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}
