@@ -20,7 +20,7 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 	if err != nil {
 		return err
 	}
-	healthHandler := func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
 		if instanceId == "" {
 			instanceId = getInstanceId()
 		}
@@ -47,8 +47,6 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 		if err := resp.WriteAsJson(response); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
-	}
-	ws.Route(ws.GET("/").To(healthHandler))
-	ws.Route(ws.GET("/health").To(healthHandler))
+	}))
 	return nil
 }
