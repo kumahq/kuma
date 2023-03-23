@@ -1,0 +1,10 @@
+import{d as l,o as a,c as s,y as r,b as n,f as t,k as i,w as _,z as y,a as g,a2 as P,u as d,X as b,F as f,M as D,I as O,a1 as C,a3 as N,a4 as h}from"./index-c8ce0213.js";const E=l({__name:"WarningDefault",props:{payload:{type:[String,Object],required:!0}},setup(e){return(o,u)=>(a(),s("span",null,r(e.payload),1))}}),I=l({__name:"WarningEnvoyIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    Envoy (`),t("strong",null,r(e.payload.envoy),1),n(") is unsupported by the current version of Kuma DP ("),t("strong",null,r(e.payload.kumaDp),1),n(") [Requirements: "),t("strong",null,r(e.payload.requirements),1),n(`].
+  `)]))}}),A=l({__name:"WarningUnsupportedKumaDPVersion",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    Unsupported version of Kuma DP (`),t("strong",null,r(e.payload.kumaDp),1),n(`)
+  `)]))}}),V=l({__name:"WarningZoneAndGlobalCPSVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    There is mismatch between versions of Zone CP (`),t("strong",null,r(e.payload.zoneCpVersion),1),n(`)
+    and the Global CP (`),t("strong",null,r(e.payload.globalCpVersion),1),n(`)
+  `)]))}}),k=l({__name:"WarningZoneAndKumaDPVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    There is a mismatch between versions of Kuma DP (`),t("strong",null,r(e.payload.kumaDp),1),n(`) and the Zone CP.
+  `)]))}}),v=l({__name:"WarningsWidget",props:{warnings:{type:Array,required:!0}},setup(e){const o=e;function u(c=""){switch(c){case h:return I;case N:return A;case C:return k;case O:return V;default:return E}}return(c,B)=>(a(),i(d(D),{"border-variant":"noBorder"},{body:_(()=>[t("ul",null,[(a(!0),s(f,null,y(o.warnings,(p,m)=>(a(),s("li",{key:`${p.kind}/${m}`,class:"mb-1"},[g(d(b),{appearance:"warning"},{alertMessage:_(()=>[(a(),i(P(u(p.kind)),{payload:p.payload},null,8,["payload"]))]),_:2},1024)]))),128))])]),_:1}))}});export{v as _};
