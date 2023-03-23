@@ -117,9 +117,9 @@ func (mode TLSMode) postgresMode() (string, error) {
 type TLSPostgresStoreConfig struct {
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
 	Mode TLSMode `json:"mode" envconfig:"kuma_store_postgres_tls_mode"`
-	// Path to TLS Certificate of the client. Used in require, verifyCa and verifyFull modes
+	// Path to TLS Certificate of the client. Required when server has METHOD=cert
 	CertPath string `json:"certPath" envconfig:"kuma_store_postgres_tls_cert_path"`
-	// Path to TLS Key of the client. Used in verifyNone, verifyCa and verifyFull modes
+	// Path to TLS Key of the client. Required when server has METHOD=cert
 	KeyPath string `json:"keyPath" envconfig:"kuma_store_postgres_tls_key_path"`
 	// Path to the root certificate. Used in verifyCa and verifyFull modes.
 	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`

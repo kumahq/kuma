@@ -39,9 +39,9 @@ store:
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-      # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
+      # Path to TLS Certificate of the client. Required when server has METHOD=cert
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-      # Path to TLS Key of the client. Used in verifyCa and verifyFull modes
+      # Path to TLS Key of the client. Required when server has METHOD=cert
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
