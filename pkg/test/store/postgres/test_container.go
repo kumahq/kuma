@@ -47,6 +47,11 @@ func relativeToPkgMod(file string) string {
 	return strings.TrimPrefix(file, root)
 }
 
+func relativeToProjectRoot(path string) string {
+	root := getProjectRoot(path)
+	return strings.TrimPrefix(path, root)
+}
+
 func relativeToProjectRootParent(path string) string {
 	root := getProjectRootParent(path)
 	return strings.TrimPrefix(path, root)
@@ -66,8 +71,13 @@ func resourceDir() string {
 
 	projectRootParent := getProjectRootParent(cwd)
 	fileRelativeToProjectRootParent := relativeToProjectRootParent(cfile)
+	projectRoot := getProjectRoot(cwd)
+	fileRelativeToProjectRoot:= relativeToProjectRoot(cfile)
 
 	file := path.Join(projectRootParent, fileRelativeToProjectRootParent) // kuma ide, kuma cmd, km ide
+	if !util_files.FileExists(file) {                                     // for parent projects
+		file = path.Join(projectRoot, fileRelativeToProjectRoot) // kuma ide, kuma cmd, km ide
+	}
 	if !util_files.FileExists(file) {                                     // for parent projects
 		file = path.Join(getGopath(), "pkg", "mod", relativeToPkgMod(cfile))
 	}
