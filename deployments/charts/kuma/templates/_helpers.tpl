@@ -333,13 +333,13 @@ env:
 {{- end }}
 {{- if .Values.postgres.tls.secretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-secrets/tls.crt
+  value: /var/run/secrets/kuma.io/postgres-tls-certtls.crt
 - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-secrets/tls.key
+  value: /var/run/secrets/kuma.io/postgres-tls-certtls.key
 {{- end }}
 {{- if .Values.postgres.tls.caSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-root-ca/rootCA.crt
+  value: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}
