@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"go/build"
 	"os"
 	"path"
 	"runtime"
@@ -30,59 +29,28 @@ type PostgresContainer struct {
 	WithTLS   bool
 }
 
-func getProjectRoot(file string) string {
-	dir := file
-	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
-		dir = path.Dir(dir)
-	}
-	return path.Dir(dir)
-}
-
-func getProjectRootParent(file string) string {
-	return path.Dir(getProjectRoot(file))
-}
-
-func relativeToPkgMod(file string) string {
-	root := path.Dir(path.Dir(path.Dir(getProjectRoot(file))))
-	return strings.TrimPrefix(file, root)
-}
-
-func relativeToProjectRoot(path string) string {
-	root := getProjectRoot(path)
-	return strings.TrimPrefix(path, root)
-}
-
-func relativeToProjectRootParent(path string) string {
-	root := getProjectRootParent(path)
-	return strings.TrimPrefix(path, root)
-}
-
-func getGopath() string {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = build.Default.GOPATH
-	}
-	return gopath
-}
-
-func resourceDir() string {
-	cwd, _ := os.Getwd()
-	_, cfile, _, _ := runtime.Caller(0)
-
-	projectRootParent := getProjectRootParent(cwd)
-	fileRelativeToProjectRootParent := relativeToProjectRootParent(cfile)
-	projectRoot := getProjectRoot(cwd)
-	fileRelativeToProjectRoot := relativeToProjectRoot(cfile)
+func findProjectRoot(cwd, callerFile string) string {
+	projectRootParent := util_files.GetProjectRootParent(cwd)
+	fileRelativeToProjectRootParent := util_files.RelativeToProjectRootParent(callerFile)
+	projectRoot := util_files.GetProjectRoot(cwd)
+	fileRelativeToProjectRoot := util_files.RelativeToProjectRoot(callerFile)
 
 	file := path.Join(projectRootParent, fileRelativeToProjectRootParent)
 	if !util_files.FileExists(file) {
 		file = path.Join(projectRoot, fileRelativeToProjectRoot)
 	}
 	if !util_files.FileExists(file) {
-		file = path.Join(getGopath(), "pkg", "mod", relativeToPkgMod(cfile))
+		file = path.Join(util_files.GetGopath(), "pkg", "mod", util_files.RelativeToPkgMod(callerFile))
 	}
 
-	dir := getProjectRoot(file)
+	return file
+}
+
+func resourceDir() string {
+	cwd, _ := os.Getwd()
+	_, callerFile, _, _ := runtime.Caller(0)
+
+	dir := findProjectRoot(cwd, callerFile)
 	rDir := path.Join(dir, "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
