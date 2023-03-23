@@ -43,7 +43,7 @@ func findProjectRoot(cwd, callerFile string) string {
 		file = path.Join(util_files.GetGopath(), "pkg", "mod", util_files.RelativeToPkgMod(callerFile))
 	}
 
-	return file
+	return util_files.GetProjectRoot(file)
 }
 
 func resourceDir() string {
