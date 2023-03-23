@@ -179,7 +179,7 @@ spec:
           volumeMounts:
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
@@ -245,7 +245,7 @@ spec:
               readOnly: true
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
               readOnly: true
             - name: tmp
               mountPath: /tmp

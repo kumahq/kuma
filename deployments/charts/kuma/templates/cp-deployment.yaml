@@ -106,7 +106,7 @@ spec:
           {{- if .Values.postgres.tls.caSecretName }}
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
               readOnly: true
           {{- end }}
           {{- if .Values.postgres.tls.secretName }}
@@ -207,7 +207,7 @@ spec:
           {{- if .Values.postgres.tls.caSecretName }}
             - name: postgres-tls-cert-ca
               subPath: ca.crt
-              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
+              mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/rootCA.crt
               readOnly: true
           {{- end }}
           {{- if .Values.postgres.tls.secretName }}
