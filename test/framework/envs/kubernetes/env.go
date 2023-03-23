@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"encoding/json"
-	"runtime"
 
 	. "github.com/onsi/gomega"
 
@@ -15,23 +14,21 @@ var Cluster *framework.K8sCluster
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
 func SetupAndGetState() []byte {
 	Cluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Verbose)
+
 	// The Gateway API webhook needs to start before we can create
 	// GatewayClasses
-	gatewayAPI := "false"
-	// There's no arm64 webhook image yet
-	if runtime.GOARCH == "amd64" {
-		gatewayAPI = "true"
-		Expect(Cluster.Install(
-			framework.GatewayAPICRDs,
-		)).To(Succeed())
-	}
+	Expect(Cluster.Install(
+		framework.GatewayAPICRDs,
+	)).To(Succeed())
+
 	kumaOptions := append([]framework.KumaDeploymentOption{
 		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		framework.WithCtlOpts(map[string]string{
-			"--experimental-gatewayapi": gatewayAPI,
+			"--experimental-gatewayapi": "true",
 		}),
 		framework.WithEgress(),
 	}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Standalone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
