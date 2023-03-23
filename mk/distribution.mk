@@ -19,33 +19,26 @@ endif
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 define make_distributions_target
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): GOOS=$(1)
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): GOARCH=$(2)
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME):
+build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp  build/artifacts-$(1)-$(2)/kuma-dp $(if $(4),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy) $(if $(5),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy)
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
-	$(MAKE) build/kumactl GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
-	$(MAKE) build/kuma-cp GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kuma-cp/kuma-cp $$@/bin
-	$(MAKE) build/kuma-dp GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
 # CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly empty)
 ifneq ($(3),skip)
-	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2) COREDNS_EXT=$(subst coredns,,$(3))
+	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 # A first possible envoy to package
 ifneq ($(4),)
-	$(MAKE) build/envoy/$(1)-$(2)/$(4)/envoy GOOS=$(1) GOARCH=$(2)
-	cp build/envoy/$(1)-$(2)/$(4)/envoy $$@/bin
+	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy $$@/bin
 endif
 # A second possible envoy to package
 ifneq ($(5),)
-	$(MAKE) build/envoy/$(1)-$(2)/$(4)/envoy GOOS=$(1) GOARCH=$(2)
-	cp build/envoy/$(1)-$(2)/$(4)/envoy $$@/bin/envoy-$(5)
+	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy $$@/bin/envoy-$(5)
 endif
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555
@@ -68,12 +61,12 @@ endif
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
-	docker run --rm \
+	$$(call GATE_PUSH,docker run --rm \
 	  -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it $(PULP_RELEASE_IMAGE) \
 	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
-	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish
+	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish)
 endef
 
 # These are meant to be used inside foreach
