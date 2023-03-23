@@ -28,7 +28,7 @@ var _ = Describe("Events", func() {
 		c, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 		cfg = *c
-		ver, err := migrateDb(cfg)
+		ver, err := MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
 	})
