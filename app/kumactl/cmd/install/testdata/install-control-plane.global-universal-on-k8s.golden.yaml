@@ -159,14 +159,6 @@ spec:
               value: "global"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
-            - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/postgres-tls-secret-name"
-            - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
-            - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
-            - name: KUMA_STORE_POSTGRES_TLS_MODE
-              value: "verifyFull"
             - name: KUMA_STORE_TYPE
               value: "postgres"
           args:
@@ -181,9 +173,6 @@ spec:
               cpu: 500m
               memory: 256Mi
           volumeMounts:
-            - name: postgres-client-certs
-              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
-              readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
@@ -204,14 +193,6 @@ spec:
               value: "global"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
-            - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/postgres-tls-secret-name"
-            - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
-            - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
-            - name: KUMA_STORE_POSTGRES_TLS_MODE
-              value: "verifyFull"
             - name: KUMA_STORE_TYPE
               value: "postgres"
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
@@ -250,15 +231,9 @@ spec:
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
-            - name: postgres-client-certs
-              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
-              readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
-        - name: postgres-client-certs
-          secret:
-            secretName: postgres-tls-secret-name
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
