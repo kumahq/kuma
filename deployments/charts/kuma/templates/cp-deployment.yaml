@@ -103,9 +103,14 @@ spec:
             {{- .Values.controlPlane.resources | toYaml | nindent 12 }}
             {{- end }}
           volumeMounts:
-          {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
-            - name: postgres-client-certs
-              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
+          {{- if .Values.postgres.tls.caSecretName }}
+            - name: postgres-client-ca
+              mountPath: /var/run/secrets/kuma.io/postgres-client-root-ca/
+              readOnly: true
+          {{- end }}
+          {{- if .Values.postgres.tls.clientSecretName }}
+            - name: postgres-client-secrets
+              mountPath: /var/run/secrets/kuma.io/postgres-client-secrets/
               readOnly: true
           {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
@@ -193,9 +198,14 @@ spec:
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
-            - name: postgres-client-certs
-              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
+          {{- if .Values.postgres.tls.caSecretName }}
+            - name: postgres-client-ca
+              mountPath: /var/run/secrets/kuma.io/postgres-client-root-ca/
+              readOnly: true
+          {{- end }}
+          {{- if .Values.postgres.tls.clientSecretName }}
+            - name: postgres-client-secrets
+              mountPath: /var/run/secrets/kuma.io/postgres-client-secrets/
               readOnly: true
           {{- end }}
           {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
@@ -267,10 +277,15 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.secretName }}
         {{- end }}
-        {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
-        - name: postgres-client-certs
+        {{- if .Values.postgres.tls.caSecretName }}
+        - name: postgres-client-ca
           secret:
-            secretName: {{ .Values.postgres.tls.secretName }}
+            secretName: {{ .Values.postgres.tls.caSecretName }}
+        {{- end }}
+        {{- if .Values.postgres.tls.clientSecretName }}
+        - name: postgres-client-secrets
+          secret:
+            secretName: {{ .Values.postgres.tls.clientSecretName }}
         {{- end }}
         {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         - name: api-server-client-certs

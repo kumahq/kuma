@@ -327,16 +327,19 @@ env:
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
-{{- if ne .Values.postgres.tls.mode "disable" }}
-{{- if empty .Values.postgres.tls.secretName }}
-{{ fail "if mode is not 'disable' then you must provide .Values.postgres.tls.secretName" }}
+{{- if or (eq .Values.postgres.tls.mode "verify-ca") (eq .Values.postgres.tls.mode "verify-full") }}
+{{- if empty .Values.postgres.tls.caSecretName }}
+{{ fail "if mode is 'verify-ca' or 'verify-full' then you must provide .Values.postgres.tls.caSecretName" }}
 {{- end }}
+{{- if .Values.postgres.tls.clientSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.crt
+  value: /var/run/secrets/kuma.io/postgres-client-secrets/{{ .Values.postgres.tls.clientSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.key
+  value: /var/run/secrets/kuma.io/postgres-client-secrets/{{ .Values.postgres.tls.clientSecretName }}
+{{- end }}
+{{- if .Values.postgres.tls.caSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-certs/{{ .Values.postgres.tls.secretName }}
+  value: /var/run/secrets/kuma.io/postgres-client-root-ca/{{ .Values.postgres.tls.caSecretName }}
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}
