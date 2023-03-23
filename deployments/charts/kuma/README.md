@@ -191,7 +191,8 @@ A Helm chart for the Kuma Control Plane
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |
-| postgres.tls.secretName | string | `nil` | Secret name that contains the CA tls.crt, tls.key and CA bundle |
+| postgres.tls.caSecretName | string | `nil` | Secret name that contains the root CA bundle |
+| postgres.tls.clientSecretName | string | `nil` | Secret name that contains the client tls.crt, tls.key |
 
 ## Custom Resource Definitions
 
