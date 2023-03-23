@@ -329,7 +329,7 @@ env:
 {{- end }}
 {{- if or (eq .Values.postgres.tls.mode "verifyCa") (eq .Values.postgres.tls.mode "verifyFull") }}
 {{- if empty .Values.postgres.tls.caSecretName }}
-{{ fail "if mode is 'verify-ca' or 'verify-full' then you must provide .Values.postgres.tls.caSecretName" }}
+{{ fail "if mode is 'verifyCa' or 'verifyFull' then you must provide .Values.postgres.tls.caSecretName" }}
 {{- end }}
 {{- if .Values.postgres.tls.clientSecretName }}
 - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
