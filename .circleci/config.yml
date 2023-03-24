@@ -5,7 +5,7 @@ reusable:
   constants:
     - &go_version "1.20.2"
     - &lastK8sVersion v1.26.1-k3s1
-    - &firstK8sVersion v1.22.16-k3s1
+    - &firstK8sVersion v1.20.15-k3s1
 
   docker_images:
     - &golang_image "cimg/go:1.20.2"
@@ -258,7 +258,7 @@ jobs:
             or:
               - {equal: [test/e2e, << parameters.target >>]}
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
-              - {equal: [kindIpv6, << parameters.cniNetworkPlugin >>]}
+              - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
               - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
           steps:
