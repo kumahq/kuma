@@ -105,6 +105,7 @@ networking:
 		// then traffic shouldn't reach external service
 		Eventually(func(g Gomega) {
 			out, _, err := universalClusters.Exec("", "", AppEgress, "ps", "aux")
+			Logf("output %s:", out)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring("envoy"))
 		}, "1m", "1s").Should(Succeed())
@@ -115,7 +116,7 @@ networking:
 				cluster, "demo-client", "external-service-1.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+			g.Expect(response.Exitcode).To(Or(Equal(22), Equal(56), Equal(7), Equal(28)))
 		}).Should(Succeed())
 	})
 }

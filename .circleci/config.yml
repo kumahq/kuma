@@ -96,7 +96,7 @@ commands:
           name: maybe-add-env
           command: |
             function add_env() {
-              echo 'export env' >> "$BASH_ENV"
+              echo 'export << parameters.env >>' >> "$BASH_ENV"
               exit 0
             }
             if [[ "<< pipeline.git.branch >>" == "master" || "<< pipeline.git.branch >>" == "release-"*  ]]; then
@@ -391,7 +391,9 @@ jobs:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - setenv_depending_on_priority:
         label: "ci/run-full-matrix"
-        env: ENABLED_GOARCHES="arm64 amd64"
+        env: ENABLED_GOARCHES="arm64 amd64" FOO="bar"
+    - run:
+        command: env
     - run:
         command: make build
     - run:
