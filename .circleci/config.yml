@@ -393,7 +393,7 @@ jobs:
         label: "ci/run-full-matrix"
         env: ENABLED_GOARCHES="arm64 amd64"
     - run:
-        command: make build
+        command: make build/distributions
     - run:
         command: make -j images
     - run:
@@ -402,6 +402,7 @@ jobs:
     - persist_to_workspace:
         root: build
         paths:
+        - distributions/out
         - docker
         - artifacts-linux-amd64
         - artifacts-linux-arm64
@@ -418,7 +419,7 @@ jobs:
           env: ALLOW_PUSH=true
       - setenv_depending_on_priority:
           label: ci/run-full-matrix
-          env: ENABLED_GOARCHES="arm64 amd64"
+          env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
       # Mount files from the upstream jobs
       - restore_cache:
           keys:

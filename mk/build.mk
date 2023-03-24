@@ -34,6 +34,9 @@ SUPPORTED_GOOSES ?= linux darwin
 
 # This is a list of all architecture enabled, this means generic targets like `make build` or `make images` will build for each of these arches
 ENABLED_GOARCHES ?= $(GOARCH)
+# This is a list of all osses enabled, this means generic targets like `make build/distributions` will build for each of these arches
+ENABLED_GOOSES ?= $(GOOS)
+ENABLED_ARCH_OS = $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch)))
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
@@ -44,11 +47,11 @@ build/release: $(addprefix build/,$(BUILD_RELEASE_BINARIES)) ## Dev: Build relea
 .PHONY: build/test
 build/test: $(addprefix build/,$(BUILD_TEST_BINARIES)) ## Dev: Build testing binaries
 
-# create targets like `make build/kumactl` that will build binaries for all arches defined in `$ENABLED_GOARCHES`
+# create targets like `make build/kumactl` that will build binaries for all arches defined in `$ENABLED_GOARCHES` and `$ENABLED_GOOSES`
 define LOCAL_BUILD_TARGET
-build/$(2): build/artifacts-$(GOOS)-$(1)/$(2)
+build/$(1): $$(patsubst %,build/artifacts-%/$(1),$$(ENABLED_ARCH_OS))
 endef
-$(foreach goarch,$(ENABLED_GOARCHES),$(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(goarch),$(target)))))
+$(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(target))))
 
 # Build_Go_Application is a build command for the Kuma Go applications.
 Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $$(LD_FLAGS) -o $$@/$$(notdir $$@)

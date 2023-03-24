@@ -78,16 +78,15 @@ dist_envoy_alt = $(word 5, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
 # Call make_distribution_target with each combination
 $(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_coredns),$(dist_envoy),$(dist_envoy_alt))))
+ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution
-DIST_TARGETS:=$(foreach elt, $(DISTRIBUTION_LIST), build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(dist_name).tar.gz)
-.PHONY: build/distributions
-build/distributions: $(DIST_TARGETS)
+.PHONY: build/distributions ## Build tar.gz for each enabled distribution
+build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 
 # Create a main target which will publish to pulp each to the tar.gz built
-PULP_PUBLISH_TARGETS:=$(foreach elt, $(DISTRIBUTION_LIST), publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(dist_name))
-.PHONY: publish/pulp
-publish/pulp: $(PULP_PUBLISH_TARGETS)
+.PHONY: publish/pulp ## Publish to pulp all enabled distributions
+publish/pulp: $(addprefix publish/pulp/$(DISTRIBUTION_TARGET_NAME)-,$(ENABLED_DIST_NAMES))
 
 .PHONY: clean/distributions
 clean/distributions:
