@@ -109,7 +109,7 @@ docker/tag/test: $(patsubst %,docker/%/tag,$(ALL_TEST_WITH_ARCH))
 .PHONY: docker/push
 docker/push: $(patsubst %,docker/%/push,$(ALL_RELEASE_WITH_ARCH))
 .PHONY: docker/manifest
-docker/manifest: $(patsubst %,docker/%/manifest,$(ALL_RELEASE_WITH_ARCH))
+docker/manifest: $(patsubst %,docker/%/manifest,$(IMAGES_RELEASE))
 .PHONY: images
 images: images/release images/test ## Dev: Rebuild release and test Docker images
 .PHONY: images/release
