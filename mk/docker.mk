@@ -1,12 +1,13 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images-${GOARCH}
 KUMA_VERSION ?= master
 
+DOCKER_REPO ?= docker.io
 DOCKER_REGISTRY ?= kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
 define build_image
-$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)))
+$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REPO)/$(DOCKER_REGISTRY)/,$(1)))
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
@@ -120,3 +121,11 @@ images/test: $(addprefix image/,$(ALL_TEST_WITH_ARCH)) ## Dev: Rebuild test Dock
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 	for c in `docker ps -q`; do docker kill $$c; done
 	docker system prune --all --volumes --force
+
+.PHONY: docker/login
+docker/login:
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REPO)
+
+.PHONY: docker/logout
+docker/logout:
+	docker logout $(DOCKER_REPO)

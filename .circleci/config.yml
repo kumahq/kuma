@@ -441,6 +441,12 @@ jobs:
       - run:
           name: publish images
           command: |
+            make docker/login
+            # ensure we always logout
+            function on_exit() {
+              make docker/logout
+            }
+            trap on_exit EXIT
             make docker/push
             make docker/manifest
 
