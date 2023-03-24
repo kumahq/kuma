@@ -1,6 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
 ENVOY_TAG ?= v$(ENVOY_VERSION)
-ENVOY_ARTIFACT_EXT ?= opt
 
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
@@ -68,8 +67,5 @@ build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-%/envoy:
 	ENVOY_DISTRO=$$(firstword $$*) \
 	ENVOY_ARTIFACT_EXT=$$(lastword $$(subst -, ,$$*)) \
 	BINARY_PATH=$$@ ${KUMA_DIR}/tools/envoy/fetch.sh
-
-.PHONY: build/artifacts-$(1)-$(2)/envoy
-build/artifacts-$(1)-$(2)/envoy: build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$$(if $$(findstring linux,$(1)),alpine,$(1))-$$(ENVOY_ARTIFACT_EXT)/envoy
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_ENVOY_TARGET,$(goos),$(goarch)))))
