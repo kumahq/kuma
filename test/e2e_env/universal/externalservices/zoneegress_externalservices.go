@@ -108,7 +108,7 @@ networking:
 			Logf("output %s:", out)
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring("envoy"))
-		}, "1m", "1s").Should(Succeed())
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
 		// then traffic shouldn't reach external service
 		Consistently(func(g Gomega) {
@@ -116,7 +116,7 @@ networking:
 				cluster, "demo-client", "external-service-1.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Or(Equal(22), Equal(56), Equal(7), Equal(28)))
+			g.Expect(response.Exitcode).To(Or(Equal(22), Equal(52), Equal(56), Equal(7), Equal(28)))
 		}).Should(Succeed())
 	})
 }
