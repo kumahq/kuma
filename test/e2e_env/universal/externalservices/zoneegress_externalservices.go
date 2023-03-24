@@ -67,7 +67,7 @@ networking:
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	FIt("should not access external service when zone egress is down", func() {
+	It("should not access external service when zone egress is down", func() {
 		// given universal cluster
 		universalClusters, ok := cluster.(*UniversalCluster)
 		Expect(ok).To(BeTrue())
@@ -101,6 +101,7 @@ networking:
 
 		// when egress is down
 		_, _, err = universalClusters.Exec("", "", AppEgress, "pkill", "kuma-dp")
+		Expect(err).ToNot(HaveOccurred())
 		// then traffic shouldn't reach external service
 		Eventually(func(g Gomega) {
 			out, _, err := universalClusters.Exec("", "", AppEgress, "ps", "aux")
