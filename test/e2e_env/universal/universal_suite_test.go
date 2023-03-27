@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/grpc"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/intercp"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
@@ -99,4 +100,5 @@ var (
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
+	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 )
