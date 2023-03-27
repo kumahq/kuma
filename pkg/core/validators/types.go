@@ -111,6 +111,40 @@ func MakeRequiredFieldErr(path PathBuilder) ValidationError {
 	return err
 }
 
+func MakeOneOfErr(fieldA, fieldB, msg string, oneOf []string) ValidationError {
+	var err ValidationError
+	var quoted []string
+
+	for _, value := range oneOf {
+		quoted = append(quoted, fmt.Sprintf("%q", value))
+	}
+
+	message := fmt.Sprintf(
+		"%q %s one of [%s]",
+		fieldA,
+		msg,
+		strings.Join(quoted, ", "),
+	)
+
+	if fieldB != "" {
+		message = fmt.Sprintf(
+			"%q %s when %q is one of [%s]",
+			fieldA,
+			msg,
+			fieldB,
+			strings.Join(quoted, ", "),
+		)
+	}
+
+	err.AddViolationAt(Root(), message)
+
+	return err
+}
+
+func MakeFieldMustBeOneOfErr(field string, allowed ...string) ValidationError {
+	return MakeOneOfErr(field, "", "must be", allowed)
+}
+
 func IsValidationError(err error) bool {
 	_, ok := err.(*ValidationError)
 	return ok

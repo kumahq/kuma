@@ -1,4 +1,4 @@
-CI_K3S_VERSION ?= v1.21.1-k3s1
+CI_K3S_VERSION ?= v1.22.16-k3s1
 
 
 KUMA_MODE ?= standalone

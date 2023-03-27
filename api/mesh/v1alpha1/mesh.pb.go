@@ -1198,6 +1198,7 @@ type CertificateAuthorityBackend_RootChain struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Timeout on request for to CA for root certificate chain.
+	// If not specified, defaults to 10s.
 	RequestTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=requestTimeout,proto3" json:"requestTimeout,omitempty"`
 }
 

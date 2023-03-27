@@ -346,7 +346,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bootstrap).ToNot(BeNil())
-		Expect(len(kumaSidecarConfiguration.Metrics.Aggregate)).To(Equal(2))
+		Expect(kumaSidecarConfiguration.Metrics.Aggregate).To(HaveLen(2))
 		Expect(kumaSidecarConfiguration.Metrics.Aggregate).To(ContainElements(types.Aggregate{
 			Address: "127.0.0.1",
 			Name:    "my-app",

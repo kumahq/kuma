@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -27,19 +28,29 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 	case api.ModOpRemove:
 		l.remove(resources)
 	case api.ModOpPatch:
-		l.patch(resources, listener)
+		return l.patch(resources, listener)
 	default:
 		return errors.Errorf("invalid operation: %s", l.Operation)
 	}
 	return nil
 }
 
-func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) {
+func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) error {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
+			if len(l.JsonPatches) > 0 {
+				if err := jsonpatch.MergeJsonPatch(listener.Resource, l.JsonPatches); err != nil {
+					return err
+				}
+
+				continue
+			}
+
 			util_proto.Merge(listener.Resource, listenerPatch)
 		}
 	}
+
+	return nil
 }
 
 func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {

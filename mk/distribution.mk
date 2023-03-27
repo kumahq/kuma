@@ -1,9 +1,10 @@
 DISTRIBUTION_LICENSE_PATH ?= tools/releases/templates
 DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 # A list of all distributions
-# OS:ARCH:coredns:ENVOY_FLAVOUR:ENVOY_FLAVOUR
+# OS:ARCH:COREDNS:ENVOY_FLAVOUR:ENVOY_FLAVOUR
 # The second ENVOY_FLAVOUR is optional
-# If you don't want to include coredns just put an empty string
+# COREDNS is always coredns(CORDNS_EXT)
+# If you don't want to include just put skip
 DISTRIBUTION_LIST ?= linux:amd64:coredns:alpine-opt:centos-opt linux:arm64:coredns:alpine-opt darwin:amd64:coredns:darwin-opt darwin:arm64:coredns:darwin-opt
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
@@ -31,9 +32,9 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME):
 	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-# CoreDNS doesn't always need to be included
-ifeq ($(3),coredns)
-	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2)
+# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly empty)
+ifneq ($(3),skip)
+	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2) COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 # A first possible envoy to package
@@ -50,10 +51,19 @@ endif
 	find $$@ -type f | xargs chmod 555
 	# Text files don't have executable access
 	find $$@ -type f -exec grep -I -q '' {} \; -print | xargs chmod 444
+# Rename all executables to `.exe` when building the windows distrib
+ifeq ($(1),windows)
+        # find on darwin doesn't support `-executable` so we use `-perm +111` which we can't use on Linux
+	find $$@/bin $(if $(findstring Darwin,$(shell uname)),-perm +111,-executable) -type f -exec mv {} {}.exe \;
+endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p build/distributions/out
+ifeq ($(shell uname),Darwin)
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
+else
+	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ .
+endif
 	shasum -a 256 $$@ > $$@.sha256
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)

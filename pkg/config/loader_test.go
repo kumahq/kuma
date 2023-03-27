@@ -96,6 +96,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.Password).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
+			Expect(cfg.Store.Postgres.DriverName).To(Equal("postgres"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
@@ -116,11 +117,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
 
-			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
-			Expect(cfg.ApiServer.HTTP.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
+			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
 			Expect(cfg.ApiServer.HTTP.Interface).To(Equal("192.168.0.1"))
 			Expect(cfg.ApiServer.HTTP.Port).To(Equal(uint32(15681)))
-			Expect(cfg.ApiServer.HTTPS.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.HTTPS.Enabled).To(BeFalse())
 			Expect(cfg.ApiServer.HTTPS.Interface).To(Equal("192.168.0.2"))
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
@@ -131,7 +132,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.ApiServer.HTTPS.RequireClientCert).To(BeTrue())
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
-			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
+			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(BeFalse())
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.Authn.Tokens.EnableIssuer).To(BeFalse())
@@ -140,7 +141,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.BasePath).To(Equal("/api"))
 			Expect(cfg.ApiServer.RootUrl).To(Equal("https://foo.com"))
 			Expect(cfg.ApiServer.GUI.RootUrl).To(Equal("https://bar.com"))
-			Expect(cfg.ApiServer.GUI.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.GUI.Enabled).To(BeFalse())
 			Expect(cfg.ApiServer.GUI.BasePath).To(Equal("/ui"))
 
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
@@ -148,7 +149,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout.Duration).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
-			Expect(cfg.MonitoringAssignmentServer.TlsEnabled).To(Equal(true))
+			Expect(cfg.MonitoringAssignmentServer.TlsEnabled).To(BeTrue())
 			Expect(cfg.MonitoringAssignmentServer.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.MonitoringAssignmentServer.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.MonitoringAssignmentServer.TlsMinVersion).To(Equal("TLSv1_3"))
@@ -196,10 +197,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
-			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV1).To(Equal(true))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV1).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
@@ -227,7 +228,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
-			Expect(cfg.Multizone.Global.KDS.TlsEnabled).To(Equal(false))
+			Expect(cfg.Multizone.Global.KDS.TlsEnabled).To(BeFalse())
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
@@ -246,7 +247,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
-			Expect(cfg.Diagnostics.TlsEnabled).To(Equal(true))
+			Expect(cfg.Diagnostics.TlsEnabled).To(BeTrue())
 			Expect(cfg.Diagnostics.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Diagnostics.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Diagnostics.TlsMinVersion).To(Equal("TLSv1_3"))
@@ -336,6 +337,7 @@ store:
     user: kuma
     password: kuma
     dbName: kuma
+    driverName: postgres
     connectionTimeout: 10
     maxOpenConnections: 300
     maxIdleConnections: 300
@@ -644,6 +646,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_USER":                                                                 "kuma",
 				"KUMA_STORE_POSTGRES_PASSWORD":                                                             "kuma",
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
+				"KUMA_STORE_POSTGRES_DRIVER_NAME":                                                          "postgres",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",

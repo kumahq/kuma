@@ -59,24 +59,17 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 	}
 
 	switch conf.Type {
-	case LeastRequestType:
-		if conf.LeastRequest == nil {
-			verr.AddViolation("leastRequest", validators.MustBeDefined)
-		}
 	case RingHashType:
-		if conf.RingHash == nil {
-			verr.AddViolation("ringHash", validators.MustBeDefined)
-		} else {
+		if conf.RingHash != nil {
 			verr.AddError("ringHash", validateRingHash(conf.RingHash))
 		}
 	case MaglevType:
-		if conf.Maglev == nil {
-			verr.AddViolation("maglev", validators.MustBeDefined)
-		} else {
+		if conf.Maglev != nil {
 			verr.AddError("maglev", validateMaglev(conf.Maglev))
 		}
 	case RoundRobinType:
 	case RandomType:
+	case LeastRequestType:
 	}
 
 	return verr

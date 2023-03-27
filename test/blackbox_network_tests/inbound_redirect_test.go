@@ -21,7 +21,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -100,7 +100,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -179,7 +179,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -268,7 +268,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -358,7 +358,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -449,7 +449,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -541,7 +541,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -616,7 +616,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {

@@ -4,8 +4,10 @@ import (
 	"errors"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 )
@@ -38,9 +40,10 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
-	return migrateDb(*cfg)
+	return MigrateDb(*cfg)
 }
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
-	return pc.ComponentManager().Add(postgres_events.NewListener(*pc.Config().Store.Postgres, out))
+	postgresListener := postgres_events.NewListener(*pc.Config().Store.Postgres, out)
+	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener))
 }

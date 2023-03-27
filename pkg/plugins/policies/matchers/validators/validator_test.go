@@ -31,7 +31,7 @@ var _ = Describe("TargetRef Validator", func() {
 			validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
 
 			// then
-			Expect(validationErr.OrNil()).To(BeNil())
+			Expect(validationErr.OrNil()).To(Succeed())
 		},
 		Entry("Mesh", testCase{
 			inputYaml: `

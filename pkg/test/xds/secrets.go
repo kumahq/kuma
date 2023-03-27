@@ -28,9 +28,11 @@ var TestSecretsInfo = &secrets.Info{
 	SupportedBackends: []string{"ca-1"},
 }
 
-type TestSecrets struct{}
+type TestSecrets struct {
+	GeneratedMeshCAs map[string]struct{}
+}
 
-func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret) {
+func (ts *TestSecrets) get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret) {
 	identitySecret := &core_xds.IdentitySecret{
 		PemCerts: [][]byte{
 			[]byte("CERT"),
@@ -40,6 +42,11 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string
 
 	cas := map[string]*core_xds.CaSecret{}
 	for _, mesh := range meshes {
+		if ts.GeneratedMeshCAs == nil {
+			ts.GeneratedMeshCAs = map[string]struct{}{}
+		}
+		ts.GeneratedMeshCAs[mesh.GetMeta().GetName()] = struct{}{}
+
 		cas[mesh.GetMeta().GetName()] = &core_xds.CaSecret{
 			PemCerts: [][]byte{
 				[]byte("CA"),
@@ -56,30 +63,30 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string
 	return identitySecret, cas, allInOne
 }
 
-func (*TestSecrets) GetForZoneEgress(
+func (ts *TestSecrets) GetForZoneEgress(
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, cas, _ := get([]*core_mesh.MeshResource{mesh})
+	identity, cas, _ := ts.get([]*core_mesh.MeshResource{mesh})
 
 	return identity, cas[mesh.GetMeta().GetName()], nil
 }
 
-func (*TestSecrets) GetForDataPlane(
+func (ts *TestSecrets) GetForDataPlane(
 	_ *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	identity, cas, _ := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
+	identity, cas, _ := ts.get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, cas, nil
 }
 
-func (*TestSecrets) GetAllInOne(
+func (ts *TestSecrets) GetAllInOne(
 	mesh *core_mesh.MeshResource,
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, _, allInOne := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
+	identity, _, allInOne := ts.get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, allInOne, nil
 }
 

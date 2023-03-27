@@ -113,7 +113,10 @@ func attachedRoutesForListeners(
 				refStatus := route.Status.Parents[i]
 				if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
 					attached := attachedRoutes[sectionName]
-					attached.num++
+
+					if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
+						attached.num++
+					}
 
 					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.RouteConditionResolvedRefs)) {
 						attached.invalidRoutes = append(attached.invalidRoutes, kube_client.ObjectKeyFromObject(&route).String())

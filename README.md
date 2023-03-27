@@ -20,7 +20,7 @@
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
 
 **Social**
-[![Slack](https://chat.kuma.io/badge.svg)](https://chat.kuma.io/)
+[![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack)](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1rcll3y6t-DkV_CAItZUoy0IvCwQ~jlQ)
 [![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 
 Kuma is a modern Envoy-based service mesh that can run on every cloud, in a single or multi-zone capacity, across both Kubernetes and VMs. Thanks to its broad universal workload support, combined with native support for Envoy as its data plane proxy technology (but with no Envoy expertise required), Kuma provides modern L4-L7 service connectivity, discovery, security, observability, routing and more across any service on any platform, databases included.

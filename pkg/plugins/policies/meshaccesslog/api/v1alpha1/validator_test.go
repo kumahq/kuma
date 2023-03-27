@@ -23,7 +23,7 @@ var _ = Describe("MeshAccessLog", func() {
 				verr := meshAccessLog.Validate()
 
 				// then
-				Expect(verr).To(BeNil())
+				Expect(verr).ToNot(HaveOccurred())
 			},
 			Entry("mesh from/to example", `
 targetRef:

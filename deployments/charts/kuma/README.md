@@ -78,6 +78,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.hostNetwork | bool | `false` | Specifies if the deployment should be started in hostNetwork mode. |
+| controlPlane.admissionServerPort | int | `5443` | Define a new server port for the admission controller. Recommended to set in combination with hostNetwork to prevent multiple port bindings on the same port (like Calico in AWS EKS). |
 | controlPlane.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for control plane. |
 | controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
@@ -97,6 +98,9 @@ A Helm chart for the Kuma Control Plane
 | cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
 | cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
 | cni.experimental.imageEbpf.tag | string | `"0.8.5"` | CNI experimental eBPF image tag |
+| cni.resources.requests.cpu | string | `"100m"` |  |
+| cni.resources.requests.memory | string | `"100Mi"` |  |
+| cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
@@ -141,6 +145,10 @@ A Helm chart for the Kuma Control Plane
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| egress.resources.requests.cpu | string | `"50m"` |  |
+| egress.resources.requests.memory | string | `"64Mi"` |  |
+| egress.resources.limits.cpu | string | `"1000m"` |  |
+| egress.resources.limits.memory | string | `"512Mi"` |  |
 | egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -184,7 +192,8 @@ A Helm chart for the Kuma Control Plane
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |
-| postgres.tls.secretName | string | `nil` | Secret name that contains the CA tls.crt, tls.key and CA bundle |
+| postgres.tls.caSecretName | string | `nil` | Secret name that contains the ca.crt |
+| postgres.tls.secretName | string | `nil` | Secret name that contains the client tls.crt, tls.key |
 
 ## Custom Resource Definitions
 

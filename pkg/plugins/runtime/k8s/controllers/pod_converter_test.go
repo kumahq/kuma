@@ -685,7 +685,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 
 			// expect
 			configuration, err := MetricsAggregateFor(pod)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 			Expect(configuration).To(HaveLen(len(given.expected)))
 			Expect(configuration).To(ContainElements(given.expected))
 		},

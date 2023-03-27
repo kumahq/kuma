@@ -604,6 +604,77 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 		}),
+		Entry("should patch resource matching filter name with JsonPatch", testCase{
+			listeners: []string{
+				`
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                          startChildSpan: true
+                          suppressEnvoyHeaders: true
+                          strictCheckHeaders:
+                          - foo
+                          - bar
+                      - name: envoy.filters.http.gzip
+                      statPrefix: localhost_8080
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND`,
+			},
+			modifications: []string{
+				`
+                httpFilter:
+                   operation: Patch
+                   match:
+                     name: envoy.filters.http.router
+                   jsonPatches:
+                   - op: remove
+                     path: /suppressEnvoyHeaders
+                   - op: replace
+                     path: /strictCheckHeaders/1
+                     value: baz
+                   - op: add
+                     path: /dynamicStats
+                     value: false
+                `,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                          dynamicStats: false
+                          startChildSpan: true
+                          strictCheckHeaders:
+                          - foo
+                          - baz
+                      - name: envoy.filters.http.gzip
+                      statPrefix: localhost_8080
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND`,
+		}),
 		Entry("should patch resource matching listener tags", testCase{
 			listeners: []string{
 				`

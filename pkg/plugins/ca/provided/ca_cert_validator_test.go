@@ -64,7 +64,7 @@ var _ = Describe("ValidateCaCert()", func() {
 			// when
 			err := ValidateCaCert(given.input)
 			// then
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 
 			// when
 			actual, err := yaml.Marshal(err)

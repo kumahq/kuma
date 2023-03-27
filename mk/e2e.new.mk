@@ -10,12 +10,13 @@ E2E_DEPS_TARGETS ?=
 # Environment veriables the tests should run with
 E2E_ENV_VARS ?=
 
+E2E_BIN_DEPS ?=
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
-E2E_DEPS_TARGETS+= docker/load
-E2E_ENV_VARS += CLEANUP_LOGS_ON_SUCCESS=true
+E2E_BIN_DEPS+= docker/load
+E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
-E2E_DEPS_TARGETS+= build/kumactl images
+E2E_BIN_DEPS+= build/kumactl images
 endif
 
 ifndef KUMA_UNIVERSAL_IMAGE
@@ -53,6 +54,10 @@ endif
 
 ifeq ($(CI_K3S_VERSION),v1.19.16-k3s1)
 GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!legacy-k3s-not-supported)
+endif
+
+ifeq ($(shell uname -m | sed -e s/aarch.*/arm64/),arm64)
+	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
 endif
 
 
@@ -127,13 +132,13 @@ test/e2e/debug-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/netw
 
 
 .PHONY: test/e2e
-test/e2e: $(E2E_DEPS_TARGETS)
+test/e2e: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
-test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
+test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
 	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
 	$(MAKE) test/e2e/k8s/wait/kuma-1
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
@@ -141,11 +146,11 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
-test/e2e-universal: build/kumactl images/test k3d/network/create
+test/e2e-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/network/create
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(UNIVERSAL_E2E_PKG_LIST)
 
 .PHONY: test/e2e-multizone
-test/e2e-multizone: $(E2E_DEPS_TARGETS)
+test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
