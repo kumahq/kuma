@@ -1,6 +1,13 @@
 KUMA_DIR ?= .
-ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
-CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+TOOLS_DIR = $(KUMA_DIR)/tools
+# Important to use `:=` to only run the script once per make invocation!
+BUILD_INFO := $(shell $(TOOLS_DIR)/releases/version.sh)
+BUILD_INFO_VERSION = $(word 1, $(BUILD_INFO))
+GIT_TAG = $(word 2, $(BUILD_INFO))
+GIT_COMMIT = $(word 3, $(BUILD_INFO))
+BUILD_DATE = $(word 4, $(BUILD_INFO))
+ENVOY_VERSION = $(word 5, $(BUILD_INFO))
+CI_TOOLS_VERSION = $(word 6, $(BUILD_INFO))
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -14,13 +21,18 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
+# A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
+# $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
+define GATE_PUSH
+$(if $(ALLOW_PUSH),$(1), # $(1))
+endef
+
 # The e2e tests depend on Kind kubeconfigs being in this directory,
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
-TOOLS_DIR ?= $(KUMA_DIR)/tools
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
 HELM=$(CI_TOOLS_BIN_DIR)/helm
 K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
