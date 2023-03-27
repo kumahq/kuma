@@ -230,22 +230,6 @@ jobs:
         name: "Run tests"
         command: |
           make << parameters.target >>
-    - run:
-        # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
-        name: "Push coverage to Codecov"
-        when: always
-        command: |
-          set -o errexit
-          curl --fail --location --silent --output codecov https://codecov.io/bash
-          readonly VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2)
-          readonly URL="https://raw.githubusercontent.com/codecov/codecov-bash"
-          for i in 1 256 512 ; do
-            echo checking SHA${i}SUM for version ${VERSION}
-            shasum --algorithm $i --check --ignore-missing <(
-              curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
-            )
-          done
-          bash ./codecov -f "build/reports/*.out"
     - store_artifacts:
         path: build/reports
         destination: /reports
