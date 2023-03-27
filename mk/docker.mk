@@ -129,8 +129,8 @@ docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 
 .PHONY: docker/login
 docker/login:
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REPO)
+	$(call GATE_PUSH,docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REPO))
 
 .PHONY: docker/logout
 docker/logout:
-	docker logout $(DOCKER_REPO)
+	$(call GATE_PUSH,docker logout $(DOCKER_REPO))
