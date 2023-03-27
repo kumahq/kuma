@@ -81,7 +81,7 @@ func createLogsFile(dir, fileName string) (*os.File, error) {
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return nil, err
 	}
-	
+
 	return os.OpenFile(path.Join(dir, fileName), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
 }
 
