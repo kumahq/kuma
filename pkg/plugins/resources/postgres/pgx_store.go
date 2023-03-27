@@ -49,7 +49,7 @@ func connect(config config.PostgresStoreConfig) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	pgxConfig, err := pgxpool.ParseConfig(connectionString)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +336,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 
 	postgresSuccessfulAcquireCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_acquire",
-		Help: "Cumulative count of successful acquires from the pool",
+		Help: "Cumulative count of acquires from the pool",
 		ConstLabels: map[string]string{
 			"type": "successful",
 		},
@@ -346,7 +346,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 
 	postgresCanceledAcquireCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_acquire",
-		Help: "Cumulative count of acquires from the pool that were canceled by a context",
+		Help: "Cumulative count of acquires from the pool",
 		ConstLabels: map[string]string{
 			"type": "canceled",
 		},
@@ -356,7 +356,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 
 	postgresConstructingConnectionsCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections",
-		Help: "Number of connections with construction in progress in the pool",
+		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "constructing",
 		},
@@ -366,9 +366,9 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 
 	postgresNewConnectionsCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections",
-		Help: "Cumulative count of new connections opened",
+		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
-			"type": "constructing",
+			"type": "new",
 		},
 	}, func() float64 {
 		return float64(pool.Stat().NewConnsCount())
