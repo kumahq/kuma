@@ -242,8 +242,8 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 			}
 
 			entry.Rewrite = &rewrite
-		} else if f.GetAutoHostRewrite() {
-			entry.AutoHostRewrite = true
+		} else if f.GetRewriteHostToBackendHostname() {
+			entry.RewriteHostToBackendHostname = true
 		}
 	}
 

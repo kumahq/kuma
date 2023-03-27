@@ -66,7 +66,7 @@ func GenerateVirtualHost(
 
 			route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
 			route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
-			route.RouteSetAutoHostRewrite(e.AutoHostRewrite),
+			route.RouteSetRewriteHostToBackendHostname(e.RewriteHostToBackendHostname),
 		)
 
 		// Generate a retry policy for this route, if there is one.
@@ -125,16 +125,17 @@ func GenerateVirtualHost(
 				switch h.Key {
 				case ":authority", "Host", "host":
 					// Only one HostRewriteSpecifier can be set for RouteAction
-					// and when auto_host_rewrite is set on route, it should
-					// have precedence over explicit request host header
-					// modification.
+					// and when rewrite_host_to_backend_hostname is set on
+					// route, it should have precedence over explicit request
+					// host header modification.
 					// It's just precaution as MeshGatewayRoute validator
 					// shouldn't allow above situation to occur.
-					if !e.AutoHostRewrite {
+					if !e.RewriteHostToBackendHostname {
 						log.Info("[WARNING] route contains both "+
-							"'auto_host_rewrite' option specified and "+
-							"explicit 'host' header modification. Explicit "+
-							"modification will be ignored",
+							"'rewrite_host_to_backend_hostname' option "+
+							"specified and explicit 'host' header "+
+							"modification. Explicit modification will be "+
+							"ignored",
 							"route", e.Route,
 						)
 

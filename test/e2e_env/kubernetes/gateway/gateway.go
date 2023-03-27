@@ -88,7 +88,7 @@ type: system.kuma.io/secret
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	route := func(name, path, destination string, autoHostRewrite bool) string {
+	route := func(name, path, destination string, rewriteHostToBackendHostname bool) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayRoute
@@ -107,10 +107,10 @@ spec:
             match: PREFIX
             value: %s
         filters:
-        - auto_host_rewrite: %t
+        - rewrite_host_to_backend_hostname: %t
         backends:
         - destination:
-            kuma.io/service: %s`, name, path, autoHostRewrite, destination)
+            kuma.io/service: %s`, name, path, rewriteHostToBackendHostname, destination)
 	}
 
 	Context("Mesh service", func() {

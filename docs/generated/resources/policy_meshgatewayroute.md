@@ -219,7 +219,7 @@
                     
                     - `remove` (optional, repeated)    
                 
-                - `autoHostRewrite` (optional)
+                - `rewriteHostToBackendHostname` (optional)
                 
                     Option to indicate that during forwarding, the host header should be
                     swapped with the hostname of the upstream host chosen by the Envoy's

@@ -94,12 +94,12 @@ func validateMeshGatewayRouteHTTPRule(
 		}
 	}
 
-	var autoHostRewrite bool
+	var rewriteHostToBackendHostname bool
 	var filters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
 	for _, f := range conf.GetFilters() {
-		if f.GetAutoHostRewrite() {
-			autoHostRewrite = true
+		if f.GetRewriteHostToBackendHostname() {
+			rewriteHostToBackendHostname = true
 			continue
 		}
 
@@ -111,7 +111,7 @@ func validateMeshGatewayRouteHTTPRule(
 			hasRedirect = true
 		}
 
-		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f, hasPrefixMatch, autoHostRewrite))
+		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f, hasPrefixMatch, rewriteHostToBackendHostname))
 	}
 
 	// It doesn't make sense to redirect and also mirror or rewrite request headers.
@@ -207,7 +207,7 @@ func validateMeshGatewayRouteHTTPMatch(
 func validateMeshGatewayRouteHTTPFilter(
 	path validators.PathBuilder,
 	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Filter,
-	hasPrefixMatch, autoHostRewrite bool,
+	hasPrefixMatch, rewriteHostToBackendHostname bool,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -220,9 +220,9 @@ func validateMeshGatewayRouteHTTPFilter(
 			for i, h := range headers {
 				switch h.GetName() {
 				case ":authority", "Host", "host":
-					if autoHostRewrite {
+					if rewriteHostToBackendHostname {
 						message := fmt.Sprintf(
-							"cannot modify '%s' header, when route has set 'auto_host_rewrite' option",
+							"cannot modify '%s' header, when route has set 'rewrite_host_to_backend_hostname' option",
 							h.GetName(),
 						)
 

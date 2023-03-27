@@ -30,10 +30,10 @@ type Entry struct {
 	Match  Match
 	Action Action
 
-	// AutoHostRewrite indicates that during forwarding, the host header should
+	// RewriteHostToBackendHostname indicates that during forwarding, the host header should
 	// be swapped with the hostname of the upstream host chosen by the Envoy's
 	// cluster manager.
-	AutoHostRewrite bool
+	RewriteHostToBackendHostname bool
 
 	// Mirror specifies whether to mirror matching traffic.
 	Mirror *Mirror

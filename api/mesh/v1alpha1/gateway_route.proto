@@ -232,7 +232,7 @@ message MeshGatewayRoute {
         // BE AWARE:
         // - it's mutually exclusive with request_header filter which explicitly
         //   replaces "host" header
-        bool auto_host_rewrite = 6;
+        bool rewrite_host_to_backend_hostname = 6;
       }
     };
 
