@@ -38,7 +38,7 @@ We could probably get away with initially exposing only `serviceAccountName`, `r
 ## Solution
 
 ### Additional Configuration
-Below are the new structs we'd add. We'd also rename `MeshGatewayServiceMetadata` (that currently holds annotations) to `MeshGatewayMetadata` to make it generic (for service and deployment).
+Below are the new structs we'd add. We'd also rename `MeshGatewayServiceMetadata` (that currently holds annotations) to `MeshGatewayMetadata` to make it generic (for service and deployment). 
 
 ```go
 // MeshGatewayCommonConfig represents the configuration in common for both
@@ -77,4 +77,16 @@ type MeshGatewayDeploymentSpec struct {
 }
 
 ```
+We should also add `labels` to the `MeshGatewayMetadata` object.
 
+```go
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayServiceMetadata holds Service metadata.
+type MeshGatewayMetadata struct {
+	// Annotations holds annotations to be set on a Service.
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Labels holds annotations to be set on a Pod.
+	Labels map[string]string `json:"labels,omitempty"`
+}
+```
