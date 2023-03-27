@@ -373,6 +373,9 @@ jobs:
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
+      - store_artifacts:
+          name: "Store logs"
+          path: /tmp/e2e
 
   build:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
