@@ -1,6 +1,7 @@
-FROM kumahq/static-debian11:no-push
-
 ARG ARCH
-COPY /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
+FROM kumahq/static-debian11:no-push-$ARCH
+ARG ARCH
+
+COPY /build/artifacts-linux-${ARCH}/kuma-cp/kuma-cp /usr/bin
 
 ENTRYPOINT ["kuma-cp"]

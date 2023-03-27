@@ -18,34 +18,32 @@ endif
 
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
+# $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
+# $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`
+# $(5) - an optional extra envoy to add to the distribution (this is useful for centos7 which needs a specific envoy build). It will be called `envoy-centos7`
 define make_distributions_target
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): GOOS=$(1)
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): GOARCH=$(2)
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME):
+build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp  build/artifacts-$(1)-$(2)/kuma-dp $(if $(4),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy) $(if $(5),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy)
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
-	$(MAKE) build/kumactl GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
-	$(MAKE) build/kuma-cp GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kuma-cp/kuma-cp $$@/bin
-	$(MAKE) build/kuma-dp GOOS=$(1) GOARCH=$(2)
 	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly empty)
+# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
-	$(MAKE) build/coredns GOOS=$(1) GOARCH=$(2) COREDNS_EXT=$(subst coredns,,$(3))
+	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
 # A first possible envoy to package
 ifneq ($(4),)
-	$(MAKE) build/envoy/$(1)-$(2)/$(4)/envoy GOOS=$(1) GOARCH=$(2)
-	cp build/envoy/$(1)-$(2)/$(4)/envoy $$@/bin
+	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy $$@/bin
 endif
 # A second possible envoy to package
 ifneq ($(5),)
-	$(MAKE) build/envoy/$(1)-$(2)/$(4)/envoy GOOS=$(1) GOARCH=$(2)
-	cp build/envoy/$(1)-$(2)/$(4)/envoy $$@/bin/envoy-$(5)
+	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy $$@/bin/envoy-centos7
 endif
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555
@@ -68,12 +66,12 @@ endif
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
-	docker run --rm \
+	$$(call GATE_PUSH,docker run --rm \
 	  -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it $(PULP_RELEASE_IMAGE) \
 	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
-	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish
+	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish)
 endef
 
 # These are meant to be used inside foreach
@@ -85,16 +83,15 @@ dist_envoy_alt = $(word 5, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
 # Call make_distribution_target with each combination
 $(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_coredns),$(dist_envoy),$(dist_envoy_alt))))
+ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution
-DIST_TARGETS:=$(foreach elt, $(DISTRIBUTION_LIST), build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(dist_name).tar.gz)
-.PHONY: build/distributions
-build/distributions: $(DIST_TARGETS)
+.PHONY: build/distributions ## Build tar.gz for each enabled distribution
+build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 
 # Create a main target which will publish to pulp each to the tar.gz built
-PULP_PUBLISH_TARGETS:=$(foreach elt, $(DISTRIBUTION_LIST), publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(dist_name))
-.PHONY: publish/pulp
-publish/pulp: $(PULP_PUBLISH_TARGETS)
+.PHONY: publish/pulp ## Publish to pulp all enabled distributions
+publish/pulp: $(addprefix publish/pulp/$(DISTRIBUTION_TARGET_NAME)-,$(ENABLED_DIST_NAMES))
 
 .PHONY: clean/distributions
 clean/distributions:
