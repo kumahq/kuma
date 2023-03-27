@@ -188,7 +188,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		User:                 "kuma",
 		Password:             "kuma",
 		DbName:               "kuma",
-		DriverName:           "pgx",
+		DriverName:           DriverNamePgx,
 		ConnectionTimeout:    5,
 		MaxOpenConnections:   50, // 0 for unlimited
 		MaxIdleConnections:   50, // 0 for unlimited

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"net"
 
 	"github.com/pkg/errors"
@@ -257,7 +258,14 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		pluginName = core_plugins.Memory
 		pluginConfig = nil
 	case store.PostgresStore:
-		pluginName = core_plugins.Postgres
+		switch cfg.Store.Postgres.DriverName {
+		case postgres.DriverNamePgx:
+			pluginName = core_plugins.Pgx
+		case postgres.DriverNamePq:
+			pluginName = core_plugins.Postgres
+		default:
+			return errors.Errorf("unknown driver name %s", cfg.Store.Postgres.DriverName)
+		}
 		pluginConfig = cfg.Store.Postgres
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
