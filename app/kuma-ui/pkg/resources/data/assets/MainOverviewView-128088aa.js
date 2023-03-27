@@ -1,1 +1,0 @@
-import{M as a}from"./MeshResources-286f8344.js";import{d as r,g as t,o,c,a as e,u as n,b as m,F as i}from"./index-c8ce0213.js";const v=r({__name:"MainOverviewView",setup(u){const s=t();return(l,p)=>(o(),c(i,null,[e(n(s),{class:"mt-16"}),m(),e(a,{class:"mt-8"})],64))}});export{v as default};

@@ -224,7 +224,7 @@ env:
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
-  value: "5443"
+  value: {{ .Values.controlPlane.admissionServerPort | default "5443" | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
   value: /var/run/secrets/kuma.io/tls-cert
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
