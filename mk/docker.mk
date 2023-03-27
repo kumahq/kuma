@@ -24,6 +24,7 @@ export DOCKER_BUILDKIT := 1
 
 ENVOY_ARTIFACT_EXT ?= opt
 # add targets to build images for each arch
+# $(1) - GOOS to build for
 define IMAGE_TARGETS_BY_ARCH
 .PHONY: image/static/$(1)
 image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
@@ -68,6 +69,9 @@ endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
 
 # add targets to generate docker/{save,load,tag,push} for each supported ARCH
+# add targets to build images for each arch
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
 define DOCKER_TARGETS_BY_ARCH
 .PHONY: docker/$(1)/$(2)/save
 docker/$(1)/$(2)/save:

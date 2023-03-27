@@ -18,6 +18,11 @@ endif
 
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
+# $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
+# $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`
+# $(5) - an optional extra envoy to add to the distribution (this is useful for centos7 which needs a specific envoy build). It will be called `envoy-centos7`
 define make_distributions_target
 build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp  build/artifacts-$(1)-$(2)/kuma-dp $(if $(4),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy) $(if $(5),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy)
 	rm -rf $$@
@@ -27,7 +32,7 @@ build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-
 	cp build/artifacts-$(1)-$(2)/kuma-dp/kuma-dp $$@/bin
 	cp $(DISTRIBUTION_LICENSE_PATH)/* $$@
 	cp $(DISTRIBUTION_CONFIG_PATH) $$@/conf
-# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly empty)
+# CoreDNS is not included when the value is `skip` otherwise it's used as the COREDNS_EXT (which is most commonly just coredns)
 ifneq ($(3),skip)
 	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
@@ -38,7 +43,7 @@ ifneq ($(4),)
 endif
 # A second possible envoy to package
 ifneq ($(5),)
-	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy $$@/bin/envoy-$(5)
+	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy $$@/bin/envoy-centos7
 endif
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555

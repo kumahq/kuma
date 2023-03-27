@@ -58,6 +58,8 @@ clean/envoy:
 	rm -rf build/envoy/
 
 # create targets to fetch envoy for each OS/ARCH combination
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
 define BUILD_ENVOY_TARGET
 build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-%/envoy:
 	GOOS=$(1) \

@@ -48,6 +48,7 @@ build/release: $(addprefix build/,$(BUILD_RELEASE_BINARIES)) ## Dev: Build relea
 build/test: $(addprefix build/,$(BUILD_TEST_BINARIES)) ## Dev: Build testing binaries
 
 # create targets like `make build/kumactl` that will build binaries for all arches defined in `$ENABLED_GOARCHES` and `$ENABLED_GOOSES`
+# $(1) - GOOS to build for
 define LOCAL_BUILD_TARGET
 build/$(1): $$(patsubst %,build/artifacts-%/$(1),$$(ENABLED_ARCH_OS))
 endef
@@ -57,6 +58,8 @@ $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call 
 Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $$(LD_FLAGS) -o $$@/$$(notdir $$@)
 
 # create targets to build binaries for each OS/ARCH combination
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
 define BUILD_TARGET
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cp
 build/artifacts-$(1)-$(2)/kuma-cp:
