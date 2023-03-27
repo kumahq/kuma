@@ -155,7 +155,7 @@ spec:
               protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
-            - containerPort: 5443
+            - containerPort: {{ .Values.controlPlane.admissionServerPort | default "5443" }}
             {{- if ne .Values.controlPlane.mode "global" }}
             - containerPort: 5678
             {{- end }}
