@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 type UniversalNetworking struct {
@@ -39,7 +38,6 @@ type UniversalNetworkingState struct {
 
 type UniversalCluster struct {
 	t              testing.TestingT
-	logsPath       string
 	name           string
 	controlplane   *UniversalControlPlane
 	apps           map[string]*UniversalApp
@@ -58,7 +56,6 @@ var _ Cluster = &UniversalCluster{}
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
 		t:              t,
-		logsPath:       universal_logs.GetPath(Config.UniversalE2ELogsPath, t.Name()),
 		name:           name,
 		apps:           map[string]*UniversalApp{},
 		verbose:        verbose,
@@ -68,10 +65,6 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		envoyTunnels:   map[string]envoy_admin.Tunnel{},
 		networking:     map[string]UniversalNetworking{},
 	}
-}
-
-func (c *UniversalCluster) LogsPath() string {
-	return c.logsPath
 }
 
 func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
@@ -160,7 +153,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, c.logsPath, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
 	if err != nil {
 		return err
 	}
@@ -293,7 +286,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, c.logsPath, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
 	if err != nil {
 		return err
 	}
@@ -376,7 +369,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 		return errors.New("missing public port: 22")
 	}
 
-	app := ssh.NewApp(kumaCP.containerName, kumaCP.logsPath, kumaCP.verbose, sshPort, envVars, args)
+	app := ssh.NewApp(kumaCP.containerName, "", kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -420,7 +413,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := ssh.NewApp(app.containerName, c.logsPath, c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(app.containerName, "", c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -498,7 +491,7 @@ func (c *UniversalCluster) addIngressEnvoyTunnel() error {
 }
 
 func (c *UniversalCluster) createEnvoyTunnel(name string) error {
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.logsPath, c.networking[name].ApiServerPort, c.verbose)
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.networking[name].ApiServerPort, c.verbose)
 	if err != nil {
 		return err
 	}
