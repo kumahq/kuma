@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"errors"
-
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -12,15 +11,15 @@ import (
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 )
 
-var _ core_plugins.ResourceStorePlugin = &pqPlugin{}
+var _ core_plugins.ResourceStorePlugin = &pgxPlugin{}
 
-type pqPlugin struct{}
+type pgxPlugin struct{}
 
 func init() {
-	core_plugins.Register(core_plugins.Postgres, &pqPlugin{})
+	core_plugins.Register(core_plugins.Pgx, &pgxPlugin{})
 }
 
-func (p *pqPlugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, error) {
+func (p *pgxPlugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
@@ -32,10 +31,10 @@ func (p *pqPlugin) NewResourceStore(pc core_plugins.PluginContext, config core_p
 	if !migrated {
 		return nil, errors.New(`database is not migrated. Run "kuma-cp migrate up" to update database to the newest schema`)
 	}
-	return NewPqStore(pc.Metrics(), *cfg)
+	return NewPgxStore(pc.Metrics(), *cfg)
 }
 
-func (p *pqPlugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
+func (p *pgxPlugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
@@ -43,7 +42,7 @@ func (p *pqPlugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Pl
 	return MigrateDb(*cfg)
 }
 
-func (p *pqPlugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
+func (p *pgxPlugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
 	postgresListener := postgres_events.NewListener(*pc.Config().Store.Postgres, out)
 	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener))
 }

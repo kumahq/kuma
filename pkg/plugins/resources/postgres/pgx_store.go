@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"strconv"
 	"strings"
 	"time"
@@ -17,31 +19,45 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 )
 
-type postgresResourceStore struct {
-	db *sql.DB
+
+type pgxResourceStore struct {
+	pool *pgxpool.Pool
 }
 
-var _ store.ResourceStore = &postgresResourceStore{}
+var _ store.ResourceStore = &pgxResourceStore{}
 
-func NewPqStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
-	db, err := common_postgres.ConnectToDb(config)
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
+	pool, err := connect(config)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := registerPqMetrics(metrics, db); err != nil {
+	if err := registerMetrics(metrics, pool); err != nil {
 		return nil, errors.Wrapf(err, "could not register DB metrics")
 	}
 
-	return &postgresResourceStore{
-		db: db,
+	return &pgxResourceStore{
+		pool: pool,
 	}, nil
 }
 
-func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
+func connect(config config.PostgresStoreConfig) (*pgxpool.Pool, error) {
+	connectionString, err := config.ConnectionString()
+	if err != nil {
+		return nil, err
+	}
+	pgxConfig, err := pgxpool.ParseConfig(connectionString)
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
+}
+
+func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
 	bytes, err := core_model.ToJSON(resource.GetSpec())
@@ -62,7 +78,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
-	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
+	_, err = r.pool.Exec(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
 		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
@@ -81,7 +97,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 	return nil
 }
 
-func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Resource, fs ...store.UpdateOptionsFunc) error {
+func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	bytes, err := core_model.ToJSON(resource.GetSpec())
 	if err != nil {
 		return err
@@ -95,7 +111,8 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
-	result, err := r.db.Exec(
+	result, err := r.pool.Exec(
+		ctx,
 		statement,
 		string(bytes),
 		newVersion,
@@ -108,7 +125,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
-	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
+	if rows := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
 		return store.ErrorResourceConflict(resource.Descriptor().Name, resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
 	}
 
@@ -123,26 +140,26 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 	return nil
 }
 
-func (r *postgresResourceStore) Delete(_ context.Context, resource core_model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
-	result, err := r.db.Exec(statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
+	result, err := r.pool.Exec(ctx, statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
-	if rows, _ := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
+	if rows := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 
 	return nil
 }
 
-func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
+func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
+	row := r.pool.QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
@@ -174,7 +191,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resou
 	return nil
 }
 
-func (r *postgresResourceStore) List(_ context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
+func (r *pgxResourceStore) List(ctx context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
 	statement := `SELECT name, mesh, spec, version, creation_time, modification_time FROM resources WHERE type=$1`
@@ -193,7 +210,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 	}
 	statement += " ORDER BY name, mesh"
 
-	rows, err := r.db.Query(statement, statementArgs...)
+	rows, err := r.pool.Query(ctx, statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -201,7 +218,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 
 	total := 0
 	for rows.Next() {
-		item, err := pqRowToItem(resources, rows)
+		item, err := rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
@@ -215,7 +232,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 	return nil
 }
 
-func pqRowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.Resource, error) {
+func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {
 	var name, mesh, spec string
 	var version int
 	var creationTime, modificationTime time.Time
@@ -240,11 +257,12 @@ func pqRowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.
 	return item, nil
 }
 
-func (r *postgresResourceStore) Close() error {
-	return r.db.Close()
+func (r *pgxResourceStore) Close() error {
+	r.pool.Close()
+	return nil
 }
 
-func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
+func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 	postgresCurrentConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections",
 		Help: "Current number of postgres store connections",
@@ -252,7 +270,7 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 			"type": "open_connections",
 		},
 	}, func() float64 {
-		return float64(db.Stats().OpenConnections)
+		return float64(pool.Stat().TotalConns())
 	})
 
 	postgresInUseConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -262,7 +280,7 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 			"type": "in_use",
 		},
 	}, func() float64 {
-		return float64(db.Stats().InUse)
+		return float64(pool.Stat().AcquiredConns())
 	})
 
 	postgresIdleConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -272,28 +290,28 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 			"type": "idle",
 		},
 	}, func() float64 {
-		return float64(db.Stats().Idle)
+		return float64(pool.Stat().IdleConns())
 	})
 
 	postgresMaxOpenConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections_max",
 		Help: "Max postgres store open connections",
 	}, func() float64 {
-		return float64(db.Stats().MaxOpenConnections)
+		return float64(pool.Stat().MaxConns())
 	})
 
 	postgresWaitConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_count",
 		Help: "Current waiting postgres store connections",
 	}, func() float64 {
-		return float64(db.Stats().WaitCount)
+		return float64(pool.Stat().EmptyAcquireCount())
 	})
 
 	postgresWaitConnectionDurationMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_duration",
 		Help: "Time Blocked waiting for new connection in seconds",
 	}, func() float64 {
-		return db.Stats().WaitDuration.Seconds()
+		return pool.Stat().AcquireDuration().Seconds()
 	})
 
 	postgresMaxIdleClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -303,17 +321,7 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 			"type": "max_idle_conns",
 		},
 	}, func() float64 {
-		return float64(db.Stats().MaxIdleClosed)
-	})
-
-	postgresMaxIdleTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Name: "store_postgres_connection_closed",
-		Help: "Current number of closed postgres store connections",
-		ConstLabels: map[string]string{
-			"type": "conn_max_idle_time",
-		},
-	}, func() float64 {
-		return float64(db.Stats().MaxIdleTimeClosed)
+		return float64(pool.Stat().MaxIdleDestroyCount())
 	})
 
 	postgresMaxLifeTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -323,13 +331,55 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 			"type": "conn_max_life_time",
 		},
 	}, func() float64 {
-		return float64(db.Stats().MaxLifetimeClosed)
+		return float64(pool.Stat().MaxLifetimeDestroyCount())
+	})
+
+	postgresSuccessfulAcquireCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_acquire",
+		Help: "Cumulative count of successful acquires from the pool",
+		ConstLabels: map[string]string{
+			"type": "successful",
+		},
+	}, func() float64 {
+		return float64(pool.Stat().AcquireCount())
+	})
+
+	postgresCanceledAcquireCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_acquire",
+		Help: "Cumulative count of acquires from the pool that were canceled by a context",
+		ConstLabels: map[string]string{
+			"type": "canceled",
+		},
+	}, func() float64 {
+		return float64(pool.Stat().CanceledAcquireCount())
+	})
+
+	postgresConstructingConnectionsCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Number of connections with construction in progress in the pool",
+		ConstLabels: map[string]string{
+			"type": "constructing",
+		},
+	}, func() float64 {
+		return float64(pool.Stat().ConstructingConns())
+	})
+
+	postgresNewConnectionsCountMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Cumulative count of new connections opened",
+		ConstLabels: map[string]string{
+			"type": "constructing",
+		},
+	}, func() float64 {
+		return float64(pool.Stat().NewConnsCount())
 	})
 
 	if err := metrics.
 		BulkRegister(postgresCurrentConnectionMetric, postgresInUseConnectionMetric, postgresIdleConnectionMetric,
 			postgresMaxOpenConnectionMetric, postgresWaitConnectionMetric, postgresWaitConnectionDurationMetric,
-			postgresMaxIdleClosedConnectionMetric, postgresMaxIdleTimeClosedConnectionMetric, postgresMaxLifeTimeClosedConnectionMetric); err != nil {
+			postgresMaxIdleClosedConnectionMetric, postgresMaxLifeTimeClosedConnectionMetric, postgresSuccessfulAcquireCountMetric,
+			postgresCanceledAcquireCountMetric, postgresConstructingConnectionsCountMetric, postgresNewConnectionsCountMetric,
+		); err != nil {
 		return err
 	}
 	return nil

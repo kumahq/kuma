@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("PostgresStore template", func() {
-	createStore := func() store.ResourceStore {
+	createStore := func(storeName string) store.ResourceStore {
 		cfg, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -21,12 +21,19 @@ var _ = Describe("PostgresStore template", func() {
 		_, err = MigrateDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := NewStore(metrics, *cfg)
+		var pStore store.ResourceStore
+		if storeName == "pgx" {
+			pStore, err = NewPgxStore(metrics, *cfg)
+		} else {
+			pStore, err = NewPqStore(metrics, *cfg)
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		return pStore
 	}
 
-	test_store.ExecuteStoreTests(createStore)
-	test_store.ExecuteOwnerTests(createStore)
+	test_store.ExecuteStoreTests(createStore, "pgx")
+	test_store.ExecuteOwnerTests(createStore, "pgx")
+	test_store.ExecuteStoreTests(createStore, "pq")
+	test_store.ExecuteOwnerTests(createStore, "pq")
 })
