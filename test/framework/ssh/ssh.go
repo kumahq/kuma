@@ -78,15 +78,11 @@ func NewApp(appName string, logsPath string, verbose bool, port string, envMap m
 }
 
 func createLogsFile(dir, fileName string) (*os.File, error) {
-	err := os.MkdirAll(dir, os.ModePerm)
-	if err != nil {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(path.Join(dir, fileName), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
+	
+	return os.OpenFile(path.Join(dir, fileName), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
 }
 
 func (s *App) done() {
