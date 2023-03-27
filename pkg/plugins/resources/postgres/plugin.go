@@ -40,7 +40,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
-	return migrateDb(*cfg)
+	return MigrateDb(*cfg)
 }
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {

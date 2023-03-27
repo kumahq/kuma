@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -66,19 +67,29 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 	case api.ModOpRemove:
 		c.remove(routeCfg)
 	case api.ModOpPatch:
-		c.patch(routeCfg, virtualHost)
+		return c.patch(routeCfg, virtualHost)
 	default:
 		return errors.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }
 
-func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) {
+func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) error {
 	for _, vHost := range routeCfg.VirtualHosts {
 		if c.virtualHostMatches(vHost) {
+			if len(c.JsonPatches) > 0 {
+				if err := jsonpatch.MergeJsonPatch(vHost, c.JsonPatches); err != nil {
+					return err
+				}
+
+				continue
+			}
+
 			util_proto.Merge(vHost, vHostPatch)
 		}
 	}
+
+	return nil
 }
 
 func (c *virtualHostModificator) remove(routeCfg *envoy_route.RouteConfiguration) {

@@ -14,8 +14,13 @@ import (
 )
 
 var _ = Describe("Cluster modifications", func() {
+	type testCaseCluster struct {
+		yaml   string
+		origin string
+	}
+
 	type testCase struct {
-		clusters      []string
+		clusters      []testCaseCluster
 		modifications []string
 		expected      string
 	}
@@ -24,13 +29,17 @@ var _ = Describe("Cluster modifications", func() {
 		func(given testCase) {
 			// given
 			set := core_xds.NewResourceSet()
-			for _, clusterYAML := range given.clusters {
+			for _, c := range given.clusters {
 				cluster := &envoy_cluster.Cluster{}
-				err := util_proto.FromYAML([]byte(clusterYAML), cluster)
+				err := util_proto.FromYAML([]byte(c.yaml), cluster)
 				Expect(err).ToNot(HaveOccurred())
+				origin := c.origin
+				if origin == "" {
+					origin = generator.OriginInbound
+				}
 				set.Add(&core_xds.Resource{
 					Name:     cluster.Name,
-					Origin:   generator.OriginInbound,
+					Origin:   origin,
 					Resource: cluster,
 				})
 			}
@@ -78,12 +87,15 @@ var _ = Describe("Cluster modifications", func() {
                 type: EDS`,
 		}),
 		Entry("should replace cluster", testCase{
-			clusters: []string{
-				`
-                connectTimeout: 5s
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster
-                type: ORIGINAL_DST`,
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    connectTimeout: 5s
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster
+                    type: ORIGINAL_DST
+                    `,
+				},
 			},
 			modifications: []string{
 				`
@@ -108,12 +120,15 @@ var _ = Describe("Cluster modifications", func() {
                 type: EDS`,
 		}),
 		Entry("should remove cluster matching all", testCase{
-			clusters: []string{
-				`
-                connectTimeout: 5s
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster
-                type: ORIGINAL_DST`,
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    connectTimeout: 5s
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster
+                    type: ORIGINAL_DST
+`,
+				},
 			},
 			modifications: []string{
 				`
@@ -123,17 +138,23 @@ var _ = Describe("Cluster modifications", func() {
 			expected: `{}`,
 		}),
 		Entry("should remove cluster matching name", testCase{
-			clusters: []string{
-				`
-                connectTimeout: 5s
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster
-                type: ORIGINAL_DST`,
-				`
-                connectTimeout: 5s
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster2
-                type: ORIGINAL_DST`,
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    connectTimeout: 5s
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster
+                    type: ORIGINAL_DST
+`,
+				},
+				{
+					yaml: `
+                    connectTimeout: 5s
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster2
+                    type: ORIGINAL_DST
+`,
+				},
 			},
 			modifications: []string{
 				`
@@ -153,12 +174,15 @@ var _ = Describe("Cluster modifications", func() {
                 type: ORIGINAL_DST`,
 		}),
 		Entry("should remove all inbound clusters", testCase{
-			clusters: []string{
-				`
-                connectTimeout: 5s
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster
-                type: ORIGINAL_DST`,
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    connectTimeout: 5s
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster
+                    type: ORIGINAL_DST
+`,
+				},
 			},
 			modifications: []string{
 				`
@@ -170,17 +194,20 @@ var _ = Describe("Cluster modifications", func() {
 			expected: `{}`,
 		}),
 		Entry("should patch cluster matching name", testCase{
-			clusters: []string{
-				`
-                lbPolicy: CLUSTER_PROVIDED
-                name: test:cluster
-                outlierDetection:
-                  enforcingConsecutive5xx: 100
-                  enforcingConsecutiveGatewayFailure: 0
-                  enforcingConsecutiveLocalOriginFailure: 0
-                  enforcingFailurePercentage: 0
-                  enforcingSuccessRate: 0
-                type: ORIGINAL_DST`,
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: test:cluster
+                    outlierDetection:
+                      enforcingConsecutive5xx: 100
+                      enforcingConsecutiveGatewayFailure: 0
+                      enforcingConsecutiveLocalOriginFailure: 0
+                      enforcingFailurePercentage: 0
+                      enforcingSuccessRate: 0
+                    type: ORIGINAL_DST
+`,
+				},
 			},
 			modifications: []string{
 				`
@@ -212,6 +239,116 @@ var _ = Describe("Cluster modifications", func() {
                   enforcingFailurePercentage: 0
                   enforcingSuccessRate: 100
                 type: ORIGINAL_DST`,
+		}),
+		Entry("should patch cluster matching origins with JsonPatch", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    name: foo-service
+                    type: EDS
+                    connectTimeout: 5s
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                        commonTlsContext:
+                          alpnProtocols:
+                            - kuma
+                        sni: foo-service{mesh=default}
+                    `,
+					origin: generator.OriginOutbound,
+				},
+				{
+					yaml: `
+                    name: bar-service
+                    type: ORIGINAL_DST
+                    connectTimeout: 15s
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                        sni: bar-service{mesh=default}
+                    `,
+					origin: generator.OriginInbound,
+				},
+				{
+					yaml: `
+                    name: baz-service
+                    type: ORIGINAL_DST
+                    connectTimeout: 11s
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                        sni: baz-service{mesh=default}
+                    `,
+					origin: generator.OriginOutbound,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                  operation: Patch
+                  match:
+                    origin: outbound
+                  jsonPatches:
+                  - op: add
+                    path: /transportSocket/typedConfig/commonTlsContext/tlsParams
+                    value: { "tlsMinimumProtocolVersion": "TLSv1_2" }
+                  - op: add
+                    path: /transportSocket/typedConfig/commonTlsContext/tlsParams/tlsMaximumProtocolVersion
+                    value: TLSv1_2
+                  - op: replace
+                    path: /connectTimeout
+                    value: 77s
+                `,
+			},
+			expected: `
+            resources:
+            - name: bar-service
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: bar-service
+                type: ORIGINAL_DST
+                connectTimeout: 15s
+                transportSocket:
+                  name: envoy.transport_sockets.tls
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                    sni: bar-service{mesh=default}
+            - name: baz-service
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: baz-service
+                type: ORIGINAL_DST
+                connectTimeout: 77s
+                transportSocket:
+                  name: envoy.transport_sockets.tls
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                    commonTlsContext:
+                      tlsParams:
+                        tlsMinimumProtocolVersion: TLSv1_2
+                        tlsMaximumProtocolVersion: TLSv1_2
+                    sni: baz-service{mesh=default}
+            - name: foo-service
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                name: foo-service
+                type: EDS
+                connectTimeout: 77s
+                transportSocket:
+                  name: envoy.transport_sockets.tls
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                    commonTlsContext:
+                      alpnProtocols:
+                        - kuma
+                      tlsParams:
+                        tlsMinimumProtocolVersion: TLSv1_2
+                        tlsMaximumProtocolVersion: TLSv1_2
+                    sni: foo-service{mesh=default}
+            `,
 		}),
 	)
 })

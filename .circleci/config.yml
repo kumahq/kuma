@@ -227,7 +227,7 @@ jobs:
       k8sVersion:
         description: version of k3s to use or "kind" and "kindIpv6"
         type: string
-        default: v1.26.1-k3s1
+        default: *lastK8sVersion
       parallelism:
         description: level of parallelization
         type: integer
@@ -258,7 +258,7 @@ jobs:
             or:
               - {equal: [test/e2e, << parameters.target >>]}
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
-              - {equal: [kindIpv6, << parameters.cniNetworkPlugin >>]}
+              - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
               - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
           steps:
@@ -465,7 +465,7 @@ workflows:
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e

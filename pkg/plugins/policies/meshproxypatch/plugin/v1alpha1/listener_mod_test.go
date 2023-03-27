@@ -229,6 +229,51 @@ var _ = Describe("Listener modifications", func() {
                 tcpFastOpenQueueLength: 32
                 trafficDirection: INBOUND`,
 		}),
+		Entry("should patch listener matching name with JsonPatch", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                enableReusePort: true
+                tcpBacklogSize: 256
+                `,
+			},
+			modifications: []string{
+				`
+                listener:
+                   operation: Patch
+                   match:
+                     name: inbound:192.168.0.1:8080
+                   jsonPatches:
+                   - op: add
+                     path: /tcpFastOpenQueueLength
+                     value: 88
+                   - op: replace
+                     path: /enableReusePort
+                     value: false
+                   - op: remove
+                     path: /tcpBacklogSize
+                `,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                enableReusePort: false
+                name: inbound:192.168.0.1:8080
+                tcpFastOpenQueueLength: 88
+                trafficDirection: INBOUND
+            `,
+		}),
 		Entry("should patch listener matching metadata", testCase{
 			listeners: []string{
 				`

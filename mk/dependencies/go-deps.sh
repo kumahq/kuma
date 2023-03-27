@@ -19,8 +19,9 @@ for i in \
     github.com/norwoodj/helm-docs/cmd/helm-docs@v1.11.0 \
     golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20220513142942-846f273ed465; do
   echo "install go dep: ${i}"
-  GOBIN=${OUTPUT_BIN_DIR} go install "${i}"
+  GOBIN=${OUTPUT_BIN_DIR} go install "${i}" &
 done
+wait
 
 set +x
 # Get the protos from some go dependencies

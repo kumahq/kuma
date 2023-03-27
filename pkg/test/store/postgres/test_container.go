@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,7 @@ import (
 	pg_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
 
 type PostgresContainer struct {
@@ -27,12 +29,29 @@ type PostgresContainer struct {
 	WithTLS   bool
 }
 
-func resourceDir() string {
-	dir, _ := os.Getwd()
-	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
-		dir = path.Dir(dir)
+func findProjectRoot(cwd, callerFile string) string {
+	projectRootParent := util_files.GetProjectRootParent(cwd)
+	fileRelativeToProjectRootParent := util_files.RelativeToProjectRootParent(callerFile)
+	projectRoot := util_files.GetProjectRoot(cwd)
+	fileRelativeToProjectRoot := util_files.RelativeToProjectRoot(callerFile)
+
+	file := path.Join(projectRootParent, fileRelativeToProjectRootParent)
+	if !util_files.FileExists(file) {
+		file = path.Join(projectRoot, fileRelativeToProjectRoot)
 	}
-	rDir := path.Join(path.Dir(dir), "tools/postgres")
+	if !util_files.FileExists(file) {
+		file = path.Join(util_files.GetGopath(), "pkg", "mod", util_files.RelativeToPkgMod(callerFile))
+	}
+
+	return util_files.GetProjectRoot(file)
+}
+
+func resourceDir() string {
+	cwd, _ := os.Getwd()
+	_, callerFile, _, _ := runtime.Caller(0)
+
+	dir := findProjectRoot(cwd, callerFile)
+	rDir := path.Join(dir, "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
 		panic(err)
