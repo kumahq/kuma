@@ -54,6 +54,7 @@ func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher 
 		nodeIDs: map[xds.StreamID]string{},
 	}
 }
+
 func (r *kdsRetryForcer) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
 	r.Lock()
 	defer r.Unlock()
