@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -9,13 +10,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	zone_client "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
+	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -32,7 +35,7 @@ type ResourceSyncer interface {
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
-	Sync(upstream zone_client.UpstreamResponse, fs ...SyncOptionFunc) error
+	Sync(upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) error
 }
 
 type SyncOption struct {
@@ -74,7 +77,7 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 	}
 }
 
-func (s *syncResourceStore) Sync(upstreamResponse zone_client.UpstreamResponse, fs ...SyncOptionFunc) error {
+func (s *syncResourceStore) Sync(upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	log := s.log.WithValues("type", upstreamResponse.Type)
@@ -119,8 +122,7 @@ func (s *syncResourceStore) Sync(upstreamResponse zone_client.UpstreamResponse, 
 			}
 		}
 	} else {
-		removed := getRemovedResourceKeys(upstreamResponse.RemovedResourceNames)
-		for _, rk := range removed {
+		for _, rk := range upstreamResponse.RemovedResourcesKey {
 			// check if we are adding and removing the resource at the same time
 			if r := indexedUpstream.get(rk); r != nil {
 				// it isn't remove but update
@@ -228,16 +230,16 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
-func Callbacks(
+func ZoneSyncCallback(
 	configToSync map[string]bool,
 	syncer ResourceSyncer,
 	k8sStore bool,
 	localZone string,
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
-) *zone_client.Callbacks {
-	return &zone_client.Callbacks{
-		OnResourcesReceived: func(upstream zone_client.UpstreamResponse) error {
+) *client_v2.Callbacks {
+	return &client_v2.Callbacks{
+		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
@@ -248,6 +250,7 @@ func Callbacks(
 				}
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
 					util.AddSuffixToNames(upstream.AddedResources.GetItems(), systemNamespace)
+					upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, systemNamespace)
 				}
 			}
 			if upstream.Type == mesh.ZoneIngressType {
@@ -274,18 +277,42 @@ func Callbacks(
 	}
 }
 
-func getRemovedResourceKeys(removedResourceNames []string) []core_model.ResourceKey {
-	removed := []core_model.ResourceKey{}
-	for _, resourceName := range removedResourceNames {
-		index := strings.LastIndex(resourceName, ".")
-		var rk core_model.ResourceKey
-		if index != -1 {
-			rk = core_model.ResourceKey{
-				Mesh: resourceName[index+1:],
-				Name: resourceName[:index],
+func GlobalSyncCallback(
+	syncer ResourceSyncer,
+	k8sStore bool,
+	kubeFactory resources_k8s.KubeFactory,
+	systemNamespace string,
+) *client_v2.Callbacks {
+	return &client_v2.Callbacks{
+		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
+			util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
+			upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
+			if k8sStore {
+				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
+				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
+				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.NewItem())
+				if err != nil {
+					return errors.Wrap(err, "could not convert object")
+				}
+				if kubeObject.Scope() == k8s_model.ScopeNamespace {
+					util.AddSuffixToNames(upstream.AddedResources.GetItems(), systemNamespace)
+					upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, systemNamespace)
+				}
 			}
-		}
-		removed = append(removed, rk)
+
+			if upstream.Type == core_mesh.ZoneIngressType {
+				for _, zi := range upstream.AddedResources.(*core_mesh.ZoneIngressResourceList).Items {
+					zi.Spec.Zone = upstream.ControlPlaneId
+				}
+			} else if upstream.Type == core_mesh.ZoneEgressType {
+				for _, ze := range upstream.AddedResources.(*core_mesh.ZoneEgressResourceList).Items {
+					ze.Spec.Zone = upstream.ControlPlaneId
+				}
+			}
+
+			return syncer.Sync(upstream, PrefilterBy(func(r model.Resource) bool {
+				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+			}), Zone(upstream.ControlPlaneId))
+		},
 	}
-	return removed
 }

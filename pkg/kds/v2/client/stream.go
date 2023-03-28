@@ -2,14 +2,15 @@ package client
 
 import (
 	"fmt"
+	"strings"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds"
@@ -19,36 +20,32 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type UpstreamResponse struct {
-	ControlPlaneId       string
-	Type                 model.ResourceType
-	AddedResources       model.ResourceList
-	RemovedResourceNames []string
-	IsInitialRequest     bool
-}
-
-// All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
-type DeltaKDSStream interface {
-	DeltaDiscoveryRequest(resourceType model.ResourceType) error
-	Receive() (UpstreamResponse, error)
-	ACK(typ string) error
-	NACK(typ string, err error) error
-}
-
 var _ DeltaKDSStream = &stream{}
 
+type latestReceived struct {
+	nonce         string
+	nameToVersion cache_v2.NameToVersion
+}
+
 type stream struct {
-	streamClient   mesh_proto.KDSSyncService_GlobalToZoneSyncClient
-	latestNonce    map[core_model.ResourceType]string
+	streamClient   KDSSyncServiceStream
+	latestACKed    map[core_model.ResourceType]string
+	latestReceived map[core_model.ResourceType]*latestReceived
 	deltaInitState cache_v2.ResourceVersionMap
 	clientId       string
 	cpConfig       string
 }
 
-func NewDeltaKDSStream(s mesh_proto.KDSSyncService_GlobalToZoneSyncClient, clientId string, cpConfig string, deltaInitState cache_v2.ResourceVersionMap) DeltaKDSStream {
+type KDSSyncServiceStream interface {
+	Send(*envoy_sd.DeltaDiscoveryRequest) error
+	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
+}
+
+func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, cpConfig string, deltaInitState cache_v2.ResourceVersionMap) DeltaKDSStream {
 	return &stream{
 		streamClient:   s,
-		latestNonce:    make(map[core_model.ResourceType]string),
+		latestACKed:    make(map[core_model.ResourceType]string),
+		latestReceived: make(map[core_model.ResourceType]*latestReceived),
 		deltaInitState: deltaInitState,
 		clientId:       clientId,
 		cpConfig:       cpConfig,
@@ -100,50 +97,57 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
+	core.Log.Info("received", "resp", resp)
 	rs, nameToVersion, err := util.ToDeltaCoreResourceList(resp)
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
-	s.latestNonce[rs.GetItemType()] = resp.Nonce
-
-	// when map is empty that means we are doing the first request
-	// it has to be called before `getVersionMap`
-	isInitialRequest := len(s.deltaInitState) == 0
-
-	s.deltaInitState[rs.GetItemType()] = s.updateVersionMap(rs.GetItemType(), nameToVersion)
+	// when there isn't nonce it means it's the first request
+	isInitialRequest := true
+	if _, found := s.latestACKed[rs.GetItemType()]; found {
+		isInitialRequest = false
+	}
+	s.latestReceived[rs.GetItemType()] = &latestReceived{
+		nonce:         resp.Nonce,
+		nameToVersion: nameToVersion,
+	}
 	return UpstreamResponse{
-		ControlPlaneId:       resp.GetControlPlane().GetIdentifier(),
-		Type:                 rs.GetItemType(),
-		AddedResources:       rs,
-		RemovedResourceNames: resp.RemovedResources,
-		IsInitialRequest:     isInitialRequest,
+		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
+		Type:                rs.GetItemType(),
+		AddedResources:      rs,
+		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
+		IsInitialRequest:    isInitialRequest,
 	}, nil
 }
 
-func (s *stream) ACK(typ string) error {
-	latestNonce, found := s.latestNonce[core_model.ResourceType(typ)]
-	if !found {
+func (s *stream) ACK(resourceType model.ResourceType) error {
+	latestReceived := s.latestReceived[resourceType]
+	if latestReceived == nil {
 		return nil
 	}
 	err := s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
-		ResponseNonce: latestNonce,
+		ResponseNonce: latestReceived.nonce,
 		Node: &envoy_core.Node{
 			Id: s.clientId,
 		},
-		TypeUrl: typ,
+		TypeUrl: string(resourceType),
 	})
+	if err == nil {
+		s.latestACKed[resourceType] = latestReceived.nonce
+		s.deltaInitState[resourceType] = s.updateVersionMap(resourceType, latestReceived.nameToVersion)
+	}
 	return err
 }
 
-func (s *stream) NACK(typ string, err error) error {
-	latestNonce, found := s.latestNonce[core_model.ResourceType(typ)]
+func (s *stream) NACK(resourceType model.ResourceType, err error) error {
+	latestReceived, found := s.latestReceived[resourceType]
 	if !found {
 		return nil
 	}
 	return s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
-		InitialResourceVersions: map[string]string{},
-		ResponseNonce:           latestNonce,
-		TypeUrl:                 typ,
+		ResponseNonce:          latestReceived.nonce,
+		ResourceNamesSubscribe: []string{"*"},
+		TypeUrl:                string(resourceType),
 		Node: &envoy_core.Node{
 			Id: s.clientId,
 		},
@@ -164,4 +168,20 @@ func (s *stream) updateVersionMap(typ core_model.ResourceType, nameToVersion cac
 		versions[name] = version
 	}
 	return versions
+}
+
+// go-contro-plane cache keeps them as a <resource_name>.<mesh_name>
+func (s *stream) mapRemovedResources(removedResourceNames []string) []core_model.ResourceKey {
+	removed := []core_model.ResourceKey{}
+	for _, resourceName := range removedResourceNames {
+		index := strings.LastIndex(resourceName, ".")
+		var rk core_model.ResourceKey
+		if index != -1 {
+			rk = core_model.WithMesh(resourceName[index+1:], resourceName[:index])
+		} else {
+			rk = core_model.WithoutMesh(resourceName)
+		}
+		removed = append(removed, rk)
+	}
+	return removed
 }

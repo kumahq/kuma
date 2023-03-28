@@ -146,7 +146,7 @@ func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.Delta
 		subscription.Config = req.Node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
 	}
 
-	c.log.V(1).Info("OnDeltaStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	c.log.V(1).Info("OnStreamDeltaRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 

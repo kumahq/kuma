@@ -69,12 +69,26 @@ func AddPrefixToNames(rs []model.Resource, prefix string) {
 	}
 }
 
+func AddPrefixToResourceKeyNames(rk []model.ResourceKey, prefix string) []model.ResourceKey {
+	for idx, r := range rk {
+		rk[idx].Name = fmt.Sprintf("%s.%s", prefix, r.Name)
+	}
+	return rk
+}
+
 func AddSuffixToNames(rs []model.Resource, suffix string) {
 	for _, r := range rs {
 		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
 		m := NewResourceMeta(newName, r.GetMeta().GetMesh())
 		r.SetMeta(m)
 	}
+}
+
+func AddSuffixToResourceKeyNames(rk []model.ResourceKey, suffix string) []model.ResourceKey {
+	for idx, r := range rk {
+		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)
+	}
+	return rk
 }
 
 func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) bool {
