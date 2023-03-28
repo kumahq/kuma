@@ -50,6 +50,7 @@ func New(
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
+		newKdsRetryForcer(log, cache, hasher), // this change might requires backoff to be enabled
 		syncTracker,
 	}
 	if insight {
