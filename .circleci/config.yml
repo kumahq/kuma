@@ -205,7 +205,7 @@ jobs:
       target:
         description: The test make target.
         type: string
-        default: test-with-reports
+        default: test
       arch:
         description: The golang arch.
         type: string
@@ -229,7 +229,7 @@ jobs:
     - run:
         name: "Run tests"
         command: |
-          make << parameters.target >>
+          make << parameters.target >> TEST_REPORTS=1
     - store_artifacts:
         path: build/reports
         destination: /reports
