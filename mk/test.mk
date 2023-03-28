@@ -11,7 +11,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test,./pkg/transparentproxy/istio/tools --race
 
 TEST_ENV=KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GOENV)
-GINKGO_TEST:=$(TEST_ENV_VARS) $(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
+GINKGO_TEST:=$(TEST_ENV) $(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
 test: build/ebpf ## Dev: Run tests for all modules
