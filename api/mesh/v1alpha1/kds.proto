@@ -39,6 +39,23 @@ service GlobalKDSService {
   rpc StreamClusters(stream ClustersResponse) returns (stream ClustersRequest);
 }
 
+// KDSSyncService is a service exposed by the control-plane for the
+// synchronization of the resources between zone and global control-plane.
+service KDSSyncService {
+  // GlobalToZoneSync is logically a service exposed by global control-plane
+  // that allows zone control plane to connect and synchronize resources from
+  // the global control-plane to the zone control-plane. It uses delta xDS from
+  // go-control-plane and responds only with the changes to the resources.
+  rpc GlobalToZoneSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+      returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
+  // ZoneToGlobalSync is logically a service exposed by global control-plane
+  // that allows zone control plane to connect and synchronize resources to
+  // the global control-plane. It uses delta xDS from go-control-plane and
+  // responds only with the changes to the resources.
+  rpc ZoneToGlobalSync(stream envoy.service.discovery.v3.DeltaDiscoveryResponse)
+      returns (stream envoy.service.discovery.v3.DeltaDiscoveryRequest);
+}
+
 // XDSConfigRequest is a request for XDS Config Dump that is executed on Zone
 // CP.
 message XDSConfigRequest {
