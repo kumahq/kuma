@@ -2,13 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
-
 
 type pgxResourceStore struct {
 	pool *pgxpool.Pool
@@ -49,11 +48,10 @@ func connect(config config.PostgresStoreConfig) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	pgxConfig, err := pgxpool.ParseConfig(connectionString)
-
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
 }
 
@@ -165,7 +163,7 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	var version int
 	var creationTime, modificationTime time.Time
 	err := row.Scan(&spec, &version, &creationTime, &modificationTime)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if err != nil {
@@ -258,7 +256,7 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 }
 
 func (r *pgxResourceStore) Close() error {
-	r.pool.Close()
+	r.pool.Close() // does not work, at least on my machine
 	return nil
 }
 

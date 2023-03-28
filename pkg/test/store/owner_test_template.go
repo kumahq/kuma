@@ -30,7 +30,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Context("Store: " + storeName, func() {
+	Context("Store: "+storeName, func() {
 		It("should delete resource when its owner is deleted", func() {
 			// setup
 			meshRes := core_mesh.NewMeshResource()
