@@ -1,63 +1,4 @@
 resources:
-- name: backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
-        - region
-        - version
-    name: backend
-    type: EDS
-- name: backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.1
-              portValue: 2521
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              mesh: mesh1
-              region: eu
-              version: v1
-            envoy.transport_socket_match:
-              mesh: mesh1
-              region: eu
-              version: v1
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 2521
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              mesh: mesh1
-              region: us
-              version: v2
-            envoy.transport_socket_match:
-              mesh: mesh1
-              region: us
-              version: v2
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -75,14 +16,14 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh1:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh1
                 region: eu
                 version: v1
-          statPrefix: backend
+          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1}
@@ -91,12 +32,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh1:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh1
-          statPrefix: backend
+          statPrefix: mesh1_backend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
