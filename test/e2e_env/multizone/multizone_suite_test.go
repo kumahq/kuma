@@ -45,6 +45,7 @@ var (
 	_ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)
 	_ = Describe("Connectivity", connectivity.Connectivity, Ordered)
 	_ = Describe("Sync", multizone_sync.Sync, Ordered)
+	_ = Describe("Sync V2", multizone_sync.SyncV2, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
