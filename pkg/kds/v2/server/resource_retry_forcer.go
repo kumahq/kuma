@@ -38,24 +38,22 @@ import (
 // The change of version in the map triggers update to be sent.
 type kdsRetryForcer struct {
 	util_xds_v3.NoopCallbacks
-	hasher 				envoy_cache.NodeHash
-	cache  				envoy_cache.SnapshotCache
-	log              	logr.Logger
-	nodeIDs           	map[xds.StreamID]string
+	hasher  envoy_cache.NodeHash
+	cache   envoy_cache.SnapshotCache
+	log     logr.Logger
+	nodeIDs map[xds.StreamID]string
 
 	sync.Mutex
 }
 
 func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash) *kdsRetryForcer {
 	return &kdsRetryForcer{
-		cache:              cache,
-		hasher:             hasher,
-		log: 				log,
-		nodeIDs:            map[xds.StreamID]string{},
+		cache:   cache,
+		hasher:  hasher,
+		log:     log,
+		nodeIDs: map[xds.StreamID]string{},
 	}
 }
-
-
 func (r *kdsRetryForcer) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
 	r.Lock()
 	defer r.Unlock()
@@ -70,7 +68,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	if request.ErrorDetail == nil {
 		return nil // not NACK, no need to retry
 	}
-	
+
 	r.Lock()
 	nodeID := r.nodeIDs[streamID]
 	if nodeID == "" {
@@ -87,7 +85,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	if !ok {
 		return errors.New("couldn't convert snapshot from cache to envoy Snapshot")
 	}
-	for	resourceName := range cacheSnapshot.VersionMap[model.ResourceType(request.TypeUrl)]{
+	for resourceName := range cacheSnapshot.VersionMap[model.ResourceType(request.TypeUrl)] {
 		cacheSnapshot.VersionMap[model.ResourceType(request.TypeUrl)][resourceName] = ""
 	}
 
