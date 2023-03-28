@@ -55,6 +55,8 @@ func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher 
 	}
 }
 
+var _ envoy_xds.Callbacks = &kdsRetryForcer{}
+
 func (r *kdsRetryForcer) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
 	r.Lock()
 	defer r.Unlock()
@@ -93,5 +95,3 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	r.log.V(1).Info("forced the new verion of resources", "nodeID", nodeID, "type", request.TypeUrl)
 	return nil
 }
-
-var _ envoy_xds.Callbacks = &kdsRetryForcer{}
