@@ -83,7 +83,7 @@ func (p *EgressProxyBuilder) Build(
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
 
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func (p *EgressProxyBuilder) Build(
 			Mesh:             mesh,
 			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
-			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
 				mesh,
 				p.zone,

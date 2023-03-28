@@ -47,15 +47,15 @@ var _ = Describe("IngressGenerator", func() {
 				given.meshGateways = &core_mesh.MeshGatewayResourceList{}
 			}
 			proxy := &core_xds.Proxy{
-				Id:          *core_xds.BuildProxyId("default", "ingress"),
-				ZoneIngress: zoneIngressRes,
-				APIVersion:  envoy_common.APIV3,
+				Id:         *core_xds.BuildProxyId("default", "ingress"),
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets: given.outboundTargets,
 				},
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
-					GatewayRoutes: &core_mesh.MeshGatewayRouteResourceList{},
-					MeshGateways:  given.meshGateways,
+					ZoneIngressResource: zoneIngressRes,
+					GatewayRoutes:       &core_mesh.MeshGatewayRouteResourceList{},
+					MeshGateways:        given.meshGateways,
 					PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
 						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
 							Items: given.trafficRoutes,
