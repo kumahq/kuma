@@ -77,6 +77,13 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 	}
 }
 
+func AddSuffixToResourceKeyNames(rk []model.ResourceKey, suffix string) []model.ResourceKey {
+	for idx, r := range rk {
+		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)
+	}
+	return rk
+}
+
 func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) bool {
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(resName, prefix) {

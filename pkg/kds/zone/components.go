@@ -20,16 +20,19 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
-	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
+	kds_cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
-var kdsZoneLog = core.Log.WithName("kds-zone")
+var (
+	kdsZoneLog      = core.Log.WithName("kds-zone")
+	kdsDeltaZoneLog = core.Log.WithName("kds-delta-zone")
+)
 
 func Setup(rt core_runtime.Runtime) error {
 	if rt.Config().Mode != config_core.Zone {
@@ -54,6 +57,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
+	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore())
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
 	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
@@ -90,12 +94,12 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	})
 
-	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error {
-		log := kdsZoneLog.WithValues("kds-version", "v2")
+	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState kds_cache_v2.ResourceVersionMap) error {
+		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
 		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson), deltaInitState),
-			sync_store_v2.Callbacks(
+			kds_sync_store_v2.ZoneSyncCallback(
 				rt.KDSContext().Configs,
-				sync_store_v2.NewResourceSyncer(kdsZoneLog, rt.ResourceStore()),
+				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
 				zone,
 				kubeFactory,
@@ -104,7 +108,7 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := syncClient.Receive(); err != nil {
-				log.Error(err, "KDSSink finished with an error")
+				log.Error(err, "KDSSyncClient finished with an error")
 			}
 		}()
 		return nil

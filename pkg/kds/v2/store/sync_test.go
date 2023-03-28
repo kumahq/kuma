@@ -12,8 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
-	zone_client "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -50,7 +50,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should create new resources in empty store", func() {
-		upstreamResponse := zone_client.UpstreamResponse{}
+		upstreamResponse := client_v2.UpstreamResponse{}
 		upstream := &mesh.MeshResourceList{}
 		idxs := []int{1, 2, 3, 4}
 		for _, i := range idxs {
@@ -71,18 +71,18 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 	})
 
 	It("should delete all resources", func() {
-		upstreamResponse := zone_client.UpstreamResponse{}
-		removedResources := []string{}
+		upstreamResponse := client_v2.UpstreamResponse{}
+		removedResources := []model.ResourceKey{}
 		for i := 0; i < 10; i++ {
 			m := meshBuilder(i)
-			removedResources = append(removedResources, fmt.Sprintf("mesh-%d.", i))
+			removedResources = append(removedResources, model.WithoutMesh(fmt.Sprintf("mesh-%d", i)))
 			err := resourceStore.Create(context.Background(), m, store.CreateBy(model.MetaToResourceKey(m.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())
 		}
 		upstream := &mesh.MeshResourceList{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
-		upstreamResponse.RemovedResourceNames = removedResources
+		upstreamResponse.RemovedResourcesKey = removedResources
 
 		err := syncer.Sync(upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
@@ -107,10 +107,19 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := zone_client.UpstreamResponse{}
+		upstreamResponse := client_v2.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
-		upstreamResponse.RemovedResourceNames = []string{"mesh-0.", "mesh-3.", "mesh-4.", "mesh-5.", "mesh-6.", "mesh-8.", "mesh-9.", "mesh-10."}
+		upstreamResponse.RemovedResourcesKey = []model.ResourceKey{
+			model.WithoutMesh("mesh-0"),
+			model.WithoutMesh("mesh-3"),
+			model.WithoutMesh("mesh-4"),
+			model.WithoutMesh("mesh-5"),
+			model.WithoutMesh("mesh-6"),
+			model.WithoutMesh("mesh-8"),
+			model.WithoutMesh("mesh-9"),
+			model.WithoutMesh("mesh-10"),
+		}
 
 		err := syncer.Sync(upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
@@ -138,7 +147,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse := zone_client.UpstreamResponse{}
+		upstreamResponse := client_v2.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
@@ -159,7 +168,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		// given
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
-		upstreamResponse := zone_client.UpstreamResponse{}
+		upstreamResponse := client_v2.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
@@ -187,7 +196,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 
-		upstreamResponse := zone_client.UpstreamResponse{}
+		upstreamResponse := client_v2.UpstreamResponse{}
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 

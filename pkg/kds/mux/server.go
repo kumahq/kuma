@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	global_service "github.com/kumahq/kuma/pkg/kds/v2/global/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -44,10 +43,6 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
-type CallbacksV2 interface {
-	OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error
-}
-
 type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error
 
 func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error {
@@ -60,7 +55,7 @@ type server struct {
 	filters              []Filter
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
-	kdsSyncServiceServer *global_service.KDSSyncServiceServer
+	kdsSyncServiceServer *KDSSyncServiceServer
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -72,7 +67,7 @@ func NewServer(
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
-	kdsSyncServiceServer *global_service.KDSSyncServiceServer,
+	kdsSyncServiceServer *KDSSyncServiceServer,
 ) component.Component {
 	return &server{
 		callbacks:            callbacks,

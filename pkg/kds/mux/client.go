@@ -32,7 +32,7 @@ var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks           Callbacks
-	callbacksV2         CallbacksV2
+	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
@@ -51,7 +51,7 @@ func NewClient(
 	globalURL string,
 	clientID string,
 	callbacks Callbacks,
-	callbacksV2 CallbacksV2,
+	globalToZoneCb OnGlobalToZoneSyncStartedFunc,
 	config multizone.KdsClientConfig,
 	experimantalConfig config.ExperimentalConfig,
 	metrics metrics.Metrics,
@@ -60,7 +60,7 @@ func NewClient(
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
-		callbacksV2:         callbacksV2,
+		globalToZoneCb:      globalToZoneCb,
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
@@ -177,31 +177,17 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	processingErrorsCh := make(chan error)
-	if err := c.callbacksV2.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
+	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
 		log.Error(err, "closing Global to Zone Sync stream after callback error")
 		errorCh <- err
 		return
 	}
-	select {
-	case <-stop:
-		log.Info("Global to Zone Sync rpc stream stopped")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-	case err := <-processingErrorsCh:
-		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "Global to Zone Sync failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			errorCh <- err
-			return
-		}
-		log.Error(err, "Global to Zone Sync failed prematurely, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
-		return
+	<-stop
+	log.Info("Global to Zone Sync rpc stream stopped")
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
 	}
+	errorCh <- err
 }
 
 func (c *client) startXDSConfigs(

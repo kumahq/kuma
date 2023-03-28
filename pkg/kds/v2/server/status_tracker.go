@@ -64,7 +64,7 @@ type streamState struct {
 }
 
 // OnDeltaStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 func (c *statusTracker) OnDeltaStreamOpen(ctx context.Context, streamID int64, typ string) error {
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
@@ -111,7 +111,7 @@ func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) 
 }
 
 // OnStreamDeltaRequest is called once a request is received on a stream.
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.DeltaDiscoveryRequest) error {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
@@ -146,7 +146,7 @@ func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.Delta
 		subscription.Config = req.Node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
 	}
 
-	c.log.V(1).Info("OnDeltaStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	c.log.V(1).Info("OnStreamDeltaRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
@@ -166,7 +166,7 @@ func (c *statusTracker) OnStreamDeltaResponse(streamID int64, req *envoy_sd.Delt
 	subscription.Status.Total.ResponsesSent++
 	util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesSent++
 
-	c.log.V(1).Info("OnDeltaStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+	c.log.V(1).Info("OnStreamDeltaResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }
 
 func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool) {

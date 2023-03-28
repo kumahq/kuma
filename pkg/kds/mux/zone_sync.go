@@ -1,4 +1,4 @@
-package v2
+package mux
 
 import (
 	"google.golang.org/grpc"
@@ -9,13 +9,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 )
 
-type Filter interface {
+type FilterV2 interface {
 	InterceptServerStream(stream grpc.ServerStream) error
 	InterceptClientStream(stream grpc.ClientStream) error
-}
-
-type Callbacks interface {
-	OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errorCh chan error)
 }
 
 type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errorCh chan error)
@@ -27,15 +23,15 @@ func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_pro
 var clientLog = core.Log.WithName("kds-delta-client")
 
 type KDSSyncServiceServer struct {
-	callback Callbacks
-	filters  []Filter
+	globalToZoneCb OnGlobalToZoneSyncConnectFunc
+	filters        []FilterV2
 	mesh_proto.UnimplementedKDSSyncServiceServer
 }
 
-func NewKDSSyncServiceServer(callback Callbacks, filters []Filter) *KDSSyncServiceServer {
+func NewKDSSyncServiceServer(globalToZoneCb OnGlobalToZoneSyncConnectFunc, filters []FilterV2) *KDSSyncServiceServer {
 	return &KDSSyncServiceServer{
-		callback: callback,
-		filters:  filters,
+		globalToZoneCb: globalToZoneCb,
+		filters:        filters,
 	}
 }
 
@@ -49,7 +45,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		}
 	}
 	processingErrorsCh := make(chan error)
-	go g.callback.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
+	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
 	select {
 	case <-stream.Context().Done():
 		clientLog.Info("GlobalToZoneSync rpc stream stopped")

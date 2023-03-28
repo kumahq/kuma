@@ -6,11 +6,28 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+type UpstreamResponse struct {
+	ControlPlaneId      string
+	Type                model.ResourceType
+	AddedResources      model.ResourceList
+	RemovedResourcesKey []model.ResourceKey
+	IsInitialRequest    bool
+}
+
 type Callbacks struct {
 	OnResourcesReceived func(upstream UpstreamResponse) error
+}
+
+// All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
+type DeltaKDSStream interface {
+	DeltaDiscoveryRequest(resourceType model.ResourceType) error
+	Receive() (UpstreamResponse, error)
+	ACK(resourceType model.ResourceType) error
+	NACK(resourceType model.ResourceType, err error) error
 }
 
 type KDSSyncClient interface {
@@ -53,7 +70,7 @@ func (s *kdsSyncClient) Receive() error {
 
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
-			if err := s.kdsStream.ACK(string(received.Type)); err != nil {
+			if err := s.kdsStream.ACK(received.Type); err != nil {
 				if err == io.EOF {
 					return nil
 				}
@@ -63,7 +80,7 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		if err := s.callbacks.OnResourcesReceived(received); err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
-			if err := s.kdsStream.NACK(string(received.Type), err); err != nil {
+			if err := s.kdsStream.NACK(received.Type, err); err != nil {
 				if err == io.EOF {
 					return nil
 				}
@@ -71,7 +88,7 @@ func (s *kdsSyncClient) Receive() error {
 			}
 		} else {
 			s.log.V(1).Info("sending ACK", "type", received.Type)
-			if err := s.kdsStream.ACK(string(received.Type)); err != nil {
+			if err := s.kdsStream.ACK(received.Type); err != nil {
 				if err == io.EOF {
 					return nil
 				}

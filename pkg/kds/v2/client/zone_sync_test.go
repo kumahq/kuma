@@ -20,8 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
-	zone_client "github.com/kumahq/kuma/pkg/kds/v2/zone/client"
+	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -32,12 +32,12 @@ var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
 	initStateMap := cache_v2.ResourceVersionMap{}
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) zone_client.KDSSyncClient {
-		return zone_client.NewKDSSyncClient(
+	newPolicySink := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) client_v2.KDSSyncClient {
+		return client_v2.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-			zone_client.NewDeltaKDSStream(cs, zoneName, "", initStateMap),
-			sync_store.Callbacks(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+			client_v2.NewDeltaKDSStream(cs, zoneName, "", initStateMap),
+			sync_store_v2.ZoneSyncCallback(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
@@ -59,7 +59,7 @@ var _ = Describe("Zone Delta Sync", func() {
 	}
 
 	var zoneStore store.ResourceStore
-	var zoneSyncer sync_store.ResourceSyncer
+	var zoneSyncer sync_store_v2.ResourceSyncer
 	var globalStore store.ResourceStore
 	var closeFunc func()
 
@@ -84,7 +84,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		clientStream := serverStream.ClientStream(stop)
 
 		zoneStore = memory.NewStore()
-		zoneSyncer = sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
+		zoneSyncer = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
 
 		wg.Add(1)
 		go func() {
