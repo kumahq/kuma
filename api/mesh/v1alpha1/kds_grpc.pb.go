@@ -416,6 +416,11 @@ type KDSSyncServiceClient interface {
 	// the global control-plane to the zone control-plane. It uses delta xDS from
 	// go-control-plane and responds only with the changes to the resources.
 	GlobalToZoneSync(ctx context.Context, opts ...grpc.CallOption) (KDSSyncService_GlobalToZoneSyncClient, error)
+	// ZoneToGlobalSync is logically a service exposed by global control-plane
+	// that allows zone control plane to connect and synchronize resources to
+	// the global control-plane. It uses delta xDS from go-control-plane and
+	// responds only with the changes to the resources.
+	ZoneToGlobalSync(ctx context.Context, opts ...grpc.CallOption) (KDSSyncService_ZoneToGlobalSyncClient, error)
 }
 
 type kDSSyncServiceClient struct {
@@ -457,6 +462,37 @@ func (x *kDSSyncServiceGlobalToZoneSyncClient) Recv() (*v3.DeltaDiscoveryRespons
 	return m, nil
 }
 
+func (c *kDSSyncServiceClient) ZoneToGlobalSync(ctx context.Context, opts ...grpc.CallOption) (KDSSyncService_ZoneToGlobalSyncClient, error) {
+	stream, err := c.cc.NewStream(ctx, &KDSSyncService_ServiceDesc.Streams[1], "/kuma.mesh.v1alpha1.KDSSyncService/ZoneToGlobalSync", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &kDSSyncServiceZoneToGlobalSyncClient{stream}
+	return x, nil
+}
+
+type KDSSyncService_ZoneToGlobalSyncClient interface {
+	Send(*v3.DeltaDiscoveryResponse) error
+	Recv() (*v3.DeltaDiscoveryRequest, error)
+	grpc.ClientStream
+}
+
+type kDSSyncServiceZoneToGlobalSyncClient struct {
+	grpc.ClientStream
+}
+
+func (x *kDSSyncServiceZoneToGlobalSyncClient) Send(m *v3.DeltaDiscoveryResponse) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *kDSSyncServiceZoneToGlobalSyncClient) Recv() (*v3.DeltaDiscoveryRequest, error) {
+	m := new(v3.DeltaDiscoveryRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // KDSSyncServiceServer is the server API for KDSSyncService service.
 // All implementations must embed UnimplementedKDSSyncServiceServer
 // for forward compatibility
@@ -466,6 +502,11 @@ type KDSSyncServiceServer interface {
 	// the global control-plane to the zone control-plane. It uses delta xDS from
 	// go-control-plane and responds only with the changes to the resources.
 	GlobalToZoneSync(KDSSyncService_GlobalToZoneSyncServer) error
+	// ZoneToGlobalSync is logically a service exposed by global control-plane
+	// that allows zone control plane to connect and synchronize resources to
+	// the global control-plane. It uses delta xDS from go-control-plane and
+	// responds only with the changes to the resources.
+	ZoneToGlobalSync(KDSSyncService_ZoneToGlobalSyncServer) error
 	mustEmbedUnimplementedKDSSyncServiceServer()
 }
 
@@ -475,6 +516,9 @@ type UnimplementedKDSSyncServiceServer struct {
 
 func (UnimplementedKDSSyncServiceServer) GlobalToZoneSync(KDSSyncService_GlobalToZoneSyncServer) error {
 	return status.Errorf(codes.Unimplemented, "method GlobalToZoneSync not implemented")
+}
+func (UnimplementedKDSSyncServiceServer) ZoneToGlobalSync(KDSSyncService_ZoneToGlobalSyncServer) error {
+	return status.Errorf(codes.Unimplemented, "method ZoneToGlobalSync not implemented")
 }
 func (UnimplementedKDSSyncServiceServer) mustEmbedUnimplementedKDSSyncServiceServer() {}
 
@@ -515,6 +559,32 @@ func (x *kDSSyncServiceGlobalToZoneSyncServer) Recv() (*v3.DeltaDiscoveryRequest
 	return m, nil
 }
 
+func _KDSSyncService_ZoneToGlobalSync_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(KDSSyncServiceServer).ZoneToGlobalSync(&kDSSyncServiceZoneToGlobalSyncServer{stream})
+}
+
+type KDSSyncService_ZoneToGlobalSyncServer interface {
+	Send(*v3.DeltaDiscoveryRequest) error
+	Recv() (*v3.DeltaDiscoveryResponse, error)
+	grpc.ServerStream
+}
+
+type kDSSyncServiceZoneToGlobalSyncServer struct {
+	grpc.ServerStream
+}
+
+func (x *kDSSyncServiceZoneToGlobalSyncServer) Send(m *v3.DeltaDiscoveryRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *kDSSyncServiceZoneToGlobalSyncServer) Recv() (*v3.DeltaDiscoveryResponse, error) {
+	m := new(v3.DeltaDiscoveryResponse)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // KDSSyncService_ServiceDesc is the grpc.ServiceDesc for KDSSyncService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -526,6 +596,12 @@ var KDSSyncService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GlobalToZoneSync",
 			Handler:       _KDSSyncService_GlobalToZoneSync_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "ZoneToGlobalSync",
+			Handler:       _KDSSyncService_ZoneToGlobalSync_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
