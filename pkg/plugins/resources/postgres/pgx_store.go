@@ -47,6 +47,8 @@ func connect(config config.PostgresStoreConfig) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	pgxConfig, err := pgxpool.ParseConfig(connectionString)
+	pgxConfig.MinConns = 1
+	pgxConfig.MaxConns = 2
 	if err != nil {
 		return nil, err
 	}
