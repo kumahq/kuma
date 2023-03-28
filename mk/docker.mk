@@ -63,7 +63,7 @@ image/kuma-cni/$(1): image/base-root/$(1) build/artifacts-linux-$(1)/kuma-cni bu
 	docker build -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-universal/$(1)
-image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server
+image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server build/artifacts-linux-$(1)/coredns
 	docker build -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/Dockerfile.universal .
 endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
@@ -112,9 +112,9 @@ docker/tag/release: $(patsubst %,docker/%/tag,$(ALL_RELEASE_WITH_ARCH))
 .PHONY: docker/tag/test
 docker/tag/test: $(patsubst %,docker/%/tag,$(ALL_TEST_WITH_ARCH))
 .PHONY: docker/push
-docker/push: $(patsubst %,docker/%/push,$(ALL_RELEASE_WITH_ARCH))
+docker/push: $(patsubst %,docker/%/push,$(ALL_RELEASE_WITH_ARCH)) ## Publish all docker images with arch specific tags
 .PHONY: docker/manifest
-docker/manifest: $(patsubst %,docker/%/manifest,$(IMAGES_RELEASE))
+docker/manifest: $(patsubst %,docker/%/manifest,$(IMAGES_RELEASE)) ## Publish all manifests (images need to be pushed already
 .PHONY: images
 images: images/release images/test ## Dev: Rebuild release and test Docker images
 .PHONY: images/release
