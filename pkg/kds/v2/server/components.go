@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -32,13 +34,12 @@ func New(
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
-	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
-	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
+	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -46,9 +47,10 @@ func New(
 	callbacks := util_xds_v3.CallbacksChain{
 		&typeAdjustCallbacks{},
 		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
-		util_xds_v3.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
-		util_xds_v3.AdaptCallbacks(statsCallbacks),
-		util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)),
+		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
+		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
+		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
+		newKdsRetryForcer(log, cache, hasher),
 		syncTracker,
 	}
 	if insight {
@@ -58,8 +60,8 @@ func New(
 }
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
-	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
-		return NewZoneInsightSink(
+	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
+		return kds_server.NewZoneInsightSink(
 			accessor,
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
@@ -68,14 +70,14 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
 			},
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
-			NewZonesInsightStore(rt.ResourceManager()),
+			kds_server.NewZonesInsightStore(rt.ResourceManager()),
 			l)
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
+func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
 	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "kds_generation",
+		Name:       "kds_delta_generation",
 		Help:       "Summary of KDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
 	})
@@ -84,7 +86,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
-		Name: "kds_generation_errors",
+		Name: "kds_delta_generation_errors",
 	})
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err
@@ -114,10 +116,10 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
+	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct{}

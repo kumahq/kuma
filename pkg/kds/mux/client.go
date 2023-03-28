@@ -18,11 +18,13 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -30,12 +32,19 @@ var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks           Callbacks
+	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
+	zoneToGlobalCb      OnZoneToGlobalSyncStartedFunc
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
+	experimantalConfig  config.ExperimentalConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
+	// stores map[typ]map[resource-name]version in case of reconnect
+	// sends these information in first request so server responds only
+	// with real changes
+	deltaInitState cache_v2.ResourceVersionMap
 }
 
 func NewClient(
@@ -43,18 +52,25 @@ func NewClient(
 	globalURL string,
 	clientID string,
 	callbacks Callbacks,
+	globalToZoneCb OnGlobalToZoneSyncStartedFunc,
+	zoneToGlobalCb OnZoneToGlobalSyncStartedFunc,
 	config multizone.KdsClientConfig,
+	experimantalConfig config.ExperimentalConfig,
 	metrics metrics.Metrics,
 	envoyAdminProcessor service.EnvoyAdminProcessor,
 ) component.Component {
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
+		globalToZoneCb:      globalToZoneCb,
+		zoneToGlobalCb:      zoneToGlobalCb,
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
+		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
+		deltaInitState:      cache_v2.ResourceVersionMap{},
 	}
 }
 
@@ -103,10 +119,16 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
-	go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
+	if c.experimantalConfig.DeltaEnabled {
+		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
+		go c.startZoneToGlobalSync(withKDSCtx, log, conn, stop, errorCh)
+	} else {
+		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+	}
 
 	select {
 	case <-stop:
@@ -149,6 +171,48 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 		errorCh <- err
 		return
 	}
+}
+
+func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
+	stream, err := kdsClient.GlobalToZoneSync(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
+		log.Error(err, "closing Global to Zone Sync stream after callback error")
+		errorCh <- err
+		return
+	}
+	<-stop
+	log.Info("Global to Zone Sync rpc stream stopped")
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	errorCh <- err
+}
+
+func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
+	stream, err := kdsClient.ZoneToGlobalSync(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+	if err := c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream); err != nil {
+		log.Error(err, "closing Zone to Global Sync stream after callback error")
+		errorCh <- err
+		return
+	}
+	<-stop
+	log.Info("Zone to Global Sync rpc stream stopped")
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	errorCh <- err
 }
 
 func (c *client) startXDSConfigs(
