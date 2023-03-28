@@ -24,6 +24,7 @@ type StatsCallbacks interface {
 	// This should be called when the client of xDS/KDS server disconnects.
 	DiscardConfig(configVersion string)
 	Callbacks
+	DeltaCallbacks
 }
 
 type statsCallbacks struct {
@@ -145,5 +146,37 @@ func (s *statsCallbacks) takeConfigTimeFromQueue(configVersion string) (time.Tim
 }
 
 func (s *statsCallbacks) OnStreamResponse(_ int64, _ DiscoveryRequest, response DiscoveryResponse) {
+	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+}
+
+func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error {
+	s.Lock()
+	defer s.Unlock()
+	s.streamsActive++
+	return nil
+}
+
+func (s *statsCallbacks) OnDeltaStreamClosed(int64) {
+	s.Lock()
+	defer s.Unlock()
+	s.streamsActive--
+}
+
+func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryRequest) error {
+	if len(request.GetInitialResourceVersions()) == 0 {
+		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
+	}
+
+	if request.HasErrors() {
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
+	} else {
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+	}
+
+	// TODO(lukidzi): figure out how to measure delivery time because of lack of version
+	return nil
+}
+
+func (s *statsCallbacks) OnStreamDeltaResponse(_ int64, _ DeltaDiscoveryRequest, response DeltaDiscoveryResponse) {
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
 }
