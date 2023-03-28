@@ -100,16 +100,23 @@ networking:
 		}, "30s", "1s").Should(Succeed())
 
 		// when egress is down
-		_, _, err = universalClusters.Exec("", "", AppEgress, "pkill", "-9", "kuma-dp")
+		_, _, err = universalClusters.Exec("", "", AppEgress, "pkill", "kuma-dp")
 		Expect(err).ToNot(HaveOccurred())
-
 		// then traffic shouldn't reach external service
 		Eventually(func(g Gomega) {
+			out, _, err := universalClusters.Exec("", "", AppEgress, "pgrep", "-l", "envoy")
+			Logf("output %s:", out)
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(out).ToNot(ContainSubstring("envoy"))
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+		// then traffic shouldn't reach external service
+		Consistently(func(g Gomega) {
 			response, err := client.CollectFailure(
 				cluster, "demo-client", "external-service-1.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
-		}, "30s", "1s").Should(Succeed())
+			g.Expect(response.Exitcode).To(Or(Equal(22), Equal(52), Equal(56), Equal(7), Equal(28)))
+		}).Should(Succeed())
 	})
 }

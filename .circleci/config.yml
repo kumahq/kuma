@@ -82,6 +82,36 @@ commands:
           echo "halt running job"
           circleci-agent step halt
           exit 0
+  setenv_depending_on_priority:
+    description: "don't run following steps if in PR and doesn't have a specific label"
+    parameters:
+      label:
+        type: string
+        description: a label to for running this (if empty no label override is allowed)
+      env:
+        type: string
+        description: a set of env var to set if it's a priority job
+    steps:
+      - run:
+          name: maybe-add-env
+          command: |
+            function add_env() {
+              echo 'export << parameters.env >>' >> "$BASH_ENV"
+              exit 0
+            }
+            if [[ "<< pipeline.git.branch >>" == "master" || "<< pipeline.git.branch >>" == "release-"*  ]]; then
+              echo "on a main branch so run everything"
+              add_env
+            fi
+            if [[ "<< pipeline.git.tag >>" != "" ]]; then
+              echo "on a tag so run everything"
+              add_env
+            fi
+            if [[ "<<parameters.label>>" != "" && $(${KUMA_DIR}/tools/ci/has_label.sh "<<parameters.label>>") == "true" ]]; then
+              echo "<<parameters.label>> label present on PR so run everything"
+              add_env
+            fi
+            exit 0
   halt_job_if_labeled:
     description: "don't run following steps if PR has a specific label"
     parameters:
@@ -231,7 +261,7 @@ jobs:
       parallelism:
         description: level of parallelization
         type: integer
-        default: 8
+        default: 1
       target:
         description: makefile target
         type: string
@@ -343,95 +373,85 @@ jobs:
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
+      - store_artifacts:
+          name: "Store logs"
+          path: /tmp/e2e
 
   build:
-    parameters:
-      arch:
-        description: The golang arch
-        type: string
-        default: amd64
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
-      name: vm-<< parameters.arch >>
+      name: vm-amd64
     steps:
     - checkout
-    - when:
-        condition: {equal: [arm64, << parameters.arch >>]}
-        steps:
-          - halt_non_priority_job
     - install_build_tools:
-        go_arch: <<parameters.arch>>
+        go_arch: amd64
+    - run: # allows to build both arch on AMD
+        name: "install QUEMU"
+        description: "Install quem'u to support ARM build"
+        command: |
+          sudo apt-get install -y qemu-user-static binfmt-support
     - restore_cache:
         keys:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+    - setenv_depending_on_priority:
+        label: "ci/run-full-matrix"
+        env: ENABLED_GOARCHES="arm64 amd64"
     - run:
-        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
-        command: make build
+        command: make build/distributions
     - run:
-        name: Build Docker images
-        command: |
-          make images
+        command: make -j images
     - run:
-        name: Save Docker images into TAR archives
-        command: |
-          make docker/save
+        command: make -j docker/save
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build
         paths:
-        - docker-images-<<parameters.arch>>
-        - artifacts-linux-<<parameters.arch>>
-        - ebpf-<<parameters.arch>>
+        - distributions/out
+        - docker
+        - artifacts-linux-amd64
+        - artifacts-linux-arm64
+        - ebpf-amd64
+        - ebpf-arm64
 
   distributions:
     executor: vm-amd64
     steps:
       - install_build_tools
       - checkout
+      - setenv_depending_on_priority:
+          label: ci/force-publish
+          env: ALLOW_PUSH=true
+      - setenv_depending_on_priority:
+          label: ci/run-full-matrix
+          env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
+      # Mount files from the upstream jobs
+      - restore_cache:
+          keys:
+            - vm-amd64_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - attach_workspace:
+          at: build
       - run:
           name: Build distributions
           command: make build/distributions
       - run:
           name: inspect created tars
           command: for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
-      - halt_non_priority_job:
-          label: ci/force-publish
       - run:
           name: Publish distributions to Pulp
           command: make publish/pulp
-
-  release:
-    executor: vm-amd64
-    steps:
-    - install_build_tools
-    - checkout
-    - run:
-        name: "Download Go modules"
-        command: go mod download
-    - run: # allows to build both arch on AMD
-        name: "Install quem'u to support ARM build"
-        command: |
-          sudo apt-get install -y qemu-user-static
-          sudo apt-get install -y binfmt-support
-    - run:
-        name: Build Packages
-        command: |
-          ./tools/releases/distros.sh --package
-    - run:
-        name: Push Packages
-        command: |
-          ./tools/releases/distros.sh --release
-    - run:
-        name: Build Docker
-        command: |
-          ${KUMA_DIR}/tools/releases/docker.sh --build
-    - run:
-        name: Push Docker
-        command: |
-          ${KUMA_DIR}/tools/releases/docker.sh --push
-    - run:
-        name: Create and Push multiarch manifest for Docker images
-        command: |
-          ${KUMA_DIR}/tools/releases/docker.sh --manifest
+      - run:
+          name: load images
+          command: make docker/load
+      - run:
+          name: publish images
+          command: |
+            make docker/login
+            # ensure we always logout
+            function on_exit() {
+              make docker/logout
+            }
+            trap on_exit EXIT
+            make docker/push
+            make docker/manifest
 
 workflows:
   version: 2
@@ -447,12 +467,8 @@ workflows:
       - check:
           requires: [ go_cache ]
       - build:
-          name: build-<< matrix.arch >>
-          matrix:
-            alias: build
-            parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ go_cache-golang ]
+          name: build
+          requires: [ go_cache-vm-amd64 ]
       - test:
           name: test-<< matrix.arch >>
           matrix:
@@ -469,7 +485,7 @@ workflows:
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [ build, check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -478,8 +494,7 @@ workflows:
               k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
-          parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [ build, check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
@@ -489,26 +504,7 @@ workflows:
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
-          parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
-      - release:
-          # publish artifacts speculatively for normal commits
-          filters: # only on master and release-* branches (never on PRs and tags)
-            branches:
-              only:
-                - master
-                - /^release-.*/
-            tags:
-              ignore: /.*/
-          requires: [ build ]
-      - release:
-          # only publish tagged artifacts if everything passes
-          filters: # only on tags
-            branches:
-              ignore: /.*/
-            tags:
-              only: /.*/
-          requires: [ test, test/e2e, test/e2e-legacy ]
+          requires: [ build, check ]
       - distributions:
           requires: [ test, test/e2e, test/e2e-legacy ]
 
