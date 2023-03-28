@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/global/server"
+	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
