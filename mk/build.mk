@@ -1,7 +1,7 @@
 build_info_fields = \
 	version=$(BUILD_INFO_VERSION) \
 	gitTag=$(GIT_TAG) \
-	gitCommit=$(GIT_COMMIT)) \
+	gitCommit=$(GIT_COMMIT) \
 	buildDate=$(BUILD_DATE) \
 	Envoy=$(ENVOY_VERSION)
 
@@ -37,6 +37,13 @@ ENABLED_GOARCHES ?= $(GOARCH)
 # This is a list of all osses enabled, this means generic targets like `make build/distributions` will build for each of these arches
 ENABLED_GOOSES ?= $(GOOS)
 ENABLED_ARCH_OS = $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch)))
+
+.PHONY: build/info
+build/info: ## Dev: Show build info
+	@echo build-info: $(build_info_fields)
+	@echo tools-dir: $(CI_TOOLS_DIR)
+	@echo arch: supported=$(SUPPORTED_GOARCHES), enabled=$(ENABLED_GOARCHES)
+	@echo os: supported=$(SUPPORTED_GOOSES), enabled=$(ENABLED_GOOSES)
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
