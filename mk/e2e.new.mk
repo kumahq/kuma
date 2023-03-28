@@ -120,7 +120,7 @@ test/e2e/debug: $(E2E_DEPS_TARGETS)
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
 	$(E2E_ENV_VARS) \
-	$(GINKGO_TEST_E2E) --procs 1 --keep-going=false --fail-fast $(E2E_PKG_LIST)
+	GINKGO_EDITOR_INTEGRATION=true $(GINKGO_TEST_E2E) --procs 1 --keep-going=false --fail-fast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
