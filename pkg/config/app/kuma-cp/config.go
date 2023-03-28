@@ -210,6 +210,7 @@ var DefaultConfig = func() Config {
 		Experimental: ExperimentalConfig{
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: true,
+			DeltaEnabled:        false,
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
