@@ -1,0 +1,10 @@
+type: ExternalService
+mesh: mesh-1
+name: es-1
+networking:
+  address: "external-database.ns.svc:80"
+tags:
+  kuma.io/service: external-database
+  kuma.io/protocol: http
+  kuma.io/zone: zone-1
+  version: v1
