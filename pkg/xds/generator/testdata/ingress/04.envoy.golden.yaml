@@ -1,4 +1,158 @@
 resources:
+- name: mesh1:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh1_backend
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - region
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - version
+    name: mesh1:backend
+    type: EDS
+- name: mesh2:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh2_backend
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - region
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - version
+    name: mesh2:backend
+    type: EDS
+- name: mesh1:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh1:backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              mesh: mesh1
+              region: eu
+              version: v1
+            envoy.transport_socket_match:
+              mesh: mesh1
+              region: eu
+              version: v1
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.2
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              mesh: mesh1
+              region: us
+              version: v2
+            envoy.transport_socket_match:
+              mesh: mesh1
+              region: us
+              version: v2
+- name: mesh2:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh2:backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              arch: ARM
+              cloud: eks
+              mesh: mesh2
+              os: ubuntu
+              region: asia
+              version: v3
+            envoy.transport_socket_match:
+              arch: ARM
+              cloud: eks
+              mesh: mesh2
+              os: ubuntu
+              region: asia
+              version: v3
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              arch: x86
+              cloud: gke
+              mesh: mesh2
+              os: debian
+              region: eu
+              version: v1
+            envoy.transport_socket_match:
+              arch: x86
+              cloud: gke
+              mesh: mesh2
+              os: debian
+              region: eu
+              version: v1
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              cloud: aks
+              mesh: mesh2
+              version: v2
+            envoy.transport_socket_match:
+              cloud: aks
+              mesh: mesh2
+              version: v2
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
