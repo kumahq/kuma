@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds"
@@ -97,7 +96,6 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	if err != nil {
 		return UpstreamResponse{}, err
 	}
-	core.Log.Info("received", "resp", resp)
 	rs, nameToVersion, err := util.ToDeltaCoreResourceList(resp)
 	if err != nil {
 		return UpstreamResponse{}, err
