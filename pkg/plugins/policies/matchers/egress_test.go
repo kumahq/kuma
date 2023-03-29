@@ -80,7 +80,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			bytes, err := yaml.Marshal(policies.ToRules)
+			bytes, err := yaml.Marshal(policies.FromRules)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "torules")))

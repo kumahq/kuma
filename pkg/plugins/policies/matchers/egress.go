@@ -16,12 +16,34 @@ import (
 func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
 
-	fr, err := processFromRules(es, policies)
-	if err != nil {
-		return core_xds.TypedMatchingPolicies{}, err
+	if len(policies.GetItems()) == 0 {
+		return core_xds.TypedMatchingPolicies{}, nil
 	}
 
-	tr, err := processToRules(es, policies)
+	p := policies.GetItems()[0]
+
+	if _, ok := p.GetSpec().(core_xds.Policy); !ok {
+		return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
+	}
+
+	_, isFrom := p.GetSpec().(core_xds.PolicyWithFromList)
+	_, isTo := p.GetSpec().(core_xds.PolicyWithToList)
+
+	if isFrom && isTo {
+		return core_xds.TypedMatchingPolicies{}, errors.Errorf("zone egress doesn't support policies that have both 'from' and 'to'")
+	}
+
+	if !isFrom && !isTo {
+		return core_xds.TypedMatchingPolicies{}, nil
+	}
+
+	var fr core_xds.FromRules
+	var err error
+	if isFrom {
+		fr, err = processFromRules(es, policies)
+	} else {
+		fr, err = processToRules(es, policies)
+	}
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
@@ -29,7 +51,6 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 	return core_xds.TypedMatchingPolicies{
 		Type:      rType,
 		FromRules: fr,
-		ToRules:   tr,
 	}, nil
 }
 
@@ -40,15 +61,10 @@ func processFromRules(
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range rl.GetItems() {
-		spec, ok := policy.GetSpec().(core_xds.Policy)
-		if !ok {
-			return core_xds.FromRules{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rl.GetItemType())
-		}
-
+		spec := policy.GetSpec().(core_xds.Policy)
 		if !externalServiceSelectedByTargetRef(spec.GetTargetRef(), es) {
 			continue
 		}
-
 		matchedPolicies = append(matchedPolicies, policy)
 	}
 
@@ -59,21 +75,55 @@ func processFromRules(
 	})
 }
 
+// It's not natural for zone egress to have 'to' policies. It doesn't make sense to target
+// external service in the top-level targetRef and specify 'to' array (simply because we don't
+// have access to the external service outbounds). But there are situations when we're
+// targeting external service in the 'to' array, and we need to make adjustments on the Egress, i.e:
+//
+// type: MeshLoadBalancingStrategy
+// spec:
+//
+//	targetRef:
+//	  kind: Mesh
+//	to:
+//	  - targetRef:
+//	      kind: MeshService
+//	      name: external-service-1
+//	    default:
+//	      localityAwareness:
+//	        disabled: true
+//
+// In this case we need to apply the policy to the Egress. The problem is that Egress is
+// a single point for multiple clients. This means we have to specify different configurations
+// for different clients. In order to easily get a list of rules for 'to' policy on Egress
+// we have to convert it to 'from' policy, i.e. the policy above will be converted to artificially
+// created policy:
+//
+// spec:
+//
+//	targetRef:
+//	  kind: MeshService
+//	  name: external-service-1
+//	from:
+//	  - targetRef:
+//	      kind: Mesh
+//	    default:
+//	      localityAwareness:
+//	        disabled: true
+//
+// that's why processToRules() method produces FromRules for the Egress.
 func processToRules(
 	es *core_mesh.ExternalServiceResource,
 	rl core_model.ResourceList,
-) (core_xds.ToRules, error) {
+) (core_xds.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range rl.GetItems() {
-		spec, ok := policy.GetSpec().(core_xds.Policy)
-		if !ok {
-			return core_xds.ToRules{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rl.GetItemType())
-		}
+		spec := policy.GetSpec().(core_xds.Policy)
 
 		to, ok := spec.(core_xds.PolicyWithToList)
 		if !ok {
-			return core_xds.ToRules{}, nil
+			return core_xds.FromRules{}, nil
 		}
 
 		for _, item := range to.GetToList() {
@@ -91,6 +141,7 @@ func processToRules(
 			if !externalServiceSelectedByTargetRef(item.GetTargetRef(), es) {
 				continue
 			}
+			// convert 'to' policyItem to 'from' policyItem
 			artificial := &artificialPolicyItem{
 				conf:      item.GetDefault(),
 				targetRef: policy.GetSpec().(core_xds.Policy).GetTargetRef(),
@@ -102,10 +153,12 @@ func processToRules(
 
 	rules, err := core_xds.BuildRules(toList)
 	if err != nil {
-		return core_xds.ToRules{}, err
+		return core_xds.FromRules{}, err
 	}
 
-	return core_xds.ToRules{Rules: rules}, nil
+	return core_xds.FromRules{Rules: map[core_xds.InboundListener]core_xds.Rules{
+		{}: rules,
+	}}, nil
 }
 
 type artificialPolicyItem struct {
