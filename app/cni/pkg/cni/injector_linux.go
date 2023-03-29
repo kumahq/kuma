@@ -94,22 +94,21 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	if err != nil {
 		return nil, err
 	}
+	inboundPortV6, err := convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
+	if err != nil {
+		return nil, err
+	}
+	enableIpV6, err := transparentproxy.ShouldEnableIPv6(inboundPortV6)
+	if err != nil {
+		return nil, err
+	}
+	cfg.IPv6 = enableIpV6
 	redirectInbound := !isGateway
 	if redirectInbound {
 		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
 		if err != nil {
 			return nil, err
 		}
-
-		inboundPortV6, err := convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
-		if err != nil {
-			return nil, err
-		}
-		enableIpV6, err := transparentproxy.ShouldEnableIPv6(inboundPortV6)
-		if err != nil {
-			return nil, err
-		}
-		cfg.IPv6 = enableIpV6
 
 		excludedPorts, err := convertCommaSeparatedString(intermediateConfig.excludeInboundPorts)
 		if err != nil {
