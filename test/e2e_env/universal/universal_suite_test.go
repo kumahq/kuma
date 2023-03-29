@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/intercp"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
@@ -82,6 +83,7 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+<<<<<<< HEAD
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
 var _ = Describe("Cross-mesh Gateway", gateway.CrossMeshGatewayOnUniversal, Ordered)
@@ -106,3 +108,53 @@ var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniver
 var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
+=======
+var (
+	_ = Describe("User Auth", auth.UserAuth)
+	_ = Describe("DP Auth", auth.DpAuth, Ordered)
+	_ = Describe("Offline Auth", auth.OfflineAuth, Ordered)
+	_ = Describe("Gateway", gateway.Gateway, Ordered)
+	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
+	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
+	_ = Describe("HealthCheck", healthcheck.Policy)
+	_ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
+	_ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
+	_ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
+	_ = Describe("External Services", externalservices.Policy, Ordered)
+	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
+	_ = Describe("Inspect", inspect.Inspect, Ordered)
+	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
+	_ = Describe("Tracing", observability.Tracing, Ordered)
+	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
+	_ = Describe("Membership", membership.Membership, Ordered)
+	_ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
+	_ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
+	_ = Describe("Timeout", timeout.Policy, Ordered)
+	_ = Describe("Retry", retry.Policy, Ordered)
+	_ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
+	_ = Describe("MeshRetry", meshretry.GrpcRetry, Ordered)
+	_ = Describe("RateLimit", ratelimit.Policy, Ordered)
+	_ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
+	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
+	_ = Describe("Matching", matching.Matching, Ordered)
+	_ = Describe("Mtls", mtls.Policy, Ordered)
+	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
+	_ = Describe("Apis", api.Api, Ordered)
+	_ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
+	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
+	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
+	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
+	_ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
+	_ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
+	_ = Describe("GRPC", grpc.GRPC, Ordered)
+	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
+	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
+	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
+	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Label("arm-not-supported"), Ordered)
+	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
+	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
+	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
+	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
+	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
+)
+>>>>>>> fdc88c788 (fix(kuma-cp): add components in runtime (#6350))
