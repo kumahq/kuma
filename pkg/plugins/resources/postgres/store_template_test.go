@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -26,9 +27,11 @@ var _ = Describe("PostgresStore template", func() {
 
 		var pStore store.ResourceStore
 		if storeName == "pgx" {
-			pStore, err = NewPgxStore(pqMetrics, *cfg)
+			cfg.DriverName = postgres.DriverNamePgx
+			pStore, err = NewPgxStore(pgxMetrics, *cfg)
 		} else {
-			pStore, err = NewPqStore(pgxMetrics, *cfg)
+			cfg.DriverName = postgres.DriverNamePq
+			pStore, err = NewPqStore(pqMetrics, *cfg)
 		}
 		Expect(err).ToNot(HaveOccurred())
 

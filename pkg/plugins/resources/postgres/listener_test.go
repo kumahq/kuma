@@ -115,8 +115,10 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 	Expect(err).ToNot(HaveOccurred())
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
+		cfg.DriverName = postgres_config.DriverNamePgx
 		pStore, err = NewPgxStore(metrics, cfg)
 	} else {
+		cfg.DriverName = postgres_config.DriverNamePq
 		pStore, err = NewPqStore(metrics, cfg)
 	}
 	Expect(err).ToNot(HaveOccurred())
