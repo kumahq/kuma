@@ -1,9 +1,0 @@
-type: TrafficPermission
-name: tp1
-mesh: default
-sources:
-- match:
-    service: web
-destinations:
-- match:
-    service: backend

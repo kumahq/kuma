@@ -94,13 +94,7 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 1000m
-              memory: 512Mi
+          resources: {{ toYaml .Values.egress.resources | nindent 12 }}
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca

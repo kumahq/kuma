@@ -631,6 +631,62 @@ var _ = Describe("Network Filter modifications", func() {
                       streamIdleTimeout: 5s
                 name: inbound:192.168.0.1:8080`,
 		}),
+		Entry("should patch resource matching filter name with JsonPatch", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      stat_prefix: backend
+                      requestTimeout: 2s
+                      rds:
+                        configSource:
+                          ads: {}
+                        routeConfigName: outbound:backend
+                      httpFilters:
+                      - name: router
+`,
+			},
+			modifications: []string{
+				`
+               networkFilter:
+                 operation: Patch
+                 match:
+                   name: envoy.filters.network.http_connection_manager
+                 jsonPatches:
+                 - op: add
+                   path: /streamIdleTimeout
+                   value: 55s
+                 - op: replace
+                   path: /statPrefix
+                   value: foo
+                 - op: remove
+                   path: /requestTimeout
+               `,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: router
+                      rds:
+                        configSource:
+                          ads: {}
+                        routeConfigName: outbound:backend
+                      statPrefix: foo
+                      streamIdleTimeout: 55s
+                name: inbound:192.168.0.1:8080`,
+		}),
 		Entry("should patch resource providing config", testCase{
 			listeners: []string{
 				`

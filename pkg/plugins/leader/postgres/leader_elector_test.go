@@ -27,7 +27,7 @@ var _ = Describe("postgresLeaderElector", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		createElector := func(name string) component.LeaderElector {
-			client, err := pglock.New(sql,
+			client, err := pglock.UnsafeNew(sql,
 				pglock.WithLeaseDuration(500*time.Millisecond),
 				pglock.WithHeartbeatFrequency(100*time.Millisecond),
 				pglock.WithOwner(name),

@@ -51,8 +51,7 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 		return nil, errors.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
 	}
 
-	msgTypeName := strings.ReplaceAll(dst.TypeUrl, googleApis, "") // TypeURL in Any contains type.googleapis.com/ prefix, but in Proto registry it does not have this prefix.
-	msgType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(msgTypeName))
+	msgType, err := FindMessageType(dst.TypeUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +68,13 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 
 	Merge(dstMsg, srcMsg)
 	return MarshalAnyDeterministic(dstMsg)
+}
+
+func FindMessageType(typeUrl string) (protoreflect.MessageType, error) {
+	// TypeURL in Any contains type.googleapis.com/ prefix, but in Proto
+	// registry it does not have this prefix.
+	msgTypeName := strings.ReplaceAll(typeUrl, googleApis, "")
+	fullName := protoreflect.FullName(msgTypeName)
+
+	return protoregistry.GlobalTypes.FindMessageByName(fullName)
 }

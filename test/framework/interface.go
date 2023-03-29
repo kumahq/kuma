@@ -565,4 +565,5 @@ type ControlPlane interface {
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
+	Exec(cmd ...string) (string, string, error)
 }

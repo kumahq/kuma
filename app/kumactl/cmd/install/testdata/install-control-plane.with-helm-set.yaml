@@ -452,7 +452,8 @@ spec:
                     description: "Claims lists the names of resources, defined in
                       spec.resourceClaims, that are used by this container. \n This
                       is an alpha field and requires enabling the DynamicResourceAllocation
-                      feature gate. \n This field is immutable."
+                      feature gate. \n This field is immutable. It can only be set
+                      for containers."
                     items:
                       description: ResourceClaim references one entry in PodSpec.ResourceClaims.
                       properties:
@@ -1702,6 +1703,7 @@ spec:
                                     so that Envoy performs two-choice selection if
                                     the field is not set.
                                   format: int32
+                                  minimum: 2
                                   type: integer
                               type: object
                             maglev:
@@ -1731,6 +1733,7 @@ spec:
                                           name:
                                             description: The name of the cookie that
                                               will be used to obtain the hash key.
+                                            minLength: 1
                                             type: string
                                           path:
                                             description: The name of the path for
@@ -1753,6 +1756,7 @@ spec:
                                               is no data associated with the key,
                                               or the stored object is not Envoy::Hashable,
                                               no hash will be produced.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - key
@@ -1763,6 +1767,7 @@ spec:
                                             description: The name of the request header
                                               that will be used to obtain the hash
                                               key.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -1775,6 +1780,7 @@ spec:
                                               the hash key. If the parameter is not
                                               present, no hash will be produced. Query
                                               parameter names are case-sensitive.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -1860,6 +1866,7 @@ spec:
                                           name:
                                             description: The name of the cookie that
                                               will be used to obtain the hash key.
+                                            minLength: 1
                                             type: string
                                           path:
                                             description: The name of the path for
@@ -1882,6 +1889,7 @@ spec:
                                               is no data associated with the key,
                                               or the stored object is not Envoy::Hashable,
                                               no hash will be produced.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - key
@@ -1892,6 +1900,7 @@ spec:
                                             description: The name of the request header
                                               that will be used to obtain the hash
                                               key.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -1904,6 +1913,7 @@ spec:
                                               the hash key. If the parameter is not
                                               present, no hash will be produced. Query
                                               parameter names are case-sensitive.
+                                            minLength: 1
                                             type: string
                                         required:
                                         - name
@@ -2066,6 +2076,38 @@ spec:
                           description: Cluster is a modification of Envoy's Cluster
                             resource.
                           properties:
+                            jsonPatches:
+                              description: JsonPatches specifies list of jsonpatches
+                                to apply to on Envoy's Cluster resource
+                              items:
+                                description: JsonPatchBlock is one json patch operation
+                                  block.
+                                properties:
+                                  from:
+                                    description: From is a jsonpatch from string,
+                                      used by move and copy operations.
+                                    type: string
+                                  op:
+                                    description: Op is a jsonpatch operation string.
+                                    enum:
+                                    - add
+                                    - remove
+                                    - replace
+                                    - move
+                                    - copy
+                                    type: string
+                                  path:
+                                    description: Path is a jsonpatch path string.
+                                    type: string
+                                  value:
+                                    description: Value must be a valid json value
+                                      used by replace and add operations.
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - op
+                                - path
+                                type: object
+                              type: array
                             match:
                               description: Match is a set of conditions that have
                                 to be matched for modification operation to happen.
@@ -2111,6 +2153,39 @@ spec:
                             Filter available in HTTP Connection Manager in a Listener
                             resource.
                           properties:
+                            jsonPatches:
+                              description: JsonPatches specifies list of jsonpatches
+                                to apply to on Envoy's HTTP Filter available in HTTP
+                                Connection Manager in a Listener resource.
+                              items:
+                                description: JsonPatchBlock is one json patch operation
+                                  block.
+                                properties:
+                                  from:
+                                    description: From is a jsonpatch from string,
+                                      used by move and copy operations.
+                                    type: string
+                                  op:
+                                    description: Op is a jsonpatch operation string.
+                                    enum:
+                                    - add
+                                    - remove
+                                    - replace
+                                    - move
+                                    - copy
+                                    type: string
+                                  path:
+                                    description: Path is a jsonpatch path string.
+                                    type: string
+                                  value:
+                                    description: Value must be a valid json value
+                                      used by replace and add operations.
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - op
+                                - path
+                                type: object
+                              type: array
                             match:
                               description: Match is a set of conditions that have
                                 to be matched for modification operation to happen.
@@ -2167,6 +2242,38 @@ spec:
                           description: Listener is a modification of Envoy's Listener
                             resource.
                           properties:
+                            jsonPatches:
+                              description: JsonPatches specifies list of jsonpatches
+                                to apply to on Envoy's Listener resource
+                              items:
+                                description: JsonPatchBlock is one json patch operation
+                                  block.
+                                properties:
+                                  from:
+                                    description: From is a jsonpatch from string,
+                                      used by move and copy operations.
+                                    type: string
+                                  op:
+                                    description: Op is a jsonpatch operation string.
+                                    enum:
+                                    - add
+                                    - remove
+                                    - replace
+                                    - move
+                                    - copy
+                                    type: string
+                                  path:
+                                    description: Path is a jsonpatch path string.
+                                    type: string
+                                  value:
+                                    description: Value must be a valid json value
+                                      used by replace and add operations.
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - op
+                                - path
+                                type: object
+                              type: array
                             match:
                               description: Match is a set of conditions that have
                                 to be matched for modification operation to happen.
@@ -2216,6 +2323,38 @@ spec:
                           description: NetworkFilter is a modification of Envoy Listener's
                             filter.
                           properties:
+                            jsonPatches:
+                              description: JsonPatches specifies list of jsonpatches
+                                to apply to on Envoy Listener's filter.
+                              items:
+                                description: JsonPatchBlock is one json patch operation
+                                  block.
+                                properties:
+                                  from:
+                                    description: From is a jsonpatch from string,
+                                      used by move and copy operations.
+                                    type: string
+                                  op:
+                                    description: Op is a jsonpatch operation string.
+                                    enum:
+                                    - add
+                                    - remove
+                                    - replace
+                                    - move
+                                    - copy
+                                    type: string
+                                  path:
+                                    description: Path is a jsonpatch path string.
+                                    type: string
+                                  value:
+                                    description: Value must be a valid json value
+                                      used by replace and add operations.
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - op
+                                - path
+                                type: object
+                              type: array
                             match:
                               description: Match is a set of conditions that have
                                 to be matched for modification operation to happen.
@@ -2272,6 +2411,38 @@ spec:
                           description: VirtualHost is a modification of Envoy's VirtualHost
                             referenced in HTTP Connection Manager in a Listener resource.
                           properties:
+                            jsonPatches:
+                              description: JsonPatches specifies list of jsonpatches
+                                to apply to on Envoy's VirtualHost resource
+                              items:
+                                description: JsonPatchBlock is one json patch operation
+                                  block.
+                                properties:
+                                  from:
+                                    description: From is a jsonpatch from string,
+                                      used by move and copy operations.
+                                    type: string
+                                  op:
+                                    description: Op is a jsonpatch operation string.
+                                    enum:
+                                    - add
+                                    - remove
+                                    - replace
+                                    - move
+                                    - copy
+                                    type: string
+                                  path:
+                                    description: Path is a jsonpatch path string.
+                                    type: string
+                                  value:
+                                    description: Value must be a valid json value
+                                      used by replace and add operations.
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - op
+                                - path
+                                type: object
+                              type: array
                             match:
                               description: Match is a set of conditions that have
                                 to be matched for modification operation to happen.
@@ -6104,13 +6275,13 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
+          resources: 
             limits:
               cpu: 1000m
               memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
           volumeMounts:
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca

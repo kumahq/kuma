@@ -1,12 +1,9 @@
-build_info := $(shell $(TOOLS_DIR)/releases/version.sh)
-BUILD_INFO_VERSION ?= $(word 1, $(build_info))
-
-build_info_fields := \
+build_info_fields = \
 	version=$(BUILD_INFO_VERSION) \
-	gitTag=$(word 2, $(build_info)) \
-	gitCommit=$(word 3, $(build_info)) \
-	buildDate=$(word 4, $(build_info)) \
-	Envoy=$(word 5, $(build_info))
+	gitTag=$(GIT_TAG) \
+	gitCommit=$(GIT_COMMIT) \
+	buildDate=$(BUILD_DATE) \
+	Envoy=$(ENVOY_VERSION)
 
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
@@ -21,150 +18,87 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v $(GOFLAGS) $(LD_FLAGS)
-GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v
+# An optional extension to the coredns packages
+COREDNS_EXT ?=
+COREDNS_VERSION = v1.10.1
 
-COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
-COREDNS_VERSION ?= v1.10.1
-COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
-COREDNS_PLUGIN_CFG_PATH ?= $(TOOLS_DIR)/builds/coredns/templates/plugin.cfg
-
-# List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
-
-# List of binaries that we have test build roles for.
+# List of binaries that we have build/release build rules for.
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni
+# List of binaries that we have build/test build roles for.
 BUILD_TEST_BINARIES := test-server
 
-# Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
+# This is a list of all architecture supported, this means we'll define targets for all these architectures
+SUPPORTED_GOARCHES ?= amd64 arm64
+# This is a list of all os supported, this means we'll define targets for all these OSes
+SUPPORTED_GOOSES ?= linux darwin
+
+# This is a list of all architecture enabled, this means generic targets like `make build` or `make images` will build for each of these arches
+ENABLED_GOARCHES ?= $(GOARCH)
+# This is a list of all osses enabled, this means generic targets like `make build/distributions` will build for each of these arches
+ENABLED_GOOSES ?= $(GOOS)
+ENABLED_ARCH_OS = $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch)))
+
+.PHONY: build/info
+build/info: ## Dev: Show build info
+	@echo build-info: $(build_info_fields)
+	@echo tools-dir: $(CI_TOOLS_DIR)
+	@echo arch: supported=$(SUPPORTED_GOARCHES), enabled=$(ENABLED_GOARCHES)
+	@echo os: supported=$(SUPPORTED_GOOSES), enabled=$(ENABLED_GOOSES)
 
 .PHONY: build
-build: build/release build/test
+build: build/release build/test ## Dev: Build all binaries
 
 .PHONY: build/release
-build/release: $(patsubst %,build/%,$(BUILD_RELEASE_BINARIES)) ## Dev: Build all binaries
+build/release: $(addprefix build/,$(BUILD_RELEASE_BINARIES)) ## Dev: Build release binaries
 
 .PHONY: build/test
-build/test: $(patsubst %,build/%,$(BUILD_TEST_BINARIES)) ## Dev: Build testing binaries
+build/test: $(addprefix build/,$(BUILD_TEST_BINARIES)) ## Dev: Build testing binaries
 
-.PHONY: build/linux-amd64
-build/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build
+# create targets like `make build/kumactl` that will build binaries for all arches defined in `$ENABLED_GOARCHES` and `$ENABLED_GOOSES`
+# $(1) - GOOS to build for
+define LOCAL_BUILD_TARGET
+build/$(1): $$(patsubst %,build/artifacts-%/$(1),$$(ENABLED_ARCH_OS))
+endef
+$(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(target))))
 
-.PHONY: build/linux-arm64
-build/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build
+# Build_Go_Application is a build command for the Kuma Go applications.
+Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $$(LD_FLAGS) -o $$@/$$(notdir $$@)
 
-.PHONY: build/release/linux-amd64
-build/release/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/release
+# create targets to build binaries for each OS/ARCH combination
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
+define BUILD_TARGET
+.PHONY: build/artifacts-$(1)-$(2)/kuma-cp
+build/artifacts-$(1)-$(2)/kuma-cp:
+	$(Build_Go_Application) ./app/kuma-cp
 
-.PHONY: build/release/linux-arm64
-build/release/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/release
+.PHONY: build/artifacts-$(1)-$(2)/kuma-dp
+build/artifacts-$(1)-$(2)/kuma-dp:
+	$(Build_Go_Application) ./app/kuma-dp
 
-.PHONY: build/test/linux-amd64
-build/test/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test
+.PHONY: build/artifacts-$(1)-$(2)/kumactl
+build/artifacts-$(1)-$(2)/kumactl: build/ebpf
+	$(Build_Go_Application) ./app/kumactl
 
-.PHONY: build/test/linux-arm64
-build/test/linux-arm64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test
-
-.PHONY: build/kuma-cp
-build/kuma-cp: ## Dev: Build `Control Plane` binary
-	$(Build_Go_Application) ./app/$(notdir $@)
-
-.PHONY: build/kuma-dp
-build/kuma-dp: ## Dev: Build `kuma-dp` binary
-	$(Build_Go_Application) ./app/$(notdir $@)
-
-.PHONY: build/kumactl
-build/kumactl: build/ebpf ## Dev: Build `kumactl` binary
-	$(Build_Go_Application) ./app/$(notdir $@)
-
-.PHONY: build/kuma-cni
-build/kuma-cni: ## Dev: Build `kuma-cni` binary
+.PHONY: build/artifacts-$(1)-$(2)/kuma-cni
+build/artifacts-$(1)-$(2)/kuma-cni:
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
 
-.PHONY: build/install-cni
-build/install-cni: ## Dev: Build `install-cni` binary
+.PHONY: build/artifacts-$(1)-$(2)/install-cni
+build/artifacts-$(1)-$(2)/install-cni:
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
 
-.PHONY: build/coredns
-build/coredns:
-ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
-	rm -rf "$(COREDNS_TMP_DIRECTORY)"
-	git clone --branch $(COREDNS_VERSION) --depth 1 $(COREDNS_GIT_REPOSITORY) $(COREDNS_TMP_DIRECTORY)
-	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
-	cd $(COREDNS_TMP_DIRECTORY) && \
-		GOOS= GOARCH= go generate coredns.go && \
-		go get github.com/coredns/alternate && \
-		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
-	rm -rf "$(COREDNS_TMP_DIRECTORY)"
-else
-	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
-endif
+.PHONY: build/artifacts-$(1)-$(2)/coredns
+build/artifacts-$(1)-$(2)/coredns:
+	mkdir -p $$(@) && \
+	[ -f $$(@)/coredns ] || \
+	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
-.PHONY: build/test-server
-build/test-server: ## Dev: Build `test-server` binary
+.PHONY: build/artifacts-$(1)-$(2)/test-server
+build/artifacts-$(1)-$(2)/test-server:
 	$(Build_Go_Application) ./test/server
-
-.PHONY: build/kuma-cni/linux-amd64
-build/kuma-cni/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cni
-
-.PHONY: build/kuma-cni/linux-arm64
-build/kuma-cni/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cni
-
-.PHONY: build/install-cni/linux-amd64
-build/install-cni/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/install-cni
-
-.PHONY: build/install-cni/linux-arm64
-build/install-cni/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/install-cni
-
-.PHONY: build/kuma-cp/linux-amd64
-build/kuma-cp/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
-
-.PHONY: build/kuma-cp/linux-arm64
-build/kuma-cp/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cp
-
-.PHONY: build/kuma-dp/linux-amd64
-build/kuma-dp/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-dp
-
-.PHONY: build/kuma-dp/linux-arm64
-build/kuma-dp/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-dp
-
-.PHONY: build/kumactl/linux-amd64
-build/kumactl/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kumactl
-
-.PHONY: build/kumactl/linux-arm64
-build/kumactl/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kumactl
-
-.PHONY: build/coredns/linux-amd64
-build/coredns/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/coredns
-
-.PHONY: build/coredns/linux-arm64
-build/coredns/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/coredns
-
-.PHONY: build/test-server/linux-amd64
-build/test-server/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/test-server
-
-.PHONY: build/test-server/linux-arm64
-build/test-server/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/test-server
+endef
+$(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean

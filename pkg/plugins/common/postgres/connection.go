@@ -13,7 +13,7 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open(cfg.DriverName, connStr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create connection to DB")
 	}

@@ -30,7 +30,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -102,7 +102,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -191,7 +191,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -282,7 +282,7 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -369,7 +369,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -442,7 +442,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -532,7 +532,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 		ns, err = netns.NewNetNSBuilder().
 			WithBeforeExecFuncs(sysctl.SetLocalPortRange(32768, 32770)).
 			Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -647,7 +647,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			WithIPv6(true).
 			WithBeforeExecFuncs(sysctl.SetLocalPortRange(32768, 32770)).
 			Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -760,7 +760,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -835,7 +835,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 
 	BeforeEach(func() {
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -913,7 +913,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 		ns, err = netns.NewNetNSBuilder().
 			WithBeforeExecFuncs(sysctl.SetLocalPortRange(32768, 32770)).
 			Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -1034,17 +1034,17 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("192.168.0.1/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("192.168.0.2/24")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -1122,17 +1122,17 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 
 	BeforeEach(func() {
 		mainLink, peerLink, linkErr := netns.NewLinkPair()
-		Expect(linkErr).To(BeNil())
+		Expect(linkErr).ToNot(HaveOccurred())
 
 		ns1Address, addrErr := netlink.ParseAddr("fd00::10:1:1/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(mainLink, ns1Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 
 		ns2Address, addrErr := netlink.ParseAddr("fd00::10:1:2/64")
-		Expect(addrErr).To(BeNil())
+		Expect(addrErr).ToNot(HaveOccurred())
 		ns2, err = netns.NewNetNSBuilder().WithIPv6(true).WithSharedLink(peerLink, ns2Address).Build()
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {

@@ -1,5 +1,0 @@
-apiVersion: kuma.io/v1alpha1
-kind: ProxyTemplate
-metadata:
-  name: empty
-mesh: default

@@ -14,11 +14,13 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/grpc"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/intercp"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshloadbalancingstrategy"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
@@ -38,7 +40,9 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/transparentproxy"
 	"github.com/kumahq/kuma/test/e2e_env/universal/virtualoutbound"
 	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
+	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 func TestE2E(t *testing.T) {
@@ -47,9 +51,11 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
-	_ = BeforeEach(universal.RememberSpecID)
-	_ = AfterSuite(universal.WriteLogsIfFailed)
-	_ = AfterEach(universal.WriteLogsIfFailed)
+	_ = ReportAfterSuite("cleanup", func(report Report) {
+		if Config.CleanupLogsOnSuccess {
+			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
+		}
+	})
 )
 
 var (
@@ -97,4 +103,6 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
+	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
+	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 )

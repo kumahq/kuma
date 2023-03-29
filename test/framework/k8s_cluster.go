@@ -622,7 +622,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
-			err := c.controlplane.UpdateObject("mesh", name,
+			err := UpdateKubeObject(c.GetTesting(), c.GetKubectlOptions(), "mesh", name,
 				func(obj runtime.Object) runtime.Object {
 					mesh := core_mesh.NewMeshResource()
 
