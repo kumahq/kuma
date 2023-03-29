@@ -237,5 +237,6 @@ var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough,
 var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)
 var _ = Describe("Connectivity", connectivity.Connectivity, Ordered)
+var _ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
 var _ = Describe("Sync", multizone_sync.Sync, Ordered)
 var _ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
