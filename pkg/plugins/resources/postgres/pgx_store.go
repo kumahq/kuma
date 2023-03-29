@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -40,12 +41,26 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}, nil
 }
 
-func connect(config config.PostgresStoreConfig) (*pgxpool.Pool, error) {
-	connectionString, err := config.ConnectionString()
+func connect(postgresStoreConfig config.PostgresStoreConfig) (*pgxpool.Pool, error) {
+	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err
 	}
 	pgxConfig, err := pgxpool.ParseConfig(connectionString)
+
+	if postgresStoreConfig.MaxOpenConnections == 0 {
+		// pgx MaxCons must be > 0, see https://github.com/jackc/puddle/blob/c5402ce53663d3c6481ea83c2912c339aeb94adc/pool.go#L160
+		// so unlimited is just max int
+		pgxConfig.MaxConns = math.MaxInt32
+	} else {
+		pgxConfig.MaxConns = int32(postgresStoreConfig.MaxOpenConnections)
+	}
+	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
+	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
+	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
+	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
+	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckPeriod.Duration
+
 	if err != nil {
 		return nil, err
 	}

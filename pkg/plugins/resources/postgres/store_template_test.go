@@ -15,6 +15,7 @@ var _ = Describe("PostgresStore template", func() {
 	createStore := func(storeName string) store.ResourceStore {
 		cfg, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
+		cfg.MaxOpenConnections = 2
 
 		pqMetrics, err := core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
