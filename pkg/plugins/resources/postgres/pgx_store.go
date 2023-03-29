@@ -59,7 +59,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig) (*pgxpool.Pool, err
 	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckPeriod.Duration
+	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
 
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
-	if rows := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
+	if rows := result.RowsAffected(); rows != 1 {
 		return store.ErrorResourceConflict(resource.Descriptor().Name, resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
 	}
 
@@ -159,7 +159,7 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
-	if rows := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
+	if rows := result.RowsAffected(); rows == 0 {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 

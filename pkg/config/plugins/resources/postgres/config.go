@@ -29,7 +29,7 @@ var (
 	DefaultMaxReconnectInterval        = config_types.Duration{Duration: 60 * time.Second}
 	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
 	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 0}
-	DefaultHealthCheckPeriod           = config_types.Duration{Duration: time.Minute}
+	DefaultHealthCheckInterval         = config_types.Duration{Duration: time.Minute}
 	// above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
 
@@ -49,30 +49,30 @@ type PostgresStoreConfig struct {
 	DriverName string `json:"driverName" envconfig:"kuma_store_postgres_driver_name"`
 	// Connection Timeout to the DB in seconds
 	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
-	// MaxConnectionLifetime (pgx only) is the duration since creation after which a connection will be automatically closed
+	// MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
 	MaxConnectionLifetime config_types.Duration `json:"maxConnectionLifetime" envconfig:"kuma_store_postgres_max_connection_lifetime"`
-	// MaxConnectionLifetimeJitter (pgx only) is the duration after MaxConnectionLifetime to randomly decide to close a connection.
+	// MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after MaxConnectionLifetime to randomly decide to close a connection.
 	// This helps prevent all connections from being closed at the exact same time, starving the pool.
 	MaxConnectionLifetimeJitter config_types.Duration `json:"maxConnectionLifetimeJitter" envconfig:"kuma_store_postgres_max_connection_lifetime_jitter"`
-	// HealthCheckPeriod (pgx only) is the duration between checks of the health of idle connections.
-	HealthCheckPeriod config_types.Duration `json:"healthCheckPeriod" envconfig:"kuma_store_postgres_health_check_period"`
-	// MinOpenConnections (pgx only) is the minimum number of open connections to the database
+	// HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
+	HealthCheckInterval config_types.Duration `json:"healthCheckInterval" envconfig:"kuma_store_postgres_health_check_interval"`
+	// MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
 	MinOpenConnections int `json:"minOpenConnections" envconfig:"kuma_store_postgres_min_open_connections"`
 	// MaxOpenConnections is the maximum number of open connections to the database
 	// `0` value means number of open connections is unlimited
 	MaxOpenConnections int `json:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
-	// MaxIdleConnections (pq only) is the maximum number of connections in the idle connection pool
+	// MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
 	// <0 value means no idle connections and 0 means default max idle connections
 	MaxIdleConnections int `json:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `json:"tls"`
-	// MinReconnectInterval (pq only) controls the duration to wait before trying to
+	// MinReconnectInterval (applied only when driverName=postgres) controls the duration to wait before trying to
 	// re-establish the database connection after connection loss. After each
 	// consecutive failure this interval is doubled, until MaxReconnectInterval
 	// is reached. Successfully completing the connection establishment procedure
 	// resets the interval back to MinReconnectInterval.
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
-	// MaxReconnectInterval (pq only) controls the maximum possible duration to wait before trying
+	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
@@ -230,8 +230,8 @@ func (p *PostgresStoreConfig) Validate() error {
 		if p.MaxConnectionLifetimeJitter != DefaultMaxConnectionLifetimeJitter {
 			logger.Info(warning + "MaxConnectionLifetimeJitter " + pgxAlternativeMessage)
 		}
-		if p.HealthCheckPeriod != DefaultHealthCheckPeriod {
-			logger.Info(warning + "HealthCheckPeriod " + pgxAlternativeMessage)
+		if p.HealthCheckInterval != DefaultHealthCheckInterval {
+			logger.Info(warning + "HealthCheckInterval " + pgxAlternativeMessage)
 		}
 	}
 
@@ -255,7 +255,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MinOpenConnections:          DefaultMinOpenConnections,
 		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
 		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
-		HealthCheckPeriod:           DefaultHealthCheckPeriod,
+		HealthCheckInterval:         DefaultHealthCheckInterval,
 	}
 }
 
