@@ -51,6 +51,7 @@ func SyncV2() {
 				Install(Kuma(core.Zone, zone1Options...)).
 				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
+				Install(DemoClientUniversal("demo-client", meshName)).
 				Setup(zone1)
 			Expect(err).ToNot(HaveOccurred())
 		}()
@@ -72,6 +73,7 @@ func SyncV2() {
 				Install(Kuma(core.Zone, zone2Options...)).
 				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
+				Install(TestServerUniversal("test-server", meshName)).
 				Setup(zone2)
 			Expect(err).ToNot(HaveOccurred())
 		}()
