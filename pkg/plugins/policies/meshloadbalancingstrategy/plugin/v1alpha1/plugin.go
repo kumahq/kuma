@@ -18,7 +18,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -30,7 +30,15 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources)
 }
 
+func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, es, resources)
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.ZoneEgressProxy != nil {
+		// todo(lobkovilya): take matched for ZoneEgress policies from proxy.ZoneEgressProxy.MeshResourcesList[].Dynamic
+	}
+
 	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
 	if !ok {
 		return nil
