@@ -38,7 +38,7 @@ run/universal/postgres/ssl: ## Dev: Run Control Plane locally in universal mode 
 	$(MAKE) run/universal/postgres
 
 .PHONY: run/universal/postgres
-run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with Postgres store
+run/universal/postgres: build/kuma-cp ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
@@ -50,7 +50,7 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 	KUMA_STORE_POSTGRES_TLS_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
 	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
 	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
-	$(GO_RUN) ./app/kuma-cp/main.go migrate up --log-level=debug
+	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp migrate up --log-level=debug
 
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
@@ -63,7 +63,7 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 	KUMA_STORE_POSTGRES_TLS_CERT_PATH=$(POSTGRES_SSL_CERT_PATH) \
 	KUMA_STORE_POSTGRES_TLS_KEY_PATH=$(POSTGRES_SSL_KEY_PATH) \
 	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
-	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
+	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp run --log-level=debug
 
 .PHONY: run/example/envoy/universal
 run/example/envoy/universal: run/echo-server run/example/envoy
@@ -80,10 +80,7 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 	curl -s localhost:$(ENVOY_ADMIN_PORT)/config_dump
 
 .PHONY: run/universal/memory
-run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
-	KUMA_ENVIRONMENT=universal \
-	KUMA_STORE_TYPE=memory \
-	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
+run/universal/memory: run/kuma-cp ## Dev: Run Control Plane locally in universal mode with in-memory store
 
 .PHONY: start/postgres
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
@@ -102,18 +99,24 @@ start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial s
 stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
 	$(MAKE) stop/postgres
 
+.PHONY: run/kuma-cp
+run/kuma-cp: build/kumactl build/kuma-cp ## Dev: Run `kuma-dp` locally
+	KUMA_ENVIRONMENT=universal \
+	KUMA_STORE_TYPE=memory \
+	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp run --log-level=debug
+
 .PHONY: run/kuma-dp
-run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
+run/kuma-dp: build/kumactl build/kuma-dp ## Dev: Run `kuma-dp` locally
 	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
-	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
+	$(BUILD_ARTIFACTS_DIR)/kuma-dp/kuma-dp run --log-level=debug
 
 .PHONY: run/xds-client
 run/xds-client:
 	go run ./tools/xds-client/... run --dps "${NUM_OF_DATAPLANES}" --services "${NUM_OF_SERVICES}" --xds-server-address "${KUMA_CP_ADDRESS}"
 
 .PHONY: run/echo-server
-run/echo-server:
-	go run test/server/main.go echo --port=$(EXAMPLE_DATAPLANE_SERVICE_PORT) &
+run/echo-server: build/test-server
+	$(BUILD_ARTIFACTS_DIR)/test-server/test-server echo --port=$(EXAMPLE_DATAPLANE_SERVICE_PORT)
