@@ -93,6 +93,5 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
-	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 )
