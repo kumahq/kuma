@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
@@ -233,3 +234,4 @@ var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)
+var _ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
