@@ -29,3 +29,11 @@ func (c *controlPlaneIdCallbacks) OnStreamResponse(ctx context.Context, streamID
 		}
 	}
 }
+
+func (c *controlPlaneIdCallbacks) OnStreamDeltaResponse(streamID int64, request *envoy_discovery.DeltaDiscoveryRequest, response *envoy_discovery.DeltaDiscoveryResponse) {
+	if c.id != "" {
+		response.ControlPlane = &envoy_core.ControlPlane{
+			Identifier: c.id,
+		}
+	}
+}
