@@ -98,5 +98,7 @@ type PolicyPlugin interface {
 
 type EgressPolicyPlugin interface {
 	PolicyPlugin
+	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
+	// should be applied on the zone egress.
 	EgressMatchedPolicies(*core_mesh.ExternalServiceResource, xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
 }

@@ -17,7 +17,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 	policies := resources.ListOrEmpty(rType)
 
 	if len(policies.GetItems()) == 0 {
-		return core_xds.TypedMatchingPolicies{}, nil
+		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
 	p := policies.GetItems()[0]
