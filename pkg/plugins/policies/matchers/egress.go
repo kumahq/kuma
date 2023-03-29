@@ -27,6 +27,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 	}
 
 	return core_xds.TypedMatchingPolicies{
+		Type:      rType,
 		FromRules: fr,
 		ToRules:   tr,
 	}, nil

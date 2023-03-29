@@ -136,7 +136,7 @@ func (p *EgressProxyBuilder) Build(
 					return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
 				}
 				if res.Type == "" {
-					return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", name)
+					return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
 				}
 				policies[res.Type] = res
 			}
