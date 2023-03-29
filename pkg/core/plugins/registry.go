@@ -26,7 +26,6 @@ const (
 	Universal  PluginName = "universal"
 	Memory     PluginName = "memory"
 	Postgres   PluginName = "postgres"
-	Pgx        PluginName = "pgx"
 
 	CaBuiltin  PluginName = "builtin"
 	CaProvided PluginName = "provided"

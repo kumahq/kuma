@@ -7,7 +7,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -68,14 +67,7 @@ func migrate(cfg kuma_cp.Config) error {
 		pluginName = core_plugins.Memory
 		pluginConfig = nil
 	case store.PostgresStore:
-		switch cfg.Store.Postgres.DriverName {
-		case postgres.DriverNamePgx:
-			pluginName = core_plugins.Pgx
-		case postgres.DriverNamePq:
-			pluginName = core_plugins.Postgres
-		default:
-			return errors.Errorf("unknown driver name %s", cfg.Store.Postgres.DriverName)
-		}
+		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
