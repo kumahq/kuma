@@ -1,10 +1,10 @@
 package postgres
 
 import (
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
