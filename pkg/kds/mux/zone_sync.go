@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,8 +49,7 @@ var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
-			clientLog.Error(err, "closing KDS stream following a callback error")
-			return err
+			return errors.Wrap(err, "closing KDS stream following a callback error")
 		}
 	}
 	processingErrorsCh := make(chan error)
@@ -60,19 +60,16 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		return nil
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
-			clientLog.Error(err, "GlobalToZoneSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			return err
+			return errors.Wrap(err, "GlobalToZoneSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
-		clientLog.Error(err, "GlobalToZoneSync rpc stream failed prematurely, will restart in background")
-		return err
+		return errors.Wrap(err, "GlobalToZoneSync rpc stream failed prematurely, will restart in background")
 	}
 }
 
 func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
-			clientLog.Error(err, "closing KDS stream following a callback error")
-			return err
+			return errors.Wrap(err, "closing KDS stream following a callback error")
 		}
 	}
 	processingErrorsCh := make(chan error)
@@ -83,10 +80,8 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		return nil
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
-			clientLog.Error(err, "ZoneToGlobalSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			return err
+			return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
-		clientLog.Error(err, "ZoneToGlobalSync rpc stream failed prematurely, will restart in background")
-		return err
+		return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed prematurely, will restart in background")
 	}
 }

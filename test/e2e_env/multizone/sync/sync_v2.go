@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -23,7 +24,7 @@ func SyncV2() {
 		// Global
 		global = NewUniversalCluster(NewTestingT(), clusterNameGlobal, Silent)
 		err := NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)).
 			Install(MTLSMeshUniversal(meshName)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
@@ -34,37 +35,39 @@ func SyncV2() {
 		wg.Add(2)
 
 		// Zone1 cluster
+		zone1Options := append(
+			[]framework.KumaDeploymentOption{
+				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "true"),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				WithHDS(false),
+			},
+			framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...,
+		)
 		zone1 = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
 		go func() {
 			defer GinkgoRecover()
 			defer wg.Done()
 			err := NewClusterSetup().
-				Install(Kuma(core.Zone,
-					WithEnv("KUMA_EXPERIMENTAL_DELTA_ENABLED", "true"),
-					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-					WithHDS(false),
-				)).
-				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
-				Install(TestServerUniversal("test-service", meshName, WithServiceName("test-service"))).
+				Install(Kuma(core.Zone, zone1Options...)).
 				Setup(zone1)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 
 		// Zone2 cluster
+		zone2Options := append(
+			[]framework.KumaDeploymentOption{
+				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "true"),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				WithHDS(false),
+			},
+			framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
+		)
 		zone2 = NewUniversalCluster(NewTestingT(), clusterName2, Silent)
 		go func() {
 			defer GinkgoRecover()
 			defer wg.Done()
 			err := NewClusterSetup().
-				Install(Kuma(core.Zone,
-					WithEnv("KUMA_EXPERIMENTAL_DELTA_ENABLED", "true"),
-					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-					WithHDS(false),
-				)).
-				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
-				Install(TestServerUniversal("test-service-zone2", meshName, WithServiceName("test-service-zone2"))).
+				Install(Kuma(core.Zone, zone2Options...)).
 				Setup(zone2)
 			Expect(err).ToNot(HaveOccurred())
 		}()

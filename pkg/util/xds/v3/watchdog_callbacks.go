@@ -142,7 +142,7 @@ func (cb *watchdogCallbacks) OnDeltaStreamClosed(streamID int64, node *envoy_cor
 	}
 }
 
-// OnDeltaStreamRequest is called once a request is received on a stream.
+// OnStreamDeltaRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_discovery.DeltaDiscoveryRequest) error {
 	cb.mu.RLock() // read access to the map of all ADS streams

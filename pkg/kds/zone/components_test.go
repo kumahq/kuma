@@ -226,7 +226,7 @@ var _ = Describe("Zone Sync", func() {
 		})
 	})
 
-	Context("ZoneToGlobal", func() {
+	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer
 		newPolicySyncClient := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) kds_client_v2.KDSSyncClient {
 			return kds_client_v2.NewKDSSyncClient(
