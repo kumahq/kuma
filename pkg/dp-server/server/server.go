@@ -139,3 +139,7 @@ func (d *DpServer) HTTPMux() *http.ServeMux {
 func (d *DpServer) GrpcServer() *grpc.Server {
 	return d.grpcServer
 }
+
+func (d *DpServer) SetFilter(filter Filter) {
+	d.filter = filter
+}
