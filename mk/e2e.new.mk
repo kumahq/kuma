@@ -20,6 +20,7 @@ E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
 E2E_K8S_BIN_DEPS+= build/kumactl images
 E2E_UNIVERSAL_BIN_DEPS+= build/kumactl images/test
+E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
 endif
 
 # We don't use `go list` here because Ginkgo requires disk path names,
