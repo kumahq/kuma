@@ -30,5 +30,5 @@ var _ = Describe("KubernetesStore template", func() {
 			},
 			Scheme: k8sClientScheme,
 		}
-	})
+	}, "kubernetes")
 })

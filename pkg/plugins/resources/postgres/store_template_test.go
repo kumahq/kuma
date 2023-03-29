@@ -13,36 +13,35 @@ import (
 
 var _ = Describe("PostgresStore template", func() {
 	createStore := func(storeName string) func() store.ResourceStore {
-		cfg, err := c.Config(test_postgres.WithRandomDb)
-		Expect(err).ToNot(HaveOccurred())
-		cfg.MaxOpenConnections = 2
-
-		pqMetrics, err := core_metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-
-		pgxMetrics, err := core_metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-
-		_, err = MigrateDb(*cfg)
-		Expect(err).ToNot(HaveOccurred())
-
-		var pStore store.ResourceStore
-		if storeName == "pgx" {
-			cfg.DriverName = postgres.DriverNamePgx
-			pStore, err = NewPgxStore(pgxMetrics, *cfg)
-		} else {
-			cfg.DriverName = postgres.DriverNamePq
-			pStore, err = NewPqStore(pqMetrics, *cfg)
-		}
-		Expect(err).ToNot(HaveOccurred())
-
 		return func() store.ResourceStore {
+			cfg, err := c.Config(test_postgres.WithRandomDb)
+			Expect(err).ToNot(HaveOccurred())
+			cfg.MaxOpenConnections = 2
+
+			pqMetrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
+
+			pgxMetrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = MigrateDb(*cfg)
+			Expect(err).ToNot(HaveOccurred())
+
+			var pStore store.ResourceStore
+			if storeName == "pgx" {
+				cfg.DriverName = postgres.DriverNamePgx
+				pStore, err = NewPgxStore(pgxMetrics, *cfg)
+			} else {
+				cfg.DriverName = postgres.DriverNamePq
+				pStore, err = NewPqStore(pqMetrics, *cfg)
+			}
+			Expect(err).ToNot(HaveOccurred())
 			return pStore
 		}
 	}
 
-	test_store.ExecuteStoreTests(createStore("pgx"))
-	test_store.ExecuteOwnerTests(createStore("pgx"))
-	test_store.ExecuteStoreTests(createStore("pq"))
-	test_store.ExecuteOwnerTests(createStore("pq"))
+	test_store.ExecuteStoreTests(createStore("pgx"), "pgx")
+	test_store.ExecuteOwnerTests(createStore("pgx"), "pgx")
+	test_store.ExecuteStoreTests(createStore("pq"), "pq")
+	test_store.ExecuteOwnerTests(createStore("pq"), "pq")
 })
