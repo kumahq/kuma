@@ -120,7 +120,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
-	if c.experimantalConfig.DeltaEnabled {
+	if c.experimantalConfig.KDSDeltaEnabled {
 		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
 	} else {
 		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
@@ -178,16 +178,14 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		return
 	}
 	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
-		log.Error(err, "closing Global to Zone Sync stream after callback error")
-		errorCh <- err
+		errorCh <- errors.Wrap(err, "closing Global to Zone Sync stream after callback error")
 		return
 	}
 	<-stop
 	log.Info("Global to Zone Sync rpc stream stopped")
 	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
+		errorCh <- errors.Wrap(err, "CloseSend returned an error")
 	}
-	errorCh <- err
 }
 
 func (c *client) startXDSConfigs(

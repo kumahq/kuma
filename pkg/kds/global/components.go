@@ -109,10 +109,9 @@ func Setup(rt runtime.Runtime) error {
 			errChan <- err
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
-		log.Info("new session created")
+		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(log, clientId, rt.ResourceManager()); err != nil {
-			log.Error(err, "Global CP could not create a zone")
-			errChan <- err
+			errChan <- errors.Wrap(err, "Global CP could not create a zone")
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
 			errChan <- err
