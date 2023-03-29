@@ -128,6 +128,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				svcAnnotations[k] = v
 			}
 
+			svcLabels := map[string]string{}
+			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Labels {
+				svcLabels[k] = v
+			}
+
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: gatewayInstance.Namespace,
@@ -252,6 +257,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				},
 			)
 
+			container.SecurityContext.AllowPrivilegeEscalation = boolPointer(false)
+
 			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
 			if err != nil {
 				r.Log.Info("couldn't determine Sysctl `net.ipv4.ip_unprivileged_port_start` support", "error", err)
@@ -273,9 +280,43 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
 			}
 
+			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != 0 {
+				if securityContext == nil {
+					securityContext = &kube_core.PodSecurityContext{
+						FSGroup: &fsGroup,
+					}
+				} else {
+					securityContext.FSGroup = &fsGroup
+				}
+			}
+
+			if readOnlyRFS := gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem; readOnlyRFS {
+				container.SecurityContext.ReadOnlyRootFilesystem = &readOnlyRFS
+			}
+
+			container.VolumeMounts = []kube_core.VolumeMount{
+				{
+					Name:      "tmp-dir",
+					MountPath: "/tmp",
+				},
+			}
+
 			podSpec := kube_core.PodSpec{
 				SecurityContext: securityContext,
 				Containers:      []kube_core.Container{container},
+			}
+
+			if serviceAccountName := gatewayInstance.Spec.PodTemplate.Spec.ServiceAccountName; serviceAccountName != "" {
+				podSpec.ServiceAccountName = serviceAccountName
+			}
+
+			podSpec.Volumes = []kube_core.Volume{
+				{
+					Name: "tmp-dir",
+					VolumeSource: kube_core.VolumeSource{
+						EmptyDir: &kube_core.EmptyDirVolumeSource{},
+					},
+				},
 			}
 
 			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
@@ -283,14 +324,22 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
 			}
 
-			annotations := map[string]string{
+			podAnnotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 				metadata.KumaTagsAnnotation:    string(jsonTags),
 				metadata.KumaMeshAnnotation:    mesh,
 			}
 
-			labels := k8sSelector(gatewayInstance.Name)
-			labels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
+			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Annotations {
+				podAnnotations[k] = v
+			}
+
+			podLabels := k8sSelector(gatewayInstance.Name)
+			podLabels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
+
+			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Labels {
+				podLabels[k] = v
+			}
 
 			deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
 			deployment.Spec.Selector = &kube_meta.LabelSelector{
@@ -298,8 +347,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 			deployment.Spec.Template = kube_core.PodTemplateSpec{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      labels,
-					Annotations: annotations,
+					Labels:      podLabels,
+					Annotations: podAnnotations,
 				},
 				Spec: podSpec,
 			}
@@ -452,4 +501,8 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		// reconciling both Instances.
 		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
+}
+
+func boolPointer(b bool) *bool {
+	return &b
 }

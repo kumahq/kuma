@@ -54,6 +54,11 @@ type MeshGatewayCommonConfig struct {
 	//
 	// +optional
 	ServiceTemplate MeshGatewayServiceTemplate `json:"serviceTemplate,omitempty"`
+
+	// PodTemplate configures the Pod owned by this config.
+	//
+	// +optional
+	PodTemplate MeshGatewayPodTemplate `json:"podTemplate,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -61,7 +66,7 @@ type MeshGatewayCommonConfig struct {
 // MeshGatewayServiceTemplate holds configuration for a Service.
 type MeshGatewayServiceTemplate struct {
 	// Metadata holds metadata configuration for a Service.
-	Metadata MeshGatewayServiceMetadata `json:"metadata,omitempty"`
+	Metadata MeshGatewayObjectMetadata `json:"metadata,omitempty"`
 
 	// Spec holds some customizable fields of a Service.
 	Spec MeshGatewayServiceSpec `json:"spec,omitempty"`
@@ -69,10 +74,24 @@ type MeshGatewayServiceTemplate struct {
 
 // +k8s:deepcopy-gen=true
 
-// MeshGatewayServiceMetadata holds Service metadata.
-type MeshGatewayServiceMetadata struct {
-	// Annotations holds annotations to be set on a Service.
+// MeshGatewayPodTemplate holds configuration for a Service.
+type MeshGatewayPodTemplate struct {
+	// Metadata holds metadata configuration for a Service.
+	Metadata MeshGatewayObjectMetadata `json:"metadata,omitempty"`
+
+	// Spec holds some customizable fields of a Pod.
+	Spec MeshGatewayPodSpec `json:"spec,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayObjectMetadata holds Service metadata.
+type MeshGatewayObjectMetadata struct {
+	// Annotations holds annotations to be set on an object.
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels holds labels to be set on an objects.
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -82,6 +101,49 @@ type MeshGatewayServiceSpec struct {
 	// LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
 	// +optional
 	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayPodSpec holds customizable fields of a Service spec.
+type MeshGatewayPodSpec struct {
+	// ServiceAccountName corresponds to PodSpec.ServiceAccountName.
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// PodSecurityContext corresponds to PodSpec.SecurityContext
+	// +optional
+	PodSecurityContext `json:"securityContext,omitempty"`
+
+	// Container corresponds to PodSpec.Container
+	// +optional
+	Container `json:"container,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// PodSecurityContext corresponds to PodSpec.SecurityContext
+type PodSecurityContext struct {
+	// FSGroup corresponds to PodSpec.SecurityContext.FSGroup
+	// +optional
+	FSGroup int64 `json:"fsGroup,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// Container corresponds to PodSpec.Container
+type Container struct {
+	// ContainerSecurityContext corresponds to PodSpec.Container.SecurityContext
+	SecurityContext `json:"securityContext,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// SecurityContext corresponds to PodSpec.Container.SecurityContext
+type SecurityContext struct {
+	// ReadOnlyRootFilesystem corresponds to PodSpec.Container.SecurityContext.ReadOnlyRootFilesystem
+	// +optional
+	ReadOnlyRootFilesystem bool `json:"readOnlyRootFilesystem,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
