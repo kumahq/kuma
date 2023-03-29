@@ -187,35 +187,5 @@ var _ = Describe("PostgresStoreConfig", func() {
 			},
 			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),
-		Entry("Unsupported setting used with pgx driver", validateTestCase{
-			config: postgres.PostgresStoreConfig{
-				Host:                 "localhost",
-				User:                 "postgres",
-				Password:             "postgres",
-				DbName:               "kuma",
-				TLS:                  postgres.DefaultTLSPostgresStoreConfig(),
-				MinReconnectInterval: config_types.Duration{Duration: 1 * time.Second},
-				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
-
-				DriverName:         postgres.DriverNamePgx,
-				MaxIdleConnections: 3,
-			},
-			error: "MaxIdleConnections does not have an equivalent for pgx driver. If you need this setting consider using lib/pq as a postgres driver by setting driverName='postgres' or setting KUMA_STORE_POSTGRES_DRIVER_NAME='postgres' env variable.",
-		}),
-		Entry("Unsupported setting used with pq driver", validateTestCase{
-			config: postgres.PostgresStoreConfig{
-				Host:                 "localhost",
-				User:                 "postgres",
-				Password:             "postgres",
-				DbName:               "kuma",
-				TLS:                  postgres.DefaultTLSPostgresStoreConfig(),
-				MinReconnectInterval: config_types.Duration{Duration: 1 * time.Second},
-				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
-
-				DriverName:         postgres.DriverNamePq,
-				MinOpenConnections: 3,
-			},
-			error: "MinOpenConnections does not have an equivalent for pq driver. If you need this setting consider using pgx as a postgres driver by setting driverName='pgx' or setting KUMA_STORE_POSTGRES_DRIVER_NAME='pgx' env variable.",
-		}),
 	)
 })

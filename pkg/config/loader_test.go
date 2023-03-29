@@ -98,6 +98,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DriverName).To(Equal("postgres"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
+			Expect(cfg.Store.Postgres.MaxConnectionLifetime.Duration).To(Equal(123 * time.Minute))
+			Expect(cfg.Store.Postgres.MaxConnectionLifetimeJitter.Duration).To(Equal(456 * time.Second))
+			Expect(cfg.Store.Postgres.HealthCheckPeriod.Duration).To(Equal(78 * time.Second))
+			Expect(cfg.Store.Postgres.MinOpenConnections).To(Equal(3))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
@@ -339,7 +343,11 @@ store:
     dbName: kuma
     driverName: postgres
     connectionTimeout: 10
+    minOpenConnections: 3
     maxOpenConnections: 300
+    maxConnectionLifetime: 123m
+    maxConnectionLifetimeJitter: 456s
+    healthCheckPeriod: 78s
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
@@ -648,8 +656,12 @@ proxy:
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
 				"KUMA_STORE_POSTGRES_DRIVER_NAME":                                                          "postgres",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
+				"KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS":                                                 "3",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
+				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME":                                              "123m",
+				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER":                                       "456s",
+				"KUMA_STORE_POSTGRES_HEALTH_CHECK_PERIOD":                                                  "78s",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",

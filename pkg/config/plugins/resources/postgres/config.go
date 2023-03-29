@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 const (
@@ -18,14 +19,16 @@ const (
 	DefaultMinOpenConnections = 0
 )
 
-var _ config.Config = &PostgresStoreConfig{}
+var (
+	_      config.Config = &PostgresStoreConfig{}
+	logger               = core.Log.WithName("postgres-config")
+)
 
 var (
 	DefaultMinReconnectInterval        = config_types.Duration{Duration: 10 * time.Second}
 	DefaultMaxReconnectInterval        = config_types.Duration{Duration: 60 * time.Second}
 	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
 	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 0}
-	DefaultMaxConnIdleTime             = config_types.Duration{Duration: time.Minute * 30}
 	DefaultHealthCheckPeriod           = config_types.Duration{Duration: time.Minute}
 	// above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
@@ -199,35 +202,36 @@ func (p *PostgresStoreConfig) Validate() error {
 	if p.MinReconnectInterval.Duration >= p.MaxReconnectInterval.Duration {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
 	}
+	warning := "[WARNING] "
 	switch p.DriverName {
 	case DriverNamePgx:
 		pqAlternativeMessage := "does not have an equivalent for pgx driver. " +
 			"If you need this setting consider using lib/pq as a postgres driver by setting driverName='postgres' or " +
 			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='postgres' env variable."
 		if p.MaxIdleConnections != DefaultMaxIdleConnections {
-			return errors.New("MaxIdleConnections " + pqAlternativeMessage)
+			logger.Info(warning + "MaxIdleConnections " + pqAlternativeMessage)
 		}
 		if p.MinReconnectInterval != DefaultMinReconnectInterval {
-			return errors.New("MinReconnectInterval " + pqAlternativeMessage)
+			logger.Info(warning + "MinReconnectInterval " + pqAlternativeMessage)
 		}
 		if p.MaxReconnectInterval != DefaultMaxReconnectInterval {
-			return errors.New("MaxReconnectInterval " + pqAlternativeMessage)
+			logger.Info(warning + "MaxReconnectInterval " + pqAlternativeMessage)
 		}
 	case DriverNamePq:
 		pgxAlternativeMessage := "does not have an equivalent for pq driver. " +
 			"If you need this setting consider using pgx as a postgres driver by setting driverName='pgx' or " +
 			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='pgx' env variable."
 		if p.MinOpenConnections != DefaultMinOpenConnections {
-			return errors.New("MinOpenConnections " + pgxAlternativeMessage)
+			logger.Info(warning + "MinOpenConnections " + pgxAlternativeMessage)
 		}
 		if p.MaxConnectionLifetime != DefaultMaxConnectionLifetime {
-			return errors.New("MaxConnectionLifetime " + pgxAlternativeMessage)
+			logger.Info(warning + "MaxConnectionLifetime " + pgxAlternativeMessage)
 		}
 		if p.MaxConnectionLifetimeJitter != DefaultMaxConnectionLifetimeJitter {
-			return errors.New("MaxConnectionLifetimeJitter " + pgxAlternativeMessage)
+			logger.Info(warning + "MaxConnectionLifetimeJitter " + pgxAlternativeMessage)
 		}
 		if p.HealthCheckPeriod != DefaultHealthCheckPeriod {
-			return errors.New("HealthCheckPeriod " + pgxAlternativeMessage)
+			logger.Info(warning + "HealthCheckPeriod " + pgxAlternativeMessage)
 		}
 	}
 
