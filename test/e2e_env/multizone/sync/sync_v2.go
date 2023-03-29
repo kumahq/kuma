@@ -49,6 +49,8 @@ func SyncV2() {
 			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone, zone1Options...)).
+				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 				Setup(zone1)
 			Expect(err).ToNot(HaveOccurred())
 		}()
@@ -68,6 +70,8 @@ func SyncV2() {
 			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone, zone2Options...)).
+				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 				Setup(zone2)
 			Expect(err).ToNot(HaveOccurred())
 		}()
