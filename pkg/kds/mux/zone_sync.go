@@ -42,7 +42,6 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
 			return errors.Wrap(err, "closing KDS stream following a callback error")
-
 		}
 	}
 	processingErrorsCh := make(chan error)
