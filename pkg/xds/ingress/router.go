@@ -8,12 +8,12 @@ import (
 
 func BuildDestinationMap(mesh string, ingress *core_mesh.ZoneIngressResource) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
-	for _, service := range ingress.Spec.GetAvailableServices() {
-		if mesh != ingress.GetMesh() {
+	for _, svc := range ingress.Spec.GetAvailableServices() {
+		if mesh != svc.GetMesh() {
 			continue
 		}
-		service := ingress.Tags[mesh_proto.ServiceTag]
-		destinations[service] = destinations[service].Add(mesh_proto.MatchTags(ingress.Tags))
+		service := svc.Tags[mesh_proto.ServiceTag]
+		destinations[service] = destinations[service].Add(mesh_proto.MatchTags(svc.Tags))
 	}
 	return destinations
 }
