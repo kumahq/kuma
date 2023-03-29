@@ -89,7 +89,9 @@ var _ = Describe("Bootstrap Server", func() {
 			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
 			ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},
 		}
-		dpServer := server.NewDpServer(dpServerCfg, metrics)
+		dpServer := server.NewDpServer(dpServerCfg, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+			return true
+		})
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
