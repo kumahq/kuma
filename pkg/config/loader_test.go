@@ -661,7 +661,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME":                                              "123m",
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER":                                       "456s",
-				"KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL":                                                  "78s",
+				"KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL":                                                "78s",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
