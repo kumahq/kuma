@@ -220,14 +220,14 @@ func (p *PostgresStoreConfig) Validate() error {
 		if p.MinOpenConnections != DefaultMinOpenConnections {
 			return errors.New("MinOpenConnections " + pgxAlternativeMessage)
 		}
-		if p.MaxConnectionLifetime != DefaultMinReconnectInterval {
-			return errors.New("MinReconnectInterval " + pgxAlternativeMessage)
+		if p.MaxConnectionLifetime != DefaultMaxConnectionLifetime {
+			return errors.New("MaxConnectionLifetime " + pgxAlternativeMessage)
 		}
-		if p.MaxConnectionLifetimeJitter != DefaultMaxReconnectInterval {
-			return errors.New("MaxReconnectInterval " + pgxAlternativeMessage)
+		if p.MaxConnectionLifetimeJitter != DefaultMaxConnectionLifetimeJitter {
+			return errors.New("MaxConnectionLifetimeJitter " + pgxAlternativeMessage)
 		}
-		if p.HealthCheckPeriod != DefaultMaxReconnectInterval {
-			return errors.New("MaxReconnectInterval " + pgxAlternativeMessage)
+		if p.HealthCheckPeriod != DefaultHealthCheckPeriod {
+			return errors.New("HealthCheckPeriod " + pgxAlternativeMessage)
 		}
 	}
 
