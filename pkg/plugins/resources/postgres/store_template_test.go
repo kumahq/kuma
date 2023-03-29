@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("PostgresStore template", func() {
-	createStore := func(storeName string) store.ResourceStore {
+	createStore := func(storeName string) func() store.ResourceStore {
 		cfg, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 		cfg.MaxOpenConnections = 2
@@ -36,11 +36,13 @@ var _ = Describe("PostgresStore template", func() {
 		}
 		Expect(err).ToNot(HaveOccurred())
 
-		return pStore
+		return func() store.ResourceStore {
+			return pStore
+		}
 	}
 
-	test_store.ExecuteStoreTests(createStore, "pgx")
-	test_store.ExecuteOwnerTests(createStore, "pgx")
-	test_store.ExecuteStoreTests(createStore, "pq")
-	test_store.ExecuteOwnerTests(createStore, "pq")
+	test_store.ExecuteStoreTests(createStore("pgx"))
+	test_store.ExecuteOwnerTests(createStore("pgx"))
+	test_store.ExecuteStoreTests(createStore("pq"))
+	test_store.ExecuteOwnerTests(createStore("pq"))
 })
