@@ -27,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	kds_cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
@@ -129,13 +128,8 @@ func Setup(rt runtime.Runtime) error {
 		if err != nil {
 			errChan <- err
 		}
-		initStoreState, err := getInitStateMap(stream.Context(), reg, rt.ReadOnlyResourceManager())
-		if err != nil {
-			errChan <- err
-		}
-
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "", initStoreState)
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
 		sink := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream,
 			kds_sync_store_v2.GlobalSyncCallback(resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
 		go func() {
@@ -158,25 +152,6 @@ func Setup(rt runtime.Runtime) error {
 			rt.KDSContext().GlobalServerFiltersV2,
 		),
 	))
-}
-
-func getInitStateMap(ctx context.Context, reg registry.TypeRegistry, rm core_manager.ReadOnlyResourceManager) (kds_cache_v2.ResourceVersionMap, error) {
-	initStoreState := kds_cache_v2.ResourceVersionMap{}
-	for _, typ := range reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)) {
-		storedResources, err := registry.Global().NewList(typ)
-		if err != nil {
-			return nil, err
-		}
-		if err := rm.List(ctx, storedResources); err != nil {
-			return nil, err
-		}
-		resources := kds_cache_v2.NameToVersion{}
-		for _, r := range storedResources.GetItems() {
-			resources[r.GetMeta().GetName()] = ""
-		}
-		initStoreState[typ] = resources
-	}
-	return initStoreState, nil
 }
 
 func createZoneIfAbsent(log logr.Logger, name string, resManager core_manager.ResourceManager) error {

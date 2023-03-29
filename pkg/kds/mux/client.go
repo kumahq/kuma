@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -41,10 +40,6 @@ type client struct {
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
-	// stores map[typ]map[resource-name]version in case of reconnect
-	// sends these information in first request so server responds only
-	// with real changes
-	deltaInitState cache_v2.ResourceVersionMap
 }
 
 func NewClient(
@@ -70,7 +65,6 @@ func NewClient(
 		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
-		deltaInitState:      cache_v2.ResourceVersionMap{},
 	}
 }
 
@@ -181,7 +175,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
+	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream); err != nil {
 		errorCh <- errors.Wrap(err, "closing Global to Zone Sync stream after callback error")
 		return
 	}
