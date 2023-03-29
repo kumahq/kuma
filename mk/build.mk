@@ -23,7 +23,7 @@ COREDNS_EXT ?=
 COREDNS_VERSION = v1.10.1
 
 # List of binaries that we have build/release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni
 # List of binaries that we have build/test build roles for.
 BUILD_TEST_BINARIES := test-server
 

@@ -30,7 +30,8 @@ func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayap
 // mergeHTTPRouteStatus updates the route status with the list of conditions for
 // each parent ref by mutating the given HTTPRoute.
 func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentConditions) {
-	var mergedStatuses []gatewayapi.RouteParentStatus
+	// we cannot set a `nil` list
+	mergedStatuses := []gatewayapi.RouteParentStatus{}
 	var previousStatuses []gatewayapi.RouteParentStatus
 
 	// partition statuses based on whether we control them
