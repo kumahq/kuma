@@ -36,16 +36,16 @@ func BuildExternalServicesEndpointMap(
 func BuildEgressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
-	thisZone string,
+	localZone string,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, thisZone, mesh, nil)
+	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil)
 
-	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, mesh, loader, thisZone)
+	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, mesh, loader, localZone)
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -63,7 +63,7 @@ func BuildEgressEndpointMap(
 
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
-	thisZone string,
+	localZone string,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
@@ -71,16 +71,16 @@ func BuildEdsEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, thisZone, mesh, nil)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
 
-	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, thisZone)
+	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone)
 
 	if mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh, thisZone)
+		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh, localZone)
 	}
 
 	return outbound
@@ -111,7 +111,7 @@ func fillDataplaneOutbounds(
 	dataplanes []*core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	endpointWeight uint32,
-	thisZone string,
+	localZone string,
 ) {
 	for _, dataplane := range dataplanes {
 		dpSpec := dataplane.Spec
@@ -131,7 +131,7 @@ func fillDataplaneOutbounds(
 				Port:     inboundPort,
 				Tags:     inboundTags,
 				Weight:   endpointWeight,
-				Locality: GetLocality(thisZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 			})
 		}
 	}
@@ -173,7 +173,7 @@ func CrossMeshEndpointTags(
 func BuildCrossMeshEndpointMap(
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource,
-	thisZone string,
+	localZone string,
 	gateways []*core_mesh.MeshGatewayResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
@@ -185,7 +185,7 @@ func BuildCrossMeshEndpointMap(
 		outbound,
 		zoneIngresses,
 		zoneEgresses,
-		thisZone,
+		localZone,
 		mesh,
 		otherMesh,
 	)
@@ -222,7 +222,7 @@ func BuildCrossMeshEndpointMap(
 				Port:     listener.GetPort(),
 				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
 				Weight:   endpointWeight,
-				Locality: GetLocality(thisZone, getZone(dpTags), mesh.LocalityAwareLbEnabled()),
+				Locality: GetLocality(localZone, getZone(dpTags), mesh.LocalityAwareLbEnabled()),
 			})
 		}
 	}
@@ -241,14 +241,14 @@ func fillIngressOutbounds(
 	outbound core_xds.EndpointMap,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
-	thisZone string,
+	localZone string,
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
 ) uint32 {
 	ziInstances := map[string]struct{}{}
 
 	for _, zi := range zoneIngresses {
-		if !zi.IsRemoteIngress(thisZone) {
+		if !zi.IsRemoteIngress(localZone) {
 			continue
 		}
 
@@ -310,7 +310,7 @@ func fillIngressOutbounds(
 			serviceTags := cloneTags(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
-			locality := GetLocality(thisZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
 			// TODO (bartsmykla): We have to check if it will be ok in a situation
 			//  where we have few zone ingresses with the same services, as
@@ -410,13 +410,13 @@ func fillExternalServicesOutboundsThroughEgress(
 	externalServices []*core_mesh.ExternalServiceResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
-	thisZone string,
+	localZone string,
 ) {
 	for _, externalService := range externalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := cloneTags(externalService.Spec.GetTags())
 		serviceName := serviceTags[mesh_proto.ServiceTag]
-		locality := GetLocality(thisZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
 		for _, ze := range zoneEgresses {
 			zeNetworking := ze.Spec.GetNetworking()
@@ -515,7 +515,7 @@ const (
 	priorityRemote = 1
 )
 
-func GetLocality(thisZone string, otherZone *string, localityAwareness bool) *core_xds.Locality {
+func GetLocality(localZone string, otherZone *string, localityAwareness bool) *core_xds.Locality {
 	if otherZone == nil {
 		return nil
 	}
@@ -531,7 +531,7 @@ func GetLocality(thisZone string, otherZone *string, localityAwareness bool) *co
 
 	var priority uint32 = priorityLocal
 
-	if localityAwareness && thisZone != *otherZone {
+	if localityAwareness && localZone != *otherZone {
 		priority = priorityRemote
 	}
 
