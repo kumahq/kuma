@@ -35,9 +35,10 @@ func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, res
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.ZoneEgressProxy != nil {
-		// todo(lobkovilya): take matched for ZoneEgress policies from proxy.ZoneEgressProxy.MeshResourcesList[].Dynamic
-	}
+	// todo(lobkovilya): take matched for ZoneEgress policies from proxy.ZoneEgressProxy.MeshResourcesList[].Dynamic
+	//  if proxy.ZoneEgressProxy != nil {
+	//    ...
+	//  }
 
 	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
 	if !ok {

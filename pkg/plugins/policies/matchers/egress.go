@@ -54,7 +54,7 @@ func processFromRules(
 	sort.Sort(ByTargetRef(matchedPolicies))
 
 	return core_xds.BuildFromRules(map[core_xds.InboundListener][]core_model.Resource{
-		core_xds.InboundListener{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
+		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
 	})
 }
 

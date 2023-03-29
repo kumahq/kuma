@@ -66,7 +66,6 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			bytes, err := yaml.Marshal(policies.FromRules)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "fromrules")))
 
 	DescribeTable("should return egress toRules for the given external service",
@@ -84,6 +83,5 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			bytes, err := yaml.Marshal(policies.ToRules)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "torules")))
 })

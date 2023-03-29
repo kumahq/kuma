@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("MatchedPolicies", func() {
-
 	type testCase struct {
 		dppFile      string
 		policiesFile string
