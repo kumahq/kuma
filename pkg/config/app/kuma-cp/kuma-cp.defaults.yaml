@@ -31,7 +31,8 @@ store:
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
     # MaxConnectionLifetime (pgx only) is the duration since creation after which a connection will be automatically closed
     maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
-    # MaxConnectionLifetime (pgx only) is the duration since creation after which a connection will be automatically closed
+    # MaxConnectionLifetimeJitter (pgx only) is the duration after maxConnectionLifetime to randomly decide to close a connection.
+    # This helps prevent all connections from being closed at the exact same time, starving the pool.
     maxConnectionLifetimeJitter: "0s" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
     # HealthCheckPeriod (pgx only) is the duration between checks of the health of idle connections.
     healthCheckPeriod: "1m" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_PERIOD
