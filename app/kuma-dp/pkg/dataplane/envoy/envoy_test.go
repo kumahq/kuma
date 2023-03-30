@@ -220,22 +220,19 @@ var _ = Describe("Envoy", func() {
 		}))
 
 		It("should return an error if Envoy binary path is not found", test.Within(10*time.Second, func() {
-			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
-					BinaryPath: "testdata",
+					BinaryPath: "nonexistent",
 					ConfigDir:  configDir,
 				},
 			}
-
-			By("starting a mock dataplane")
-			// when
 			_, err := envoy.New(envoy.Opts{
 				Config:          cfg,
 				BootstrapConfig: []byte{},
 				Stdout:          &bytes.Buffer{},
 				Stderr:          &bytes.Buffer{},
 			})
+
 			Expect(err).To(HaveOccurred())
 		}))
 	})
