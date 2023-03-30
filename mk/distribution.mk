@@ -5,7 +5,7 @@ DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 # The second ENVOY_FLAVOUR is optional
 # COREDNS is always coredns(CORDNS_EXT)
 # If you don't want to include just put skip
-DISTRIBUTION_LIST ?= linux:amd64:coredns:alpine-opt:centos-opt linux:arm64:coredns:alpine-opt darwin:amd64:coredns:darwin-opt darwin:arm64:coredns:darwin-opt
+DISTRIBUTION_LIST ?= linux:amd64:coredns:envoy linux:arm64:coredns:envoy darwin:amd64:coredns:envoy darwin:arm64:coredns:envoy
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE ?= $(PROJECT_NAME)
@@ -22,10 +22,9 @@ DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
 # $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
-# $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`
-# $(5) - an optional extra envoy to add to the distribution (this is useful for centos7 which needs a specific envoy build). It will be called `envoy-centos7`
+# $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`)
 define make_distributions_target
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp  build/artifacts-$(1)-$(2)/kuma-dp $(if $(4),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy) $(if $(5),build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy)
+build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp build/artifacts-$(1)-$(2)/kuma-dp
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
 	cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
@@ -38,14 +37,11 @@ ifneq ($(3),skip)
 	$(MAKE) build/artifacts-$(1)-$(2)/coredns COREDNS_EXT=$(subst coredns,,$(3))
 	cp build/artifacts-$(1)-$(2)/coredns/coredns $$@/bin
 endif
-# A first possible envoy to package
-ifneq ($(4),)
-	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(4)/envoy $$@/bin
-endif
-# A second possible envoy to package
-ifneq ($(5),)
-	cp build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-$(5)/envoy $$@/bin/envoy-centos7
-endif
+
+# Package envoy
+	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT=$(subst envoy,,$(4))
+	cp build/artifacts-$(1)-$(2)/envoy/envoy $$@/bin
+
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555
 	# Text files don't have executable access

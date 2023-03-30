@@ -39,8 +39,8 @@ image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
 	docker build -t kumahq/base-root-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.base-root .
 
 .PHONY: image/envoy/$(1)
-image/envoy/$(1): build/artifacts-linux-$(1)/envoy/$(ENVOY_VERSION)-alpine-$(ENVOY_ARTIFACT_EXT)/envoy ## Dev: Rebuild `envoy` Docker image
-	docker build -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) --build-arg ENVOY_VERSION=$(ENVOY_VERSION)-alpine-$(ENVOY_ARTIFACT_EXT) -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
+image/envoy/$(1): build/artifacts-linux-$(1)/envoy ## Dev: Rebuild `envoy` Docker image
+	docker build -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
 
 .PHONY: image/kuma-cp/$(1)
 image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image

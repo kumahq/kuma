@@ -23,7 +23,7 @@ COREDNS_EXT ?=
 COREDNS_VERSION = v1.10.1
 
 # List of binaries that we have build/release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
 # List of binaries that we have build/test build roles for.
 BUILD_TEST_BINARIES := test-server
 
@@ -94,9 +94,16 @@ build/artifacts-$(1)-$(2)/coredns:
 	[ -f $$(@)/coredns ] || \
 	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
+.PHONY: build/artifacts-$(1)-$(2)/envoy
+build/artifacts-$(1)-$(2)/envoy:
+	mkdir -p $$(@) && \
+	[ -f $$(@)/envoy ] || \
+	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-$(2)-v$(ENVOY_VERSION)$(ENVOY_EXT).tar.gz | tar -C $$(@) -xz
+
 .PHONY: build/artifacts-$(1)-$(2)/test-server
 build/artifacts-$(1)-$(2)/test-server:
 	$(Build_Go_Application) ./test/server
+
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
