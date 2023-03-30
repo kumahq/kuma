@@ -269,7 +269,7 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 }
 
 func (r *pgxResourceStore) Close() error {
-	r.pool.Close() // does not work, at least on my machine
+	r.pool.Close()
 	return nil
 }
 
