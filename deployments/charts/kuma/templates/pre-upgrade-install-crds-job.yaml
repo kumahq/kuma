@@ -83,7 +83,6 @@ data:
       echo "/kuma/crds/crds.yaml not found or empty, it looks like there is no crds to install"
     fi
   save_crds.sh: |
-    #!/usr/bin/env sh
     set -e
     
     crds="$(kumactl install crds --no-config {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
