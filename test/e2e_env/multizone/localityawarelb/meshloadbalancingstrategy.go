@@ -87,7 +87,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(HaveLen(1))
 		}, "30s", "500ms").Should(Succeed())
-
 	})
 
 	It("should load balance to the same internal service when LA is disabled", func() {

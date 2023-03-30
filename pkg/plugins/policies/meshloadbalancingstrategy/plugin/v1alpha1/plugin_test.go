@@ -40,7 +40,6 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 var _ = Describe("MeshLoadBalancingStrategy", func() {
 	type testCase struct {
 		resources []core_xds.Resource
-		toRules   core_xds.ToRules
 		proxy     *core_xds.Proxy
 	}
 	DescribeTable("Apply",
@@ -258,7 +257,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 			},
 		}),
-		FEntry("egress", testCase{
+		Entry("egress", testCase{
 			resources: []core_xds.Resource{
 				{
 					Name:   "mesh-1:eds-cluster",
