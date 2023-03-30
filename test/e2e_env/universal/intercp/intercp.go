@@ -1,6 +1,7 @@
 package intercp
 
 import (
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -10,7 +11,7 @@ import (
 func InterCP() {
 	It("should run inter cp server", func() {
 		Eventually(func(g Gomega) {
-			_, _, err := universal.Cluster.GetKuma().Exec("nc", "-z", "localhost", "5683")
+			_, _, err := universal.Cluster.GetKuma().(*framework.UniversalControlPlane).Exec("nc", "-z", "localhost", "5683")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 	})

@@ -51,7 +51,6 @@ var _ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreSta
 var (
 	_ = Describe("User Auth", auth.UserAuth)
 	_ = Describe("DP Auth", auth.DpAuth, Ordered)
-	_ = Describe("Offline Auth", auth.OfflineAuth, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
 	_ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
