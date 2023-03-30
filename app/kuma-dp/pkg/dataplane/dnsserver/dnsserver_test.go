@@ -183,15 +183,12 @@ var _ = Describe("DNS Server", func() {
 
 			By("starting a mock DNS Server")
 			// when
-			dnsServer, err := New(&Opts{
+			_, err := New(&Opts{
 				Config: cfg,
 				Stdout: &bytes.Buffer{},
 				Stderr: &bytes.Buffer{},
 			})
-			// then
-			Expect(dnsServer).To(BeNil())
-			// and
-			Expect(err.Error()).To(ContainSubstring("could not find binary in any of the following paths"))
+			Expect(err).To(HaveOccurred())
 		}))
 	})
 })

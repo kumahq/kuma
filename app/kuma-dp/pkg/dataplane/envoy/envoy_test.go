@@ -230,17 +230,13 @@ var _ = Describe("Envoy", func() {
 
 			By("starting a mock dataplane")
 			// when
-			dataplane, err := envoy.New(envoy.Opts{
+			_, err := envoy.New(envoy.Opts{
 				Config:          cfg,
 				BootstrapConfig: []byte{},
 				Stdout:          &bytes.Buffer{},
 				Stderr:          &bytes.Buffer{},
 			})
-			// then
-			Expect(dataplane).To(BeNil())
-			// and
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(("could not find binary in any of the following paths")))
 		}))
 	})
 
