@@ -144,6 +144,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			}
 
 			service.Annotations = svcAnnotations
+			service.Labels = svcLabels
 
 			var ports []kube_core.ServicePort
 			seenPorts := map[uint32]struct{}{}
@@ -282,12 +283,9 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != 0 {
 				if securityContext == nil {
-					securityContext = &kube_core.PodSecurityContext{
-						FSGroup: &fsGroup,
-					}
-				} else {
-					securityContext.FSGroup = &fsGroup
+					securityContext = &kube_core.PodSecurityContext{}
 				}
+				securityContext.FSGroup = &fsGroup
 			}
 
 			if readOnlyRFS := gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem; readOnlyRFS {
