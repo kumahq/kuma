@@ -120,9 +120,12 @@ func ApplicationsMetrics() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshNoAggregate),
 				testserver.WithName("test-server-dp-metrics"),
+				testserver.WithoutProbes(), // when application binds to localhost you cannot access it
+				testserver.WithEchoArgs("--ip", "localhost"),
 				testserver.WithPodAnnotations(map[string]string{
 					"prometheus.metrics.kuma.io/aggregate-app-path":       "/my-app",
 					"prometheus.metrics.kuma.io/aggregate-app-port":       "80",
+					"prometheus.metrics.kuma.io/aggregate-app-address":    "localhost",
 					"prometheus.metrics.kuma.io/aggregate-other-app-path": "/other-app",
 					"prometheus.metrics.kuma.io/aggregate-other-app-port": "80",
 				}))).
@@ -222,8 +225,8 @@ func ApplicationsMetrics() {
 
 		// overridden by pod
 		Expect(stdout).To(ContainSubstring("my-app"))
-		// overridden by pod
-		Expect(stdout).To(ContainSubstring("other-app"))
+		// overridden by pod but binding to localhost so it's not available
+		Expect(stdout).ToNot(ContainSubstring("other-app"))
 		// metric from envoy
 		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
 	})

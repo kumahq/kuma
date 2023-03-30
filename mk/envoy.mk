@@ -21,6 +21,7 @@ endif
 # builds from sources. It's possible to build binaries for darwin, linux and centos by specifying GOOS
 # and ENVOY_DISTRO variables. Envoy version could be specified by ENVOY_TAG that accepts git tag or commit
 # hash values.
+# TODO remove the following 4 targets when we are using new envoy builds (when fetch.sh is no longer needed). We'll also be able to add back envoy in `BUILD_RELEASE_BINARIES` in build.mk
 .PHONY: build/envoy
 build/envoy:
 	GOOS=${GOOS} \

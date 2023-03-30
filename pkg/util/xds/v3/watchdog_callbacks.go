@@ -116,3 +116,61 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 	}
 	return nil
 }
+
+// OnDeltaStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
+func (cb *watchdogCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID int64, typ string) error {
+	cb.mu.Lock() // write access to the map of all ADS streams
+	defer cb.mu.Unlock()
+
+	cb.streams[streamID] = watchdogStreamState{
+		context: ctx,
+	}
+
+	return nil
+}
+
+// OnDeltaStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+func (cb *watchdogCallbacks) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
+	cb.mu.Lock() // write access to the map of all ADS streams
+	defer cb.mu.Unlock()
+
+	defer delete(cb.streams, streamID)
+
+	if watchdog := cb.streams[streamID]; watchdog.cancel != nil {
+		watchdog.cancel()
+	}
+}
+
+// OnStreamDeltaRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
+func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_discovery.DeltaDiscoveryRequest) error {
+	cb.mu.RLock() // read access to the map of all ADS streams
+	watchdog := cb.streams[streamID]
+	cb.mu.RUnlock()
+
+	if watchdog.cancel != nil {
+		return nil
+	}
+
+	cb.mu.Lock() // write access to the map of all ADS streams
+	defer cb.mu.Unlock()
+
+	// create a stop channel even if there won't be an actual watchdog
+	stopCh := make(chan struct{})
+	watchdog.cancel = func() {
+		close(stopCh)
+	}
+	cb.streams[streamID] = watchdog
+
+	runnable, err := cb.newNodeWatchdog(watchdog.context, req.Node, streamID)
+	if err != nil {
+		return err
+	}
+
+	if runnable != nil {
+		// kick off watchdog for that stream
+		go runnable.Start(stopCh)
+	}
+	return nil
+}

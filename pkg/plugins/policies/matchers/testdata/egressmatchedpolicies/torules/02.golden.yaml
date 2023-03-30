@@ -1,0 +1,39 @@
+Rules:
+  :0:
+  - Conf:
+      localityAwareness:
+        disabled: true
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mlbs-1
+      type: MeshLoadBalancingStrategy
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mlbs-2
+      type: MeshLoadBalancingStrategy
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+    - Key: version
+      Not: false
+      Value: v2
+  - Conf:
+      localityAwareness:
+        disabled: false
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mlbs-1
+      type: MeshLoadBalancingStrategy
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+    - Key: version
+      Not: true
+      Value: v2

@@ -128,6 +128,7 @@ spec:
 			Expect(YamlK8s(haConfig)(kubernetes.Cluster)).To(Succeed())
 			Expect(YamlK8s(haGatewayClass)(kubernetes.Cluster)).To(Succeed())
 			Expect(YamlK8s(haGateway)(kubernetes.Cluster)).To(Succeed())
+			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
@@ -177,6 +178,7 @@ spec:
 		BeforeAll(func() {
 			Expect(YamlK8s(gateway)(kubernetes.Cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(gatewayName), "10080")
+			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
@@ -404,12 +406,13 @@ spec:
 			Expect(YamlK8s(secret)(kubernetes.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(kubernetes.Cluster)).To(Succeed())
 			ip = GatewayIP(gatewayName)
+			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 		})
 
-		XIt("should route the traffic using TLS", func() {
+		It("should route the traffic using TLS", func() {
 			// given
 			route := fmt.Sprintf(`
 apiVersion: gateway.networking.k8s.io/v1beta1

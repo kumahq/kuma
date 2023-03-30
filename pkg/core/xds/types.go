@@ -173,6 +173,8 @@ type SecretsTracker interface {
 	UsedAllInOne() bool
 }
 
+type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
+
 type MeshResources struct {
 	Mesh                           *core_mesh.MeshResource
 	TrafficRoutes                  []*core_mesh.TrafficRouteResource
@@ -181,6 +183,7 @@ type MeshResources struct {
 	EndpointMap                    EndpointMap
 	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
 	ExternalServiceRateLimits      ExternalServiceRateLimitMap
+	Dynamic                        ExternalServiceDynamicPolicies
 }
 
 type ZoneEgressProxy struct {
