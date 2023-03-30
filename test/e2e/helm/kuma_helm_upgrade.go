@@ -64,6 +64,7 @@ func UpgradingWithHelmChart() {
 			)
 
 			// then CRD is upgraded
+			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(ContainSubstring("AllowWithShadowDeny"))
 			// remove this when+then after initialChartVersion is changed to 2.1.x or later
 		},
