@@ -113,11 +113,11 @@ type MeshGatewayPodSpec struct {
 
 	// PodSecurityContext corresponds to PodSpec.SecurityContext
 	// +optional
-	PodSecurityContext `json:"securityContext,omitempty"`
+	PodSecurityContext PodSecurityContext `json:"securityContext,omitempty"`
 
 	// Container corresponds to PodSpec.Container
 	// +optional
-	Container `json:"container,omitempty"`
+	Container Container `json:"container,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -134,7 +134,7 @@ type PodSecurityContext struct {
 // Container corresponds to PodSpec.Container
 type Container struct {
 	// ContainerSecurityContext corresponds to PodSpec.Container.SecurityContext
-	SecurityContext `json:"securityContext,omitempty"`
+	SecurityContext SecurityContext `json:"securityContext,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
