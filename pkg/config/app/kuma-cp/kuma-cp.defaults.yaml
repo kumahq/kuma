@@ -33,9 +33,9 @@ store:
     maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
     # MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after maxConnectionLifetime to randomly decide to close a connection.
     # This helps prevent all connections from being closed at the exact same time, starving the pool.
-    maxConnectionLifetimeJitter: "0s" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
+    maxConnectionLifetimeJitter: "1m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
     # HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
-    healthCheckInterval: "1m" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL
+    healthCheckInterval: "30s" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL
     # MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
     minOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS
     # MaxOpenConnections is the maximum number of open connections to the database

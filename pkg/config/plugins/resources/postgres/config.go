@@ -28,9 +28,9 @@ var (
 	DefaultMinReconnectInterval        = config_types.Duration{Duration: 10 * time.Second}
 	DefaultMaxReconnectInterval        = config_types.Duration{Duration: 60 * time.Second}
 	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
-	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 0}
-	DefaultHealthCheckInterval         = config_types.Duration{Duration: time.Minute}
-	// above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
+	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 1 * time.Minute}
+	DefaultHealthCheckInterval         = config_types.Duration{Duration: 30 * time.Second}
+	// some of the above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
 
 // Postgres store configuration
