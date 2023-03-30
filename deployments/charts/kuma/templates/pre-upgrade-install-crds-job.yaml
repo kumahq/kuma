@@ -1,6 +1,6 @@
 {{- if (and .Values.installCrdsOnUpgrade.enabled (eq .Values.controlPlane.environment "kubernetes")) }}
   {{ $hook := "pre-upgrade,pre-install" }}
-  {{- $serviceAccountName := printf "%s-install-missing-crds" (include "kuma.name" .) }}
+  {{- $serviceAccountName := printf "%s-install-crds" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -22,7 +22,7 @@ imagePullSecrets:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}-install-missing-crds
+  name: {{ include "kuma.name" . }}-install-crds
   annotations:
     "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
@@ -36,13 +36,15 @@ rules:
       - customresourcedefinitions
     verbs:
       - create
+      - patch
+      - update
       - list
       - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}-install-missing-crds
+  name: {{ include "kuma.name" . }}-install-crds
   annotations:
     "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
@@ -52,7 +54,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" . }}-install-missing-crds
+  name: {{ include "kuma.name" . }}-install-crds
 subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
@@ -61,7 +63,7 @@ subjects:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "kuma.name" . }}-install-missing-crds-scripts
+  name: {{ include "kuma.name" . }}-install-crds-scripts
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "{{ $hook }}"
@@ -70,27 +72,31 @@ metadata:
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 data:
-  install_missing_crds.sh: |
+  install_crds.sh: |
     #!/usr/bin/env sh
+    set -e
 
-    if [ -s /kuma/missing/crds.yaml ]; then
-      echo "/kuma/missing/crds.yaml found and is not empty, adding crds"
-      kubectl create -f /kuma/missing/crds.yaml
+    if [ -s /kuma/crds/crds.yaml ]; then
+      echo "/kuma/crds/crds.yaml found and is not empty, adding crds"
+      kubectl apply -f /kuma/crds/crds.yaml
     else
-      echo "/kuma/missing/crds.yaml not found or empty, it looks like there is no missing crds"
+      echo "/kuma/crds/crds.yaml not found or empty, it looks like there is no crds to install"
     fi
-  save_missing_crds.sh: |
-    missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
+  save_crds.sh: |
+    #!/usr/bin/env sh
+    set -e
+    
+    crds="$(kumactl install crds --no-config {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
-    if [ -n "${missing_crds}" ]; then
-      echo "found missing crds - saving to /kuma/missing/crds.yaml"
-      echo "${missing_crds}" > /kuma/missing/crds.yaml
+    if [ -n "${crds}" ]; then
+      echo "found crds - saving to /kuma/crds/crds.yaml"
+      echo "${crds}" > /kuma/crds/crds.yaml
     fi
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "kuma.name" . }}-install-missing-crds
+  name: {{ template "kuma.name" . }}-install-crds
   namespace: {{ .Release.Namespace }}
   labels:
   {{ include "kuma.labels" . | nindent 4 }}
@@ -100,7 +106,7 @@ metadata:
 spec:
   template:
     metadata:
-      name: {{ template "kuma.name" . }}-install-missing-crds-job
+      name: {{ template "kuma.name" . }}-install-crds-job
       labels:
     {{ include "kuma.labels" . | nindent 8 }}
     spec:
@@ -129,10 +135,10 @@ spec:
                cpu: "100m"
                memory: "256Mi"
           command:
-            - '/kuma/scripts/install_missing_crds.sh'
+            - '/kuma/scripts/install_crds.sh'
           volumeMounts:
-            - mountPath: /kuma/missing
-              name: missing-crds
+            - mountPath: /kuma/crds
+              name: crds
               readOnly: true
             - mountPath: /kuma/scripts
               name: scripts
@@ -150,18 +156,18 @@ spec:
                cpu: "100m"
                memory: "256Mi"
           volumeMounts:
-          - mountPath: /kuma/missing
-            name: missing-crds
+          - mountPath: /kuma/crds
+            name: crds
           - mountPath: /kuma/scripts
             name: scripts
             readOnly: true
           args:
-          - '/kuma/scripts/save_missing_crds.sh'
+          - '/kuma/scripts/save_crds.sh'
       volumes:
         - name: scripts
           configMap:
-            name: {{ include "kuma.name" . }}-install-missing-crds-scripts
+            name: {{ include "kuma.name" . }}-install-crds-scripts
             defaultMode: 0755
-        - name: missing-crds
+        - name: crds
           emptyDir: {}
 {{- end }}
