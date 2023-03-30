@@ -1,8 +1,7 @@
 DISTRIBUTION_LICENSE_PATH ?= tools/releases/templates
 DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 # A list of all distributions
-# OS:ARCH:COREDNS:ENVOY_FLAVOUR:ENVOY_FLAVOUR
-# The second ENVOY_FLAVOUR is optional
+# OS:ARCH:COREDNS:ENVOY_FLAVOUR
 # COREDNS is always coredns(CORDNS_EXT)
 # If you don't want to include just put skip
 DISTRIBUTION_LIST ?= linux:amd64:coredns:envoy linux:arm64:coredns:envoy darwin:amd64:coredns:envoy darwin:arm64:coredns:envoy

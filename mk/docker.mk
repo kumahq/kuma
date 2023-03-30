@@ -22,7 +22,6 @@ images/show: ## output all images that are built with the current configuration
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
 
-ENVOY_ARTIFACT_EXT ?= opt
 # add targets to build images for each arch
 # $(1) - GOOS to build for
 define IMAGE_TARGETS_BY_ARCH
