@@ -1,0 +1,47 @@
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: mlbs-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  to:
+    - targetRef:
+        kind: MeshService
+        name: external-database
+      default:
+        localityAwareness:
+          disabled: true
+    - targetRef:
+        kind: Mesh
+      default:
+        localityAwareness:
+          disabled: false
+---
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: mlbs-2
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: backend
+    tags:
+      version: v2
+  to:
+    - targetRef:
+        kind: MeshService
+        name: external-database
+      default:
+        localityAwareness:
+          disabled: false
+    - targetRef:
+        kind: Mesh
+      default:
+        localityAwareness:
+          disabled: true
+    - targetRef:
+        kind: MeshService
+        name: some-other-service
+      default:
+        localityAwareness:
+          disabled: false

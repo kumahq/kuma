@@ -21,7 +21,6 @@ include mk/check.mk
 include mk/test.mk
 include mk/generate.mk
 include mk/docker.mk
-include mk/run.mk
 include mk/kind.mk
 include mk/k3d.mk
 include mk/e2e.new.mk
@@ -30,3 +29,4 @@ include mk/envoy.mk
 include mk/helm.mk
 include mk/ebpf.mk
 include mk/distribution.mk
+include mk/run.mk

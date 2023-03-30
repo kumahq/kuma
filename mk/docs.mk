@@ -18,7 +18,7 @@ docs/install/markdown: ## Generate CLI reference in markdown format
 .PHONY: docs/install/manpages
 docs/install/manpages: DESTDIR:=$(DESTDIR)/manpages
 docs/install/manpages: ## Generate CLI reference in man(1) format
-	@DESTDIR=$(DESTDIR) FORMAT=man $(GO_RUN) $(TOOLS_DIR)/docs/generate.go
+	@DESTDIR=$(DESTDIR) FORMAT=man go run $(TOOLS_DIR)/docs/generate.go
 
 .PHONY: docs/install/resources
 docs/install/resources: DESTDIR:=$(DESTDIR)/resources
