@@ -186,3 +186,15 @@ func (c *UniversalControlPlane) UpdateObject(
 ) error {
 	return c.kumactl.KumactlUpdateObject(typeName, objectName, update)
 }
+
+func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
+	sshApp := ssh.NewApp(
+		c.name,
+		c.verbose,
+		c.cpNetworking.SshPort, nil, cmd,
+	)
+	if err := sshApp.Run(); err != nil {
+		return "", sshApp.Err(), err
+	}
+	return sshApp.Out(), sshApp.Err(), nil
+}
