@@ -313,6 +313,7 @@ func (OutboundProxyGenerator) generateEDS(
 
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
+					Origin:   OriginOutbound,
 					Resource: loadAssignment,
 				})
 			}

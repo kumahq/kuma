@@ -44,20 +44,6 @@ networking:
 `, mesh, net.JoinHostPort(ip, "8080"))
 }
 
-func zoneExternalService(mesh string, ip string, name string, zone string) string {
-	return fmt.Sprintf(`
-type: ExternalService
-mesh: "%s"
-name: "%s"
-tags:
-  kuma.io/service: "%s"
-  kuma.io/protocol: http
-  kuma.io/zone: "%s"
-networking:
-  address: "%s"
-`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
-}
-
 func InstallExternalService(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return cluster.DeployApp(
@@ -69,6 +55,20 @@ func InstallExternalService(name string) InstallFunc {
 }
 
 func ExternalServicesWithLocalityAwareLb() {
+	zoneExternalService := func(mesh string, ip string, name string, zone string) string {
+		return fmt.Sprintf(`
+type: ExternalService
+mesh: "%s"
+name: "%s"
+tags:
+  kuma.io/service: "%s"
+  kuma.io/protocol: http
+  kuma.io/zone: "%s"
+networking:
+  address: "%s"
+`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
+	}
+
 	const mesh = "external-service-locality-lb"
 	const meshNoZoneEgress = "external-service-locality-lb-no-egress"
 	const namespace = "external-service-locality-lb"

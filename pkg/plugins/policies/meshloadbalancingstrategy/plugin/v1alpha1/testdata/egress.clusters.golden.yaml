@@ -1,20 +1,20 @@
 resources:
-- name: cluster-backend
+- name: mesh-1:eds-cluster
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_eds-cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbPolicy: RANDOM
-    name: backend
+    name: mesh-1:eds-cluster
     type: EDS
-- name: cluster-payment
+- name: mesh-2:static-cluster
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    lbPolicy: RING_HASH
+    altStatName: mesh-2_static-cluster
     loadAssignment:
-      clusterName: payment
+      clusterName: mesh-2:static-cluster
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -49,9 +49,5 @@ resources:
         locality:
           zone: zone-2
         priority: 1
-    name: payment
-    ringHashLbConfig:
-      hashFunction: MURMUR_HASH_2
-      maximumRingSize: "1000"
-      minimumRingSize: "100"
+    name: mesh-2:static-cluster
     type: STATIC
