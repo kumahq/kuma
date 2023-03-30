@@ -8,6 +8,17 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Universal
+
+### Changed default postgres driver to pgx
+- If you encounter any problems with the persistence layer please [submit an issue](https://github.com/kumahq/kuma/issues/new) and temporarily switch to the previous driver (`lib/pq`) by setting
+`DriverName=postgres` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME='postgres'` env variable.
+- Several configuration settings are not supported by the new driver right now, if used to configure them please try running with new defaults or [submit an issue](https://github.com/kumahq/kuma/issues/new).
+List of unsupported configuration options:
+  - MaxIdleConnections (used in store)
+  - MinReconnectInterval (used in events listener)
+  - MaxReconnectInterval (used in events listener)
+
 ### K8s
 
 ### Removed deprecated annotations

@@ -8,6 +8,6 @@ import (
 )
 
 var _ = Describe("MemoryStore template", func() {
-	test_store.ExecuteStoreTests(memory.NewStore)
-	test_store.ExecuteOwnerTests(memory.NewStore)
+	test_store.ExecuteStoreTests(memory.NewStore, "memory")
+	test_store.ExecuteOwnerTests(memory.NewStore, "memory")
 })
