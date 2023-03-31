@@ -1,0 +1,7 @@
+import{d as g,an as b,ao as v,i as y,r as f,j as h,a5 as V,o as i,k as u,w as e,a as t,e as n,g as d,y as z,u as s,D as x,a2 as D,ap as r,H as M}from"./index-c3d6184d.js";import{O as S,a as G,b as C}from"./OnboardingPage-57606e61.js";const N={class:"graph-list mb-6"},O={class:"radio-button-group"},T=g({__name:"DeploymentTypes",setup(w){const p=b(),m={standalone:v(),"multi-zone":p},c=y(),a=f("standalone"),_=h(()=>m[a.value]);return V(function(){a.value=c.getters["config/getMulticlusterStatus"]?"multi-zone":"standalone"}),(k,o)=>(i(),u(C,{"with-image":""},{header:e(()=>[t(S,null,{title:e(()=>[n(`
+          Learn about deployments
+        `)]),description:e(()=>[d("p",null,z(s(x))+" can be deployed in standalone or multi-zone mode.",1)]),_:1})]),content:e(()=>[d("div",N,[(i(),u(D(s(_))))]),n(),d("div",O,[t(s(r),{modelValue:a.value,"onUpdate:modelValue":o[0]||(o[0]=l=>a.value=l),name:"mode","selected-value":"standalone","data-testid":"onboarding-standalone-radio-button"},{default:e(()=>[n(`
+          Standalone deployment
+        `)]),_:1},8,["modelValue"]),n(),t(s(r),{modelValue:a.value,"onUpdate:modelValue":o[1]||(o[1]=l=>a.value=l),name:"mode","selected-value":"multi-zone","data-testid":"onboarding-multi-zone-radio-button"},{default:e(()=>[n(`
+          Multi-zone deployment
+        `)]),_:1},8,["modelValue"])])]),navigation:e(()=>[t(G,{"next-step":"onboarding-configuration-types","previous-step":"onboarding-welcome"})]),_:1}))}});const P=M(T,[["__scopeId","data-v-711049bb"]]);export{P as default};

@@ -2,6 +2,7 @@ package insights
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -134,43 +135,46 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 
 	eventReader := r.eventFactory.New()
 	for {
-		event, err := eventReader.Recv(stop)
-		if err == events.ListenerStoppedErr {
+		select {
+		case <-stop:
 			return nil
-		}
-		if err != nil {
-			return err
-		}
-		resourceChanged, ok := event.(events.ResourceChangedEvent)
-		if !ok {
-			continue
-		}
-		desc, err := r.registry.DescriptorFor(resourceChanged.Type)
-		if err != nil {
-			log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
-		}
-		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
-			r.deleteRateLimiter(resourceChanged.Key.Name)
-		}
-		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
-			continue
-		}
-		if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
-			if err := r.createOrUpdateServiceInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
-				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
+		case event, ok := <-eventReader.Recv():
+			if !ok {
+				return errors.New("end of events channel")
 			}
-		}
-		if desc.Scope == model.ScopeGlobal {
-			continue
-		}
-		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
-			// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
-			// because that's how we find online/offline Dataplane's status
-			continue
-		}
-		if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
-			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
-			continue
+
+			resourceChanged, ok := event.(events.ResourceChangedEvent)
+			if !ok {
+				continue
+			}
+
+			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+			if err != nil {
+				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+			}
+			if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
+				r.deleteRateLimiter(resourceChanged.Key.Name)
+			}
+			if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
+				continue
+			}
+			if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
+				if err := r.createOrUpdateServiceInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
+					log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
+				}
+			}
+			if desc.Scope == model.ScopeGlobal {
+				continue
+			}
+			if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
+				// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
+				// because that's how we find online/offline Dataplane's status
+				continue
+			}
+			if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
+				log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
+				continue
+			}
 		}
 	}
 }
