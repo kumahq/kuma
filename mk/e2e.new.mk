@@ -110,7 +110,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 .PHONY: test/e2e/list/all
 test/e2e/list/all:
 	@$(GINKGO) --json-report=report.json --dry-run $(E2E_PKG_LIST) $(KUBE_E2E_PKG_LIST) $(UNIVERSAL_E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST) > /dev/null
-	@cat report.json | jq '.[].SpecReports[] | select( .LeafNodeType == "It" ) | (.ContainerHierarchyTexts | join(" ")) + " " + .LeafNodeText'
+	@cat report.json | jq '.[].SpecReports[] | select( .LeafNodeType == "It" ) | (.ContainerHierarchyTexts | join(" ")) + " " + .LeafNodeText' | sort
 	@rm report.json
 
 .PHONY: test/e2e/list/new
