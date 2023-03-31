@@ -106,7 +106,7 @@ docker/save: $(patsubst %,docker/%/save,$(ALL_RELEASE_WITH_ARCH) $(ALL_TEST_WITH
 .PHONY: docker/load
 docker/load: $(patsubst %,docker/%/load,$(ALL_RELEASE_WITH_ARCH) $(ALL_TEST_WITH_ARCH))
 .PHONY: docker/tag
-docker/tag: docker/tag/test docker/tag/release
+docker/tag: docker/tag/test docker/tag/release ## Tag local arch containers with the version with the arch (this is mostly to use non multi-arch images as if they were released images in e2e tests)
 .PHONY: docker/tag/release
 docker/tag/release: $(patsubst %,docker/%/tag,$(ALL_RELEASE_WITH_ARCH))
 .PHONY: docker/tag/test
