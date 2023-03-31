@@ -124,23 +124,7 @@ func GenerateVirtualHost(
 			for _, h := range e.RequestHeaders.Replace {
 				switch h.Key {
 				case ":authority", "Host", "host":
-					// Only one HostRewriteSpecifier can be set for RouteAction
-					// and when rewrite_host_to_backend_hostname is set on
-					// route, it should have precedence over explicit request
-					// host header modification.
-					// It's just precaution as MeshGatewayRoute validator
-					// shouldn't allow above situation to occur.
-					if !e.RewriteHostToBackendHostname {
-						log.Info("[WARNING] route contains both "+
-							"'rewrite_host_to_backend_hostname' option "+
-							"specified and explicit 'host' header "+
-							"modification. Explicit modification will be "+
-							"ignored",
-							"route", e.Route,
-						)
-
-						routeBuilder.Configure(route.RouteReplaceHostHeader(h.Value))
-					}
+					routeBuilder.Configure(route.RouteReplaceHostHeader(h.Value))
 				default:
 					routeBuilder.Configure(route.RouteAddRequestHeader(route.RouteReplaceHeader(h.Key, h.Value)))
 				}
