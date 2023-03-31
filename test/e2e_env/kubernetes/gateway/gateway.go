@@ -88,7 +88,7 @@ type: system.kuma.io/secret
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	route := func(name, path, destination string, rewriteHostToBackendHostname bool) string {
+	route := func(name, path, destination string) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayRoute
@@ -106,11 +106,19 @@ spec:
         - path:
             match: PREFIX
             value: %s
-        filters:
-        - rewrite_host_to_backend_hostname: %t
         backends:
         - destination:
-            kuma.io/service: %s`, name, path, rewriteHostToBackendHostname, destination)
+            kuma.io/service: %s
+      - matches:
+        - path:
+            match: PREFIX
+            value: /rewrite-host%s
+        filters:
+        - rewriteHostToBackendHostname: true
+        backends:
+        - destination:
+            kuma.io/service: %s
+`, name, path, destination, path, destination)
 	}
 
 	Context("Mesh service", func() {
@@ -122,7 +130,7 @@ spec:
 					testserver.WithNamespace(namespace),
 					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
 				)).
-				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80", true))).
+				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80"))).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -198,7 +206,7 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "rt-echo-server"),
 				)).
 				Install(YamlK8s(rt)).
-				Install(YamlK8s(route("rt-echo-server", "/rt", "rt-echo-server_simple-gateway_svc_80", false))).
+				Install(YamlK8s(route("rt-echo-server", "/rt", "rt-echo-server_simple-gateway_svc_80"))).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -247,7 +255,7 @@ spec:
 		})
 
 		It("should proxy to service via HTTP", func() {
-			route := route("es-echo-server", "/external-service", "external-service", false)
+			route := route("es-echo-server", "/external-service", "external-service")
 			setup := NewClusterSetup().Install(YamlK8s(route))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
@@ -266,15 +274,30 @@ spec:
 			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
 		})
 
-		It("should automatically set host header from external service address", func() {
-			route := route("es-echo-server", "/external-service", "external-service", true)
+		It("should automatically set host header from external service address when rewriteHostToBackendHostname is set to true", func() {
+			route := route("es-echo-server", "/external-service", "external-service")
 			setup := NewClusterSetup().Install(YamlK8s(route))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
+			// don't rewrite host to backend hostname
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/external-service",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
+			}, "30s", "1s").Should(Succeed())
+
+			// rewrite host to backend hostname
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/rewrite-host/external-service",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
