@@ -30,11 +30,6 @@ type Entry struct {
 	Match  Match
 	Action Action
 
-	// RewriteHostToBackendHostname indicates that during forwarding, the host header should
-	// be swapped with the hostname of the upstream host chosen by the Envoy's
-	// cluster manager.
-	RewriteHostToBackendHostname bool
-
 	// Mirror specifies whether to mirror matching traffic.
 	Mirror *Mirror
 
@@ -131,6 +126,11 @@ type Rewrite struct {
 	ReplaceFullPath *string
 
 	ReplacePrefixMatch *string
+
+	// HostToBackendHostname indicates that during forwarding, the host header
+	// should be swapped with the hostname of the upstream host chosen by the
+	// Envoy's cluster manager.
+	HostToBackendHostname bool
 }
 
 // Mirror specifies a traffic mirroring operation.

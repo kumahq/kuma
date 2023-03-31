@@ -98,9 +98,11 @@ func validateMeshGatewayRouteHTTPRule(
 	var filters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
 	for _, f := range conf.GetFilters() {
-		if f.GetRewriteHostToBackendHostname() {
-			rewriteHostToBackendHostname = true
-			continue
+		if m := f.GetRewrite(); m != nil {
+			if m.GetHostToBackendHostname() {
+				rewriteHostToBackendHostname = true
+				continue
+			}
 		}
 
 		filters = append(filters, f)
@@ -222,7 +224,7 @@ func validateMeshGatewayRouteHTTPFilter(
 				case ":authority", "Host", "host":
 					if rewriteHostToBackendHostname {
 						message := fmt.Sprintf(
-							"cannot modify '%s' header, when route has set 'rewrite_host_to_backend_hostname' option",
+							"cannot modify '%s' header, when route has set 'rewrite.host_to_backend_hostname' option",
 							h.GetName(),
 						)
 

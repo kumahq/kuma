@@ -114,7 +114,8 @@ spec:
             match: PREFIX
             value: /rewrite-host%s
         filters:
-        - rewriteHostToBackendHostname: true
+        - rewrite
+            hostToBackendHostname: true
         backends:
         - destination:
             kuma.io/service: %s
@@ -274,7 +275,7 @@ spec:
 			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
 		})
 
-		It("should automatically set host header from external service address when rewriteHostToBackendHostname is set to true", func() {
+		It("should automatically set host header from external service address when rewrite.hostToBackendHostname is set to true", func() {
 			route := route("es-echo-server", "/external-service", "external-service")
 			setup := NewClusterSetup().Install(YamlK8s(route))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())

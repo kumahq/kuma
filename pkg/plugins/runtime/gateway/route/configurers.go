@@ -253,7 +253,7 @@ func RouteSetRewriteHostToBackendHostname(value bool) RouteConfigurer {
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetAction() == nil {
-			return errors.New("cannot set the rewrite_host_to_backend_hostname before the route action")
+			return errors.New("cannot set the 'auto_host_rewrite' before the route action")
 		}
 
 		if action := r.GetRoute(); action != nil {
