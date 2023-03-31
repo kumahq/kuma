@@ -113,9 +113,10 @@ test/e2e/list/all:
 	@cat report.json | jq '.[].SpecReports[] | select( .LeafNodeType == "It" ) | (.ContainerHierarchyTexts | join(" ")) + " " + .LeafNodeText' | sort
 	@rm report.json
 
+TEST_LIST_BRANCH_TO_DIFF_AGAINST ?= master
 .PHONY: test/e2e/list/new
 test/e2e/list/new:
-	@git checkout --quiet focus-and-repeat-tests
+	@git checkout --quiet $(TEST_LIST_BRANCH_TO_DIFF_AGAINST)
 	@$(MAKE) test/e2e/list/all > master-test-list.txt
 	@git checkout --quiet -
 	@$(MAKE) test/e2e/list/all > current-test-list.txt
