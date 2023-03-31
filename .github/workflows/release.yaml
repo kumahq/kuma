@@ -27,7 +27,6 @@ env:
   CHECK: ${{ inputs.check }}
   EDITION: kuma
   MIN_VERSION: "1.1.0"
-  INCLUDE_DEV: "true"
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -91,7 +90,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --include-dev ${{ env.INCLUDE_DEV }} > versions.yml
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
