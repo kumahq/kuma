@@ -138,7 +138,7 @@ kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
 
 .PHONY: run/k8s
-run/k8s: generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
+run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
 	$(KUBECTL) diff -f pkg/plugins/resources/k8s/native/config/crd/bases || $(KUBECTL) apply -f pkg/plugins/resources/k8s/native/config/crd/bases
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_ENVIRONMENT=kubernetes \
@@ -147,7 +147,7 @@ run/k8s: generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes m
 	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-cp/cmd/testdata/tls.key \
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
-	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
+	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp --log-level=debug
 
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
 run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)

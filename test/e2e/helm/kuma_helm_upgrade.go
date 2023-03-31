@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -52,8 +53,20 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			err = k8sCluster.UpgradeKuma(core.Standalone, WithHelmReleaseName(releaseName))
+			err = k8sCluster.UpgradeKuma(core.Standalone, WithHelmReleaseName(releaseName), WithHelmChartPath(Config.HelmChartPath))
 			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			out, err := k8s.RunKubectlAndGetOutputE(
+				k8sCluster.GetTesting(),
+				k8sCluster.GetKubectlOptions(),
+				"get", "crd", "meshtrafficpermissions.kuma.io", "-oyaml",
+			)
+
+			// then CRD is upgraded
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(ContainSubstring("AllowWithShadowDeny"))
+			// remove this when+then after initialChartVersion is changed to 2.1.x or later
 		},
 		func() []TableEntry {
 			var out []TableEntry

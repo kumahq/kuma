@@ -1,41 +1,26 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
-
-REPORTS_DIR ?= ./build/reports
-COVERAGE_PROFILE_FILENAME := coverage.out
-COVERAGE_PROFILE := $(REPORTS_DIR)/$(COVERAGE_PROFILE_FILENAME)
-COVERAGE_REPORT_HTML := $(REPORTS_DIR)/coverage.html
-
-GINKGO_TEST_FLAGS += -p --keep-going \
-	--keep-separate-reports \
-	--junit-report results.xml
-
-ifneq ($(REPORTS_DIR), "")
-	GINKGO_TEST_FLAGS += --output-dir $(REPORTS_DIR)
-endif
+REPORTS_DIR ?= build/reports
 
 GINKGO_UNIT_TEST_FLAGS ?= \
-	--skip-package ./test,./pkg/transparentproxy/istio/tools --race \
-	--cover --covermode atomic --coverpkg ./... --coverprofile $(COVERAGE_PROFILE_FILENAME)
+	--skip-package ./test,./pkg/transparentproxy/istio/tools --race
 
-GINKGO_TEST:=$(GENV) $(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
+# -race requires CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
+UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),,GINKGO_EDITOR_INTEGRATION=true)
+GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) -p --keep-going --keep-separate-reports --junit-report results.xml --output-dir $(REPORTS_DIR)
 
 .PHONY: test
-test: build/ebpf
-	# -race required CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(EXTRA_GOENV) CGO_ENABLED=1 go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "pkg/transparentproxy/istio/tools")
+test: build/ebpf | $(REPORTS_DIR) ## Dev: Run tests for all modules. to include reports set `make TEST_REPORTS=1` and `make TEST_REPORTS=coverage` to include coverage. To run only some tests by set `TEST_PKG_LIST=./pkg/...` for example
+ifdef TEST_REPORTS
+	$(UNIT_TEST_ENV) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(if $(findstring coverage,$(TEST_REPORTS)),--cover --covermode atomic --coverpkg ./... --coverprofile coverage.out) $(TEST_PKG_LIST)
+	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
+endif
+ifndef TEST_REPORTS
+	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "pkg/transparentproxy/istio/tools")
+endif
 
-.PHONY: test-with-reports
-test-with-reports: build/ebpf ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
-	$(MAKE) coverage
-
-${COVERAGE_PROFILE}:
-	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
-
-.PHONY: coverage
-coverage: ${COVERAGE_PROFILE}
-	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_PROFILE)" -o "$(COVERAGE_REPORT_HTML)"
+$(REPORTS_DIR):
+	mkdir -p $(REPORTS_DIR)
 
 .PHONY: test/kuma-cp
 test/kuma-cp: TEST_PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...

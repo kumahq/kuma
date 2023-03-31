@@ -40,7 +40,7 @@ var _ = Describe("Events", func() {
 			defer close(eventBusStopCh)
 			defer close(listenerErrCh)
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, storeErrCh)
+			go triggerNotifications(cfg, driverName, storeErrCh)
 
 			// when
 			event, err := listener.Recv(eventBusStopCh)
@@ -67,7 +67,7 @@ var _ = Describe("Events", func() {
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, storeErrCh)
+			go triggerNotifications(cfg, driverName, storeErrCh)
 
 			// when
 			event, err := listener.Recv(eventBusStopCh)
@@ -110,10 +110,17 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 	return listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh
 }
 
-func setupStore(cfg postgres_config.PostgresStoreConfig) store.ResourceStore {
+func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) store.ResourceStore {
 	metrics, err := core_metrics.NewMetrics("Standalone")
 	Expect(err).ToNot(HaveOccurred())
-	pStore, err := NewStore(metrics, cfg)
+	var pStore store.ResourceStore
+	if driverName == "pgx" {
+		cfg.DriverName = postgres_config.DriverNamePgx
+		pStore, err = NewPgxStore(metrics, cfg)
+	} else {
+		cfg.DriverName = postgres_config.DriverNamePq
+		pStore, err = NewPqStore(metrics, cfg)
+	}
 	Expect(err).ToNot(HaveOccurred())
 	return pStore
 }
@@ -131,8 +138,8 @@ func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, 
 	return listener
 }
 
-func triggerNotifications(cfg postgres_config.PostgresStoreConfig, storeErrCh chan error) {
-	pStore := setupStore(cfg)
+func triggerNotifications(cfg postgres_config.PostgresStoreConfig, driverName string, storeErrCh chan error) {
+	pStore := setupStore(cfg, driverName)
 	defer GinkgoRecover()
 	for i := 0; !channels.IsClosed(storeErrCh); i++ {
 		err := pStore.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(fmt.Sprintf("mesh-%d", i), ""))

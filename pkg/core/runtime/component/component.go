@@ -3,6 +3,8 @@ package component
 import (
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/util/channels"
 )
@@ -74,17 +76,41 @@ func NewManager(leaderElector LeaderElector) Manager {
 	}
 }
 
+var LeaderComponentAddAfterStartErr = errors.New("cannot add leader component after component manager is started")
+
 type manager struct {
-	components    []Component
 	leaderElector LeaderElector
+
+	sync.Mutex // protects access to fields below
+	components []Component
+	started    bool
+	stopCh     <-chan struct{}
+	errCh      chan error
 }
 
 func (cm *manager) Add(c ...Component) error {
+	cm.Lock()
+	defer cm.Unlock()
 	cm.components = append(cm.components, c...)
+	if cm.started {
+		// start component if it's added in runtime after Start is called.
+		for _, component := range c {
+			if component.NeedLeaderElection() {
+				return LeaderComponentAddAfterStartErr
+			}
+			go func(c Component, stopCh <-chan struct{}, errCh chan error) {
+				if err := c.Start(stopCh); err != nil {
+					errCh <- err
+				}
+			}(component, cm.stopCh, cm.errCh)
+		}
+	}
 	return nil
 }
 
 func (cm *manager) waitForDone() {
+	// limitation: waitForDone does not wait for components added after Start() is called.
+	// This is ok for now, because it's used only in context of Kuma DP where we are not adding components in runtime.
 	for _, c := range cm.components {
 		if gc, ok := c.(GracefulComponent); ok {
 			gc.WaitForDone()
@@ -95,7 +121,13 @@ func (cm *manager) waitForDone() {
 func (cm *manager) Start(stop <-chan struct{}) error {
 	errCh := make(chan error)
 
+	cm.Lock()
 	cm.startNonLeaderComponents(stop, errCh)
+	cm.started = true
+	cm.stopCh = stop
+	cm.errCh = errCh
+	cm.Unlock()
+	// this has to be called outside of lock because it can be leader at any time, and it locks in leader callbacks.
 	cm.startLeaderComponents(stop, errCh)
 
 	defer cm.waitForDone()
@@ -139,6 +171,9 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 			mutex.Lock()
 			defer mutex.Unlock()
 			leaderStopCh = make(chan struct{})
+
+			cm.Lock()
+			defer cm.Unlock()
 			for _, component := range cm.components {
 				if component.NeedLeaderElection() {
 					go func(c Component) {

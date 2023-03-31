@@ -98,6 +98,8 @@ const (
 
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
+	// KumaMetricsPrometheusAggregateAddress allows to specify which address for specific app should request for metrics
+	KumaMetricsPrometheusAggregateAddress = "prometheus.metrics.kuma.io/aggregate-%s-address"
 	// KumaMetricsPrometheusAggregatePort allows to specify which port for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePort = "prometheus.metrics.kuma.io/aggregate-%s-port"
 	// KumaMetricsPrometheusAggregateEnabled allows to specify if we want to enable specific scraping, default: true

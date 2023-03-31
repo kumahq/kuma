@@ -15,6 +15,7 @@ PULP_DIST_VERSION ?= release
 ifneq (,$(findstring preview,$(BUILD_INFO_VERSION)))
 	PULP_DIST_VERSION=preview
 endif
+DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_NAME)
 
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
