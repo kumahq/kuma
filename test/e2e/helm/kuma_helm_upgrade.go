@@ -26,7 +26,7 @@ func UpgradingWithHelmChart() {
 		initialChartVersion string
 	}
 
-	PDescribeTable(
+	DescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
 			t := NewTestingT()
@@ -46,14 +46,17 @@ func UpgradingWithHelmChart() {
 					WithHelmReleaseName(releaseName),
 					WithHelmChartVersion(given.initialChartVersion),
 					WithoutHelmOpt("global.image.tag"),
-					WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
 				)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			err = k8sCluster.UpgradeKuma(core.Standalone, WithHelmReleaseName(releaseName), WithHelmChartPath(Config.HelmChartPath))
+			err = k8sCluster.UpgradeKuma(core.Standalone,
+				WithHelmReleaseName(releaseName),
+				WithHelmChartPath(Config.HelmChartPath),
+				ClearNoHelmOpts(),
+			)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
