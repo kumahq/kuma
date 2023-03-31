@@ -140,8 +140,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		select {
 		case <-stop:
 			return nil
-		case event, closed := <-eventReader.Recv():
-			if closed {
+		case event, ok := <-eventReader.Recv():
+			if !ok {
 				return errors.New("end of events channel")
 			}
 
