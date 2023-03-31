@@ -114,7 +114,7 @@ spec:
             match: PREFIX
             value: /rewrite-host%s
         filters:
-        - rewrite
+        - rewrite:
             hostToBackendHostname: true
         backends:
         - destination:
