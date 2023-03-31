@@ -129,7 +129,6 @@ Routes:
               clusters:
               - name: external-httpbin-8490df2e58a77ae0
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:
