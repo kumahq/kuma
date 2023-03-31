@@ -6,8 +6,8 @@ type TestEventReader struct {
 	Ch chan events.Event
 }
 
-func (t *TestEventReader) Recv(stop <-chan struct{}) (events.Event, error) {
-	return <-t.Ch, nil
+func (t *TestEventReader) Recv() <-chan events.Event {
+	return t.Ch
 }
 
 type TestEventReaderFactory struct {
