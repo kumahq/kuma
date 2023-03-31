@@ -15,17 +15,17 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -40,7 +40,7 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 var _ = Describe("MeshLoadBalancingStrategy", func() {
 	type testCase struct {
 		resources []core_xds.Resource
-		toRules   core_xds.ToRules
+		proxy     *core_xds.Proxy
 	}
 	DescribeTable("Apply",
 		func(given testCase) {
@@ -51,53 +51,16 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			}
 
 			context := xds_context.Context{}
-			proxy := core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Dataplane: samples.DataplaneBackendBuilder().
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						v1alpha1.MeshLoadBalancingStrategyType: {
-							Type:    v1alpha1.MeshLoadBalancingStrategyType,
-							ToRules: given.toRules,
-						},
-					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			}
+
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resources, context, given.proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
 
 			Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 			Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
+			Expect(getResource(resources, envoy_resource.EndpointType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
 		},
 		Entry("basic", testCase{
 			resources: []core_xds.Resource{
@@ -105,15 +68,59 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "cluster-backend",
 					Origin: generator.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(policies_xds.WithName("backend")).
+						Configure(clusters.EdsCluster("backend")).
 						MustBuild(),
+				},
+				{
+					Name:   "cluster-backend",
+					Origin: generator.OriginOutbound,
+					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
+						{
+							Target: "192.168.1.1",
+							Port:   8080,
+							Tags: map[string]string{
+								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+								mesh_proto.ZoneTag:     "zone-1",
+							},
+							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
+						},
+						{
+							Target: "192.168.1.2",
+							Port:   8080,
+							Tags: map[string]string{
+								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+								mesh_proto.ZoneTag:     "zone-2",
+							},
+							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
+						},
+					}),
 				},
 				{
 					Name:   "cluster-payment",
 					Origin: generator.OriginOutbound,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(policies_xds.WithName("payment")).
-						MustBuild(),
+						Configure(clusters.ProvidedEndpointCluster(
+							"payment",
+							false,
+							core_xds.Endpoint{
+								Target: "192.168.0.1",
+								Port:   8080,
+								Tags: map[string]string{
+									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+									mesh_proto.ZoneTag:     "zone-1",
+								},
+								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
+							},
+							core_xds.Endpoint{
+								Target: "192.168.0.2",
+								Port:   8080,
+								Tags: map[string]string{
+									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+									mesh_proto.ZoneTag:     "zone-2",
+								},
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
+							},
+						)).MustBuild(),
 				},
 				{
 					Name:   "listener-backend",
@@ -166,39 +173,185 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).MustBuild(),
 				},
 			},
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
-					{
-						Subset: core_xds.MeshService("backend"),
-						Conf: v1alpha1.Conf{
-							LoadBalancer: &v1alpha1.LoadBalancer{
-								Type: v1alpha1.RandomType,
+			proxy: &core_xds.Proxy{
+				APIVersion: envoy_common.APIV3,
+				Dataplane: builders.Dataplane().
+					AddInboundOfTagsMap(map[string]string{
+						mesh_proto.ServiceTag: "backend",
+						mesh_proto.ZoneTag:    "zone-1",
+					}).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  "backend",
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  "payment",
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
+					Build(),
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						v1alpha1.MeshLoadBalancingStrategyType: {
+							Type: v1alpha1.MeshLoadBalancingStrategyType,
+							ToRules: core_xds.ToRules{
+								Rules: []*core_xds.Rule{
+									{
+										Subset: core_xds.MeshService("backend"),
+										Conf: v1alpha1.Conf{
+											LoadBalancer: &v1alpha1.LoadBalancer{
+												Type: v1alpha1.RandomType,
+											},
+										},
+									},
+									{
+										Subset: core_xds.MeshService("payment"),
+										Conf: v1alpha1.Conf{
+											LoadBalancer: &v1alpha1.LoadBalancer{
+												Type: v1alpha1.RingHashType,
+												RingHash: &v1alpha1.RingHash{
+													MinRingSize:  pointer.To[uint32](100),
+													MaxRingSize:  pointer.To[uint32](1000),
+													HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
+													HashPolicies: &[]v1alpha1.HashPolicy{
+														{
+															Type: v1alpha1.QueryParameterType,
+															QueryParameter: &v1alpha1.QueryParameter{
+																Name: "queryparam",
+															},
+															Terminal: pointer.To(true),
+														},
+														{
+															Type: v1alpha1.ConnectionType,
+															Connection: &v1alpha1.Connection{
+																SourceIP: pointer.To(true),
+															},
+															Terminal: pointer.To(false),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
-					{
-						Subset: core_xds.MeshService("payment"),
-						Conf: v1alpha1.Conf{
-							LoadBalancer: &v1alpha1.LoadBalancer{
-								Type: v1alpha1.RingHashType,
-								RingHash: &v1alpha1.RingHash{
-									MinRingSize:  pointer.To[uint32](100),
-									MaxRingSize:  pointer.To[uint32](1000),
-									HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-									HashPolicies: &[]v1alpha1.HashPolicy{
-										{
-											Type: v1alpha1.QueryParameterType,
-											QueryParameter: &v1alpha1.QueryParameter{
-												Name: "queryparam",
+				},
+				Routing: core_xds.Routing{
+					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+							},
+						},
+						"payment": {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("egress", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:   "mesh-1:eds-cluster",
+					Origin: egress.OriginEgress,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+						Configure(clusters.EdsCluster("mesh-1:eds-cluster")).
+						MustBuild(),
+				},
+				{
+					Name:   "mesh-1:cla-for-eds-cluster",
+					Origin: egress.OriginEgress,
+					Resource: endpoints.CreateClusterLoadAssignment("mesh-1:eds-cluster", []core_xds.Endpoint{
+						{
+							Target: "192.168.1.1",
+							Port:   8080,
+							Tags: map[string]string{
+								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+								mesh_proto.ZoneTag:     "zone-1",
+							},
+							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
+						},
+						{
+							Target: "192.168.1.2",
+							Port:   8080,
+							Tags: map[string]string{
+								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+								mesh_proto.ZoneTag:     "zone-2",
+							},
+							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
+						},
+					}),
+				},
+				{
+					Name:   "mesh-2:static-cluster",
+					Origin: egress.OriginEgress,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+						Configure(clusters.ProvidedEndpointCluster(
+							"mesh-2:static-cluster",
+							false,
+							core_xds.Endpoint{
+								Target: "192.168.0.1",
+								Port:   8080,
+								Tags: map[string]string{
+									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+									mesh_proto.ZoneTag:     "zone-1",
+								},
+								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
+							},
+							core_xds.Endpoint{
+								Target: "192.168.0.2",
+								Port:   8080,
+								Tags: map[string]string{
+									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+									mesh_proto.ZoneTag:     "zone-2",
+								},
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
+							},
+						)).MustBuild(),
+				},
+			},
+			proxy: &core_xds.Proxy{
+				APIVersion: envoy_common.APIV3,
+				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Spec: &mesh_proto.ZoneEgress{Zone: "zone-1"},
+					},
+					MeshResourcesList: []*core_xds.MeshResources{
+						{
+							Mesh: builders.Mesh().WithName("mesh-1").Build(),
+							Dynamic: core_xds.ExternalServiceDynamicPolicies{
+								"eds-cluster": {
+									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+										FromRules: core_xds.FromRules{
+											Rules: map[core_xds.InboundListener]core_xds.Rules{
+												{}: {
+													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
+												},
 											},
-											Terminal: pointer.To(true),
 										},
-										{
-											Type: v1alpha1.ConnectionType,
-											Connection: &v1alpha1.Connection{
-												SourceIP: pointer.To(true),
+									},
+								},
+							},
+						},
+						{
+							Mesh: builders.Mesh().WithName("mesh-2").Build(),
+							Dynamic: core_xds.ExternalServiceDynamicPolicies{
+								"static-cluster": {
+									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+										FromRules: core_xds.FromRules{
+											Rules: map[core_xds.InboundListener]core_xds.Rules{
+												{}: {
+													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
+												},
 											},
-											Terminal: pointer.To(false),
 										},
 									},
 								},
