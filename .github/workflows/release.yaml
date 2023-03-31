@@ -26,7 +26,7 @@ env:
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check }}
   EDITION: kuma
-  MIN_VERSION: "1.1.0"
+  MIN_VERSION: "1.2.0"
 jobs:
   release:
     runs-on: ubuntu-latest
