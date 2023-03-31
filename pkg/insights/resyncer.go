@@ -126,42 +126,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		select {
 		case <-stop:
 			return nil
-<<<<<<< HEAD
-		}
-		if err != nil {
-			return err
-		}
-		resourceChanged, ok := event.(events.ResourceChangedEvent)
-		if !ok {
-			continue
-		}
-		desc, err := r.registry.DescriptorFor(resourceChanged.Type)
-		if err != nil {
-			log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
-		}
-		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
-			r.deleteRateLimiter(resourceChanged.Key.Name)
-		}
-		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
-			continue
-		}
-		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
-			if err := r.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
-				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
-			}
-		}
-		if desc.Scope == model.ScopeGlobal {
-			continue
-		}
-		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
-			// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
-			// because that's how we find online/offline Dataplane's status
-			continue
-		}
-		if err := r.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
-			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
-			continue
-=======
 		case event, closed := <-eventReader.Recv():
 			if closed {
 				return errors.New("end of events channel")
@@ -182,8 +146,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
 				continue
 			}
-			if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
-				if err := r.createOrUpdateServiceInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
+			if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
+				if err := r.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
 					log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 				}
 			}
@@ -195,11 +159,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				// because that's how we find online/offline Dataplane's status
 				continue
 			}
-			if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
+			if err := r.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
 				log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 				continue
 			}
->>>>>>> 2092786d1 (refactor(events): use channel for Recv instead of blocking (#6401))
 		}
 	}
 }
