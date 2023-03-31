@@ -9,14 +9,29 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 const (
-	DriverNamePgx = "pgx"
-	DriverNamePq  = "postgres"
+	DriverNamePgx             = "pgx"
+	DriverNamePq              = "postgres"
+	DefaultMaxIdleConnections = 50
+	DefaultMinOpenConnections = 0
 )
 
-var _ config.Config = &PostgresStoreConfig{}
+var (
+	_      config.Config = &PostgresStoreConfig{}
+	logger               = core.Log.WithName("postgres-config")
+)
+
+var (
+	DefaultMinReconnectInterval        = config_types.Duration{Duration: 10 * time.Second}
+	DefaultMaxReconnectInterval        = config_types.Duration{Duration: 60 * time.Second}
+	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
+	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 1 * time.Minute}
+	DefaultHealthCheckInterval         = config_types.Duration{Duration: 30 * time.Second}
+	// some of the above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
+)
 
 // Postgres store configuration
 type PostgresStoreConfig struct {
@@ -34,21 +49,30 @@ type PostgresStoreConfig struct {
 	DriverName string `json:"driverName" envconfig:"kuma_store_postgres_driver_name"`
 	// Connection Timeout to the DB in seconds
 	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
-	// Maximum number of open connections to the database
+	// MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
+	MaxConnectionLifetime config_types.Duration `json:"maxConnectionLifetime" envconfig:"kuma_store_postgres_max_connection_lifetime"`
+	// MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after MaxConnectionLifetime to randomly decide to close a connection.
+	// This helps prevent all connections from being closed at the exact same time, starving the pool.
+	MaxConnectionLifetimeJitter config_types.Duration `json:"maxConnectionLifetimeJitter" envconfig:"kuma_store_postgres_max_connection_lifetime_jitter"`
+	// HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
+	HealthCheckInterval config_types.Duration `json:"healthCheckInterval" envconfig:"kuma_store_postgres_health_check_interval"`
+	// MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
+	MinOpenConnections int `json:"minOpenConnections" envconfig:"kuma_store_postgres_min_open_connections"`
+	// MaxOpenConnections is the maximum number of open connections to the database
 	// `0` value means number of open connections is unlimited
 	MaxOpenConnections int `json:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
-	// Maximum number of connections in the idle connection pool
+	// MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
 	// <0 value means no idle connections and 0 means default max idle connections
 	MaxIdleConnections int `json:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `json:"tls"`
-	// MinReconnectInterval controls the duration to wait before trying to
+	// MinReconnectInterval (applied only when driverName=postgres) controls the duration to wait before trying to
 	// re-establish the database connection after connection loss. After each
 	// consecutive failure this interval is doubled, until MaxReconnectInterval
 	// is reached. Successfully completing the connection establishment procedure
 	// resets the interval back to MinReconnectInterval.
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
-	// MaxReconnectInterval controls the maximum possible duration to wait before trying
+	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
@@ -117,9 +141,9 @@ func (mode TLSMode) postgresMode() (string, error) {
 type TLSPostgresStoreConfig struct {
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
 	Mode TLSMode `json:"mode" envconfig:"kuma_store_postgres_tls_mode"`
-	// Path to TLS Certificate of the client. Used in require, verifyCa and verifyFull modes
+	// Path to TLS Certificate of the client. Required when server has METHOD=cert
 	CertPath string `json:"certPath" envconfig:"kuma_store_postgres_tls_cert_path"`
-	// Path to TLS Key of the client. Used in verifyNone, verifyCa and verifyFull modes
+	// Path to TLS Key of the client. Required when server has METHOD=cert
 	KeyPath string `json:"keyPath" envconfig:"kuma_store_postgres_tls_key_path"`
 	// Path to the root certificate. Used in verifyCa and verifyFull modes.
 	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
@@ -178,23 +202,60 @@ func (p *PostgresStoreConfig) Validate() error {
 	if p.MinReconnectInterval.Duration >= p.MaxReconnectInterval.Duration {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
 	}
+	warning := "[WARNING] "
+	switch p.DriverName {
+	case DriverNamePgx:
+		pqAlternativeMessage := "does not have an equivalent for pgx driver. " +
+			"If you need this setting consider using lib/pq as a postgres driver by setting driverName='postgres' or " +
+			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='postgres' env variable."
+		if p.MaxIdleConnections != DefaultMaxIdleConnections {
+			logger.Info(warning + "MaxIdleConnections " + pqAlternativeMessage)
+		}
+		if p.MinReconnectInterval != DefaultMinReconnectInterval {
+			logger.Info(warning + "MinReconnectInterval " + pqAlternativeMessage)
+		}
+		if p.MaxReconnectInterval != DefaultMaxReconnectInterval {
+			logger.Info(warning + "MaxReconnectInterval " + pqAlternativeMessage)
+		}
+	case DriverNamePq:
+		pgxAlternativeMessage := "does not have an equivalent for pq driver. " +
+			"If you need this setting consider using pgx as a postgres driver by setting driverName='pgx' or " +
+			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='pgx' env variable."
+		if p.MinOpenConnections != DefaultMinOpenConnections {
+			logger.Info(warning + "MinOpenConnections " + pgxAlternativeMessage)
+		}
+		if p.MaxConnectionLifetime != DefaultMaxConnectionLifetime {
+			logger.Info(warning + "MaxConnectionLifetime " + pgxAlternativeMessage)
+		}
+		if p.MaxConnectionLifetimeJitter != DefaultMaxConnectionLifetimeJitter {
+			logger.Info(warning + "MaxConnectionLifetimeJitter " + pgxAlternativeMessage)
+		}
+		if p.HealthCheckInterval != DefaultHealthCheckInterval {
+			logger.Info(warning + "HealthCheckInterval " + pgxAlternativeMessage)
+		}
+	}
+
 	return nil
 }
 
 func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 	return &PostgresStoreConfig{
-		Host:                 "127.0.0.1",
-		Port:                 15432,
-		User:                 "kuma",
-		Password:             "kuma",
-		DbName:               "kuma",
-		DriverName:           "pgx",
-		ConnectionTimeout:    5,
-		MaxOpenConnections:   50, // 0 for unlimited
-		MaxIdleConnections:   50, // 0 for unlimited
-		TLS:                  DefaultTLSPostgresStoreConfig(),
-		MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
-		MaxReconnectInterval: config_types.Duration{Duration: 60 * time.Second},
+		Host:                        "127.0.0.1",
+		Port:                        15432,
+		User:                        "kuma",
+		Password:                    "kuma",
+		DbName:                      "kuma",
+		DriverName:                  DriverNamePgx,
+		ConnectionTimeout:           5,
+		MaxOpenConnections:          50,                        // 0 for unlimited
+		MaxIdleConnections:          DefaultMaxIdleConnections, // 0 for unlimited
+		TLS:                         DefaultTLSPostgresStoreConfig(),
+		MinReconnectInterval:        DefaultMinReconnectInterval,
+		MaxReconnectInterval:        DefaultMaxReconnectInterval,
+		MinOpenConnections:          DefaultMinOpenConnections,
+		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
+		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
+		HealthCheckInterval:         DefaultHealthCheckInterval,
 	}
 }
 

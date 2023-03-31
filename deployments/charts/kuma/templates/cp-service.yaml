@@ -26,7 +26,7 @@ spec:
     {{- if ne .Values.controlPlane.environment "universal" }}
     - port: 443
       name: https-admission-server
-      targetPort: 5443
+      targetPort: {{ .Values.controlPlane.admissionServerPort | default "5443" }}
       appProtocol: http
     {{- end }}
     {{- if ne .Values.controlPlane.mode "global" }}

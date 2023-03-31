@@ -98,6 +98,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.DriverName).To(Equal("postgres"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
+			Expect(cfg.Store.Postgres.MaxConnectionLifetime.Duration).To(Equal(123 * time.Minute))
+			Expect(cfg.Store.Postgres.MaxConnectionLifetimeJitter.Duration).To(Equal(456 * time.Second))
+			Expect(cfg.Store.Postgres.HealthCheckInterval.Duration).To(Equal(78 * time.Second))
+			Expect(cfg.Store.Postgres.MinOpenConnections).To(Equal(3))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
@@ -321,6 +325,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
+			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -339,7 +344,11 @@ store:
     dbName: kuma
     driverName: postgres
     connectionTimeout: 10
+    minOpenConnections: 3
     maxOpenConnections: 300
+    maxConnectionLifetime: 123m
+    maxConnectionLifetimeJitter: 456s
+    healthCheckInterval: 78s
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
@@ -625,6 +634,7 @@ experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
+  kdsDeltaEnabled: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -648,8 +658,12 @@ proxy:
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
 				"KUMA_STORE_POSTGRES_DRIVER_NAME":                                                          "postgres",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
+				"KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS":                                                 "3",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
+				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME":                                              "123m",
+				"KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER":                                       "456s",
+				"KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL":                                                "78s",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
@@ -778,6 +792,7 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
+				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",

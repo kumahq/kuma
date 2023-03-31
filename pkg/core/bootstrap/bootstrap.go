@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"net"
+	"net/http"
 
 	"github.com/pkg/errors"
 
@@ -121,7 +122,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithCAProvider(caProvider)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
+	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+		return true
+	}))
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 

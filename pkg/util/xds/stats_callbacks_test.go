@@ -19,142 +19,236 @@ import (
 )
 
 var _ = Describe("Stats callbacks", func() {
-	const streamId = int64(1)
+	Context("Callbacks", func() {
+		const streamId = int64(1)
+		var adaptedCallbacks envoy_xds.Callbacks
+		var statsCallbacks util_xds.StatsCallbacks
+		var metrics core_metrics.Metrics
+		var currentTime time.Time
 
-	var statsCallbacks util_xds.StatsCallbacks
-	var adaptedCallbacks envoy_xds.Callbacks
-	var metrics core_metrics.Metrics
+		BeforeEach(func() {
+			m, err := core_metrics.NewMetrics("standalone")
+			Expect(err).ToNot(HaveOccurred())
+			metrics = m
+			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "xds")
+			adaptedCallbacks = util_xds_v3.AdaptCallbacks(statsCallbacks)
+			Expect(err).ToNot(HaveOccurred())
 
-	var currentTime time.Time
+			currentTime = time.Now()
+			core.Now = func() time.Time {
+				return currentTime
+			}
+		})
 
-	BeforeEach(func() {
-		m, err := core_metrics.NewMetrics("standalone")
-		Expect(err).ToNot(HaveOccurred())
-		metrics = m
-		statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "xds")
-		adaptedCallbacks = util_xds_v3.AdaptCallbacks(statsCallbacks)
-		Expect(err).ToNot(HaveOccurred())
+		AfterEach(func() {
+			core.Now = time.Now
+		})
 
-		currentTime = time.Now()
-		core.Now = func() time.Time {
-			return currentTime
-		}
+		It("should track active streams", func() {
+			// when
+			err := statsCallbacks.OnStreamOpen(context.Background(), streamId, "")
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_streams_active").GetGauge().GetValue()).To(Equal(1.0))
+
+			// when
+			statsCallbacks.OnStreamClosed(streamId)
+			Expect(test_metrics.FindMetric(metrics, "xds_streams_active").GetGauge().GetValue()).To(Equal(0.0))
+		})
+
+		It("should ignore initial DiscoveryRequest", func() {
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "",
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_requests_received").GetCounter().GetValue()).To(Equal(0.0))
+		})
+
+		It("should track ACK", func() {
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_requests_received", "confirmation", "ACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track NACK", func() {
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+				ErrorDetail: &status.Status{},
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_requests_received", "confirmation", "NACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track responses sent", func() {
+			// when
+			resp := &envoy_discovery.DiscoveryResponse{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamResponse(context.Background(), streamId, nil, resp)
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track config delivery", func() {
+			// given
+			statsCallbacks.ConfigReadyForDelivery("123")
+			currentTime = currentTime.Add(time.Second)
+
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
+		})
+
+		It("should not track delivery of configs that were not ready to being delivered", func() {
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
+		})
+
+		It("should not track discarded configs", func() {
+			// given
+			statsCallbacks.ConfigReadyForDelivery("123")
+			statsCallbacks.DiscardConfig("123")
+
+			// when
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
+		})
 	})
 
-	AfterEach(func() {
-		core.Now = time.Now
-	})
+	Context("DeltaCallbacks", func() {
+		const streamId = int64(1)
+		var adaptedCallbacks envoy_xds.Callbacks
+		var statsCallbacks util_xds.StatsCallbacks
+		var metrics core_metrics.Metrics
+		var currentTime time.Time
 
-	It("should track active streams", func() {
-		// when
-		err := statsCallbacks.OnStreamOpen(context.Background(), streamId, "")
+		BeforeEach(func() {
+			m, err := core_metrics.NewMetrics("standalone")
+			Expect(err).ToNot(HaveOccurred())
+			metrics = m
+			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "delta_xds")
+			adaptedCallbacks = util_xds_v3.AdaptDeltaCallbacks(statsCallbacks)
+			Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_streams_active").GetGauge().GetValue()).To(Equal(1.0))
+			currentTime = time.Now()
+			core.Now = func() time.Time {
+				return currentTime
+			}
+		})
 
-		// when
-		statsCallbacks.OnStreamClosed(streamId)
-		Expect(test_metrics.FindMetric(metrics, "xds_streams_active").GetGauge().GetValue()).To(Equal(0.0))
-	})
+		AfterEach(func() {
+			core.Now = time.Now
+		})
 
-	It("should ignore initial DiscoveryRequest", func() {
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "",
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
+		It("should track active streams", func() {
+			// when
+			err := statsCallbacks.OnDeltaStreamOpen(context.Background(), streamId, "")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_requests_received").GetCounter().GetValue()).To(Equal(0.0))
-	})
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_streams_active").GetGauge().GetValue()).To(Equal(1.0))
 
-	It("should track ACK", func() {
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
+			// when
+			statsCallbacks.OnStreamClosed(streamId)
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_streams_active").GetGauge().GetValue()).To(Equal(0.0))
+		})
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_requests_received", "confirmation", "ACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
-	})
+		It("should ignore initial DiscoveryRequest", func() {
+			// when
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				TypeUrl: resource.RouteType,
+			}
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
 
-	It("should track NACK", func() {
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-			ErrorDetail: &status.Status{},
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received").GetCounter().GetValue()).To(Equal(0.0))
+		})
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_requests_received", "confirmation", "NACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
-	})
+		It("should track ACK", func() {
+			// when
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				TypeUrl: resource.RouteType,
+				InitialResourceVersions: map[string]string{
+					"route-1": "123",
+				},
+			}
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
 
-	It("should track responses sent", func() {
-		// when
-		resp := &envoy_discovery.DiscoveryResponse{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-		}
-		adaptedCallbacks.OnStreamResponse(context.Background(), streamId, nil, resp)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received", "confirmation", "ACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
 
-		// then
-		Expect(test_metrics.FindMetric(metrics, "xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
-	})
+		It("should track NACK", func() {
+			// when
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				TypeUrl: resource.RouteType,
+				InitialResourceVersions: map[string]string{
+					"route-1": "123",
+				},
+				ErrorDetail: &status.Status{},
+			}
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
 
-	It("should track config delivery", func() {
-		// given
-		statsCallbacks.ConfigReadyForDelivery("123")
-		currentTime = currentTime.Add(time.Second)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received", "confirmation", "NACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
 
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
+		It("should track responses sent", func() {
+			// when
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl:           resource.RouteType,
+				SystemVersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, nil, resp)
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
-		Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
-	})
-
-	It("should not track delivery of configs that were not ready to being delivered", func() {
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
-	})
-
-	It("should not track discarded configs", func() {
-		// given
-		statsCallbacks.ConfigReadyForDelivery("123")
-		statsCallbacks.DiscardConfig("123")
-
-		// when
-		req := &envoy_discovery.DiscoveryRequest{
-			TypeUrl:     resource.RouteType,
-			VersionInfo: "123",
-		}
-		err := adaptedCallbacks.OnStreamRequest(streamId, req)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(0)))
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
 	})
 })

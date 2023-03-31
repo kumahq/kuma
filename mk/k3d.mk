@@ -1,4 +1,4 @@
-CI_K3S_VERSION ?= v1.20.15-k3s1
+CI_K3S_VERSION ?= v1.22.16-k3s1
 
 
 KUMA_MODE ?= standalone
@@ -117,6 +117,7 @@ k3d/load/images:
 .PHONY: k3d/load
 k3d/load:
 	$(MAKE) images
+	$(MAKE) docker/tag
 	$(MAKE) k3d/load/images
 
 .PHONY: k3d/deploy/kuma

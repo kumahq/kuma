@@ -54,6 +54,7 @@ type E2eConfig struct {
 	OS                            string            `json:"os,omitempty" envconfig:"OS"`
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
+	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -209,7 +210,7 @@ var defaultConf = E2eConfig{
 	SuiteConfig: SuiteConfig{
 		Helm: HelmSuiteConfig{
 			Versions: []string{
-				"1.6.0",
+				"2.0.1",
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{
@@ -256,6 +257,7 @@ var defaultConf = E2eConfig{
 	ZoneEgressApp:        "kuma-egress",
 	ZoneIngressApp:       "kuma-ingress",
 	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
+	CleanupLogsOnSuccess: false,
 }
 
 func init() {

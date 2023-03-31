@@ -28,16 +28,19 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
+type Filter func(writer http.ResponseWriter, request *http.Request) bool
+
 type DpServer struct {
 	config         dp_server.DpServerConfig
 	httpMux        *http.ServeMux
 	grpcServer     *grpc.Server
+	filter         Filter
 	promMiddleware middleware.Middleware
 }
 
 var _ component.Component = &DpServer{}
 
-func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpServer {
+func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filter Filter) *DpServer {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
@@ -63,6 +66,7 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpSe
 		config:         config,
 		httpMux:        http.NewServeMux(),
 		grpcServer:     grpcServer,
+		filter:         filter,
 		promMiddleware: promMiddleware,
 	}
 }
@@ -115,6 +119,10 @@ func (d *DpServer) NeedLeaderElection() bool {
 }
 
 func (d *DpServer) handle(writer http.ResponseWriter, request *http.Request) {
+	if !d.filter(writer, request) {
+		return
+	}
+	// add filter function that will be in runtime, and we will implement it in kong-mesh
 	if request.ProtoMajor == 2 && strings.Contains(request.Header.Get("Content-Type"), "application/grpc") {
 		d.grpcServer.ServeHTTP(writer, request)
 	} else {
@@ -130,4 +138,8 @@ func (d *DpServer) HTTPMux() *http.ServeMux {
 
 func (d *DpServer) GrpcServer() *grpc.Server {
 	return d.grpcServer
+}
+
+func (d *DpServer) SetFilter(filter Filter) {
+	d.filter = filter
 }

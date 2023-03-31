@@ -95,3 +95,10 @@ type PolicyPlugin interface {
 	// You can access matching policies by using `proxy.Policies.Dynamic`.
 	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
 }
+
+type EgressPolicyPlugin interface {
+	PolicyPlugin
+	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
+	// should be applied on the zone egress.
+	EgressMatchedPolicies(*core_mesh.ExternalServiceResource, xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+}

@@ -693,6 +693,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 			annotations: map[string]string{
 				"prometheus.metrics.kuma.io/aggregate-my-app-path":    "/stats",
 				"prometheus.metrics.kuma.io/aggregate-my-app-port":    "123",
+				"prometheus.metrics.kuma.io/aggregate-my-app-address": "localhost",
 				"prometheus.metrics.kuma.io/aggregate-my-app-enabled": "false",
 			},
 			expected: []*mesh_proto.PrometheusAggregateMetricsConfig{
@@ -701,6 +702,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 					Path:    "/stats",
 					Port:    123,
 					Enabled: util_proto.Bool(false),
+					Address: "localhost",
 				},
 			},
 		}),

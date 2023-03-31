@@ -1,6 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
 ENVOY_TAG ?= v$(ENVOY_VERSION)
-ENVOY_ARTIFACT_EXT ?=
 
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
@@ -22,6 +21,7 @@ endif
 # builds from sources. It's possible to build binaries for darwin, linux and centos by specifying GOOS
 # and ENVOY_DISTRO variables. Envoy version could be specified by ENVOY_TAG that accepts git tag or commit
 # hash values.
+# TODO remove the following 4 targets when we are using new envoy builds (when fetch.sh is no longer needed). We'll also be able to add back envoy in `BUILD_RELEASE_BINARIES` in build.mk
 .PHONY: build/envoy
 build/envoy:
 	GOOS=${GOOS} \
@@ -52,15 +52,23 @@ else
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 endif
 
-build/envoy/$(GOOS)-$(GOARCH)/%/envoy:
-	GOOS=$(GOOS) \
-	GOARCH=$(GOARCH) \
-	ENVOY_TARGET=$* \
-	ENVOY_TAG=$(ENVOY_TAG) \
-	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
-
 .PHONY: clean/envoy
 clean/envoy:
 	rm -rf ${SOURCE_DIR}
-	rm -rf build/artifacts-${GOOS}-${GOARCH}/envoy/
+	rm -rf build/artifacts-*/envoy/
 	rm -rf build/envoy/
+
+# create targets to fetch envoy for each OS/ARCH combination
+# $(1) - GOOS to build for
+# $(2) - GOARCH to build for
+define BUILD_ENVOY_TARGET
+build/artifacts-$(1)-$(2)/envoy/$(ENVOY_VERSION)-%/envoy:
+	GOOS=$(1) \
+	GOARCH=$(2) \
+	ENVOY_TARGET=$$* \
+	ENVOY_TAG=$(ENVOY_TAG) \
+	ENVOY_DISTRO=$$(firstword $$*) \
+	ENVOY_ARTIFACT_EXT=$$(lastword $$(subst -, ,$$*)) \
+	BINARY_PATH=$$@ ${KUMA_DIR}/tools/envoy/fetch.sh
+endef
+$(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_ENVOY_TARGET,$(goos),$(goarch)))))

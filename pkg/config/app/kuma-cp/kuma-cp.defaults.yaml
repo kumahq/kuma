@@ -29,29 +29,38 @@ store:
     driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
-    # Maximum number of open connections to the database
+    # MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
+    maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
+    # MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after maxConnectionLifetime to randomly decide to close a connection.
+    # This helps prevent all connections from being closed at the exact same time, starving the pool.
+    maxConnectionLifetimeJitter: "1m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
+    # HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
+    healthCheckInterval: "30s" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL
+    # MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
+    minOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS
+    # MaxOpenConnections is the maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
     maxOpenConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
-    # Maximum number of connections in the idle connection pool
+    # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-      # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
+      # Path to TLS Certificate of the client. Required when server has METHOD=cert
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-      # Path to TLS Key of the client. Used in verifyCa and verifyFull modes
+      # Path to TLS Key of the client. Required when server has METHOD=cert
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-    # MinReconnectInterval controls the duration to wait before trying to
+    # MinReconnectInterval (applied only when driverName=postgres) controls the duration to wait before trying to
     # re-establish the database connection after connection loss. After each
     # consecutive failure this interval is doubled, until MaxReconnectInterval
     # is reached. Successfully completing the connection establishment procedure
     # resets the interval back to MinReconnectInterval.
     minReconnectInterval: "10s" # ENV: KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL
-    # MaxReconnectInterval controls the maximum possible duration to wait before trying
+    # MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
     # to re-establish the database connection after connection loss.
     maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
 

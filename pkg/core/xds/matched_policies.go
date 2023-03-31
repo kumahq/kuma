@@ -93,6 +93,8 @@ type TypedMatchingPolicies struct {
 	SingleItemRules   SingleItemRules
 }
 
+type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
+
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions TrafficPermissionMap
@@ -116,7 +118,7 @@ type MatchedPolicies struct {
 	// Actual Envoy Configuration is generated without taking this ProxyTemplate into account
 	ProxyTemplate *core_mesh.ProxyTemplateResource
 
-	Dynamic map[core_model.ResourceType]TypedMatchingPolicies
+	Dynamic PluginOriginatedPolicies
 }
 
 func (m *MatchedPolicies) OrderedDynamicPolicies() []core_model.ResourceType {
