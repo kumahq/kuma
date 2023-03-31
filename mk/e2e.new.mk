@@ -123,6 +123,10 @@ test/e2e/list/new:
 	@git diff --no-index --unified=0 master-test-list.txt current-test-list.txt | cat | tail -n +6 | grep -v -E "@@|-" | cut -d "+" -f 2
 	@rm master-test-list.txt current-test-list.txt
 
+.PHONY: test/e2e/prevent-flakes
+test/e2e/prevent-flakes:
+	$(MAKE) GINKGO_E2E_TEST_FLAGS="--repeat=3 $$($(MAKE) test/e2e/list/new | xargs -I {} echo --focus=\'{}\' | tr '\n' ' ')" test/e2e test/e2e-kubernetes test/e2e-universal test/e2e-multizone
+
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
 # It runs tests with fail fast which means you don't have to wait for all tests to get information that something failed
 # Clusters are deleted only if all tests passes, otherwise clusters are live and running current test deployment
