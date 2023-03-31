@@ -255,6 +255,12 @@ func WithoutHelmOpt(name string) KumaDeploymentOption {
 	})
 }
 
+func ClearNoHelmOpts() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.noHelmOpts = nil
+	})
+}
+
 func WithEnv(name, value string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.env[name] = value
