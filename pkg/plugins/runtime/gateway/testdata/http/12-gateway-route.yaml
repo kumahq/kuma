@@ -127,6 +127,7 @@ Routes:
                 exact: gibberish
             path: /lang/json
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -153,6 +154,7 @@ Routes:
                 exact: application/json
             path: /app/json
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -179,6 +181,7 @@ Routes:
                 exact: gibberish
             prefix: /lang/json/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
