@@ -26,7 +26,7 @@ func UpgradingWithHelmChart() {
 		initialChartVersion string
 	}
 
-	DescribeTable(
+	PDescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
 			t := NewTestingT()
