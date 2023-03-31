@@ -107,11 +107,19 @@ test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
 .PHONY: test/e2e/k8s/stop
 test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
-.PHONY: test/e2e/list
-test/e2e/list:
+.PHONY: test/e2e/list/all
+test/e2e/list/all:
 	@$(GINKGO) --json-report=report.json --dry-run $(E2E_PKG_LIST) $(KUBE_E2E_PKG_LIST) $(UNIVERSAL_E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST) > /dev/null
 	@cat report.json | jq '.[].SpecReports[] | select( .LeafNodeType == "It" ) | (.ContainerHierarchyTexts | join(" ")) + " " + .LeafNodeText'
 	@rm report.json
+
+.PHONY: test/e2e/list/new
+test/e2e/list/new:
+	git checkout focus-and-repeat-tests
+	$(MAKE) test/e2e/list/all > master-test-list.txt
+	git checkout -
+	$(MAKE) test/e2e/list/all > current-test-list.txt
+	git diff --no-index --unified=0 master-test-list.txt current-test-list.txt | cat | tail -n +6 | grep -v -E "@@|-" | cut -d "+" -f 2
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
 # It runs tests with fail fast which means you don't have to wait for all tests to get information that something failed
