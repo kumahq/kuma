@@ -136,7 +136,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - bar.example.com
         name: bar.example.com
@@ -160,7 +159,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - '*.example.com'
         name: '*.example.com'
@@ -184,7 +182,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - '*'
         name: '*'
