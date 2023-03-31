@@ -25,7 +25,7 @@ type ResourceChangedEvent struct {
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
-	Recv(stop <-chan struct{}) (Event, error)
+	Recv() <-chan Event
 }
 
 type Emitter interface {
