@@ -106,7 +106,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                               weight: 20
                             - name: backend-1
                               weight: 80
-                            totalWeight: 100
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,

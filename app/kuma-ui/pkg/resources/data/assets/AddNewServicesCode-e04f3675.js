@@ -1,0 +1,12 @@
+import{L as x}from"./LoadingBox-75010714.js";import{O as y,a as N,b as A}from"./OnboardingPage-108a1f36.js";import{_ as p}from"./CodeBlock.vue_vue_type_style_index_0_lang-82aa021d.js";import{d as C,l as T,i as O,r as _,j as P,at as D,o,k as E,w as i,a as s,e,u as I,c as a,F as L,g as t,x as S,N as R,O as B,H as V}from"./index-0be248c4.js";const h=c=>(R("data-v-9b23b64f"),c=c(),B(),c),G=h(()=>t("p",{class:"mb-4 text-center"},`
+        The demo application includes two services: a Redis backend to store a counter value, and a frontend web UI to show and increment the counter.
+      `,-1)),H=h(()=>t("p",null,"To run execute the following command:",-1)),K={key:1},q={class:"status-box mt-4"},F={key:0,class:"status--is-connected","data-testid":"dpps-connected"},M={key:1,class:"status--is-disconnected","data-testid":"dpps-disconnected"},U={key:0,class:"status-loading-box mt-4"},$=C({__name:"AddNewServicesCode",setup(c){const b=T(),g=O(),f=1e3,r="https://github.com/kumahq/kuma-counter-demo/",v="https://github.com/kumahq/kuma-counter-demo/blob/master/README.md",k="kubectl apply -f https://bit.ly/3Kh2Try",n=_(!1),l=_(null),w=P(()=>g.getters["config/getEnvironment"]==="kubernetes");u(),D(function(){m()});async function u(){try{const{total:d}=await b.getAllDataplanes();n.value=d>0}catch(d){console.error(d)}finally{n.value||(m(),l.value=window.setTimeout(()=>u(),f))}}function m(){l.value!==null&&window.clearTimeout(l.value)}return(d,j)=>(o(),E(A,null,{header:i(()=>[s(y,null,{title:i(()=>[e(`
+          Add services
+        `)]),_:1})]),content:i(()=>[G,e(),I(w)?(o(),a(L,{key:0},[H,e(),s(p,{id:"code-block-kubernetes-command",language:"bash",code:k})],64)):(o(),a("div",K,[t("p",{class:"mb-4 text-center"},[e(`
+          Clone `),t("a",{href:r,target:"_blank"},"the GitHub repository"),e(` for the demo application:
+        `)]),e(),s(p,{id:"code-block-clone-command",language:"bash",code:`git clone ${r}`},null,8,["code"]),e(),t("p",{class:"mt-4 text-center"},[e(`
+          And follow the instructions in `),t("a",{href:v,target:"_blank"},"the README"),e(`.
+        `)])])),e(),t("div",null,[t("p",q,[e(`
+          DPPs status:
+
+          `),n.value?(o(),a("span",F,"Connected")):(o(),a("span",M,"Disconnected"))]),e(),n.value?S("",!0):(o(),a("div",U,[s(x)]))])]),navigation:i(()=>[s(N,{"next-step":"onboarding-dataplanes-overview","previous-step":"onboarding-add-services","should-allow-next":n.value},null,8,["should-allow-next"])]),_:1}))}});const X=V($,[["__scopeId","data-v-9b23b64f"]]);export{X as default};

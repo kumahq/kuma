@@ -1,8 +1,7 @@
 FROM debian:11 as envoy
-ARG ENVOY_VERSION
 ARG ARCH
 
-COPY /build/artifacts-linux-$ARCH/envoy/$ENVOY_VERSION/envoy /envoy
+COPY /build/artifacts-linux-$ARCH/envoy/envoy /envoy
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y libcap2-bin=1:2.44-1 && \
