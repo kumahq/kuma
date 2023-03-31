@@ -2,8 +2,6 @@ package events
 
 import (
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 func NewEventBus() *EventBus {
@@ -46,14 +44,6 @@ type reader struct {
 	events chan Event
 }
 
-func (k *reader) Recv(stop <-chan struct{}) (Event, error) {
-	select {
-	case event, ok := <-k.events:
-		if !ok {
-			return nil, errors.New("end of events channel")
-		}
-		return event, nil
-	case <-stop:
-		return nil, ListenerStoppedErr
-	}
+func (k *reader) Recv() <-chan Event {
+	return k.events
 }
