@@ -44,6 +44,8 @@ conf:
           name: customer
           value: kong
       filters:
+      - rewrite:
+          host_to_backend_hostname: true
       - request_header:
           set:
           - name: x-foo
@@ -509,6 +511,36 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
+`),
+		ErrorCase("request header filter for 'host' header when all"+
+			" backends have 'rewrite.host_to_backend_hostname' set to true",
+			validators.Violation{
+				Field:   "conf.http.rules[0].filters[0].request_header.set[0]",
+				Message: "cannot modify 'host' header, when route has set 'rewrite.host_to_backend_hostname' option",
+			}, `
+type: MeshGatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          value: /
+      filters:
+      - rewrite:
+          host_to_backend_hostname: true
+      - request_header:
+          set:
+          - name: host
+            value: foo
+      backends:
+      - weight: 5
+        destination:
+          kuma.io/service: target-1
 `),
 		ErrorCase("empty mirror filter backend", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].mirror.backend",

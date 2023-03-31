@@ -25,7 +25,6 @@ include mk/kind.mk
 include mk/k3d.mk
 include mk/e2e.new.mk
 include mk/docs.mk
-include mk/envoy.mk
 include mk/helm.mk
 include mk/ebpf.mk
 include mk/distribution.mk

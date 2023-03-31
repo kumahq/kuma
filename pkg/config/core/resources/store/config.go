@@ -18,6 +18,7 @@ type StoreType = string
 const (
 	KubernetesStore StoreType = "kubernetes"
 	PostgresStore   StoreType = "postgres"
+	PgxStore        StoreType = "pgx"
 	MemoryStore     StoreType = "memory"
 )
 

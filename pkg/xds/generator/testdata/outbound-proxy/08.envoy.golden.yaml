@@ -99,7 +99,6 @@ resources:
                       weight: 10
                     - name: es2-_1_
                       weight: 90
-                    totalWeight: 100
           statPrefix: es2
           streamIdleTimeout: 0s
     metadata:
@@ -150,7 +149,6 @@ resources:
                       weight: 10
                     - name: es2-_1_
                       weight: 90
-                    totalWeight: 100
           statPrefix: es2
           streamIdleTimeout: 0s
     metadata:
@@ -201,7 +199,6 @@ resources:
                       weight: 10
                     - name: es2-_1_
                       weight: 90
-                    totalWeight: 100
           statPrefix: es2
           streamIdleTimeout: 0s
     metadata:

@@ -243,7 +243,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             path: /ext
           route:
@@ -259,7 +258,6 @@ Routes:
               clusters:
               - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /echo/
           route:
@@ -279,7 +277,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /ext/
           route:
@@ -295,7 +292,6 @@ Routes:
               clusters:
               - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:
