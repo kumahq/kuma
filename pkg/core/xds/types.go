@@ -183,7 +183,9 @@ type MeshResources struct {
 	EndpointMap                    EndpointMap
 	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
 	ExternalServiceRateLimits      ExternalServiceRateLimitMap
-	Dynamic                        ExternalServiceDynamicPolicies
+
+	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
+	Dynamic ExternalServiceDynamicPolicies
 }
 
 type ZoneEgressProxy struct {
