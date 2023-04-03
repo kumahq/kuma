@@ -2,8 +2,10 @@ package externalservices
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -15,15 +17,17 @@ import (
 )
 
 func ExternalServices() {
-	meshName := "external-services"
-	namespace := "external-services"
-	clientNamespace := "client-external-services"
+	tpName := "traffic-to-es-" + strings.ToLower(random.UniqueId())
+	es1PolicyName := "external-service-1-" + strings.ToLower(random.UniqueId())
+	meshName := "external-services-" + strings.ToLower(random.UniqueId())
+	namespace := "external-services-" + strings.ToLower(random.UniqueId())
+	clientNamespace := "client-external-services-" + strings.ToLower(random.UniqueId())
 
 	mesh := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: external-services
+  name: %s
 spec:
   mtls:
     enabledBackend: ca-1
@@ -36,8 +40,8 @@ spec:
   routing:
     zoneEgress: true
 `
-	meshPassthroughEnabled := fmt.Sprintf(mesh, "true")
-	meshPassthroughDisabled := fmt.Sprintf(mesh, "false")
+	meshPassthroughEnabled := fmt.Sprintf(mesh, meshName, "true")
+	meshPassthroughDisabled := fmt.Sprintf(mesh, meshName, "false")
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -48,7 +52,7 @@ spec:
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-external-services")
+		err = k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-"+meshName)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -59,26 +63,26 @@ spec:
 	})
 
 	Context("non-TLS", func() {
-		externalService := `
+		externalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
-mesh: external-services
+mesh: %s
 metadata:
-  name: external-service-1
+  name: %s
 spec:
   tags:
     kuma.io/service: external-service
     kuma.io/protocol: http
   networking:
-    address: external-service.external-services.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`
+    address: external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
+`, meshName, es1PolicyName, namespace)
 
-		trafficPermission := `
+		trafficPermission := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: TrafficPermission
-mesh: external-services
+mesh: %s
 metadata:
-  name: traffic-to-es
+  name: %s
 spec:
   sources:
     - match:
@@ -86,7 +90,7 @@ spec:
   destinations:
     - match:
         kuma.io/service: external-service
-`
+`, meshName, tpName)
 
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -100,7 +104,7 @@ spec:
 			// given working communication outside the mesh with passthrough enabled and no traffic permission
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					kubernetes.Cluster, "demo-client", fmt.Sprintf("external-service.%s", namespace),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -112,7 +116,7 @@ spec:
 			// then accessing the external service is no longer possible
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					kubernetes.Cluster, "demo-client", fmt.Sprintf("external-service.%s", namespace),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -125,7 +129,7 @@ spec:
 			// then traffic is still blocked because of lack of the traffic permission
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					kubernetes.Cluster, "demo-client", fmt.Sprintf("external-service.%s", namespace),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -138,7 +142,7 @@ spec:
 			// then you can access external service again
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					kubernetes.Cluster, "demo-client", fmt.Sprintf("external-service.%s", namespace),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -156,7 +160,7 @@ spec:
 	})
 
 	Context("TLS", func() {
-		tlsExternalService := `
+		tlsExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 mesh: external-services
@@ -167,10 +171,10 @@ spec:
     kuma.io/service: tls-external-service
     kuma.io/protocol: http
   networking:
-    address: tls-external-service.external-services.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
+    address: tls-external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
     tls:
       enabled: true
-`
+`, namespace)
 
 		tlsTrafficPermission := `
 apiVersion: kuma.io/v1alpha1
