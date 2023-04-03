@@ -1,6 +1,8 @@
 package healthcheck
 
 import (
+	"github.com/gruntwork-io/terratest/modules/random"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,8 +16,8 @@ import (
 )
 
 func ApplicationOnUniversalClientOnK8s() {
-	namespace := "healthcheck-app-on-universal"
-	meshName := "healthcheck-app-on-universal"
+	namespace := "healthcheck-app-on-universal-" + strings.ToLower(random.UniqueId())
+	meshName := "healthcheck-app-on-universal-" + strings.ToLower(random.UniqueId())
 
 	BeforeAll(func() {
 		err := multizone.Global.Install(MTLSMeshUniversal(meshName))
