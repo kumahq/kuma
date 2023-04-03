@@ -222,7 +222,8 @@ var _ = Describe("Proxy Builder", func() {
 					},
 				},
 			}))
-			Expect(proxy.Routing.OutboundTargets).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
+			Expect(proxy.ZoneIngressProxy.MeshResourceList).To(HaveLen(1))
+			Expect(proxy.ZoneIngressProxy.MeshResourceList[0].EndpointMap).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
 				Target: "192.168.0.3",
 				Port:   8080,
 				Tags: map[string]string{
@@ -231,7 +232,7 @@ var _ = Describe("Proxy Builder", func() {
 				},
 				Weight: 1,
 			}}))
-			Expect(proxy.ZoneIngress.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
+			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
 				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 					{
 						Tags: map[string]string{

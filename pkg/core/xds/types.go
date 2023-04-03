@@ -132,7 +132,6 @@ type Proxy struct {
 	Id                  ProxyId
 	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
-	ZoneIngress         *core_mesh.ZoneIngressResource
 	Metadata            *DataplaneMetadata
 	Routing             Routing
 	Policies            MatchedPolicies
@@ -195,10 +194,17 @@ type ZoneEgressProxy struct {
 	MeshResourcesList  []*MeshResources
 }
 
+type MeshIngressResources struct {
+	Mesh        *core_mesh.MeshResource
+	EndpointMap EndpointMap
+}
+
 type ZoneIngressProxy struct {
-	GatewayRoutes   *core_mesh.MeshGatewayRouteResourceList
-	MeshGateways    *core_mesh.MeshGatewayResourceList
-	PolicyResources map[core_model.ResourceType]core_model.ResourceList
+	ZoneIngressResource *core_mesh.ZoneIngressResource
+	GatewayRoutes       *core_mesh.MeshGatewayRouteResourceList
+	MeshGateways        *core_mesh.MeshGatewayResourceList
+	PolicyResources     map[core_model.ResourceType]core_model.ResourceList
+	MeshResourceList    []*MeshIngressResources
 }
 
 type VIPDomains struct {

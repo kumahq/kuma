@@ -140,7 +140,7 @@ networking:
 			mesh,
 			"external-service-in-kube-zone1",
 		)
-		filterIngress := "cluster.external-service-in-kube-zone1.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-kube-zone1.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -167,7 +167,7 @@ networking:
 			mesh,
 			"external-service-in-uni-zone4",
 		)
-		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-uni-zone4.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -196,7 +196,7 @@ networking:
 			meshNoZoneEgress,
 			"demo-es-in-uni-zone4",
 		)
-		filterIngress := "cluster.demo-es-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_demo-es-in-uni-zone4.upstream_rq_total", meshNoZoneEgress)
 
 		// and there is no stat because external service is not exposed through ingress
 		Eventually(func(g Gomega) {
