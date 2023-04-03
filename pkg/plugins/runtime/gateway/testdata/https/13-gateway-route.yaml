@@ -234,6 +234,7 @@ Routes:
         - match:
             path: /match/bar
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -253,6 +254,7 @@ Routes:
         - match:
             path: /match/baz
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -272,6 +274,7 @@ Routes:
         - match:
             prefix: /match/baz/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -293,6 +296,7 @@ Routes:
               googleRe2: {}
               regex: /match/foo
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

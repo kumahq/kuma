@@ -195,6 +195,7 @@ Routes:
           requestHeadersToRemove:
           - delete-another
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             requestMirrorPolicies:
             - cluster: echo-mirror-90205ae37cc0294e
               runtimeFraction:
