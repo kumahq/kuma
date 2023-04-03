@@ -354,6 +354,7 @@ jobs:
             else
               export MAKE_PARAMETERS="-j2"
             fi
+
             if [[ "<< parameters.deltaKDS >>" == true ]]; then
               export KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=true
             fi
