@@ -224,7 +224,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - three.example.com
         name: three.example.com
@@ -248,7 +247,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - one.example.com
         name: one.example.com
@@ -272,7 +270,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

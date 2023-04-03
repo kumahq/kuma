@@ -18,7 +18,6 @@ virtualHosts:
               key: x-kuma-tags
               value: '&kuma.io/service=sample-gateway&'
           weight: 1
-        totalWeight: 1
     typedPerFilterConfig:
       envoy.filters.http.local_ratelimit:
         '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
