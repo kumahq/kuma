@@ -151,6 +151,7 @@ Routes:
               key: X-Kuma-Test
               value: value
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

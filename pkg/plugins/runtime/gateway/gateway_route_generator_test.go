@@ -281,6 +281,8 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 302
+          path:
+            replaceFull: /redirected
 `,
 		),
 
@@ -367,6 +369,15 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /otherprefix/a
+      filters:
+        - redirect:
+            status_code: 302
+            path:
+              replacePrefixMatch: "/a"
 `,
 		),
 
@@ -1640,6 +1651,26 @@ conf:
     retryOn:
       - all_5xx
     numRetries: 20
+`,
+		),
+		Entry("handled unresolved-backend tag",
+			"unresolved-backend.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: unresolved-backend
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: kuma.io/unresolved-backend
 `,
 		),
 	}

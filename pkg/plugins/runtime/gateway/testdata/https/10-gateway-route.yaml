@@ -259,6 +259,7 @@ Routes:
                 regex: .*sh
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -282,6 +283,7 @@ Routes:
                 exact: application/json
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -305,6 +307,7 @@ Routes:
                 exact: gibberish
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -327,6 +330,7 @@ Routes:
               presentMatch: true
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -349,6 +353,7 @@ Routes:
               presentMatch: false
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
