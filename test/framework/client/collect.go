@@ -28,6 +28,7 @@ type CollectResponsesOpts struct {
 	numberOfRequests      int
 	maxConcurrentRequests int
 	maxTime               int
+	maxCurlRetry          int
 	verbose               bool
 	cacert                string
 	URL                   string
@@ -48,6 +49,7 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 		numberOfRequests:      10,
 		maxConcurrentRequests: 10,
 		maxTime:               5,
+		maxCurlRetry:          3,
 		verbose:               false,
 		Method:                "GET",
 		Headers:               map[string]string{},
@@ -261,6 +263,8 @@ func CollectResponse(
 ) (string, string, error) {
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
+		"--retry", strconv.Itoa(opts.maxCurlRetry),
+		"--retry-all-errors",
 		"--request", opts.Method,
 		opts.ShellEscaped(opts.URL),
 	)
