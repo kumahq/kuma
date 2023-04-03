@@ -15,7 +15,7 @@ spec:
     - port: 10080
       name: http
       appProtocol: http
-      targetPort: 80
+      targetPort: 8080
   selector:
     app: externalservice-http-server
 
@@ -42,16 +42,16 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: mendhak/http-https-echo
+          image: mendhak/http-https-echo:23
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 3
             periodSeconds: 3
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           resources:
             limits:
               cpu: 50m
