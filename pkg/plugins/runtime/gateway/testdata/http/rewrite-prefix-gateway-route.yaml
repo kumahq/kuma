@@ -118,6 +118,17 @@ Routes:
         name: echo.example.com
         routes:
         - match:
+            path: /otherprefix/a
+          redirect:
+            portRedirect: 8080
+            regexRewrite:
+              pattern:
+                googleRe2: {}
+                regex: .*
+              substitution: /a
+            responseCode: FOUND
+            stripQuery: true
+        - match:
             path: /prefix/a
           route:
             regexRewrite:
@@ -141,6 +152,13 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
+        - match:
+            prefix: /otherprefix/a/
+          redirect:
+            portRedirect: 8080
+            prefixRewrite: /a/
+            responseCode: FOUND
+            stripQuery: true
         - match:
             prefix: /prefix/a/
           route:

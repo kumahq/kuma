@@ -281,6 +281,8 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 302
+          path:
+            replaceFull: /redirected
 `,
 		),
 
@@ -367,6 +369,15 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /otherprefix/a
+      filters:
+        - redirect:
+            status_code: 302
+            path:
+              replacePrefixMatch: "/a"
 `,
 		),
 
