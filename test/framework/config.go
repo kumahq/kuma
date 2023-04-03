@@ -266,7 +266,7 @@ var defaultConf = E2eConfig{
 	ZoneIngressApp:       "kuma-ingress",
 	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
 	CleanupLogsOnSuccess: false,
-	KumaDeltaKDS: false,
+	KumaDeltaKDS:         false,
 }
 
 func init() {
