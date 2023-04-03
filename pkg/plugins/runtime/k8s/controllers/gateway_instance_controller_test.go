@@ -3,7 +3,6 @@ package controllers_test
 import (
 	"context"
 	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_apps "k8s.io/api/apps/v1"
@@ -19,6 +18,7 @@ import (
 	kuma_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("GatewayInstanceReconciler", func() {
@@ -70,11 +70,11 @@ var _ = Describe("GatewayInstanceReconciler", func() {
 						Spec: kuma_k8s.MeshGatewayPodSpec{
 							ServiceAccountName: "test",
 							PodSecurityContext: kuma_k8s.PodSecurityContext{
-								FSGroup: 4000,
+								FSGroup: pointer.To(int64(4000)),
 							},
 							Container: kuma_k8s.Container{
 								SecurityContext: kuma_k8s.SecurityContext{
-									ReadOnlyRootFilesystem: false,
+									ReadOnlyRootFilesystem: pointer.To(false),
 								},
 							},
 						},

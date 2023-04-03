@@ -35,6 +35,7 @@ import (
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -258,7 +259,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				},
 			)
 
-			container.SecurityContext.AllowPrivilegeEscalation = boolPointer(false)
+			container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
 
 			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
 			if err != nil {
@@ -281,20 +282,18 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
 			}
 
-			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != 0 {
+			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != nil {
 				if securityContext == nil {
 					securityContext = &kube_core.PodSecurityContext{}
 				}
-				securityContext.FSGroup = &fsGroup
+				securityContext.FSGroup = fsGroup
 			}
 
-			if readOnlyRFS := gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem; readOnlyRFS {
-				container.SecurityContext.ReadOnlyRootFilesystem = &readOnlyRFS
-			}
+			container.SecurityContext.ReadOnlyRootFilesystem = gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem
 
 			container.VolumeMounts = []kube_core.VolumeMount{
 				{
-					Name:      "tmp-dir",
+					Name:      "tmp",
 					MountPath: "/tmp",
 				},
 			}
@@ -303,14 +302,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				SecurityContext: securityContext,
 				Containers:      []kube_core.Container{container},
 			}
-
-			if serviceAccountName := gatewayInstance.Spec.PodTemplate.Spec.ServiceAccountName; serviceAccountName != "" {
-				podSpec.ServiceAccountName = serviceAccountName
-			}
+			podSpec.ServiceAccountName = gatewayInstance.Spec.PodTemplate.Spec.ServiceAccountName
 
 			podSpec.Volumes = []kube_core.Volume{
 				{
-					Name: "tmp-dir",
+					Name: "tmp",
 					VolumeSource: kube_core.VolumeSource{
 						EmptyDir: &kube_core.EmptyDirVolumeSource{},
 					},
@@ -499,8 +495,4 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		// reconciling both Instances.
 		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
-}
-
-func boolPointer(b bool) *bool {
-	return &b
 }

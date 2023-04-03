@@ -126,7 +126,7 @@ type MeshGatewayPodSpec struct {
 type PodSecurityContext struct {
 	// FSGroup corresponds to PodSpec.SecurityContext.FSGroup
 	// +optional
-	FSGroup int64 `json:"fsGroup,omitempty"`
+	FSGroup *int64 `json:"fsGroup,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -143,7 +143,7 @@ type Container struct {
 type SecurityContext struct {
 	// ReadOnlyRootFilesystem corresponds to PodSpec.Container.SecurityContext.ReadOnlyRootFilesystem
 	// +optional
-	ReadOnlyRootFilesystem bool `json:"readOnlyRootFilesystem,omitempty"`
+	ReadOnlyRootFilesystem *bool `json:"readOnlyRootFilesystem,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
