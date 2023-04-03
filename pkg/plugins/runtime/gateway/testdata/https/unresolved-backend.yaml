@@ -1,139 +1,7 @@
 Clusters:
-  Resources:
-    api-service-4508437668c35ed8:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: api-service-4508437668c35ed8
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      perConnectionBufferLimitBytes: 32768
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
-    echo-mirror-3dd740a2de879d4c:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: echo-mirror-3dd740a2de879d4c
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      perConnectionBufferLimitBytes: 32768
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
-    echo-service-9f149ed9e14091ca:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      perConnectionBufferLimitBytes: 32768
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
+  Resources: {}
 Endpoints:
-  Resources:
-    api-service-4508437668c35ed8:
-      clusterName: api-service-4508437668c35ed8
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.1
-                portValue: 20001
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-    echo-mirror-3dd740a2de879d4c:
-      clusterName: echo-mirror-3dd740a2de879d4c
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.3
-                portValue: 20003
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-    echo-service-9f149ed9e14091ca:
-      clusterName: echo-service-9f149ed9e14091ca
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+  Resources: {}
 Listeners:
   Resources:
     edge-gateway:HTTPS:8080:
@@ -232,53 +100,20 @@ Routes:
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
-            path: /api
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            retryPolicy:
-              numRetries: 20
-              retryOn: 5xx
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: api-service-4508437668c35ed8
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-        - match:
-            prefix: /api/
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            retryPolicy:
-              numRetries: 20
-              retryOn: 5xx
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: api-service-4508437668c35ed8
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-        - match:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            requestMirrorPolicies:
-            - cluster: echo-mirror-3dd740a2de879d4c
-              runtimeFraction:
-                defaultValue:
-                  numerator: 1
             retryPolicy:
-              numRetries: 20
-              retryOn: 5xx
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-9f149ed9e14091ca
+              - name: kuma.io/unresolved-backend
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
