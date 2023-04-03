@@ -59,6 +59,7 @@ func ApplicationOnUniversalClientOnK8s() {
 		expectHealthyInstances := func(g Gomega) {
 			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithMaxConcurrentReqeusts(1),
 				client.WithNumberOfRequests(10),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -66,7 +67,7 @@ func ApplicationOnUniversalClientOnK8s() {
 			g.Expect(instances).To(And(HaveKey("dp-universal-1"), HaveKey("dp-universal-3")))
 		}
 
-		Eventually(expectHealthyInstances, MustPassRepeatedly(5)).WithTimeout(30 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
+		Eventually(expectHealthyInstances).WithTimeout(30 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
 		Consistently(expectHealthyInstances).WithTimeout(10 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
 	})
 }
