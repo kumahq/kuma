@@ -356,7 +356,7 @@ jobs:
             fi
 
             if [[ "<< parameters.deltaKDS >>" == true ]]; then
-              export KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=true
+              export KUMA_DELTA_KDS=true
             fi
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
