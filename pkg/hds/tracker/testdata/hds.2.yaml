@@ -28,4 +28,8 @@ clusterHealthChecks:
         socketAddress:
           address: 192.168.0.1
           portValue: 80
+  upstreamBindConfig:
+    sourceAddress:
+      address: 127.0.0.6
+      portValue: 0
 interval: 8s
