@@ -98,8 +98,7 @@ func TestConformance(t *testing.T) {
 	var passingTests []suite.ConformanceTest
 	for _, test := range tests.ConformanceTests {
 		switch test.ShortName {
-		case tests.HTTPRouteDisallowedKind.ShortName, // TODO: we only support HTTPRoute so it's not yet possible to test this
-			tests.TLSRouteSimpleSameNamespace.ShortName: // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
+		case tests.TLSRouteSimpleSameNamespace.ShortName: // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
 			continue
 		}
 		passingTests = append(passingTests, test)
