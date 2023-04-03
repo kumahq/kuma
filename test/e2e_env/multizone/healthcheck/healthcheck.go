@@ -66,7 +66,7 @@ func ApplicationOnUniversalClientOnK8s() {
 			g.Expect(instances).To(And(HaveKey("dp-universal-1"), HaveKey("dp-universal-3")))
 		}
 
-		Eventually(expectHealthyInstances).WithTimeout(30 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
+		Eventually(expectHealthyInstances, MustPassRepeatedly(5)).WithTimeout(30 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
 		Consistently(expectHealthyInstances).WithTimeout(10 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
 	})
 }
