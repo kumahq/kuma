@@ -12,7 +12,7 @@ clusterHealthChecks:
   - endpoints:
     - address:
         socketAddress:
-          address: 127.0.0.1
+          address: 127.0.0.6
           portValue: 9901
 - clusterName: localhost:80
   healthChecks:
