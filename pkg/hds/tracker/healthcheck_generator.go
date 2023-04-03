@@ -137,7 +137,7 @@ func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.
 				Address: &envoy_core.Address{
 					Address: &envoy_core.Address_SocketAddress{
 						SocketAddress: &envoy_core.SocketAddress{
-							Address: "127.0.0.1",
+							Address: "127.0.0.6",
 							PortSpecifier: &envoy_core.SocketAddress_PortValue{
 								PortValue: port,
 							},
