@@ -187,5 +187,45 @@ var _ = Describe("PostgresStoreConfig", func() {
 			},
 			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),
+		Entry("MinOpenConnections is greater than MaxOpenConnections", validateTestCase{
+			config: postgres.PostgresStoreConfig{
+				Host:                 "localhost",
+				User:                 "postgres",
+				Password:             "postgres",
+				DbName:               "kuma",
+				TLS:                  postgres.DefaultTLSPostgresStoreConfig(),
+				MinReconnectInterval: config_types.Duration{Duration: 1 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MinOpenConnections:   5,
+				MaxOpenConnections:   1,
+			},
+			error: "MinOpenConnections should be less than MaxOpenConnections",
+		}),
+		Entry("MinOpenConnections should be greater than 0", validateTestCase{
+			config: postgres.PostgresStoreConfig{
+				Host:                 "localhost",
+				User:                 "postgres",
+				Password:             "postgres",
+				DbName:               "kuma",
+				TLS:                  postgres.DefaultTLSPostgresStoreConfig(),
+				MinReconnectInterval: config_types.Duration{Duration: 1 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MinOpenConnections:   -1,
+			},
+			error: "MinOpenConnections should be greater than 0",
+		}),
+		Entry("MaxConnectionLifetime should be greater than 0", validateTestCase{
+			config: postgres.PostgresStoreConfig{
+				Host:                  "localhost",
+				User:                  "postgres",
+				Password:              "postgres",
+				DbName:                "kuma",
+				TLS:                   postgres.DefaultTLSPostgresStoreConfig(),
+				MinReconnectInterval:  config_types.Duration{Duration: 1 * time.Second},
+				MaxReconnectInterval:  config_types.Duration{Duration: 10 * time.Second},
+				HealthCheckInterval:  config_types.Duration{Duration: -1 * time.Second},
+			},
+			error: "HealthCheckInterval should be greater than 0",
+		}),
 	)
 })
