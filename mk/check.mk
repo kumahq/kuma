@@ -36,7 +36,7 @@ helm-lint:
 
 .PHONY: ginkgo/unfocus
 ginkgo/unfocus:
-	@$(GINKGO) unfocus
+	#@$(GINKGO) unfocus
 
 .PHONY: ginkgo/lint
 ginkgo/lint:

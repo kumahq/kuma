@@ -28,7 +28,7 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Multizone Suite")
 }
 
-//var _ = SynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
+// var _ = SynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
 
 var (
 	_ = PDescribe("Gateway", gateway.GatewayHybrid, Ordered)
