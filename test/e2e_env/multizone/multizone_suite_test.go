@@ -48,7 +48,7 @@ var (
 	_ = PDescribe("Sync V2", multizone_sync.SyncV2, Ordered)
 	_ = PDescribe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = PDescribe("Zone Disable", zonedisable.ZoneDisable, Ordered)
-	_ = FDescribe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
+	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
 	_ = PDescribe("Ownership", ownership.MultizoneUniversal, Ordered)
 	_ = PDescribe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = PDescribe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
