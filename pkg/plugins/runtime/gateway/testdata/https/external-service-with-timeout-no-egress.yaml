@@ -132,6 +132,7 @@ Routes:
         - match:
             path: /ext
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -147,6 +148,7 @@ Routes:
         - match:
             prefix: /ext/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

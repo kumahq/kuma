@@ -1653,6 +1653,26 @@ conf:
     numRetries: 20
 `,
 		),
+		Entry("handled unresolved-backend tag",
+			"unresolved-backend.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: unresolved-backend
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: kuma.io/unresolved-backend
+`,
+		),
 	}
 
 	tcpEntries := []TableEntry{
