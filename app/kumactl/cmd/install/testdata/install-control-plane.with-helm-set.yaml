@@ -2976,6 +2976,43 @@ spec:
                                     is 10 times the "BaseInterval".
                                   type: string
                               type: object
+                            hostSelection:
+                              description: HostSelection is a list of predicates that
+                                dictate how hosts should be selected when requests
+                                are retried.
+                              items:
+                                properties:
+                                  predicate:
+                                    description: Type is requested predicate mode.
+                                      Available values are OmitPreviousHosts, OmitHostsWithTags,
+                                      and OmitPreviousPriorities.
+                                    type: string
+                                  tags:
+                                    additionalProperties:
+                                      type: string
+                                    description: Tags is a map of metadata to match
+                                      against for selecting the omitted hosts. Required
+                                      if Type is OmitHostsWithTags
+                                    type: object
+                                  updateFrequency:
+                                    description: UpdateFrequency is how often the
+                                      priority load should be updated based on previously
+                                      attempted priorities. Used for OmitPreviousPriorities.
+                                      Default is 2 if not set.
+                                    format: int32
+                                    type: integer
+                                required:
+                                - predicate
+                                type: object
+                              type: array
+                            hostSelectionMaxAttempts:
+                              description: HostSelectionMaxAttempts is the maximum
+                                number of times host selection will be reattempted
+                                before giving up, at which point the host that was
+                                last selected will be routed to. If unspecified, this
+                                will default to retrying once.
+                              format: int64
+                              type: integer
                             numRetries:
                               description: NumRetries is the number of attempts that
                                 will be made on failed (and retriable) requests

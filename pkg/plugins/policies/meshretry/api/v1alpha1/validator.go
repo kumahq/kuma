@@ -79,7 +79,8 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("http")
 	if http.NumRetries == nil && http.PerTryTimeout == nil && http.BackOff == nil && http.RetryOn == nil &&
-		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil && http.RateLimitedBackOff == nil {
+		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil &&
+		http.RateLimitedBackOff == nil && http.HostSelection == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if http.BackOff != nil {
@@ -90,6 +91,9 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	}
 	if http.RetryOn != nil {
 		verr.AddErrorAt(path, validateHTTPRetryOn(*http.RetryOn))
+	}
+	if http.HostSelection != nil {
+		verr.AddErrorAt(path, validateHostSelection(http.HostSelection))
 	}
 	return verr
 }
@@ -171,6 +175,29 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 		}
 	}
 
+	return verr
+}
+
+func validateHostSelection(predicates *[]Predicate) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("hostSelection")
+
+	for i, predicate := range *predicates {
+		switch predicate.PredicateType {
+		case OmitHostsWithTags:
+			if predicate.Tags == nil {
+				verr.AddViolationAt(path.Index(i).Field("tags"), validators.MustBeDefined)
+			}
+		case OmitPreviousPriorities:
+			if predicate.UpdateFrequency <= 0 {
+				verr.AddViolationAt(path.Index(i).Field("updateFrequency"), validators.MustBeDefinedAndGreaterThanZero)
+			}
+		case OmitPreviousHosts:
+		default:
+			verr.AddViolationAt(path.Index(i).Field("predicate"), fmt.Sprintf("unknown predicate type '%v'",
+				predicate.PredicateType))
+		}
+	}
 	return verr
 }
 
