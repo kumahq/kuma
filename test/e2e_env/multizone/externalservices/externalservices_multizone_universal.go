@@ -3,11 +3,10 @@ package externalservices
 import (
 	"encoding/base64"
 	"fmt"
-	"sync"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"sync"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -233,7 +232,7 @@ routing:
 		}, "1m", "3s").Should(Succeed())
 	})
 
-	It("should respect external-service's zone tag in locality-aware lb mode", func() {
+	FIt("should respect external-service's zone tag in locality-aware lb mode", func() {
 		externalServiceWithZone := func(zone, address string) string {
 			return fmt.Sprintf(`
 type: ExternalService

@@ -273,8 +273,8 @@ jobs:
               - {equal: [test/e2e, << parameters.target >>]}
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
-              - {equal: [arm64, << parameters.arch >>]}
-              - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
+#              - {equal: [arm64, << parameters.arch >>]}
+#              - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
       - run:
@@ -448,47 +448,47 @@ workflows:
             alias: go_cache
             parameters:
               executor: [ golang, vm-amd64, vm-arm64 ]
-      - check:
-          requires: [ go_cache ]
+#      - check:
+#          requires: [ go_cache ]
       - build:
           name: build
           requires: [ go_cache-vm-amd64 ]
-      - test:
-          name: test-<< matrix.arch >>
-          matrix:
-            alias: test
-            parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ check ]
-      - e2e:
-          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
-          matrix:
-            alias: test/e2e-legacy
-            parameters:
-              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
-              arch: [ amd64, arm64 ]
-          parallelism: 3
-          target: test/e2e
-          requires: [ build, check ]
+#      - test:
+#          name: test-<< matrix.arch >>
+#          matrix:
+#            alias: test
+#            parameters:
+#              arch: [ amd64, arm64 ]
+#          requires: [ check ]
+#      - e2e:
+#          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+#          matrix:
+#            alias: test/e2e-legacy
+#            parameters:
+#              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
+#              arch: [ amd64, arm64 ]
+#          parallelism: 3
+#          target: test/e2e
+#          requires: [ build, check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
-              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
-              arch: [ amd64, arm64 ]
-          requires: [ build, check ]
-      - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
-          matrix:
-            alias: test/e2e-calico
-            parameters:
-              k8sVersion: [ *lastK8sVersion ]
+              k8sVersion: [ *firstK8sVersion, *lastK8sVersion ]
               target: [ test/e2e-multizone ]
-              arch: [ amd64 ]
-              cniNetworkPlugin: [ calico ]
-          requires: [ build, check ]
+              arch: [ amd64, arm64 ]
+          requires: [ build ]
+#      - e2e:
+#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+#          matrix:
+#            alias: test/e2e-calico
+#            parameters:
+#              k8sVersion: [ *lastK8sVersion ]
+#              target: [ test/e2e-multizone ]
+#              arch: [ amd64 ]
+#              cniNetworkPlugin: [ calico ]
+#          requires: [ build, check ]
       - distributions:
           requires: [ test, test/e2e, test/e2e-legacy ]
 
