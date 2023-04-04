@@ -22,11 +22,11 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
-	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=20m -v
 
 .PHONY: golangci-lint-fmt
 golangci-lint-fmt:
-	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=20m -v \
 		--disable-all \
 		--enable gofumpt
 
