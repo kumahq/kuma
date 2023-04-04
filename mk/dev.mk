@@ -1,4 +1,5 @@
 KUMA_DIR ?= .
+ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
