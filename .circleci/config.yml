@@ -406,7 +406,7 @@ jobs:
           env: ALLOW_PUSH=true
       - setenv_depending_on_priority:
           label: ci/run-full-matrix
-          env: ENABLED_GOARCHES="arm64" ENABLED_GOOSES="linux"
+          env: ENABLED_GOARCHES="amd64" ENABLED_GOOSES="linux"
       # Mount files from the upstream jobs
       - restore_cache:
           keys:
@@ -477,7 +477,7 @@ workflows:
             parameters:
               k8sVersion: [ *firstK8sVersion, *lastK8sVersion ]
               target: [ test/e2e-multizone ]
-              arch: [ arm64 ]
+              arch: [ amd64 ]
           requires: [ build, check ]
 #      - e2e:
 #          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
