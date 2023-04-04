@@ -448,8 +448,8 @@ workflows:
             alias: go_cache
             parameters:
               executor: [ golang, vm-amd64, vm-arm64 ]
-#      - check:
-#          requires: [ go_cache ]
+      - check:
+          requires: [ go_cache ]
       - build:
           name: build
           requires: [ go_cache-vm-amd64 ]
@@ -478,7 +478,7 @@ workflows:
               k8sVersion: [ *firstK8sVersion, *lastK8sVersion ]
               target: [ test/e2e-multizone ]
               arch: [ amd64, arm64 ]
-          requires: [ build ]
+          requires: [ build, check ]
 #      - e2e:
 #          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
 #          matrix:
