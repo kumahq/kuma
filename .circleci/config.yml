@@ -489,6 +489,6 @@ workflows:
 #              arch: [ amd64 ]
 #              cniNetworkPlugin: [ calico ]
 #          requires: [ build, check ]
-      - distributions:
-          requires: [ test, test/e2e, test/e2e-legacy ]
+#      - distributions:
+#          requires: [ test, test/e2e, test/e2e-legacy ]
 
