@@ -310,6 +310,22 @@ var _ = Describe("Rules", func() {
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
+			Entry("single matched not", testCase{
+				rules: xds.Rules{
+					{
+						Subset: []xds.Tag{
+							{Key: "key1", Value: "val1", Not: true},
+						},
+						Conf: meshtrafficpermission_api.Conf{
+							Action: "Allow",
+						},
+					},
+				},
+				subset: []xds.Tag{
+					{Key: "key1", Value: "val2"},
+				},
+				confYAML: []byte(`action: Allow`),
+			}),
 			Entry("single matched rule, rule and subset with negation", testCase{
 				rules: xds.Rules{
 					{
