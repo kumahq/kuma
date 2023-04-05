@@ -182,23 +182,6 @@ message MeshGatewayRoute {
             [ (doc.required) = true, (validate.rules).double.lte = 100.0 ];
       };
 
-      message Rewrite {
-        oneof path {
-          string replace_full = 1;
-          // Note that rewriting "/prefix" to "/" will do the right thing:
-          // - the path "/prefix" is rewritten to "/"
-          // - the path "/prefix/rest" is rewritten to "/rest"
-          string replace_prefix_match = 2;
-        }
-        // Option to indicate that during forwarding, the host header should
-        // be swapped with the hostname of the upstream host chosen by the
-        // Envoy's cluster manager. BE AWARE:
-        // - it's mutually exclusive with request_header filter which
-        // explicitly
-        //   replaces "host" header
-        bool host_to_backend_hostname = 3;
-      }
-
       // The redirect filter responds to the HTTP request immediately,
       // without forwarding it to any backend. The response is a HTTP
       // redirect message.
@@ -225,9 +208,24 @@ message MeshGatewayRoute {
           (validate.rules).uint32.gte = 300,
           (validate.rules).uint32.lte = 308
         ];
-
-        Rewrite path = 5;
       };
+
+      message Rewrite {
+        oneof path {
+          string replace_full = 1;
+          // Note that rewriting "/prefix" to "/" will do the right thing:
+          // - the path "/prefix" is rewritten to "/"
+          // - the path "/prefix/rest" is rewritten to "/rest"
+          string replace_prefix_match = 2;
+        }
+        // Option to indicate that during forwarding, the host header should
+        // be swapped with the hostname of the upstream host chosen by the
+        // Envoy's cluster manager. BE AWARE:
+        // - it's mutually exclusive with request_header filter which
+        // explicitly
+        //   replaces "host" header
+        bool host_to_backend_hostname = 3;
+      }
 
       oneof filter {
         HeaderFilter request_header = 1;

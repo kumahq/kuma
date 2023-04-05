@@ -371,27 +371,6 @@ func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 			// Looks like https://github.com/envoyproxy/envoy/issues/19589
 			envoyRedirect.PortRedirect = port
 		}
-		if rewrite := redirect.PathRewrite; rewrite != nil {
-			if rewrite.ReplaceFullPath != nil {
-				envoyRedirect.PathRewriteSpecifier = &envoy_config_route.RedirectAction_RegexRewrite{
-					RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
-						Pattern: &envoy_type_matcher.RegexMatcher{
-							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-								GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-							},
-							Regex: `.*`,
-						},
-						Substitution: *rewrite.ReplaceFullPath,
-					},
-				}
-			}
-
-			if rewrite.ReplacePrefixMatch != nil {
-				envoyRedirect.PathRewriteSpecifier = &envoy_config_route.RedirectAction_PrefixRewrite{
-					PrefixRewrite: *rewrite.ReplacePrefixMatch,
-				}
-			}
-		}
 
 		switch redirect.Status {
 		case 301:

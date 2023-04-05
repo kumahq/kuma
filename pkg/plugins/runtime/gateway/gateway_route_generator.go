@@ -95,13 +95,6 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
 				exactPathRewrite = &rewrite
 			}
-			var exactPathRedirectPathRewrite *string
-			if redir := e.Action.Redirect; redir != nil {
-				if rw := redir.PathRewrite; rw != nil && rw.ReplacePrefixMatch != nil {
-					rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
-					exactPathRedirectPathRewrite = &rewrite
-				}
-			}
 
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
@@ -112,10 +105,6 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 			if exactPathRewrite != nil {
 				replace := *exactPathRewrite + "/"
 				e.Rewrite.ReplacePrefixMatch = &replace
-			}
-			if exactPathRedirectPathRewrite != nil {
-				replace := *exactPathRedirectPathRewrite + "/"
-				e.Action.Redirect.PathRewrite.ReplacePrefixMatch = &replace
 			}
 			entries = append(entries, e)
 
@@ -142,17 +131,6 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 					exactMatch.Rewrite = &route.Rewrite{
 						ReplaceFullPath: &path,
 					}
-				}
-				if exactPathRedirectPathRewrite != nil {
-					path := *exactPathRedirectPathRewrite
-					if path == "" {
-						path = "/"
-					}
-					redir := *exactMatch.Action.Redirect
-					redir.PathRewrite = &route.Rewrite{
-						ReplaceFullPath: &path,
-					}
-					exactMatch.Action.Redirect = &redir
 				}
 				exactEntries[exactPath] = append(exactEntries[exactPath], exactMatch)
 			}
@@ -203,24 +181,13 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 	for _, f := range rule.GetFilters() {
 		if r := f.GetRedirect(); r != nil {
-			redirection := &route.Redirection{
+			entry.Action.Redirect = &route.Redirection{
 				Status:     r.GetStatusCode(),
 				Scheme:     r.GetScheme(),
 				Host:       r.GetHostname(),
 				Port:       r.GetPort(),
 				StripQuery: true,
 			}
-			if p := r.GetPath(); p != nil {
-				rewrite := &route.Rewrite{}
-				switch t := p.GetPath().(type) {
-				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull:
-					rewrite.ReplaceFullPath = &t.ReplaceFull
-				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch:
-					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
-				}
-				redirection.PathRewrite = rewrite
-			}
-			entry.Action.Redirect = redirection
 		} else if m := f.GetMirror(); m != nil {
 			entry.Mirror = &route.Mirror{
 				Percentage: m.GetPercentage().GetValue(),

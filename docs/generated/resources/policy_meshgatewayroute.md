@@ -192,25 +192,6 @@
                     - `statusCode` (required)
                     
                         The HTTP response status code. This must be in the range 300 - 308.    
-                    
-                    - `path` (optional)    
-                        
-                        - `replaceFull` (optional)    
-                        
-                        - `replacePrefixMatch` (optional)
-                        
-                            Note that rewriting "/prefix" to "/" will do the right thing:
-                            - the path "/prefix" is rewritten to "/"
-                            - the path "/prefix/rest" is rewritten to "/rest"    
-                        
-                        - `hostToBackendHostname` (optional)
-                        
-                            Option to indicate that during forwarding, the host header should
-                            be swapped with the hostname of the upstream host chosen by the
-                            Envoy's cluster manager. BE AWARE:
-                            - it's mutually exclusive with request_header filter which
-                            explicitly
-                            replaces "host" header    
                 
                 - `rewrite` (optional)    
                     

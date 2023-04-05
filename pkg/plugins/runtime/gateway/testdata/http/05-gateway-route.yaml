@@ -78,11 +78,6 @@ Routes:
           redirect:
             hostRedirect: example.com
             portRedirect: 8080
-            regexRewrite:
-              pattern:
-                googleRe2: {}
-                regex: .*
-              substitution: /redirected
             responseCode: FOUND
             schemeRedirect: https
             stripQuery: true
