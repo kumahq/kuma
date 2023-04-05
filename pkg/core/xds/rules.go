@@ -42,7 +42,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 			if otherTag.Value == tag.Value && otherTag.Not != tag.Not {
 				return false
 			}
-			if otherTag.Value != tag.Value && !otherTag.Not {
+			if otherTag.Value != tag.Value && !otherTag.Not && !tag.Not {
 				return false
 			}
 		}
