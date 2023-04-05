@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -30,7 +29,6 @@ type stream struct {
 	streamClient   KDSSyncServiceStream
 	latestACKed    map[core_model.ResourceType]string
 	latestReceived map[core_model.ResourceType]*latestReceived
-	deltaInitState cache_v2.ResourceVersionMap
 	clientId       string
 	cpConfig       string
 }
@@ -40,18 +38,17 @@ type KDSSyncServiceStream interface {
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
 }
 
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, cpConfig string, deltaInitState cache_v2.ResourceVersionMap) DeltaKDSStream {
+func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, cpConfig string) DeltaKDSStream {
 	return &stream{
 		streamClient:   s,
 		latestACKed:    make(map[core_model.ResourceType]string),
 		latestReceived: make(map[core_model.ResourceType]*latestReceived),
-		deltaInitState: deltaInitState,
 		clientId:       clientId,
 		cpConfig:       cpConfig,
 	}
 }
 
-func (s *stream) DeltaDiscoveryRequest(resourceType model.ResourceType) error {
+func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) error {
 	cpVersion, err := util_proto.ToStruct(&system_proto.Version{
 		KumaCp: &system_proto.KumaCpVersion{
 			Version:   kuma_version.Build.Version,
@@ -63,14 +60,9 @@ func (s *stream) DeltaDiscoveryRequest(resourceType model.ResourceType) error {
 	if err != nil {
 		return err
 	}
-	initialResources := map[string]string{}
-	if value, found := s.deltaInitState[resourceType]; found {
-		initialResources = value
-	}
 
 	req := &envoy_sd.DeltaDiscoveryRequest{
-		InitialResourceVersions: initialResources,
-		ResponseNonce:           "",
+		ResponseNonce: "",
 		Node: &envoy_core.Node{
 			Id: s.clientId,
 			Metadata: &structpb.Struct{
@@ -118,7 +110,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	}, nil
 }
 
-func (s *stream) ACK(resourceType model.ResourceType) error {
+func (s *stream) ACK(resourceType core_model.ResourceType) error {
 	latestReceived := s.latestReceived[resourceType]
 	if latestReceived == nil {
 		return nil
@@ -132,12 +124,11 @@ func (s *stream) ACK(resourceType model.ResourceType) error {
 	})
 	if err == nil {
 		s.latestACKed[resourceType] = latestReceived.nonce
-		s.deltaInitState[resourceType] = s.updateVersionMap(resourceType, latestReceived.nameToVersion)
 	}
 	return err
 }
 
-func (s *stream) NACK(resourceType model.ResourceType, err error) error {
+func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 	latestReceived, found := s.latestReceived[resourceType]
 	if !found {
 		return nil
@@ -153,19 +144,6 @@ func (s *stream) NACK(resourceType model.ResourceType, err error) error {
 			Message: fmt.Sprintf("%s", err),
 		},
 	})
-}
-
-func (s *stream) updateVersionMap(typ core_model.ResourceType, nameToVersion cache_v2.NameToVersion) cache_v2.NameToVersion {
-	var versions map[string]string
-	if value, found := s.deltaInitState[typ]; found {
-		versions = value
-	} else {
-		return nameToVersion
-	}
-	for name, version := range nameToVersion {
-		versions[name] = version
-	}
-	return versions
 }
 
 // go-contro-plane cache keeps them as a <resource_name>.<mesh_name>
