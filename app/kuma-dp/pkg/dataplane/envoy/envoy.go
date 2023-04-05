@@ -112,7 +112,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
-		"--log-level", e.opts.Config.DataplaneRuntime.EnvoyLogLevel,
+		"--log-level", "debug",
 	}
 
 	// If the concurrency is explicit, use that. On Linux, users
