@@ -104,7 +104,7 @@ build/artifacts-$(1)-arm64/envoy:
 build/artifacts-$(1)-amd64/envoy:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/envoy ] || \
-	curl -s --fail --location https://github.com/lukidzi/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-amd64-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)_amd64)-test.tar.gz | tar -C $$(@) -xz
+	curl -s --fail --location https://github.com/lobkovilya/envoy-builds/releases/download/v$(ENVOY_VERSION)-reorder/envoy-$(1)-amd64-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)_amd64).tar.gz | tar -C $$(@) -xz
 
 
 .PHONY: build/artifacts-$(1)-$(2)/test-server
