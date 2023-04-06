@@ -32,7 +32,14 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	if !migrated {
 		return nil, errors.New(`database is not migrated. Run "kuma-cp migrate up" to update database to the newest schema`)
 	}
-	return NewStore(pc.Metrics(), *cfg)
+	switch cfg.DriverName {
+	case postgres.DriverNamePgx:
+		return NewPgxStore(pc.Metrics(), *cfg)
+	case postgres.DriverNamePq:
+		return NewPqStore(pc.Metrics(), *cfg)
+	default:
+		return nil, errors.New("unknown driver name " + cfg.DriverName)
+	}
 }
 
 func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {
@@ -40,7 +47,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	if !ok {
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
-	return migrateDb(*cfg)
+	return MigrateDb(*cfg)
 }
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {

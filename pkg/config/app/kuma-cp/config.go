@@ -30,11 +30,6 @@ var _ config.Config = &Defaults{}
 type Defaults struct {
 	// If true, it skips creating the default Mesh
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
-	// If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
-	// Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
-	// be removed in the future.
-	// TODO: https://github.com/kumahq/kuma/issues/4772
-	EnableLocalhostInboundClusters bool `json:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -181,8 +176,7 @@ var DefaultConfig = func() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			SkipMeshCreation:               false,
-			EnableLocalhostInboundClusters: false,
+			SkipMeshCreation: false,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
@@ -210,6 +204,7 @@ var DefaultConfig = func() Config {
 		Experimental: ExperimentalConfig{
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: true,
+			KDSDeltaEnabled:     false,
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
@@ -350,6 +345,8 @@ type ExperimentalConfig struct {
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
+	// KDSDeltaEnabled defines if using KDS Sync with incremental xDS
+	KDSDeltaEnabled bool `json:"kdsDeltaEnabled" envconfig:"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"`
 }
 
 func (e ExperimentalConfig) Validate() error {

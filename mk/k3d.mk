@@ -117,6 +117,7 @@ k3d/load/images:
 .PHONY: k3d/load
 k3d/load:
 	$(MAKE) images
+	$(MAKE) docker/tag
 	$(MAKE) k3d/load/images
 
 .PHONY: k3d/deploy/kuma

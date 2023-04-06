@@ -176,6 +176,7 @@ Routes:
         - match:
             path: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             requestMirrorPolicies:
             - cluster: echo-mirror-90205ae37cc0294e
               runtimeFraction:
@@ -198,7 +199,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

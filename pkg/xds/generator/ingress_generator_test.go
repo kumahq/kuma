@@ -13,6 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -22,12 +23,12 @@ import (
 
 var _ = Describe("IngressGenerator", func() {
 	type testCase struct {
-		ingress         string
-		expected        string
-		outboundTargets core_xds.EndpointMap
-		trafficRoutes   []*core_mesh.TrafficRouteResource
-		meshGateways    *core_mesh.MeshGatewayResourceList
-		meshHTTPRoutes  []*v1alpha1.MeshHTTPRouteResource
+		ingress          string
+		expected         string
+		meshResourceList []*core_xds.MeshIngressResources
+		trafficRoutes    []*core_mesh.TrafficRouteResource
+		meshGateways     *core_mesh.MeshGatewayResourceList
+		meshHTTPRoutes   []*v1alpha1.MeshHTTPRouteResource
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -47,15 +48,12 @@ var _ = Describe("IngressGenerator", func() {
 				given.meshGateways = &core_mesh.MeshGatewayResourceList{}
 			}
 			proxy := &core_xds.Proxy{
-				Id:          *core_xds.BuildProxyId("default", "ingress"),
-				ZoneIngress: zoneIngressRes,
-				APIVersion:  envoy_common.APIV3,
-				Routing: core_xds.Routing{
-					OutboundTargets: given.outboundTargets,
-				},
+				Id:         *core_xds.BuildProxyId("default", "ingress"),
+				APIVersion: envoy_common.APIV3,
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
-					GatewayRoutes: &core_mesh.MeshGatewayRouteResourceList{},
-					MeshGateways:  given.meshGateways,
+					ZoneIngressResource: zoneIngressRes,
+					GatewayRoutes:       &core_mesh.MeshGatewayRouteResourceList{},
+					MeshGateways:        given.meshGateways,
 					PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
 						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
 							Items: given.trafficRoutes,
@@ -64,6 +62,7 @@ var _ = Describe("IngressGenerator", func() {
 							Items: given.meshHTTPRoutes,
 						},
 					},
+					MeshResourceList: given.meshResourceList,
 				},
 			}
 
@@ -102,29 +101,34 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "01.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Target: "192.168.0.1",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v1",
-							"region":          "eu",
-							"mesh":            "mesh1",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.2",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v2",
-							"region":          "us",
-							"mesh":            "mesh1",
-						},
-						Weight: 1,
 					},
 				},
 			},
@@ -150,8 +154,8 @@ var _ = Describe("IngressGenerator", func() {
               address: 10.0.0.1
               port: 10001
 `,
-			expected:        "02.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
+			expected:         "02.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{},
 			trafficRoutes: []*core_mesh.TrafficRouteResource{
 				{
 					Spec: &mesh_proto.TrafficRoute{
@@ -186,29 +190,34 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "03.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Target: "192.168.0.1",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v1",
-							"region":          "eu",
-							"mesh":            "mesh1",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.2",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v2",
-							"region":          "us",
-							"mesh":            "mesh1",
-						},
-						Weight: 1,
 					},
 				},
 			},
@@ -295,68 +304,80 @@ var _ = Describe("IngressGenerator", func() {
                   version: v2
 `,
 			expected: "04.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Target: "192.168.0.1",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v1",
-							"region":          "eu",
-							"mesh":            "mesh1",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
 					},
-					{
-						Target: "192.168.0.2",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v2",
-							"region":          "us",
-							"mesh":            "mesh1",
+				},
+				{
+					Mesh: builders.Mesh().WithName("mesh2").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.3",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"cloud":           "eks",
+									"arch":            "ARM",
+									"os":              "ubuntu",
+									"region":          "asia",
+									"version":         "v3",
+									"mesh":            "mesh2",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.4",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "frontend",
+									"cloud":           "gke",
+									"arch":            "x86",
+									"os":              "debian",
+									"region":          "eu",
+									"version":         "v1",
+									"mesh":            "mesh2",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.5",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "frontend",
+									"cloud":           "aks",
+									"version":         "v2",
+									"mesh":            "mesh2",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.3",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"cloud":           "eks",
-							"arch":            "ARM",
-							"os":              "ubuntu",
-							"region":          "asia",
-							"version":         "v3",
-							"mesh":            "mesh2",
-						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.4",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "frontend",
-							"cloud":           "gke",
-							"arch":            "x86",
-							"os":              "debian",
-							"region":          "eu",
-							"version":         "v1",
-							"mesh":            "mesh2",
-						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.5",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "frontend",
-							"cloud":           "aks",
-							"version":         "v2",
-							"mesh":            "mesh2",
-						},
-						Weight: 1,
 					},
 				},
 			},
@@ -467,8 +488,13 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "05.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {},
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {},
+					},
+				},
 			},
 			trafficRoutes: []*core_mesh.TrafficRouteResource{
 				{
@@ -514,27 +540,37 @@ var _ = Describe("IngressGenerator", func() {
                   kuma.io/service: mesh-gateway
 `,
 			expected: "meshgateway.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Target: "192.168.0.1",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"mesh":            "mesh1",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
 					},
 				},
-				"mesh-gateway": {
-					{
-						Target: "192.168.0.2",
-						Port:   80,
-						Tags: map[string]string{
-							"kuma.io/service": "mesh-gateway",
-							"mesh":            "mesh2",
+				{
+					Mesh: builders.Mesh().WithName("mesh2").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"mesh-gateway": {
+							{
+								Target: "192.168.0.2",
+								Port:   80,
+								Tags: map[string]string{
+									"kuma.io/service": "mesh-gateway",
+									"mesh":            "mesh2",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
 					},
 				},
 			},
@@ -591,29 +627,34 @@ var _ = Describe("IngressGenerator", func() {
                   region: us
 `,
 			expected: "with-meshhttproute.envoy.golden.yaml",
-			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Target: "192.168.0.1",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v1",
-							"region":          "eu",
-							"mesh":            "mesh1",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+								},
+								Weight: 1,
+							},
 						},
-						Weight: 1,
-					},
-					{
-						Target: "192.168.0.2",
-						Port:   2521,
-						Tags: map[string]string{
-							"kuma.io/service": "backend",
-							"version":         "v2",
-							"region":          "us",
-							"mesh":            "mesh1",
-						},
-						Weight: 1,
 					},
 				},
 			},

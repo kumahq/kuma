@@ -87,10 +87,11 @@ type Action struct {
 // Redirection is an action that responds to a HTTP request with a HTTP
 // redirect response.
 type Redirection struct {
-	Status uint32 // HTTP status code.
-	Scheme string // URL scheme (optional).
-	Host   string // URL host (optional).
-	Port   uint32 // URL port (optional).
+	Status      uint32 // HTTP status code.
+	Scheme      string // URL scheme (optional).
+	Host        string // URL host (optional).
+	Port        uint32 // URL port (optional).
+	PathRewrite *Rewrite
 
 	StripQuery bool // Whether to strip the query string.
 }
@@ -126,6 +127,11 @@ type Rewrite struct {
 	ReplaceFullPath *string
 
 	ReplacePrefixMatch *string
+
+	// HostToBackendHostname indicates that during forwarding, the host header
+	// should be swapped with the hostname of the upstream host chosen by the
+	// Envoy's cluster manager.
+	HostToBackendHostname bool
 }
 
 // Mirror specifies a traffic mirroring operation.

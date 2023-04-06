@@ -1,6 +1,5 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 PROTO_DIRS ?= ./pkg/config ./api
-
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
 POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
@@ -23,8 +22,8 @@ generate: $(GENERATE_TARGET)
 
 .PHONY: resources/type
 resources/type:
-	$(GO_RUN) $(TOOLS_DIR)/resource-gen/main.go -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
-	$(GO_RUN) $(TOOLS_DIR)/resource-gen/main.go -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
+	go run $(TOOLS_DIR)/resource-gen/main.go -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
+	go run $(TOOLS_DIR)/resource-gen/main.go -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
@@ -43,7 +42,7 @@ generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
 GENERATE_POLICIES_TARGET ?= cleanup/crds cleanup/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
-generate/policies: $(GENERATE_POLICIES_TARGET)
+generate/policies: $(GENERATE_POLICIES_TARGET) ## Generate all policies written as plugins
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*

@@ -107,5 +107,9 @@ func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
 		return proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetNetworking().GetAddress()
 	}
 
-	return proxy.ZoneIngress.Spec.GetNetworking().GetAddress()
+	if proxy.ZoneIngressProxy != nil {
+		return proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking().GetAddress()
+	}
+
+	return ""
 }

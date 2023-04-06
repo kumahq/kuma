@@ -28,7 +28,7 @@ var _ = Describe("Events", func() {
 		c, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 		cfg = *c
-		ver, err := migrateDb(cfg)
+		ver, err := MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
 	})
@@ -40,14 +40,16 @@ var _ = Describe("Events", func() {
 			defer close(eventBusStopCh)
 			defer close(listenerErrCh)
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, storeErrCh)
+			go triggerNotifications(cfg, driverName, storeErrCh)
+
+			eventsChan := listener.Recv()
 
 			// when
-			event, err := listener.Recv(eventBusStopCh)
+			var resourceChanged kuma_events.ResourceChangedEvent
+			Eventually(eventsChan, "1s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
 
 			// then
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged := event.(kuma_events.ResourceChangedEvent)
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 
@@ -67,32 +69,26 @@ var _ = Describe("Events", func() {
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
-			go triggerNotifications(cfg, storeErrCh)
+			go triggerNotifications(cfg, driverName, storeErrCh)
+
+			eventsChan := listener.Recv()
 
 			// when
-			event, err := listener.Recv(eventBusStopCh)
+			var resourceChanged kuma_events.ResourceChangedEvent
+			Eventually(eventsChan, "1s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
 
-			// then
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged := event.(kuma_events.ResourceChangedEvent)
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 
-			// when postgres is stopped
-			err = c.Stop()
-
-			// then
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(c.Stop()).To(Succeed())
 			Consistently(storeErrCh, "1s", "100ms").Should(Receive())
 
-			// when postgres is restarted
-			err = c.Start()
+			Expect(c.Start()).To(Succeed())
 
-			// then
-			Expect(err).To(Not(HaveOccurred()))
-			event, err = listener.Recv(eventBusStopCh)
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged = event.(kuma_events.ResourceChangedEvent)
+			Eventually(eventsChan, "5s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
+
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 		},
@@ -110,10 +106,17 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 	return listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh
 }
 
-func setupStore(cfg postgres_config.PostgresStoreConfig) store.ResourceStore {
+func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) store.ResourceStore {
 	metrics, err := core_metrics.NewMetrics("Standalone")
 	Expect(err).ToNot(HaveOccurred())
-	pStore, err := NewStore(metrics, cfg)
+	var pStore store.ResourceStore
+	if driverName == "pgx" {
+		cfg.DriverName = postgres_config.DriverNamePgx
+		pStore, err = NewPgxStore(metrics, cfg)
+	} else {
+		cfg.DriverName = postgres_config.DriverNamePq
+		pStore, err = NewPqStore(metrics, cfg)
+	}
 	Expect(err).ToNot(HaveOccurred())
 	return pStore
 }
@@ -131,8 +134,8 @@ func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, 
 	return listener
 }
 
-func triggerNotifications(cfg postgres_config.PostgresStoreConfig, storeErrCh chan error) {
-	pStore := setupStore(cfg)
+func triggerNotifications(cfg postgres_config.PostgresStoreConfig, driverName string, storeErrCh chan error) {
+	pStore := setupStore(cfg, driverName)
 	defer GinkgoRecover()
 	for i := 0; !channels.IsClosed(storeErrCh); i++ {
 		err := pStore.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(fmt.Sprintf("mesh-%d", i), ""))

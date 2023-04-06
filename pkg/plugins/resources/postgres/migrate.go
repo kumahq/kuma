@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/migrations"
 )
 
-func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, error) {
+func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, error) {
 	m, err := newMigrate(cfg)
 	if err != nil {
 		return 0, err

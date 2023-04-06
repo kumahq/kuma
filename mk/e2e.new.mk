@@ -10,18 +10,18 @@ E2E_DEPS_TARGETS ?=
 # Environment veriables the tests should run with
 E2E_ENV_VARS ?=
 
-E2E_BIN_DEPS ?=
+E2E_K8S_BIN_DEPS =
+E2E_UNIVERSAL_BIN_DEPS =
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
-E2E_BIN_DEPS+= docker/load
+E2E_K8S_BIN_DEPS+= docker/load
+E2E_UNIVERSAL_BIN_DEPS+= docker/load
+E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
-E2E_BIN_DEPS+= build/kumactl images
+E2E_K8S_BIN_DEPS+= build/kumactl images
+E2E_UNIVERSAL_BIN_DEPS+= build/kumactl images/test
+E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
 endif
-
-ifndef KUMA_UNIVERSAL_IMAGE
-	KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_DOCKER_IMAGE)
-endif
-E2E_ENV_VARS += KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_IMAGE)
 
 # We don't use `go list` here because Ginkgo requires disk path names,
 # not Go packages names.
@@ -33,7 +33,11 @@ UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
 MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
 GINKGO_E2E_LABEL_FILTERS ?=
-GINKGO_TEST_E2E=$(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
+
+GINKGO_TEST_E2E=$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
+ifdef DEBUG
+GINKGO_TEST_E2E+=--procs 1 --keep-going=false --fail-fast
+endif
 
 define append_label_filter
 $(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) && $(1),$(1))
@@ -112,32 +116,31 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 .PHONY: test/e2e/debug
 test/e2e/debug: $(E2E_DEPS_TARGETS)
 	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
-	$(MAKE) images
-	$(MAKE) build/kumactl
+	$(MAKE) build/kumactl images
+	$(MAKE) docker/tag
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
 	$(E2E_ENV_VARS) \
-	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --procs 1 --keep-going=false --fail-fast $(E2E_PKG_LIST)
+	$(GINKGO_TEST_E2E) --procs 1 --keep-going=false --fail-fast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
-test/e2e/debug-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/network/create
-	$(E2E_ENV_VARS) \
-	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --keep-going=false --procs 1 --fail-fast $(UNIVERSAL_E2E_PKG_LIST)
-
+test/e2e/debug-universal:
+	@echo "Stop using this target use `make test/e2e-universal DEBUG=1`"
+	$(MAKE) test/e2e-universal DEBUG=1
 
 .PHONY: test/e2e
-test/e2e: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
+test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slower as they start and stop Kuma for each tests). Use DEBUG=1 to more easily find issues
+	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
-test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
+test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues
+	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
 	$(MAKE) test/e2e/k8s/wait/kuma-1
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
@@ -145,11 +148,13 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
-test/e2e-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/network/create
+test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues
+	$(MAKE) docker/tag/test
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(UNIVERSAL_E2E_PKG_LIST)
 
 .PHONY: test/e2e-multizone
-test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_BIN_DEPS)
+test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e tests. Use DEBUG=1 to more easily find issues
+	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

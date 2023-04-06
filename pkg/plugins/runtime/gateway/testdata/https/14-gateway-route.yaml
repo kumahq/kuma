@@ -150,6 +150,7 @@ Routes:
                 exact: PUT
             path: /app/json
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             hostRewriteLiteral: newhost.example.com
             retryPolicy:
               numRetries: 5
@@ -167,7 +168,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

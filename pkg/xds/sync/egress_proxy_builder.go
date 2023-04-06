@@ -4,9 +4,12 @@ import (
 	"context"
 	"sort"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -83,7 +86,7 @@ func (p *EgressProxyBuilder) Build(
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
 
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +101,7 @@ func (p *EgressProxyBuilder) Build(
 			Mesh:             mesh,
 			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
-			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
 				mesh,
 				p.zone,
@@ -118,6 +121,26 @@ func (p *EgressProxyBuilder) Build(
 				externalServices,
 				rateLimits,
 			),
+			Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+		}
+
+		for _, es := range externalServices {
+			policies := core_xds.PluginOriginatedPolicies{}
+			for name, plugin := range plugins.Plugins().PolicyPlugins() {
+				egressPlugin, ok := plugin.(plugins.EgressPolicyPlugin)
+				if !ok {
+					continue
+				}
+				res, err := egressPlugin.EgressMatchedPolicies(es, meshCtx.Resources)
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+				}
+				if res.Type == "" {
+					return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
+				}
+				policies[res.Type] = res
+			}
+			meshResources.Dynamic[es.Spec.GetService()] = policies
 		}
 
 		meshResourcesList = append(meshResourcesList, meshResources)

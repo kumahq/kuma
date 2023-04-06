@@ -246,6 +246,26 @@ func RouteReplaceHostHeader(host string) RouteConfigurer {
 	})
 }
 
+func RouteSetRewriteHostToBackendHostname(value bool) RouteConfigurer {
+	if !value {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if r.GetAction() == nil {
+			return errors.New("cannot set the 'auto_host_rewrite' before the route action")
+		}
+
+		if action := r.GetRoute(); action != nil {
+			action.HostRewriteSpecifier = &envoy_config_route.RouteAction_AutoHostRewrite{
+				AutoHostRewrite: util_proto.Bool(value),
+			}
+		}
+
+		return nil
+	})
+}
+
 // RouteDeleteRequestHeader deletes the given header from the HTTP request.
 func RouteDeleteRequestHeader(name string) RouteConfigurer {
 	if name == "" {
@@ -351,6 +371,27 @@ func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 			// Looks like https://github.com/envoyproxy/envoy/issues/19589
 			envoyRedirect.PortRedirect = port
 		}
+		if rewrite := redirect.PathRewrite; rewrite != nil {
+			if rewrite.ReplaceFullPath != nil {
+				envoyRedirect.PathRewriteSpecifier = &envoy_config_route.RedirectAction_RegexRewrite{
+					RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
+						Pattern: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+								GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+							},
+							Regex: `.*`,
+						},
+						Substitution: *rewrite.ReplaceFullPath,
+					},
+				}
+			}
+
+			if rewrite.ReplacePrefixMatch != nil {
+				envoyRedirect.PathRewriteSpecifier = &envoy_config_route.RedirectAction_PrefixRewrite{
+					PrefixRewrite: *rewrite.ReplacePrefixMatch,
+				}
+			}
+		}
 
 		switch redirect.Status {
 		case 301:
@@ -431,12 +472,9 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 			byName[d.Name] = d
 		}
 
-		var total uint32
 		var weights []*envoy_config_route.WeightedCluster_ClusterWeight
 
 		for n, d := range byName {
-			total += d.Weight
-
 			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption
 
 			isMeshCluster := mesh.ZoneEgressEnabled() || !HasExternalServiceEndpoint(mesh, endpoints, d)
@@ -456,11 +494,11 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 
 		r.Action = &envoy_config_route.Route_Route{
 			Route: &envoy_config_route.RouteAction{
-				Timeout: nil, // TODO(jpeach) support request timeout from the Timeout policy, but which one?
+				ClusterNotFoundResponseCode: envoy_config_route.RouteAction_INTERNAL_SERVER_ERROR,
+				Timeout:                     nil, // TODO(jpeach) support request timeout from the Timeout policy, but which one?
 				ClusterSpecifier: &envoy_config_route.RouteAction_WeightedClusters{
 					WeightedClusters: &envoy_config_route.WeightedCluster{
-						Clusters:    weights,
-						TotalWeight: util_proto.UInt32(total),
+						Clusters: weights,
 					},
 				},
 			},

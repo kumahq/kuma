@@ -1,7 +1,8 @@
 resources:
-- name: backend
+- name: mesh1:backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh1_backend
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
@@ -21,12 +22,37 @@ resources:
         keys:
         - mesh
         - version
-    name: backend
+    name: mesh1:backend
     type: EDS
-- name: backend
+- name: mesh2:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh2_backend
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - region
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+        - version
+    name: mesh2:backend
+    type: EDS
+- name: mesh1:backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend
+    clusterName: mesh1:backend
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -61,6 +87,12 @@ resources:
               mesh: mesh1
               region: us
               version: v2
+- name: mesh2:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh2:backend
+    endpoints:
+    - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
@@ -138,13 +170,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh1:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh1
                 version: v2
-          statPrefix: backend
+          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1,region=eu}
@@ -153,13 +185,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh1:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh1
                 region: eu
-          statPrefix: backend
+          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh1}
@@ -168,12 +200,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh1:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh1
-          statPrefix: backend
+          statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh2,version=v2}
@@ -182,13 +214,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh2:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
                 version: v2
-          statPrefix: backend
+          statPrefix: mesh2_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh2,region=eu}
@@ -197,13 +229,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh2:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
                 region: eu
-          statPrefix: backend
+          statPrefix: mesh2_backend
     - filterChainMatch:
         serverNames:
         - backend{mesh=mesh2}
@@ -212,12 +244,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend
+          cluster: mesh2:backend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
-          statPrefix: backend
+          statPrefix: mesh2_backend
     - filterChainMatch:
         serverNames:
         - frontend{cloud=gke,mesh=mesh2,region=eu}
@@ -226,14 +258,14 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: frontend
+          cluster: mesh2:frontend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 cloud: gke
                 mesh: mesh2
                 region: eu
-          statPrefix: frontend
+          statPrefix: mesh2_frontend
     - filterChainMatch:
         serverNames:
         - frontend{cloud=aks,mesh=mesh2}
@@ -242,13 +274,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: frontend
+          cluster: mesh2:frontend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 cloud: aks
                 mesh: mesh2
-          statPrefix: frontend
+          statPrefix: mesh2_frontend
     - filterChainMatch:
         serverNames:
         - frontend{mesh=mesh2}
@@ -257,12 +289,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: frontend
+          cluster: mesh2:frontend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
-          statPrefix: frontend
+          statPrefix: mesh2_frontend
     - filterChainMatch:
         serverNames:
         - frontend{mesh=mesh2,version=v2}
@@ -271,13 +303,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: frontend
+          cluster: mesh2:frontend
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
                 version: v2
-          statPrefix: frontend
+          statPrefix: mesh2_frontend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

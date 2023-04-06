@@ -42,12 +42,27 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error
+
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error {
+	return f(session)
+}
+
+type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error
+
+func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error {
+	return f(session)
+}
+
 type server struct {
-	config        multizone.KdsServerConfig
-	callbacks     Callbacks
-	filters       []Filter
-	metrics       core_metrics.Metrics
-	serviceServer *service.GlobalKDSServiceServer
+	config               multizone.KdsServerConfig
+	callbacks            Callbacks
+	CallbacksGlobal      OnGlobalToZoneSyncConnectFunc
+	CallbacksZone        OnZoneToGlobalSyncConnectFunc
+	filters              []Filter
+	metrics              core_metrics.Metrics
+	serviceServer        *service.GlobalKDSServiceServer
+	kdsSyncServiceServer *KDSSyncServiceServer
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -59,13 +74,15 @@ func NewServer(
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
+	kdsSyncServiceServer *KDSSyncServiceServer,
 ) component.Component {
 	return &server{
-		callbacks:     callbacks,
-		filters:       filters,
-		config:        config,
-		metrics:       metrics,
-		serviceServer: serviceServer,
+		callbacks:            callbacks,
+		filters:              filters,
+		config:               config,
+		metrics:              metrics,
+		serviceServer:        serviceServer,
+		kdsSyncServiceServer: kdsSyncServiceServer,
 	}
 }
 
@@ -106,6 +123,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	// register services
 	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
+	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))

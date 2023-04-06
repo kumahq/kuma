@@ -202,6 +202,7 @@ specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
 
 Allowed types are enforced via `commitlint`. The list can be found at the
 [`config-conventional` repository](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum).
+`fix` and `feat` should only be used for end user visibile contributions. A change to CI, build, a MADR or docs contribution should use the respective `ci`, `build`, `test` types.
 
 ##### Scope
 

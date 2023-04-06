@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
@@ -11,22 +12,36 @@ import (
 )
 
 var _ = Describe("PostgresStore template", func() {
-	createStore := func() store.ResourceStore {
-		cfg, err := c.Config(test_postgres.WithRandomDb)
-		Expect(err).ToNot(HaveOccurred())
+	createStore := func(storeName string) func() store.ResourceStore {
+		return func() store.ResourceStore {
+			cfg, err := c.Config(test_postgres.WithRandomDb)
+			Expect(err).ToNot(HaveOccurred())
+			cfg.MaxOpenConnections = 2
 
-		metrics, err := core_metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
+			pqMetrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
 
-		_, err = migrateDb(*cfg)
-		Expect(err).ToNot(HaveOccurred())
+			pgxMetrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := NewStore(metrics, *cfg)
-		Expect(err).ToNot(HaveOccurred())
+			_, err = MigrateDb(*cfg)
+			Expect(err).ToNot(HaveOccurred())
 
-		return pStore
+			var pStore store.ResourceStore
+			if storeName == "pgx" {
+				cfg.DriverName = postgres.DriverNamePgx
+				pStore, err = NewPgxStore(pgxMetrics, *cfg)
+			} else {
+				cfg.DriverName = postgres.DriverNamePq
+				pStore, err = NewPqStore(pqMetrics, *cfg)
+			}
+			Expect(err).ToNot(HaveOccurred())
+			return pStore
+		}
 	}
 
-	test_store.ExecuteStoreTests(createStore)
-	test_store.ExecuteOwnerTests(createStore)
+	test_store.ExecuteStoreTests(createStore("pgx"), "pgx")
+	test_store.ExecuteOwnerTests(createStore("pgx"), "pgx")
+	test_store.ExecuteStoreTests(createStore("pq"), "pq")
+	test_store.ExecuteOwnerTests(createStore("pq"), "pq")
 })

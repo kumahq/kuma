@@ -7,11 +7,14 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
+	k8s_strings "k8s.io/utils/strings"
 
 	"github.com/kumahq/kuma/test/framework/utils"
 )
@@ -43,32 +46,52 @@ func NewApp(appName string, logsPath string, verbose bool, port string, envMap m
 	for k, v := range envMap {
 		sshArgs = append(sshArgs, fmt.Sprintf("%s=%s", k, utils.ShellEscape(v)))
 	}
+
 	sshArgs = append(sshArgs, args...)
 	app.cmd = exec.Command("ssh", sshArgs...)
-	err := os.MkdirAll(logsPath, os.ModePerm)
-	if err != nil {
-		panic(errors.Wrap(err, "could not create /tmp/e2e"))
-	}
-	logFileName := path.Join(logsPath, appName)
-	app.logFile, err = os.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
-	if err != nil {
-		panic(errors.Wrap(err, "could not create "+logFileName))
-	}
-	outWriters := []io.Writer{&app.stdout, app.logFile}
-	errWriters := []io.Writer{&app.stderr, app.logFile}
+
+	outWriters := []io.Writer{&app.stdout}
+	errWriters := []io.Writer{&app.stderr}
 
 	if verbose {
 		outWriters = append(outWriters, os.Stdout)
 		errWriters = append(errWriters, os.Stderr)
 	}
+
+	if logsPath != "" {
+		file, err := createLogsFile(logsPath,
+			k8s_strings.ShortenString(appName+"_"+sanitize.BaseName(strings.Join(args, "_")), 243),
+		)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to create log file"))
+		}
+		app.logFile = file
+		outWriters = append(outWriters, file)
+		errWriters = append(errWriters, file)
+	}
+
 	app.cmd.Stdout = io.MultiWriter(outWriters...)
 	app.cmd.Stderr = io.MultiWriter(errWriters...)
 	app.cmd.Stdin = &app.stdin
+
 	return app
 }
 
+func createLogsFile(dir, fileName string) (*os.File, error) {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
+	return os.OpenFile(path.Join(dir, fileName), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
+}
+
 func (s *App) done() {
-	s.logFile.Close()
+	if s.logFile == nil {
+		return
+	}
+	if err := s.logFile.Close(); err != nil {
+		Logf("Failed to close log file: %v", err)
+	}
 }
 
 func (s *App) Run() error {

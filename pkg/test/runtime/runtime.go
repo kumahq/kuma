@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -110,7 +111,9 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, err
 	}
 	builder.WithXDS(xdsCtx)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
+	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+		return true
+	}))
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
 	if err != nil {

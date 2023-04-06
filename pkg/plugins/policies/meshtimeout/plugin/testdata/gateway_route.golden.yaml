@@ -10,6 +10,7 @@ virtualHosts:
   - match:
       path: /
     route:
+      clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       timeout: 5s
       weightedClusters:
         clusters:
@@ -19,4 +20,3 @@ virtualHosts:
               key: x-kuma-tags
               value: '&kuma.io/service=sample-gateway&'
           weight: 1
-        totalWeight: 1

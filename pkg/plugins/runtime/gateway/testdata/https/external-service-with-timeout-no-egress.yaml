@@ -132,6 +132,7 @@ Routes:
         - match:
             path: /ext
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -144,10 +145,10 @@ Routes:
               clusters:
               - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /ext/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -160,7 +161,6 @@ Routes:
               clusters:
               - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

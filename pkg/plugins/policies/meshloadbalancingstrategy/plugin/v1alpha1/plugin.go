@@ -14,11 +14,13 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -30,7 +32,19 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, es, resources)
+}
+
+func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.ZoneEgressProxy != nil {
+		return p.configureEgress(rs, proxy)
+	}
+
+	return p.configureDPP(rs, proxy)
+}
+
+func (p plugin) configureDPP(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
 	if !ok {
 		return nil
@@ -38,7 +52,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
+	endpoints := policies_xds.GatherEndpoints(rs)
 
+	var zone string
+	if inbounds := proxy.Dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
+		zone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+	}
 	serviceConfs := map[string]api.Conf{}
 
 	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutbound() {
@@ -74,9 +93,73 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 				return err
 			}
 		}
+		if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
+			for _, cla := range endpoints[serviceName] {
+				for _, localityLbEndpoints := range cla.Endpoints {
+					if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
+						localityLbEndpoints.Priority = 1
+					}
+				}
+			}
+		}
 	}
 
 	return nil
+}
+
+func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	localityAwareExternalServices := map[string][]core_xds.ServiceName{}
+
+	for _, mr := range proxy.ZoneEgressProxy.MeshResourcesList {
+		for es, dynamic := range mr.Dynamic {
+			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
+			if !ok {
+				continue
+			}
+
+			if !p.isLocalityAware(policies.FromRules) {
+				continue
+			}
+
+			meshName := mr.Mesh.GetMeta().GetName()
+			localityAwareExternalServices[meshName] = append(localityAwareExternalServices[meshName], es)
+		}
+	}
+
+	endpoints := policies_xds.GatherEgressEndpoints(rs)
+	zone := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetZone()
+
+	for meshName, externalServices := range localityAwareExternalServices {
+		for _, es := range externalServices {
+			clusterName := envoy_names.GetMeshClusterName(meshName, es)
+			cla, ok := endpoints[clusterName]
+			if !ok {
+				continue
+			}
+			for _, localityLbEndpoints := range cla.Endpoints {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
+					localityLbEndpoints.Priority = 1
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// Zone egress is a single point for multiple clients. At this moment we don't support different
+// configurations based on the client, that's why locality awareness is enabled if at least one
+// client requires it to be enabled.
+func (p plugin) isLocalityAware(fr core_xds.FromRules) bool {
+	for _, rules := range fr.Rules {
+		for _, r := range rules {
+			conf := r.Conf.(api.Conf)
+			if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p plugin) generateLDS(l *envoy_listener.Listener, lbConf *api.LoadBalancer) error {

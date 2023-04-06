@@ -1128,7 +1128,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 		)
-		Describe("BuildRemoteEndpointMap()", func() {
+		Describe("BuildEgressEndpointMap()", func() {
 			type testCase struct {
 				zoneIngresses    []*core_mesh.ZoneIngressResource
 				externalServices []*core_mesh.ExternalServiceResource
@@ -1139,7 +1139,7 @@ var _ = Describe("TrafficRoute", func() {
 			DescribeTable("should generate endpoints map for zone egress",
 				func(given testCase) {
 					// when
-					endpoints := BuildRemoteEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
+					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
 					// then
 					Expect(endpoints).To(Equal(given.expected))
 				},

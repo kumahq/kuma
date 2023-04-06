@@ -4,6 +4,7 @@ set -e
 
 OUTPUT_DIR=$1/bin
 VERSION="0.8.0"
+mkdir -p "${OUTPUT_DIR}"
 if [ "$ARCH" == "amd64" ]; then
   ARCH="x86_64"
 elif [ "$ARCH" == "arm64" ]; then
@@ -21,10 +22,6 @@ if [ -e "${SHELLCHECK}" ] && [ "v$(${SHELLCHECK} --version | grep version: | cut
 fi
   echo "Installing shellcheck ${SHELLCHECK}"
   set -x
-  mkdir /tmp/shellcheck
   curl --fail --location -s https://github.com/koalaman/shellcheck/releases/download/v${VERSION}/"${VERSION_NAME}".tar.xz \
-    | tar --no-same-owner --strip-component=1 -C /tmp/shellcheck -xJ
-  mv /tmp/shellcheck/shellcheck "$SHELLCHECK"
-  rm -rf /tmp/shellcheck
-  set +x
+    | tar --no-same-owner --strip-component=1 -C "$OUTPUT_DIR" -xJ
   echo "Shellcheck $SHELLCHECK has been installed at $OUTPUT_DIR"
