@@ -98,7 +98,7 @@ build/artifacts-$(1)-$(2)/coredns:
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/envoy ] || \
-	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-$(2)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)$(2)).tar.gz | tar -C $$(@) -xz
+	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-$(2)-v$(ENVOY_VERSION)-alpine-opt.tar.gz | tar -C $$(@) -xz
 
 .PHONY: build/artifacts-$(1)-$(2)/test-server
 build/artifacts-$(1)-$(2)/test-server:
