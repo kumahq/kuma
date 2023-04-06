@@ -48,6 +48,12 @@ service KDSSyncService {
   // go-control-plane and responds only with the changes to the resources.
   rpc GlobalToZoneSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
       returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
+  // ZoneToGlobalSync is logically a service exposed by global control-plane
+  // that allows zone control plane to connect and synchronize resources to
+  // the global control-plane. It uses delta xDS from go-control-plane and
+  // responds only with the changes to the resources.
+  rpc ZoneToGlobalSync(stream envoy.service.discovery.v3.DeltaDiscoveryResponse)
+      returns (stream envoy.service.discovery.v3.DeltaDiscoveryRequest);
 }
 
 // XDSConfigRequest is a request for XDS Config Dump that is executed on Zone

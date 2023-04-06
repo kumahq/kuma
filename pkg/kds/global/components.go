@@ -27,7 +27,9 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
+	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -76,6 +78,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
+	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore())
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
@@ -119,6 +122,24 @@ func Setup(rt runtime.Runtime) error {
 			log.V(1).Info("GlobalToZoneSync finished gracefully")
 		}
 	})
+
+	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
+		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		if err != nil {
+			errChan <- err
+		}
+		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
+		sink := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream,
+			kds_sync_store_v2.GlobalSyncCallback(resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
+		go func() {
+			if err := sink.Receive(); err != nil {
+				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			} else {
+				log.V(1).Info("KDSSyncClient finished gracefully")
+			}
+		}()
+	})
 	return rt.Add(mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
@@ -127,6 +148,7 @@ func Setup(rt runtime.Runtime) error {
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
+			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
 		),
 	))

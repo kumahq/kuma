@@ -43,9 +43,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		if proxy.Dataplane.IsUsingTransparentProxy() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() || endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
 			switch net.IsAddressIPv6(endpoint.WorkloadIP) {
 			case true:
-				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv6, 0))
+				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(InPassThroughIPv6, 0))
 			case false:
-				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0))
+				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(InPassThroughIPv4, 0))
 			}
 		}
 

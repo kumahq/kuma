@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -30,13 +29,12 @@ import (
 
 var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
-	initStateMap := cache_v2.ResourceVersionMap{}
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) client_v2.KDSSyncClient {
 		return client_v2.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-			client_v2.NewDeltaKDSStream(cs, zoneName, "", initStateMap),
+			client_v2.NewDeltaKDSStream(cs, zoneName, ""),
 			sync_store_v2.ZoneSyncCallback(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 		)
 	}

@@ -202,6 +202,24 @@ func (p *PostgresStoreConfig) Validate() error {
 	if p.MinReconnectInterval.Duration >= p.MaxReconnectInterval.Duration {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
 	}
+	if p.MinOpenConnections < 0 {
+		return errors.New("MinOpenConnections should be greater than 0")
+	}
+	if p.MinOpenConnections > p.MaxOpenConnections {
+		return errors.New("MinOpenConnections should be less than MaxOpenConnections")
+	}
+	if p.MaxConnectionLifetime.Duration < 0 {
+		return errors.New("MaxConnectionLifetime should be greater than 0")
+	}
+	if p.MaxConnectionLifetimeJitter.Duration < 0 {
+		return errors.New("MaxConnectionLifetimeJitter should be greater than 0")
+	}
+	if p.MaxConnectionLifetimeJitter.Duration > p.MaxConnectionLifetime.Duration {
+		return errors.New("MaxConnectionLifetimeJitter should be less than MaxConnectionLifetime")
+	}
+	if p.HealthCheckInterval.Duration < 0 {
+		return errors.New("HealthCheckInterval should be greater than 0")
+	}
 	warning := "[WARNING] "
 	switch p.DriverName {
 	case DriverNamePgx:
