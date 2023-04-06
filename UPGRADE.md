@@ -6,11 +6,17 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upcoming release
+## Upgrade to `2.2.x`
 
 ### Universal
 
-### Changed default postgres driver to pgx
+#### CentOS 7
+
+We are dropping support for running Envoy on CentOS 7 with this release and will
+not release CentOS 7 compatible Envoy builds.
+
+#### Changed default postgres driver to pgx
+
 - If you encounter any problems with the persistence layer please [submit an issue](https://github.com/kumahq/kuma/issues/new) and temporarily switch to the previous driver (`lib/pq`) by setting
 `DriverName=postgres` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME='postgres'` env variable.
 - Several configuration settings are not supported by the new driver right now, if used to configure them please try running with new defaults or [submit an issue](https://github.com/kumahq/kuma/issues/new).
@@ -19,28 +25,28 @@ List of unsupported configuration options:
   - MinReconnectInterval (used in events listener)
   - MaxReconnectInterval (used in events listener)
 
+#### Longer name of the resource in postgres
+
+Kuma now permits the creation of a resource with a name of up to 253 characters, which is an increase from the previous limit of 100 characters. This adjustment brings our system in line with the naming convention supported by Kubernetes.
+This change requires to run `kuma-cp migrate up` to apply changes to the postgres database.
+
 ### K8s
 
-### Removed deprecated annotations
+#### Removed deprecated annotations
 
 - `kuma.io/builtindns` and `kuma.io/builtindnsport` are removed in favour of `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port` introduced in 1.8.0. If you are using the legacy CNI you main need to set these old annotations manually in your pod definition.
 - `kuma.io/sidecar-injection` is no longer supported as an annotation, you should use it as a label.
 
-### Helm
+#### Helm
 
 All containers now have defaults for `resources.requests.{cpu,memory}` and `resources.limits.{memory}`.
 There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.
 
-### Gateway API
+#### Gateway API
 
 We now support version `v0.6.0` of the Gateway API. See the [upstream API
 changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
 more info.
-
-### Longer name of the resource in postgres
-
-Kuma now permits the creation of a resource with a name of up to 253 characters, which is an increase from the previous limit of 100 characters. This adjustment brings our system in line with the naming convention supported by Kubernetes.
-This change requires to run `kuma-cp migrate up` to apply changes to the postgres database.
 
 ### Auth configuration of DP server in Kuma CP
 
@@ -102,6 +108,24 @@ helm upgrade --install --create-namespace --namespace kuma-system \
 ```sh
 kumactl install control-plane --set "legacy.transparentProxy=true" | kubectl apply -f-
 ```
+
+### Removal of deprecated options to reach applications bound to `localhost`
+
+The deprecated options `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS` and
+`defaults.enableLocalhostInboundClusters` were removed.
+
+This change affects only applications using transparent proxy.
+
+Applications that are binding to `localhost` won't be reachable anymore.
+This is the default behaviour from Kuma 1.8.0. Until now, it was possible to set
+a deprecated kuma-cp configurations `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
+or `defaults.enableLocalhostInboundClusters` to `true`, which was allowing to
+still reach these applications.
+
+One of the options to upgrade change address which the application is
+listening on, to `0.0.0.0`.
+Other option is to define `dataplane.networking.inbound[].serviceAddress`
+to the address which service is binding to.
 
 ## Upgrade to `2.1.x`
 

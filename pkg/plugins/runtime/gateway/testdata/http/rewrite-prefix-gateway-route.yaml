@@ -118,8 +118,20 @@ Routes:
         name: echo.example.com
         routes:
         - match:
+            path: /otherprefix/a
+          redirect:
+            portRedirect: 8080
+            regexRewrite:
+              pattern:
+                googleRe2: {}
+                regex: .*
+              substitution: /a
+            responseCode: FOUND
+            stripQuery: true
+        - match:
             path: /prefix/a
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             regexRewrite:
               pattern:
                 googleRe2: {}
@@ -141,10 +153,17 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
+        - match:
+            prefix: /otherprefix/a/
+          redirect:
+            portRedirect: 8080
+            prefixRewrite: /a/
+            responseCode: FOUND
+            stripQuery: true
         - match:
             prefix: /prefix/a/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             prefixRewrite: /a/
             retryPolicy:
               numRetries: 5
@@ -162,7 +181,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

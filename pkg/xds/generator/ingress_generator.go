@@ -36,7 +36,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Prox
 
 	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)
 
-	listener, err := i.generateLDS(proxy, proxy.ZoneIngress, destinationsPerService, proxy.APIVersion)
+	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource, destinationsPerService, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -46,19 +46,21 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Prox
 		Resource: listener,
 	})
 
-	services := i.services(proxy)
+	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
+		services := i.services(mr)
 
-	cdsResources, err := i.generateCDS(services, destinationsPerService, proxy.APIVersion)
-	if err != nil {
-		return nil, err
-	}
-	resources.Add(cdsResources...)
+		cdsResources, err := i.generateCDS(services, destinationsPerService, proxy.APIVersion, mr)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(cdsResources...)
 
-	edsResources, err := i.generateEDS(proxy, services, proxy.APIVersion)
-	if err != nil {
-		return nil, err
+		edsResources, err := i.generateEDS(services, proxy.APIVersion, mr)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(edsResources...)
 	}
-	resources.Add(edsResources...)
 
 	return resources, nil
 }
@@ -70,27 +72,27 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Prox
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(
-	proxy *core_xds.Proxy,
 	ingress *core_mesh.ZoneIngressResource,
 	destinationsPerService map[string][]tags.Tags,
 	apiVersion core_xds.APIVersion,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetNetworking().GetAddress(), proxy.ZoneIngress.Spec.GetNetworking().GetPort())
+	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort())
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
 		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort(), core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
-	if len(proxy.ZoneIngress.Spec.AvailableServices) == 0 {
+	if len(ingress.Spec.AvailableServices) == 0 {
 		inboundListenerBuilder = inboundListenerBuilder.
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion)))
 	}
 
 	sniUsed := map[string]bool{}
 
-	for _, inbound := range proxy.ZoneIngress.Spec.GetAvailableServices() {
+	for _, inbound := range ingress.Spec.GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
 		destinations := destinationsPerService[service]
 		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
+		clusterName := envoy_names.GetMeshClusterName(inbound.Mesh, service)
 
 		for _, destination := range destinations {
 			meshDestination := destination.
@@ -105,8 +107,8 @@ func (i IngressGenerator) generateLDS(
 				envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchServerNames(sni),
-					envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
-						envoy_common.WithService(service),
+					envoy_listeners.TcpProxyWithMetadata(clusterName, envoy_common.NewCluster(
+						envoy_common.WithName(clusterName),
 						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 					)),
 				),
@@ -233,9 +235,9 @@ func (_ IngressGenerator) destinations(
 	return destinations
 }
 
-func (_ IngressGenerator) services(proxy *core_xds.Proxy) []string {
+func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
 	var services []string
-	for service := range proxy.Routing.OutboundTargets {
+	for service := range mr.EndpointMap {
 		services = append(services, service)
 	}
 	sort.Strings(services)
@@ -246,13 +248,17 @@ func (i IngressGenerator) generateCDS(
 	services []string,
 	destinationsPerService map[string][]tags.Tags,
 	apiVersion core_xds.APIVersion,
+	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 	for _, service := range services {
+		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
+
 		tagSlice := tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(tags.Without(mesh_proto.ServiceTag), tags.With("mesh"))
+
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
-			Configure(envoy_clusters.EdsCluster(service)).
+			Configure(envoy_clusters.EdsCluster(clusterName)).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
@@ -260,7 +266,7 @@ func (i IngressGenerator) generateCDS(
 			return nil, err
 		}
 		resources = append(resources, &core_xds.Resource{
-			Name:     service,
+			Name:     clusterName,
 			Origin:   OriginIngress,
 			Resource: edsCluster,
 		})
@@ -269,19 +275,21 @@ func (i IngressGenerator) generateCDS(
 }
 
 func (_ IngressGenerator) generateEDS(
-	proxy *core_xds.Proxy,
 	services []string,
 	apiVersion core_xds.APIVersion,
+	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 	for _, service := range services {
-		endpoints := proxy.Routing.OutboundTargets[service]
-		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpoints, apiVersion)
+		endpoints := mr.EndpointMap[service]
+
+		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, &core_xds.Resource{
-			Name:     service,
+			Name:     clusterName,
 			Origin:   OriginIngress,
 			Resource: cla,
 		})

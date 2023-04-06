@@ -360,6 +360,7 @@ Routes:
         - match:
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -376,7 +377,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - three.example.com
         name: three.example.com
@@ -390,6 +390,7 @@ Routes:
         - match:
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -406,7 +407,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - one.example.com
         name: one.example.com
@@ -420,6 +420,7 @@ Routes:
         - match:
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -436,7 +437,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

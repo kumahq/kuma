@@ -21,7 +21,6 @@ import (
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	"github.com/kumahq/kuma/pkg/kds/zone"
@@ -232,7 +231,7 @@ var _ = Describe("Zone Sync", func() {
 			return kds_client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-				kds_client_v2.NewDeltaKDSStream(cs, zoneName, "", cache_v2.ResourceVersionMap{}),
+				kds_client_v2.NewDeltaKDSStream(cs, zoneName, ""),
 				sync_store_v2.ZoneSyncCallback(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 			)
 		}

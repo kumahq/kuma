@@ -172,26 +172,19 @@ var _ = Describe("DNS Server", func() {
 		}))
 
 		It("should return an error if DNS Server binary path is not found", test.Within(10*time.Second, func() {
-			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
 					Enabled:           true,
-					CoreDNSBinaryPath: "testdata",
+					CoreDNSBinaryPath: "nonexistent",
 					ConfigDir:         configDir,
 				},
 			}
-
-			By("starting a mock DNS Server")
-			// when
-			dnsServer, err := New(&Opts{
+			_, err := New(&Opts{
 				Config: cfg,
 				Stdout: &bytes.Buffer{},
 				Stderr: &bytes.Buffer{},
 			})
-			// then
-			Expect(dnsServer).To(BeNil())
-			// and
-			Expect(err.Error()).To(ContainSubstring("could not find binary in any of the following paths"))
+			Expect(err).To(HaveOccurred())
 		}))
 	})
 })

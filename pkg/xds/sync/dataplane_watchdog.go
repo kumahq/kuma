@@ -92,7 +92,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 // syncDataplane syncs state of the Dataplane.
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) error {
-	meshCtx, err := d.MeshCache.GetMeshContext(ctx, syncLog, d.key.Mesh)
+	meshCtx, err := d.MeshCache.GetMeshContext(ctx, d.key.Mesh)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	if err != nil {
 		return err
 	}
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, proxy.ZoneIngress.Spec.Networking.Address)
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking().GetAddress())
 	if err != nil {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}

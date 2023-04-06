@@ -436,6 +436,52 @@ spec:
             description: MeshGatewayInstanceSpec specifies the options available for
               a GatewayDataplane.
             properties:
+              podTemplate:
+                description: PodTemplate configures the Pod owned by this config.
+                properties:
+                  metadata:
+                    description: Metadata holds metadata configuration for a Service.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations holds annotations to be set on an
+                          object.
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: Labels holds labels to be set on an objects.
+                        type: object
+                    type: object
+                  spec:
+                    description: Spec holds some customizable fields of a Pod.
+                    properties:
+                      container:
+                        description: Container corresponds to PodSpec.Container
+                        properties:
+                          securityContext:
+                            description: ContainerSecurityContext corresponds to PodSpec.Container.SecurityContext
+                            properties:
+                              readOnlyRootFilesystem:
+                                description: ReadOnlyRootFilesystem corresponds to
+                                  PodSpec.Container.SecurityContext.ReadOnlyRootFilesystem
+                                type: boolean
+                            type: object
+                        type: object
+                      securityContext:
+                        description: PodSecurityContext corresponds to PodSpec.SecurityContext
+                        properties:
+                          fsGroup:
+                            description: FSGroup corresponds to PodSpec.SecurityContext.FSGroup
+                            format: int64
+                            type: integer
+                        type: object
+                      serviceAccountName:
+                        description: ServiceAccountName corresponds to PodSpec.ServiceAccountName.
+                        type: string
+                    type: object
+                type: object
               replicas:
                 default: 1
                 description: Replicas is the number of dataplane proxy replicas to
@@ -502,8 +548,13 @@ spec:
                       annotations:
                         additionalProperties:
                           type: string
-                        description: Annotations holds annotations to be set on a
-                          Service.
+                        description: Annotations holds annotations to be set on an
+                          object.
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: Labels holds labels to be set on an objects.
                         type: object
                     type: object
                   spec:

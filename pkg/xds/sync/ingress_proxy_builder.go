@@ -44,35 +44,24 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 		return nil, err
 	}
 
-	allMeshDataplanes := &core_mesh.DataplaneResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {
-		return nil, err
-	}
-	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
-
-	availableExternalServices, err := p.getIngressExternalServices(ctx)
+	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx, zoneIngress, zoneEgressesList)
 	if err != nil {
 		return nil, err
 	}
-
-	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices, zoneIngressProxy.MeshGateways)
 
 	proxy := &core_xds.Proxy{
 		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
-		ZoneIngress:      zoneIngress,
-		Routing:          *routing,
 		ZoneIngressProxy: zoneIngressProxy,
 	}
 	return proxy, nil
 }
 
-func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*core_xds.ZoneIngressProxy, error) {
+func (p *IngressProxyBuilder) buildZoneIngressProxy(
+	ctx context.Context,
+	zoneIngress *core_mesh.ZoneIngressResource,
+	zoneEgressesList *core_mesh.ZoneEgressResourceList,
+) (*core_xds.ZoneIngressProxy, error) {
 	routes := &core_mesh.TrafficRouteResourceList{}
 	if err := p.ReadOnlyResManager.List(ctx, routes); err != nil {
 		return nil, err
@@ -95,13 +84,46 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*core_
 		return nil, err
 	}
 
+	var meshList core_mesh.MeshResourceList
+	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
+		return nil, err
+	}
+
+	var meshResourceList []*core_xds.MeshIngressResources
+
+	for _, mesh := range meshList.Items {
+		meshName := mesh.GetMeta().GetName()
+
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
+		if err != nil {
+			return nil, err
+		}
+
+		destinations := ingress.BuildDestinationMap(meshName, zoneIngress)
+
+		meshResources := &core_xds.MeshIngressResources{
+			Mesh: mesh,
+			EndpointMap: ingress.BuildEndpointMap(
+				destinations,
+				meshCtx.Resources.Dataplanes().Items,
+				meshCtx.Resources.ExternalServices().Items,
+				zoneEgressesList.Items,
+				gateways.Items,
+			),
+		}
+
+		meshResourceList = append(meshResourceList, meshResources)
+	}
+
 	return &core_xds.ZoneIngressProxy{
-		GatewayRoutes: gatewayRoutes,
-		MeshGateways:  gateways,
+		ZoneIngressResource: zoneIngress,
+		GatewayRoutes:       gatewayRoutes,
+		MeshGateways:        gateways,
 		PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
 			meshhttproute_api.MeshHTTPRouteType: meshHTTPRoutes,
 			core_mesh.TrafficRouteType:          routes,
 		},
+		MeshResourceList: meshResourceList,
 	}, nil
 }
 
@@ -117,24 +139,6 @@ func (p *IngressProxyBuilder) getZoneIngress(ctx context.Context, key core_model
 		return nil, err
 	}
 	return zoneIngress, nil
-}
-
-func (p *IngressProxyBuilder) resolveRouting(
-	zoneIngress *core_mesh.ZoneIngressResource,
-	zoneEgresses *core_mesh.ZoneEgressResourceList,
-	dataplanes *core_mesh.DataplaneResourceList,
-	externalServices *core_mesh.ExternalServiceResourceList,
-	meshGateways *core_mesh.MeshGatewayResourceList,
-) *core_xds.Routing {
-	destinations := ingress.BuildDestinationMap(zoneIngress)
-	endpoints := ingress.BuildEndpointMap(
-		destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items, meshGateways.Items,
-	)
-
-	routing := &core_xds.Routing{
-		OutboundTargets: endpoints,
-	}
-	return routing
 }
 
 func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource) error {
@@ -173,7 +177,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 		}
 		meshName := mesh.GetMeta().GetName()
 
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
 		if err != nil {
 			return nil, err
 		}

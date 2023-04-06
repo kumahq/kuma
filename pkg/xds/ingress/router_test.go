@@ -15,19 +15,26 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 			Spec: &mesh_proto.ZoneIngress{
 				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 					{
+						Mesh: "mesh-1",
 						Tags: map[string]string{"kuma.io/service": "backend", "version": "v1", "region": "us"},
 					},
 					{
+						Mesh: "mesh-1",
 						Tags: map[string]string{"kuma.io/service": "backend"},
 					},
 					{
+						Mesh: "mesh-1",
 						Tags: map[string]string{"kuma.io/service": "web", "version": "v2", "region": "eu"},
+					},
+					{
+						Mesh: "mesh-2",
+						Tags: map[string]string{"kuma.io/service": "payments"},
 					},
 				},
 			},
 		}
 
-		actual := BuildDestinationMap(ingress)
+		actual := BuildDestinationMap("mesh-1", ingress)
 		expected := xds.DestinationMap{
 			"backend": []mesh_proto.TagSelector{
 				{

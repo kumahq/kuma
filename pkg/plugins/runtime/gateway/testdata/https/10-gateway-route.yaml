@@ -259,6 +259,7 @@ Routes:
                 regex: .*sh
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -275,7 +276,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             headers:
             - name: Content-Type
@@ -283,6 +283,7 @@ Routes:
                 exact: application/json
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -299,7 +300,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             headers:
             - name: Language
@@ -307,6 +307,7 @@ Routes:
                 exact: gibberish
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -323,13 +324,13 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             headers:
             - name: X-I-AM-PRESENT
               presentMatch: true
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -346,13 +347,13 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             headers:
             - name: X-I-AM-ABSENT
               presentMatch: false
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -369,7 +370,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

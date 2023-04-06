@@ -2,6 +2,8 @@ name: "release"
 
 on:
   release: {}
+  schedule:
+    - cron: 0 7 * * *
   workflow_dispatch:
     inputs:
       release:
@@ -23,6 +25,8 @@ env:
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check }}
+  EDITION: kuma
+  MIN_VERSION: "1.2.0"
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -33,7 +37,7 @@ jobs:
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.4.0
+          go install github.com/kumahq/ci-tools/cmd/release-tool@latest
       - name: remove-cni
         # CNI was only introduced in 1.7 so versions before should remove
         if: startsWith(env.RELEASE, '1.7') || startsWith(env.RELEASE, '1.6')
@@ -77,7 +81,17 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: "master"
-      - name: update-CHANGELOG.md-in-master
+      - name: update-active-branches.json
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
+          release-tool version-file --repo ${{ github.repository }} --active-branches > active-branches.json
+      - name: update-versions.yml
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
+      - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
@@ -85,13 +99,13 @@ jobs:
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v4
         with:
-          commit-message: "docs(CHANGELOG.md): updating changelog"
+          commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true
           branch: chore/update-changelog
           delete-branch: true
-          title: "docs(CHANGELOG.md): updating changelog"
+          title: "docs(CHANGELOG.md): updating changelog and version files"
           draft: false
-          labels: ci/auto-merge,ci/skip-test
+          labels: ci/skip-test
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

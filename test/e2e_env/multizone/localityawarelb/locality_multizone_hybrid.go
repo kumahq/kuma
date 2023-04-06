@@ -44,20 +44,6 @@ networking:
 `, mesh, net.JoinHostPort(ip, "8080"))
 }
 
-func zoneExternalService(mesh string, ip string, name string, zone string) string {
-	return fmt.Sprintf(`
-type: ExternalService
-mesh: "%s"
-name: "%s"
-tags:
-  kuma.io/service: "%s"
-  kuma.io/protocol: http
-  kuma.io/zone: "%s"
-networking:
-  address: "%s"
-`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
-}
-
 func InstallExternalService(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return cluster.DeployApp(
@@ -69,6 +55,20 @@ func InstallExternalService(name string) InstallFunc {
 }
 
 func ExternalServicesWithLocalityAwareLb() {
+	zoneExternalService := func(mesh string, ip string, name string, zone string) string {
+		return fmt.Sprintf(`
+type: ExternalService
+mesh: "%s"
+name: "%s"
+tags:
+  kuma.io/service: "%s"
+  kuma.io/protocol: http
+  kuma.io/zone: "%s"
+networking:
+  address: "%s"
+`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
+	}
+
 	const mesh = "external-service-locality-lb"
 	const meshNoZoneEgress = "external-service-locality-lb-no-egress"
 	const namespace = "external-service-locality-lb"
@@ -140,7 +140,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			mesh,
 			"external-service-in-kube-zone1",
 		)
-		filterIngress := "cluster.external-service-in-kube-zone1.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-kube-zone1.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -167,7 +167,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			mesh,
 			"external-service-in-uni-zone4",
 		)
-		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-uni-zone4.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -196,7 +196,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			meshNoZoneEgress,
 			"demo-es-in-uni-zone4",
 		)
-		filterIngress := "cluster.demo-es-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_demo-es-in-uni-zone4.upstream_rq_total", meshNoZoneEgress)
 
 		// and there is no stat because external service is not exposed through ingress
 		Eventually(func(g Gomega) {

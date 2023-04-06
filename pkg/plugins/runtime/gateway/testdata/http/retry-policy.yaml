@@ -208,6 +208,7 @@ Routes:
         - match:
             path: /api
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 20
               retryOn: 5xx
@@ -220,10 +221,10 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /api/
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             retryPolicy:
               numRetries: 20
               retryOn: 5xx
@@ -236,10 +237,10 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             requestMirrorPolicies:
             - cluster: echo-mirror-3dd740a2de879d4c
               runtimeFraction:
@@ -257,7 +258,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:
