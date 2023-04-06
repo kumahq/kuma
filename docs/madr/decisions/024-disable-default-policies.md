@@ -15,19 +15,22 @@ to be able to disable that default creation of policies selectively.
 [here](https://github.com/kumahq/kuma/issues/3346#issuecomment-1006600634)).
 2. Add a binary (yes / no) `disableDefaultPolicies` option to the `Mesh` object.
 3. Add individual switches (e.g. `disableDefaultTrafficPermission`) for each policy.
+4. Add `skipDefaultPolicies` []string field to allow comma-separated list of policies to skip.
 
 ## Decision Outcome
 
-Chosen option: 3. Add individual switches (e.g. `disableDefaultTrafficPermission`) for each policy.
+Chosen option: 4. Add `skipDefaultPolicies` []string field to allow comma-separated list of policies to skip.
 
 ## Decision Drivers
 
 ### Pros
 - More granular control over what's created (good for testing as well)
 - Predictable, understandable behavior
+- Only adds a single additional field to Mesh configuration
 
 ### Cons
-- Adds multiple additional options to / clutters the `Mesh` object
+- CSV string fields can be a bit messy, but there is precedent in the codebase 
+(`kumactl install observability --components`).
 
 ## Open Questions
 
