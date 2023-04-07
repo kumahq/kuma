@@ -12,7 +12,7 @@ docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm
 helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
-DOCS_CMD_FORMAT=markdown
+DOCS_CMD_FORMAT ?= markdown
 .PHONY: docs/generated/cmd
 docs/generated/cmd:
 	DESTDIR=$@ FORMAT=$(DOCS_CMD_FORMAT) go run $(TOOLS_DIR)/docs/generate.go
