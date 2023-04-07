@@ -8,7 +8,7 @@ set -o nounset
 # - if ENVOY_TAG is a real git tag like 'v1.20.0' then the version is equal to '1.20.0' (without the first letter 'v').
 # - if ENVOY_TAG is a commit hash then the version will look like '1.20.1-dev-b16d390f'
 
-ENVOY_TAG=${ENVOY_TAG:-"v1.22.7"}
+ENVOY_TAG=${ENVOY_TAG:-"v1.22.10"}
 ENVOY_VERSION=$(curl --silent --location "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION.txt")
 
 # for envoy versions older than v1.22.0 file 'VERSION.txt' used to be called 'VERSION'
