@@ -181,6 +181,7 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 func validateHostSelection(predicates *[]Predicate) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("hostSelection")
+	var prioritySet bool
 
 	for i, predicate := range *predicates {
 		switch predicate.PredicateType {
@@ -189,9 +190,14 @@ func validateHostSelection(predicates *[]Predicate) validators.ValidationError {
 				verr.AddViolationAt(path.Index(i).Field("tags"), validators.MustBeDefined)
 			}
 		case OmitPreviousPriorities:
+			if prioritySet {
+				verr.AddViolationAt(path.Index(i).Field("predicate"), fmt.Sprintf("%v must only be specified once",
+					predicate.PredicateType))
+			}
 			if predicate.UpdateFrequency <= 0 {
 				verr.AddViolationAt(path.Index(i).Field("updateFrequency"), validators.MustBeDefinedAndGreaterThanZero)
 			}
+			prioritySet = true
 		case OmitPreviousHosts:
 		default:
 			verr.AddViolationAt(path.Index(i).Field("predicate"), fmt.Sprintf("unknown predicate type '%v'",

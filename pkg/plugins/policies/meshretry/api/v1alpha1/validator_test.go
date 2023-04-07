@@ -461,6 +461,27 @@ violations:
   - field:  spec.to[0].default.conf.http.hostSelection[1].predicate
     message: unknown predicate type 'IncorrectPredicateType'`,
 			}),
+			Entry("OmitPreviousPriorities specified twice", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        hostSelection:
+          - predicate: OmitPreviousPriorities
+            updateFrequency: 3
+          - predicate: OmitPreviousHosts
+          - predicate: OmitPreviousPriorities
+            updateFrequency: 1
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.hostSelection[2].predicate
+    message: OmitPreviousPriorities must only be specified once`,
+			}),
 		)
 	})
 })
