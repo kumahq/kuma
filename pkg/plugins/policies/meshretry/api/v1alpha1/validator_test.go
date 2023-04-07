@@ -408,6 +408,59 @@ violations:
   - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].name
     message: must be defined`,
 			}),
+			Entry("missing tags when hostSelection set to OmitHostsWithTags", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        hostSelection:
+          - predicate: OmitHostsWithTags
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.hostSelection[0].tags
+    message: must be defined`,
+			}),
+			Entry("update frequency less than 1 specified for OmitPreviousPriorites", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        hostSelection:
+          - predicate: OmitPreviousPriorities
+            updateFrequency: 0
+`,
+				expected: `
+violations:
+  - field:  spec.to[0].default.conf.http.hostSelection[0].updateFrequency
+    message: must be defined and greater than zero`,
+			}),
+			Entry("incorrect / unsupported predicate type specified in hostSelection", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        hostSelection:
+          - predicate: OmitPreviousHosts
+          - predicate: IncorrectPredicateType
+`,
+				expected: `
+violations:
+  - field:  spec.to[0].default.conf.http.hostSelection[1].predicate
+    message: unknown predicate type 'IncorrectPredicateType'`,
+			}),
 		)
 	})
 })
