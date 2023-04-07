@@ -27,7 +27,7 @@ docs/generated/resources: ## Generate Mesh API reference
 .PHONY: docs/generated/kuma-cp.md
 docs/generated/kuma-cp.md: ## Generate Mesh API reference
 	@mkdir -p $(dir $@)
-	@echo "# Control-Plane configuration" >> $@
+	@echo "# Control-Plane configuration" > $@
 	@echo "Here are all options to configure the control-plane:" >> $@
 	@echo '```yaml' >> $@
 	@cat $(DOCS_CP_CONFIG) >> $@
