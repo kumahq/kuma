@@ -28,42 +28,31 @@ store:
     password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
     # Database name of the Postgres DB
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
-    # Driver to use, one of: pgx, postgres
-    driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
-    # MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
-    maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
-    # MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after maxConnectionLifetime to randomly decide to close a connection.
-    # This helps prevent all connections from being closed at the exact same time, starving the pool.
-    maxConnectionLifetimeJitter: "1m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
-    # HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
-    healthCheckInterval: "30s" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL
-    # MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
-    minOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS
-    # MaxOpenConnections is the maximum number of open connections to the database
+    # Maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
     maxOpenConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
-    # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
+    # Maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-      # Path to TLS Certificate of the client. Required when server has METHOD=cert
+      # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-      # Path to TLS Key of the client. Required when server has METHOD=cert
+      # Path to TLS Key of the client. Used in verifyCa and verifyFull modes
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-    # MinReconnectInterval (applied only when driverName=postgres) controls the duration to wait before trying to
+    # MinReconnectInterval controls the duration to wait before trying to
     # re-establish the database connection after connection loss. After each
     # consecutive failure this interval is doubled, until MaxReconnectInterval
     # is reached. Successfully completing the connection establishment procedure
     # resets the interval back to MinReconnectInterval.
     minReconnectInterval: "10s" # ENV: KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL
-    # MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
+    # MaxReconnectInterval controls the maximum possible duration to wait before trying
     # to re-establish the database connection after connection loss.
     maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
 
@@ -112,16 +101,6 @@ monitoringAssignmentServer:
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
   # The default timeout for a single fetch-based discovery request, if not specified
   defaultFetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT
-  # Path to TLS certificate file
-  tlsCertFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CERT_FILE
-  # Path to TLS key file
-  tlsKeyFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
-  tlsMinVersion: "TLSv1_2" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
-  tlsMaxVersion: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
-  tlsCipherSuites: [] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES
 
 # Envoy XDS server configuration
 xdsServer:
@@ -160,16 +139,6 @@ apiServer:
     tlsCertFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
     tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
-    # Path to the CA certificate which is used to sign client certificates. It is used only for verifying client certificates.
-    tlsCaFile: "" # ENV: KUMA_API_SERVER_HTTPS_CLIENT_CERTS_CA_FILE
-    # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
-    tlsMinVersion: "TLSv1_2" # ENV: KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION
-    # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
-    tlsMaxVersion: # ENV: KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION
-    # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
-    tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
-    # If true, then HTTPS connection will require client cert.
-    requireClientCert: false # ENV: KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT
   # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
   auth:
     # Directory of authorized client certificates (only validate in HTTPS)
@@ -184,39 +153,11 @@ apiServer:
     tokens:
       # If true then User Token with name admin and group admin will be created and placed as admin-user-token Kuma secret
       bootstrapAdminToken: true # ENV: KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN
-      # If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-      enableIssuer: true # ENV: KUMA_API_SERVER_AUTHN_TOKENS_ENABLE_ISSUER
-      # Token validator configuration
-      validator:
-        # If true then Kuma secrets with prefix "user-token-signing-key" are considered as signing keys.
-        useSecrets: true # ENV: KUMA_API_SERVER_AUTHN_TOKENS_VALIDATOR_USE_SECRETS
-        # List of public keys used to validate the token. Example:
-        # - kid: 1
-        #   key: |
-        #     -----BEGIN RSA PUBLIC KEY-----
-        #     MIIBCgKCAQEAq....
-        #     -----END RSA PUBLIC KEY-----
-        # - kid: 2
-        #   keyFile: /keys/public.pem
-        publicKeys: []
-
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
-  # Can be used if you use a reverse proxy
-  rootUrl: "" # ENV: KUMA_API_SERVER_ROOT_URL
-  # The path to serve the API from
-  basePath: "/" # ENV: KUMA_API_SERVER_BASE_PATH
-  # configuration specific to the GUI
-  gui:
-    # Whether to serve the gui (if mode=zone this has no effect)
-    enabled: true # ENV: KUMA_API_SERVER_GUI_ENABLED
-    # Can be used if you use a reverse proxy or want to serve the gui from a different path
-    rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
-    # The path to serve the GUI from
-    basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
 
 # Environment-specific configuration
 runtime:
@@ -334,23 +275,6 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
-      transparentProxyV1: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1
-      # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
-      # installed using ebpf instead of iptables
-      ebpf:
-        # Install transparent proxy using ebpf
-        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
-        # Name of the environmental variable which will include IP address of the pod
-        instanceIPEnvVarName: INSTANCE_IP # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
-        # Path where BPF file system will be mounted for pinning ebpf programs and maps
-        bpffsPath: /sys/fs/bpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-        # Path of mounted cgroup2
-        cgroupPath: /sys/fs/cgroup # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
-        # Name of the network interface which should be used to attach to it TC programs
-        # when not specified, we will try to automatically determine it
-        tcAttachIface: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
-        # Path where compiled eBPF programs are placed
-        programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
@@ -361,15 +285,23 @@ runtime:
 defaults:
   # If true, it skips creating the default Mesh
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
+  # If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
+  # Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
+  # be removed in the future.
+  enableLocalhostInboundClusters: false #ENV: KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS
 
 # Metrics configuration
 metrics:
   dataplane:
+    # Enables collecting metrics from Dataplane
+    enabled: true # ENV: KUMA_METRICS_DATAPLANE_ENABLED
     # How many latest subscriptions will be stored in DataplaneInsight object, if equals 0 then unlimited
     subscriptionLimit: 2 # ENV: KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT
     # How long data plane proxy can stay Online without active xDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT
   zone:
+    # Enables collecting metrics from Zone
+    enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
     # How long zone can stay Online without active KDS connection
@@ -393,12 +325,6 @@ general:
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
-  tlsMinVersion: "TLSv1_2" # ENV: KUMA_GENERAL_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
-  tlsMaxVersion: # ENV: KUMA_GENERAL_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
-  tlsCipherSuites: [] # ENV: KUMA_GENERAL_TLS_CIPHER_SUITES
   # WorkDir defines a path to the working directory
   # Kuma stores in this directory autogenerated entities like certificates.
   # If empty then the working directory is $HOME/.kuma
@@ -412,8 +338,6 @@ dnsServer:
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
   # Will create a service "<kuma.io/service>.mesh" dns entry for every service.
   serviceVipEnabled: true # ENV: KUMA_DNS_SERVER_SERVICE_VIP_ENABLED
-  # The port to use along with the `<kuma.io/service>.mesh` dns entry
-  serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
 
 # Multizone mode
 multizone:
@@ -425,26 +349,16 @@ multizone:
       refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
       # Interval for flushing Zone Insights (stats of multi-zone communication)
       zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
-      # TlsEnabled turns on TLS for KDS
-      tlsEnabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
       tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-      # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+      # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
       tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-      # TlsMinVersion the minimum version of TLS
-      tlsMinVersion: "TLSv1_2" # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION
-      # TlsMaxVersion the maximum version of TLS
-      tlsMaxVersion: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MAX_VERSION
-      # TlsCipherSuites the list of cipher suites
-      tlsCipherSuites: [] # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE
       # MsgSendTimeout defines a timeout on sending a single KDS message.
       # KDS stream between control planes is terminated if the control plane hits this timeout.
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
-      # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
-      nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -461,8 +375,6 @@ multizone:
       # MsgSendTimeout defines a timeout on sending a single KDS message.
       # KDS stream between control planes is terminated if the control plane hits this timeout.
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
-      # Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane
-      nackBackoff: 5s # ENV: KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF
 
 # Diagnostics configuration
 diagnostics:
@@ -470,18 +382,6 @@ diagnostics:
   serverPort: 5680 # ENV: KUMA_DIAGNOSTICS_SERVER_PORT
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
-  # Whether tls is enabled or not
-  tlsEnabled: false # ENV: KUMA_DIAGNOSTICS_TLS_ENABLED
-  # TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
-  tlsCertFile: # ENV: KUMA_DIAGNOSTICS_TLS_CERT_FILE
-  # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
-  tlsKeyFile: # ENV: KUMA_DIAGNOSTICS_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS
-  tlsMinVersion: "TLSv1_2" # ENV: KUMA_DIAGNOSTICS_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS
-  tlsMaxVersion: # ENV: KUMA_DIAGNOSTICS_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites
-  tlsCipherSuites: [] # ENV: KUMA_DIAGNOSTICS_TLS_CIPHER_SUITES
 
 # Dataplane Server configuration that servers API like Bootstrap/XDS for the Dataplane.
 dpServer:
@@ -491,78 +391,11 @@ dpServer:
   tlsCertFile: # ENV: KUMA_DP_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS
-  tlsMinVersion: "TLSv1_2" # ENV: KUMA_DP_SERVER_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS
-  tlsMaxVersion: # ENV: KUMA_DP_SERVER_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites
-  tlsCipherSuites: [] # ENV: KUMA_DP_SERVER_TLS_CIPHER_SUITES
-  # ReadHeaderTimeout defines the amount of time DP server will be allowed
-  # to read request headers. The connection's read deadline is reset
-  # after reading the headers and the Handler can decide what is considered
-  # too slow for the body. If ReadHeaderTimeout is zero there is no timeout.
-  # The timeout is configurable as in rare cases, when Kuma CP was restarting,
-  # 1s which is explicitly set in other servers was insufficient and DPs
-  # were failing to reconnect (we observed this in Projected Service Account
-  # Tokens e2e tests, which started flaking a lot after introducing explicit
-  # 1s timeout)
-  readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
   # Auth defines an authentication configuration for the DP Server
-  # DEPRECATED: use "authn" section.
   auth:
     # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
     # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
     type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
-  # Authn defines an authentication configuration for the DP Server
-  authn:
-    # Configuration for data plane proxy authentication.
-    dpProxy:
-      # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
-      # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
-      type: ""
-      # Configuration of dpToken authentication method
-      dpToken:
-        # If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-        enableIssuer: true
-        # DP Token validator configuration.
-        validator:
-          # If true then Kuma secrets with prefix "dataplane-token-signing-key-{mesh}" are considered as signing keys.
-          useSecrets: true
-          # List of public keys used to validate the token. Example:
-          # - kid: 1
-          #   mesh: default
-          #   key: |
-          #     -----BEGIN RSA PUBLIC KEY-----
-          #     MIIBCgKCAQEAq....
-          #     -----END RSA PUBLIC KEY-----
-          # - kid: 2
-          #   mesh: demo
-          #   keyFile: /keys/public.pem
-          publicKeys: []
-    # Configuration for zone proxy authentication.
-    zoneProxy:
-      # Type of authentication. Available values: "serviceAccountToken", "zoneToken", "none".
-      # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "zoneToken" on Universal.
-      type: ""
-      # Configuration for zoneToken authentication method.
-      zoneToken:
-        # If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-        enableIssuer: true
-        # Zone Token validator configuration.
-        validator:
-          # If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
-          useSecrets: true
-          # List of public keys used to validate the token. Example:
-          # - kid: 1
-          #   key: |
-          #     -----BEGIN RSA PUBLIC KEY-----
-          #     MIIBCgKCAQEAq....
-          #     -----END RSA PUBLIC KEY-----
-          # - kid: 2
-          #   keyFile: /keys/public.pem
-          publicKeys: []
-    # If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) stored in the file without proxy restart.
-    enableReloadableTokens: false # ENV: KUMA_DP_SERVER_AUTHN_ENABLE_RELOADABLE_TOKENS
   # Hds defines a Health Discovery Service configuration
   hds:
     # Enabled if true then Envoy will actively check application's ports, but only on Universal.
@@ -586,28 +419,6 @@ dpServer:
       healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
-
-# Intercommunication CP configuration
-interCp:
-  # Catalog configuration. Catalog keeps a record of all live CP instances in the zone.
-  catalog:
-    # Indicates an address on which other control planes can communicate with this CP.
-    # If empty then it's autoconfigured by taking the first IP of the nonloopback network interface.
-    instanceAddress: "" # ENV: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
-    # Interval on which CP will send heartbeat to a leader.
-    heartbeatInterval: 5s # ENV: KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL
-    # Interval on which CP will write all instances to a catalog.
-    writerInterval: 15s # ENV: KUMA_INTER_CP_CATALOG_WRITER_INTERVAL
-  # Intercommunication CP server configuration
-  server:
-    # Port of the inter-cp server
-    port: 5683 # ENV: KUMA_INTER_CP_SERVER_PORT
-    # TlsMinVersion the minimum version of TLS
-    tlsMinVersion: "TLSv1_2" # ENV: KUMA_INTER_CP_SERVER_TLS_MIN_VERSION
-    # TlsMaxVersion the maximum version of TLS
-    tlsMaxVersion: # ENV: KUMA_INTER_CP_SERVER_TLS_MAX_VERSION
-    # TlsCipherSuites the list of cipher suites
-    tlsCipherSuites: [ ] # ENV: KUMA_INTER_CP_SERVER_TLS_CIPHER_SUITES
 
 # Access Control configuration
 access:
@@ -661,7 +472,7 @@ experimental:
   gatewayAPI: false # ENV: KUMA_EXPERIMENTAL_GATEWAY_API
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-  kubeOutboundsAsVIPs: true # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
+  kubeOutboundsAsVIPs: false # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
 
 proxy:
   gateway:
