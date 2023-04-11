@@ -24,7 +24,7 @@ env:
   PULP_URL: "https://download.konghq.com/kuma-binaries-release/"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
   RELEASE: ${{ inputs.release || '0.0.0' }}
-  CHECK: ${{ inputs.check === "true" }}
+  CHECK: ${{ inputs.check || "true" }}
   EDITION: kuma
   MIN_VERSION: "1.2.0"
 jobs:
