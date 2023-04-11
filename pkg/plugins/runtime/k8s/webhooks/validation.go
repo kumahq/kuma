@@ -3,6 +3,7 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"net/http"
 	"strings"
 
@@ -24,13 +25,13 @@ import (
 	"github.com/kumahq/kuma/pkg/version"
 )
 
-func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, cpServiceAccountName string) k8s_common.AdmissionValidator {
+func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, allowedServiceAccounts []string) k8s_common.AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry:         coreRegistry,
 		k8sRegistry:          k8sRegistry,
 		converter:            converter,
 		mode:                 mode,
-		cpServiceAccountName: cpServiceAccountName,
+		allowedServiceAccounts: allowedServiceAccounts,
 	}
 }
 
@@ -40,7 +41,7 @@ type validatingHandler struct {
 	converter            k8s_common.Converter
 	decoder              *admission.Decoder
 	mode                 core.CpMode
-	cpServiceAccountName string
+	allowedServiceAccounts []string
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
@@ -110,9 +111,11 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
 func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
-	if userInfo.Username == h.cpServiceAccountName ||
-		userInfo.Username == "system:serviceaccount:kube-system:generic-garbage-collector" {
-		// Assume this means sync from another zone or GC cleanup resources due to OwnerRef.
+	if slices.Contains(h.allowedServiceAccounts, userInfo.Username) {
+		// Assume this means one of the following:
+		// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName))
+		// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
+		// - storageversionmigratior
 		// Not security; protecting user from self.
 		return admission.Allowed("")
 	}

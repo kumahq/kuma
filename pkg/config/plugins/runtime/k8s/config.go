@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"github.com/kumahq/kuma/pkg/core"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,13 +12,17 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
+const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"
+
+var logger = core.Log.WithName("kubernetes-config")
+
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 	return &KubernetesRuntimeConfig{
 		AdmissionServer: AdmissionServerConfig{
 			Port: 5443,
 		},
 		ControlPlaneServiceName: "kuma-control-plane",
-		ServiceAccountName:      "system:serviceaccount:kuma-system:kuma-control-plane",
+		ServiceAccountName:      defaultServiceAccountName,
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -105,7 +110,11 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
+	// Deprecated! Use AllowedServiceAccounts instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
+	// List of names of Service Accounts that admission requests are allowed.
+	// This list is appended with Control Plane's Service Account and generic-garbage-collector
+	AllowedServiceAccounts []string `json:"allowedServiceAccounts,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_service_accounts"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 	// NodeTaintController that prevents applications from scheduling until CNI is ready.
@@ -313,6 +322,9 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 	}
 	if c.MarshalingCacheExpirationTime.Duration < 0 {
 		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
+	}
+	if c.ServiceAccountName != defaultServiceAccountName {
+		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedServiceAccounts.")
 	}
 	return errs
 }
