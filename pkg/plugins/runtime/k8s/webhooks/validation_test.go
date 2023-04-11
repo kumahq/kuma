@@ -42,7 +42,7 @@ var _ = Describe("Validation", func() {
 		func(given testCase) {
 			// given
 			webhook := &kube_admission.Webhook{
-				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, "system:serviceaccount:kuma-system:kuma-control-plane"),
+				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, []string{"system:serviceaccount:kuma-system:kuma-control-plane"}),
 			}
 			Expect(webhook.InjectScheme(scheme)).To(Succeed())
 

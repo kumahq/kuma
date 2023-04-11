@@ -3,7 +3,6 @@ package k8s
 import (
 	"time"
 
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
