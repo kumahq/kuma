@@ -19,10 +19,10 @@ docs/generated/cmd:
 
 .PHONY: docs/generated/resources
 docs/generated/resources: ## Generate Mesh API reference
-	mkdir -p $@ && $(PROTOC) \
-		--kumadoc_out=$@ \
-		--plugin=protoc-gen-kumadoc=$(PROTOC_GEN_KUMADOC) \
-		$(DOCS_PROTOS)
+	mkdir -p $(@) && cd api/ && $(PROTOC) \
+		--kumadoc_out=../$(@) \
+		--plugin=protoc-gen-kumadoc=$(GOPATH_BIN_DIR)/protoc-gen-kumadoc \
+		mesh/v1alpha1/*.proto
 
 .PHONY: docs/generated/kuma-cp.md
 docs/generated/kuma-cp.md: ## Generate Mesh API reference
