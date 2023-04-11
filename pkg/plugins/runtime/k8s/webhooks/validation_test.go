@@ -41,8 +41,9 @@ var _ = Describe("Validation", func() {
 	DescribeTable("Validation",
 		func(given testCase) {
 			// given
+			allowedServiceAccounts := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
 			webhook := &kube_admission.Webhook{
-				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, []string{"system:serviceaccount:kuma-system:kuma-control-plane"}),
+				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, allowedServiceAccounts),
 			}
 			Expect(webhook.InjectScheme(scheme)).To(Succeed())
 
