@@ -162,7 +162,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
-			Expect(cfg.Runtime.Kubernetes.AllowedServiceAccounts).To(Equal([]string{"allowed-sa-1", "allowed-sa-2"}))
+			Expect(cfg.Runtime.Kubernetes.AllowedUsers).To(Equal([]string{"allowed-usr-1", "allowed-usr-2"}))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniApp).To(Equal("kuma-cni"))
 
@@ -426,7 +426,7 @@ runtime:
     dataplaneCleanupAge: 1h
   kubernetes:
     serviceAccountName: custom-sa
-    allowedServiceAccounts: ["allowed-sa-1", "allowed-sa-2"]
+    allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
     controlPlaneServiceName: custom-control-plane
     nodeTaintController:
       enabled: true
@@ -714,7 +714,7 @@ proxy:
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
-				"KUMA_RUNTIME_KUBERNETES_ALLOWED_SERVICE_ACCOUNTS":                                         "allowed-sa-1,allowed-sa-2",
+				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP":                                    "kuma-cni",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",

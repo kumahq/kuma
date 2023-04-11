@@ -110,11 +110,11 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
-	// Deprecated: Use AllowedServiceAccounts instead.
+	// Deprecated: Use AllowedUsers instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// List of names of Service Accounts that admission requests are allowed.
 	// This list is appended with Control Plane's Service Account and generic-garbage-collector
-	AllowedServiceAccounts []string `json:"allowedServiceAccounts,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_service_accounts"`
+	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 	// NodeTaintController that prevents applications from scheduling until CNI is ready.
@@ -324,7 +324,7 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	if c.ServiceAccountName != defaultServiceAccountName {
-		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedServiceAccounts.")
+		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedUsers.")
 	}
 	return errs
 }
