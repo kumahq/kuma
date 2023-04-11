@@ -3,10 +3,12 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"net/http"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
+	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,20 +29,20 @@ import (
 
 func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, allowedServiceAccounts []string) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry:         coreRegistry,
-		k8sRegistry:          k8sRegistry,
-		converter:            converter,
-		mode:                 mode,
+		coreRegistry:           coreRegistry,
+		k8sRegistry:            k8sRegistry,
+		converter:              converter,
+		mode:                   mode,
 		allowedServiceAccounts: allowedServiceAccounts,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry         core_registry.TypeRegistry
-	k8sRegistry          k8s_registry.TypeRegistry
-	converter            k8s_common.Converter
-	decoder              *admission.Decoder
-	mode                 core.CpMode
+	coreRegistry           core_registry.TypeRegistry
+	k8sRegistry            k8s_registry.TypeRegistry
+	converter              k8s_common.Converter
+	decoder                *admission.Decoder
+	mode                   core.CpMode
 	allowedServiceAccounts []string
 }
 

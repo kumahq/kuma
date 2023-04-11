@@ -1,8 +1,8 @@
 package k8s
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
 	"time"
+
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"
