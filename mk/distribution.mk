@@ -66,7 +66,7 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	  -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it $(PULP_RELEASE_IMAGE) \
-	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
+	  release --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
 	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish)
 endef
 
