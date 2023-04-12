@@ -495,7 +495,7 @@ workflows:
             parameters:
               k8sVersion: [ *lastK8sVersion ]
               target: [ test/e2e-multizone ]
-              arch: [ amd64, arm64 ]
+              arch: [ amd64 ]
               deltaKDS: [ true ]
           requires: [ build, check ]
       - e2e:
