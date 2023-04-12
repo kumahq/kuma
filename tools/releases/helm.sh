@@ -76,7 +76,7 @@ function package {
 
       tar -xzf "${f}" --directory "${tmpdir}"
 
-      tar -czvf "${f}" \
+      tar -czf "${f}" \
         --directory "${tmpdir}" \
         --owner 0 \
         --group 0 \
