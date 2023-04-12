@@ -65,23 +65,25 @@ function package {
       find "${dir}/crds" -name "*meshgatewayconfigs.yaml" -delete
     fi
 
-    # Chart Releaser is always packaging dependencies specified in Chart.yaml
-    # file first. The archives with packaged dependencies lands inside "charts"
-    # directory (i.e. deployments/[...]/charts/[dependency_name]-[version].tgz).
-    # When building the final chart package, it includes inside, the content of
-    # the "charts" directory. When it finds an archive there, it flattens it and
-    # includes in the final package as well. It means if the chart have any
-    # dependencies, the final chart's archive will contain duplicated manifests.
-    # As Chart Releaser will automatically download the dependencies and then
-    # will archive them, we can safely remove the content of "charts" directory
-    # to mitigate the above issue.
-    if [[ -d "${dir}/charts" ]]; then
-      rm -vrf "${dir}/charts/"*
-    fi
-
-   cr package \
+    cr package \
       --package-path "${CHARTS_PACKAGE_PATH}" \
       "${dir}"
+
+    # repackage archive to remove potential duplicates
+    for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
+      local tmpdir
+      tmpdir=$(mktemp --directory)
+
+      tar -xzf "${f}" --directory "${tmpdir}"
+
+      tar -czvf "${f}" \
+        --directory "${tmpdir}" \
+        --owner 0 \
+        --group 0 \
+        --no-same-owner \
+        --no-same-permissions \
+        "$(basename "${dir}")"
+    done
 
     # Restore files removed above
     git checkout -- "${dir}"
