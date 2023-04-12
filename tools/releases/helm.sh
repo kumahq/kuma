@@ -80,8 +80,6 @@ function package {
         --directory "${tmpdir}" \
         --owner 0 \
         --group 0 \
-        --no-same-owner \
-        --no-same-permissions \
         "$(basename "${dir}")"
     done
 
