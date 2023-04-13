@@ -84,17 +84,8 @@ jobs:
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early but this isn't possible: https://github.com/actions/runner/issues/662
-      - name: Generate GitHub app token
-        id: github-app-token
-        if: github.event.inputs.release == 'true'
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          repository: ${{ env.GH_OWNER }}/charts
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:
-          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
           GH_OWNER: ${{ github.event.inputs.gh-owner }}
         run: make helm/release
