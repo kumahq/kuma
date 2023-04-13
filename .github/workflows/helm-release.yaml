@@ -26,6 +26,10 @@ on:
         required: false
         default: kumahq
         type: string
+      gh-token:
+        description: Token to github organisation owner
+        required: false
+        type: string
 
 env:
   CR_VERSION: 1.5.0
@@ -87,5 +91,6 @@ jobs:
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
           GH_OWNER: ${{ github.event.inputs.gh-owner }}
         run: make helm/release
