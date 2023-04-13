@@ -91,6 +91,6 @@ jobs:
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.event.inputs.gh-token }}
           GH_OWNER: ${{ github.event.inputs.gh-owner }}
         run: make helm/release
