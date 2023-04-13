@@ -56,7 +56,7 @@ build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/dist
 ifeq ($(shell uname),Darwin)
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 else
-	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ .
+	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ $$(notdir $$<)
 endif
 	shasum -a 256 $$@ > $$@.sha256
 
