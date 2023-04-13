@@ -53,6 +53,9 @@ endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p build/distributions/out
+	# Create a tar with group and owner 0 and mtime of 0 (this makes builds reproducible).
+	# Have the tar be just the `kuma-version` folder and nothing else at root
+	# tar is different between darwin and Linux so executre different commands
 ifeq ($(shell uname),Darwin)
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 else
