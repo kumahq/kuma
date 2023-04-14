@@ -209,7 +209,7 @@ func (d *DataplaneLifecycle) deregisterProxy(
 	log logr.Logger,
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)
-	time.After(d.deregistrationDelay)
+	<-time.After(d.deregistrationDelay)
 	// stream context is canceled at this point, because DP has disconnected. Use background context instead.
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
