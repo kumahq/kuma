@@ -13,7 +13,8 @@ CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
 ifdef CI
-	CI_TOOLS_VERSION=master
+        # tools version is irrelevant on CI as we checkout only 1 branch at a time.
+	CI_TOOLS_VERSION=ci
 endif
 
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
