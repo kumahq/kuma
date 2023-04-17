@@ -91,8 +91,8 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
 ifeq ($(GOOS),darwin)
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
 endif
 
 .PHONY: k3d/wait

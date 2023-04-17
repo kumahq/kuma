@@ -155,6 +155,22 @@ var _ = Describe("MeshRetry", func() {
 										Value: "prefix-",
 									},
 								},
+								HostSelection: &[]api.Predicate{
+									{
+										PredicateType: "OmitPreviousHosts",
+									},
+									{
+										PredicateType:   "OmitPreviousPriorities",
+										UpdateFrequency: 2,
+									},
+									{
+										PredicateType: "OmitHostsWithTags",
+										Tags: map[string]string{
+											"test": "test",
+										},
+									},
+								},
+								HostSelectionMaxAttempts: pointer.To(int64(2)),
 							},
 						},
 					},

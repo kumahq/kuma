@@ -65,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         if: fromJSON(env.CHECK) && !(startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --url ${{ env.PULP_URL }}
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --base-url ${{ env.PULP_URL }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}

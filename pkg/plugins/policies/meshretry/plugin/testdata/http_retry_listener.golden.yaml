@@ -23,6 +23,7 @@ filterChains:
           - '*'
           name: backend
           retryPolicy:
+            hostSelectionRetryMaxAttempts: "2"
             numRetries: 1
             perTryTimeout: 2s
             rateLimitedRetryBackOff:
@@ -76,7 +77,23 @@ filterChains:
             retryBackOff:
               baseInterval: 3s
               maxInterval: 4s
+            retryHostPredicate:
+            - name: envoy.retry_host_predicates.previous_hosts
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.retry.host.previous_hosts.v3.PreviousHostsPredicate
+            - name: envoy.retry_host_predicates.omit_host_metadata
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.retry.host.omit_host_metadata.v3.OmitHostMetadataConfig
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      test: test
             retryOn: 5xx,gateway-error,reset,retriable-4xx,connect-failure,envoy-ratelimited,refused-stream,http3-post-connect-failure,retriable-status-codes
+            retryPriority:
+              name: envoy.retry_priorities.previous_priorities
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.retry.priority.previous_priorities.v3.PreviousPrioritiesConfig
+                updateFrequency: 2
           routes:
           - match:
               prefix: /

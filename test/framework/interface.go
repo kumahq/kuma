@@ -563,6 +563,7 @@ type Cluster interface {
 type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
+	GetXDSServerAddress() string
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
 	GetGlobalStatusAPI() string
@@ -571,5 +572,6 @@ type ControlPlane interface {
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
+	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)
 }
