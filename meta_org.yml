@@ -82,3 +82,8 @@ default:
       delete: true
     - name: triage
       delete: true
+  milestones:
+    - title: backlog
+      description: "Issues that are being tracked for interest but not assigned to a specific release yet"
+    - title: 2.3.x
+      description: "2.3.x release"
