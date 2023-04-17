@@ -1,0 +1,3 @@
+import{O as s,a as n,b as i}from"./OnboardingPage-c53c2bac.js";import{d as p,o as _,k as c,w as t,a,e as d,N as r,O as l,g as o,_ as m}from"./index-3d59543a.js";const g=""+new URL("kuma_gui-ecebdf10.png",import.meta.url).href,u=e=>(r("data-v-6eceb6a0"),e=e(),l(),e),h=u(()=>o("div",{class:"gui-preview-image"},[o("img",{src:g})],-1)),b=p({__name:"CompletedView",setup(e){return(f,w)=>(_(),c(i,null,{header:t(()=>[a(s,null,{title:t(()=>[d(`
+          Go to the dashboard
+        `)]),_:1})]),content:t(()=>[h]),navigation:t(()=>[a(n,{"next-step":"home","next-step-title":"Complete","last-step":"","show-skip":!1})]),_:1}))}});const C=m(b,[["__scopeId","data-v-6eceb6a0"]]);export{C as default};
