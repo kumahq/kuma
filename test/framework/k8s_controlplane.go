@@ -3,6 +3,7 @@ package framework
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -18,6 +19,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 )
+
+var _ ControlPlane = &K8sControlPlane{}
 
 type K8sControlPlane struct {
 	t          testing.TestingT
@@ -202,20 +205,22 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 }
 
 func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {
-	return c.getKDSServerAddress(false)
+	return c.getKumaCPAddress("grpc://", kdsPort, loadBalancerKdsPort)
 }
 
 func (c *K8sControlPlane) GetKDSServerAddress() string {
-	return c.getKDSServerAddress(true)
+	return c.getKumaCPAddress("grpcs://", kdsPort, loadBalancerKdsPort)
+}
+
+func (c *K8sControlPlane) GetXDSServerAddress() string {
+	return c.getKumaCPAddress("", xdsPort, xdsPort)
 }
 
 // A naive implementation to find the URL where Zone CP exposes its API
-func (c *K8sControlPlane) getKDSServerAddress(secure bool) string {
-	protocol := "grpcs"
-	if !secure {
-		protocol = "grpc"
-	}
-
+func (c *K8sControlPlane) getKumaCPAddress(
+	protocolPrefix string,
+	port, loadBalancerPort int,
+) string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
 	//  so the env var was created for that purpose
@@ -228,12 +233,12 @@ func (c *K8sControlPlane) getKDSServerAddress(secure bool) string {
 			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 
-		return protocol + "://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+		return fmt.Sprintf("%s%s:%d", protocolPrefix, address, loadBalancerPort)
 	}
 
 	pod := c.GetKumaCPPods()[0]
-	return protocol + "://" + net.JoinHostPort(
-		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
+	return protocolPrefix + net.JoinHostPort(
+		pod.Status.HostIP, strconv.FormatUint(uint64(port), 10))
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
@@ -311,6 +316,17 @@ func (c *K8sControlPlane) GenerateZoneIngressLegacyToken(zone string) (string, e
 
 func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
 	data := fmt.Sprintf(`{"zone": "%s", "scope": ["egress"]}`, zone)
+
+	return c.generateToken("/zone", data)
+}
+
+func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string, error) {
+	scopeJson, err := json.Marshal(scope)
+	if err != nil {
+		return "", err
+	}
+
+	data := fmt.Sprintf(`'{"zone": "%s", "scope": %s}'`, zone, scopeJson)
 
 	return c.generateToken("/zone", data)
 }
