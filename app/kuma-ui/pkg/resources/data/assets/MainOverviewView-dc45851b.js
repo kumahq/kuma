@@ -1,1 +1,0 @@
-import{M as a}from"./MeshResources-1e5b3dff.js";import{d as r,h as t,o,c,a as e,u as n,e as i}from"./index-cef1317e.js";const _={class:"kcard-stack"},f=r({__name:"MainOverviewView",setup(d){const s=t();return(m,p)=>(o(),c("div",_,[e(n(s)),i(),e(a)]))}});export{f as default};
