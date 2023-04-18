@@ -210,6 +210,15 @@ func (d *DataplaneLifecycle) deregisterProxy(
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)
 	<-time.After(d.deregistrationDelay)
+
+	d.Lock()
+	_, ok := d.createdDpByCallbacks[key]
+	d.Unlock()
+	if ok {
+		log.Info("no need to deregister proxy. It has already connected to this instance")
+		return nil
+	}
+
 	// stream context is canceled at this point, because DP has disconnected. Use background context instead.
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
