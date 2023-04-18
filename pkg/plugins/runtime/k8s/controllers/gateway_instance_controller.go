@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -196,24 +197,31 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	return obj.(*kube_core.Service), nil
 }
 
-func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) (bool, error) {
+var r = regexp.MustCompile("^[0-9]+")
+
+func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) bool {
 	major, err := strconv.Atoi(v.Major)
 	if err != nil {
-		return false, err
+		return false
 	}
 
-	minor, err := strconv.Atoi(v.Minor)
+	minorNum := r.FindString(v.Minor)
+	if minorNum == "" {
+		return false
+	}
+
+	minor, err := strconv.Atoi(minorNum)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	switch {
 	case major > 1:
-		return true, nil
+		return true
 	case major == 1:
-		return minor >= 22, nil
+		return minor >= 22
 	default:
-		return false, nil
+		return false
 	}
 }
 
@@ -261,10 +269,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
 
-			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
-			if err != nil {
-				r.Log.Info("couldn't determine Sysctl `net.ipv4.ip_unprivileged_port_start` support", "error", err)
-			}
+			unprivilegedPortStartSupported := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
 
 			var securityContext *kube_core.PodSecurityContext
 			if unprivilegedPortStartSupported {

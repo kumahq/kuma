@@ -53,10 +53,13 @@ endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p build/distributions/out
+	# Create a tar with group and owner 0 and mtime of 0 (this makes builds reproducible).
+	# Have the tar be just the `kuma-version` folder and nothing else at root
+	# tar is different between darwin and Linux so executre different commands
 ifeq ($(shell uname),Darwin)
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 else
-	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ .
+	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ $$(notdir $$<)
 endif
 	shasum -a 256 $$@ > $$@.sha256
 
@@ -66,7 +69,7 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	  -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it $(PULP_RELEASE_IMAGE) \
-	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
+	  release --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
 	  --package-type $(PULP_PACKAGE_TYPE) --dist-name binaries --dist-version $(PULP_DIST_VERSION) --publish)
 endef
 

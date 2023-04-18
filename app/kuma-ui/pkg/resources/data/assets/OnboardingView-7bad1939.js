@@ -1,1 +1,0 @@
-import{_ as r,L as s,o as e,k as o,w as a,a as c,a2 as _,al as i}from"./index-521c0f24.js";const l={};function d(f,m){const n=s("router-view");return e(),o(n,null,{default:a(({Component:t})=>[c(i,{mode:"out-in",name:"fade"},{default:a(()=>[(e(),o(_(t)))]),_:2},1024)]),_:1})}const p=r(l,[["render",d]]);export{p as default};
