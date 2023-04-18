@@ -10,7 +10,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var log = core.Log.WithName("clusterID")
@@ -20,16 +19,16 @@ var log = core.Log.WithName("clusterID")
 // In standalone setup, followers are waiting until leader creates a cluster ID
 // In Multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
 type clusterIDReader struct {
-	rt core_runtime.Runtime
+	rt  core_runtime.Runtime
+	ctx context.Context
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			clusterID, err := c.read(ctx)
+			clusterID, err := c.read(c.ctx)
 			if err != nil {
 				log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
 			}

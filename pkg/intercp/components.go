@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/client"
@@ -27,11 +26,12 @@ import (
 
 var log = core.Log.WithName("inter-cp")
 
-func Setup(rt runtime.Runtime) error {
+func Setup(ctx context.Context, rt runtime.Runtime) error {
 	cfg := rt.Config().InterCp
 	defaults := &intercp_tls.DefaultsComponent{
 		ResManager: rt.ResourceManager(),
 		Log:        log.WithName("defaults"),
+		Ctx: ctx,
 	}
 
 	heartbeats := catalog.NewHeartbeats()
@@ -46,7 +46,6 @@ func Setup(rt runtime.Runtime) error {
 	pool := rt.InterCPClientPool()
 	go pool.StartCleanup(rt.AppContext(), time.NewTicker(10*time.Second))
 
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
 		certs, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
 		if err != nil {
@@ -74,7 +73,7 @@ func Setup(rt runtime.Runtime) error {
 
 		return rt.Add(
 			interCpServer,
-			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+			catalog.NewHeartbeatComponent(ctx, c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
 				conn, err := pool.Client(serverURL)
 				if err != nil {
 					return nil, errors.Wrap(err, "could not create inter-cp client")
@@ -86,7 +85,7 @@ func Setup(rt runtime.Runtime) error {
 
 	return rt.Add(
 		defaults,
-		catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
+		catalog.NewWriter(ctx, c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
 		registerComponent,
 	)
 }

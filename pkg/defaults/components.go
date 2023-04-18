@@ -25,8 +25,13 @@ import (
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
-	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
-		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+	if runtime.Config().Mode != config_core.Zone && runtime.Config().Store.CreateDefaultResources { // Don't run defaults in Zone (it's done in Global)
+		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
+		ctx := user.Ctx(context.Background(), user.ControlPlane)
+		defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+		if err := runtime.Add(defaultsComponent); err != nil {
+			return err
+		}
 
 		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
 		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
@@ -42,12 +47,9 @@ func Setup(runtime runtime.Runtime) error {
 		)); err != nil {
 			return err
 		}
-		if err := runtime.Add(defaultsComponent); err != nil {
-			return err
-		}
 	}
 
-	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
+	if runtime.Config().Mode != config_core.Global && runtime.Config().Store.CreateDefaultResources { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
 		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{ResManager: runtime.ResourceManager()}); err != nil {
 			return err
 		}
@@ -55,13 +57,14 @@ func Setup(runtime runtime.Runtime) error {
 	return nil
 }
 
-func NewDefaultsComponent(config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
+func NewDefaultsComponent(ctx context.Context, config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
 	return &defaultsComponent{
 		cpMode:      cpMode,
 		environment: environment,
 		config:      config,
 		resManager:  resManager,
 		resStore:    resStore,
+		ctx: ctx,
 	}
 }
 
@@ -73,6 +76,7 @@ type defaultsComponent struct {
 	config      *kuma_cp.Defaults
 	resManager  core_manager.ResourceManager
 	resStore    store.ResourceStore
+	ctx         context.Context
 }
 
 func (d *defaultsComponent) NeedLeaderElection() bool {
@@ -82,7 +86,7 @@ func (d *defaultsComponent) NeedLeaderElection() bool {
 
 func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 	// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx, cancelFn := context.WithCancel(d.ctx)
 	defer cancelFn()
 	wg := &sync.WaitGroup{}
 	errChan := make(chan error)

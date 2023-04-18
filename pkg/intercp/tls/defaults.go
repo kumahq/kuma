@@ -11,18 +11,18 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type DefaultsComponent struct {
 	ResManager manager.ResourceManager
 	Log        logr.Logger
+	Ctx        context.Context
 }
 
 var _ component.Component = &DefaultsComponent{}
 
 func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx, cancelFn := context.WithCancel(e.Ctx)
 	go func() {
 		<-stop
 		cancelFn()

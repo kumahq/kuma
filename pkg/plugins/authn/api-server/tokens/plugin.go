@@ -15,7 +15,9 @@ import (
 
 const PluginName = "tokens"
 
-type plugin struct{}
+type plugin struct{
+	isInitialised bool
+}
 
 var (
 	_ plugins.AuthnAPIServerPlugin = plugin{}
@@ -58,6 +60,7 @@ func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authentic
 			context.Config().Store.Type,
 		),
 	)
+	c.isInitialised = true
 	return UserTokenAuthenticator(validator), nil
 }
 
@@ -66,6 +69,9 @@ func (c plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginCon
 }
 
 func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plugins.PluginConfig) error {
+	if !c.isInitialised {
+		return nil
+	}
 	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
 	component := core_tokens.NewDefaultSigningKeyComponent(signingKeyManager, log)
 	if err := context.ComponentManager().Add(component); err != nil {

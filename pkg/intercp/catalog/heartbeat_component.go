@@ -9,7 +9,6 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("heartbeat")
@@ -22,18 +21,14 @@ type heartbeatComponent struct {
 
 	leader *Instance
 	client system_proto.InterCpPingServiceClient
+	ctx    context.Context
 }
 
 var _ component.Component = &heartbeatComponent{}
 
 type NewClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
 
-func NewHeartbeatComponent(
-	catalog Catalog,
-	instance Instance,
-	interval time.Duration,
-	newClientFn NewClientFn,
-) component.Component {
+func NewHeartbeatComponent(ctx context.Context, catalog Catalog, instance Instance, interval time.Duration, newClientFn NewClientFn, ) component.Component {
 	return &heartbeatComponent{
 		catalog: catalog,
 		request: &system_proto.PingRequest{
@@ -43,24 +38,24 @@ func NewHeartbeatComponent(
 		},
 		newClientFn: newClientFn,
 		interval:    interval,
+		ctx: ctx,
 	}
 }
 
 func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting heartbeats to a leader")
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ticker := time.NewTicker(h.interval)
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := h.heartbeat(ctx, true); err != nil {
+			if err := h.heartbeat(h.ctx, true); err != nil {
 				h.leader = nil
 				heartbeatLog.Error(err, "could not heartbeat the leader")
 			}
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
-			if err := h.heartbeat(ctx, false); err != nil {
+			if err := h.heartbeat(h.ctx, false); err != nil {
 				h.leader = nil
 				heartbeatLog.Error(err, "could not heartbeat the leader")
 			}
