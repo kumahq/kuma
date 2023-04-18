@@ -23,8 +23,7 @@ DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_
 # $(3) - coredns extension to use (or `skip` if we shouldn't include COREDNS)
 # $(4) - primary envoy to use in the distribution (the binary that will be called `envoy`)
 define make_distributions_target
-build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME):
-	@if [ ! -d build/artifacts-$(1)-$(2) ]; then echo "need to run 'make build' first!"; exit 1; fi
+build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME): build/artifacts-$(1)-$(2)/kumactl build/artifacts-$(1)-$(2)/kuma-cp build/artifacts-$(1)-$(2)/kuma-dp
 	rm -rf $$@
 	mkdir -p $$@/bin $$@/conf
 	cp build/artifacts-$(1)-$(2)/kumactl/kumactl $$@/bin
