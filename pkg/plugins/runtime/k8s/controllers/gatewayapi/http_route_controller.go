@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -119,6 +120,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}
 
+		refConditions := slices.Clone(routeConditions)
+
 		switch refAttachment {
 		case attachment.Unknown:
 			// We don't care about this ref
@@ -141,8 +144,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				reason = string(gatewayapi.RouteReasonNoMatchingParent)
 			}
 
-			if !kube_apimeta.IsStatusConditionFalse(routeConditions, string(gatewayapi.RouteConditionAccepted)) {
-				kube_apimeta.SetStatusCondition(&routeConditions, kube_meta.Condition{
+			if !kube_apimeta.IsStatusConditionFalse(refConditions, string(gatewayapi.RouteConditionAccepted)) {
+				kube_apimeta.SetStatusCondition(&refConditions, kube_meta.Condition{
 					Type:   string(gatewayapi.RouteConditionAccepted),
 					Status: kube_meta.ConditionFalse,
 					Reason: reason,
@@ -150,7 +153,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			}
 		}
 
-		conditions[ref] = routeConditions
+		conditions[ref] = refConditions
 	}
 
 	var kumaRoute *mesh_proto.MeshGatewayRoute

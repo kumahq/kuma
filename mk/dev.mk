@@ -12,6 +12,11 @@ KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
+ifdef CI
+        # tools version is irrelevant on CI as we checkout only 1 branch at a time.
+	CI_TOOLS_VERSION=ci
+endif
+
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
 	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}

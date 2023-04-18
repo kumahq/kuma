@@ -23,8 +23,6 @@ on:
         type: boolean
 
 env:
-  CR_VERSION: 1.3.0
-
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_OWNER: ${{ github.repository_owner }}
