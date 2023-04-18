@@ -62,13 +62,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	mesh := k8s_util.MeshOfByAnnotation(httpRoute, &ns)
 
-	spec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
+	gatewayRouteSpec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if spec != nil {
-		if err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
+	if gatewayRouteSpec != nil {
+		if err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, gatewayRouteSpec); err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
 		}
 	}

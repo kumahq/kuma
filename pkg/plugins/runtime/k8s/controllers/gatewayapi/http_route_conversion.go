@@ -8,6 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -216,7 +217,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		}
 
 		return map[string]string{
-			mesh_proto.ServiceTag: k8s_util.ServiceTagFor(svc, &port),
+			mesh_proto.ServiceTag: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
 		}, nil, nil
 	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
 		resource := core_mesh.NewExternalServiceResource()
