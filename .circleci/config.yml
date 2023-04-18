@@ -378,9 +378,11 @@ jobs:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - setenv_depending_on_priority:
         label: "ci/run-full-matrix"
-        env: ENABLED_GOARCHES="arm64 amd64"
+        env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
     - run:
-        command: make build/distributions
+        command: make build
+    - run:
+        command: make -j build/distributions
     - run:
         command: make -j images
     - run:
@@ -413,9 +415,6 @@ jobs:
             - vm-amd64_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
       - attach_workspace:
           at: build
-      - run:
-          name: Build distributions
-          command: make build/distributions
       - run:
           name: inspect created tars
           command: for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done

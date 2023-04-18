@@ -36,7 +36,9 @@ SUPPORTED_GOOSES ?= linux darwin
 ENABLED_GOARCHES ?= $(GOARCH)
 # This is a list of all osses enabled, this means generic targets like `make build/distributions` will build for each of these arches
 ENABLED_GOOSES ?= $(GOOS)
-ENABLED_ARCH_OS = $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch)))
+# We can remove some specific combination that may be invalid with this
+IGNORED_ARCH_OS ?=
+ENABLED_ARCH_OS = $(filter-out $(IGNORED_ARCH_OS), $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch))))
 
 .PHONY: build/info
 build/info: ## Dev: Show build info
@@ -44,6 +46,8 @@ build/info: ## Dev: Show build info
 	@echo tools-dir: $(CI_TOOLS_DIR)
 	@echo arch: supported=$(SUPPORTED_GOARCHES), enabled=$(ENABLED_GOARCHES)
 	@echo os: supported=$(SUPPORTED_GOOSES), enabled=$(ENABLED_GOOSES)
+	@echo ignored=$(IGNORED_ARCH_OS)
+	@echo enabled arch-os=$(ENABLED_ARCH_OS)
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
