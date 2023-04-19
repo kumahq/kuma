@@ -1,6 +1,7 @@
 package access
 
 import (
+	"context"
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -45,15 +46,15 @@ func mapAccess(users []string, groups []string) accessMaps {
 	return m
 }
 
-func (s *staticEnvoyAdminAccess) ValidateViewConfigDump(user user.User) error {
+func (s *staticEnvoyAdminAccess) ValidateViewConfigDump(ctx context.Context, user user.User) error {
 	return validateAccess(s.configDump, user)
 }
 
-func (s *staticEnvoyAdminAccess) ValidateViewStats(user user.User) error {
+func (s *staticEnvoyAdminAccess) ValidateViewStats(ctx context.Context, user user.User) error {
 	return validateAccess(s.stats, user)
 }
 
-func (s *staticEnvoyAdminAccess) ValidateViewClusters(user user.User) error {
+func (s *staticEnvoyAdminAccess) ValidateViewClusters(ctx context.Context, user user.User) error {
 	return validateAccess(s.clusters, user)
 }
 

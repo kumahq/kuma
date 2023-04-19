@@ -1,9 +1,10 @@
 package access
 
 import (
-	"github.com/kumahq/kuma/pkg/core/user"
+    "context"
+    "github.com/kumahq/kuma/pkg/core/user"
 )
 
 type ZoneTokenAccess interface {
-	ValidateGenerateZoneToken(zone string, user user.User) error
+	ValidateGenerateZoneToken(ctx context.Context, zone string, user user.User) error
 }
