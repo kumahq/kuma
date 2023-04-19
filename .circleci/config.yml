@@ -370,6 +370,7 @@ jobs:
         name: "install QUEMU"
         description: "Install quem'u to support ARM build"
         command: |
+          sudo apt update
           sudo apt-get install -y qemu-user-static binfmt-support
     - restore_cache:
         keys:
@@ -446,10 +447,10 @@ workflows:
             parameters:
               executor: [ golang, vm-amd64, vm-arm64 ]
       - check:
-          requires: [ go_cache ]
+          requires: [ go_cache-golang ]
       - build:
           name: build
-          requires: [ go_cache-vm-amd64 ]
+          requires: [ go_cache-golang ]
       - test:
           name: test-<< matrix.arch >>
           matrix:
