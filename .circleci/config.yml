@@ -362,12 +362,10 @@ jobs:
           path: /tmp/e2e
 
   build:
-    executor: # we are using linux/arm64 and linux/amd64 vm's for build
-      name: vm-amd64
+    executor:
+      name: golang
     steps:
     - checkout
-    - install_build_tools:
-        go_arch: amd64
     - run: # allows to build both arch on AMD
         name: "install QUEMU"
         description: "Install quem'u to support ARM build"
