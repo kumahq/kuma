@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"context"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -25,7 +26,7 @@ func NewDataplaneTokenIssuer(resManager manager.ResourceManager) issuer.Dataplan
 func NewZoneIngressTokenIssuer(resManager manager.ResourceManager) zoneingress.TokenIssuer {
 	return zoneingress.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
+			tokens.NewSigningKeyManager(context.Background(), resManager, zoneingress.ZoneIngressSigningKeyPrefix),
 		),
 	)
 }
@@ -33,7 +34,7 @@ func NewZoneIngressTokenIssuer(resManager manager.ResourceManager) zoneingress.T
 func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
 	return zone.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix),
+			tokens.NewSigningKeyManager(context.Background(), resManager, zone.SigningKeyPrefix),
 		),
 	)
 }

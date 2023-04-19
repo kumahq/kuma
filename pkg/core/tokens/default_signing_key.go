@@ -15,19 +15,21 @@ import (
 type defaultSigningKeyComponent struct {
 	signingKeyManager SigningKeyManager
 	log               logr.Logger
+	ctx               context.Context
 }
 
 var _ component.Component = &defaultSigningKeyComponent{}
 
-func NewDefaultSigningKeyComponent(signingKeyManager SigningKeyManager, log logr.Logger) component.Component {
+func NewDefaultSigningKeyComponent(ctx context.Context, signingKeyManager SigningKeyManager, log logr.Logger) component.Component {
 	return &defaultSigningKeyComponent{
 		signingKeyManager: signingKeyManager,
 		log:               log,
+		ctx: ctx,
 	}
 }
 
 func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx, cancelFn := context.WithCancel(user.Ctx(d.ctx, user.ControlPlane))
 	defer cancelFn()
 	errChan := make(chan error)
 	go func() {

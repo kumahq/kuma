@@ -23,7 +23,7 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		// given
 		ctx := context.Background()
 		resManager := manager.NewResourceManager(memory.NewStore())
-		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, issuer.UserTokenSigningKeyPrefix)
+		signingKeyManager := core_tokens.NewSigningKeyManager(context.Background(), resManager, issuer.UserTokenSigningKeyPrefix)
 		tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
 		tokenValidator := issuer.NewUserTokenValidator(
 			core_tokens.NewValidator(

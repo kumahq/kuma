@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	go_context "context"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -72,8 +73,9 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if !c.isInitialised {
 		return nil
 	}
-	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
-	component := core_tokens.NewDefaultSigningKeyComponent(signingKeyManager, log)
+	ctx := go_context.Background()
+	signingKeyManager := core_tokens.NewSigningKeyManager(ctx, context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
+	component := core_tokens.NewDefaultSigningKeyComponent(ctx, signingKeyManager, log)
 	if err := context.ComponentManager().Add(component); err != nil {
 		return err
 	}

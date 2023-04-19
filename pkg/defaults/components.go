@@ -33,24 +33,19 @@ func Setup(runtime runtime.Runtime) error {
 			return err
 		}
 
-		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-			zoneIngressSigningKeyManager,
-			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 			return err
 		}
 
-		zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-			zoneSigningKeyManager,
-			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
-		)); err != nil {
+		zoneSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zone.SigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 			return err
 		}
 	}
 
 	if runtime.Config().Mode != config_core.Global && runtime.Config().Store.CreateDefaultResources { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{ResManager: runtime.ResourceManager()}); err != nil {
+		if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(context.Background(), runtime.ResourceManager())); err != nil {
 			return err
 		}
 	}

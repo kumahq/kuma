@@ -245,11 +245,11 @@ var _ = Describe("Authentication flow", func() {
 			err := resStore.Create(context.Background(), &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)
+			zoneKeyManager := tokens.NewSigningKeyManager(context.Background(), resManager, zone.SigningKeyPrefix)
 			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
 
-			ziKeyManager := tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix)
+			ziKeyManager := tokens.NewSigningKeyManager(context.Background(), resManager, zoneingress.ZoneIngressSigningKeyPrefix)
 			Expect(ziKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 			zoneIngressTokenIssuer = builtin.NewZoneIngressTokenIssuer(resManager)
 		})

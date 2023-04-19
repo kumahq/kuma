@@ -14,14 +14,22 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
 )
 
-type EnvoyAdminCaDefaultComponent struct {
+type envoyAdminCaDefaultComponent struct {
 	ResManager manager.ResourceManager
+	ctx        context.Context
 }
 
-var _ component.Component = &EnvoyAdminCaDefaultComponent{}
+var _ component.Component = &envoyAdminCaDefaultComponent{}
 
-func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+func NewEnvoyAdminCaDefaultComponent(ctx context.Context, resManager manager.ResourceManager) component.Component {
+	return &envoyAdminCaDefaultComponent{
+		ResManager: resManager,
+		ctx: ctx,
+	}
+}
+
+func (e *envoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
+	ctx, cancelFn := context.WithCancel(user.Ctx(e.ctx, user.ControlPlane))
 	go func() {
 		<-stop
 		cancelFn()
@@ -35,11 +43,11 @@ func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
 	})
 }
 
-func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
+func (e envoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func (e *EnvoyAdminCaDefaultComponent) ensureEnvoyAdminCaExist(ctx context.Context) error {
+func (e *envoyAdminCaDefaultComponent) ensureEnvoyAdminCaExist(ctx context.Context) error {
 	_, err := tls.LoadCA(ctx, e.ResManager)
 	if err == nil {
 		log.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
