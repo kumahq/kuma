@@ -366,12 +366,7 @@ jobs:
       name: golang
     steps:
     - checkout
-    - run: # allows to build both arch on AMD
-        name: "install QUEMU"
-        description: "Install quem'u to support ARM build"
-        command: |
-          sudo apt update
-          sudo apt-get install -y qemu-user-static binfmt-support
+    - setup_remote_docker
     - restore_cache:
         keys:
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
