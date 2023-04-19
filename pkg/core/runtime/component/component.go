@@ -95,6 +95,7 @@ func (cm *manager) Add(c ...Component) error {
 	if cm.started {
 		// start component if it's added in runtime after Start is called.
 		for _, component := range c {
+			// TODO: figure out if the components needed can be rewritten as something else
 			//if component.NeedLeaderElection() {
 			//	return LeaderComponentAddAfterStartErr
 			//}
