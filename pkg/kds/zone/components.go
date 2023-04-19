@@ -1,8 +1,6 @@
 package zone
 
 import (
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -27,6 +25,7 @@ import (
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -113,6 +112,7 @@ func Setup(rt core_runtime.Runtime) error {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
 		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
+				stream.Context(),
 				rt.KDSContext().Configs,
 				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
@@ -157,6 +157,7 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.EnvoyAdminClient().Stats,
 			rt.EnvoyAdminClient().Clusters,
 		),
+		rt.Config().Multizone.Zone.AdditionalMetadata,
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }

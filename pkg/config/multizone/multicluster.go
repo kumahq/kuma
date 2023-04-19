@@ -45,6 +45,11 @@ func DefaultGlobalConfig() *GlobalConfig {
 	}
 }
 
+type MetadataKeyValue struct {
+	Key string
+	Value string
+}
+
 // Zone configuration
 type ZoneConfig struct {
 	// Kuma Zone name used to mark the zone dataplane resources
@@ -52,7 +57,8 @@ type ZoneConfig struct {
 	// GlobalAddress URL of Global Kuma CP
 	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
-	KDS *KdsClientConfig `json:"kds,omitempty"`
+	KDS                *KdsClientConfig `json:"kds,omitempty"`
+	AdditionalMetadata []MetadataKeyValue `json:"additionalMetadata"`
 }
 
 func (r *ZoneConfig) Sanitize() {
