@@ -363,14 +363,9 @@ jobs:
         env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
     - restore_cache:
         keys:
-          - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          - docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - run:
         command: make dev/tools
-    - save_cache:
-        key: golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-        paths:
-          - "/home/circleci/go/pkg/mod"
-          - "/home/circleci/.kuma-dev"
     - run:
         command: make check
     - run:
@@ -381,7 +376,11 @@ jobs:
         command: make -j images
     - run:
         command: make -j docker/save
-    # Persist the specified paths into the workspace for use in downstream jobs
+    - save_cache:
+        key: docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+        paths:
+          - "/home/circleci/go/pkg/mod"
+          - "/home/circleci/.kuma-dev"
     - persist_to_workspace:
         root: build
         paths:
