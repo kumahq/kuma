@@ -20,7 +20,11 @@ type ZoneInsightSink interface {
 }
 
 type ZoneInsightStore interface {
-	Upsert(zone string, subscription *system_proto.KDSSubscription) error
+	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
+}
+
+var CustomIterator = func() ([]context.Context, error) {
+	return []context.Context{context.Background()}, nil
 }
 
 func NewZoneInsightSink(
@@ -62,7 +66,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	var lastStoredState *system_proto.KDSSubscription
 	var generation uint32
 
-	flush := func() {
+	flush := func(ctx context.Context) {
 		zone, currentState := s.accessor.GetStatus()
 		select {
 		case <-generationTicker.C:
@@ -74,7 +78,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			return
 		}
 
-		if err := s.store.Upsert(zone, currentState); err != nil {
+		if err := s.store.Upsert(ctx, zone, currentState); err != nil {
 			if store.IsResourceConflict(err) {
 				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
 			} else {
@@ -89,10 +93,22 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	for {
 		select {
 		case <-flushTicker.C:
-			flush()
+			contexts, err := CustomIterator()
+			if err != nil {
+				s.log.Error(err, "could not get contexts")
+			}
+			for _, ctx := range contexts {
+				flush(ctx)
+			}
 			time.Sleep(s.flushBackoff)
 		case <-stop:
-			flush()
+			contexts, err := CustomIterator()
+			if err != nil {
+				s.log.Error(err, "could not get contexts")
+			}
+			for _, ctx := range contexts {
+				flush(ctx)
+			}
 			return
 		}
 	}
@@ -108,8 +124,8 @@ type zoneInsightStore struct {
 	resManager manager.ResourceManager
 }
 
-func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
-	ctx := user.Ctx(context.TODO(), user.ControlPlane)
+func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
 
 	key := core_model.ResourceKey{
 		Name: zone,

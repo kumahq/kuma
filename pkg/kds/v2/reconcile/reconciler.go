@@ -71,15 +71,15 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hasher.ID(node)
+	id := cache_v2.CustomKeyFunction(ctx, r.hasher.ID(node))
 	old, _ := r.cache.GetSnapshot(id)
-	new = r.Version(new, old)
+	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(ctx, id, new)
 }
 
-func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
+func (r *reconciler) Version(ctx context.Context, new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
 	if new == nil {
 		return nil
 	}

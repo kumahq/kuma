@@ -20,8 +20,8 @@ type builder struct {
 	resources map[string][]envoy_types.ResourceWithTTL
 }
 
-var CustomKeyFunction = func(ctx context.Context, typ core_model.ResourceType) string {
-	return string(typ)
+var CustomKeyFunction = func(ctx context.Context, typ string) string {
+	return typ
 }
 
 var CustomUnKeyFunction = func (ctx context.Context, typ string) (bool, string) {
@@ -36,7 +36,7 @@ func (b *builder) With(ctx context.Context, typ core_model.ResourceType, resourc
 			TTL:      nil,
 		}
 	}
-	b.resources[CustomKeyFunction(ctx, typ)] = ttlResources
+	b.resources[CustomKeyFunction(ctx, string(typ))] = ttlResources
 	return b
 }
 
