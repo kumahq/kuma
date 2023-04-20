@@ -47,10 +47,10 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		if err != nil {
 			return nil, err
 		}
-		builder = builder.With(typ, resources)
+		builder = builder.With(ctx, typ, resources)
 	}
 
-	return builder.Build(""), nil
+	return builder.Build(ctx, ""), nil
 }
 
 func (s *snapshotGenerator) getResources(ctx context.Context, typ model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
