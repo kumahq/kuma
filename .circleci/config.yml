@@ -189,17 +189,6 @@ jobs:
         - "/home/circleci/go/pkg/mod"
         - "/home/circleci/.kuma-dev"
 
-  check:
-    executor: golang
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: make check
-
   test:
     parameters:
       target:
@@ -362,23 +351,23 @@ jobs:
           path: /tmp/e2e
 
   build:
-    executor: # we are using linux/arm64 and linux/amd64 vm's for build
-      name: vm-amd64
+    executor:
+      name: golang
     steps:
     - checkout
-    - install_build_tools:
-        go_arch: amd64
-    - run: # allows to build both arch on AMD
-        name: "install QUEMU"
-        description: "Install quem'u to support ARM build"
-        command: |
-          sudo apt-get install -y qemu-user-static binfmt-support
-    - restore_cache:
-        keys:
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+    - setup_remote_docker
+    - run:
+        command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
     - setenv_depending_on_priority:
         label: "ci/run-full-matrix"
         env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
+    - restore_cache:
+        keys:
+          - docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+    - run:
+        command: make dev/tools
+    - run:
+        command: make check
     - run:
         command: make build
     - run:
@@ -387,7 +376,11 @@ jobs:
         command: make -j images
     - run:
         command: make -j docker/save
-    # Persist the specified paths into the workspace for use in downstream jobs
+    - save_cache:
+        key: docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+        paths:
+          - "/home/circleci/go/pkg/mod"
+          - "/home/circleci/.kuma-dev"
     - persist_to_workspace:
         root: build
         paths:
@@ -446,19 +439,16 @@ workflows:
           matrix:
             alias: go_cache
             parameters:
-              executor: [ golang, vm-amd64, vm-arm64 ]
-      - check:
-          requires: [ go_cache ]
+              executor: [ vm-amd64, vm-arm64 ]
       - build:
           name: build
-          requires: [ go_cache-vm-amd64 ]
       - test:
           name: test-<< matrix.arch >>
           matrix:
             alias: test
             parameters:
               arch: [ amd64, arm64 ]
-          requires: [ check ]
+          requires: [ build, go_cache-vm-<< matrix.arch >> ]
       - e2e:
           name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -468,7 +458,7 @@ workflows:
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e
-          requires: [ build, check ]
+          requires: [ build, go_cache-vm-<< matrix.arch >> ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -477,7 +467,7 @@ workflows:
               k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
-          requires: [ build, check ]
+          requires: [ build, go_cache-vm-<< matrix.arch >> ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
@@ -487,7 +477,7 @@ workflows:
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
-          requires: [ build, check ]
+          requires: [ build, go_cache-vm-amd64 ]
       - distributions:
           requires: [ test, test/e2e, test/e2e-legacy ]
 
