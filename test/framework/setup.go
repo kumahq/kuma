@@ -410,28 +410,45 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	}
 }
 
-func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool) InstallFunc {
+func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		containerName := fmt.Sprintf("%s.%s", name, mesh)
-		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
-		opt := []AppDeploymentOption{
-			WithAppname(name),
+		var opts appDeploymentOptions
+		opts.apply(opt...)
+		args := []string{"ncat", "-lk", "9999", ">", "/nc.out"}
+		opt = append(
+			opt,
 			WithName(name),
-			WithMesh(mesh),
+			WithAppname(AppModeTcpSink),
+			WithArgs(args),
 			WithoutDataplane(),
-			WithDockerContainerName(containerName),
-		}
+			WithTransparentProxy(false),
+			WithIPv6(Config.IPV6),
+		)
+		return cluster.DeployApp(opt...)
+	}
+}
+
+func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
+	return func(cluster Cluster) error {
+		var opts appDeploymentOptions
+		opts.apply(opt...)
+		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
 		if tls {
-			path, err := DumpTempCerts("localhost", containerName)
+			path, err := DumpTempCerts("localhost", opts.dockerContainerName)
 			Logf("using temp dir: %s", path)
 			if err != nil {
 				return err
 			}
 			args = append(args, "--crt", "/certs/cert.pem", "--key", "/certs/key.pem", "--tls")
-			opt = append(opt, WithDockerVolumes(path+":/certs"))
+			opts.dockerVolumes = append(opts.dockerVolumes, fmt.Sprintf("%s:/certs", path))
 		}
-
-		opt = append(opt, WithArgs(args))
+		opt = append(opt,
+			WithAppname(name),
+			WithName(name),
+			WithoutDataplane(),
+			WithArgs(args),
+			WithDockerVolumes(opts.dockerVolumes...),
+		)
 		return cluster.DeployApp(opt...)
 	}
 }

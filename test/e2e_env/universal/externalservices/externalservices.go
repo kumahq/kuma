@@ -3,7 +3,6 @@ package externalservices
 import (
 	"encoding/base64"
 	"fmt"
-	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -69,18 +68,31 @@ networking:
 	var esHttp2HostPort string
 	var esHttpsHostPort string
 
+	var esHttpContainerName string
+	var esHttpsContainerName string
+	var esHttp2ContainerName string
+
 	BeforeAll(func() {
+		esHttpName := "es-http"
+		esHttpsName := "es-https"
+		esHttp2Name := "es-http-2"
+
+		esHttpContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttpName)
+		esHttpsContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttpsName)
+		esHttp2ContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttp2Name)
+
+		esHttpHostPort = fmt.Sprintf("%s:%d", esHttpContainerName, 80)
+		esHttpsHostPort = fmt.Sprintf("%s:%d", esHttpsContainerName, 443)
+		esHttp2HostPort = fmt.Sprintf("%s:%d", esHttp2ContainerName, 81)
+
 		err := NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(TestServerExternalServiceUniversal("es-http", meshName, 80, false)).
-			Install(TestServerExternalServiceUniversal("es-https", meshName, 443, true)).
-			Install(TestServerExternalServiceUniversal("es-http-2", meshName, 81, false)).
+			Install(TestServerExternalServiceUniversal(esHttpName, meshName, 80, false, WithDockerContainerName(esHttpContainerName))).
+			Install(TestServerExternalServiceUniversal(esHttpsName, meshName, 443, true, WithDockerContainerName(esHttpsContainerName))).
+			Install(TestServerExternalServiceUniversal(esHttp2Name, meshName, 81, false, WithDockerContainerName(esHttp2ContainerName))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http").GetContainerName(), "80")
-		esHttp2HostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http-2").GetContainerName(), "81")
-		esHttpsHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-https").GetContainerName(), "443")
 	})
 
 	E2EAfterAll(func() {
@@ -101,14 +113,13 @@ networking:
 	}
 
 	It("should route to external-service", func() {
-		ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil))
 		err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
 		checkSuccessfulRequest("ext-srv-1.mesh", And(
 			Not(ContainSubstring("HTTPS")),
 			// Should rewrite host header
-			ContainSubstring(`"Host":["es-http.external-service-base"]`),
+			ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
 		))
 		checkSuccessfulRequest(esHttpHostPort, Not(ContainSubstring("HTTPS")))
 	})
