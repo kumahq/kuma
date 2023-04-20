@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -21,10 +22,6 @@ type ZoneInsightSink interface {
 
 type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
-}
-
-var CustomIterator = func() ([]context.Context, error) {
-	return []context.Context{context.Background()}, nil
 }
 
 func NewZoneInsightSink(
@@ -93,7 +90,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	for {
 		select {
 		case <-flushTicker.C:
-			contexts, err := CustomIterator()
+			contexts, err := iterator.CustomIterator()
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}
@@ -102,7 +99,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 			time.Sleep(s.flushBackoff)
 		case <-stop:
-			contexts, err := CustomIterator()
+			contexts, err := iterator.CustomIterator()
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}

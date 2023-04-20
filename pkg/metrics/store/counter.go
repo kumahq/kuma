@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -47,17 +48,29 @@ func (s *storeCounter) Start(stop <-chan struct{}) error {
 
 func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker) error {
 	defer ticker.Stop()
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
-
 	log.Info("starting the resource counter")
-	if err := s.count(ctx); err != nil {
-		log.Error(err, "unable to count resources")
+
+	contexts, err := iterator.CustomIterator()
+	if err != nil {
+		log.Error(err, "could not get contexts")
+	}
+
+	for _, ctx := range contexts {
+		if err := s.count(user.Ctx(ctx, user.ControlPlane)); err != nil {
+			log.Error(err, "unable to count resources")
+		}
 	}
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.count(ctx); err != nil {
-				log.Error(err, "unable to count resources")
+			contexts, err := iterator.CustomIterator()
+			if err != nil {
+				log.Error(err, "could not get contexts")
+			}
+			for _, ctx := range contexts {
+				if err := s.count(user.Ctx(ctx, user.ControlPlane)); err != nil {
+					log.Error(err, "unable to count resources")
+				}
 			}
 		case <-stop:
 			log.Info("stopping")
