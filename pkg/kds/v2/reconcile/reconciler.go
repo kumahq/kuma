@@ -63,6 +63,10 @@ func (r *reconciler) Clear(node *envoy_core.Node) {
 	}
 }
 
+var CustomHashId = func(ctx context.Context, id string) string {
+	return id
+}
+
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
 	new, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
@@ -71,14 +75,10 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hasher.ID(node)
+	id := CustomHashId(ctx, r.hasher.ID(node))
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)
-
-	xnew, _ := r.generator.GenerateSnapshot(ctx, node)
-	println(xnew)
-
 	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(ctx, id, new)
 }

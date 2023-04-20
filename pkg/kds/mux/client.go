@@ -29,10 +29,6 @@ import (
 
 var muxClientLog = core.Log.WithName("kds-mux-client")
 
-var CustomClientId = func(ctx context.Context, id string) string {
-	return id
-}
-
 type client struct {
 	callbacks           Callbacks
 	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
@@ -101,7 +97,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	}()
 
 	withKDSCtx, cancel := context.WithCancel(metadata.AppendToOutgoingContext(c.ctx,
-		"client-id", CustomClientId(c.ctx, c.clientID),
+		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
 	))
 

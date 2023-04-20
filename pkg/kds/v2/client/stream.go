@@ -20,8 +20,6 @@ import (
 
 var _ DeltaKDSStream = &stream{}
 
-var TenantId = ""
-
 type latestReceived struct {
 	nonce         string
 	nameToVersion cache_v2.NameToVersion
@@ -66,7 +64,7 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 	req := &envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
-			Id: TenantId + ":" + s.clientId,
+			Id: s.clientId,
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
 					kds.MetadataFieldVersion: {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
