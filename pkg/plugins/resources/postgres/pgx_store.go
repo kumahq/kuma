@@ -26,6 +26,8 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
+var CustomizePgxConfig = func(pgxConfig *pgxpool.Config) {}
+
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	pool, err := connect(config)
 	if err != nil {
@@ -60,15 +62,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig) (*pgxpool.Pool, err
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	if postgresStoreConfig.BeforeAcquire != nil {
-		pgxConfig.AfterConnect = postgresStoreConfig.AfterConnect
-	}
-	if postgresStoreConfig.BeforeAcquire != nil {
-		pgxConfig.BeforeAcquire = postgresStoreConfig.BeforeAcquire
-	}
-	if postgresStoreConfig.AfterRelease != nil {
-		pgxConfig.AfterRelease = postgresStoreConfig.AfterRelease
-	}
+	CustomizePgxConfig(pgxConfig)
 
 	if err != nil {
 		return nil, err
