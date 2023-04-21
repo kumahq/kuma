@@ -508,7 +508,7 @@ workflows:
               cniNetworkPlugin: [ calico ]
           requires: [ build, go_cache-vm-amd64 ]
       - container-structure-test:
-          name: container-structure-test-<< matrix.executor >>
+          name: test/container-structure-<< matrix.executor >>
           matrix:
             alias: test/container-structure
             parameters:
