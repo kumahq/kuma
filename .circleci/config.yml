@@ -429,7 +429,7 @@ jobs:
             make docker/push
             make docker/manifest
 
-  container-structure-test:
+  container-structure:
     executor: << parameters.executor >>
     parameters:
       executor:
