@@ -453,7 +453,7 @@ jobs:
     - when:
         condition:
           or:
-          - {equal: [arm64, << parameters.arch >>]}
+          - {equal: [vm-arm64, << parameters.executor >>]}
         steps:
         - halt_non_priority_job
     - restore_cache:
