@@ -463,9 +463,7 @@ jobs:
     - run:
         command: make dev/tools
     - run:
-        command: make docker/load
-    - run:
-        command: make test/container-structure
+        command: make -j test/container-structure
 
 
 workflows:
