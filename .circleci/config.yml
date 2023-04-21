@@ -448,6 +448,14 @@ jobs:
         - install_build_tools:
             go_arch: arm64
     - checkout
+    - halt_job_if_labeled:
+        label: "ci/skip-container-structure-test"
+    - when:
+        condition:
+          or:
+          - {equal: [arm64, << parameters.arch >>]}
+        steps:
+        - halt_non_priority_job
     - restore_cache:
         key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - attach_workspace:
