@@ -457,7 +457,7 @@ jobs:
     - run:
         command: make docker/load
     - run:
-        command: test/container-structure
+        command: make test/container-structure
 
 
 workflows:
