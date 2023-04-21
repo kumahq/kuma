@@ -69,6 +69,7 @@ func Setup(rt runtime.Runtime) error {
 		mesh_proto.RegisterInterCPEnvoyAdminForwardServiceServer(interCpServer.GrpcServer(), envoyAdminServer)
 
 		return rt.Add(
+			interCpServer,
 			catalog.NewHeartbeatComponent(ctx, c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
 				conn, err := pool.Client(serverURL)
 				if err != nil {
