@@ -450,6 +450,8 @@ jobs:
     - checkout
     - restore_cache:
         key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+    - attach_workspace:
+        at: build
     - run:
         command: make dev/tools
     - run:
@@ -507,7 +509,7 @@ workflows:
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
           requires: [ build, go_cache-vm-amd64 ]
-      - container-structure-test:
+      - container-structure:
           name: test/container-structure-<< matrix.executor >>
           matrix:
             alias: test/container-structure
