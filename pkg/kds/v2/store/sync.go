@@ -230,7 +230,7 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
-func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string, ) *client_v2.Callbacks {
+func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {

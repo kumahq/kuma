@@ -28,7 +28,7 @@ func NewWriter(ctx context.Context, catalog Catalog, heartbeats *Heartbeats, ins
 		heartbeats: heartbeats,
 		instance:   leaderInstance,
 		interval:   interval,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 

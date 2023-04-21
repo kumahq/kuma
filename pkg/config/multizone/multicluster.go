@@ -46,7 +46,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 }
 
 type MetadataKeyValue struct {
-	Key string
+	Key   string
 	Value string
 }
 
@@ -57,7 +57,7 @@ type ZoneConfig struct {
 	// GlobalAddress URL of Global Kuma CP
 	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
-	KDS                *KdsClientConfig `json:"kds,omitempty"`
+	KDS                *KdsClientConfig   `json:"kds,omitempty"`
 	AdditionalMetadata []MetadataKeyValue `json:"additionalMetadata"`
 }
 

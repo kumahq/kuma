@@ -1,6 +1,8 @@
 package zone
 
 import (
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -25,7 +27,6 @@ import (
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-	"github.com/pkg/errors"
 )
 
 var (

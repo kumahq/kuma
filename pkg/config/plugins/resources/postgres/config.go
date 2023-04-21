@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -76,9 +76,9 @@ type PostgresStoreConfig struct {
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
-	MaxReconnectInterval config_types.Duration                 `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
-	BeforeAcquire        func(context.Context, *pgx.Conn) bool `json:"-"`
-	AfterRelease         func(*pgx.Conn) bool                  `json:"-"`
+	MaxReconnectInterval config_types.Duration                  `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	BeforeAcquire        func(context.Context, *pgx.Conn) bool  `json:"-"`
+	AfterRelease         func(*pgx.Conn) bool                   `json:"-"`
 	AfterConnect         func(context.Context, *pgx.Conn) error `json:"-"`
 }
 
@@ -279,8 +279,8 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
 		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
 		HealthCheckInterval:         DefaultHealthCheckInterval,
-		BeforeAcquire: nil,
-		AfterRelease: nil,
+		BeforeAcquire:               nil,
+		AfterRelease:                nil,
 	}
 }
 

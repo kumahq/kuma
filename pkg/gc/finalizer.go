@@ -2,7 +2,6 @@ package gc
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var finalizerLog = core.Log.WithName("finalizer")
@@ -84,7 +84,6 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 					}
 				}
-
 			}
 		case <-stop:
 			finalizerLog.Info("stopped")

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -14,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 type ZoneInsightSink interface {

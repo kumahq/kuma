@@ -59,7 +59,7 @@ func NewDefaultsComponent(ctx context.Context, config *kuma_cp.Defaults, cpMode 
 		config:      config,
 		resManager:  resManager,
 		resStore:    resStore,
-		ctx: ctx,
+		ctx:         ctx,
 	}
 }
 

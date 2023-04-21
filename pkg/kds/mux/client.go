@@ -43,7 +43,7 @@ type client struct {
 	additionalMetadata  []multizone.MetadataKeyValue
 }
 
-func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor, additionalMetadata []multizone.MetadataKeyValue, ) component.Component {
+func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor, additionalMetadata []multizone.MetadataKeyValue) component.Component {
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
@@ -55,7 +55,7 @@ func NewClient(ctx context.Context, globalURL string, clientID string, callbacks
 		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
-		additionalMetadata: additionalMetadata,
+		additionalMetadata:  additionalMetadata,
 	}
 }
 

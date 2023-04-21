@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"net"
 	"os"
 	"strconv"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 

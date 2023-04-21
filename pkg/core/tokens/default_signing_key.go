@@ -24,7 +24,7 @@ func NewDefaultSigningKeyComponent(ctx context.Context, signingKeyManager Signin
 	return &defaultSigningKeyComponent{
 		signingKeyManager: signingKeyManager,
 		log:               log,
-		ctx: ctx,
+		ctx:               ctx,
 	}
 }
 

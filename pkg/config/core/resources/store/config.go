@@ -43,11 +43,11 @@ type StoreConfig struct {
 
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
-		Type:       MemoryStore,
-		Postgres:   postgres.DefaultPostgresStoreConfig(),
-		Kubernetes: k8s.DefaultKubernetesStoreConfig(),
-		Cache:      DefaultCacheStoreConfig(),
-		Upsert:     DefaultUpsertConfig(),
+		Type:                   MemoryStore,
+		Postgres:               postgres.DefaultPostgresStoreConfig(),
+		Kubernetes:             k8s.DefaultKubernetesStoreConfig(),
+		Cache:                  DefaultCacheStoreConfig(),
+		Upsert:                 DefaultUpsertConfig(),
 		CreateDefaultResources: true,
 	}
 }

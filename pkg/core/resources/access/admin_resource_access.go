@@ -1,8 +1,8 @@
 package access
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
@@ -51,7 +51,7 @@ func (a *adminResourceAccess) ValidateGet(ctx context.Context, _ model.ResourceK
 	return a.validateAdminAccess(ctx, user, descriptor)
 }
 
-func (r *adminResourceAccess) validateAdminAccess(ctx context.Context, u user.User, descriptor model.ResourceTypeDescriptor) error {
+func (r *adminResourceAccess) validateAdminAccess(_ context.Context, u user.User, descriptor model.ResourceTypeDescriptor) error {
 	if !descriptor.AdminOnly {
 		return nil
 	}

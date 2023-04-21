@@ -1,8 +1,9 @@
 package access
 
 import (
-    "context"
-    "github.com/kumahq/kuma/pkg/core/user"
+	"context"
+
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type NoopDpTokenAccess struct{}

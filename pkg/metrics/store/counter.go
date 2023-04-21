@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("metrics").WithName("store-counter")

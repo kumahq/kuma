@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"sync"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("mesh-insight-resyncer")

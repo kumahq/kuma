@@ -169,7 +169,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 
-	initializeTokenIssuers(builder)
+	initializeTokenIssuers(appCtx, builder)
 
 	if err := initializeMeshCache(builder); err != nil {
 		return nil, err
@@ -490,17 +490,17 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func initializeTokenIssuers(builder *core_runtime.Builder) {
+func initializeTokenIssuers(ctx context.Context, builder *core_runtime.Builder) {
 	issuers := builtin.TokenIssuers{
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
+		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(ctx, builder.ResourceManager()),
 	}
 	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
-		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
+		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(ctx, builder.ResourceManager())
 	} else {
 		issuers.DataplaneToken = issuer.DisabledIssuer{}
 	}
 	if builder.Config().DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer {
-		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
+		issuers.ZoneToken = builtin.NewZoneTokenIssuer(ctx, builder.ResourceManager())
 	} else {
 		issuers.ZoneToken = zone2.DisabledIssuer{}
 	}

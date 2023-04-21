@@ -2,6 +2,7 @@ package tokens
 
 import (
 	go_context "context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -16,13 +17,13 @@ import (
 
 const PluginName = "tokens"
 
-type plugin struct{
+type plugin struct {
 	isInitialised bool
 }
 
 var (
-	_ plugins.AuthnAPIServerPlugin = plugin{}
-	_ plugins.BootstrapPlugin      = plugin{}
+	_ plugins.AuthnAPIServerPlugin = &plugin{}
+	_ plugins.BootstrapPlugin      = &plugin{}
 )
 
 // We declare AccessStrategies and not into Runtime because it's a plugin.
@@ -40,7 +41,7 @@ func init() {
 	plugins.Register(PluginName, &plugin{})
 }
 
-func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
+func (c *plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
 	publicKeys, err := core_tokens.PublicKeyFromConfig(context.Config().ApiServer.Authn.Tokens.Validator.PublicKeys)
 	if err != nil {
 		return nil, err
@@ -65,11 +66,11 @@ func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authentic
 	return UserTokenAuthenticator(validator), nil
 }
 
-func (c plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
+func (c *plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
 	return nil
 }
 
-func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plugins.PluginConfig) error {
+func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plugins.PluginConfig) error {
 	if !c.isInitialised {
 		return nil
 	}
@@ -97,10 +98,10 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	return nil
 }
 
-func (c plugin) Name() plugins.PluginName {
+func (c *plugin) Name() plugins.PluginName {
 	return PluginName
 }
 
-func (c plugin) Order() int {
+func (c *plugin) Order() int {
 	return plugins.EnvironmentPreparedOrder + 1
 }

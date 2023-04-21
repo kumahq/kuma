@@ -72,7 +72,8 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
 			kds_server.NewZonesInsightStore(rt.ResourceManager()),
 			l,
-		)}, log)
+		)
+	}, log)
 }
 
 func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {

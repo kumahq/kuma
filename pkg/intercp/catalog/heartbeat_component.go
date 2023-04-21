@@ -28,7 +28,7 @@ var _ component.Component = &heartbeatComponent{}
 
 type NewClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
 
-func NewHeartbeatComponent(ctx context.Context, catalog Catalog, instance Instance, interval time.Duration, newClientFn NewClientFn, ) component.Component {
+func NewHeartbeatComponent(ctx context.Context, catalog Catalog, instance Instance, interval time.Duration, newClientFn NewClientFn) component.Component {
 	return &heartbeatComponent{
 		catalog: catalog,
 		request: &system_proto.PingRequest{
@@ -38,7 +38,7 @@ func NewHeartbeatComponent(ctx context.Context, catalog Catalog, instance Instan
 		},
 		newClientFn: newClientFn,
 		interval:    interval,
-		ctx: ctx,
+		ctx:         ctx,
 	}
 }
 

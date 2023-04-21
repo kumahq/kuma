@@ -2,6 +2,7 @@ package clusterid
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"

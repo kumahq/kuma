@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
@@ -139,7 +139,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 			if rt.Config().Store.CreateDefaultResources {
-				if err := intercp.Setup(user.Ctx(context.Background(), user.ControlPlane), rt); err != nil {
+				if err := intercp.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up Control Plane Intercommunication")
 					return err
 				}

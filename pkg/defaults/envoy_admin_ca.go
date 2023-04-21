@@ -24,7 +24,7 @@ var _ component.Component = &envoyAdminCaDefaultComponent{}
 func NewEnvoyAdminCaDefaultComponent(ctx context.Context, resManager manager.ResourceManager) component.Component {
 	return &envoyAdminCaDefaultComponent{
 		ResManager: resManager,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 

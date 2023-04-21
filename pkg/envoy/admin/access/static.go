@@ -2,6 +2,7 @@ package access
 
 import (
 	"context"
+
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/user"

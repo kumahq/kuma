@@ -26,12 +26,12 @@ func NewMeshManager(
 	createDefaultResources bool,
 ) core_manager.ResourceManager {
 	return &meshManager{
-		store:         store,
-		otherManagers: otherManagers,
-		caManagers:    caManagers,
-		registry:      registry,
-		meshValidator: validator,
-		unsafeDelete:  unsafeDelete,
+		store:                  store,
+		otherManagers:          otherManagers,
+		caManagers:             caManagers,
+		registry:               registry,
+		meshValidator:          validator,
+		unsafeDelete:           unsafeDelete,
 		createDefaultResources: createDefaultResources,
 	}
 }

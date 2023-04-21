@@ -35,7 +35,7 @@ func NewSigningKeyManager(ctx context.Context, manager manager.ResourceManager, 
 	return &signingKeyManager{
 		manager:          manager,
 		signingKeyPrefix: signingKeyPrefix,
-		ctx: ctx,
+		ctx:              ctx,
 	}
 }
 

@@ -15,13 +15,13 @@ type APIManager interface {
 }
 
 type APIList struct {
-	list []*restful.WebService
+	list    []*restful.WebService
 	filters []restful.FilterFunction
 }
 
 func NewAPIList() *APIList {
 	return &APIList{
-		list: []*restful.WebService{},
+		list:    []*restful.WebService{},
 		filters: []restful.FilterFunction{},
 	}
 }

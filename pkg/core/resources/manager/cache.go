@@ -52,7 +52,7 @@ var HashSuffix = func(ctx context.Context) string {
 
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
-	cacheKey := fmt.Sprintf("GET:%s:%s:" + HashSuffix(ctx), res.Descriptor().Name, opts.HashCode())
+	cacheKey := fmt.Sprintf("GET:%s:%s:"+HashSuffix(ctx), res.Descriptor().Name, opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
@@ -92,7 +92,7 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 	if !opts.IsCacheable() {
 		return fmt.Errorf("filter functions are not allowed for cached store")
 	}
-	cacheKey := fmt.Sprintf("LIST:%s:%s" + HashSuffix(ctx), list.GetItemType(), opts.HashCode())
+	cacheKey := fmt.Sprintf("LIST:%s:%s"+HashSuffix(ctx), list.GetItemType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
