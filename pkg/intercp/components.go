@@ -29,12 +29,7 @@ var log = core.Log.WithName("inter-cp")
 
 func Setup(rt runtime.Runtime) error {
 	cfg := rt.Config().InterCp
-	defaults := &intercp_tls.DefaultsComponent{
-		ResManager: rt.ResourceManager(),
-		Log:        log.WithName("defaults"),
-		Ctx:        rt.AppContext(),
-	}
-
+	defaults := intercp_tls.NewDefaultsComponent(rt.AppContext(), rt.ResourceManager(), log.WithName("defaults"))
 	heartbeats := catalog.NewHeartbeats()
 	c := catalog.NewConfigCatalog(rt.ResourceManager())
 

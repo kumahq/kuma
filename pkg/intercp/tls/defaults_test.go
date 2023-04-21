@@ -2,27 +2,24 @@ package tls_test
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("TLS", func() {
 	var ch chan struct{}
-	var defaults intercp_tls.DefaultsComponent
+	var defaults component.Component
 	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		defaults = intercp_tls.DefaultsComponent{
-			ResManager: resManager,
-			Log:        logr.Discard(),
-		}
+		defaults = intercp_tls.NewDefaultsComponent(context.Background(), resManager, logr.Discard())
 		ch = make(chan struct{})
 	})
 

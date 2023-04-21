@@ -74,7 +74,7 @@ type PostgresStoreConfig struct {
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
-	MaxReconnectInterval config_types.Duration                  `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
 
 func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
