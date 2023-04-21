@@ -2,6 +2,7 @@ package gc
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/pkg/errors"
@@ -67,16 +68,23 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time
 func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	ticker := f.newTicker()
 	defer ticker.Stop()
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	finalizerLog.Info("started")
 	for {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.checkGeneration(ctx, typ, now); err != nil {
-					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
+				contexts, err := iterator.CustomIterator()
+				if err != nil {
+					finalizerLog.Error(err, "could not get contexts")
+					break
 				}
+				for _, ctx := range contexts {
+					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
+						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
+					}
+				}
+
 			}
 		case <-stop:
 			finalizerLog.Info("stopped")
