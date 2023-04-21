@@ -1,42 +1,33 @@
 name: "blackbox-tests"
-
 on:
   workflow_dispatch:
-
 env:
   CGO_ENABLED: "0"
-
 jobs:
   blackbox-tests:
     runs-on: ubuntu-20.04
-
     steps:
-    - uses: actions/checkout@v3
-
-    - name: "Set up Go"
-      uses: actions/setup-go@v4
-      with:
-        go-version: "~1.20.2"
-
-    - name: "Configure go modules cache"
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
-    - name: "Install dependencies"
-      run: |
-        go mod tidy
-
-    - name: "Setup user to test user id port exclusion"
-      run: |
-        sudo groupadd -g 4200 dns_test_user_group
-        sudo useradd dns_test_user -u 4201 -g 4200 -m -s /bin/bash
-
-    - name: "Run blackbox tests"
-      run: |
-        sudo "PATH=$PATH" $(which ginkgo) run ./test/blackbox_tests/...
+      - uses: actions/checkout@v3
+      - name: "Set up Go"
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20.2"
+      - name: "Configure go modules cache"
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: "Install dependencies"
+        run: |
+          go mod tidy
+      - name: "Setup user to test user id port exclusion"
+        run: |
+          sudo groupadd -g 4200 dns_test_user_group
+          sudo useradd dns_test_user -u 4201 -g 4200 -m -s /bin/bash
+      - name: "Run blackbox tests"
+        run: |
+          sudo "PATH=$PATH" $(which ginkgo) run ./test/blackbox_tests/...
