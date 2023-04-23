@@ -85,9 +85,6 @@ store:
   # For example you don't have to delete all Dataplane objects before you delete a Mesh
   unsafeDelete: false # ENV: KUMA_STORE_UNSAFE_DELETE
 
-  # CreateDefaultResources skips creating default resources like "default" mesh.
-  createDefaultResources: true # ENV: KUMA_STORE_CREATE_DEFAULT_RESOURCES
-
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Parameters of bootstrap configuration
@@ -592,6 +589,8 @@ dpServer:
 
 # Intercommunication CP configuration
 interCp:
+  # Enable InterCp component. Default: true.
+  enabled: true
   # Catalog configuration. Catalog keeps a record of all live CP instances in the zone.
   catalog:
     # Indicates an address on which other control planes can communicate with this CP.

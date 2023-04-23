@@ -2,6 +2,7 @@ package defaults
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	"sync"
 	"time"
 
@@ -25,28 +26,48 @@ import (
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
-	if runtime.Config().Mode != config_core.Zone && runtime.Config().Store.CreateDefaultResources { // Don't run defaults in Zone (it's done in Global)
+	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
 		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-		ctx := user.Ctx(context.Background(), user.ControlPlane)
-		defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
-		if err := runtime.Add(defaultsComponent); err != nil {
+		contexts, err := iterator.CustomIterator()
+		if err != nil {
 			return err
 		}
+		var allErrors error
+		for _, ctx := range contexts {
+			ctx = user.Ctx(ctx, user.ControlPlane)
+			defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+			if err := runtime.Add(defaultsComponent); err != nil {
+				allErrors = multierr.Append(allErrors, err)
+			}
 
-		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
-			return err
+			zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+				allErrors = multierr.Append(allErrors, err)
+			}
+
+			zoneSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zone.SigningKeyPrefix)
+			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+				allErrors = multierr.Append(allErrors, err)
+			}
 		}
-
-		zoneSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zone.SigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
-			return err
+		if allErrors != nil {
+			return allErrors
 		}
 	}
 
-	if runtime.Config().Mode != config_core.Global && runtime.Config().Store.CreateDefaultResources { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(context.Background(), runtime.ResourceManager())); err != nil {
+	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
+		contexts, err := iterator.CustomIterator()
+		if err != nil {
 			return err
+		}
+		var allErrors error
+		for _, ctx := range contexts {
+			if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(ctx, runtime.ResourceManager())); err != nil {
+				allErrors = multierr.Append(allErrors, err)
+			}
+		}
+		if allErrors != nil {
+			return allErrors
 		}
 	}
 	return nil

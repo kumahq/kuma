@@ -2,6 +2,7 @@ package clusterid
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -20,7 +21,6 @@ var log = core.Log.WithName("clusterID")
 // In Multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
 type clusterIDReader struct {
 	rt  core_runtime.Runtime
-	ctx context.Context
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
@@ -28,14 +28,20 @@ func (c *clusterIDReader) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			clusterID, err := c.read(c.ctx)
+			contexts, err := iterator.CustomIterator()
 			if err != nil {
-				log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
+				log.Error(err, "could not get contexts")
 			}
-			if clusterID != "" {
-				log.Info("setting cluster ID", "clusterID", clusterID)
-				c.rt.SetClusterId(clusterID)
-				return nil
+			for _, ctx := range contexts {
+				clusterID, err := c.read(ctx)
+				if err != nil {
+					log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
+				}
+				if clusterID != "" {
+					log.Info("setting cluster ID", "clusterID", clusterID)
+					c.rt.SetClusterId(clusterID)
+					return nil
+				}
 			}
 		case <-stop:
 			return nil

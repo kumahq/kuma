@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
@@ -116,11 +114,9 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Global KDS")
 				return err
 			}
-			if rt.Config().Store.CreateDefaultResources {
-				if err := clusterid.Setup(user.Ctx(context.Background(), user.ControlPlane), rt); err != nil {
-					runLog.Error(err, "unable to set up clusterID")
-					return err
-				}
+			if err := clusterid.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up clusterID")
+				return err
 			}
 			if err := diagnostics.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Diagnostics server")
@@ -138,7 +134,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up GC")
 				return err
 			}
-			if rt.Config().Store.CreateDefaultResources {
+			if rt.Config().InterCp.Enabled {
 				if err := intercp.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up Control Plane Intercommunication")
 					return err

@@ -37,8 +37,6 @@ type StoreConfig struct {
 	// UnsafeDelete skips validation of resource delete.
 	// For example you don't have to delete all Dataplane objects before you delete a Mesh
 	UnsafeDelete bool `json:"unsafeDelete" envconfig:"kuma_store_unsafe_delete"`
-	// CreateDefaultResources skips creating default resources like "default" mesh.
-	CreateDefaultResources bool `json:"CreateDefaultResources" envconfig:"kuma_store_create_default_resources"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
@@ -48,7 +46,6 @@ func DefaultStoreConfig() *StoreConfig {
 		Kubernetes:             k8s.DefaultKubernetesStoreConfig(),
 		Cache:                  DefaultCacheStoreConfig(),
 		Upsert:                 DefaultUpsertConfig(),
-		CreateDefaultResources: true,
 	}
 }
 
