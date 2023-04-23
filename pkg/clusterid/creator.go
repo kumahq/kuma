@@ -2,9 +2,8 @@ package clusterid
 
 import (
 	"context"
+
 	"github.com/hashicorp/go-multierror"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -12,6 +11,8 @@ import (
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 type clusterIDCreator struct {

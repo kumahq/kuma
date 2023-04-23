@@ -28,7 +28,7 @@ var _ = Describe("Cluster ID", func() {
 		runtime, err := builder.Build()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusterid.Setup(context.Background(), runtime)
+		err = clusterid.Setup(runtime)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when runtime is started

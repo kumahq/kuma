@@ -2,7 +2,6 @@ package clusterid
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -11,6 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("clusterID")
@@ -20,7 +20,7 @@ var log = core.Log.WithName("clusterID")
 // In standalone setup, followers are waiting until leader creates a cluster ID
 // In Multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
 type clusterIDReader struct {
-	rt  core_runtime.Runtime
+	rt core_runtime.Runtime
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {

@@ -2,7 +2,6 @@ package defaults
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 	"sync"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("defaults")

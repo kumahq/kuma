@@ -2,9 +2,6 @@ package mesh
 
 import (
 	"context"
-	"github.com/hashicorp/go-multierror"
-	"github.com/kumahq/kuma/pkg/util/iterator"
-	"istio.io/pkg/log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -28,22 +25,22 @@ func NewMeshManager(
 	unsafeDelete bool,
 ) core_manager.ResourceManager {
 	return &meshManager{
-		store:                  store,
-		otherManagers:          otherManagers,
-		caManagers:             caManagers,
-		registry:               registry,
-		meshValidator:          validator,
-		unsafeDelete:           unsafeDelete,
+		store:         store,
+		otherManagers: otherManagers,
+		caManagers:    caManagers,
+		registry:      registry,
+		meshValidator: validator,
+		unsafeDelete:  unsafeDelete,
 	}
 }
 
 type meshManager struct {
-	store                  core_store.ResourceStore
-	otherManagers          core_manager.ResourceManager
-	caManagers             core_ca.Managers
-	registry               core_registry.TypeRegistry
-	meshValidator          MeshValidator
-	unsafeDelete           bool
+	store         core_store.ResourceStore
+	otherManagers core_manager.ResourceManager
+	caManagers    core_ca.Managers
+	registry      core_registry.TypeRegistry
+	meshValidator MeshValidator
+	unsafeDelete  bool
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -85,18 +82,8 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	contexts, err := iterator.CustomIterator()
-	if err != nil {
-		log.Error(err, "could not get contexts")
-	}
-	for _, ctx := range contexts {
-		var allErrors error
-		if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name); err != nil {
-			allErrors = multierror.Append(allErrors, err)
-		}
-		if allErrors != nil {
-			return allErrors
-		}
+	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name); err != nil {
+		return err
 	}
 	return nil
 }

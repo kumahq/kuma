@@ -299,7 +299,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
-			Expect(cfg.InterCp.Enabled).To(Equal(true))
+			Expect(cfg.InterCp.Enabled).To(BeTrue())
 			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
 			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
 			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
