@@ -68,10 +68,10 @@ to:
           type: Exact
       - path:
           value: "/trailing/slash/"
-          type: Prefix
+          type: PathPrefix
       - path:
           value: "relative"
-          type: Prefix
+          type: PathPrefix
 `),
 		ErrorCase("repeated match query param names",
 			validators.Violation{
@@ -265,7 +265,7 @@ to:
   rules:
     - matches:
       - path:
-          type: Prefix
+          type: PathPrefix
           value: /
       default:
         backendRefs:
@@ -292,7 +292,7 @@ to:
   rules:
     - matches:
       - path:
-          type: Prefix
+          type: PathPrefix
           value: /
       default:
         filters:
@@ -330,7 +330,7 @@ to:
     - matches:
       - path:
           value: /prefix
-          type: Prefix
+          type: PathPrefix
       default:
         filters:
           - type: URLRewrite

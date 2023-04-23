@@ -124,7 +124,7 @@ spec:
       rules: 
         - matches:
             - path: 
-                type: Prefix
+                type: PathPrefix
                 value: /
           default:
             backendRefs:
@@ -172,7 +172,7 @@ spec:
       rules: 
         - matches:
             - path: 
-                type: Prefix
+                type: PathPrefix
                 value: /
           default:
             filters:
@@ -218,7 +218,7 @@ spec:
       rules: 
         - matches:
             - path: 
-                type: Prefix
+                type: PathPrefix
                 value: /prefix
           default:
             filters:

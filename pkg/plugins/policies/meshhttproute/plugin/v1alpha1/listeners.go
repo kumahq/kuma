@@ -119,7 +119,7 @@ func prepareRoutes(
 	catchAllMatch := []api.Match{{
 		Path: &api.PathMatch{
 			Value: "/",
-			Type:  api.Prefix,
+			Type:  api.PathPrefix,
 		},
 	}}
 
