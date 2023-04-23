@@ -243,7 +243,7 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	}
 }
 
-func zoneRelatedResource(
+func universalZoneRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	appType AppMode,
 	resourceManifestFunc func(address string, port, advertisedPort int) string,
@@ -278,7 +278,7 @@ func zoneRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
+		dpYAML := resourceManifestFunc(publicAddress, universalKDSPort, universalKDSPort)
 
 		zone := uniCluster.name
 		if uniCluster.controlplane.mode == core.Standalone {
@@ -305,7 +305,7 @@ func IngressUniversal(tokenProvider func(zone string) (string, error)) InstallFu
 		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
 	}
 
-	return zoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
+	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
@@ -313,7 +313,7 @@ func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFun
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
+	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
