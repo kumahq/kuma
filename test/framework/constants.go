@@ -20,7 +20,7 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	universalKDSPort = 30685
+	universalKDSPort = 30686
 )
 
 const (
