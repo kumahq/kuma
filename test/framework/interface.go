@@ -563,7 +563,6 @@ type Cluster interface {
 type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
-	GetXDSServerAddress() string
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
 	GetGlobalStatusAPI() string
