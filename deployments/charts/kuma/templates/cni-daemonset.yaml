@@ -5,9 +5,7 @@ metadata:
   name: {{ include "kuma.name" . }}-cni-node
   namespace: kube-system
   annotations:
-    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
-    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
-    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
+    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
   labels: {{- include "kuma.cniLabels" . | nindent 4 }}
 spec:
   selector:
