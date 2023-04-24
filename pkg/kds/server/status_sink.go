@@ -53,6 +53,10 @@ type zoneInsightSink struct {
 	log              logr.Logger
 }
 
+var CustomKey = func(ctx context.Context) string {
+	return ""
+}
+
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
@@ -60,7 +64,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	generationTicker := s.generationTicker()
 	defer generationTicker.Stop()
 
-	lastStoredState := make(map[context.Context]*system_proto.KDSSubscription)
+	lastStoredState := make(map[string]*system_proto.KDSSubscription)
 	var generation uint32
 
 	flush := func(ctx context.Context) {
@@ -71,7 +75,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState[ctx]) {
+		if proto.Equal(currentState, lastStoredState[CustomKey(ctx)]) {
 			return
 		}
 
@@ -83,7 +87,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
-			lastStoredState[ctx] = currentState
+			lastStoredState[CustomKey(ctx)] = currentState
 		}
 	}
 
