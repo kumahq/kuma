@@ -23,6 +23,10 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+# Change here and `make check` ensures these are used for CI
+K8S_MIN_VERSION = v1.20.15-k3s1
+K8S_MAX_VERSION = v1.26.1-k3s1
+GO_VERSION := 1.20.2
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 

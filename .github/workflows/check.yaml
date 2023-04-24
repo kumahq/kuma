@@ -1,5 +1,4 @@
 name: "Lint PRs"
-
 on:
   pull_request:
     types:
@@ -7,8 +6,6 @@ on:
       - opened
       - reopened
       - synchronized
-
-
 jobs:
   # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
