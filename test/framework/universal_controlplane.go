@@ -69,6 +69,10 @@ func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return c.getKDSServerAddress(true)
 }
 
+func (c *UniversalControlPlane) GetXDSServerAddress() string {
+	return net.JoinHostPort(c.cpNetworking.IP, "5678")
+}
+
 func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
 	protocol := "grpcs"
 	if !secure {

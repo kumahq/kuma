@@ -565,6 +565,7 @@ type ControlPlane interface {
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
+	GetXDSServerAddress() string
 	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
