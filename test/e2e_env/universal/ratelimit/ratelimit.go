@@ -39,7 +39,7 @@ conf:
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
-			Install(TestServerExternalServiceUniversal("rate-limit", meshName, 80, false)).
+			Install(TestServerExternalServiceUniversal("rate-limit", 80, false)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {

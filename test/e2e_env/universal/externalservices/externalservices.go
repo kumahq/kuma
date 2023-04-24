@@ -87,9 +87,9 @@ networking:
 
 		err := NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(TestServerExternalServiceUniversal(esHttpName, meshName, 80, false, WithDockerContainerName(esHttpContainerName))).
-			Install(TestServerExternalServiceUniversal(esHttpsName, meshName, 443, true, WithDockerContainerName(esHttpsContainerName))).
-			Install(TestServerExternalServiceUniversal(esHttp2Name, meshName, 81, false, WithDockerContainerName(esHttp2ContainerName))).
+			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
+			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
+			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

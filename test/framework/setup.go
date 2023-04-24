@@ -428,7 +428,7 @@ func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
 	}
 }
 
-func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
+func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
