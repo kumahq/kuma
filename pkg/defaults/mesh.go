@@ -2,9 +2,9 @@ package defaults
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
