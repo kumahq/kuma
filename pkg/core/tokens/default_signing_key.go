@@ -36,7 +36,7 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 		defer close(errChan)
 		backoff := retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 		err := retry.Do(ctx, backoff, func(ctx context.Context) error {
-			return retry.RetryableError(d.createDefaultSigningKeyIfNotExist(ctx)) // retry all errors
+			return retry.RetryableError(CreateDefaultSigningKeyIfNotExist(ctx, d.log, d.signingKeyManager)) // retry all errors
 		})
 		if err != nil {
 			// Retry this operation since on Kubernetes, secrets are validated.
@@ -52,21 +52,21 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist(ctx context.Context) error {
-	_, _, err := d.signingKeyManager.GetLatestSigningKey(ctx)
+func CreateDefaultSigningKeyIfNotExist(ctx context.Context, log logr.Logger, signingKeyManager SigningKeyManager) error {
+	_, _, err := signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
-		d.log.V(1).Info("signing key already exists. Skip creating.")
+		log.V(1).Info("signing key already exists. Skip creating.")
 		return nil
 	}
 	if _, ok := err.(*SigningKeyNotFound); !ok {
 		return err
 	}
-	d.log.Info("trying to create signing key")
-	if err := d.signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
-		d.log.V(1).Info("could not create signing key", "err", err)
+	log.Info("trying to create signing key")
+	if err := signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
+		log.V(1).Info("could not create signing key", "err", err)
 		return err
 	}
-	d.log.Info("default signing key created")
+	log.Info("default signing key created")
 	return nil
 }
 
