@@ -53,7 +53,7 @@ networking:
 
 		err = NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(TestServerExternalServiceUniversal("http-server", "", 80, false, WithDockerContainerName("kuma-es-ze_externalservice-http-server"))).
+			Install(TestServerExternalServiceUniversal("http-server", 80, false, WithDockerContainerName("kuma-es-ze_externalservice-http-server"))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Install(EgressUniversal(func(zone string) (string, error) {
 				return cluster.GetKuma().GenerateZoneEgressToken("")
