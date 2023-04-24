@@ -34,7 +34,10 @@ func (c *clusterIDCreator) create() error {
 	}
 	var allErrors error
 	for _, ctx := range contexts {
-		allErrors = multierror.Append(allErrors, Create(user.Ctx(ctx, user.ControlPlane), c.configManager))
+		err := Create(user.Ctx(ctx, user.ControlPlane), c.configManager)
+		if err != nil {
+			allErrors = multierror.Append(allErrors, err)
+		}
 	}
 	return allErrors
 }
