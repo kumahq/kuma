@@ -6,4 +6,4 @@ ARG ARCH
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin/
 
-ENTRYPOINT ["/busybox/busybox", "sh", "-c"]
+ENTRYPOINT ["/usr/bin/kumactl"]
