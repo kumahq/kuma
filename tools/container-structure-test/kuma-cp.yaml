@@ -8,3 +8,6 @@ commandTests:
 - name: "Should return version"
   command: kuma-cp
   args: ["version"]
+
+metadataTest:
+  entrypoint: ["kuma-cp"]

@@ -8,3 +8,6 @@ commandTests:
 - name: "Should return version"
   command: kumactl
   args: ["version"]
+
+metadataTest:
+  entrypoint: ["/busybox/busybox", "sh", "-c"]

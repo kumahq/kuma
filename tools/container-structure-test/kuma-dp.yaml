@@ -8,3 +8,6 @@ commandTests:
 - name: "Should return version"
   command: kuma-dp
   args: ["version"]
+
+metadataTest:
+  entrypoint: ["kuma-dp"]

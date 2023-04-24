@@ -19,3 +19,7 @@ commandTests:
 licenseTests:
 - debian: false
   files: ["/kuma/LICENSE"]
+
+metadataTest:
+  entrypoint: ["/usr/bin/kumactl"]
+  cmd: ["install", "transparent-proxy"]

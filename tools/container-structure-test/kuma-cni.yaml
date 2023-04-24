@@ -15,3 +15,6 @@ commandTests:
   command: which
   args: ["kuma-cni"]
   expectedOutput: ["/.*/kuma-cni"]
+
+metadataTest:
+  entrypoint: ["/install-cni"]
