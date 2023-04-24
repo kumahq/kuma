@@ -53,10 +53,8 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
-      {{- if .Values.cni.podSecurityContext }}
       securityContext:
-      {{ toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
-      {{- end }}
+      {{- toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: install-cni
           {{- if not .Values.legacy.cni.enabled }}
@@ -96,14 +94,10 @@ spec:
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
           {{- end }}
-          {{- if .Values.experimental.ebpf.enabled }}
-          securityContext:
-            privileged: true
-          {{- else }}
-          {{- if .Values.cni.containerSecurityContext }}
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
-          {{- end }}
+          {{- if .Values.experimental.ebpf.enabled }}
+            privileged: true
           {{- end }}
           {{- if not .Values.experimental.ebpf.enabled }}
           env:
@@ -140,6 +134,8 @@ spec:
               name: host-var-run
               mountPropagation: Bidirectional
             {{- end }}
+            - name: tmp
+              mountPath: /tmp
       volumes:
         # Used to install CNI.
         - name: cni-bin-dir
@@ -159,4 +155,6 @@ spec:
             path: /proc
           name: host-proc
         {{- end }}
+        - name: tmp
+          emptyDir: {}
 {{- end }}
