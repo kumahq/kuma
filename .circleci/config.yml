@@ -425,22 +425,22 @@ jobs:
       - when:
           condition: {equal: [vm-amd64, << parameters.executor >>]}
           steps:
-          - install_build_tools:
-              go_arch: amd64
+            - install_build_tools:
+                go_arch: amd64
       - when:
           condition: {equal: [vm-arm64, << parameters.executor >>]}
           steps:
-          - install_build_tools:
-              go_arch: arm64
+            - install_build_tools:
+                go_arch: arm64
       - checkout
       - halt_job_if_labeled:
           label: "ci/skip-container-structure-test"
       - when:
           condition:
             or:
-            - {equal: [vm-arm64, << parameters.executor >>]}
+              - {equal: [vm-arm64, << parameters.executor >>]}
           steps:
-          - halt_non_priority_job
+            - halt_non_priority_job
       - restore_cache:
           key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
       - attach_workspace:
