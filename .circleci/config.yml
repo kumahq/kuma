@@ -1,61 +1,55 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
-
-reusable:
-
-  constants:
-    - &go_version "1.20.2"
-    - &lastK8sVersion v1.26.1-k3s1
-    - &firstK8sVersion v1.20.15-k3s1
-
-  docker_images:
-    - &golang_image "cimg/go:1.20.2"
-
-  vm_images:
-    - &ubuntu_vm_image "ubuntu-2204:2022.10.2"
-
+parameters:
+  # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
+  go_version:
+    type: string
+    default: "1.20.2"
+  first_k8s_version:
+    type: string
+    default: "v1.20.15-k3s1"
+  last_k8s_version:
+    type: string
+    default: "v1.26.1-k3s1"
+  ubuntu_image:
+    type: string
+    default: "ubuntu-2204:2022.10.2"
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
     description: "Install an upstream Go release to $HOME/go"
     parameters:
-      go_os:
-        type: string
-        default: linux
       go_arch:
         type: string
         default: amd64
-      go_version:
-        type: string
-        default: *go_version
     steps:
-    - run:
-        # `unzip`    is necessary to install `protoc`
-        # `gcc`      is necessary to run `go test -race`
-        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils` is necessary to decompress xz files
-        name: "Install basic tools"
-        command: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
+      - run:
+          # `unzip`    is necessary to install `protoc`
+          # `gcc`      is necessary to run `go test -race`
+          # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+          # `xz-utils` is necessary to decompress xz files
+          name: "Install basic tools"
+          command: |
+            if [ -r /etc/os-release ]; then source /etc/os-release; fi
+            case "$ID" in
+            ubuntu)
+              if ! command -v sudo 2>&1 >/dev/null; then
+                apt update
+                apt install -y sudo
+              fi
 
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
-            ;;
-          esac
-    - run:
-        name: "Install Go"
-        # See https://golang.org/doc/install#tarball
-        command: |
-          curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
-          echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
-          # if GOPATH is not set, `golang-ci` fails with an obscure message
-          # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
-          echo 'export GOPATH=$HOME/go' >> $BASH_ENV
+              sudo apt update
+              sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
+              ;;
+            esac
+      - run:
+          name: "Install Go"
+          # See https://golang.org/doc/install#tarball
+          command: |
+            curl -s --fail --location https://dl.google.com/go/go<<pipeline.parameters.go_version>>.linux-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
+            echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+            # if GOPATH is not set, `golang-ci` fails with an obscure message
+            # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+            echo 'export GOPATH=$HOME/go' >> $BASH_ENV
   halt_non_priority_job:
     description: "don't run following steps if in PR and doesn't have a specific label"
     parameters:
@@ -64,24 +58,24 @@ commands:
         description: a label to for running this (if empty no label override is allowed)
         default: "ci/run-full-matrix"
     steps:
-    - run:
-        name: maybe-halt
-        command: |
-          if [[ "<< pipeline.git.branch >>" == "master" || "<< pipeline.git.branch >>" == "release-"*  ]]; then
-            echo "on a main branch so don't halt job"
+      - run:
+          name: maybe-halt
+          command: |
+            if [[ "<< pipeline.git.branch >>" == "master" || "<< pipeline.git.branch >>" == "release-"*  ]]; then
+              echo "on a main branch so don't halt job"
+              exit 0
+            fi
+            if [[ "<< pipeline.git.tag >>" != "" ]]; then
+              echo "on a tag to don't halt job"
+              exit 0
+            fi
+            if [[ "<<parameters.label>>" != "" && $(${KUMA_DIR}/tools/ci/has_label.sh "<<parameters.label>>") == "true" ]]; then
+              echo "<<parameters.label>> label present on PR so don't halt job"
+              exit 0
+            fi
+            echo "halt running job"
+            circleci-agent step halt
             exit 0
-          fi
-          if [[ "<< pipeline.git.tag >>" != "" ]]; then
-            echo "on a tag to don't halt job"
-            exit 0
-          fi
-          if [[ "<<parameters.label>>" != "" && $(${KUMA_DIR}/tools/ci/has_label.sh "<<parameters.label>>") == "true" ]]; then
-            echo "<<parameters.label>> label present on PR so don't halt job"
-            exit 0
-          fi
-          echo "halt running job"
-          circleci-agent step halt
-          exit 0
   setenv_depending_on_priority:
     description: "don't run following steps if in PR and doesn't have a specific label"
     parameters:
@@ -134,27 +128,24 @@ executors:
   golang:
     resource_class: xlarge
     docker:
-    - image: *golang_image
+      - image: "cimg/go:<< pipeline.parameters.go_version >>"
     environment:
       KUMA_DIR: .
-      GO_VERSION: *go_version
-
+      GO_VERSION: << pipeline.parameters.go_version >>
   vm-amd64:
     resource_class: large
     machine:
-      image: *ubuntu_vm_image
+      image: << pipeline.parameters.ubuntu_image >>
     environment:
       KUMA_DIR: .
-      GO_VERSION: *go_version
-
+      GO_VERSION: << pipeline.parameters.go_version >>
   vm-arm64:
     resource_class: arm.large
     machine:
-      image: *ubuntu_vm_image
+      image: << pipeline.parameters.ubuntu_image >>
     environment:
       KUMA_DIR: .
-      GO_VERSION: *go_version
-
+      GO_VERSION: << pipeline.parameters.go_version >>
 jobs:
   go_cache:
     executor: << parameters.executor >>
@@ -164,31 +155,30 @@ jobs:
         type: string
         default: golang
     steps:
-    - when:
-        condition: {equal: [vm-amd64, << parameters.executor >>]}
-        steps:
-          - install_build_tools:
-              go_arch: amd64
-    - when:
-        condition: {equal: [vm-arm64, << parameters.executor >>]}
-        steps:
-          - install_build_tools:
-              go_arch: arm64
-    - checkout
-    - restore_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        command: make dev/tools
-    - run:
-        name: "Download Go modules"
-        command: |
-          go mod download -x
-    - save_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-        paths:
-        - "/home/circleci/go/pkg/mod"
-        - "/home/circleci/.kuma-dev"
-
+      - when:
+          condition: {equal: [vm-amd64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: amd64
+      - when:
+          condition: {equal: [vm-arm64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: arm64
+      - checkout
+      - restore_cache:
+          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          command: make dev/tools
+      - run:
+          name: "Download Go modules"
+          command: |
+            go mod download -x
+      - save_cache:
+          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+            - "/home/circleci/.kuma-dev"
   test:
     parameters:
       target:
@@ -202,35 +192,33 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
-    - checkout
-    - when:
-        condition: {equal: [arm64, << parameters.arch >>]}
-        steps:
-          - halt_non_priority_job
-    - halt_job_if_labeled:
-        label: "ci/skip-test"
-    - install_build_tools:
-        go_arch: << parameters.arch >>
-        go_os: linux
-    - restore_cache:
-        keys:
-        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        name: "Run tests"
-        command: |
-          make << parameters.target >> TEST_REPORTS=1
-    - store_artifacts:
-        path: build/reports
-        destination: /reports
-    - store_test_results:
-        path: build/reports
-
+      - checkout
+      - when:
+          condition: {equal: [arm64, << parameters.arch >>]}
+          steps:
+            - halt_non_priority_job
+      - halt_job_if_labeled:
+          label: "ci/skip-test"
+      - install_build_tools:
+          go_arch: << parameters.arch >>
+      - restore_cache:
+          keys:
+            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          name: "Run tests"
+          command: |
+            make << parameters.target >> TEST_REPORTS=1
+      - store_artifacts:
+          path: build/reports
+          destination: /reports
+      - store_test_results:
+          path: build/reports
   e2e:
     parameters:
       k8sVersion:
         description: version of k3s to use or "kind" and "kindIpv6"
         type: string
-        default: *lastK8sVersion
+        default: << pipeline.parameters.last_k8s_version >>
       parallelism:
         description: level of parallelization
         type: integer
@@ -263,7 +251,7 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
-              - {equal: [*firstK8sVersion, << parameters.k8sVersion >>]}
+              - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
       - run:
@@ -283,7 +271,7 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-            
+
             # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
@@ -349,48 +337,46 @@ jobs:
       - store_artifacts:
           name: "Store logs"
           path: /tmp/e2e
-
   build:
     executor:
       name: golang
     steps:
-    - checkout
-    - setup_remote_docker
-    - run:
-        command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
-    - setenv_depending_on_priority:
-        label: "ci/run-full-matrix"
-        env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
-    - restore_cache:
-        keys:
-          - docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        command: make dev/tools
-    - run:
-        command: make check
-    - run:
-        command: make build
-    - run:
-        command: make -j build/distributions
-    - run:
-        command: make -j images
-    - run:
-        command: make -j docker/save
-    - save_cache:
-        key: docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-        paths:
-          - "/home/circleci/go/pkg/mod"
-          - "/home/circleci/.kuma-dev"
-    - persist_to_workspace:
-        root: build
-        paths:
-        - distributions/out
-        - docker
-        - artifacts-linux-amd64
-        - artifacts-linux-arm64
-        - ebpf-amd64
-        - ebpf-arm64
-
+      - checkout
+      - setup_remote_docker
+      - run:
+          command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
+      - setenv_depending_on_priority:
+          label: "ci/run-full-matrix"
+          env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
+      - restore_cache:
+          keys:
+            - docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          command: make dev/tools
+      - run:
+          command: make check
+      - run:
+          command: make build
+      - run:
+          command: make -j build/distributions
+      - run:
+          command: make -j images
+      - run:
+          command: make -j docker/save
+      - save_cache:
+          key: docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+            - "/home/circleci/.kuma-dev"
+      - persist_to_workspace:
+          root: build
+          paths:
+            - distributions/out
+            - docker
+            - artifacts-linux-amd64
+            - artifacts-linux-arm64
+            - ebpf-amd64
+            - ebpf-arm64
   distributions:
     executor: vm-amd64
     steps:
@@ -428,10 +414,8 @@ jobs:
             trap on_exit EXIT
             make docker/push
             make docker/manifest
-
 workflows:
   version: 2
-
   kuma-commit:
     jobs:
       - go_cache:
@@ -439,7 +423,7 @@ workflows:
           matrix:
             alias: go_cache
             parameters:
-              executor: [ vm-amd64, vm-arm64 ]
+              executor: [vm-amd64, vm-arm64]
       - build:
           name: build
       - test:
@@ -447,37 +431,36 @@ workflows:
           matrix:
             alias: test
             parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ build, go_cache-vm-<< matrix.arch >> ]
+              arch: [amd64, arm64]
+          requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
-              arch: [ amd64, arm64 ]
+              k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
+              arch: [amd64, arm64]
           parallelism: 3
           target: test/e2e
-          requires: [ build, go_cache-vm-<< matrix.arch >> ]
+          requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ *firstK8sVersion, *lastK8sVersion, kind, kindIpv6 ]
-              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
-              arch: [ amd64, arm64 ]
-          requires: [ build, go_cache-vm-<< matrix.arch >> ]
+              k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
+              target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
+              arch: [amd64, arm64]
+          requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
             alias: test/e2e-calico
             parameters:
-              k8sVersion: [ *lastK8sVersion ]
-              target: [ test/e2e-multizone ]
-              arch: [ amd64 ]
-              cniNetworkPlugin: [ calico ]
-          requires: [ build, go_cache-vm-amd64 ]
+              k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
+              target: [test/e2e-multizone]
+              arch: [amd64]
+              cniNetworkPlugin: [calico]
+          requires: [build, go_cache-vm-amd64]
       - distributions:
-          requires: [ test, test/e2e, test/e2e-legacy ]
-
+          requires: [test, test/e2e, test/e2e-legacy]
