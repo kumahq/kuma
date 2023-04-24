@@ -20,9 +20,7 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	kdsPort             = 30685
-	loadBalancerKdsPort = 5685
-	xdsPort             = 5678
+	universalKDSPort = 30686
 )
 
 const (

@@ -6,6 +6,14 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.3.x`
+
+### **Breaking changes**
+
+#### `MeshHTTPRoute`
+
+* Changed path match `type` from `Prefix` to `PathPrefix`
+
 ## Upgrade to `2.2.x`
 
 ### Universal

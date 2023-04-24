@@ -87,3 +87,9 @@ default:
       description: "Issues that are being tracked for interest but not assigned to a specific release yet"
     - title: 2.3.x
       description: "2.3.x release"
+    - title: 2.4.x
+      description: "2.4.x release"
+    - title: 2.5.x
+      description: "2.5.x release"
+    - title: 2.6.x
+      description: "2.6.x release"

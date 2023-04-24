@@ -50,7 +50,7 @@ type Match struct {
 	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
+// +kubebuilder:validation:Enum=Exact;PathPrefix;RegularExpression
 type PathMatchType string
 
 // +kubebuilder:validation:Enum=CONNECT;DELETE;GET;HEAD;OPTIONS;PATCH;POST;PUT;TRACE
@@ -58,7 +58,7 @@ type Method string
 
 const (
 	Exact             PathMatchType = "Exact"
-	Prefix            PathMatchType = "Prefix"
+	PathPrefix        PathMatchType = "PathPrefix"
 	RegularExpression PathMatchType = "RegularExpression"
 )
 
