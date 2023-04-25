@@ -129,7 +129,6 @@ func (d *DataplaneLifecycle) register(
 		return existing.SetSpec(md.Resource.GetSpec())
 	},
 	)
-
 	if err != nil {
 		log.Info("cannot register proxy", "reason", err.Error())
 		return errors.Wrap(err, "could not register proxy passed in kuma-dp run")
