@@ -85,13 +85,15 @@ func TestConformance(t *testing.T) {
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,
 			suite.SupportHTTPRoute,
+			suite.SupportGatewayClassObservedGenerationBump,
 			suite.SupportHTTPRouteQueryParamMatching,
 			suite.SupportHTTPRouteMethodMatching,
 			suite.SupportHTTPResponseHeaderModification,
 			suite.SupportHTTPRoutePortRedirect,
 			suite.SupportHTTPRouteSchemeRedirect,
 			suite.SupportHTTPRoutePathRedirect,
-			suite.SupportGatewayClassObservedGenerationBump,
+			suite.SupportHTTPRouteHostRewrite,
+			suite.SupportHTTPRoutePathRewrite,
 		),
 	})
 
