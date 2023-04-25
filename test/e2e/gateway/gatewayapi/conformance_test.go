@@ -68,7 +68,7 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
-	var validUniqueListenerPorts kubernetes.PortSet
+	var validUniqueListenerPorts kubernetes.PortStack
 	for i := minNodePort; i <= maxNodePort; i++ {
 		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
 	}
@@ -83,6 +83,8 @@ func TestConformance(t *testing.T) {
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: sets.New(
+			suite.SupportGateway,
+			suite.SupportHTTPRoute,
 			suite.SupportHTTPRouteQueryParamMatching,
 			suite.SupportHTTPRouteMethodMatching,
 			suite.SupportHTTPResponseHeaderModification,

@@ -306,9 +306,9 @@ var (
 	simpleHostname  = gatewayapi.Hostname("simple.local")
 	anyTestHostname = gatewayapi.Hostname("*.wildcard.local")
 
-	listenerReady = []kube_meta.Condition{
+	listenerProgrammed = []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.ListenerConditionReady),
+			Type:   string(gatewayapi.ListenerConditionProgrammed),
 			Status: kube_meta.ConditionTrue,
 		},
 	}
@@ -373,7 +373,7 @@ var (
 			Listeners: []gatewayapi.ListenerStatus{
 				{
 					Name:       simpleListenerName,
-					Conditions: listenerReady,
+					Conditions: listenerProgrammed,
 				},
 			},
 		},
@@ -400,15 +400,15 @@ var (
 			Listeners: []gatewayapi.ListenerStatus{
 				{
 					Name:       simpleListenerName,
-					Conditions: listenerReady,
+					Conditions: listenerProgrammed,
 				},
 				{
 					Name:       wildcardListenerName,
-					Conditions: listenerReady,
+					Conditions: listenerProgrammed,
 				},
 				{
 					Name:       allNsListenerName,
-					Conditions: listenerReady,
+					Conditions: listenerProgrammed,
 				},
 			},
 		},
