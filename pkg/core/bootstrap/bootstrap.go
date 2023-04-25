@@ -450,7 +450,13 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime.Duration, builder.Metrics())
+		cachedManager, err := core_manager.NewCachedManager(
+			customizableManager,
+			builder.Config().Store.Cache.ExpirationTime.Duration,
+			builder.Metrics(),
+			builder.Hashing().ResourceManagerGetCacheKey,
+			builder.Hashing().ResourceManagerListCacheKey,
+		)
 		if err != nil {
 			return err
 		}

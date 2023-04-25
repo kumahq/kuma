@@ -60,7 +60,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
-		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics)
+		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics, nil, nil)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and created resources

@@ -102,9 +102,10 @@ type (
 )
 
 type Hashing struct {
-	KdsId                   ContextWithIdToString
-	ResourceManagerCacheKey ContextToString
-	SinkStatusCacheKey      ContextToString
+	KdsId                       ContextWithIdToString
+	ResourceManagerGetCacheKey  core_store.GetOptionsFunc
+	ResourceManagerListCacheKey core_store.ListOptionsFunc
+	SinkStatusCacheKey          ContextToString
 }
 
 type PgxConfigCustomizer func(pgxConfig *pgxpool.Config)

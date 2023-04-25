@@ -2,11 +2,11 @@ package universal
 
 import (
 	"context"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	plugin_leader "github.com/kumahq/kuma/pkg/plugins/leader"
@@ -30,9 +30,18 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 	}
 	b.WithComponentManager(component.NewManager(leaderElector))
 	b.WithHashing(core_runtime.Hashing{
-		KdsId:                   nil,
-		ResourceManagerCacheKey: func(ctx context.Context) string { return "" },
-		SinkStatusCacheKey:      func(ctx context.Context) string { return "" },
+		KdsId: nil,
+		ResourceManagerGetCacheKey: func(options *store.GetOptions) {
+			options.Suffix = func(ctx context.Context) string {
+				return "global"
+			}
+		},
+		ResourceManagerListCacheKey: func(options *store.ListOptions) {
+			options.Suffix = func(ctx context.Context) string {
+				return "global"
+			}
+		},
+		SinkStatusCacheKey: func(ctx context.Context) string { return "" },
 	})
 	b.WithConfigCustomization(core_runtime.ConfigCustomization{
 		Pgx: func(pgxConfig *pgxpool.Config) {},

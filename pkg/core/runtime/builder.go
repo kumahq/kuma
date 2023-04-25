@@ -338,7 +338,7 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.interCpPool == nil {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
-	if b.hashing.KdsId == nil || b.hashing.ResourceManagerCacheKey == nil || b.hashing.SinkStatusCacheKey == nil {
+	if b.hashing.KdsId == nil || b.hashing.SinkStatusCacheKey == nil || b.hashing.ResourceManagerGetCacheKey == nil || b.hashing.ResourceManagerListCacheKey == nil {
 		return nil, errors.Errorf("Hasing has not been configured")
 	}
 	if b.configCustomization.Pgx == nil {
