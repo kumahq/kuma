@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/util/iterator"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -129,8 +130,8 @@ func (b *reportsBuffer) marshall() (string, error) {
 // XXX this function retrieves all dataplanes and all meshes;
 // ideally, the number of dataplanes and number of meshes
 // should be pushed from the outside rather than pulled
-func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
+func (b *reportsBuffer) updateEntitiesReport(ctx context.Context, rt core_runtime.Runtime) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
 	dps, err := fetchDataplanes(ctx, rt)
 	if err != nil {
 		return err
@@ -189,15 +190,15 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string, extraFn core_runtime.ExtraReportsFn) error {
-	if err := b.updateEntitiesReport(rt); err != nil {
+func (b *reportsBuffer) dispatch(ctx context.Context, rt core_runtime.Runtime, host string, port int, pingType string, extraFn core_runtime.ExtraReportsFn) error {
+	if err := b.updateEntitiesReport(ctx, rt); err != nil {
 		return err
 	}
 	b.mutable["signal"] = pingType
 	b.mutable["cluster_id"] = rt.GetClusterId()
 	b.mutable["uptime"] = strconv.FormatInt(int64(time.Since(rt.GetStartTime())/time.Second), 10)
 	if extraFn != nil {
-		if valMap, err := extraFn(rt); err != nil {
+		if valMap, err := extraFn(ctx, rt); err != nil {
 			return err
 		} else {
 			b.Append(valMap)
@@ -248,14 +249,22 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 
 func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer, extraFn core_runtime.ExtraReportsFn) {
 	go func() {
-		err := buffer.dispatch(rt, pingHost, pingPort, "start", extraFn)
+		contexts, err := iterator.CustomIterator()
 		if err != nil {
-			log.V(2).Info("failed sending usage info", "cause", err.Error())
+			log.Error(err, "could not get contexts")
 		}
-		for range time.Tick(time.Second * pingInterval) {
-			err := buffer.dispatch(rt, pingHost, pingPort, "ping", extraFn)
+		for _, ctx := range contexts {
+			err := buffer.dispatch(ctx, rt, pingHost, pingPort, "start", extraFn)
 			if err != nil {
 				log.V(2).Info("failed sending usage info", "cause", err.Error())
+			}
+		}
+		for range time.Tick(time.Second * pingInterval) {
+			for _, ctx := range contexts {
+				err := buffer.dispatch(ctx, rt, pingHost, pingPort, "ping", extraFn)
+				if err != nil {
+					log.V(2).Info("failed sending usage info", "cause", err.Error())
+				}
 			}
 		}
 	}()
