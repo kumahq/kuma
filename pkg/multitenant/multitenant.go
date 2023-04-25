@@ -14,7 +14,7 @@ type DefaultTenant struct{}
 var _ Tenant = &DefaultTenant{}
 
 func (d DefaultTenant) GetTenantIds(_ context.Context) ([]string, error) {
-	return []string{}, nil
+	return []string{""}, nil
 }
 
 type tenantCtx struct{}
