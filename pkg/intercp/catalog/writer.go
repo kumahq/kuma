@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var writerLog = core.Log.WithName("intercp").WithName("catalog").WithName("writer")
@@ -15,12 +16,11 @@ type catalogWriter struct {
 	heartbeats *Heartbeats
 	instance   Instance
 	interval   time.Duration
-	ctx        context.Context
 }
 
 var _ component.Component = &catalogWriter{}
 
-func NewWriter(ctx context.Context, catalog Catalog, heartbeats *Heartbeats, instance Instance, interval time.Duration) component.Component {
+func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, interval time.Duration) component.Component {
 	leaderInstance := instance
 	leaderInstance.Leader = true
 	return &catalogWriter{
@@ -28,14 +28,14 @@ func NewWriter(ctx context.Context, catalog Catalog, heartbeats *Heartbeats, ins
 		heartbeats: heartbeats,
 		instance:   leaderInstance,
 		interval:   interval,
-		ctx:        ctx,
 	}
 }
 
 func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting catalog writer")
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	writerLog.Info("replacing a leader in the catalog")
-	if err := r.catalog.ReplaceLeader(r.ctx, r.instance); err != nil {
+	if err := r.catalog.ReplaceLeader(ctx, r.instance); err != nil {
 		writerLog.Error(err, "could not replace leader") // continue, it will be replaced in ticker anyways
 	}
 	ticker := time.NewTicker(r.interval)
@@ -44,7 +44,7 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 		case <-ticker.C:
 			instances := r.heartbeats.ResetAndCollect()
 			instances = append(instances, r.instance)
-			updated, err := r.catalog.Replace(r.ctx, instances)
+			updated, err := r.catalog.Replace(ctx, instances)
 			if err != nil {
 				writerLog.Error(err, "could not update catalog")
 				continue

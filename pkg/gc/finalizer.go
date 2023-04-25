@@ -74,7 +74,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				contexts, err := iterator.CustomIterator()
+				contexts, err := multitenant.TenantIterator(context.Background())
 				if err != nil {
 					finalizerLog.Error(err, "could not get contexts")
 					break

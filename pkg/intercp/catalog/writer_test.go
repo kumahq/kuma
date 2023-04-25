@@ -36,7 +36,7 @@ var _ = Describe("Writer", func() {
 		c = catalog.NewConfigCatalog(resManager)
 		heartbeats := catalog.NewHeartbeats()
 		closeCh = make(chan struct{})
-		writer := catalog.NewWriter(context.Background(), c, heartbeats, leader, 100*time.Millisecond)
+		writer := catalog.NewWriter(c, heartbeats, leader, 100*time.Millisecond)
 		go func() {
 			defer GinkgoRecover()
 			Expect(writer.Start(closeCh)).To(Succeed())

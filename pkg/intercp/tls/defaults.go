@@ -11,26 +11,18 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
-type defaultsComponent struct {
+type DefaultsComponent struct {
 	ResManager manager.ResourceManager
 	Log        logr.Logger
-	Ctx        context.Context
 }
 
-var _ component.Component = &defaultsComponent{}
+var _ component.Component = &DefaultsComponent{}
 
-func NewDefaultsComponent(ctx context.Context, resManager manager.ResourceManager, logger logr.Logger) component.Component {
-	return &defaultsComponent{
-		ResManager: resManager,
-		Log:        logger,
-		Ctx:        ctx,
-	}
-}
-
-func (e *defaultsComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(e.Ctx)
+func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	go func() {
 		<-stop
 		cancelFn()
@@ -44,11 +36,11 @@ func (e *defaultsComponent) Start(stop <-chan struct{}) error {
 	})
 }
 
-func (e defaultsComponent) NeedLeaderElection() bool {
+func (e DefaultsComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func (e *defaultsComponent) ensureInterCpCaExist(ctx context.Context) error {
+func (e *DefaultsComponent) ensureInterCpCaExist(ctx context.Context) error {
 	_, err := LoadCA(ctx, e.ResManager)
 	if err == nil {
 		e.Log.V(1).Info("Inter CP CA already exists. Skip creating Envoy Admin CA.")

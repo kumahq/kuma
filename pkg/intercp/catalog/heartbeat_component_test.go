@@ -39,10 +39,15 @@ var _ = Describe("Heartbeats", func() {
 		}
 		pc := pingClient // copy pointer to get rid of data race
 
-		heartbeatComponent = catalog.NewHeartbeatComponent(context.Background(), c, currentInstance, 10*time.Millisecond, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
-			pc.SetServerURL(serverURL)
-			return pc, nil
-		})
+		heartbeatComponent = catalog.NewHeartbeatComponent(
+			c,
+			currentInstance,
+			10*time.Millisecond,
+			func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+				pc.SetServerURL(serverURL)
+				return pc, nil
+			},
+		)
 
 		stopCh = make(chan struct{})
 		go func() {

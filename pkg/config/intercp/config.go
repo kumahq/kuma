@@ -22,7 +22,6 @@ func DefaultInterCpConfig() InterCpConfig {
 			TlsMinVersion:   "TLSv1_2",
 			TlsCipherSuites: []string{},
 		},
-		Enabled: true,
 	}
 }
 
@@ -31,8 +30,6 @@ type InterCpConfig struct {
 	Catalog CatalogConfig `json:"catalog"`
 	// Intercommunication CP server configuration
 	Server InterCpServerConfig `json:"server"`
-	// Enable InterCp component. Default: true.
-	Enabled bool `json:"enabled" envconfig:"kuma_inter_cp_enabled"`
 }
 
 func (i *InterCpConfig) Validate() error {

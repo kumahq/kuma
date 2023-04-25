@@ -28,7 +28,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
-		hashId:         hashId,
+		hashFn:         hashId,
 	}
 }
 
@@ -38,13 +38,13 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashId         core_runtime.ContextWithIdToString
+	hashFn         core_runtime.ContextWithIdToString
 
 	lock sync.Mutex
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
-	id := r.hashId(ctx, r.hasher.ID(node))
+	id := r.hashFn(ctx, r.hasher.ID(node))
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
@@ -68,7 +68,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hashId(ctx, r.hasher.ID(node))
+	id := r.hashFn(ctx, r.hasher.ID(node))
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)

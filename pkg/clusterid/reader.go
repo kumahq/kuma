@@ -10,7 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/util/iterator"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var log = core.Log.WithName("clusterID")
@@ -24,24 +24,19 @@ type clusterIDReader struct {
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			contexts, err := iterator.CustomIterator()
+			clusterID, err := c.read(ctx)
 			if err != nil {
-				log.Error(err, "could not get contexts")
+				log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
 			}
-			for _, ctx := range contexts {
-				clusterID, err := c.read(ctx)
-				if err != nil {
-					log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
-				}
-				if clusterID != "" {
-					log.Info("setting cluster ID", "clusterID", clusterID)
-					c.rt.SetClusterId(clusterID)
-					return nil
-				}
+			if clusterID != "" {
+				log.Info("setting cluster ID", "clusterID", clusterID)
+				c.rt.SetClusterId(clusterID)
+				return nil
 			}
 		case <-stop:
 			return nil

@@ -50,7 +50,7 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	defer ticker.Stop()
 	log.Info("starting the resource counter")
 
-	contexts, err := iterator.CustomIterator()
+	contexts, err := multitenant.TenantIterator(context.Background())
 	if err != nil {
 		log.Error(err, "could not get contexts")
 	}
@@ -63,7 +63,7 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	for {
 		select {
 		case <-ticker.C:
-			contexts, err := iterator.CustomIterator()
+			contexts, err := multitenant.TenantIterator(context.Background())
 			if err != nil {
 				log.Error(err, "could not get contexts")
 			}

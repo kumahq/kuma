@@ -3,7 +3,6 @@ package clusterid
 import (
 	"context"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -12,7 +11,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 type clusterIDCreator struct {
@@ -28,32 +26,19 @@ func (c *clusterIDCreator) NeedLeaderElection() bool {
 }
 
 func (c *clusterIDCreator) create() error {
-	contexts, err := iterator.CustomIterator()
-	if err != nil {
-		log.Error(err, "could not get contexts")
-	}
-	var allErrors error
-	for _, ctx := range contexts {
-		err := Create(user.Ctx(ctx, user.ControlPlane), c.configManager)
-		if err != nil {
-			allErrors = multierror.Append(allErrors, err)
-		}
-	}
-	return allErrors
-}
-
-func Create(ctx context.Context, configManager config_manager.ConfigManager) error {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	resource := config_model.NewConfigResource()
-	err := configManager.Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
+	err := c.configManager.Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
 		resource.Spec.Config = core.NewUUID()
 		log.Info("creating cluster ID", "clusterID", resource.Spec.Config)
-		if err := configManager.Create(ctx, resource, store.CreateByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh)); err != nil {
+		if err := c.configManager.Create(ctx, resource, store.CreateByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh)); err != nil {
 			return errors.Wrap(err, "could not create config")
 		}
 	}
+
 	return nil
 }

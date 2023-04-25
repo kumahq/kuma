@@ -8,19 +8,21 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("TLS", func() {
 	var ch chan struct{}
-	var defaults component.Component
+	var defaults intercp_tls.DefaultsComponent
 	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		defaults = intercp_tls.NewDefaultsComponent(context.Background(), resManager, logr.Discard())
+		defaults = intercp_tls.DefaultsComponent{
+			ResManager: resManager,
+			Log:        logr.Discard(),
+		}
 		ch = make(chan struct{})
 	})
 

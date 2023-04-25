@@ -28,7 +28,7 @@ var log = core.Log.WithName("defaults")
 func Setup(runtime runtime.Runtime) error {
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
 		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-		contexts, err := iterator.CustomIterator()
+		contexts, err := multitenant.TenantIterator(context.Background())
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func Setup(runtime runtime.Runtime) error {
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		contexts, err := iterator.CustomIterator()
+		contexts, err := multitenant.TenantIterator(context.Background())
 		if err != nil {
 			return err
 		}

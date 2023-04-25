@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/iterator"
+	"github.com/kumahq/kuma/pkg/util/multitenant"
 )
 
 type ZoneInsightSink interface {
@@ -25,7 +25,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, statusCacheKey core_runtime.ContextToString) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing core_runtime.Hashing) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -33,7 +33,7 @@ func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker
 		accessor:         accessor,
 		store:            store,
 		log:              log,
-		statusCacheKey:   statusCacheKey,
+		hashing:          hashing,
 	}
 }
 
@@ -46,7 +46,8 @@ type zoneInsightSink struct {
 	accessor         StatusAccessor
 	store            ZoneInsightStore
 	log              logr.Logger
-	statusCacheKey   core_runtime.ContextToString
+	hashing          core_runtime.Hashing
+	tenant           multitenant.Tenant
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
@@ -67,7 +68,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState[s.statusCacheKey(ctx)]) {
+		if proto.Equal(currentState, lastStoredState[s.hashing.SinkStatusCacheKey(ctx)]) {
 			return
 		}
 
@@ -79,28 +80,28 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
-			lastStoredState[s.statusCacheKey(ctx)] = currentState
+			lastStoredState[s.hashing.SinkStatusCacheKey(ctx)] = currentState
 		}
 	}
 
 	for {
 		select {
 		case <-flushTicker.C:
-			contexts, err := iterator.CustomIterator()
+			tenantIds, err := s.tenant.GetTenantIds(context.Background())
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}
-			for _, ctx := range contexts {
-				flush(ctx)
+			for _, tenantId := range tenantIds {
+				flush(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId))
 			}
 			time.Sleep(s.flushBackoff)
 		case <-stop:
-			contexts, err := iterator.CustomIterator()
+			tenantIds, err := s.tenant.GetTenantIds(context.Background())
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}
-			for _, ctx := range contexts {
-				flush(ctx)
+			for _, tenantId := range tenantIds {
+				flush(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId))
 			}
 			return
 		}

@@ -55,10 +55,6 @@ func NewCachedManager(delegate ReadOnlyResourceManager,
 	}, nil
 }
 
-var HashSuffix = func(ctx context.Context) string {
-	return ""
-}
-
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	if c.getOptionsFunc != nil {
 		fs = append(fs, c.getOptionsFunc)

@@ -589,8 +589,6 @@ dpServer:
 
 # Intercommunication CP configuration
 interCp:
-  # Enable InterCp component. Default: true.
-  enabled: true
   # Catalog configuration. Catalog keeps a record of all live CP instances in the zone.
   catalog:
     # Indicates an address on which other control planes can communicate with this CP.

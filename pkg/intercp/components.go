@@ -29,7 +29,11 @@ var log = core.Log.WithName("inter-cp")
 
 func Setup(rt runtime.Runtime) error {
 	cfg := rt.Config().InterCp
-	defaults := intercp_tls.NewDefaultsComponent(rt.AppContext(), rt.ResourceManager(), log.WithName("defaults"))
+	defaults := &intercp_tls.DefaultsComponent{
+		ResManager: rt.ResourceManager(),
+		Log:        log.WithName("defaults"),
+	}
+
 	heartbeats := catalog.NewHeartbeats()
 	c := catalog.NewConfigCatalog(rt.ResourceManager())
 
@@ -70,7 +74,7 @@ func Setup(rt runtime.Runtime) error {
 
 		return rt.Add(
 			interCpServer,
-			catalog.NewHeartbeatComponent(ctx, c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
 				conn, err := pool.Client(serverURL)
 				if err != nil {
 					return nil, errors.Wrap(err, "could not create inter-cp client")
@@ -82,7 +86,7 @@ func Setup(rt runtime.Runtime) error {
 
 	return rt.Add(
 		defaults,
-		catalog.NewWriter(ctx, c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
+		catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
 		registerComponent,
 	)
 }

@@ -96,22 +96,15 @@ type ResourceValidators struct {
 	Mesh      managers_mesh.MeshValidator
 }
 
-type (
-	ContextToString       func(ctx context.Context) string
-	ContextWithIdToString func(ctx context.Context, id string) string
-)
-
-type Hashing struct {
-	KdsId                       ContextWithIdToString
-	ResourceManagerGetCacheKey  core_store.GetOptionsFunc
-	ResourceManagerListCacheKey core_store.ListOptionsFunc
-	SinkStatusCacheKey          ContextToString
+type Hashing interface {
+	GetOptionsFunc() core_store.GetOptionsFunc
+	ListOptionsFunc() core_store.ListOptionsFunc
+	KdsHashFn(ctx context.Context, id string) string
+	SinkStatusCacheKey(ctx context.Context) string
 }
 
-type PgxConfigCustomizer func(pgxConfig *pgxpool.Config)
-
-type ConfigCustomization struct {
-	Pgx PgxConfigCustomizer
+type ConfigCustomization interface {
+	Pgx(pgxConfig *pgxpool.Config)
 }
 
 type ExtraReportsFn func(context.Context, Runtime) (map[string]string, error)

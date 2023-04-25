@@ -299,7 +299,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
-			Expect(cfg.InterCp.Enabled).To(BeTrue())
 			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
 			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
 			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
@@ -598,7 +597,6 @@ dpServer:
       healthyThreshold: 8
       unhealthyThreshold: 9
 interCp:
-  enabled: true
   catalog:
     instanceAddress: "192.168.0.1"
     heartbeatInterval: 1s
@@ -840,7 +838,6 @@ proxy:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_INTER_CP_ENABLED":                                                                    "true",
 				"KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS":                                                   "192.168.0.1",
 				"KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL":                                                 "1s",
 				"KUMA_INTER_CP_CATALOG_WRITER_INTERVAL":                                                    "2s",
