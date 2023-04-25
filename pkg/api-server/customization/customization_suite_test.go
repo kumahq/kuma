@@ -1,7 +1,6 @@
 package customization_test
 
 import (
-	"context"
 	"net"
 	"path/filepath"
 	"testing"
@@ -56,7 +55,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
 	resManager := manager.NewResourceManager(store)
-	ctx := context.Background()
 	apiServer, err := api_server.NewApiServer(
 		resManager,
 		xds_context.NewMeshContextBuilder(
@@ -82,9 +80,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 		builtin.TokenIssuers{
-			DataplaneToken:   builtin.NewDataplaneTokenIssuer(ctx, resManager),
-			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(ctx, resManager),
-			ZoneToken:        builtin.NewZoneTokenIssuer(ctx, resManager),
+			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())

@@ -40,12 +40,12 @@ func Setup(runtime runtime.Runtime) error {
 				allErrors = multierr.Append(allErrors, err)
 			}
 
-			zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+			zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
 			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 				allErrors = multierr.Append(allErrors, err)
 			}
 
-			zoneSigningKeyManager := tokens.NewSigningKeyManager(ctx, runtime.ResourceManager(), zone.SigningKeyPrefix)
+			zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
 			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 				allErrors = multierr.Append(allErrors, err)
 			}

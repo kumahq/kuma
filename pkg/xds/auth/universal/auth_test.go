@@ -48,7 +48,7 @@ var _ = Describe("Authentication flow", func() {
 		Expect(resManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
 		Expect(resManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
 
-		dpTokenIssuer = builtin.NewDataplaneTokenIssuer(ctx, resManager)
+		dpTokenIssuer = builtin.NewDataplaneTokenIssuer(resManager)
 		dataplaneValidator, err := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore, dp_server.DpTokenValidatorConfig{
 			UseSecrets: true,
 		})
@@ -245,13 +245,13 @@ var _ = Describe("Authentication flow", func() {
 			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			zoneKeyManager := tokens.NewSigningKeyManager(ctx, resManager, zone.SigningKeyPrefix)
+			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)
 			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-			zoneTokenIssuer = builtin.NewZoneTokenIssuer(ctx, resManager)
+			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
 
-			ziKeyManager := tokens.NewSigningKeyManager(ctx, resManager, zoneingress.ZoneIngressSigningKeyPrefix)
+			ziKeyManager := tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix)
 			Expect(ziKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-			zoneIngressTokenIssuer = builtin.NewZoneIngressTokenIssuer(ctx, resManager)
+			zoneIngressTokenIssuer = builtin.NewZoneIngressTokenIssuer(resManager)
 		})
 
 		It("should authenticate zone ingress with zone token", func() {

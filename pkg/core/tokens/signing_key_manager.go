@@ -31,18 +31,16 @@ type SigningKeyManager interface {
 	CreateSigningKey(ctx context.Context, keyID KeyID) error
 }
 
-func NewSigningKeyManager(ctx context.Context, manager manager.ResourceManager, signingKeyPrefix string) SigningKeyManager {
+func NewSigningKeyManager(manager manager.ResourceManager, signingKeyPrefix string) SigningKeyManager {
 	return &signingKeyManager{
 		manager:          manager,
 		signingKeyPrefix: signingKeyPrefix,
-		ctx:              ctx,
 	}
 }
 
 type signingKeyManager struct {
 	manager          manager.ResourceManager
 	signingKeyPrefix string
-	ctx              context.Context
 }
 
 var _ SigningKeyManager = &signingKeyManager{}

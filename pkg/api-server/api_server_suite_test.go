@@ -243,9 +243,9 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 		builtin.TokenIssuers{
-			DataplaneToken:   builtin.NewDataplaneTokenIssuer(ctx, resManager),
-			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(ctx, resManager),
-			ZoneToken:        builtin.NewZoneTokenIssuer(ctx, resManager),
+			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 	)
 	if err != nil {

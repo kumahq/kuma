@@ -126,9 +126,9 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
-		DataplaneToken:   tokens_builtin.NewDataplaneTokenIssuer(appCtx, builder.ResourceManager()),
-		ZoneIngressToken: tokens_builtin.NewZoneIngressTokenIssuer(appCtx, builder.ResourceManager()),
-		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(appCtx, builder.ResourceManager()),
+		DataplaneToken:   tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
+		ZoneIngressToken: tokens_builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
+		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 

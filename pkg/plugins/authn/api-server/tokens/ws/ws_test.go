@@ -40,7 +40,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	BeforeEach(func() {
 		resManager := manager.NewResourceManager(memory.NewStore())
-		signingKeyManager := core_tokens.NewSigningKeyManager(context.Background(), resManager, issuer.UserTokenSigningKeyPrefix)
+		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, issuer.UserTokenSigningKeyPrefix)
 		tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
 		userTokenValidator = issuer.NewUserTokenValidator(
 			core_tokens.NewValidator(

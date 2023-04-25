@@ -83,7 +83,7 @@ var _ = Describe("Token issuer", func() {
 		BeforeEach(func() {
 			store = memory.NewStore()
 			secretManager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None())
-			signingKeyManager = tokens.NewSigningKeyManager(context.Background(), secretManager, TestTokenSigningKeyPrefix)
+			signingKeyManager = tokens.NewSigningKeyManager(secretManager, TestTokenSigningKeyPrefix)
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
 				core.Log.WithName("test"),

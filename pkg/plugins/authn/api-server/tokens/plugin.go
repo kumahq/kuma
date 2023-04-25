@@ -75,7 +75,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 		return nil
 	}
 	ctx := go_context.Background()
-	signingKeyManager := core_tokens.NewSigningKeyManager(ctx, context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
+	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
 	component := core_tokens.NewDefaultSigningKeyComponent(ctx, signingKeyManager, log)
 	if err := context.ComponentManager().Add(component); err != nil {
 		return err

@@ -1,8 +1,6 @@
 package builtin
 
 import (
-	"context"
-
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -16,7 +14,7 @@ import (
 
 var log = core.Log.WithName("tokens-validator")
 
-func NewDataplaneTokenIssuer(_ context.Context, resManager manager.ResourceManager) issuer.DataplaneTokenIssuer {
+func NewDataplaneTokenIssuer(resManager manager.ResourceManager) issuer.DataplaneTokenIssuer {
 	return issuer.NewDataplaneTokenIssuer(func(meshName string) tokens.Issuer {
 		return tokens.NewTokenIssuer(
 			tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName),
@@ -24,18 +22,18 @@ func NewDataplaneTokenIssuer(_ context.Context, resManager manager.ResourceManag
 	})
 }
 
-func NewZoneIngressTokenIssuer(ctx context.Context, resManager manager.ResourceManager) zoneingress.TokenIssuer {
+func NewZoneIngressTokenIssuer(resManager manager.ResourceManager) zoneingress.TokenIssuer {
 	return zoneingress.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(ctx, resManager, zoneingress.ZoneIngressSigningKeyPrefix),
+			tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
 		),
 	)
 }
 
-func NewZoneTokenIssuer(ctx context.Context, resManager manager.ResourceManager) zone.TokenIssuer {
+func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
 	return zone.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(ctx, resManager, zone.SigningKeyPrefix),
+			tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix),
 		),
 	)
 }
