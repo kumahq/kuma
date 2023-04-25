@@ -40,6 +40,18 @@ func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
 	return t.metrics
 }
 
+func (t *testRuntimeContext) Hashing() multitenant.Hashing {
+	return t.hashing
+}
+
+func (t *testRuntimeContext) ConfigCustomization() multitenant.PgxConfigCustomization {
+	return t.configCustomization
+}
+
+func (t *testRuntimeContext) Tenant() multitenant.Tenant {
+	return t.tenant
+}
+
 func (t *testRuntimeContext) Add(c ...component.Component) error {
 	t.components = append(t.components, c...)
 	return nil
