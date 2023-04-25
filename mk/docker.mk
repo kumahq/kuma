@@ -1,7 +1,8 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images-${GOARCH}
 KUMA_VERSION ?= master
 
-DOCKER_REGISTRY ?= docker.io/kumahq
+DOCKER_SERVER ?= docker.io
+DOCKER_REGISTRY ?= $(DOCKER_SERVER)/kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
@@ -127,8 +128,8 @@ docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 
 .PHONY: docker/login
 docker/login:
-	$(call GATE_PUSH,docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY))
+	$(call GATE_PUSH,docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_SERVER))
 
 .PHONY: docker/logout
 docker/logout:
-	$(call GATE_PUSH,docker logout $(DOCKER_REGISTRY))
+	$(call GATE_PUSH,docker logout $(DOCKER_SERVER))
