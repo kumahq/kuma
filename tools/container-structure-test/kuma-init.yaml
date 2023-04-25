@@ -7,18 +7,13 @@ fileExistenceTests:
   isExecutableBy: any
 
 commandTests:
-- name: "Is kumactl binary in PATH"
-  command: which
-  args: ["kumactl"]
-  expectedOutput: ["/.*/kumactl"]
+- name: "Contains kumactl"
+  command: kumactl
+  args: ["version"]
 - name: "Contains iptables (legacy)"
   command: iptables
   args: ["--version"]
   expectedOutput: ["iptables v.*(legacy)"]
-
-licenseTests:
-- debian: false
-  files: ["/kuma/LICENSE"]
 
 metadataTest:
   entrypoint: ["/usr/bin/kumactl"]

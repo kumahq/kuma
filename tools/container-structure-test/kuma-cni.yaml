@@ -10,11 +10,5 @@ fileExistenceTests:
   shouldExist: true
   isExecutableBy: any
 
-commandTests:
-- name: "Is binary in the PATH"
-  command: which
-  args: ["kuma-cni"]
-  expectedOutput: ["/.*/kuma-cni"]
-
 metadataTest:
   entrypoint: ["/install-cni"]
