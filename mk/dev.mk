@@ -53,7 +53,30 @@ GOLANGCI_LINT_DIR := $(CI_TOOLS_BIN_DIR)
 HELM_DOCS_PATH := $(CI_TOOLS_BIN_DIR)/helm-docs
 SHELLCHECK_PATH := $(CI_TOOLS_BIN_DIR)/shellcheck
 
+<<<<<<< HEAD
 TOOLS_DIR ?= $(shell pwd)/tools
+=======
+CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
+HELM=$(CI_TOOLS_BIN_DIR)/helm
+K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
+KIND=$(CI_TOOLS_BIN_DIR)/kind
+KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
+KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
+KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
+PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
+SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
+CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
+# from go-deps
+PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
+PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
+PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
+PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
+GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
+GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
+HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
+KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
+HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
+>>>>>>> 42e4980cd (ci(tests): add container structure tests (#6581))
 
 PROTOC_OS=unknown
 UNAME_S := $(shell uname -s)
