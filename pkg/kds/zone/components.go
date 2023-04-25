@@ -158,7 +158,6 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.EnvoyAdminClient().Stats,
 			rt.EnvoyAdminClient().Clusters,
 		),
-		rt.Config().Multizone.Zone.AdditionalMetadata,
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }

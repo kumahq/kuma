@@ -40,10 +40,9 @@ type client struct {
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
-	additionalMetadata  []multizone.MetadataKeyValue
 }
 
-func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor, additionalMetadata []multizone.MetadataKeyValue) component.Component {
+func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
@@ -55,7 +54,6 @@ func NewClient(ctx context.Context, globalURL string, clientID string, callbacks
 		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
-		additionalMetadata:  additionalMetadata,
 	}
 }
 
@@ -100,10 +98,6 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
 	))
-
-	for _, meta := range c.additionalMetadata {
-		withKDSCtx = metadata.AppendToOutgoingContext(withKDSCtx, meta.Key, meta.Value)
-	}
 	defer cancel()
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
