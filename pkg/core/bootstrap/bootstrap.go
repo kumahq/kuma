@@ -48,6 +48,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -70,6 +71,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
+	builder.WithTenant(multitenant.DefaultTenant{})
+	builder.WithHashing(multitenant.DefaultHashing{})
+	builder.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
