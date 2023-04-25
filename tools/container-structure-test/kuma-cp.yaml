@@ -6,4 +6,4 @@ commandTests:
   args: ["version"]
 
 metadataTest:
-  entrypoint: ["kuma-cp"]
+  entrypoint: ["/usr/bin/kuma-cp"]
