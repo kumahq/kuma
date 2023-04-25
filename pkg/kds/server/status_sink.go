@@ -12,8 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type ZoneInsightSink interface {
@@ -24,7 +24,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing core_runtime.Hashing) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -45,8 +45,8 @@ type zoneInsightSink struct {
 	accessor         StatusAccessor
 	store            ZoneInsightStore
 	log              logr.Logger
-	hashing          core_runtime.Hashing
-	tenant           core_runtime.Tenant
+	hashing          multitenant.Hashing
+	tenant           multitenant.Tenant
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {

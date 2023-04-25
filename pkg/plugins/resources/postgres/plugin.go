@@ -9,6 +9,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 )
 
@@ -34,7 +35,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	}
 	switch cfg.DriverName {
 	case postgres.DriverNamePgx:
-		return NewPgxStore(pc.Metrics(), *cfg, pc.ConfigCustomization().Pgx)
+		return NewPgxStore(pc.Metrics(), *cfg, multitenant.DefaultPgxConfigCustomization{})
 	case postgres.DriverNamePq:
 		return NewPqStore(pc.Metrics(), *cfg)
 	default:

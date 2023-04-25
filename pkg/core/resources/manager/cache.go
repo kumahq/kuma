@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
@@ -24,10 +25,9 @@ type cachedManager struct {
 	cache    *cache.Cache
 	metrics  *prometheus.CounterVec
 
-	mutexes         map[string]*sync.Mutex
-	mapMutex        sync.Mutex // guards "mutexes" field
-	getOptionsFunc  store.GetOptionsFunc
-	listOptionsFunc store.ListOptionsFunc
+	mutexes  map[string]*sync.Mutex
+	mapMutex sync.Mutex // guards "mutexes" field
+	hashing  multitenant.Hashing
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
@@ -35,8 +35,7 @@ var _ ReadOnlyResourceManager = &cachedManager{}
 func NewCachedManager(delegate ReadOnlyResourceManager,
 	expirationTime time.Duration,
 	metrics metrics.Metrics,
-	getOptionsFunc store.GetOptionsFunc,
-	listOptionsFunc store.ListOptionsFunc,
+	hashing multitenant.Hashing,
 ) (ReadOnlyResourceManager, error) {
 	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "store_cache",
@@ -46,18 +45,17 @@ func NewCachedManager(delegate ReadOnlyResourceManager,
 		return nil, err
 	}
 	return &cachedManager{
-		delegate:        delegate,
-		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
-		metrics:         metric,
-		mutexes:         map[string]*sync.Mutex{},
-		getOptionsFunc:  getOptionsFunc,
-		listOptionsFunc: listOptionsFunc,
+		delegate: delegate,
+		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		metrics:  metric,
+		mutexes:  map[string]*sync.Mutex{},
+		hashing:  hashing,
 	}, nil
 }
 
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
-	if c.getOptionsFunc != nil {
-		fs = append(fs, c.getOptionsFunc)
+	if c.hashing.GetOptionsFunc() != nil {
+		fs = append(fs, c.hashing.GetOptionsFunc())
 	}
 	opts := store.NewGetOptions(fs...)
 	cacheKey := fmt.Sprintf("GET:%s:%s", res.Descriptor().Name, opts.HashCode(ctx))
@@ -96,8 +94,8 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 }
 
 func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
-	if c.listOptionsFunc != nil {
-		fs = append(fs, c.listOptionsFunc)
+	if c.hashing.ListOptionsFunc() != nil {
+		fs = append(fs, c.hashing.ListOptionsFunc())
 	}
 	opts := store.NewListOptions(fs...)
 	if !opts.IsCacheable() {

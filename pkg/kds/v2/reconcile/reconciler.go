@@ -13,22 +13,22 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashId core_runtime.ContextWithIdToString) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashing multitenant.Hashing) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
-		hashFn:         hashId,
+		hashing:        hashing,
 	}
 }
 
@@ -38,13 +38,13 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashFn         core_runtime.ContextWithIdToString
+	hashing        multitenant.Hashing
 
 	lock sync.Mutex
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
-	id := r.hashFn(ctx, r.hasher.ID(node))
+	id := r.hashing.KdsHashFn(ctx, r.hasher.ID(node))
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
@@ -68,7 +68,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hashFn(ctx, r.hasher.ID(node))
+	id := r.hashing.KdsHashFn(ctx, r.hasher.ID(node))
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)

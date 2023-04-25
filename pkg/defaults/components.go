@@ -24,16 +24,16 @@ import (
 
 var log = core.Log.WithName("defaults")
 
-func Setup(runtime runtime.Runtime, tenant runtime.Tenant) error {
+func Setup(runtime runtime.Runtime) error {
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
 		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-		tenantIds, err := tenant.GetTenantIds(context.TODO())
+		tenantIds, err := runtime.Tenant().GetTenantIds(context.TODO())
 		if err != nil {
 			return err
 		}
 		var allErrors error
 		for _, tenantId := range tenantIds {
-			ctx := user.Ctx(context.WithValue(context.TODO(), tenant.TenantContextKey(), tenantId), user.ControlPlane)
+			ctx := user.Ctx(context.WithValue(context.TODO(), runtime.Tenant().TenantContextKey(), tenantId), user.ControlPlane)
 			defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 			if err := runtime.Add(defaultsComponent); err != nil {
 				allErrors = multierr.Append(allErrors, err)
@@ -55,13 +55,13 @@ func Setup(runtime runtime.Runtime, tenant runtime.Tenant) error {
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		tenantIds, err := tenant.GetTenantIds(context.TODO())
+		tenantIds, err := runtime.Tenant().GetTenantIds(context.TODO())
 		if err != nil {
 			return err
 		}
 		var allErrors error
 		for _, tenantId := range tenantIds {
-			ctx := context.WithValue(context.TODO(), tenant.TenantContextKey(), tenantId)
+			ctx := context.WithValue(context.TODO(), runtime.Tenant().TenantContextKey(), tenantId)
 			if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(ctx, runtime.ResourceManager())); err != nil {
 				allErrors = multierr.Append(allErrors, err)
 			}

@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -28,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
@@ -80,9 +79,9 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	Hashing() Hashing
-	ConfigCustomization() ConfigCustomization
-	Tenant() Tenant
+	Hashing() multitenant.Hashing
+	ConfigCustomization() multitenant.PgxConfigCustomization
+	Tenant() multitenant.Tenant
 }
 
 type Access struct {
@@ -95,22 +94,6 @@ type Access struct {
 type ResourceValidators struct {
 	Dataplane managers_dataplane.Validator
 	Mesh      managers_mesh.MeshValidator
-}
-
-type Hashing interface {
-	GetOptionsFunc() core_store.GetOptionsFunc
-	ListOptionsFunc() core_store.ListOptionsFunc
-	KdsHashFn(ctx context.Context, id string) string
-	SinkStatusCacheKey(ctx context.Context) string
-}
-
-type ConfigCustomization interface {
-	Pgx(pgxConfig *pgxpool.Config)
-}
-
-type Tenant interface {
-	GetTenantIds(ctx context.Context) ([]string, error)
-	TenantContextKey() any
 }
 
 type ExtraReportsFn func(Runtime) (map[string]string, error)
@@ -184,9 +167,9 @@ type runtimeContext struct {
 	tokenIssuers        builtin.TokenIssuers
 	meshCache           *mesh.Cache
 	interCpPool         *client.Pool
-	hashing             Hashing
-	configCustomization ConfigCustomization
-	tenant              Tenant
+	hashing             multitenant.Hashing
+	configCustomization multitenant.PgxConfigCustomization
+	tenant              multitenant.Tenant
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -301,14 +284,14 @@ func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
 }
 
-func (rc *runtimeContext) Hashing() Hashing {
+func (rc *runtimeContext) Hashing() multitenant.Hashing {
 	return rc.hashing
 }
 
-func (rc *runtimeContext) ConfigCustomization() ConfigCustomization {
+func (rc *runtimeContext) ConfigCustomization() multitenant.PgxConfigCustomization {
 	return rc.configCustomization
 }
 
-func (rc *runtimeContext) Tenant() Tenant {
+func (rc *runtimeContext) Tenant() multitenant.Tenant {
 	return rc.tenant
 }

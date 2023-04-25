@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
@@ -56,8 +57,9 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	Hashing() Hashing
-	ConfigCustomization() ConfigCustomization
+	Hashing() multitenant.Hashing
+	ConfigCustomization() multitenant.PgxConfigCustomization
+	Tenant() multitenant.Tenant
 }
 
 var _ BuilderContext = &Builder{}
@@ -94,9 +96,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	configCustomization ConfigCustomization
-	hashing             Hashing
-	tenant              Tenant
+	configCustomization multitenant.PgxConfigCustomization
+	hashing             multitenant.Hashing
+	tenant              multitenant.Tenant
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -262,17 +264,17 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
-func (b *Builder) WithHashing(hashing Hashing) *Builder {
+func (b *Builder) WithHashing(hashing multitenant.Hashing) *Builder {
 	b.hashing = hashing
 	return b
 }
 
-func (b *Builder) WithConfigCustomization(configCustomization ConfigCustomization) *Builder {
+func (b *Builder) WithConfigCustomization(configCustomization multitenant.PgxConfigCustomization) *Builder {
 	b.configCustomization = configCustomization
 	return b
 }
 
-func (b *Builder) WithTenant(tenant Tenant) *Builder {
+func (b *Builder) WithTenant(tenant multitenant.Tenant) *Builder {
 	b.tenant = tenant
 	return b
 }
@@ -348,7 +350,7 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("Hasing has not been configured")
 	}
 	if b.configCustomization == nil {
-		return nil, errors.Errorf("ConfigCustomization has not been configured")
+		return nil, errors.Errorf("PgxConfigCustomization has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -504,14 +506,14 @@ func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
 }
 
-func (b *Builder) Hashing() Hashing {
+func (b *Builder) Hashing() multitenant.Hashing {
 	return b.hashing
 }
 
-func (b *Builder) ConfigCustomization() ConfigCustomization {
+func (b *Builder) ConfigCustomization() multitenant.PgxConfigCustomization {
 	return b.configCustomization
 }
 
-func (b *Builder) Tenant() Tenant {
+func (b *Builder) Tenant() multitenant.Tenant {
 	return b.tenant
 }

@@ -134,11 +134,9 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up GC")
 				return err
 			}
-			if rt.Config().InterCp.Enabled {
-				if err := intercp.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up Control Plane Intercommunication")
-					return err
-				}
+			if err := intercp.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Control Plane Intercommunication")
+				return err
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)

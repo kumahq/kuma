@@ -17,8 +17,8 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type pgxResourceStore struct {
@@ -27,7 +27,7 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer core_runtime.PgxConfigCustomizer) (store.ResourceStore, error) {
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer multitenant.PgxConfigCustomization) (store.ResourceStore, error) {
 	pool, err := connect(config, customizer)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}, nil
 }
 
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer core_runtime.PgxConfigCustomizer) (*pgxpool.Pool, error) {
+func connect(postgresStoreConfig config.PostgresStoreConfig, customizer multitenant.PgxConfigCustomization) (*pgxpool.Pool, error) {
 	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig, customizer core_run
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
 	if customizer != nil {
-		customizer(pgxConfig)
+		customizer.Customize(pgxConfig)
 	}
 
 	if err != nil {

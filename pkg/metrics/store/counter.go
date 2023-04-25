@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("metrics").WithName("store-counter")
@@ -22,12 +22,12 @@ var log = core.Log.WithName("metrics").WithName("store-counter")
 type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
-	tenant     core_runtime.Tenant
+	tenant     multitenant.Tenant
 }
 
 var _ component.Component = &storeCounter{}
 
-func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenant core_runtime.Tenant) (*storeCounter, error) {
+func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenant multitenant.Tenant) (*storeCounter, error) {
 	counts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "resources_count",
 	}, []string{"resource_type"})

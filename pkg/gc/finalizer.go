@@ -2,7 +2,6 @@ package gc
 
 import (
 	"context"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var finalizerLog = core.Log.WithName("finalizer")
@@ -46,10 +46,10 @@ type subscriptionFinalizer struct {
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
 	insights  insightsByType
-	tenant    core_runtime.Tenant
+	tenant    multitenant.Tenant
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant core_runtime.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
@@ -63,7 +63,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant core_runtime.Te
 		types:     types,
 		newTicker: newTicker,
 		insights:  insights,
-		tenant: tenant,
+		tenant:    tenant,
 	}, nil
 }
 
