@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
