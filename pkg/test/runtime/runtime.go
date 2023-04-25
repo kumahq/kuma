@@ -106,7 +106,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
-	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
+	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
 	if err != nil {
 		return nil, err
 	}
