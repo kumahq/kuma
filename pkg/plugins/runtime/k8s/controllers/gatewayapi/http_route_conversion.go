@@ -291,7 +291,7 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 
 	for _, query := range match.QueryParams {
 		kumaQuery := &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query{
-			Name:  query.Name,
+			Name:  string(query.Name),
 			Value: query.Value,
 		}
 
