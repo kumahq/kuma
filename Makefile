@@ -26,12 +26,5 @@ include mk/kind.mk
 include mk/k3d.mk
 include mk/e2e.new.mk
 include mk/docs.mk
-<<<<<<< HEAD
 include mk/envoy.mk
-=======
-include mk/helm.mk
-include mk/ebpf.mk
-include mk/distribution.mk
-include mk/run.mk
 include mk/test-container-structure.mk
->>>>>>> 42e4980cd (ci(tests): add container structure tests (#6581))
