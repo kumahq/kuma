@@ -43,8 +43,8 @@ type reconciler struct {
 	lock sync.Mutex
 }
 
-func (r *reconciler) Clear(node *envoy_core.Node) {
-	id := r.hasher.ID(node)
+func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
+	id := r.hashId(ctx, r.hasher.ID(node))
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)

@@ -49,10 +49,6 @@ type zoneInsightSink struct {
 	statusCacheKey   core_runtime.ContextToString
 }
 
-var CustomKey = func(ctx context.Context) string {
-	return ""
-}
-
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
@@ -83,7 +79,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
-			lastStoredState[CustomKey(ctx)] = currentState
+			lastStoredState[s.statusCacheKey(ctx)] = currentState
 		}
 	}
 

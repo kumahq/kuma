@@ -110,7 +110,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				reconciler.Clear(node)
+				reconciler.Clear(ctx, node)
 			},
 		}, nil
 	}), nil

@@ -31,7 +31,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 	}
 	b.WithComponentManager(component.NewManager(leaderElector))
 	b.WithHashing(core_runtime.Hashing{
-		KdsId: nil,
+		KdsId: func(ctx context.Context, id string) string {
+			return id
+		},
 		ResourceManagerGetCacheKey: func(options *store.GetOptions) {
 			options.Suffix = func(ctx context.Context) string {
 				return "global"
