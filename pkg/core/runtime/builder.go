@@ -347,10 +347,13 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
 	if b.hashing == nil {
-		return nil, errors.Errorf("Hasing has not been configured")
+		return nil, errors.Errorf("Hashing has not been configured")
 	}
 	if b.configCustomization == nil {
 		return nil, errors.Errorf("PgxConfigCustomization has not been configured")
+	}
+	if b.tenant == nil {
+		return nil, errors.Errorf("Tenant has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,

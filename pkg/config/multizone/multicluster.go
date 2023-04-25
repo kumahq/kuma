@@ -45,11 +45,6 @@ func DefaultGlobalConfig() *GlobalConfig {
 	}
 }
 
-type MetadataKeyValue struct {
-	Key   string
-	Value string
-}
-
 // Zone configuration
 type ZoneConfig struct {
 	// Kuma Zone name used to mark the zone dataplane resources
