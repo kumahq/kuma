@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("metrics").WithName("store-counter")
@@ -22,11 +22,12 @@ var log = core.Log.WithName("metrics").WithName("store-counter")
 type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
+	tenant     core_runtime.Tenant
 }
 
 var _ component.Component = &storeCounter{}
 
-func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics) (*storeCounter, error) {
+func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenant core_runtime.Tenant) (*storeCounter, error) {
 	counts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "resources_count",
 	}, []string{"resource_type"})
@@ -38,6 +39,7 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics
 	return &storeCounter{
 		resManager: resManager,
 		counts:     counts,
+		tenant:     tenant,
 	}, nil
 }
 
@@ -50,25 +52,25 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	defer ticker.Stop()
 	log.Info("starting the resource counter")
 
-	contexts, err := multitenant.TenantIterator(context.Background())
+	tenantIds, err := s.tenant.GetTenantIds(context.Background())
 	if err != nil {
 		log.Error(err, "could not get contexts")
 	}
 
-	for _, ctx := range contexts {
-		if err := s.count(user.Ctx(ctx, user.ControlPlane)); err != nil {
+	for _, tenantId := range tenantIds {
+		if err := s.count(user.Ctx(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId), user.ControlPlane)); err != nil {
 			log.Error(err, "unable to count resources")
 		}
 	}
 	for {
 		select {
 		case <-ticker.C:
-			contexts, err := multitenant.TenantIterator(context.Background())
+			tenantIds, err := s.tenant.GetTenantIds(context.Background())
 			if err != nil {
 				log.Error(err, "could not get contexts")
 			}
-			for _, ctx := range contexts {
-				if err := s.count(user.Ctx(ctx, user.ControlPlane)); err != nil {
+			for _, tenantId := range tenantIds {
+				if err := s.count(user.Ctx(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId), user.ControlPlane)); err != nil {
 					log.Error(err, "unable to count resources")
 				}
 			}

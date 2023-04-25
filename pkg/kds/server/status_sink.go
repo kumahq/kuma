@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/multitenant"
 )
 
 type ZoneInsightSink interface {
@@ -47,7 +46,7 @@ type zoneInsightSink struct {
 	store            ZoneInsightStore
 	log              logr.Logger
 	hashing          core_runtime.Hashing
-	tenant           multitenant.Tenant
+	tenant           core_runtime.Tenant
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {

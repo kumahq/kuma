@@ -96,6 +96,7 @@ type Builder struct {
 	*runtimeInfo
 	configCustomization ConfigCustomization
 	hashing             Hashing
+	tenant              Tenant
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -271,6 +272,11 @@ func (b *Builder) WithConfigCustomization(configCustomization ConfigCustomizatio
 	return b
 }
 
+func (b *Builder) WithTenant(tenant Tenant) *Builder {
+	b.tenant = tenant
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -376,6 +382,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:         b.interCpPool,
 			configCustomization: b.configCustomization,
 			hashing:             b.hashing,
+			tenant:              b.tenant,
 		},
 		Manager: b.cm,
 	}, nil
@@ -503,4 +510,8 @@ func (b *Builder) Hashing() Hashing {
 
 func (b *Builder) ConfigCustomization() ConfigCustomization {
 	return b.configCustomization
+}
+
+func (b *Builder) Tenant() Tenant {
+	return b.tenant
 }

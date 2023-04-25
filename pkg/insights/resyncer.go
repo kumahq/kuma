@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 	"sync"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/util/multitenant"
 )
 
 var log = core.Log.WithName("mesh-insight-resyncer")
@@ -75,7 +75,7 @@ type resyncer struct {
 
 	registry registry.TypeRegistry
 	now      func() time.Time
-	tenant   multitenant.Tenant
+	tenant   runtime.Tenant
 }
 
 type syncInfo struct {
@@ -91,7 +91,7 @@ type syncInfo struct {
 // during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
 // by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
-func NewResyncer(config *Config, tenant multitenant.Tenant) component.Component {
+func NewResyncer(config *Config, tenant runtime.Tenant) component.Component {
 	r := &resyncer{
 		minResyncTimeout:     config.MinResyncTimeout,
 		maxResyncTimeout:     config.MaxResyncTimeout,

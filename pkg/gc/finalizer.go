@@ -2,6 +2,7 @@ package gc
 
 import (
 	"context"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var finalizerLog = core.Log.WithName("finalizer")
@@ -46,9 +46,10 @@ type subscriptionFinalizer struct {
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
 	insights  insightsByType
+	tenant    core_runtime.Tenant
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant core_runtime.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
@@ -62,6 +63,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time
 		types:     types,
 		newTicker: newTicker,
 		insights:  insights,
+		tenant: tenant,
 	}, nil
 }
 
@@ -74,12 +76,13 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				contexts, err := multitenant.TenantIterator(context.Background())
+				tenantIds, err := f.tenant.GetTenantIds(context.TODO())
 				if err != nil {
 					finalizerLog.Error(err, "could not get contexts")
 					break
 				}
-				for _, ctx := range contexts {
+				for _, tenantId := range tenantIds {
+					ctx := context.WithValue(context.TODO(), f.tenant.TenantContextKey(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
 						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 					}

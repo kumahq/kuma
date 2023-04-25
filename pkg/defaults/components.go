@@ -20,21 +20,20 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-	"github.com/kumahq/kuma/pkg/util/iterator"
 )
 
 var log = core.Log.WithName("defaults")
 
-func Setup(runtime runtime.Runtime) error {
+func Setup(runtime runtime.Runtime, tenant runtime.Tenant) error {
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
 		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-		contexts, err := multitenant.TenantIterator(context.Background())
+		tenantIds, err := tenant.GetTenantIds(context.TODO())
 		if err != nil {
 			return err
 		}
 		var allErrors error
-		for _, ctx := range contexts {
-			ctx = user.Ctx(ctx, user.ControlPlane)
+		for _, tenantId := range tenantIds {
+			ctx := user.Ctx(context.WithValue(context.TODO(), tenant.TenantContextKey(), tenantId), user.ControlPlane)
 			defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 			if err := runtime.Add(defaultsComponent); err != nil {
 				allErrors = multierr.Append(allErrors, err)
@@ -56,12 +55,13 @@ func Setup(runtime runtime.Runtime) error {
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		contexts, err := multitenant.TenantIterator(context.Background())
+		tenantIds, err := tenant.GetTenantIds(context.TODO())
 		if err != nil {
 			return err
 		}
 		var allErrors error
-		for _, ctx := range contexts {
+		for _, tenantId := range tenantIds {
+			ctx := context.WithValue(context.TODO(), tenant.TenantContextKey(), tenantId)
 			if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(ctx, runtime.ResourceManager())); err != nil {
 				allErrors = multierr.Append(allErrors, err)
 			}

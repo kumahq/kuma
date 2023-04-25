@@ -82,6 +82,7 @@ type RuntimeContext interface {
 	InterCPClientPool() *client.Pool
 	Hashing() Hashing
 	ConfigCustomization() ConfigCustomization
+	Tenant() Tenant
 }
 
 type Access struct {
@@ -107,7 +108,12 @@ type ConfigCustomization interface {
 	Pgx(pgxConfig *pgxpool.Config)
 }
 
-type ExtraReportsFn func(context.Context, Runtime) (map[string]string, error)
+type Tenant interface {
+	GetTenantIds(ctx context.Context) ([]string, error)
+	TenantContextKey() any
+}
+
+type ExtraReportsFn func(Runtime) (map[string]string, error)
 
 var _ Runtime = &runtime{}
 
@@ -180,6 +186,7 @@ type runtimeContext struct {
 	interCpPool         *client.Pool
 	hashing             Hashing
 	configCustomization ConfigCustomization
+	tenant              Tenant
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -300,4 +307,8 @@ func (rc *runtimeContext) Hashing() Hashing {
 
 func (rc *runtimeContext) ConfigCustomization() ConfigCustomization {
 	return rc.configCustomization
+}
+
+func (rc *runtimeContext) Tenant() Tenant {
+	return rc.tenant
 }
