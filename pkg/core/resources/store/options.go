@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -117,6 +118,7 @@ type GetOptions struct {
 	Name    string
 	Mesh    string
 	Version string
+	HashCode func(ctx context.Context) string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -133,10 +135,17 @@ func GetBy(key core_model.ResourceKey) GetOptionsFunc {
 	return GetByKey(key.Name, key.Mesh)
 }
 
+func defaultHashCodeFn(name, mesh string) func(ctx context.Context) string {
+	return func(ctx context.Context) string {
+		return fmt.Sprintf("%s:%s", name, mesh)
+	}
+}
+
 func GetByKey(name, mesh string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Name = name
 		opts.Mesh = mesh
+		opts.HashCode = defaultHashCodeFn(name, mesh)
 	}
 }
 
@@ -144,10 +153,6 @@ func GetByVersion(version string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Version = version
 	}
-}
-
-func (g *GetOptions) HashCode() string {
-	return fmt.Sprintf("%s:%s", g.Name, g.Mesh)
 }
 
 type ListFilterFunc func(rs core_model.Resource) bool

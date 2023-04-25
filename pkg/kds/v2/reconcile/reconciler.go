@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -13,6 +14,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
 	"github.com/kumahq/kuma/pkg/util/xds"
@@ -20,19 +22,14 @@ import (
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(
-	hasher envoy_cache.NodeHash,
-	cache envoy_cache.SnapshotCache,
-	generator SnapshotGenerator,
-	mode config_core.CpMode,
-	statsCallbacks xds.StatsCallbacks,
-) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashId core_runtime.ContextWithIdToString) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
+		hashId:         hashId,
 	}
 }
 
@@ -42,6 +39,7 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
+	hashId         core_runtime.ContextWithIdToString
 
 	lock sync.Mutex
 }
@@ -63,10 +61,6 @@ func (r *reconciler) Clear(node *envoy_core.Node) {
 	}
 }
 
-var CustomHashId = func(ctx context.Context, id string) string {
-	return id
-}
-
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
 	new, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
@@ -75,7 +69,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := CustomHashId(ctx, r.hasher.ID(node))
+	id := r.hashId(ctx, r.hasher.ID(node))
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)

@@ -39,7 +39,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks)
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.Hashing().KdsId)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -61,18 +61,11 @@ func New(
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
 	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
-		return kds_server.NewZoneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-			},
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-			},
-			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
-			kds_server.NewZonesInsightStore(rt.ResourceManager()),
-			l,
-		)
+		return kds_server.NewZoneInsightSink(accessor, func() *time.Ticker {
+			return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
+		}, func() *time.Ticker {
+			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
+		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(rt.ResourceManager()), l, rt.Hashing().SinkStatusCacheKey)
 	}, log)
 }
 

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"time"
-
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/proto"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/util/iterator"
 )
@@ -24,14 +24,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(
-	accessor StatusAccessor,
-	flushTicker func() *time.Ticker,
-	generationTicker func() *time.Ticker,
-	flushBackoff time.Duration,
-	store ZoneInsightStore,
-	log logr.Logger,
-) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, statusCacheKey core_runtime.ContextToString) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -39,6 +32,7 @@ func NewZoneInsightSink(
 		accessor:         accessor,
 		store:            store,
 		log:              log,
+		statusCacheKey:   statusCacheKey,
 	}
 }
 
@@ -51,6 +45,7 @@ type zoneInsightSink struct {
 	accessor         StatusAccessor
 	store            ZoneInsightStore
 	log              logr.Logger
+	statusCacheKey   core_runtime.ContextToString
 }
 
 var CustomKey = func(ctx context.Context) string {
@@ -75,7 +70,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState[CustomKey(ctx)]) {
+		if proto.Equal(currentState, lastStoredState[s.statusCacheKey(ctx)]) {
 			return
 		}
 

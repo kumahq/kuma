@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -78,6 +80,8 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
+	Hashing() Hashing
+	ConfigCustomization() ConfigCustomization
 }
 
 type Access struct {
@@ -90,6 +94,23 @@ type Access struct {
 type ResourceValidators struct {
 	Dataplane managers_dataplane.Validator
 	Mesh      managers_mesh.MeshValidator
+}
+
+type (
+	ContextToString       func(ctx context.Context) string
+	ContextWithIdToString func(ctx context.Context, id string) string
+)
+
+type Hashing struct {
+	KdsId                   ContextWithIdToString
+	ResourceManagerCacheKey ContextToString
+	SinkStatusCacheKey      ContextToString
+}
+
+type PgxConfigCustomizer func(pgxConfig *pgxpool.Config)
+
+type ConfigCustomization struct {
+	Pgx PgxConfigCustomizer
 }
 
 type ExtraReportsFn func(context.Context, Runtime) (map[string]string, error)
@@ -135,34 +156,36 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg            kuma_cp.Config
-	rm             core_manager.ResourceManager
-	rs             core_store.ResourceStore
-	ss             store.SecretStore
-	cs             core_store.ResourceStore
-	rom            core_manager.ReadOnlyResourceManager
-	cam            ca.Managers
-	dsl            datasource.Loader
-	ext            context.Context
-	configm        config_manager.ConfigManager
-	leadInfo       component.LeaderInfo
-	lif            lookup.LookupIPFunc
-	eac            admin.EnvoyAdminClient
-	metrics        metrics.Metrics
-	erf            events.ListenerFactory
-	apim           api_server.APIInstaller
-	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
-	dps            *dp_server.DpServer
-	kdsctx         *kds_context.Context
-	rv             ResourceValidators
-	au             authn.Authenticator
-	acc            Access
-	appCtx         context.Context
-	extraReportsFn ExtraReportsFn
-	tokenIssuers   builtin.TokenIssuers
-	meshCache      *mesh.Cache
-	interCpPool    *client.Pool
+	cfg                 kuma_cp.Config
+	rm                  core_manager.ResourceManager
+	rs                  core_store.ResourceStore
+	ss                  store.SecretStore
+	cs                  core_store.ResourceStore
+	rom                 core_manager.ReadOnlyResourceManager
+	cam                 ca.Managers
+	dsl                 datasource.Loader
+	ext                 context.Context
+	configm             config_manager.ConfigManager
+	leadInfo            component.LeaderInfo
+	lif                 lookup.LookupIPFunc
+	eac                 admin.EnvoyAdminClient
+	metrics             metrics.Metrics
+	erf                 events.ListenerFactory
+	apim                api_server.APIInstaller
+	xds                 xds_runtime.XDSRuntimeContext
+	cap                 secrets.CaProvider
+	dps                 *dp_server.DpServer
+	kdsctx              *kds_context.Context
+	rv                  ResourceValidators
+	au                  authn.Authenticator
+	acc                 Access
+	appCtx              context.Context
+	extraReportsFn      ExtraReportsFn
+	tokenIssuers        builtin.TokenIssuers
+	meshCache           *mesh.Cache
+	interCpPool         *client.Pool
+	hashing             Hashing
+	configCustomization ConfigCustomization
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -275,4 +298,12 @@ func (rc *runtimeContext) MeshCache() *mesh.Cache {
 
 func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
+}
+
+func (rc *runtimeContext) Hashing() Hashing {
+	return rc.hashing
+}
+
+func (rc *runtimeContext) ConfigCustomization() ConfigCustomization {
+	return rc.configCustomization
 }

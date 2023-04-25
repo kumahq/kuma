@@ -70,6 +70,7 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
 			NewZonesInsightStore(rt.ResourceManager()),
 			l,
+			rt.Hashing().SinkStatusCacheKey,
 		)
 	}, log)
 }

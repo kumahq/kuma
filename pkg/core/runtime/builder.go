@@ -56,6 +56,8 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
+	Hashing() Hashing
+	ConfigCustomization() ConfigCustomization
 }
 
 var _ BuilderContext = &Builder{}
@@ -92,6 +94,8 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
+	configCustomization ConfigCustomization
+	hashing             Hashing
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -257,6 +261,16 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
+func (b *Builder) WithHashing(hashing Hashing) *Builder {
+	b.hashing = hashing
+	return b
+}
+
+func (b *Builder) WithConfigCustomization(configCustomization ConfigCustomization) *Builder {
+	b.configCustomization = configCustomization
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -324,36 +338,44 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.interCpPool == nil {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
+	if b.hashing.KdsId == nil || b.hashing.ResourceManagerCacheKey == nil || b.hashing.SinkStatusCacheKey == nil {
+		return nil, errors.Errorf("Hasing has not been configured")
+	}
+	if b.configCustomization.Pgx == nil {
+		return nil, errors.Errorf("ConfigCustomization has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:            b.cfg,
-			rm:             b.rm,
-			rom:            b.rom,
-			rs:             b.rs,
-			ss:             b.ss,
-			cam:            b.cam,
-			dsl:            b.dsl,
-			ext:            b.ext,
-			configm:        b.configm,
-			leadInfo:       b.leadInfo,
-			lif:            b.lif,
-			eac:            b.eac,
-			metrics:        b.metrics,
-			erf:            b.erf,
-			apim:           b.apim,
-			xds:            b.xds,
-			cap:            b.cap,
-			dps:            b.dps,
-			kdsctx:         b.kdsctx,
-			rv:             b.rv,
-			au:             b.au,
-			acc:            b.acc,
-			appCtx:         b.appCtx,
-			extraReportsFn: b.extraReportsFn,
-			tokenIssuers:   b.tokenIssuers,
-			meshCache:      b.meshCache,
-			interCpPool:    b.interCpPool,
+			cfg:                 b.cfg,
+			rm:                  b.rm,
+			rom:                 b.rom,
+			rs:                  b.rs,
+			ss:                  b.ss,
+			cam:                 b.cam,
+			dsl:                 b.dsl,
+			ext:                 b.ext,
+			configm:             b.configm,
+			leadInfo:            b.leadInfo,
+			lif:                 b.lif,
+			eac:                 b.eac,
+			metrics:             b.metrics,
+			erf:                 b.erf,
+			apim:                b.apim,
+			xds:                 b.xds,
+			cap:                 b.cap,
+			dps:                 b.dps,
+			kdsctx:              b.kdsctx,
+			rv:                  b.rv,
+			au:                  b.au,
+			acc:                 b.acc,
+			appCtx:              b.appCtx,
+			extraReportsFn:      b.extraReportsFn,
+			tokenIssuers:        b.tokenIssuers,
+			meshCache:           b.meshCache,
+			interCpPool:         b.interCpPool,
+			configCustomization: b.configCustomization,
+			hashing:             b.hashing,
 		},
 		Manager: b.cm,
 	}, nil
@@ -473,4 +495,12 @@ func (b *Builder) InterCPClientPool() *client.Pool {
 
 func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
+}
+
+func (b *Builder) Hashing() Hashing {
+	return b.hashing
+}
+
+func (b *Builder) ConfigCustomization() ConfigCustomization {
+	return b.configCustomization
 }

@@ -34,7 +34,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	}
 	switch cfg.DriverName {
 	case postgres.DriverNamePgx:
-		return NewPgxStore(pc.Metrics(), *cfg)
+		return NewPgxStore(pc.Metrics(), *cfg, pc.ConfigCustomization().Pgx)
 	case postgres.DriverNamePq:
 		return NewPqStore(pc.Metrics(), *cfg)
 	default:
