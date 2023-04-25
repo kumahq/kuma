@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
