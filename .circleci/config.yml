@@ -414,6 +414,41 @@ jobs:
             trap on_exit EXIT
             make docker/push
             make docker/manifest
+  container-structure:
+    executor: << parameters.executor >>
+    parameters:
+      executor:
+        description: the executor to run on
+        type: string
+        default: vm-amd64
+    steps:
+      - when:
+          condition: {equal: [vm-amd64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: amd64
+      - when:
+          condition: {equal: [vm-arm64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: arm64
+      - checkout
+      - halt_job_if_labeled:
+          label: "ci/skip-container-structure-test"
+      - when:
+          condition:
+            or:
+              - {equal: [vm-arm64, << parameters.executor >>]}
+          steps:
+            - halt_non_priority_job
+      - restore_cache:
+          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - attach_workspace:
+          at: build
+      - run:
+          command: make dev/tools
+      - run:
+          command: make -j test/container-structure
 workflows:
   version: 2
   kuma-commit:
@@ -462,5 +497,12 @@ workflows:
               arch: [amd64]
               cniNetworkPlugin: [calico]
           requires: [build, go_cache-vm-amd64]
+      - container-structure:
+          name: test/container-structure-<< matrix.executor >>
+          matrix:
+            alias: test/container-structure
+            parameters:
+              executor: [vm-amd64, vm-arm64]
+          requires: [build]
       - distributions:
-          requires: [test, test/e2e, test/e2e-legacy]
+          requires: [test, test/e2e, test/e2e-legacy, test/container-structure]
