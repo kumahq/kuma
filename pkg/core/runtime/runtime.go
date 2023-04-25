@@ -92,7 +92,7 @@ type ResourceValidators struct {
 	Mesh      managers_mesh.MeshValidator
 }
 
-type ExtraReportsFn func(context.Context, Runtime) (map[string]string, error)
+type ExtraReportsFn func(Runtime) (map[string]string, error)
 
 var _ Runtime = &runtime{}
 
