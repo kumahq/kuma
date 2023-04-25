@@ -5,7 +5,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	plugin_leader "github.com/kumahq/kuma/pkg/plugins/leader"
 )
 
@@ -26,9 +25,6 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 	b.WithComponentManager(component.NewManager(leaderElector))
-	b.WithHashing(multitenant.DefaultHashing{})
-	b.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
-	b.WithTenant(multitenant.DefaultTenant{})
 	return nil
 }
 

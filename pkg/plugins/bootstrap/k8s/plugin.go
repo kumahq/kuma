@@ -22,7 +22,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -87,9 +86,6 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
 	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
-	b.WithHashing(multitenant.DefaultHashing{})
-	b.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
-	b.WithTenant(multitenant.DefaultTenant{})
 	return nil
 }
 

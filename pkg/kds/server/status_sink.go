@@ -24,7 +24,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing, tenant multitenant.Tenant) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -33,6 +33,7 @@ func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker
 		store:            store,
 		log:              log,
 		hashing:          hashing,
+		tenant:           tenant,
 	}
 }
 
