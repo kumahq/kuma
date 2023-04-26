@@ -118,7 +118,7 @@ type GetOptions struct {
 	Name           string
 	Mesh           string
 	Version        string
-	KeyFromContext func(ctx context.Context) string
+	KeyFromContext HashKeyFunc
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -152,16 +152,19 @@ func (g *GetOptions) HashCode(ctx context.Context) string {
 	return fmt.Sprintf("%s:%s:%s", g.Name, g.Mesh, g.KeyFromContext(ctx))
 }
 
-type ListFilterFunc func(rs core_model.Resource) bool
+type (
+	ListFilterFunc func(rs core_model.Resource) bool
+	HashKeyFunc    func(context.Context) string
+)
 
 type ListOptions struct {
-	Mesh         string
-	PageSize     int
-	PageOffset   string
-	FilterFunc   ListFilterFunc
-	NameContains string
-	Ordered      bool
-	Suffix       func(ctx context.Context) string
+	Mesh           string
+	PageSize       int
+	PageOffset     string
+	FilterFunc     ListFilterFunc
+	NameContains   string
+	Ordered        bool
+	KeyFromContext HashKeyFunc
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -219,5 +222,5 @@ func (l *ListOptions) IsCacheable() bool {
 }
 
 func (l *ListOptions) HashCode(ctx context.Context) string {
-	return fmt.Sprintf("%s:%t:%s:%d:%s:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset, l.Suffix(ctx))
+	return fmt.Sprintf("%s:%t:%s:%d:%s:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset, l.KeyFromContext(ctx))
 }
