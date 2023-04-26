@@ -6,4 +6,4 @@ commandTests:
   args: ["version"]
 
 metadataTest:
-  entrypoint: ["/busybox/busybox", "sh", "-c"]
+  entrypoint: ["/usr/bin/kumactl"]
