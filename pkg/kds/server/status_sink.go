@@ -45,9 +45,9 @@ type zoneInsightSink struct {
 	flushBackoff     time.Duration
 	accessor         StatusAccessor
 	store            ZoneInsightStore
-	log       logr.Logger
-	hashingFn multitenant.Hashing
-	tenantFn  multitenant.TenantFn
+	log              logr.Logger
+	hashingFn        multitenant.Hashing
+	tenantFn         multitenant.TenantFn
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {

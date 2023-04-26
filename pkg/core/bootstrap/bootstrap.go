@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"net"
 	"net/http"
 
@@ -50,6 +49,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -73,7 +73,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.DefaultHashingFn)
-	builder.WithConfigCustomizationFn(postgres.DefaultPgxConfigCustomizationFn)
+	builder.WithConfigCustomizationFn(config.DefaultPgxConfigCustomizationFn)
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}

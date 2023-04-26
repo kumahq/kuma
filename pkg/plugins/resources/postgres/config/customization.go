@@ -1,4 +1,4 @@
-package postgres
+package config
 
 import "github.com/jackc/pgx/v5/pgxpool"
 
@@ -8,5 +8,4 @@ func (p PgxConfigCustomizationFn) Customize(pgxConfig *pgxpool.Config) {
 	p(pgxConfig)
 }
 
-var DefaultPgxConfigCustomizationFn = PgxConfigCustomizationFn(func(pgxConfig *pgxpool.Config) { })
-
+var DefaultPgxConfigCustomizationFn = PgxConfigCustomizationFn(func(pgxConfig *pgxpool.Config) {})

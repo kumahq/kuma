@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"os"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
@@ -59,7 +59,7 @@ type BuilderContext interface {
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
 	HashingFn() multitenant.Hashing
-	ConfigCustomizationFn() postgres.PgxConfigCustomizationFn
+	ConfigCustomizationFn() config.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -97,9 +97,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	configCustomizationFn postgres.PgxConfigCustomizationFn
-	hashingFn           multitenant.Hashing
-	tenantFn            multitenant.TenantFn
+	configCustomizationFn config.PgxConfigCustomizationFn
+	hashingFn             multitenant.Hashing
+	tenantFn              multitenant.TenantFn
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -271,7 +271,7 @@ func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashing multit
 	return b
 }
 
-func (b *Builder) WithConfigCustomizationFn(configCustomizationFn postgres.PgxConfigCustomizationFn) *Builder {
+func (b *Builder) WithConfigCustomizationFn(configCustomizationFn config.PgxConfigCustomizationFn) *Builder {
 	b.configCustomizationFn = configCustomizationFn
 	return b
 }
@@ -355,36 +355,36 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:                 b.cfg,
-			rm:                  b.rm,
-			rom:                 b.rom,
-			rs:                  b.rs,
-			ss:                  b.ss,
-			cam:                 b.cam,
-			dsl:                 b.dsl,
-			ext:                 b.ext,
-			configm:             b.configm,
-			leadInfo:            b.leadInfo,
-			lif:                 b.lif,
-			eac:                 b.eac,
-			metrics:             b.metrics,
-			erf:                 b.erf,
-			apim:                b.apim,
-			xds:                 b.xds,
-			cap:                 b.cap,
-			dps:                 b.dps,
-			kdsctx:              b.kdsctx,
-			rv:                  b.rv,
-			au:                  b.au,
-			acc:                 b.acc,
-			appCtx:              b.appCtx,
-			extraReportsFn:      b.extraReportsFn,
-			tokenIssuers:        b.tokenIssuers,
-			meshCache:           b.meshCache,
-			interCpPool:         b.interCpPool,
+			cfg:                   b.cfg,
+			rm:                    b.rm,
+			rom:                   b.rom,
+			rs:                    b.rs,
+			ss:                    b.ss,
+			cam:                   b.cam,
+			dsl:                   b.dsl,
+			ext:                   b.ext,
+			configm:               b.configm,
+			leadInfo:              b.leadInfo,
+			lif:                   b.lif,
+			eac:                   b.eac,
+			metrics:               b.metrics,
+			erf:                   b.erf,
+			apim:                  b.apim,
+			xds:                   b.xds,
+			cap:                   b.cap,
+			dps:                   b.dps,
+			kdsctx:                b.kdsctx,
+			rv:                    b.rv,
+			au:                    b.au,
+			acc:                   b.acc,
+			appCtx:                b.appCtx,
+			extraReportsFn:        b.extraReportsFn,
+			tokenIssuers:          b.tokenIssuers,
+			meshCache:             b.meshCache,
+			interCpPool:           b.interCpPool,
 			configCustomizationFn: b.configCustomizationFn,
-			hashingFn:           b.hashingFn,
-			tenantFn:            b.tenantFn,
+			hashingFn:             b.hashingFn,
+			tenantFn:              b.tenantFn,
 		},
 		Manager: b.cm,
 	}, nil
@@ -510,7 +510,7 @@ func (b *Builder) HashingFn() multitenant.Hashing {
 	return b.hashingFn
 }
 
-func (b *Builder) ConfigCustomizationFn() postgres.PgxConfigCustomizationFn {
+func (b *Builder) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
 	return b.configCustomizationFn
 }
 

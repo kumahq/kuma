@@ -1,7 +1,6 @@
 package setup
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"time"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -16,16 +15,17 @@ import (
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
 type testRuntimeContext struct {
 	runtime.Runtime
-	rom                 manager.ReadOnlyResourceManager
-	cfg                 kuma_cp.Config
-	components          []component.Component
-	metrics             core_metrics.Metrics
+	rom                   manager.ReadOnlyResourceManager
+	cfg                   kuma_cp.Config
+	components            []component.Component
+	metrics               core_metrics.Metrics
 	hashingFn             multitenant.Hashing
-	configCustomizationFn postgres.PgxConfigCustomizationFn
+	configCustomizationFn config.PgxConfigCustomizationFn
 	tenant                multitenant.TenantFn
 }
 
@@ -45,7 +45,7 @@ func (t *testRuntimeContext) HashingFn() multitenant.Hashing {
 	return t.hashingFn
 }
 
-func (t *testRuntimeContext) ConfigCustomizationFn() postgres.PgxConfigCustomizationFn {
+func (t *testRuntimeContext) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
 	return t.configCustomizationFn
 }
 
@@ -69,7 +69,7 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		metrics:               metrics,
 		tenant:                multitenant.SingleTenant,
 		hashingFn:             multitenant.DefaultHashingFn,
-		configCustomizationFn: postgres.DefaultPgxConfigCustomizationFn,
+		configCustomizationFn: config.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
@@ -85,7 +85,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		metrics:               metrics,
 		tenant:                multitenant.SingleTenant,
 		hashingFn:             multitenant.DefaultHashingFn,
-		configCustomizationFn: postgres.DefaultPgxConfigCustomizationFn,
+		configCustomizationFn: config.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

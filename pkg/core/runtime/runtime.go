@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"sync"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
@@ -81,7 +81,7 @@ type RuntimeContext interface {
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
 	HashingFn() multitenant.Hashing
-	ConfigCustomizationFn() postgres.PgxConfigCustomizationFn
+	ConfigCustomizationFn() config.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -140,37 +140,37 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg                 kuma_cp.Config
-	rm                  core_manager.ResourceManager
-	rs                  core_store.ResourceStore
-	ss                  store.SecretStore
-	cs                  core_store.ResourceStore
-	rom                 core_manager.ReadOnlyResourceManager
-	cam                 ca.Managers
-	dsl                 datasource.Loader
-	ext                 context.Context
-	configm             config_manager.ConfigManager
-	leadInfo            component.LeaderInfo
-	lif                 lookup.LookupIPFunc
-	eac                 admin.EnvoyAdminClient
-	metrics             metrics.Metrics
-	erf                 events.ListenerFactory
-	apim                api_server.APIInstaller
-	xds                 xds_runtime.XDSRuntimeContext
-	cap                 secrets.CaProvider
-	dps                 *dp_server.DpServer
-	kdsctx              *kds_context.Context
-	rv                  ResourceValidators
-	au                  authn.Authenticator
-	acc                 Access
-	appCtx              context.Context
-	extraReportsFn      ExtraReportsFn
-	tokenIssuers        builtin.TokenIssuers
-	meshCache           *mesh.Cache
-	interCpPool         *client.Pool
-	hashingFn           multitenant.Hashing
-	configCustomizationFn postgres.PgxConfigCustomizationFn
-	tenantFn            multitenant.TenantFn
+	cfg                   kuma_cp.Config
+	rm                    core_manager.ResourceManager
+	rs                    core_store.ResourceStore
+	ss                    store.SecretStore
+	cs                    core_store.ResourceStore
+	rom                   core_manager.ReadOnlyResourceManager
+	cam                   ca.Managers
+	dsl                   datasource.Loader
+	ext                   context.Context
+	configm               config_manager.ConfigManager
+	leadInfo              component.LeaderInfo
+	lif                   lookup.LookupIPFunc
+	eac                   admin.EnvoyAdminClient
+	metrics               metrics.Metrics
+	erf                   events.ListenerFactory
+	apim                  api_server.APIInstaller
+	xds                   xds_runtime.XDSRuntimeContext
+	cap                   secrets.CaProvider
+	dps                   *dp_server.DpServer
+	kdsctx                *kds_context.Context
+	rv                    ResourceValidators
+	au                    authn.Authenticator
+	acc                   Access
+	appCtx                context.Context
+	extraReportsFn        ExtraReportsFn
+	tokenIssuers          builtin.TokenIssuers
+	meshCache             *mesh.Cache
+	interCpPool           *client.Pool
+	hashingFn             multitenant.Hashing
+	configCustomizationFn config.PgxConfigCustomizationFn
+	tenantFn              multitenant.TenantFn
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -289,7 +289,7 @@ func (rc *runtimeContext) HashingFn() multitenant.Hashing {
 	return rc.hashingFn
 }
 
-func (rc *runtimeContext) ConfigCustomizationFn() postgres.PgxConfigCustomizationFn {
+func (rc *runtimeContext) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
 	return rc.configCustomizationFn
 }
 
