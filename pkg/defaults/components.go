@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
@@ -27,62 +26,44 @@ var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
-		// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-		tenantIds, err := runtime.TenantFn().GetTenantIds(context.TODO())
-		if err != nil {
+		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+
+		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			runtime.AppContext(),
+			zoneIngressSigningKeyManager,
+			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 			return err
 		}
-		var allErrors error
-		for _, tenantId := range tenantIds {
-			ctx := user.Ctx(multitenant.WithTenant(context.TODO(), tenantId), user.ControlPlane)
-			defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
-			// TODO: https://github.com/kumahq/kuma/issues/6624
-			if err := runtime.Add(defaultsComponent); err != nil {
-				allErrors = multierr.Append(allErrors, err)
-			}
 
-			zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
-				allErrors = multierr.Append(allErrors, err)
-			}
-
-			zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
-			if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager, log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
-				allErrors = multierr.Append(allErrors, err)
-			}
+		zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			runtime.AppContext(),
+			zoneSigningKeyManager,
+			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
+		)); err != nil {
+			return err
 		}
-		if allErrors != nil {
-			return allErrors
+		if err := runtime.Add(defaultsComponent); err != nil {
+			return err
 		}
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		tenantIds, err := runtime.TenantFn().GetTenantIds(context.TODO())
-		if err != nil {
+		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{ResManager: runtime.ResourceManager()}); err != nil {
 			return err
-		}
-		var allErrors error
-		for _, tenantId := range tenantIds {
-			ctx := multitenant.WithTenant(context.TODO(), tenantId)
-			if err := runtime.Add(NewEnvoyAdminCaDefaultComponent(ctx, runtime.ResourceManager())); err != nil {
-				allErrors = multierr.Append(allErrors, err)
-			}
-		}
-		if allErrors != nil {
-			return allErrors
 		}
 	}
 	return nil
 }
 
-func NewDefaultsComponent(ctx context.Context, config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
+func NewDefaultsComponent(config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
 	return &defaultsComponent{
 		cpMode:      cpMode,
 		environment: environment,
 		config:      config,
 		resManager:  resManager,
 		resStore:    resStore,
-		ctx:         ctx,
 	}
 }
 
@@ -94,7 +75,6 @@ type defaultsComponent struct {
 	config      *kuma_cp.Defaults
 	resManager  core_manager.ResourceManager
 	resStore    store.ResourceStore
-	ctx         context.Context
 }
 
 func (d *defaultsComponent) NeedLeaderElection() bool {
@@ -104,7 +84,7 @@ func (d *defaultsComponent) NeedLeaderElection() bool {
 
 func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 	// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-	ctx, cancelFn := context.WithCancel(d.ctx)
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	defer cancelFn()
 	wg := &sync.WaitGroup{}
 	errChan := make(chan error)
@@ -117,7 +97,7 @@ func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 			defer wg.Done()
 			// if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 			err := retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-				return retry.RetryableError(CreateMeshIfNotExist(ctx, d.resManager)) // retry all errors
+				return retry.RetryableError(d.createMeshIfNotExist(ctx)) // retry all errors
 			})
 			if err != nil {
 				// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
