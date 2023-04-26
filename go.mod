@@ -26,7 +26,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.41.15
-	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -130,6 +129,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.1-0.20190430135223-99e2f22d1c94 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
