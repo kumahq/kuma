@@ -119,5 +119,8 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotC
 type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
+	// TODO: https://github.com/kumahq/kuma/issues/6632 check if it needs to be the same hasher as passed to reconcile
+	// if it's not pkg/kds/global/components_test.go:271 test fails
+	// not sure if it's a problem with the test or the implementation
 	return node.Id
 }

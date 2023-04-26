@@ -271,7 +271,7 @@ func (b *Builder) WithMultitenancy(tenantFn multitenant.Tenant, hashingFn multit
 	return b
 }
 
-func (b *Builder) WithConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomization) *Builder {
+func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomization) *Builder {
 	b.pgxConfigCustomizationFn = pgxConfigCustomizationFn
 	return b
 }

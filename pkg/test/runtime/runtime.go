@@ -134,7 +134,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
-	builder.WithConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
+	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 
 	initializeConfigManager(builder)
 

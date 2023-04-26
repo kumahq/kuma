@@ -73,7 +73,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
-	builder.WithConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
+	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
