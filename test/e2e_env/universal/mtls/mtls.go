@@ -44,8 +44,7 @@ func Policy() {
 		Consistently(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 2).Should(Succeed())
 	}
 
-	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	Describe("should support mode", FlakeAttempts(3), func() {
+	Describe("should support mode", func() {
 		publicAddress := func() string {
 			return net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
 		}
@@ -146,8 +145,7 @@ mtls:
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 	})
-	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	DescribeTable("should enforce traffic permissions", FlakeAttempts(3),
+	DescribeTable("should enforce traffic permissions",
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
