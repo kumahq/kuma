@@ -121,6 +121,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 				Kind: common_api.MeshService,
 				Name: ref[mesh_proto.ServiceTag],
 			},
+			Weight: pointer.To(uint(*gapiBackendRef.Weight)),
 		})
 	}
 

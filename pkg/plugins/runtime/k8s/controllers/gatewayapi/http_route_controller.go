@@ -81,7 +81,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		spec := meshRouteSpec
 		route := meshhttproute_k8s.MeshHTTPRoute{
 			ObjectMeta: kube_meta.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", httpRoute.Name, subName), Namespace: "kuma-system",
+				Name: fmt.Sprintf("%s-%s", httpRoute.Name, subName), Namespace: r.SystemNamespace,
 			},
 		}
 		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, &route, func() error {
@@ -156,7 +156,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 						Match: tagsForRef(route, ref),
 					},
 				)
-			case *ref.Kind == gatewayapi.Kind("Service") && *ref.Group == "":
+			case *ref.Kind == gatewayapi.Kind("Service") && *ref.Group == kube_core.GroupName:
 				namespace := route.Namespace
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
