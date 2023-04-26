@@ -115,10 +115,10 @@ func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
 }
 
 type GetOptions struct {
-	Name    string
-	Mesh    string
-	Version string
-	Suffix  func(ctx context.Context) string
+	Name           string
+	Mesh           string
+	Version        string
+	KeyFromContext func(ctx context.Context) string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -149,7 +149,7 @@ func GetByVersion(version string) GetOptionsFunc {
 }
 
 func (g *GetOptions) HashCode(ctx context.Context) string {
-	return fmt.Sprintf("%s:%s:%s", g.Name, g.Mesh, g.Suffix(ctx))
+	return fmt.Sprintf("%s:%s:%s", g.Name, g.Mesh, g.KeyFromContext(ctx))
 }
 
 type ListFilterFunc func(rs core_model.Resource) bool
