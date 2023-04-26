@@ -81,7 +81,7 @@ type RuntimeContext interface {
 	InterCPClientPool() *client.Pool
 	Hashing() multitenant.Hashing
 	ConfigCustomization() multitenant.PgxConfigCustomization
-	Tenant() multitenant.Tenant
+	TenantFn() multitenant.TenantFn
 }
 
 type Access struct {
@@ -169,7 +169,7 @@ type runtimeContext struct {
 	interCpPool         *client.Pool
 	hashing             multitenant.Hashing
 	configCustomization multitenant.PgxConfigCustomization
-	tenant              multitenant.Tenant
+	tenantFn            multitenant.TenantFn
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -292,6 +292,6 @@ func (rc *runtimeContext) ConfigCustomization() multitenant.PgxConfigCustomizati
 	return rc.configCustomization
 }
 
-func (rc *runtimeContext) Tenant() multitenant.Tenant {
-	return rc.tenant
+func (rc *runtimeContext) TenantFn() multitenant.TenantFn {
+	return rc.tenantFn
 }

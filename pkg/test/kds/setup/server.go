@@ -25,7 +25,7 @@ type testRuntimeContext struct {
 	metrics             core_metrics.Metrics
 	hashing             multitenant.Hashing
 	configCustomization multitenant.PgxConfigCustomization
-	tenant              multitenant.Tenant
+	tenant              multitenant.TenantFn
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -48,7 +48,7 @@ func (t *testRuntimeContext) ConfigCustomization() multitenant.PgxConfigCustomiz
 	return t.configCustomization
 }
 
-func (t *testRuntimeContext) Tenant() multitenant.Tenant {
+func (t *testRuntimeContext) TenantFn() multitenant.TenantFn {
 	return t.tenant
 }
 
@@ -66,7 +66,7 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		rom:                 manager.NewResourceManager(store),
 		cfg:                 kuma_cp.Config{},
 		metrics:             metrics,
-		tenant:              multitenant.DefaultTenant{},
+		tenant:              multitenant.SingleTenant,
 		hashing:             multitenant.DefaultHashing{},
 		configCustomization: multitenant.DefaultPgxConfigCustomization{},
 	}
@@ -82,7 +82,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		rom:                 manager.NewResourceManager(store),
 		cfg:                 kuma_cp.Config{},
 		metrics:             metrics,
-		tenant:              multitenant.DefaultTenant{},
+		tenant:              multitenant.SingleTenant,
 		hashing:             multitenant.DefaultHashing{},
 		configCustomization: multitenant.DefaultPgxConfigCustomization{},
 	}

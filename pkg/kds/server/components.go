@@ -71,7 +71,7 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			NewZonesInsightStore(rt.ResourceManager()),
 			l,
 			rt.Hashing(),
-			rt.Tenant(),
+			rt.TenantFn(),
 		)
 	}, log)
 }

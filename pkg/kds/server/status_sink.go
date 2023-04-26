@@ -24,7 +24,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing, tenant multitenant.Tenant) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing, tenant multitenant.TenantFn) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -33,7 +33,7 @@ func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker
 		store:            store,
 		log:              log,
 		hashing:          hashing,
-		tenant:           tenant,
+		tenantFn:         tenant,
 	}
 }
 
@@ -47,7 +47,7 @@ type zoneInsightSink struct {
 	store            ZoneInsightStore
 	log              logr.Logger
 	hashing          multitenant.Hashing
-	tenant           multitenant.Tenant
+	tenantFn         multitenant.TenantFn
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
@@ -87,21 +87,21 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	for {
 		select {
 		case <-flushTicker.C:
-			tenantIds, err := s.tenant.GetTenantIds(context.Background())
+			tenantIds, err := s.tenantFn.GetTenantIds(context.Background())
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}
 			for _, tenantId := range tenantIds {
-				flush(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId))
+				flush(multitenant.WithTenant(context.TODO(), tenantId))
 			}
 			time.Sleep(s.flushBackoff)
 		case <-stop:
-			tenantIds, err := s.tenant.GetTenantIds(context.Background())
+			tenantIds, err := s.tenantFn.GetTenantIds(context.Background())
 			if err != nil {
 				s.log.Error(err, "could not get contexts")
 			}
 			for _, tenantId := range tenantIds {
-				flush(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId))
+				flush(multitenant.WithTenant(context.TODO(), tenantId))
 			}
 			return
 		}

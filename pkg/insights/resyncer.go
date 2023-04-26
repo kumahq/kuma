@@ -75,7 +75,7 @@ type resyncer struct {
 
 	registry registry.TypeRegistry
 	now      func() time.Time
-	tenant   multitenant.Tenant
+	tenantFn multitenant.TenantFn
 }
 
 type syncInfo struct {
@@ -91,7 +91,7 @@ type syncInfo struct {
 // during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
 // by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
-func NewResyncer(config *Config, tenant multitenant.Tenant) component.Component {
+func NewResyncer(config *Config, tenant multitenant.TenantFn) component.Component {
 	r := &resyncer{
 		minResyncTimeout:     config.MinResyncTimeout,
 		maxResyncTimeout:     config.MaxResyncTimeout,
@@ -103,7 +103,7 @@ func NewResyncer(config *Config, tenant multitenant.Tenant) component.Component 
 		registry:             config.Registry,
 		addressPortGenerator: config.AddressPortGenerator,
 		now:                  config.Now,
-		tenant:               tenant,
+		tenantFn:             tenant,
 	}
 
 	r.tick = config.Tick
@@ -121,15 +121,15 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		for {
 			select {
 			case now := <-ticker:
-				tenantIds, err := r.tenant.GetTenantIds(context.TODO())
+				tenantIds, err := r.tenantFn.GetTenantIds(context.TODO())
 				if err != nil {
 					log.Error(err, "could not get contexts")
 				}
 				for _, tenantId := range tenantIds {
-					if err := r.createOrUpdateMeshInsights(context.WithValue(context.TODO(), r.tenant.TenantContextKey(), tenantId), now); err != nil {
+					if err := r.createOrUpdateMeshInsights(multitenant.WithTenant(context.TODO(), tenantId), now); err != nil {
 						log.Error(err, "unable to resync MeshInsight")
 					}
-					if err := r.createOrUpdateServiceInsights(context.WithValue(context.TODO(), r.tenant.TenantContextKey(), tenantId), now); err != nil {
+					if err := r.createOrUpdateServiceInsights(multitenant.WithTenant(context.TODO(), tenantId), now); err != nil {
 						log.Error(err, "unable to resync ServiceInsight")
 					}
 				}
@@ -146,7 +146,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		case <-stop:
 			return nil
 		case event, ok := <-eventReader.Recv():
-			tenantIds, err := r.tenant.GetTenantIds(context.TODO())
+			tenantIds, err := r.tenantFn.GetTenantIds(context.TODO())
 			if err != nil {
 				log.Error(err, "could not get contexts")
 			}
@@ -171,7 +171,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					continue
 				}
 				if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
-					if err := r.createOrUpdateServiceInsight(context.WithValue(context.TODO(), r.tenant.TenantContextKey(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
+					if err := r.createOrUpdateServiceInsight(multitenant.WithTenant(context.TODO(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
 						log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 					}
 				}
@@ -183,7 +183,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					// because that's how we find online/offline Dataplane's status
 					continue
 				}
-				if err := r.createOrUpdateMeshInsight(context.WithValue(context.TODO(), r.tenant.TenantContextKey(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
+				if err := r.createOrUpdateMeshInsight(multitenant.WithTenant(context.TODO(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
 					log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 					continue
 				}

@@ -55,7 +55,7 @@ var _ = Describe("Insight Persistence", func() {
 			AddressPortGenerator: func(s string) string {
 				return fmt.Sprintf("%s.mesh:80", s)
 			},
-		}, multitenant.DefaultTenant{})
+		}, multitenant.SingleTenant)
 		go func() {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())

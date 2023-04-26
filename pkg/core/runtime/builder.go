@@ -59,7 +59,7 @@ type BuilderContext interface {
 	InterCPClientPool() *client.Pool
 	Hashing() multitenant.Hashing
 	ConfigCustomization() multitenant.PgxConfigCustomization
-	Tenant() multitenant.Tenant
+	TenantFn() multitenant.TenantFn
 }
 
 var _ BuilderContext = &Builder{}
@@ -98,7 +98,7 @@ type Builder struct {
 	*runtimeInfo
 	configCustomization multitenant.PgxConfigCustomization
 	hashing             multitenant.Hashing
-	tenant              multitenant.Tenant
+	tenant              multitenant.TenantFn
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -274,7 +274,7 @@ func (b *Builder) WithConfigCustomization(configCustomization multitenant.PgxCon
 	return b
 }
 
-func (b *Builder) WithTenant(tenant multitenant.Tenant) *Builder {
+func (b *Builder) WithTenant(tenant multitenant.TenantFn) *Builder {
 	b.tenant = tenant
 	return b
 }
@@ -353,7 +353,7 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("PgxConfigCustomization has not been configured")
 	}
 	if b.tenant == nil {
-		return nil, errors.Errorf("Tenant has not been configured")
+		return nil, errors.Errorf("TenantFn has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -387,7 +387,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:         b.interCpPool,
 			configCustomization: b.configCustomization,
 			hashing:             b.hashing,
-			tenant:              b.tenant,
+			tenantFn:            b.tenant,
 		},
 		Manager: b.cm,
 	}, nil
@@ -517,6 +517,6 @@ func (b *Builder) ConfigCustomization() multitenant.PgxConfigCustomization {
 	return b.configCustomization
 }
 
-func (b *Builder) Tenant() multitenant.Tenant {
+func (b *Builder) TenantFn() multitenant.TenantFn {
 	return b.tenant
 }

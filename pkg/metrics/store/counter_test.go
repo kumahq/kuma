@@ -70,7 +70,7 @@ var _ = Describe("Counter", func() {
 			AddressPortGenerator: func(s string) string {
 				return fmt.Sprintf("%s.mesh:80", s)
 			},
-		}, multitenant.DefaultTenant{})
+		}, multitenant.SingleTenant)
 
 		go func() {
 			err := resyncer.Start(stop)

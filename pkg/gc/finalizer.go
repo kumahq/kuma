@@ -46,10 +46,10 @@ type subscriptionFinalizer struct {
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
 	insights  insightsByType
-	tenant    multitenant.Tenant
+	tenantFn  multitenant.TenantFn
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.TenantFn, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
@@ -63,7 +63,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.Ten
 		types:     types,
 		newTicker: newTicker,
 		insights:  insights,
-		tenant:    tenant,
+		tenantFn:  tenant,
 	}, nil
 }
 
@@ -76,13 +76,13 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				tenantIds, err := f.tenant.GetTenantIds(context.TODO())
+				tenantIds, err := f.tenantFn.GetTenantIds(context.TODO())
 				if err != nil {
 					finalizerLog.Error(err, "could not get contexts")
 					break
 				}
 				for _, tenantId := range tenantIds {
-					ctx := context.WithValue(context.TODO(), f.tenant.TenantContextKey(), tenantId)
+					ctx := multitenant.WithTenant(context.TODO(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
 						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 					}

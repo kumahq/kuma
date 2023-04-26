@@ -29,7 +29,7 @@ var _ = Describe("Subscription Finalizer", func() {
 	})
 
 	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
-		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.DefaultTenant{}, func() *time.Ticker {
+		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
 		}, system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())

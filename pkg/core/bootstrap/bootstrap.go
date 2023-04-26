@@ -71,7 +71,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	builder.WithTenant(multitenant.DefaultTenant{})
+	builder.WithTenant(multitenant.SingleTenant)
 	builder.WithHashing(multitenant.DefaultHashing{})
 	builder.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
 	if err := initializeMetrics(builder); err != nil {
