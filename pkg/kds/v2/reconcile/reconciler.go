@@ -147,5 +147,5 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 
 func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
 	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
-	return r.hasher.ID(node) + ":" + r.hashingFn.ResourceHashKey(ctx)
+	return r.hasher.ID(node) + r.hashingFn.ResourceHashKey(ctx)
 }
