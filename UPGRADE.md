@@ -14,6 +14,23 @@ does not have any particular instructions.
 
 * Changed path match `type` from `Prefix` to `PathPrefix`
 
+#### `kumactl` container image
+
+* Changed image's entrypoint to `/usr/bin/kumactl`
+
+This change was introduced to be consistent with `kuma-cp` and `kuma-dp` images,
+where names of images refer to binaries set in entrypoint. 
+
+Example valid before:
+```sh
+docker run kumahq/kumactl:2.2.1 kumactl install transparent-proxy --help
+```
+
+Equivalent example valid now:
+```sh
+docker run kumahq/kumactl:2.3.0 install transparent-proxy --help
+```
+
 ## Upgrade to `2.2.x`
 
 ### Universal
