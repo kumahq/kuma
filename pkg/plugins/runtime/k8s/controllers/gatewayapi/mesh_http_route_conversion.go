@@ -12,6 +12,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -49,12 +50,23 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 				},
 				Rules: rules,
 			}}
+			// consumer route
+			targetRef := common_api.TargetRef{
+				Kind: common_api.MeshSubset,
+				Tags: map[string]string{
+					controllers.KubeNamespaceTag: route.Namespace,
+				},
+			}
+			// producer route
+			if route.Namespace == svcRef.Namespace {
+				targetRef = common_api.TargetRef{
+					Kind: common_api.Mesh,
+				}
+			}
 			routeSubName := fmt.Sprintf("%s-%s-%d", svc.Name, svc.Namespace, port)
 			routes[routeSubName] = v1alpha1.MeshHTTPRoute{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.Mesh,
-				},
-				To: to,
+				TargetRef: targetRef,
+				To:        to,
 			}
 		}
 	}

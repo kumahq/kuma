@@ -161,11 +161,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
 				}
-				// TODO handle producer/consumer routes, for now only handle
-				// routes in the same namespace i.e. producer that apply to all requests
-				if namespace != route.Namespace {
-					continue
-				}
 				services = append(services,
 					kube_types.NamespacedName{Name: string(ref.Name), Namespace: namespace},
 				)
