@@ -31,7 +31,7 @@ var _ = Describe("PostgresStore template", func() {
 			var pStore store.ResourceStore
 			if storeName == "pgx" {
 				cfg.DriverName = postgres.DriverNamePgx
-				pStore, err = NewPgxStore(pgxMetrics, *cfg, config.DefaultPgxConfigCustomizationFn)
+				pStore, err = NewPgxStore(pgxMetrics, *cfg, config.NoopPgxConfigCustomizationFn)
 			} else {
 				cfg.DriverName = postgres.DriverNamePq
 				pStore, err = NewPqStore(pqMetrics, *cfg)

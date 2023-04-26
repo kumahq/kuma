@@ -27,7 +27,7 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomizationFn) (store.ResourceStore, error) {
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
 	pool, err := connect(config, customizer)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}, nil
 }
 
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomizationFn) (*pgxpool.Pool, error) {
+func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
 	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err
@@ -61,9 +61,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_conf
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	if customizer != nil {
-		customizer.Customize(pgxConfig)
-	}
+	customizer.Customize(pgxConfig)
 
 	if err != nil {
 		return nil, err

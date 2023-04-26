@@ -21,7 +21,7 @@ import (
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.HashingFn) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.Hashing) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
@@ -38,7 +38,7 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashingFn      multitenant.HashingFn
+	hashingFn      multitenant.Hashing
 
 	lock sync.Mutex
 }
@@ -70,13 +70,13 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	}
 	id := r.hashId(ctx, node)
 	old, _ := r.cache.GetSnapshot(id)
-	new = r.Version(ctx, new, old)
+	new = r.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(ctx, id, new)
 }
 
-func (r *reconciler) Version(ctx context.Context, new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
+func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
 	if new == nil {
 		return nil
 	}
@@ -146,5 +146,6 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 }
 
 func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
+	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
 	return r.hasher.ID(node) + ":" + r.hashingFn.ResourceHashKey(ctx)
 }

@@ -9,6 +9,10 @@ type (
 	tenantCtx struct{}
 )
 
+type Tenant interface {
+	GetTenantIds(ctx context.Context) ([]string, error)
+}
+
 func (t TenantFn) GetTenantIds(ctx context.Context) ([]string, error) {
 	return t(ctx)
 }

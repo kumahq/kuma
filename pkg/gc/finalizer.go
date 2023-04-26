@@ -46,10 +46,10 @@ type subscriptionFinalizer struct {
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
 	insights  insightsByType
-	tenantFn  multitenant.TenantFn
+	tenantFn  multitenant.Tenant
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenantFn multitenant.TenantFn, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenantFn multitenant.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {

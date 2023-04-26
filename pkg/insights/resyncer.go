@@ -75,7 +75,7 @@ type resyncer struct {
 
 	registry registry.TypeRegistry
 	now      func() time.Time
-	tenantFn multitenant.TenantFn
+	tenantFn multitenant.Tenant
 }
 
 type syncInfo struct {
@@ -91,7 +91,7 @@ type syncInfo struct {
 // during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
 // by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
-func NewResyncer(config *Config, tenantFn multitenant.TenantFn) component.Component {
+func NewResyncer(config *Config, tenantFn multitenant.Tenant) component.Component {
 	r := &resyncer{
 		minResyncTimeout:     config.MinResyncTimeout,
 		maxResyncTimeout:     config.MaxResyncTimeout,

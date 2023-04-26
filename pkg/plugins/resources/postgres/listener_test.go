@@ -113,7 +113,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
 		cfg.DriverName = postgres_config.DriverNamePgx
-		pStore, err = NewPgxStore(metrics, cfg, config.DefaultPgxConfigCustomizationFn)
+		pStore, err = NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn)
 	} else {
 		cfg.DriverName = postgres_config.DriverNamePq
 		pStore, err = NewPqStore(metrics, cfg)

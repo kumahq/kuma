@@ -58,9 +58,9 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	HashingFn() multitenant.HashingFn
-	PgxConfigCustomizationFn() config.PgxConfigCustomizationFn
-	TenantFn() multitenant.TenantFn
+	HashingFn() multitenant.Hashing
+	PgxConfigCustomizationFn() config.PgxConfigCustomization
+	TenantFn() multitenant.Tenant
 }
 
 var _ BuilderContext = &Builder{}
@@ -97,9 +97,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	pgxConfigCustomizationFn config.PgxConfigCustomizationFn
-	hashingFn                multitenant.HashingFn
-	tenantFn                 multitenant.TenantFn
+	pgxConfigCustomizationFn config.PgxConfigCustomization
+	hashingFn                multitenant.Hashing
+	tenantFn                 multitenant.Tenant
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -265,13 +265,13 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
-func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashingFn multitenant.HashingFn) *Builder {
+func (b *Builder) WithMultitenancy(tenantFn multitenant.Tenant, hashingFn multitenant.Hashing) *Builder {
 	b.tenantFn = tenantFn
 	b.hashingFn = hashingFn
 	return b
 }
 
-func (b *Builder) WithConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomizationFn) *Builder {
+func (b *Builder) WithConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomization) *Builder {
 	b.pgxConfigCustomizationFn = pgxConfigCustomizationFn
 	return b
 }
@@ -506,14 +506,14 @@ func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
 }
 
-func (b *Builder) HashingFn() multitenant.HashingFn {
+func (b *Builder) HashingFn() multitenant.Hashing {
 	return b.hashingFn
 }
 
-func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomizationFn {
+func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 	return b.pgxConfigCustomizationFn
 }
 
-func (b *Builder) TenantFn() multitenant.TenantFn {
+func (b *Builder) TenantFn() multitenant.Tenant {
 	return b.tenantFn
 }

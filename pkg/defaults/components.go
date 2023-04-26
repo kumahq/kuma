@@ -36,6 +36,7 @@ func Setup(runtime runtime.Runtime) error {
 		for _, tenantId := range tenantIds {
 			ctx := user.Ctx(multitenant.WithTenant(context.TODO(), tenantId), user.ControlPlane)
 			defaultsComponent := NewDefaultsComponent(ctx, runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+			// TODO: https://github.com/kumahq/kuma/issues/6624
 			if err := runtime.Add(defaultsComponent); err != nil {
 				allErrors = multierr.Append(allErrors, err)
 			}

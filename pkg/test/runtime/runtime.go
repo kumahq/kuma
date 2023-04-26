@@ -133,8 +133,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
-	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.DefaultHashingFn)
-	builder.WithConfigCustomizationFn(config.DefaultPgxConfigCustomizationFn)
+	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
+	builder.WithConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 
 	initializeConfigManager(builder)
 
