@@ -18,6 +18,7 @@ import (
 const PluginName = "tokens"
 
 type plugin struct {
+	// TODO: properly run AfterBootstrap - https://github.com/kumahq/kuma/issues/6607
 	isInitialised bool
 }
 
