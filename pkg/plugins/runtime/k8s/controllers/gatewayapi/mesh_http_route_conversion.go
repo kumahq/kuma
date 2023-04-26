@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -17,21 +17,29 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
+type ServiceAndPorts struct {
+	Name  kube_types.NamespacedName
+	Ports []int32
+}
+
+func serviceAndPorts(svc *kube_core.Service) ServiceAndPorts {
+	var ports []int32
+	for _, port := range svc.Spec.Ports {
+		ports = append(ports, port.Port)
+	}
+	return ServiceAndPorts{
+		Name:  kube_client.ObjectKeyFromObject(svc),
+		Ports: ports,
+	}
+}
+
 func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
-	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, svcs []kube_types.NamespacedName,
+	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, svcs []ServiceAndPorts,
 ) (map[string]v1alpha1.MeshHTTPRoute, error) {
 	routes := map[string]v1alpha1.MeshHTTPRoute{}
 
 	for _, svcRef := range svcs {
-		svc := kube_core.Service{}
-		if err := r.Client.Get(ctx, svcRef, &svc); err != nil {
-			return nil, errors.Wrap(err, "unable to get Service")
-		}
-		var ports []int32
-		for _, port := range svc.Spec.Ports {
-			ports = append(ports, port.Port)
-		}
-		for _, port := range ports {
+		for _, port := range svcRef.Ports {
 			p := port
 
 			rules, err := r.gapiToMeshRouteRules(ctx, mesh, route)
@@ -39,7 +47,7 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 				return nil, err
 			}
 			serviceName := k8s_util.ServiceTag(
-				svcRef,
+				svcRef.Name,
 				&p,
 			)
 
@@ -58,12 +66,12 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 				},
 			}
 			// producer route
-			if route.Namespace == svcRef.Namespace {
+			if route.Namespace == svcRef.Name.Namespace {
 				targetRef = common_api.TargetRef{
 					Kind: common_api.Mesh,
 				}
 			}
-			routeSubName := fmt.Sprintf("%s-%s-%d", svc.Name, svc.Namespace, port)
+			routeSubName := fmt.Sprintf("%s-%s-%d", svcRef.Name.Name, svcRef.Name.Namespace, port)
 			routes[routeSubName] = v1alpha1.MeshHTTPRoute{
 				TargetRef: targetRef,
 				To:        to,

@@ -128,7 +128,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		return nil, nil, nil, err
 	}
 
-	var services []kube_types.NamespacedName
+	var services []ServiceAndPorts
 	var selectors []*mesh_proto.Selector
 
 	// The conditions we accumulate for each ParentRef
@@ -161,9 +161,15 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
 				}
-				services = append(services,
-					kube_types.NamespacedName{Name: string(ref.Name), Namespace: namespace},
-				)
+				namespacedName := kube_types.NamespacedName{Name: string(ref.Name), Namespace: namespace}
+				var svc kube_core.Service
+				if err := r.Client.Get(ctx, namespacedName, &svc); err != nil {
+					if !kube_apierrs.IsNotFound(err) {
+						return nil, nil, nil, err
+					}
+					continue // TODO what does the spec say? does NoMatchingParent apply?
+				}
+				services = append(services, serviceAndPorts(&svc))
 			}
 		default:
 			var reason string
