@@ -11,11 +11,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 )
 
-type Clusters interface {
-	GetCluster(name string) Cluster
-	Cluster
-}
-
 type InstallationMode string
 
 var (
