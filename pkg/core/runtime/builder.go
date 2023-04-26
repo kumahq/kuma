@@ -58,8 +58,8 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	Hashing() multitenant.Hashing
-	ConfigCustomization() postgres.PgxConfigCustomizationFn
+	HashingFn() multitenant.Hashing
+	ConfigCustomizationFn() postgres.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -97,9 +97,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	configCustomization postgres.PgxConfigCustomizationFn
-	hashing  multitenant.Hashing
-	tenantFn multitenant.TenantFn
+	configCustomizationFn postgres.PgxConfigCustomizationFn
+	hashingFn           multitenant.Hashing
+	tenantFn            multitenant.TenantFn
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -267,12 +267,12 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 
 func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashing multitenant.Hashing) *Builder {
 	b.tenantFn = tenantFn
-	b.hashing = hashing
+	b.hashingFn = hashing
 	return b
 }
 
-func (b *Builder) WithConfigCustomization(configCustomization postgres.PgxConfigCustomizationFn) *Builder {
-	b.configCustomization = configCustomization
+func (b *Builder) WithConfigCustomizationFn(configCustomizationFn postgres.PgxConfigCustomizationFn) *Builder {
+	b.configCustomizationFn = configCustomizationFn
 	return b
 }
 
@@ -343,11 +343,11 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.interCpPool == nil {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
-	if b.hashing == nil {
+	if b.hashingFn == nil {
 		return nil, errors.Errorf("Hashing has not been configured")
 	}
-	if b.configCustomization == nil {
-		return nil, errors.Errorf("PgxConfigCustomization has not been configured")
+	if b.configCustomizationFn == nil {
+		return nil, errors.Errorf("PgxConfigCustomizationFn has not been configured")
 	}
 	if b.tenantFn == nil {
 		return nil, errors.Errorf("TenantFn has not been configured")
@@ -382,8 +382,8 @@ func (b *Builder) Build() (Runtime, error) {
 			tokenIssuers:        b.tokenIssuers,
 			meshCache:           b.meshCache,
 			interCpPool:         b.interCpPool,
-			configCustomization: b.configCustomization,
-			hashing:             b.hashing,
+			configCustomizationFn: b.configCustomizationFn,
+			hashingFn:           b.hashingFn,
 			tenantFn:            b.tenantFn,
 		},
 		Manager: b.cm,
@@ -506,12 +506,12 @@ func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
 }
 
-func (b *Builder) Hashing() multitenant.Hashing {
-	return b.hashing
+func (b *Builder) HashingFn() multitenant.Hashing {
+	return b.hashingFn
 }
 
-func (b *Builder) ConfigCustomization() postgres.PgxConfigCustomizationFn {
-	return b.configCustomization
+func (b *Builder) ConfigCustomizationFn() postgres.PgxConfigCustomizationFn {
+	return b.configCustomizationFn
 }
 
 func (b *Builder) TenantFn() multitenant.TenantFn {

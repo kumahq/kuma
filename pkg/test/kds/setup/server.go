@@ -24,9 +24,9 @@ type testRuntimeContext struct {
 	cfg                 kuma_cp.Config
 	components          []component.Component
 	metrics             core_metrics.Metrics
-	hashing             multitenant.Hashing
-	configCustomization postgres.PgxConfigCustomizationFn
-	tenant              multitenant.TenantFn
+	hashingFn             multitenant.Hashing
+	configCustomizationFn postgres.PgxConfigCustomizationFn
+	tenant                multitenant.TenantFn
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -41,12 +41,12 @@ func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
 	return t.metrics
 }
 
-func (t *testRuntimeContext) Hashing() multitenant.Hashing {
-	return t.hashing
+func (t *testRuntimeContext) HashingFn() multitenant.Hashing {
+	return t.hashingFn
 }
 
-func (t *testRuntimeContext) ConfigCustomization() postgres.PgxConfigCustomizationFn {
-	return t.configCustomization
+func (t *testRuntimeContext) ConfigCustomizationFn() postgres.PgxConfigCustomizationFn {
+	return t.configCustomizationFn
 }
 
 func (t *testRuntimeContext) TenantFn() multitenant.TenantFn {
@@ -64,12 +64,12 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		return nil, err
 	}
 	rt := &testRuntimeContext{
-		rom:                 manager.NewResourceManager(store),
-		cfg:                 kuma_cp.Config{},
-		metrics:             metrics,
-		tenant:              multitenant.SingleTenant,
-		hashing:             multitenant.DefaultHashing{},
-		configCustomization: postgres.DefaultPgxConfigCustomizationFn,
+		rom:                   manager.NewResourceManager(store),
+		cfg:                   kuma_cp.Config{},
+		metrics:               metrics,
+		tenant:                multitenant.SingleTenant,
+		hashingFn:             multitenant.DefaultHashingFn,
+		configCustomizationFn: postgres.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
@@ -80,12 +80,12 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		return nil, err
 	}
 	rt := &testRuntimeContext{
-		rom:                 manager.NewResourceManager(store),
-		cfg:                 kuma_cp.Config{},
-		metrics:             metrics,
-		tenant:              multitenant.SingleTenant,
-		hashing:             multitenant.DefaultHashing{},
-		configCustomization: postgres.DefaultPgxConfigCustomizationFn,
+		rom:                   manager.NewResourceManager(store),
+		cfg:                   kuma_cp.Config{},
+		metrics:               metrics,
+		tenant:                multitenant.SingleTenant,
+		hashingFn:             multitenant.DefaultHashingFn,
+		configCustomizationFn: postgres.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

@@ -24,7 +24,7 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashing multitenant.Hashing, tenant multitenant.TenantFn) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger, hashingFn multitenant.Hashing, tenant multitenant.TenantFn) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -32,7 +32,7 @@ func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker
 		accessor:         accessor,
 		store:            store,
 		log:              log,
-		hashing:          hashing,
+		hashingFn:        hashingFn,
 		tenantFn:         tenant,
 	}
 }
@@ -45,9 +45,9 @@ type zoneInsightSink struct {
 	flushBackoff     time.Duration
 	accessor         StatusAccessor
 	store            ZoneInsightStore
-	log              logr.Logger
-	hashing          multitenant.Hashing
-	tenantFn         multitenant.TenantFn
+	log       logr.Logger
+	hashingFn multitenant.Hashing
+	tenantFn  multitenant.TenantFn
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
@@ -68,7 +68,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState[s.hashing.ResourceHashKey(ctx)]) {
+		if proto.Equal(currentState, lastStoredState[s.hashingFn.ResourceHashKey(ctx)]) {
 			return
 		}
 
@@ -80,7 +80,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
-			lastStoredState[s.hashing.ResourceHashKey(ctx)] = currentState
+			lastStoredState[s.hashingFn.ResourceHashKey(ctx)] = currentState
 		}
 	}
 

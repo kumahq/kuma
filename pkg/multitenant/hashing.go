@@ -4,14 +4,13 @@ import (
 	"context"
 )
 
-type Hashing interface {
-	ResourceHashKey(ctx context.Context) string
+type Hashing func(ctx context.Context) string
+
+func (h Hashing) ResourceHashKey(ctx context.Context) string {
+	return h(ctx)
 }
 
-type DefaultHashing struct{}
-
-func (d DefaultHashing) ResourceHashKey(_ context.Context) string {
+var DefaultHashingFn = Hashing(func(ctx context.Context) string {
 	return ""
-}
+})
 
-var _ Hashing = &DefaultHashing{}

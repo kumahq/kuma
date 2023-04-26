@@ -21,14 +21,14 @@ import (
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashing multitenant.Hashing) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.Hashing) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
-		hashing:        hashing,
+		hashingFn:      hashingFn,
 	}
 }
 
@@ -38,7 +38,7 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashing        multitenant.Hashing
+	hashingFn      multitenant.Hashing
 
 	lock sync.Mutex
 }
@@ -146,5 +146,5 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 }
 
 func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
-	return r.hasher.ID(node) + ":" + r.hashing.ResourceHashKey(ctx)
+	return r.hasher.ID(node) + ":" + r.hashingFn.ResourceHashKey(ctx)
 }
