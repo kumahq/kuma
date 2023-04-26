@@ -20,13 +20,13 @@ import (
 
 type testRuntimeContext struct {
 	runtime.Runtime
-	rom                   manager.ReadOnlyResourceManager
-	cfg                   kuma_cp.Config
-	components            []component.Component
-	metrics               core_metrics.Metrics
-	hashingFn             multitenant.Hashing
-	configCustomizationFn config.PgxConfigCustomizationFn
-	tenant                multitenant.TenantFn
+	rom                      manager.ReadOnlyResourceManager
+	cfg                      kuma_cp.Config
+	components               []component.Component
+	metrics                  core_metrics.Metrics
+	hashingFn                multitenant.HashingFn
+	pgxConfigCustomizationFn config.PgxConfigCustomizationFn
+	tenantFn                 multitenant.TenantFn
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -41,16 +41,16 @@ func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
 	return t.metrics
 }
 
-func (t *testRuntimeContext) HashingFn() multitenant.Hashing {
+func (t *testRuntimeContext) HashingFn() multitenant.HashingFn {
 	return t.hashingFn
 }
 
-func (t *testRuntimeContext) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
-	return t.configCustomizationFn
+func (t *testRuntimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomizationFn {
+	return t.pgxConfigCustomizationFn
 }
 
 func (t *testRuntimeContext) TenantFn() multitenant.TenantFn {
-	return t.tenant
+	return t.tenantFn
 }
 
 func (t *testRuntimeContext) Add(c ...component.Component) error {
@@ -64,12 +64,12 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		return nil, err
 	}
 	rt := &testRuntimeContext{
-		rom:                   manager.NewResourceManager(store),
-		cfg:                   kuma_cp.Config{},
-		metrics:               metrics,
-		tenant:                multitenant.SingleTenant,
-		hashingFn:             multitenant.DefaultHashingFn,
-		configCustomizationFn: config.DefaultPgxConfigCustomizationFn,
+		rom:                      manager.NewResourceManager(store),
+		cfg:                      kuma_cp.Config{},
+		metrics:                  metrics,
+		tenantFn:                 multitenant.SingleTenant,
+		hashingFn:                multitenant.DefaultHashingFn,
+		pgxConfigCustomizationFn: config.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
@@ -80,12 +80,12 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		return nil, err
 	}
 	rt := &testRuntimeContext{
-		rom:                   manager.NewResourceManager(store),
-		cfg:                   kuma_cp.Config{},
-		metrics:               metrics,
-		tenant:                multitenant.SingleTenant,
-		hashingFn:             multitenant.DefaultHashingFn,
-		configCustomizationFn: config.DefaultPgxConfigCustomizationFn,
+		rom:                      manager.NewResourceManager(store),
+		cfg:                      kuma_cp.Config{},
+		metrics:                  metrics,
+		tenantFn:                 multitenant.SingleTenant,
+		hashingFn:                multitenant.DefaultHashingFn,
+		pgxConfigCustomizationFn: config.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

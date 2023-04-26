@@ -58,8 +58,8 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	HashingFn() multitenant.Hashing
-	ConfigCustomizationFn() config.PgxConfigCustomizationFn
+	HashingFn() multitenant.HashingFn
+	PgxConfigCustomizationFn() config.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -97,9 +97,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	configCustomizationFn config.PgxConfigCustomizationFn
-	hashingFn             multitenant.Hashing
-	tenantFn              multitenant.TenantFn
+	pgxConfigCustomizationFn config.PgxConfigCustomizationFn
+	hashingFn                multitenant.HashingFn
+	tenantFn                 multitenant.TenantFn
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -265,14 +265,14 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
-func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashing multitenant.Hashing) *Builder {
+func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashingFn multitenant.HashingFn) *Builder {
 	b.tenantFn = tenantFn
-	b.hashingFn = hashing
+	b.hashingFn = hashingFn
 	return b
 }
 
-func (b *Builder) WithConfigCustomizationFn(configCustomizationFn config.PgxConfigCustomizationFn) *Builder {
-	b.configCustomizationFn = configCustomizationFn
+func (b *Builder) WithConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomizationFn) *Builder {
+	b.pgxConfigCustomizationFn = pgxConfigCustomizationFn
 	return b
 }
 
@@ -344,9 +344,9 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
 	if b.hashingFn == nil {
-		return nil, errors.Errorf("Hashing has not been configured")
+		return nil, errors.Errorf("HashingFn has not been configured")
 	}
-	if b.configCustomizationFn == nil {
+	if b.pgxConfigCustomizationFn == nil {
 		return nil, errors.Errorf("PgxConfigCustomizationFn has not been configured")
 	}
 	if b.tenantFn == nil {
@@ -355,36 +355,36 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:                   b.cfg,
-			rm:                    b.rm,
-			rom:                   b.rom,
-			rs:                    b.rs,
-			ss:                    b.ss,
-			cam:                   b.cam,
-			dsl:                   b.dsl,
-			ext:                   b.ext,
-			configm:               b.configm,
-			leadInfo:              b.leadInfo,
-			lif:                   b.lif,
-			eac:                   b.eac,
-			metrics:               b.metrics,
-			erf:                   b.erf,
-			apim:                  b.apim,
-			xds:                   b.xds,
-			cap:                   b.cap,
-			dps:                   b.dps,
-			kdsctx:                b.kdsctx,
-			rv:                    b.rv,
-			au:                    b.au,
-			acc:                   b.acc,
-			appCtx:                b.appCtx,
-			extraReportsFn:        b.extraReportsFn,
-			tokenIssuers:          b.tokenIssuers,
-			meshCache:             b.meshCache,
-			interCpPool:           b.interCpPool,
-			configCustomizationFn: b.configCustomizationFn,
-			hashingFn:             b.hashingFn,
-			tenantFn:              b.tenantFn,
+			cfg:                      b.cfg,
+			rm:                       b.rm,
+			rom:                      b.rom,
+			rs:                       b.rs,
+			ss:                       b.ss,
+			cam:                      b.cam,
+			dsl:                      b.dsl,
+			ext:                      b.ext,
+			configm:                  b.configm,
+			leadInfo:                 b.leadInfo,
+			lif:                      b.lif,
+			eac:                      b.eac,
+			metrics:                  b.metrics,
+			erf:                      b.erf,
+			apim:                     b.apim,
+			xds:                      b.xds,
+			cap:                      b.cap,
+			dps:                      b.dps,
+			kdsctx:                   b.kdsctx,
+			rv:                       b.rv,
+			au:                       b.au,
+			acc:                      b.acc,
+			appCtx:                   b.appCtx,
+			extraReportsFn:           b.extraReportsFn,
+			tokenIssuers:             b.tokenIssuers,
+			meshCache:                b.meshCache,
+			interCpPool:              b.interCpPool,
+			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
+			hashingFn:                b.hashingFn,
+			tenantFn:                 b.tenantFn,
 		},
 		Manager: b.cm,
 	}, nil
@@ -506,12 +506,12 @@ func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
 }
 
-func (b *Builder) HashingFn() multitenant.Hashing {
+func (b *Builder) HashingFn() multitenant.HashingFn {
 	return b.hashingFn
 }
 
-func (b *Builder) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
-	return b.configCustomizationFn
+func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomizationFn {
+	return b.pgxConfigCustomizationFn
 }
 
 func (b *Builder) TenantFn() multitenant.TenantFn {

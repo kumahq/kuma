@@ -21,7 +21,7 @@ import (
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.Hashing) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.HashingFn) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
@@ -38,7 +38,7 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashingFn      multitenant.Hashing
+	hashingFn      multitenant.HashingFn
 
 	lock sync.Mutex
 }

@@ -91,7 +91,7 @@ type syncInfo struct {
 // during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
 // by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
-func NewResyncer(config *Config, tenant multitenant.TenantFn) component.Component {
+func NewResyncer(config *Config, tenantFn multitenant.TenantFn) component.Component {
 	r := &resyncer{
 		minResyncTimeout:     config.MinResyncTimeout,
 		maxResyncTimeout:     config.MaxResyncTimeout,
@@ -103,7 +103,7 @@ func NewResyncer(config *Config, tenant multitenant.TenantFn) component.Componen
 		registry:             config.Registry,
 		addressPortGenerator: config.AddressPortGenerator,
 		now:                  config.Now,
-		tenantFn:             tenant,
+		tenantFn:             tenantFn,
 	}
 
 	r.tick = config.Tick

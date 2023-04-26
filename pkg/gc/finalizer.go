@@ -49,7 +49,7 @@ type subscriptionFinalizer struct {
 	tenantFn  multitenant.TenantFn
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.TenantFn, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenantFn multitenant.TenantFn, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
@@ -63,7 +63,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenant multitenant.Ten
 		types:     types,
 		newTicker: newTicker,
 		insights:  insights,
-		tenantFn:  tenant,
+		tenantFn:  tenantFn,
 	}, nil
 }
 

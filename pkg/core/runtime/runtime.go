@@ -80,8 +80,8 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	HashingFn() multitenant.Hashing
-	ConfigCustomizationFn() config.PgxConfigCustomizationFn
+	HashingFn() multitenant.HashingFn
+	PgxConfigCustomizationFn() config.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -140,37 +140,37 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg                   kuma_cp.Config
-	rm                    core_manager.ResourceManager
-	rs                    core_store.ResourceStore
-	ss                    store.SecretStore
-	cs                    core_store.ResourceStore
-	rom                   core_manager.ReadOnlyResourceManager
-	cam                   ca.Managers
-	dsl                   datasource.Loader
-	ext                   context.Context
-	configm               config_manager.ConfigManager
-	leadInfo              component.LeaderInfo
-	lif                   lookup.LookupIPFunc
-	eac                   admin.EnvoyAdminClient
-	metrics               metrics.Metrics
-	erf                   events.ListenerFactory
-	apim                  api_server.APIInstaller
-	xds                   xds_runtime.XDSRuntimeContext
-	cap                   secrets.CaProvider
-	dps                   *dp_server.DpServer
-	kdsctx                *kds_context.Context
-	rv                    ResourceValidators
-	au                    authn.Authenticator
-	acc                   Access
-	appCtx                context.Context
-	extraReportsFn        ExtraReportsFn
-	tokenIssuers          builtin.TokenIssuers
-	meshCache             *mesh.Cache
-	interCpPool           *client.Pool
-	hashingFn             multitenant.Hashing
-	configCustomizationFn config.PgxConfigCustomizationFn
-	tenantFn              multitenant.TenantFn
+	cfg                      kuma_cp.Config
+	rm                       core_manager.ResourceManager
+	rs                       core_store.ResourceStore
+	ss                       store.SecretStore
+	cs                       core_store.ResourceStore
+	rom                      core_manager.ReadOnlyResourceManager
+	cam                      ca.Managers
+	dsl                      datasource.Loader
+	ext                      context.Context
+	configm                  config_manager.ConfigManager
+	leadInfo                 component.LeaderInfo
+	lif                      lookup.LookupIPFunc
+	eac                      admin.EnvoyAdminClient
+	metrics                  metrics.Metrics
+	erf                      events.ListenerFactory
+	apim                     api_server.APIInstaller
+	xds                      xds_runtime.XDSRuntimeContext
+	cap                      secrets.CaProvider
+	dps                      *dp_server.DpServer
+	kdsctx                   *kds_context.Context
+	rv                       ResourceValidators
+	au                       authn.Authenticator
+	acc                      Access
+	appCtx                   context.Context
+	extraReportsFn           ExtraReportsFn
+	tokenIssuers             builtin.TokenIssuers
+	meshCache                *mesh.Cache
+	interCpPool              *client.Pool
+	hashingFn                multitenant.HashingFn
+	pgxConfigCustomizationFn config.PgxConfigCustomizationFn
+	tenantFn                 multitenant.TenantFn
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -285,12 +285,12 @@ func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
 }
 
-func (rc *runtimeContext) HashingFn() multitenant.Hashing {
+func (rc *runtimeContext) HashingFn() multitenant.HashingFn {
 	return rc.hashingFn
 }
 
-func (rc *runtimeContext) ConfigCustomizationFn() config.PgxConfigCustomizationFn {
-	return rc.configCustomizationFn
+func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomizationFn {
+	return rc.pgxConfigCustomizationFn
 }
 
 func (rc *runtimeContext) TenantFn() multitenant.TenantFn {
