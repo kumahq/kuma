@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("metrics").WithName("store-counter")
@@ -22,12 +21,11 @@ var log = core.Log.WithName("metrics").WithName("store-counter")
 type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
-	tenant     multitenant.Tenant
 }
 
 var _ component.Component = &storeCounter{}
 
-func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenant multitenant.Tenant) (*storeCounter, error) {
+func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics) (*storeCounter, error) {
 	counts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "resources_count",
 	}, []string{"resource_type"})
@@ -39,7 +37,6 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics
 	return &storeCounter{
 		resManager: resManager,
 		counts:     counts,
-		tenant:     tenant,
 	}, nil
 }
 
@@ -50,29 +47,18 @@ func (s *storeCounter) Start(stop <-chan struct{}) error {
 
 func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker) error {
 	defer ticker.Stop()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+
 	log.Info("starting the resource counter")
-
-	tenantIds, err := s.tenant.GetTenantIds(context.Background())
-	if err != nil {
-		log.Error(err, "could not get contexts")
-	}
-
-	for _, tenantId := range tenantIds {
-		if err := s.count(user.Ctx(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId), user.ControlPlane)); err != nil {
-			log.Error(err, "unable to count resources")
-		}
+	if err := s.count(ctx); err != nil {
+		log.Error(err, "unable to count resources")
 	}
 	for {
 		select {
 		case <-ticker.C:
-			tenantIds, err := s.tenant.GetTenantIds(context.Background())
-			if err != nil {
-				log.Error(err, "could not get contexts")
-			}
-			for _, tenantId := range tenantIds {
-				if err := s.count(user.Ctx(context.WithValue(context.TODO(), s.tenant.TenantContextKey(), tenantId), user.ControlPlane)); err != nil {
-					log.Error(err, "unable to count resources")
-				}
+			// TODO: make metrics tenant aware https://github.com/kumahq/kuma/issues/6622
+			if err := s.count(ctx); err != nil {
+				log.Error(err, "unable to count resources")
 			}
 		case <-stop:
 			log.Info("stopping")

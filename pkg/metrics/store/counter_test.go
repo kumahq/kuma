@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -54,7 +55,7 @@ var _ = Describe("Counter", func() {
 		resManager = manager.NewResourceManager(store)
 
 		counterTicker := time.NewTicker(500 * time.Millisecond)
-		counter, err := metrics_store.NewStoreCounter(resManager, metrics, multitenant.DefaultTenant{})
+		counter, err := metrics_store.NewStoreCounter(resManager, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
 		resyncer := insights.NewResyncer(&insights.Config{
