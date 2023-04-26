@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"net"
 	"net/http"
 	"time"
@@ -132,9 +133,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
-	builder.WithTenant(multitenant.SingleTenant)
-	builder.WithHashing(multitenant.DefaultHashing{})
-	builder.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
+	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.DefaultHashing{})
+	builder.WithConfigCustomization(postgres.DefaultPgxConfigCustomizationFn)
 
 	initializeConfigManager(builder)
 

@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_events "github.com/kumahq/kuma/pkg/events"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 	"github.com/kumahq/kuma/pkg/util/channels"
@@ -113,7 +112,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
 		cfg.DriverName = postgres_config.DriverNamePgx
-		pStore, err = NewPgxStore(metrics, cfg, multitenant.DefaultPgxConfigCustomization{})
+		pStore, err = NewPgxStore(metrics, cfg, DefaultPgxConfigCustomizationFn)
 	} else {
 		cfg.DriverName = postgres_config.DriverNamePq
 		pStore, err = NewPqStore(metrics, cfg)

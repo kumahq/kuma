@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"net"
 	"net/http"
 
@@ -71,9 +72,8 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	builder.WithTenant(multitenant.SingleTenant)
-	builder.WithHashing(multitenant.DefaultHashing{})
-	builder.WithConfigCustomization(multitenant.DefaultPgxConfigCustomization{})
+	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.DefaultHashing{})
+	builder.WithConfigCustomization(postgres.DefaultPgxConfigCustomizationFn)
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}

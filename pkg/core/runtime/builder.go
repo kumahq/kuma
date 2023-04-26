@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"os"
 	"time"
 
@@ -58,7 +59,7 @@ type BuilderContext interface {
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
 	Hashing() multitenant.Hashing
-	ConfigCustomization() multitenant.PgxConfigCustomization
+	ConfigCustomization() postgres.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -96,9 +97,9 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
-	configCustomization multitenant.PgxConfigCustomization
-	hashing             multitenant.Hashing
-	tenant              multitenant.TenantFn
+	configCustomization postgres.PgxConfigCustomizationFn
+	hashing  multitenant.Hashing
+	tenantFn multitenant.TenantFn
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -264,18 +265,14 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
-func (b *Builder) WithHashing(hashing multitenant.Hashing) *Builder {
+func (b *Builder) WithMultitenancy(tenantFn multitenant.TenantFn, hashing multitenant.Hashing) *Builder {
+	b.tenantFn = tenantFn
 	b.hashing = hashing
 	return b
 }
 
-func (b *Builder) WithConfigCustomization(configCustomization multitenant.PgxConfigCustomization) *Builder {
+func (b *Builder) WithConfigCustomization(configCustomization postgres.PgxConfigCustomizationFn) *Builder {
 	b.configCustomization = configCustomization
-	return b
-}
-
-func (b *Builder) WithTenant(tenant multitenant.TenantFn) *Builder {
-	b.tenant = tenant
 	return b
 }
 
@@ -352,7 +349,7 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.configCustomization == nil {
 		return nil, errors.Errorf("PgxConfigCustomization has not been configured")
 	}
-	if b.tenant == nil {
+	if b.tenantFn == nil {
 		return nil, errors.Errorf("TenantFn has not been configured")
 	}
 	return &runtime{
@@ -387,7 +384,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:         b.interCpPool,
 			configCustomization: b.configCustomization,
 			hashing:             b.hashing,
-			tenantFn:            b.tenant,
+			tenantFn:            b.tenantFn,
 		},
 		Manager: b.cm,
 	}, nil
@@ -513,10 +510,10 @@ func (b *Builder) Hashing() multitenant.Hashing {
 	return b.hashing
 }
 
-func (b *Builder) ConfigCustomization() multitenant.PgxConfigCustomization {
+func (b *Builder) ConfigCustomization() postgres.PgxConfigCustomizationFn {
 	return b.configCustomization
 }
 
 func (b *Builder) TenantFn() multitenant.TenantFn {
-	return b.tenant
+	return b.tenantFn
 }

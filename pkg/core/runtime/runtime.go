@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"sync"
 	"time"
 
@@ -80,7 +81,7 @@ type RuntimeContext interface {
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
 	Hashing() multitenant.Hashing
-	ConfigCustomization() multitenant.PgxConfigCustomization
+	ConfigCustomization() postgres.PgxConfigCustomizationFn
 	TenantFn() multitenant.TenantFn
 }
 
@@ -168,7 +169,7 @@ type runtimeContext struct {
 	meshCache           *mesh.Cache
 	interCpPool         *client.Pool
 	hashing             multitenant.Hashing
-	configCustomization multitenant.PgxConfigCustomization
+	configCustomization postgres.PgxConfigCustomizationFn
 	tenantFn            multitenant.TenantFn
 }
 
@@ -288,7 +289,7 @@ func (rc *runtimeContext) Hashing() multitenant.Hashing {
 	return rc.hashing
 }
 
-func (rc *runtimeContext) ConfigCustomization() multitenant.PgxConfigCustomization {
+func (rc *runtimeContext) ConfigCustomization() postgres.PgxConfigCustomizationFn {
 	return rc.configCustomization
 }
 

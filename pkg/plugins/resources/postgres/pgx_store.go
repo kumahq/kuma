@@ -18,7 +18,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type pgxResourceStore struct {
@@ -27,7 +26,7 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer multitenant.PgxConfigCustomization) (store.ResourceStore, error) {
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer PgxConfigCustomizationFn) (store.ResourceStore, error) {
 	pool, err := connect(config, customizer)
 	if err != nil {
 		return nil, err
@@ -42,7 +41,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}, nil
 }
 
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer multitenant.PgxConfigCustomization) (*pgxpool.Pool, error) {
+func connect(postgresStoreConfig config.PostgresStoreConfig, customizer PgxConfigCustomizationFn) (*pgxpool.Pool, error) {
 	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	"time"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -24,7 +25,7 @@ type testRuntimeContext struct {
 	components          []component.Component
 	metrics             core_metrics.Metrics
 	hashing             multitenant.Hashing
-	configCustomization multitenant.PgxConfigCustomization
+	configCustomization postgres.PgxConfigCustomizationFn
 	tenant              multitenant.TenantFn
 }
 
@@ -44,7 +45,7 @@ func (t *testRuntimeContext) Hashing() multitenant.Hashing {
 	return t.hashing
 }
 
-func (t *testRuntimeContext) ConfigCustomization() multitenant.PgxConfigCustomization {
+func (t *testRuntimeContext) ConfigCustomization() postgres.PgxConfigCustomizationFn {
 	return t.configCustomization
 }
 
@@ -68,7 +69,7 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		metrics:             metrics,
 		tenant:              multitenant.SingleTenant,
 		hashing:             multitenant.DefaultHashing{},
-		configCustomization: multitenant.DefaultPgxConfigCustomization{},
+		configCustomization: postgres.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
@@ -84,7 +85,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		metrics:             metrics,
 		tenant:              multitenant.SingleTenant,
 		hashing:             multitenant.DefaultHashing{},
-		configCustomization: multitenant.DefaultPgxConfigCustomization{},
+		configCustomization: postgres.DefaultPgxConfigCustomizationFn,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

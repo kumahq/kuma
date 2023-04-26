@@ -7,7 +7,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
@@ -31,7 +30,7 @@ var _ = Describe("PostgresStore template", func() {
 			var pStore store.ResourceStore
 			if storeName == "pgx" {
 				cfg.DriverName = postgres.DriverNamePgx
-				pStore, err = NewPgxStore(pgxMetrics, *cfg, multitenant.DefaultPgxConfigCustomization{})
+				pStore, err = NewPgxStore(pgxMetrics, *cfg, DefaultPgxConfigCustomizationFn)
 			} else {
 				cfg.DriverName = postgres.DriverNamePq
 				pStore, err = NewPqStore(pqMetrics, *cfg)
