@@ -20,7 +20,7 @@ var _ Hashing = &DefaultHashing{}
 func (d DefaultHashing) GetOptionsFunc() store.GetOptionsFunc {
 	return func(options *store.GetOptions) {
 		options.KeyFromContext = func(ctx context.Context) string {
-			return "global"
+			return ""
 		}
 	}
 }
@@ -28,7 +28,7 @@ func (d DefaultHashing) GetOptionsFunc() store.GetOptionsFunc {
 func (d DefaultHashing) ListOptionsFunc() store.ListOptionsFunc {
 	return func(options *store.ListOptions) {
 		options.Suffix = func(ctx context.Context) string {
-			return "global"
+			return ""
 		}
 	}
 }
