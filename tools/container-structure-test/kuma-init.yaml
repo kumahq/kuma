@@ -10,10 +10,10 @@ commandTests:
 - name: "Contains kumactl"
   command: kumactl
   args: ["version"]
-- name: "Contains iptables (legacy)"
+- name: "Contains iptables"
   command: iptables
   args: ["--version"]
-  expectedOutput: ["iptables v.*(legacy)"]
+  expectedOutput: ["iptables v.*"]
 
 metadataTest:
   entrypoint: ["/usr/bin/kumactl"]
