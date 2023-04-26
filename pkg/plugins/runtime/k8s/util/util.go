@@ -8,6 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -169,12 +170,12 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 	return model.DefaultMesh
 }
 
-// ServiceTagFor returns the canonical service name for a Kubernetes service,
+// ServiceTag returns the canonical service name for a Kubernetes service,
 // optionally with a specific port.
-func ServiceTagFor(svc *kube_core.Service, svcPort *int32) string {
+func ServiceTag(name kube_types.NamespacedName, svcPort *int32) string {
 	port := ""
 	if svcPort != nil {
 		port = fmt.Sprintf("_%d", *svcPort)
 	}
-	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
+	return fmt.Sprintf("%s_%s_svc%s", name.Name, name.Namespace, port)
 }

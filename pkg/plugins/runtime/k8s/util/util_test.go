@@ -9,6 +9,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -655,7 +656,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// then
-			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
+			Expect(util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
 		})
 	})
 })
