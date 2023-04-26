@@ -44,7 +44,7 @@ type reconciler struct {
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
-	id := r.hashing.KdsHashFn(ctx, r.hasher.ID(node))
+	id := r.hashId(ctx, node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
@@ -68,7 +68,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hashing.KdsHashFn(ctx, r.hasher.ID(node))
+	id := r.hashId(ctx, node)
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(ctx, new, old)
 	r.logChanges(new, old, node)
@@ -143,4 +143,8 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
 		}
 	}
+}
+
+func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
+	return r.hasher.ID(node) + ":" + r.hashing.ResourceHashKey(ctx)
 }

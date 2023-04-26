@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/multitenant"
-
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"go.uber.org/multierr"

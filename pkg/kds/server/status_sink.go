@@ -68,7 +68,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState[s.hashing.SinkStatusCacheKey(ctx)]) {
+		if proto.Equal(currentState, lastStoredState[s.hashing.ResourceHashKey(ctx)]) {
 			return
 		}
 
@@ -80,7 +80,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
-			lastStoredState[s.hashing.SinkStatusCacheKey(ctx)] = currentState
+			lastStoredState[s.hashing.ResourceHashKey(ctx)] = currentState
 		}
 	}
 
