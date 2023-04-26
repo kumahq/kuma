@@ -172,10 +172,7 @@ type ResolvedRefsConditionFalse struct {
 	Message string
 }
 
-// gapiToKumaRef checks a reference and tries to resolve if it's supported by
-// Kuma. It returns a condition with Reason/Message if it fails or an error for
-// unexpected errors.
-func (r *HTTPRouteReconciler) gapiToKumaRef(
+func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (map[string]string, *ResolvedRefsConditionFalse, error) {
 	unresolvedBackendTags := map[string]string{
@@ -186,17 +183,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 
 	gk := policyRef.GroupKindReferredTo()
 	namespacedName := policyRef.NamespacedNameReferredTo()
-
-	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
-		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
-	} else if !permitted {
-		return unresolvedBackendTags,
-			&ResolvedRefsConditionFalse{
-				Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
-				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
-			},
-			nil
-	}
 
 	switch {
 	case gk.Kind == "Service" && gk.Group == "":
@@ -244,6 +230,35 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			Message: "backend reference must be Service or externalservice.kuma.io",
 		},
 		nil
+}
+
+// gapiToKumaRef checks a reference and tries to resolve if it's supported by
+// Kuma. It returns a condition with Reason/Message if it fails or an error for
+// unexpected errors.
+func (r *HTTPRouteReconciler) gapiToKumaRef(
+	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
+) (map[string]string, *ResolvedRefsConditionFalse, error) {
+	unresolvedBackendTags := map[string]string{
+		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
+	}
+
+	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
+
+	gk := policyRef.GroupKindReferredTo()
+	namespacedName := policyRef.NamespacedNameReferredTo()
+
+	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
+	} else if !permitted {
+		return unresolvedBackendTags,
+			&ResolvedRefsConditionFalse{
+				Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
+				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
+			},
+			nil
+	}
+
+	return r.uncheckedGapiToKumaRef(ctx, mesh, objectNamespace, ref)
 }
 
 func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRoute_HttpRoute_Match, error) {

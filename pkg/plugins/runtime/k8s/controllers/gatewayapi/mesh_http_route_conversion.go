@@ -110,7 +110,8 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 	for _, gapiBackendRef := range rule.BackendRefs {
 		// TODO condition
-		ref, _, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, gapiBackendRef.BackendObjectReference)
+		// ReferenceGrants don't need to be taken into account for Mesh
+		ref, _, err := r.uncheckedGapiToKumaRef(ctx, mesh, route.Namespace, gapiBackendRef.BackendObjectReference)
 		if err != nil {
 			return v1alpha1.Rule{}, err
 		}
