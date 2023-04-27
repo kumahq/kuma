@@ -160,7 +160,7 @@ func (k *KumactlOptions) KumactlInstallObservability(namespace string, component
 	return k.RunKumactlAndGetOutput(args...)
 }
 
-func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string) error {
+func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string, headers []string) error {
 	_, err := retry.DoWithRetryE(k.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			args := []string{
@@ -168,6 +168,9 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 				"--overwrite",
 				"--name", name,
 				"--address", address,
+			}
+			if len(headers) > 0 {
+				args = append(args, "--headers", strings.Join(headers, ","))
 			}
 			if token != "" {
 				args = append(args,
@@ -178,6 +181,24 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 			err := k.RunKumactl(args...)
 			if err != nil {
 				return "Unable to register Kuma CP. Try again.", err
+			}
+
+			return "", nil
+		})
+
+	return err
+}
+
+func (k *KumactlOptions) KumactlConfigControlPlanesSwitch(name string) error {
+	_, err := retry.DoWithRetryE(k.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			args := []string{
+				"config", "control-planes", "switch",
+				"--name", name,
+			}
+			err := k.RunKumactl(args...)
+			if err != nil {
+				return "Unable to switch Kuma CP. Try again.", err
 			}
 
 			return "", nil

@@ -47,7 +47,7 @@ func NewUniversalControlPlane(
 		return nil, err
 	}
 
-	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token); err != nil {
+	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, []string{}); err != nil {
 		return nil, err
 	}
 	return ucp, nil

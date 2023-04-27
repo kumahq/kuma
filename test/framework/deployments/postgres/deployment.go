@@ -38,12 +38,13 @@ type PostgresDeployment interface {
 }
 
 type deployOptions struct {
-	namespace      string
-	deploymentName string
-	username       string
-	password       string
-	database       string
-	primaryName    string
+	namespace        string
+	deploymentName   string
+	username         string
+	password         string
+	database         string
+	primaryName      string
+	postgresPassword string
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -98,5 +99,11 @@ func WithDatabase(database string) DeployOptionsFunc {
 func WithPrimaryName(primaryName string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.primaryName = primaryName
+	}
+}
+
+func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.postgresPassword = postgresPassword
 	}
 }

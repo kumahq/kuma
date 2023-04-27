@@ -26,10 +26,11 @@ func (t *k8SDeployment) Name() string {
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	helmOpts := &helm.Options{
 		SetValues: map[string]string{
-			"global.postgresql.auth.username": t.options.username,
-			"global.postgresql.auth.password": t.options.password,
-			"global.postgresql.auth.database": t.options.database,
-			"postgresql.primary.fullname":     t.options.primaryName,
+			"global.postgresql.auth.postgresPassword": t.options.postgresPassword,
+			"global.postgresql.auth.username":         t.options.username,
+			"global.postgresql.auth.password":         t.options.password,
+			"global.postgresql.auth.database":         t.options.database,
+			"postgresql.primary.fullname":             t.options.primaryName,
 		},
 		KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
 	}

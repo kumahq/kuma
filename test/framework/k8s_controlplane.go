@@ -177,7 +177,7 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 		return err
 	}
 	token = t
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, []string{})
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
