@@ -4,7 +4,7 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
-import "mesh/options.proto";
+import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 

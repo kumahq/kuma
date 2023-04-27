@@ -2,7 +2,7 @@
 
 set -o pipefail
 set -o nounset
-set -x
+set -e
 
 HELM_VALUES_FILE=$1
 HELM_CRD_DIR=$2
@@ -37,14 +37,7 @@ for policy in "${@:4}"; do
 done
 
 # yq_patch preserves indentation and blank lines of the original file
-function yq_patch() {
-  cat "$2" > "$2.noblank"
-  yq eval "$1" "$2" | diff -w -B "$2.noblank" - | patch -f --no-backup-if-mismatch "$2" -
-  rm "$2.noblank"
-}
-
-yq_patch "${VALUES_FILE_POLICY_PATH}"' = {}' "${HELM_VALUES_FILE}"
-
-for policy in $policies; do
-  yq_patch "${VALUES_FILE_POLICY_PATH}.${policy}"' = {}' "${HELM_VALUES_FILE}"
-done
+cat "${HELM_VALUES_FILE}" > "${HELM_VALUES_FILE}.noblank"
+# shellcheck disable=SC2016
+policies="${policies}" yq "${VALUES_FILE_POLICY_PATH}"' |= ((env(policies) | trim | split(" "))[] as $item ireduce ({}; .[$item] = {}))' "${HELM_VALUES_FILE}" | diff -w -B "${HELM_VALUES_FILE}.noblank" - | patch -f --no-backup-if-mismatch "${HELM_VALUES_FILE}" -
+rm -f "${HELM_VALUES_FILE}.noblank"
