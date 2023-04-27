@@ -102,10 +102,25 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, rule gatewayapi.HTTPRouteRule,
 ) (v1alpha1.Rule, error) {
 	var matches []v1alpha1.Match
+	var filters []v1alpha1.Filter
 	var backendRefs []v1alpha1.BackendRef
 
 	for _, gapiMatch := range rule.Matches {
-		matches = append(matches, r.gapiToKumaMeshMatch(gapiMatch))
+		match, ok := r.gapiToKumaMeshMatch(gapiMatch)
+		if !ok {
+			continue
+			// TODO set condition
+		}
+		matches = append(matches, match)
+	}
+
+	for _, gapiFilter := range rule.Filters {
+		filter, ok := r.gapiToKumaMeshFilter(ctx, mesh, route.Namespace, gapiFilter)
+		if !ok {
+			continue
+			// TODO set condition
+		}
+		filters = append(filters, filter)
 	}
 
 	for _, gapiBackendRef := range rule.BackendRefs {
@@ -128,12 +143,13 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	return v1alpha1.Rule{
 		Matches: matches,
 		Default: v1alpha1.RuleConf{
+			Filters:     &filters,
 			BackendRefs: &backendRefs,
 		},
 	}, nil
 }
 
-func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRouteMatch) v1alpha1.Match {
+func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRouteMatch) (v1alpha1.Match, bool) {
 	var match v1alpha1.Match
 
 	match.Path = &v1alpha1.PathMatch{
@@ -150,5 +166,142 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		match.Headers = append(match.Headers, header)
 	}
 
-	return match
+	for _, gapiParam := range gapiMatch.QueryParams {
+		var param v1alpha1.QueryParamsMatch
+		switch *gapiParam.Type {
+		case gatewayapi.QueryParamMatchExact:
+			param = v1alpha1.QueryParamsMatch{
+				Type:  v1alpha1.ExactQueryMatch,
+				Value: gapiParam.Value,
+			}
+		case gatewayapi.QueryParamMatchRegularExpression:
+			param = v1alpha1.QueryParamsMatch{
+				Type:  v1alpha1.RegularExpressionQueryMatch,
+				Value: gapiParam.Value,
+			}
+		default:
+			return v1alpha1.Match{}, false
+		}
+		match.QueryParams = append(match.QueryParams, param)
+	}
+
+	if gapiMatch.Method != nil {
+		match.Method = (*v1alpha1.Method)(gapiMatch.Method)
+	}
+
+	return match, true
+}
+
+func fromGAPIHeaders(gapiHeaders []gatewayapi.HTTPHeader) []v1alpha1.HeaderKeyValue {
+	var headers []v1alpha1.HeaderKeyValue
+	for _, header := range gapiHeaders {
+		headers = append(headers, v1alpha1.HeaderKeyValue{
+			Name:  common_api.HeaderName(header.Name),
+			Value: common_api.HeaderValue(header.Value),
+		})
+	}
+	return headers
+}
+
+func fromGAPIPath(gapiPath gatewayapi.HTTPPathModifier) (v1alpha1.PathRewrite, bool) {
+	switch gapiPath.Type {
+	case gatewayapi.FullPathHTTPPathModifier:
+		return v1alpha1.PathRewrite{
+			Type:            v1alpha1.ReplaceFullPathType,
+			ReplaceFullPath: gapiPath.ReplaceFullPath,
+		}, true
+	case gatewayapi.PrefixMatchHTTPPathModifier:
+		return v1alpha1.PathRewrite{
+			Type:               v1alpha1.ReplacePrefixMatchType,
+			ReplacePrefixMatch: gapiPath.ReplacePrefixMatch,
+		}, true
+	default:
+		return v1alpha1.PathRewrite{}, false
+	}
+}
+
+func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(ctx context.Context, mesh, routeNamespace string, gapiFilter gatewayapi.HTTPRouteFilter) (v1alpha1.Filter, bool) {
+	switch gapiFilter.Type {
+	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
+		modifier := gapiFilter.RequestHeaderModifier
+		return v1alpha1.Filter{
+			Type: v1alpha1.RequestHeaderModifierType,
+			RequestHeaderModifier: &v1alpha1.HeaderModifier{
+				Add:    fromGAPIHeaders(modifier.Add),
+				Set:    fromGAPIHeaders(modifier.Set),
+				Remove: modifier.Remove,
+			},
+		}, true
+	case gatewayapi.HTTPRouteFilterResponseHeaderModifier:
+		modifier := gapiFilter.ResponseHeaderModifier
+		return v1alpha1.Filter{
+			Type: v1alpha1.ResponseHeaderModifierType,
+			ResponseHeaderModifier: &v1alpha1.HeaderModifier{
+				Add:    fromGAPIHeaders(modifier.Add),
+				Set:    fromGAPIHeaders(modifier.Set),
+				Remove: modifier.Remove,
+			},
+		}, true
+	case gatewayapi.HTTPRouteFilterRequestRedirect:
+		redirect := gapiFilter.RequestRedirect
+
+		var path *v1alpha1.PathRewrite
+		if gapiPath := redirect.Path; gapiPath != nil {
+			var ok bool
+			*path, ok = fromGAPIPath(*gapiPath)
+			if !ok {
+				return v1alpha1.Filter{}, false
+			}
+		}
+
+		return v1alpha1.Filter{
+			Type: v1alpha1.RequestRedirectType,
+			RequestRedirect: &v1alpha1.RequestRedirect{
+				Scheme:     redirect.Scheme,
+				Hostname:   (*v1alpha1.PreciseHostname)(redirect.Hostname),
+				Path:       path,
+				Port:       (*v1alpha1.PortNumber)(redirect.Port),
+				StatusCode: redirect.StatusCode,
+			},
+		}, true
+	case gatewayapi.HTTPRouteFilterURLRewrite:
+		rewrite := gapiFilter.URLRewrite
+
+		var path *v1alpha1.PathRewrite
+		if gapiPath := rewrite.Path; gapiPath != nil {
+			var ok bool
+			*path, ok = fromGAPIPath(*gapiPath)
+			if !ok {
+				return v1alpha1.Filter{}, false
+			}
+		}
+
+		return v1alpha1.Filter{
+			Type: v1alpha1.URLRewriteType,
+			URLRewrite: &v1alpha1.URLRewrite{
+				Hostname: (*v1alpha1.PreciseHostname)(rewrite.Hostname),
+				Path:     path,
+			},
+		}, true
+	case gatewayapi.HTTPRouteFilterRequestMirror:
+		mirror := gapiFilter.RequestMirror
+
+		// TODO conditions
+		ref, _, err := r.uncheckedGapiToKumaRef(ctx, mesh, routeNamespace, mirror.BackendRef)
+		if err != nil {
+			return v1alpha1.Filter{}, false
+		}
+
+		return v1alpha1.Filter{
+			Type: v1alpha1.RequestMirrorType,
+			RequestMirror: &v1alpha1.RequestMirror{
+				BackendRef: common_api.TargetRef{
+					Kind: common_api.MeshService,
+					Name: ref[mesh_proto.ServiceTag],
+				},
+			},
+		}, true
+	default:
+		return v1alpha1.Filter{}, false
+	}
 }
