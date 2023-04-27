@@ -11,7 +11,7 @@ import (
 // Reconciler re-computes configuration for a given node.
 type Reconciler interface {
 	Reconcile(context.Context, *envoy_core.Node) error
-	Clear(*envoy_core.Node)
+	Clear(context.Context, *envoy_core.Node)
 }
 
 // Generates a snapshot of xDS resources for a given node.

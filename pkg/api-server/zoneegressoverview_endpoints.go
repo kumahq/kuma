@@ -42,6 +42,7 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgress(
 	name := request.PathParameter("name")
 
 	if err := r.resourceAccess.ValidateGet(
+		request.Request.Context(),
 		model.ResourceKey{Name: name},
 		mesh.NewZoneEgressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
@@ -91,6 +92,7 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgresses(
 	response *restful.Response,
 ) {
 	if err := r.resourceAccess.ValidateList(
+		request.Request.Context(),
 		"",
 		mesh.NewZoneEgressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),

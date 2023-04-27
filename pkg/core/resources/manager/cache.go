@@ -24,13 +24,14 @@ type cachedManager struct {
 	cache    *cache.Cache
 	metrics  *prometheus.CounterVec
 
-	mutexes  map[string]*sync.Mutex
-	mapMutex sync.Mutex // guards "mutexes" field
+	mutexes     map[string]*sync.Mutex
+	mapMutex    sync.Mutex // guards "mutexes" field
+	hashKeyFunc func(ctx context.Context) string
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
 
-func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics) (ReadOnlyResourceManager, error) {
+func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics, hashKeyFunc func(ctx context.Context) string) (ReadOnlyResourceManager, error) {
 	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "store_cache",
 		Help: "Summary of Store Cache",
@@ -39,16 +40,22 @@ func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Dura
 		return nil, err
 	}
 	return &cachedManager{
-		delegate: delegate,
-		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
-		metrics:  metric,
-		mutexes:  map[string]*sync.Mutex{},
+		delegate:    delegate,
+		cache:       cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		metrics:     metric,
+		mutexes:     map[string]*sync.Mutex{},
+		hashKeyFunc: hashKeyFunc,
 	}, nil
 }
 
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
+	if c.hashKeyFunc != nil {
+		fs = append(fs, func(options *store.GetOptions) {
+			options.KeyFromContext = c.hashKeyFunc
+		})
+	}
 	opts := store.NewGetOptions(fs...)
-	cacheKey := fmt.Sprintf("GET:%s:%s", res.Descriptor().Name, opts.HashCode())
+	cacheKey := fmt.Sprintf("GET:%s:%s", res.Descriptor().Name, opts.HashCode(ctx))
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
@@ -84,11 +91,16 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 }
 
 func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
+	if c.hashKeyFunc != nil {
+		fs = append(fs, func(options *store.ListOptions) {
+			options.KeyFromContext = c.hashKeyFunc
+		})
+	}
 	opts := store.NewListOptions(fs...)
 	if !opts.IsCacheable() {
 		return fmt.Errorf("filter functions are not allowed for cached store")
 	}
-	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
+	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode(ctx))
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.

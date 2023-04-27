@@ -53,6 +53,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 	meshName := r.meshFromRequest(request)
 
 	if err := r.resourceAccess.ValidateGet(
+		request.Request.Context(),
 		model.ResourceKey{Mesh: meshName, Name: name},
 		r.descriptor,
 		user.FromCtx(request.Request.Context()),
@@ -85,6 +86,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 	meshName := r.meshFromRequest(request)
 
 	if err := r.resourceAccess.ValidateList(
+		request.Request.Context(),
 		meshName,
 		r.descriptor,
 		user.FromCtx(request.Request.Context()),
@@ -160,6 +162,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 
 func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
 	if err := r.resourceAccess.ValidateCreate(
+		ctx,
 		model.ResourceKey{Mesh: meshName, Name: name},
 		spec,
 		r.descriptor,
@@ -185,6 +188,7 @@ func (r *resourceEndpoints) updateResource(
 	response *restful.Response,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
+		ctx,
 		model.ResourceKey{Mesh: currentRes.GetMeta().GetMesh(), Name: currentRes.GetMeta().GetName()},
 		currentRes.GetSpec(),
 		newSpec,
@@ -235,6 +239,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 
 	if err := r.resourceAccess.ValidateDelete(
+		request.Request.Context(),
 		model.ResourceKey{Mesh: meshName, Name: name},
 		resource.GetSpec(),
 		resource.Descriptor(),
