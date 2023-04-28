@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	kuma_core "github.com/kumahq/kuma/pkg/core"
 	"net"
 	"net/http"
 	"strconv"
@@ -21,6 +22,8 @@ import (
 )
 
 var _ ControlPlane = &K8sControlPlane{}
+
+var log = kuma_core.Log.WithName("test-framework-k8s-cp")
 
 type K8sControlPlane struct {
 	t          testing.TestingT
@@ -181,6 +184,9 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"] != "tokens" {
+		return "", nil
+	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
