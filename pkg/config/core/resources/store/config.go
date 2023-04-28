@@ -93,7 +93,7 @@ func (c CacheStoreConfig) Validate() error {
 
 func DefaultCacheStoreConfig() CacheStoreConfig {
 	return CacheStoreConfig{
-		Enabled:        true,
+		Enabled:        false, // stopped working, probably something wrong with the hashing function
 		ExpirationTime: config_types.Duration{Duration: time.Second},
 	}
 }
