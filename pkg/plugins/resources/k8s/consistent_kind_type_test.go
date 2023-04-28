@@ -32,8 +32,9 @@ var _ = Describe("Consistent Kind Types", func() {
 				continue
 			}
 
-			res, err := types.NewObject(typ)
+			desc, err := types.DescriptorFor(typ)
 			Expect(err).ToNot(HaveOccurred())
+			res := desc.NewObject()
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -50,8 +51,7 @@ var _ = Describe("Consistent Kind Types", func() {
 				continue
 			}
 
-			res, err := types.NewObject(desc.Name)
-			Expect(err).ToNot(HaveOccurred())
+			res := desc.NewObject()
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 

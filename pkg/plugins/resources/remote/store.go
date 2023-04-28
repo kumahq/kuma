@@ -143,9 +143,9 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
-	resourceApi, err := s.api.GetResourceApi(rs.GetItemType())
+	resourceApi, err := s.api.GetResourceApi(rs.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
+		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.Descriptor().Name)
 	}
 	opts := store.NewListOptions(fs...)
 	req, err := http.NewRequest("GET", resourceApi.List(opts.Mesh), nil)

@@ -88,20 +88,16 @@ type MeshFaultInjectionResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshFaultInjectionResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshFaultInjectionResourceTypeDescriptor
+}
+
 func (l *MeshFaultInjectionResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshFaultInjectionResourceList) GetItemType() model.ResourceType {
-	return MeshFaultInjectionType
-}
-
-func (l *MeshFaultInjectionResourceList) NewItem() model.Resource {
-	return NewMeshFaultInjectionResource()
 }
 
 func (l *MeshFaultInjectionResourceList) AddItem(r model.Resource) error {

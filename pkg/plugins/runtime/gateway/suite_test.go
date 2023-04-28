@@ -25,8 +25,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -145,25 +143,6 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	return &ctx, proxy
 }
 
-// FetchNamedFixture retrieves the named resource from the runtime
-// resource manager.
-func FetchNamedFixture(
-	rt runtime.Runtime,
-	resourceType core_model.ResourceType,
-	key core_model.ResourceKey,
-) (core_model.Resource, error) {
-	r, err := registry.Global().NewObject(resourceType)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := rt.ReadOnlyResourceManager().Get(context.TODO(), r, store.GetBy(key)); err != nil {
-		return nil, err
-	}
-
-	return r, nil
-}
-
 // StoreNamedFixture reads the given YAML file name from the testdata
 // directory, then stores it in the runtime resource manager.
 func StoreNamedFixture(rt runtime.Runtime, name string) error {
@@ -192,10 +171,7 @@ func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 	ctx := context.Background()
 
 	key := core_model.MetaToResourceKey(r.GetMeta())
-	current, err := registry.Global().NewObject(r.Descriptor().Name)
-	if err != nil {
-		return err
-	}
+	current := r.Descriptor().NewObject()
 
 	return manager.Upsert(ctx, mgr, key, current,
 		func(resource core_model.Resource) error {

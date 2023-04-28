@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 // The Pagination Store is handling only the pagination functionality in the List.
@@ -51,20 +50,14 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		return p.delegate.List(ctx, list, optionsFunc...)
 	}
 
-	fullList, err := registry.Global().NewList(list.GetItemType())
+	fullList := list.Descriptor().NewList()
+
+	err := p.delegate.List(ctx, fullList, optionsFunc...)
 	if err != nil {
 		return err
 	}
 
-	err = p.delegate.List(ctx, fullList, optionsFunc...)
-	if err != nil {
-		return err
-	}
-
-	filteredList, err := registry.Global().NewList(list.GetItemType())
-	if err != nil {
-		return err
-	}
+	filteredList := list.Descriptor().NewList()
 
 	for _, item := range fullList.GetItems() {
 		if opts.Filter(item) {

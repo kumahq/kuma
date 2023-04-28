@@ -34,10 +34,11 @@ func (m *OwnerReferenceMutator) InjectDecoder(d *admission.Decoder) error {
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	resType := core_model.ResourceType(req.Kind.Kind)
 
-	coreRes, err := m.CoreRegistry.NewObject(resType)
+	desc, err := m.CoreRegistry.DescriptorFor(resType)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
+	coreRes := desc.NewObject()
 	obj, err := m.K8sRegistry.NewObject(coreRes.GetSpec())
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -57,7 +58,7 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 		}
 	default:
 		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
-		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
+		if err := core_mesh.ValidateMesh(obj.GetMesh(), desc.Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
 		}
 

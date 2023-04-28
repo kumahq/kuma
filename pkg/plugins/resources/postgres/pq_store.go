@@ -178,7 +178,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 
 	statement := `SELECT name, mesh, spec, version, creation_time, modification_time FROM resources WHERE type=$1`
 	var statementArgs []interface{}
-	statementArgs = append(statementArgs, resources.GetItemType())
+	statementArgs = append(statementArgs, resources.Descriptor().Name)
 	argsIndex := 1
 	if opts.Mesh != "" {
 		argsIndex++
@@ -222,7 +222,7 @@ func pqRowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
-	item := resources.NewItem()
+	item := resources.Descriptor().NewObject()
 	if err := core_model.FromJSON([]byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
 	}

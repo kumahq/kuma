@@ -35,7 +35,7 @@ func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resou
 
 func (c *countingResourcesManager) List(ctx context.Context, list core_model.ResourceList, fn ...core_store.ListOptionsFunc) error {
 	opts := core_store.NewListOptions(fn...)
-	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
+	if list.Descriptor().Name == core_mesh.TrafficLogType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
 	atomic.AddUint32(&c.listQueries, 1)

@@ -58,7 +58,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			err := upstream.AddItem(m)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 
 		err := syncer.Sync(context.Background(), upstreamResponse)
@@ -80,7 +80,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 		upstream := &mesh.MeshResourceList{}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = removedResources
 
@@ -108,7 +108,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 		upstreamResponse := client_v2.UpstreamResponse{}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = []model.ResourceKey{
 			model.WithoutMesh("mesh-0"),
@@ -148,7 +148,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 		upstreamResponse := client_v2.UpstreamResponse{}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
 
@@ -169,7 +169,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 		upstreamResponse := client_v2.UpstreamResponse{}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 
 		// when
@@ -197,7 +197,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 
 		upstreamResponse := client_v2.UpstreamResponse{}
-		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.Type = upstream.Descriptor().Name
 		upstreamResponse.AddedResources = upstream
 
 		Expect(syncer.Sync(context.Background(), upstreamResponse)).To(Succeed())

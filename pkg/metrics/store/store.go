@@ -65,7 +65,7 @@ func (m *MeteredStore) Get(ctx context.Context, resource model.Resource, options
 func (m *MeteredStore) List(ctx context.Context, list model.ResourceList, optionsFunc ...store.ListOptionsFunc) error {
 	start := core.Now()
 	defer func() {
-		m.metric.WithLabelValues("list", string(list.GetItemType())).Observe(core.Now().Sub(start).Seconds())
+		m.metric.WithLabelValues("list", string(list.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
 	return m.delegate.List(ctx, list, optionsFunc...)
 }

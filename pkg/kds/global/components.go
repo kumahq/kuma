@@ -180,7 +180,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			if k8sStore {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
-				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
+				kubeObject, err := kubeFactory.NewObject(rs.Descriptor().NewObject())
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}
@@ -189,11 +189,12 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 				}
 			}
 
-			if rs.GetItemType() == core_mesh.ZoneIngressType {
+			switch rs.Descriptor().Name {
+			case core_mesh.ZoneIngressType:
 				for _, zi := range rs.(*core_mesh.ZoneIngressResourceList).Items {
 					zi.Spec.Zone = clusterName
 				}
-			} else if rs.GetItemType() == core_mesh.ZoneEgressType {
+			case core_mesh.ZoneEgressType:
 				for _, ze := range rs.(*core_mesh.ZoneEgressResourceList).Items {
 					ze.Spec.Zone = clusterName
 				}

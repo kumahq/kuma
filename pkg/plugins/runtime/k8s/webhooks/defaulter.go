@@ -18,10 +18,11 @@ type Defaulter interface {
 	Default() error
 }
 
-func DefaultingWebhookFor(converter k8s_common.Converter) *admission.Webhook {
+func DefaultingWebhookFor(reg registry.TypeRegistry, converter k8s_common.Converter) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &defaultingHandler{
 			converter: converter,
+			registry:  reg,
 		},
 	}
 }
@@ -29,6 +30,7 @@ func DefaultingWebhookFor(converter k8s_common.Converter) *admission.Webhook {
 type defaultingHandler struct {
 	converter k8s_common.Converter
 	decoder   *admission.Decoder
+	registry  registry.TypeRegistry
 }
 
 var _ admission.DecoderInjector = &defaultingHandler{}
@@ -39,10 +41,11 @@ func (h *defaultingHandler) InjectDecoder(d *admission.Decoder) error {
 }
 
 func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	resource, err := registry.Global().NewObject(core_model.ResourceType(req.Kind.Kind))
+	desc, err := h.registry.DescriptorFor(core_model.ResourceType(req.Kind.Kind))
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
+	resource := desc.NewObject()
 
 	obj, err := h.converter.ToKubernetesObject(resource)
 	if err != nil {
@@ -69,7 +72,7 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resource.Descriptor().Scope == core_model.ScopeMesh {
+	if desc.Scope == core_model.ScopeMesh {
 		labels := obj.GetLabels()
 		if _, ok := labels[metadata.KumaMeshLabel]; !ok {
 			if len(labels) == 0 {

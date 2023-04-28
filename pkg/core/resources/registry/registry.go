@@ -11,8 +11,6 @@ import (
 type TypeRegistry interface {
 	RegisterType(model.ResourceTypeDescriptor) error
 
-	NewObject(model.ResourceType) (model.Resource, error)
-	NewList(model.ResourceType) (model.ResourceList, error)
 	DescriptorFor(resourceType model.ResourceType) (model.ResourceTypeDescriptor, error)
 
 	ObjectTypes(filters ...model.TypeFilter) []model.ResourceType
@@ -27,6 +25,13 @@ func NewTypeRegistry() TypeRegistry {
 
 type typeRegistry struct {
 	descriptors map[model.ResourceType]model.ResourceTypeDescriptor
+}
+
+func Must(resType model.ResourceTypeDescriptor, err error) model.ResourceTypeDescriptor {
+	if err != nil {
+		panic(err)
+	}
+	return resType
 }
 
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
@@ -74,20 +79,4 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 	}
 	t.descriptors[res.Name] = res
 	return nil
-}
-
-func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, error) {
-	typDesc, ok := t.descriptors[resType]
-	if !ok {
-		return nil, errors.Errorf("invalid resource type %q", resType)
-	}
-	return typDesc.NewObject(), nil
-}
-
-func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, error) {
-	typDesc, ok := t.descriptors[resType]
-	if !ok {
-		return nil, errors.Errorf("invalid resource type %q", resType)
-	}
-	return typDesc.NewList(), nil
 }

@@ -88,20 +88,16 @@ type MeshTimeoutResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshTimeoutResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshTimeoutResourceTypeDescriptor
+}
+
 func (l *MeshTimeoutResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshTimeoutResourceList) GetItemType() model.ResourceType {
-	return MeshTimeoutType
-}
-
-func (l *MeshTimeoutResourceList) NewItem() model.Resource {
-	return NewMeshTimeoutResource()
 }
 
 func (l *MeshTimeoutResourceList) AddItem(r model.Resource) error {

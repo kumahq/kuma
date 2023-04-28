@@ -88,20 +88,16 @@ type MeshTrafficPermissionResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshTrafficPermissionResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshTrafficPermissionResourceTypeDescriptor
+}
+
 func (l *MeshTrafficPermissionResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshTrafficPermissionResourceList) GetItemType() model.ResourceType {
-	return MeshTrafficPermissionType
-}
-
-func (l *MeshTrafficPermissionResourceList) NewItem() model.Resource {
-	return NewMeshTrafficPermissionResource()
 }
 
 func (l *MeshTrafficPermissionResourceList) AddItem(r model.Resource) error {

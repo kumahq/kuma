@@ -88,20 +88,16 @@ type MeshTraceResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshTraceResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshTraceResourceTypeDescriptor
+}
+
 func (l *MeshTraceResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshTraceResourceList) GetItemType() model.ResourceType {
-	return MeshTraceType
-}
-
-func (l *MeshTraceResourceList) NewItem() model.Resource {
-	return NewMeshTraceResource()
 }
 
 func (l *MeshTraceResourceList) AddItem(r model.Resource) error {

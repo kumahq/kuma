@@ -29,8 +29,7 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 
 			resources := desc.NewList()
 			currentMesh := pctx.CurrentMesh()
-			resource := resources.NewItem()
-			if resource.Descriptor().Scope == model.ScopeGlobal {
+			if resources.Descriptor().Scope == model.ScopeGlobal {
 				currentMesh = ""
 			}
 			if err := rs.List(context.Background(), resources, core_store.ListByMesh(currentMesh), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
@@ -39,7 +38,7 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 
 			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
-				return ResolvePrinter(desc.Name, resource.Descriptor().Scope).Print(pctx.Now(), resources, cmd.OutOrStdout())
+				return ResolvePrinter(desc.Name, resources.Descriptor().Scope).Print(pctx.Now(), resources, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

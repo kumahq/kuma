@@ -59,7 +59,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 
 func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate k8s_common.ConverterPredicate) error {
 	for _, o := range in.GetItems() {
-		r := out.NewItem()
+		r := out.Descriptor().NewObject()
 		if err := c.ToCoreResource(o, r); err != nil {
 			return err
 		}

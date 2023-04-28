@@ -94,16 +94,17 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 	}
 	// when there isn't nonce it means it's the first request
 	isInitialRequest := true
-	if _, found := s.latestACKed[rs.GetItemType()]; found {
+	resourceType := rs.Descriptor().Name
+	if _, found := s.latestACKed[resourceType]; found {
 		isInitialRequest = false
 	}
-	s.latestReceived[rs.GetItemType()] = &latestReceived{
+	s.latestReceived[resourceType] = &latestReceived{
 		nonce:         resp.Nonce,
 		nameToVersion: nameToVersion,
 	}
 	return UpstreamResponse{
 		ControlPlaneId:      resp.GetControlPlane().GetIdentifier(),
-		Type:                rs.GetItemType(),
+		Type:                resourceType,
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
 		IsInitialRequest:    isInitialRequest,

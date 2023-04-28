@@ -97,7 +97,11 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 
 func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
 	// get all the insights for provided type
-	insights, _ := registry.Global().NewList(typ)
+	desc, err := registry.Global().DescriptorFor(typ)
+	if err != nil {
+		return err
+	}
+	insights := desc.NewList()
 	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
@@ -129,7 +133,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		log.V(1).Info("mark subscription as disconnected")
 		insight.GetLastSubscription().SetDisconnectTime(now)
 
-		upsertInsight, _ := registry.Global().NewObject(typ)
+		upsertInsight := desc.NewObject()
 		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
 			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
 		})
@@ -147,19 +151,20 @@ func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.Resour
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
 	}
-	for rk := range f.insights[insights.GetItemType()] {
+	insightsType := insights.Descriptor().Name
+	for rk := range f.insights[insightsType] {
 		if !byResourceKey[rk] {
-			delete(f.insights[insights.GetItemType()], rk)
+			delete(f.insights[insightsType], rk)
 		}
 	}
 }
 
 func isInsightType(typ core_model.ResourceType) bool {
-	obj, err := registry.Global().NewObject(typ)
+	desc, err := registry.Global().DescriptorFor(typ)
 	if err != nil {
 		panic(err)
 	}
-	_, ok := obj.GetSpec().(generic.Insight)
+	_, ok := desc.NewObject().GetSpec().(generic.Insight)
 	return ok
 }
 

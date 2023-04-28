@@ -318,7 +318,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
-	defaultMutator := k8s_webhooks.DefaultingWebhookFor(converter)
+	defaultMutator := k8s_webhooks.DefaultingWebhookFor(core_registry.Global(), converter)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)
 	return nil
 }

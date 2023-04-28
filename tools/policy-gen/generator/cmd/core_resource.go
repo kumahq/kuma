@@ -110,7 +110,7 @@ func (t *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
-	return {{.Name}}ResourceTypeDescriptor 
+	return {{.Name}}ResourceTypeDescriptor
 }
 
 func (t *{{.Name}}Resource) Validate() error {
@@ -128,20 +128,16 @@ type {{.Name}}ResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *{{.Name}}ResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return {{.Name}}ResourceTypeDescriptor
+}
+
 func (l *{{.Name}}ResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *{{.Name}}ResourceList) GetItemType() model.ResourceType {
-	return {{.Name}}Type
-}
-
-func (l *{{.Name}}ResourceList) NewItem() model.Resource {
-	return New{{.Name}}Resource()
 }
 
 func (l *{{.Name}}ResourceList) AddItem(r model.Resource) error {

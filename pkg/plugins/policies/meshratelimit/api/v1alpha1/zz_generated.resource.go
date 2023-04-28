@@ -88,20 +88,16 @@ type MeshRateLimitResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshRateLimitResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshRateLimitResourceTypeDescriptor
+}
+
 func (l *MeshRateLimitResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshRateLimitResourceList) GetItemType() model.ResourceType {
-	return MeshRateLimitType
-}
-
-func (l *MeshRateLimitResourceList) NewItem() model.Resource {
-	return NewMeshRateLimitResource()
 }
 
 func (l *MeshRateLimitResourceList) AddItem(r model.Resource) error {

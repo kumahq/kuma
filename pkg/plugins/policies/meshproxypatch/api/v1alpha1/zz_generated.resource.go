@@ -88,20 +88,16 @@ type MeshProxyPatchResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshProxyPatchResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshProxyPatchResourceTypeDescriptor
+}
+
 func (l *MeshProxyPatchResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshProxyPatchResourceList) GetItemType() model.ResourceType {
-	return MeshProxyPatchType
-}
-
-func (l *MeshProxyPatchResourceList) NewItem() model.Resource {
-	return NewMeshProxyPatchResource()
 }
 
 func (l *MeshProxyPatchResourceList) AddItem(r model.Resource) error {

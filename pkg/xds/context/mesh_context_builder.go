@@ -149,11 +149,12 @@ func (m *meshContextBuilder) fetchCrossMesh(
 	crossMeshPredicate func(xds.MeshName) bool,
 	crossMeshResourcePredicate func(core_model.Resource) bool,
 ) error {
-	local, err := registry.Global().NewList(typ)
+	desc, err := registry.Global().DescriptorFor(typ)
 	if err != nil {
 		return err
 	}
 
+	local := desc.NewList()
 	if err := m.rm.List(ctx, local, core_store.ListByMesh(localMesh), core_store.ListOrdered()); err != nil {
 		return err
 	}
@@ -165,10 +166,7 @@ func (m *meshContextBuilder) fetchCrossMesh(
 			continue
 		}
 
-		allOtherMeshItems, err := registry.Global().NewList(typ)
-		if err != nil {
-			return err
-		}
+		allOtherMeshItems := desc.NewList()
 		if err := m.rm.List(ctx, allOtherMeshItems, core_store.ListByMesh(otherMesh), core_store.ListOrdered()); err != nil {
 			return err
 		}
@@ -178,10 +176,7 @@ func (m *meshContextBuilder) fetchCrossMesh(
 			other = map[core_model.ResourceType]core_model.ResourceList{}
 		}
 
-		otherMeshItems, err := registry.Global().NewList(typ)
-		if err != nil {
-			return err
-		}
+		otherMeshItems := desc.NewList()
 		for _, item := range allOtherMeshItems.GetItems() {
 			if crossMeshResourcePredicate != nil && !crossMeshResourcePredicate(item) {
 				continue
@@ -261,10 +256,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 
 			resources.MeshLocalResources[typ] = insights
 		default:
-			rlist, err := registry.Global().NewList(typ)
-			if err != nil {
-				return Resources{}, err
-			}
+			rlist := registry.Must(registry.Global().DescriptorFor(typ)).NewList()
 			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(mesh.Meta.GetName()), core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}

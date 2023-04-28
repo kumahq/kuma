@@ -82,10 +82,11 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	ctx := user.Ctx(syncCtx, user.ControlPlane)
 	log := s.log.WithValues("type", upstreamResponse.Type)
 	upstream := upstreamResponse.AddedResources
-	downstream, err := registry.Global().NewList(upstreamResponse.Type)
+	desc, err := registry.Global().DescriptorFor(upstreamResponse.Type)
 	if err != nil {
 		return err
 	}
+	downstream := desc.NewList()
 	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
@@ -200,10 +201,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
-	rv, err := registry.Global().NewList(rs.GetItemType())
-	if err != nil {
-		return nil, err
-	}
+	rv := rs.Descriptor().NewList()
 	for _, r := range rs.GetItems() {
 		if predicate(r) {
 			if err := rv.AddItem(r); err != nil {
@@ -237,7 +235,7 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 				// System resources are not in the kubeFactory therefore we need explicit ifs for them
-				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.NewItem())
+				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.Descriptor().NewObject())
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}
@@ -284,7 +282,7 @@ func GlobalSyncCallback(
 			if k8sStore {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
-				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.NewItem())
+				kubeObject, err := kubeFactory.NewObject(upstream.AddedResources.Descriptor().NewObject())
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}

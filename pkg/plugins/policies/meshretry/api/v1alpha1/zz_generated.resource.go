@@ -88,20 +88,16 @@ type MeshRetryResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshRetryResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshRetryResourceTypeDescriptor
+}
+
 func (l *MeshRetryResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshRetryResourceList) GetItemType() model.ResourceType {
-	return MeshRetryType
-}
-
-func (l *MeshRetryResourceList) NewItem() model.Resource {
-	return NewMeshRetryResource()
 }
 
 func (l *MeshRetryResourceList) AddItem(r model.Resource) error {

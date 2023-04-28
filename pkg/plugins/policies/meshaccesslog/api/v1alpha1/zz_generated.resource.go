@@ -88,20 +88,16 @@ type MeshAccessLogResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshAccessLogResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshAccessLogResourceTypeDescriptor
+}
+
 func (l *MeshAccessLogResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshAccessLogResourceList) GetItemType() model.ResourceType {
-	return MeshAccessLogType
-}
-
-func (l *MeshAccessLogResourceList) NewItem() model.Resource {
-	return NewMeshAccessLogResource()
 }
 
 func (l *MeshAccessLogResourceList) AddItem(r model.Resource) error {

@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/pkg/util/yaml"
@@ -138,7 +137,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 				} else {
-					if err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource); err != nil {
+					if err := upsert(cmd.Context(), rs, resource); err != nil {
 						return err
 					}
 				}
@@ -153,11 +152,8 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
-	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
-	if err != nil {
-		return err
-	}
+func upsert(ctx context.Context, rs store.ResourceStore, res model.Resource) error {
+	newRes := res.Descriptor().NewObject()
 	meta := res.GetMeta()
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {

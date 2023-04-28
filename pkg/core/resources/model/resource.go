@@ -260,11 +260,10 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 }
 
 type ResourceList interface {
-	GetItemType() ResourceType
 	GetItems() []Resource
-	NewItem() Resource
 	AddItem(Resource) error
 	GetPagination() *Pagination
+	Descriptor() ResourceTypeDescriptor
 }
 
 type Pagination struct {

@@ -74,20 +74,16 @@ type CircuitBreakerResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *CircuitBreakerResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return CircuitBreakerResourceTypeDescriptor
+}
+
 func (l *CircuitBreakerResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *CircuitBreakerResourceList) GetItemType() model.ResourceType {
-	return CircuitBreakerType
-}
-
-func (l *CircuitBreakerResourceList) NewItem() model.Resource {
-	return NewCircuitBreakerResource()
 }
 
 func (l *CircuitBreakerResourceList) AddItem(r model.Resource) error {
@@ -179,20 +175,16 @@ type DataplaneResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *DataplaneResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneResourceTypeDescriptor
+}
+
 func (l *DataplaneResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *DataplaneResourceList) GetItemType() model.ResourceType {
-	return DataplaneType
-}
-
-func (l *DataplaneResourceList) NewItem() model.Resource {
-	return NewDataplaneResource()
 }
 
 func (l *DataplaneResourceList) AddItem(r model.Resource) error {
@@ -284,20 +276,16 @@ type DataplaneInsightResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *DataplaneInsightResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneInsightResourceTypeDescriptor
+}
+
 func (l *DataplaneInsightResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *DataplaneInsightResourceList) GetItemType() model.ResourceType {
-	return DataplaneInsightType
-}
-
-func (l *DataplaneInsightResourceList) NewItem() model.Resource {
-	return NewDataplaneInsightResource()
 }
 
 func (l *DataplaneInsightResourceList) AddItem(r model.Resource) error {
@@ -389,20 +377,16 @@ type DataplaneOverviewResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *DataplaneOverviewResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneOverviewResourceTypeDescriptor
+}
+
 func (l *DataplaneOverviewResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *DataplaneOverviewResourceList) GetItemType() model.ResourceType {
-	return DataplaneOverviewType
-}
-
-func (l *DataplaneOverviewResourceList) NewItem() model.Resource {
-	return NewDataplaneOverviewResource()
 }
 
 func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
@@ -489,20 +473,16 @@ type ExternalServiceResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ExternalServiceResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ExternalServiceResourceTypeDescriptor
+}
+
 func (l *ExternalServiceResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ExternalServiceResourceList) GetItemType() model.ResourceType {
-	return ExternalServiceType
-}
-
-func (l *ExternalServiceResourceList) NewItem() model.Resource {
-	return NewExternalServiceResource()
 }
 
 func (l *ExternalServiceResourceList) AddItem(r model.Resource) error {
@@ -602,20 +582,16 @@ type FaultInjectionResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *FaultInjectionResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return FaultInjectionResourceTypeDescriptor
+}
+
 func (l *FaultInjectionResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *FaultInjectionResourceList) GetItemType() model.ResourceType {
-	return FaultInjectionType
-}
-
-func (l *FaultInjectionResourceList) NewItem() model.Resource {
-	return NewFaultInjectionResource()
 }
 
 func (l *FaultInjectionResourceList) AddItem(r model.Resource) error {
@@ -715,20 +691,16 @@ type HealthCheckResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *HealthCheckResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return HealthCheckResourceTypeDescriptor
+}
+
 func (l *HealthCheckResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *HealthCheckResourceList) GetItemType() model.ResourceType {
-	return HealthCheckType
-}
-
-func (l *HealthCheckResourceList) NewItem() model.Resource {
-	return NewHealthCheckResource()
 }
 
 func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
@@ -820,20 +792,16 @@ type MeshResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshResourceTypeDescriptor
+}
+
 func (l *MeshResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshResourceList) GetItemType() model.ResourceType {
-	return MeshType
-}
-
-func (l *MeshResourceList) NewItem() model.Resource {
-	return NewMeshResource()
 }
 
 func (l *MeshResourceList) AddItem(r model.Resource) error {
@@ -929,20 +897,16 @@ type MeshGatewayResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshGatewayResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshGatewayResourceTypeDescriptor
+}
+
 func (l *MeshGatewayResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshGatewayResourceList) GetItemType() model.ResourceType {
-	return MeshGatewayType
-}
-
-func (l *MeshGatewayResourceList) NewItem() model.Resource {
-	return NewMeshGatewayResource()
 }
 
 func (l *MeshGatewayResourceList) AddItem(r model.Resource) error {
@@ -1038,20 +1002,16 @@ type MeshGatewayRouteResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshGatewayRouteResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshGatewayRouteResourceTypeDescriptor
+}
+
 func (l *MeshGatewayRouteResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshGatewayRouteResourceList) GetItemType() model.ResourceType {
-	return MeshGatewayRouteType
-}
-
-func (l *MeshGatewayRouteResourceList) NewItem() model.Resource {
-	return NewMeshGatewayRouteResource()
 }
 
 func (l *MeshGatewayRouteResourceList) AddItem(r model.Resource) error {
@@ -1143,20 +1103,16 @@ type MeshInsightResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshInsightResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshInsightResourceTypeDescriptor
+}
+
 func (l *MeshInsightResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshInsightResourceList) GetItemType() model.ResourceType {
-	return MeshInsightType
-}
-
-func (l *MeshInsightResourceList) NewItem() model.Resource {
-	return NewMeshInsightResource()
 }
 
 func (l *MeshInsightResourceList) AddItem(r model.Resource) error {
@@ -1251,20 +1207,16 @@ type ProxyTemplateResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ProxyTemplateResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ProxyTemplateResourceTypeDescriptor
+}
+
 func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
-	return ProxyTemplateType
-}
-
-func (l *ProxyTemplateResourceList) NewItem() model.Resource {
-	return NewProxyTemplateResource()
 }
 
 func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
@@ -1364,20 +1316,16 @@ type RateLimitResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *RateLimitResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return RateLimitResourceTypeDescriptor
+}
+
 func (l *RateLimitResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *RateLimitResourceList) GetItemType() model.ResourceType {
-	return RateLimitType
-}
-
-func (l *RateLimitResourceList) NewItem() model.Resource {
-	return NewRateLimitResource()
 }
 
 func (l *RateLimitResourceList) AddItem(r model.Resource) error {
@@ -1477,20 +1425,16 @@ type RetryResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *RetryResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return RetryResourceTypeDescriptor
+}
+
 func (l *RetryResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *RetryResourceList) GetItemType() model.ResourceType {
-	return RetryType
-}
-
-func (l *RetryResourceList) NewItem() model.Resource {
-	return NewRetryResource()
 }
 
 func (l *RetryResourceList) AddItem(r model.Resource) error {
@@ -1582,20 +1526,16 @@ type ServiceInsightResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ServiceInsightResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ServiceInsightResourceTypeDescriptor
+}
+
 func (l *ServiceInsightResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ServiceInsightResourceList) GetItemType() model.ResourceType {
-	return ServiceInsightType
-}
-
-func (l *ServiceInsightResourceList) NewItem() model.Resource {
-	return NewServiceInsightResource()
 }
 
 func (l *ServiceInsightResourceList) AddItem(r model.Resource) error {
@@ -1687,20 +1627,16 @@ type ServiceOverviewResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ServiceOverviewResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ServiceOverviewResourceTypeDescriptor
+}
+
 func (l *ServiceOverviewResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ServiceOverviewResourceList) GetItemType() model.ResourceType {
-	return ServiceOverviewType
-}
-
-func (l *ServiceOverviewResourceList) NewItem() model.Resource {
-	return NewServiceOverviewResource()
 }
 
 func (l *ServiceOverviewResourceList) AddItem(r model.Resource) error {
@@ -1795,20 +1731,16 @@ type TimeoutResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *TimeoutResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return TimeoutResourceTypeDescriptor
+}
+
 func (l *TimeoutResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *TimeoutResourceList) GetItemType() model.ResourceType {
-	return TimeoutType
-}
-
-func (l *TimeoutResourceList) NewItem() model.Resource {
-	return NewTimeoutResource()
 }
 
 func (l *TimeoutResourceList) AddItem(r model.Resource) error {
@@ -1908,20 +1840,16 @@ type TrafficLogResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *TrafficLogResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficLogResourceTypeDescriptor
+}
+
 func (l *TrafficLogResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *TrafficLogResourceList) GetItemType() model.ResourceType {
-	return TrafficLogType
-}
-
-func (l *TrafficLogResourceList) NewItem() model.Resource {
-	return NewTrafficLogResource()
 }
 
 func (l *TrafficLogResourceList) AddItem(r model.Resource) error {
@@ -2021,20 +1949,16 @@ type TrafficPermissionResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *TrafficPermissionResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficPermissionResourceTypeDescriptor
+}
+
 func (l *TrafficPermissionResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *TrafficPermissionResourceList) GetItemType() model.ResourceType {
-	return TrafficPermissionType
-}
-
-func (l *TrafficPermissionResourceList) NewItem() model.Resource {
-	return NewTrafficPermissionResource()
 }
 
 func (l *TrafficPermissionResourceList) AddItem(r model.Resource) error {
@@ -2134,20 +2058,16 @@ type TrafficRouteResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *TrafficRouteResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficRouteResourceTypeDescriptor
+}
+
 func (l *TrafficRouteResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {
-	return TrafficRouteType
-}
-
-func (l *TrafficRouteResourceList) NewItem() model.Resource {
-	return NewTrafficRouteResource()
 }
 
 func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
@@ -2243,20 +2163,16 @@ type TrafficTraceResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *TrafficTraceResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficTraceResourceTypeDescriptor
+}
+
 func (l *TrafficTraceResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *TrafficTraceResourceList) GetItemType() model.ResourceType {
-	return TrafficTraceType
-}
-
-func (l *TrafficTraceResourceList) NewItem() model.Resource {
-	return NewTrafficTraceResource()
 }
 
 func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
@@ -2352,20 +2268,16 @@ type VirtualOutboundResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *VirtualOutboundResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return VirtualOutboundResourceTypeDescriptor
+}
+
 func (l *VirtualOutboundResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *VirtualOutboundResourceList) GetItemType() model.ResourceType {
-	return VirtualOutboundType
-}
-
-func (l *VirtualOutboundResourceList) NewItem() model.Resource {
-	return NewVirtualOutboundResource()
 }
 
 func (l *VirtualOutboundResourceList) AddItem(r model.Resource) error {
@@ -2457,20 +2369,16 @@ type ZoneEgressResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneEgressResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressResourceTypeDescriptor
+}
+
 func (l *ZoneEgressResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneEgressResourceList) GetItemType() model.ResourceType {
-	return ZoneEgressType
-}
-
-func (l *ZoneEgressResourceList) NewItem() model.Resource {
-	return NewZoneEgressResource()
 }
 
 func (l *ZoneEgressResourceList) AddItem(r model.Resource) error {
@@ -2562,20 +2470,16 @@ type ZoneEgressInsightResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneEgressInsightResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressInsightResourceTypeDescriptor
+}
+
 func (l *ZoneEgressInsightResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneEgressInsightResourceList) GetItemType() model.ResourceType {
-	return ZoneEgressInsightType
-}
-
-func (l *ZoneEgressInsightResourceList) NewItem() model.Resource {
-	return NewZoneEgressInsightResource()
 }
 
 func (l *ZoneEgressInsightResourceList) AddItem(r model.Resource) error {
@@ -2667,20 +2571,16 @@ type ZoneEgressOverviewResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneEgressOverviewResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressOverviewResourceTypeDescriptor
+}
+
 func (l *ZoneEgressOverviewResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneEgressOverviewResourceList) GetItemType() model.ResourceType {
-	return ZoneEgressOverviewType
-}
-
-func (l *ZoneEgressOverviewResourceList) NewItem() model.Resource {
-	return NewZoneEgressOverviewResource()
 }
 
 func (l *ZoneEgressOverviewResourceList) AddItem(r model.Resource) error {
@@ -2767,20 +2667,16 @@ type ZoneIngressResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneIngressResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressResourceTypeDescriptor
+}
+
 func (l *ZoneIngressResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneIngressResourceList) GetItemType() model.ResourceType {
-	return ZoneIngressType
-}
-
-func (l *ZoneIngressResourceList) NewItem() model.Resource {
-	return NewZoneIngressResource()
 }
 
 func (l *ZoneIngressResourceList) AddItem(r model.Resource) error {
@@ -2872,20 +2768,16 @@ type ZoneIngressInsightResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneIngressInsightResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressInsightResourceTypeDescriptor
+}
+
 func (l *ZoneIngressInsightResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneIngressInsightResourceList) GetItemType() model.ResourceType {
-	return ZoneIngressInsightType
-}
-
-func (l *ZoneIngressInsightResourceList) NewItem() model.Resource {
-	return NewZoneIngressInsightResource()
 }
 
 func (l *ZoneIngressInsightResourceList) AddItem(r model.Resource) error {
@@ -2977,20 +2869,16 @@ type ZoneIngressOverviewResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *ZoneIngressOverviewResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressOverviewResourceTypeDescriptor
+}
+
 func (l *ZoneIngressOverviewResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *ZoneIngressOverviewResourceList) GetItemType() model.ResourceType {
-	return ZoneIngressOverviewType
-}
-
-func (l *ZoneIngressOverviewResourceList) NewItem() model.Resource {
-	return NewZoneIngressOverviewResource()
 }
 
 func (l *ZoneIngressOverviewResourceList) AddItem(r model.Resource) error {

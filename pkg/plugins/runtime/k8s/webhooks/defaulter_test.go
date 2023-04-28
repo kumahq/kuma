@@ -14,6 +14,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -57,7 +58,7 @@ var _ = Describe("Defaulter", func() {
 	var handler *kube_admission.Webhook
 
 	BeforeEach(func() {
-		handler = DefaultingWebhookFor(converter)
+		handler = DefaultingWebhookFor(registry.Global(), converter)
 		Expect(handler.InjectScheme(scheme)).To(Succeed())
 	})
 

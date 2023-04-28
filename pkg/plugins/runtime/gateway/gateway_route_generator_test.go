@@ -12,7 +12,6 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -22,7 +21,7 @@ import (
 )
 
 type WithoutResource struct {
-	Resource core_model.ResourceType
+	Resource core_model.ResourceTypeDescriptor
 	Mesh     string
 	Name     string
 }
@@ -1514,7 +1513,7 @@ conf:
           kuma.io/service: echo-service
 `,
 			WithoutResource{
-				Resource: core_mesh.TimeoutType,
+				Resource: core_mesh.TimeoutResourceTypeDescriptor,
 				Mesh:     "default",
 				Name:     "timeout-all-default",
 			},
@@ -1854,8 +1853,7 @@ conf:
 	handleArg := func(arg interface{}) {
 		switch val := arg.(type) {
 		case WithoutResource:
-			obj, err := registry.Global().NewObject(val.Resource)
-			Expect(err).ToNot(HaveOccurred())
+			obj := val.Resource.NewObject()
 			Expect(rt.ResourceManager().Delete(
 				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
 			)).To(Succeed())

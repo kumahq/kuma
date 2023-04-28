@@ -62,20 +62,16 @@ type GlobalSecretResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *GlobalSecretResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return GlobalSecretResourceTypeDescriptor
+}
+
 func (l *GlobalSecretResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *GlobalSecretResourceList) GetItemType() model.ResourceType {
-	return GlobalSecretType
-}
-
-func (l *GlobalSecretResourceList) NewItem() model.Resource {
-	return NewGlobalSecretResource()
 }
 
 func (l *GlobalSecretResourceList) AddItem(r model.Resource) error {

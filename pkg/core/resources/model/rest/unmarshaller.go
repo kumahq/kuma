@@ -83,13 +83,13 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 
 func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) error {
 	rsr := &ResourceListReceiver{
-		NewResource: rs.NewItem,
+		NewResource: rs.Descriptor().NewObject,
 	}
 	if err := u.unmarshalFn(b, rsr); err != nil {
 		return err
 	}
 	for _, ri := range rsr.ResourceList.Items {
-		r := rs.NewItem()
+		r := rsr.NewResource()
 		if err := r.SetSpec(ri.GetSpec()); err != nil {
 			return err
 		}

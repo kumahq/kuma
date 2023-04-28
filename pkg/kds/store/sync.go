@@ -8,7 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
@@ -68,11 +67,8 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(context.TODO(), user.ControlPlane)
-	log := s.log.WithValues("type", upstream.GetItemType())
-	downstream, err := registry.Global().NewList(upstream.GetItemType())
-	if err != nil {
-		return err
-	}
+	log := s.log.WithValues("type", upstream.Descriptor().Name)
+	downstream := upstream.Descriptor().NewList()
 	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
@@ -169,10 +165,7 @@ func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOpt
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
-	rv, err := registry.Global().NewList(rs.GetItemType())
-	if err != nil {
-		return nil, err
-	}
+	rv := rs.Descriptor().NewList()
 	for _, r := range rs.GetItems() {
 		if predicate(r) {
 			if err := rv.AddItem(r); err != nil {

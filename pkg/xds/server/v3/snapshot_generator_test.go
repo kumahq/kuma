@@ -18,7 +18,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -62,10 +61,7 @@ type shuffleStore struct {
 }
 
 func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opts ...core_store.ListOptionsFunc) error {
-	newList, err := registry.Global().NewList(rl.GetItemType())
-	if err != nil {
-		return err
-	}
+	newList := rl.Descriptor().NewList()
 	if err := s.ResourceStore.List(ctx, newList, opts...); err != nil {
 		return err
 	}

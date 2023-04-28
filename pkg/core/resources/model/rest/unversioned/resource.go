@@ -63,7 +63,11 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if r.Spec == nil {
-		newR, err := registry.Global().NewObject(core_model.ResourceType(r.Meta.Type))
+		desc, err := registry.Global().DescriptorFor(core_model.ResourceType(r.GetMeta().Type))
+		if err != nil {
+			return err
+		}
+		newR := desc.NewObject()
 		if err != nil {
 			return err
 		}
@@ -76,7 +80,11 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 }
 
 func (r *Resource) ToCore() (core_model.Resource, error) {
-	resource, err := registry.Global().NewObject(core_model.ResourceType(r.Meta.Type))
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(r.GetMeta().Type))
+	if err != nil {
+		return nil, err
+	}
+	resource := desc.NewObject()
 	if err != nil {
 		return nil, err
 	}

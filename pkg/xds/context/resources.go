@@ -13,11 +13,7 @@ type ResourceMap map[core_model.ResourceType]core_model.ResourceList
 func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
 	list, ok := rm[resourceType]
 	if !ok {
-		list, err := registry.Global().NewList(resourceType)
-		if err != nil {
-			panic(err)
-		}
-		return list
+		return registry.Must(registry.Global().DescriptorFor(resourceType)).NewList()
 	}
 	return list
 }

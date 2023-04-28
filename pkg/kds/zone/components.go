@@ -172,15 +172,15 @@ func Callbacks(
 ) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType && rs.GetItemType() != system.GlobalSecretType {
+			desc := rs.Descriptor()
+			if k8sStore && desc.Name != system.ConfigType && desc.Name != system.SecretType && desc.Name != system.GlobalSecretType {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 				// System resources are not in the kubeFactory therefore we need explicit ifs for them
-				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
+				kubeObject, err := kubeFactory.NewObject(desc.NewObject())
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}
-				desc := rs.NewItem().Descriptor()
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
 					if desc.IsPluginOriginated {
 						util.AddSuffixToNames(rs.GetItems(), systemNamespace)
@@ -189,17 +189,16 @@ func Callbacks(
 					}
 				}
 			}
-			if rs.GetItemType() == mesh.ZoneIngressType {
+			switch desc.Name {
+			case mesh.ZoneIngressType:
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
 				}))
-			}
-			if rs.GetItemType() == system.ConfigType {
+			case system.ConfigType:
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return configToSync[r.GetMeta().GetName()]
 				}))
-			}
-			if rs.GetItemType() == system.GlobalSecretType {
+			case system.GlobalSecretType:
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),

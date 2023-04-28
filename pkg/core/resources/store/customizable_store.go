@@ -23,7 +23,7 @@ func (m *customizableResourceStore) Get(ctx context.Context, resource model.Reso
 }
 
 func (m *customizableResourceStore) List(ctx context.Context, list model.ResourceList, fs ...ListOptionsFunc) error {
-	return m.ResourceStore(list.GetItemType()).List(ctx, list, fs...)
+	return m.ResourceStore(list.Descriptor().Name).List(ctx, list, fs...)
 }
 
 func (m *customizableResourceStore) Create(ctx context.Context, resource model.Resource, fs ...CreateOptionsFunc) error {

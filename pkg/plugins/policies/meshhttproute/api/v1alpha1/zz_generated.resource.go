@@ -88,20 +88,16 @@ type MeshHTTPRouteResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshHTTPRouteResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshHTTPRouteResourceTypeDescriptor
+}
+
 func (l *MeshHTTPRouteResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshHTTPRouteResourceList) GetItemType() model.ResourceType {
-	return MeshHTTPRouteType
-}
-
-func (l *MeshHTTPRouteResourceList) NewItem() model.Resource {
-	return NewMeshHTTPRouteResource()
 }
 
 func (l *MeshHTTPRouteResourceList) AddItem(r model.Resource) error {

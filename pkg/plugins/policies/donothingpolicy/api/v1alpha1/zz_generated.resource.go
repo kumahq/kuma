@@ -88,20 +88,16 @@ type DoNothingPolicyResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *DoNothingPolicyResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return DoNothingPolicyResourceTypeDescriptor
+}
+
 func (l *DoNothingPolicyResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *DoNothingPolicyResourceList) GetItemType() model.ResourceType {
-	return DoNothingPolicyType
-}
-
-func (l *DoNothingPolicyResourceList) NewItem() model.Resource {
-	return NewDoNothingPolicyResource()
 }
 
 func (l *DoNothingPolicyResourceList) AddItem(r model.Resource) error {

@@ -157,10 +157,11 @@ func (s *envoyAdminProcessor) executeAdminFn(
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	res, err := registry.Global().NewObject(core_model.ResourceType(resType))
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resType))
 	if err != nil {
 		return nil, err
 	}
+	res := desc.NewObject()
 	if err := s.resManager.Get(ctx, res, core_store.GetByKey(resName, resMesh)); err != nil {
 		return nil, err
 	}

@@ -213,10 +213,11 @@ func (c *memoryStore) delete(r core_model.Resource, fs ...store.DeleteOptionsFun
 		if childRecord == nil {
 			continue // resource was already deleted
 		}
-		obj, err := registry.Global().NewObject(core_model.ResourceType(child.ResourceType))
+		childDesc, err := registry.Global().DescriptorFor(core_model.ResourceType(child.ResourceType))
 		if err != nil {
-			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
+			return err
 		}
+		obj := childDesc.NewObject()
 		if err := c.unmarshalRecord(childRecord, obj); err != nil {
 			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
@@ -262,10 +263,9 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 
 	opts := store.NewListOptions(fs...)
 
-	records := c.findRecords(string(rs.GetItemType()), opts.Mesh, opts.NameContains)
-
+	records := c.findRecords(string(rs.Descriptor().Name), opts.Mesh, opts.NameContains)
 	for i := 0; i < len(records); i++ {
-		r := rs.NewItem()
+		r := rs.Descriptor().NewObject()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}

@@ -66,7 +66,7 @@ func WaitResponse(timeout time.Duration, testFunc func(rs []model.Resource)) Exe
 				return err
 			}
 			if len(rs.GetItems()) > 0 {
-				tc.SaveLastResponse(string(rs.GetItemType()), resp)
+				tc.SaveLastResponse(string(rs.Descriptor().Name), resp)
 			}
 			testFunc(rs.GetItems())
 		case <-time.After(timeout):
@@ -122,7 +122,7 @@ func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable 
 			resources = append(resources, pbaby)
 		}
 		tc.ClientStream().RecvCh <- &envoy_sd.DiscoveryResponse{
-			TypeUrl:     string(rs.GetItemType()),
+			TypeUrl:     string(rs.Descriptor().Name),
 			Nonce:       nonce,
 			VersionInfo: version,
 			Resources:   resources,

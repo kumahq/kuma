@@ -50,10 +50,11 @@ func (s *kdsSink) Receive() error {
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
 		s.log.V(1).Info("DiscoveryResponse received", "response", rs)
+		resourceType := rs.Descriptor().Name
 
 		if s.callbacks == nil {
-			s.log.Info("no callback set, sending ACK", "type", string(rs.GetItemType()))
-			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
+			s.log.Info("no callback set, sending ACK", "type", string(resourceType))
+			if err := s.kdsStream.ACK(string(resourceType)); err != nil {
 				if err == io.EOF {
 					return nil
 				}
@@ -63,15 +64,15 @@ func (s *kdsSink) Receive() error {
 		}
 		if err := s.callbacks.OnResourcesReceived(clusterID, rs); err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
-			if err := s.kdsStream.NACK(string(rs.GetItemType()), err); err != nil {
+			if err := s.kdsStream.NACK(string(resourceType), err); err != nil {
 				if err == io.EOF {
 					return nil
 				}
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 		} else {
-			s.log.V(1).Info("sending ACK", "type", string(rs.GetItemType()))
-			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
+			s.log.V(1).Info("sending ACK", "type", string(resourceType))
+			if err := s.kdsStream.ACK(string(resourceType)); err != nil {
 				if err == io.EOF {
 					return nil
 				}

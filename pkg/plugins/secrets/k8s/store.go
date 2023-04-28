@@ -152,7 +152,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 
 	fields := kube_client.MatchingFields{} // list only Kuma System secrets
 	labels := kube_client.MatchingLabels{}
-	switch rs.GetItemType() {
+	switch rs.Descriptor().Name {
 	case secret_model.SecretType:
 		fields = kube_client.MatchingFields{ // list only Kuma System secrets
 			"type": common_k8s.MeshSecretType,
@@ -268,7 +268,8 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_mode
 }
 
 func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.ResourceList) error {
-	switch out.GetItemType() {
+	resourceType := out.Descriptor().Name
+	switch resourceType {
 	case secret_model.SecretType:
 		secOut := out.(*secret_model.SecretResourceList)
 		secOut.Items = make([]*secret_model.SecretResource, len(in.Items))
@@ -290,7 +291,7 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 			secOut.Items[i] = r
 		}
 	default:
-		return errors.Errorf("invalid type %s, expected %s or %s", out.GetItemType(), secret_model.SecretType, secret_model.GlobalSecretType)
+		return errors.Errorf("invalid type %s, expected %s or %s", resourceType, secret_model.SecretType, secret_model.GlobalSecretType)
 	}
 	return nil
 }

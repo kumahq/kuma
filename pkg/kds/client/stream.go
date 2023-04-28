@@ -88,7 +88,7 @@ func (s *stream) Receive() (string, model.ResourceList, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	s.latestReceived[string(rs.GetItemType())] = resp
+	s.latestReceived[string(rs.Descriptor().Name)] = resp
 	return resp.GetControlPlane().GetIdentifier(), rs, nil
 }
 

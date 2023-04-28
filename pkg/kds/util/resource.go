@@ -118,15 +118,13 @@ func ZoneTag(r model.Resource) string {
 }
 
 func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource) (model.ResourceList, error) {
-	list, err := registry.Global().NewList(resourceType)
+	desc, err := registry.Global().DescriptorFor(resourceType)
 	if err != nil {
 		return nil, err
 	}
+	list := desc.NewList()
 	for _, kr := range krs {
-		obj, err := registry.Global().NewObject(resourceType)
-		if err != nil {
-			return nil, err
-		}
+		obj := desc.NewObject()
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}

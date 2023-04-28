@@ -90,10 +90,11 @@ var To = &to{}
 type to struct{}
 
 func (t *to) Core(r Resource) (core_model.Resource, error) {
-	resource, err := registry.Global().NewObject(core_model.ResourceType(r.GetMeta().Type))
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(r.GetMeta().Type))
 	if err != nil {
 		return nil, err
 	}
+	resource := desc.NewObject()
 	resource.SetMeta(r.GetMeta())
 	if err := resource.SetSpec(r.GetSpec()); err != nil {
 		return nil, err

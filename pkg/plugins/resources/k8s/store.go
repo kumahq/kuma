@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -174,7 +173,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		if typeIsUnregistered(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
+		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.Descriptor().Name)
 	}
 	if err := s.Client.List(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")
@@ -188,10 +187,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		}
 		return true
 	}
-	fullList, err := registry.Global().NewList(rs.GetItemType())
-	if err != nil {
-		return err
-	}
+	fullList := rs.Descriptor().NewList()
 	if err := s.Converter.ToCoreList(obj, fullList, predicate); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
@@ -272,5 +268,5 @@ func (f *SimpleKubeFactory) NewObject(r core_model.Resource) (k8s_model.Kubernet
 }
 
 func (f *SimpleKubeFactory) NewList(rl core_model.ResourceList) (k8s_model.KubernetesList, error) {
-	return f.KubeTypes.NewList(rl.NewItem().GetSpec())
+	return f.KubeTypes.NewList(rl.Descriptor().NewObject().GetSpec())
 }

@@ -50,7 +50,7 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 	if c.listQueries == nil {
 		c.listQueries = map[core_model.ResourceType]int{}
 	}
-	c.listQueries[list.GetItemType()]++
+	c.listQueries[list.Descriptor().Name]++
 	if c.err != nil {
 		return c.err
 	}

@@ -88,20 +88,16 @@ type MeshHealthCheckResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshHealthCheckResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshHealthCheckResourceTypeDescriptor
+}
+
 func (l *MeshHealthCheckResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshHealthCheckResourceList) GetItemType() model.ResourceType {
-	return MeshHealthCheckType
-}
-
-func (l *MeshHealthCheckResourceList) NewItem() model.Resource {
-	return NewMeshHealthCheckResource()
 }
 
 func (l *MeshHealthCheckResourceList) AddItem(r model.Resource) error {

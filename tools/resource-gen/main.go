@@ -249,7 +249,7 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
-	return {{.ResourceName}}TypeDescriptor 
+	return {{.ResourceName}}TypeDescriptor
 }
 
 var _ model.ResourceList = &{{.ResourceName}}List{}
@@ -259,20 +259,16 @@ type {{.ResourceName}}List struct {
 	Pagination model.Pagination
 }
 
+func (l *{{.ResourceName}}List) Descriptor() model.ResourceTypeDescriptor {
+	return {{.ResourceName}}TypeDescriptor
+}
+
 func (l *{{.ResourceName}}List) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *{{.ResourceName}}List) GetItemType() model.ResourceType {
-	return {{.ResourceType}}Type
-}
-
-func (l *{{.ResourceName}}List) NewItem() model.Resource {
-	return New{{.ResourceName}}()
 }
 
 func (l *{{.ResourceName}}List) AddItem(r model.Resource) error {

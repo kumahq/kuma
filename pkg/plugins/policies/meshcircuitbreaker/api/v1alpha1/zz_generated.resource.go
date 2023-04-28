@@ -88,20 +88,16 @@ type MeshCircuitBreakerResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshCircuitBreakerResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshCircuitBreakerResourceTypeDescriptor
+}
+
 func (l *MeshCircuitBreakerResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshCircuitBreakerResourceList) GetItemType() model.ResourceType {
-	return MeshCircuitBreakerType
-}
-
-func (l *MeshCircuitBreakerResourceList) NewItem() model.Resource {
-	return NewMeshCircuitBreakerResource()
 }
 
 func (l *MeshCircuitBreakerResourceList) AddItem(r model.Resource) error {

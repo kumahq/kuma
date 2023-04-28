@@ -88,20 +88,16 @@ type MeshLoadBalancingStrategyResourceList struct {
 	Pagination model.Pagination
 }
 
+func (l *MeshLoadBalancingStrategyResourceList) Descriptor() model.ResourceTypeDescriptor {
+	return MeshLoadBalancingStrategyResourceTypeDescriptor
+}
+
 func (l *MeshLoadBalancingStrategyResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
 	}
 	return res
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) GetItemType() model.ResourceType {
-	return MeshLoadBalancingStrategyType
-}
-
-func (l *MeshLoadBalancingStrategyResourceList) NewItem() model.Resource {
-	return NewMeshLoadBalancingStrategyResource()
 }
 
 func (l *MeshLoadBalancingStrategyResourceList) AddItem(r model.Resource) error {

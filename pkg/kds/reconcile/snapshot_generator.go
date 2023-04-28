@@ -58,10 +58,11 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 }
 
 func (s *snapshotGenerator) getResources(ctx context.Context, typ model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
-	rlist, err := registry.Global().NewList(typ)
+	desc, err := registry.Global().DescriptorFor(typ)
 	if err != nil {
 		return nil, err
 	}
+	rlist := desc.NewList()
 	if err := s.resourceManager.List(ctx, rlist); err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, n
 		features[value.GetStringValue()] = true
 	}
 
-	rv, _ := registry.Global().NewList(rs.GetItemType())
+	rv := rs.Descriptor().NewList()
 	for _, r := range rs.GetItems() {
 		if s.resourceFilter(ctx, node.GetId(), features, r) {
 			_ = rv.AddItem(r)
@@ -90,8 +91,7 @@ func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, n
 }
 
 func (s *snapshotGenerator) mapper(rs model.ResourceList) (model.ResourceList, error) {
-	rv, _ := registry.Global().NewList(rs.GetItemType())
-
+	rv := rs.Descriptor().NewList()
 	for _, r := range rs.GetItems() {
 		resource, err := s.resourceMapper(r)
 		if err != nil {
