@@ -90,6 +90,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	}
 
 	if err := d.dpAccess.ValidateGenerateDataplaneToken(
+		request.Request.Context(),
 		idReq.Name,
 		idReq.Mesh,
 		idReq.Tags,
@@ -140,7 +141,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 		return
 	}
 
-	if err := d.dpAccess.ValidateGenerateZoneIngressToken(idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
+	if err := d.dpAccess.ValidateGenerateZoneIngressToken(request.Request.Context(), idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}
@@ -182,7 +183,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 
 	ctx := request.Request.Context()
 
-	if err := d.zoneAccess.ValidateGenerateZoneToken(idReq.Zone, user.FromCtx(ctx)); err != nil {
+	if err := d.zoneAccess.ValidateGenerateZoneToken(request.Request.Context(), idReq.Zone, user.FromCtx(ctx)); err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}

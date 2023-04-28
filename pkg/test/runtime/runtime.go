@@ -34,10 +34,12 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
@@ -131,6 +133,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
+	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
+	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 
 	initializeConfigManager(builder)
 

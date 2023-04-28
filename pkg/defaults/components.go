@@ -30,6 +30,7 @@ func Setup(runtime runtime.Runtime) error {
 
 		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
 		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			runtime.AppContext(),
 			zoneIngressSigningKeyManager,
 			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 			return err
@@ -37,6 +38,7 @@ func Setup(runtime runtime.Runtime) error {
 
 		zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
 		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			runtime.AppContext(),
 			zoneSigningKeyManager,
 			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
 		)); err != nil {
@@ -95,7 +97,7 @@ func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 			defer wg.Done()
 			// if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 			err := retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-				return retry.RetryableError(d.createMeshIfNotExist(ctx)) // retry all errors
+				return retry.RetryableError(CreateMeshIfNotExist(ctx, d.resManager)) // retry all errors
 			})
 			if err != nil {
 				// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.

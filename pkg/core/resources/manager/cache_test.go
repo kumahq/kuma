@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -60,7 +61,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
-		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics)
+		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics, multitenant.NoopHashingFn.ResourceHashKey)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and created resources
