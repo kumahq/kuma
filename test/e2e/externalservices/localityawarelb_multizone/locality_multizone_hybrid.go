@@ -62,18 +62,8 @@ func InstallExternalService(name string) InstallFunc {
 
 func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	BeforeAll(func() {
-		k8sClusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
-		universalClusters, err := NewUniversalClusters(
-			[]string{Kuma4, Kuma5},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
 		// Global
-		global = universalClusters.GetCluster(Kuma5)
+		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
@@ -83,7 +73,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		globalCP := global.GetKuma()
 
 		// K8s Cluster 1
-		zone1 = k8sClusters.GetCluster(Kuma1).(*K8sCluster)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithIngress(),
@@ -96,8 +86,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 			Setup(zone1)).To(Succeed())
 
 		// Universal Cluster 4
-		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
-		Expect(err).ToNot(HaveOccurred())
+		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
@@ -112,10 +101,10 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 			Setup(zone4),
 		).To(Succeed())
 
-		err = NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1-zone"))).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
+			Setup(global),
+		).To(Succeed())
 	})
 
 	AfterAll(func() {
