@@ -77,7 +77,7 @@ k3d/network/create:
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
-	KUBECONFIG=$(KIND_KUBECONFIG) \
+	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
 	$(MAKE) k3d/wait
 	@echo
