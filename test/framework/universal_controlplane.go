@@ -148,6 +148,11 @@ func (c *UniversalControlPlane) generateToken(
 }
 
 func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
+	log.Info("envs", "env", c.kumactl.Env)
+	if c.kumactl.Env["KUMA_API_SERVER_AUTHN_TYPE"] != "tokens" {
+		return "", nil
+	}
+
 	return retry.DoWithRetryE(
 		c.t, "fetching user admin token",
 		DefaultRetries,
