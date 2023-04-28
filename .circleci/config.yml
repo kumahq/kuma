@@ -354,6 +354,8 @@ jobs:
       - run:
           command: make dev/tools
       - run:
+          command: make clean
+      - run:
           command: make check
       - run:
           command: make build
@@ -435,6 +437,8 @@ jobs:
       - checkout
       - halt_job_if_labeled:
           label: "ci/skip-container-structure-test"
+      - halt_job_if_labeled:
+          label: "ci/skip-test"
       - when:
           condition:
             or:
@@ -445,8 +449,6 @@ jobs:
           key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
       - attach_workspace:
           at: build
-      - run:
-          command: make dev/tools
       - run:
           command: make -j test/container-structure
 workflows:

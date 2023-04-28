@@ -7,14 +7,15 @@ OUTPUT_PROTO_DIR=$1/protos
 
 # Use go list -m for deps that are also on go.mod this way we use dependabot a live on the same version
 
-PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -m github.com/envoyproxy/protoc-gen-validate | cut -d ' ' -f2)
-PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -m github.com/kumahq/protoc-gen-kumadoc | cut -d ' ' -f2)
+PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
+PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -f '{{.Version}}' -m github.com/kumahq/protoc-gen-kumadoc)
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
-    google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(go list -m google.golang.org/grpc/cmd/protoc-gen-go-grpc | cut -d ' ' -f2) \
+    google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(go list -f '{{.Version}}' -m google.golang.org/grpc/cmd/protoc-gen-go-grpc) \
     ${PGV} \
     ${PGKUMADOC} \
-    github.com/onsi/ginkgo/v2/ginkgo@$(go list -m github.com/onsi/ginkgo/v2 | cut -d ' ' -f2) \
+    github.com/onsi/ginkgo/v2/ginkgo@$(go list -f '{{.Version}}' -m github.com/onsi/ginkgo/v2) \
+    sigs.k8s.io/controller-tools/cmd/controller-gen@$(go list -f '{{.Version}}' -m sigs.k8s.io/controller-tools) \
     github.com/mikefarah/yq/v4@v4.30.8 \
     github.com/norwoodj/helm-docs/cmd/helm-docs@v1.11.0 \
     golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20220513142942-846f273ed465; do

@@ -48,6 +48,7 @@ K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
 KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
+CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
 KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
 PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
 SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
@@ -119,3 +120,6 @@ dev/sync-demo:
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
 	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+
+.PHONY: clean
+clean: clean/build clean/generated clean/docs ## Dev: Clean
