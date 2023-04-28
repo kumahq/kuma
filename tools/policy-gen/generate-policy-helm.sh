@@ -37,7 +37,9 @@ for policy in "${@:4}"; do
 done
 
 # yq_patch preserves indentation and blank lines of the original file
-cat "${HELM_VALUES_FILE}" > "${HELM_VALUES_FILE}.noblank"
+cp "${HELM_VALUES_FILE}" "${HELM_VALUES_FILE}.noblank"
 # shellcheck disable=SC2016
-policies="${policies}" yq "${VALUES_FILE_POLICY_PATH}"' |= ((env(policies) | trim | split(" "))[] as $item ireduce ({}; .[$item] = {}))' "${HELM_VALUES_FILE}" | diff -w -B "${HELM_VALUES_FILE}.noblank" - | patch -f --no-backup-if-mismatch "${HELM_VALUES_FILE}" -
+policies="${policies}" yq "${VALUES_FILE_POLICY_PATH}"' |= ((env(policies) | trim | split(" "))[] as $item ireduce ({}; .[$item] = {}))' "${HELM_VALUES_FILE}" | \
+  diff --ignore-all-space --ignore-blank-lines "${HELM_VALUES_FILE}.noblank" - | \
+  patch --force --no-backup-if-mismatch "${HELM_VALUES_FILE}" -
 rm -f "${HELM_VALUES_FILE}.noblank"
