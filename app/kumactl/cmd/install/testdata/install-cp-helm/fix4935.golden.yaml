@@ -530,7 +530,7 @@ spec:
       # marks the pod as a critical add-on, ensuring it gets
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
       nodeSelector:
       
         kubernetes.io/os: linux
