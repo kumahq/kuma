@@ -102,8 +102,6 @@ func MultizoneUniversal() {
 
 		Eventually(has("zoneegresses"), "30s", "1s").Should(BeFalse())
 		Eventually(has("zoneegressinsights"), "30s", "1s").Should(BeFalse())
-
-		Expect(true).To(BeFalse())
 	})
 
 	It("should delete DataplaneInsight when Dataplane is deleted", func() {
