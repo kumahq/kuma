@@ -83,7 +83,8 @@ conf:
 		Eventually(requestRateLimited("web", "test-server", 429), "10s", "100ms").Should(Succeed())
 	})
 
-	It("should limit echo server as external service", func() {
+	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
+	It("should limit echo server as external service", FlakeAttempts(3), func() {
 		externalService := fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"
