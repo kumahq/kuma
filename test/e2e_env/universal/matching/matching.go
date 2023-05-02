@@ -32,7 +32,8 @@ func Matching() {
 		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("should both fault injections with the same destination proxy", func() {
+	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
+	It("should both fault injections with the same destination proxy", FlakeAttempts(3), func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: FaultInjection
 mesh: %s
