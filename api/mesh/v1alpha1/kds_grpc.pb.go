@@ -130,7 +130,7 @@ var KumaDiscoveryService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "mesh/v1alpha1/kds.proto",
+	Metadata: "api/mesh/v1alpha1/kds.proto",
 }
 
 // GlobalKDSServiceClient is the client API for GlobalKDSService service.
@@ -404,7 +404,7 @@ var GlobalKDSService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "mesh/v1alpha1/kds.proto",
+	Metadata: "api/mesh/v1alpha1/kds.proto",
 }
 
 // KDSSyncServiceClient is the client API for KDSSyncService service.
@@ -606,5 +606,5 @@ var KDSSyncService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "mesh/v1alpha1/kds.proto",
+	Metadata: "api/mesh/v1alpha1/kds.proto",
 }

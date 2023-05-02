@@ -32,8 +32,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
-	github.com/lib/pq v1.10.8
-	github.com/miekg/dns v1.1.53
+	github.com/lib/pq v1.10.9
+	github.com/miekg/dns v1.1.54
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.9.2
@@ -72,7 +72,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.3
-	k8s.io/klog/v2 v2.90.1
+	k8s.io/klog/v2 v2.100.1
 	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715
 	k8s.io/kubectl v0.26.3
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5

@@ -27,6 +27,9 @@ controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
+  # -- Kuma CP log output path: Defaults to /dev/stdout
+  logOutputPath: ""
+
   # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 

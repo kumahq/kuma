@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v3.20.0
-// source: mesh/v1alpha1/gateway.proto
+// source: api/mesh/v1alpha1/gateway.proto
 
 package v1alpha1
 
@@ -59,11 +59,11 @@ func (x MeshGateway_TLS_Mode) String() string {
 }
 
 func (MeshGateway_TLS_Mode) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_gateway_proto_enumTypes[0].Descriptor()
+	return file_api_mesh_v1alpha1_gateway_proto_enumTypes[0].Descriptor()
 }
 
 func (MeshGateway_TLS_Mode) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_gateway_proto_enumTypes[0]
+	return &file_api_mesh_v1alpha1_gateway_proto_enumTypes[0]
 }
 
 func (x MeshGateway_TLS_Mode) Number() protoreflect.EnumNumber {
@@ -72,7 +72,7 @@ func (x MeshGateway_TLS_Mode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MeshGateway_TLS_Mode.Descriptor instead.
 func (MeshGateway_TLS_Mode) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 type MeshGateway_Listener_Protocol int32
@@ -111,11 +111,11 @@ func (x MeshGateway_Listener_Protocol) String() string {
 }
 
 func (MeshGateway_Listener_Protocol) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_gateway_proto_enumTypes[1].Descriptor()
+	return file_api_mesh_v1alpha1_gateway_proto_enumTypes[1].Descriptor()
 }
 
 func (MeshGateway_Listener_Protocol) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_gateway_proto_enumTypes[1]
+	return &file_api_mesh_v1alpha1_gateway_proto_enumTypes[1]
 }
 
 func (x MeshGateway_Listener_Protocol) Number() protoreflect.EnumNumber {
@@ -124,7 +124,7 @@ func (x MeshGateway_Listener_Protocol) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MeshGateway_Listener_Protocol.Descriptor instead.
 func (MeshGateway_Listener_Protocol) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1, 0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
 // MeshGateway is a virtual proxy.
@@ -155,7 +155,7 @@ type MeshGateway struct {
 func (x *MeshGateway) Reset() {
 	*x = MeshGateway{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[0]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -168,7 +168,7 @@ func (x *MeshGateway) String() string {
 func (*MeshGateway) ProtoMessage() {}
 
 func (x *MeshGateway) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[0]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -181,7 +181,7 @@ func (x *MeshGateway) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway.ProtoReflect.Descriptor instead.
 func (*MeshGateway) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *MeshGateway) GetSelectors() []*Selector {
@@ -215,7 +215,7 @@ type MeshGateway_TLS struct {
 func (x *MeshGateway_TLS) Reset() {
 	*x = MeshGateway_TLS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[1]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -228,7 +228,7 @@ func (x *MeshGateway_TLS) String() string {
 func (*MeshGateway_TLS) ProtoMessage() {}
 
 func (x *MeshGateway_TLS) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[1]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -241,7 +241,7 @@ func (x *MeshGateway_TLS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_TLS.ProtoReflect.Descriptor instead.
 func (*MeshGateway_TLS) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0}
 }
 
 type MeshGateway_Listener struct {
@@ -281,7 +281,7 @@ type MeshGateway_Listener struct {
 func (x *MeshGateway_Listener) Reset() {
 	*x = MeshGateway_Listener{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[2]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -294,7 +294,7 @@ func (x *MeshGateway_Listener) String() string {
 func (*MeshGateway_Listener) ProtoMessage() {}
 
 func (x *MeshGateway_Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[2]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -307,7 +307,7 @@ func (x *MeshGateway_Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_Listener.ProtoReflect.Descriptor instead.
 func (*MeshGateway_Listener) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *MeshGateway_Listener) GetHostname() string {
@@ -375,7 +375,7 @@ type MeshGateway_Conf struct {
 func (x *MeshGateway_Conf) Reset() {
 	*x = MeshGateway_Conf{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[3]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -388,7 +388,7 @@ func (x *MeshGateway_Conf) String() string {
 func (*MeshGateway_Conf) ProtoMessage() {}
 
 func (x *MeshGateway_Conf) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +401,7 @@ func (x *MeshGateway_Conf) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_Conf.ProtoReflect.Descriptor instead.
 func (*MeshGateway_Conf) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 2}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 2}
 }
 
 func (x *MeshGateway_Conf) GetListeners() []*MeshGateway_Listener {
@@ -420,7 +420,7 @@ type MeshGateway_TLS_Options struct {
 func (x *MeshGateway_TLS_Options) Reset() {
 	*x = MeshGateway_TLS_Options{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[5]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -433,7 +433,7 @@ func (x *MeshGateway_TLS_Options) String() string {
 func (*MeshGateway_TLS_Options) ProtoMessage() {}
 
 func (x *MeshGateway_TLS_Options) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -446,7 +446,7 @@ func (x *MeshGateway_TLS_Options) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_TLS_Options.ProtoReflect.Descriptor instead.
 func (*MeshGateway_TLS_Options) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 // Aligns with MeshGatewayTLSConfig.
@@ -479,7 +479,7 @@ type MeshGateway_TLS_Conf struct {
 func (x *MeshGateway_TLS_Conf) Reset() {
 	*x = MeshGateway_TLS_Conf{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[6]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -492,7 +492,7 @@ func (x *MeshGateway_TLS_Conf) String() string {
 func (*MeshGateway_TLS_Conf) ProtoMessage() {}
 
 func (x *MeshGateway_TLS_Conf) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -505,7 +505,7 @@ func (x *MeshGateway_TLS_Conf) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_TLS_Conf.ProtoReflect.Descriptor instead.
 func (*MeshGateway_TLS_Conf) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 1}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
 func (x *MeshGateway_TLS_Conf) GetMode() MeshGateway_TLS_Mode {
@@ -540,7 +540,7 @@ type MeshGateway_Listener_Resources struct {
 func (x *MeshGateway_Listener_Resources) Reset() {
 	*x = MeshGateway_Listener_Resources{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[7]
+		mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -553,7 +553,7 @@ func (x *MeshGateway_Listener_Resources) String() string {
 func (*MeshGateway_Listener_Resources) ProtoMessage() {}
 
 func (x *MeshGateway_Listener_Resources) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_gateway_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -566,7 +566,7 @@ func (x *MeshGateway_Listener_Resources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGateway_Listener_Resources.ProtoReflect.Descriptor instead.
 func (*MeshGateway_Listener_Resources) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1, 0}
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
 func (x *MeshGateway_Listener_Resources) GetConnectionLimit() uint32 {
@@ -576,17 +576,18 @@ func (x *MeshGateway_Listener_Resources) GetConnectionLimit() uint32 {
 	return 0
 }
 
-var File_mesh_v1alpha1_gateway_proto protoreflect.FileDescriptor
+var File_api_mesh_v1alpha1_gateway_proto protoreflect.FileDescriptor
 
-var file_mesh_v1alpha1_gateway_proto_rawDesc = []byte{
-	0x0a, 0x1b, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f,
-	0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x12, 0x6b,
-	0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x1a, 0x15, 0x6b, 0x75, 0x6d, 0x61, 0x2d, 0x64, 0x6f, 0x63, 0x2f, 0x63, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x6f,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x6d, 0x65,
-	0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x73, 0x65, 0x6c, 0x65,
-	0x63, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x20, 0x73, 0x79, 0x73, 0x74,
+var file_api_mesh_v1alpha1_gateway_proto_rawDesc = []byte{
+	0x0a, 0x1f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2f, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x12, 0x12, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x15, 0x6b, 0x75, 0x6d, 0x61, 0x2d, 0x64, 0x6f, 0x63, 0x2f,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x16, 0x61, 0x70,
+	0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x20, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x24, 0x61, 0x70, 0x69, 0x2f, 0x73, 0x79, 0x73, 0x74,
 	0x65, 0x6d, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x64, 0x61, 0x74, 0x61,
 	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61,
 	0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e,
@@ -680,20 +681,20 @@ var file_mesh_v1alpha1_gateway_proto_rawDesc = []byte{
 }
 
 var (
-	file_mesh_v1alpha1_gateway_proto_rawDescOnce sync.Once
-	file_mesh_v1alpha1_gateway_proto_rawDescData = file_mesh_v1alpha1_gateway_proto_rawDesc
+	file_api_mesh_v1alpha1_gateway_proto_rawDescOnce sync.Once
+	file_api_mesh_v1alpha1_gateway_proto_rawDescData = file_api_mesh_v1alpha1_gateway_proto_rawDesc
 )
 
-func file_mesh_v1alpha1_gateway_proto_rawDescGZIP() []byte {
-	file_mesh_v1alpha1_gateway_proto_rawDescOnce.Do(func() {
-		file_mesh_v1alpha1_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(file_mesh_v1alpha1_gateway_proto_rawDescData)
+func file_api_mesh_v1alpha1_gateway_proto_rawDescGZIP() []byte {
+	file_api_mesh_v1alpha1_gateway_proto_rawDescOnce.Do(func() {
+		file_api_mesh_v1alpha1_gateway_proto_rawDescData = protoimpl.X.CompressGZIP(file_api_mesh_v1alpha1_gateway_proto_rawDescData)
 	})
-	return file_mesh_v1alpha1_gateway_proto_rawDescData
+	return file_api_mesh_v1alpha1_gateway_proto_rawDescData
 }
 
-var file_mesh_v1alpha1_gateway_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_mesh_v1alpha1_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_mesh_v1alpha1_gateway_proto_goTypes = []interface{}{
+var file_api_mesh_v1alpha1_gateway_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_api_mesh_v1alpha1_gateway_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_mesh_v1alpha1_gateway_proto_goTypes = []interface{}{
 	(MeshGateway_TLS_Mode)(0),              // 0: kuma.mesh.v1alpha1.MeshGateway.TLS.Mode
 	(MeshGateway_Listener_Protocol)(0),     // 1: kuma.mesh.v1alpha1.MeshGateway.Listener.Protocol
 	(*MeshGateway)(nil),                    // 2: kuma.mesh.v1alpha1.MeshGateway
@@ -708,7 +709,7 @@ var file_mesh_v1alpha1_gateway_proto_goTypes = []interface{}{
 	(*Selector)(nil),                       // 11: kuma.mesh.v1alpha1.Selector
 	(*v1alpha1.DataSource)(nil),            // 12: kuma.system.v1alpha1.DataSource
 }
-var file_mesh_v1alpha1_gateway_proto_depIdxs = []int32{
+var file_api_mesh_v1alpha1_gateway_proto_depIdxs = []int32{
 	11, // 0: kuma.mesh.v1alpha1.MeshGateway.selectors:type_name -> kuma.mesh.v1alpha1.Selector
 	6,  // 1: kuma.mesh.v1alpha1.MeshGateway.tags:type_name -> kuma.mesh.v1alpha1.MeshGateway.TagsEntry
 	5,  // 2: kuma.mesh.v1alpha1.MeshGateway.conf:type_name -> kuma.mesh.v1alpha1.MeshGateway.Conf
@@ -727,14 +728,14 @@ var file_mesh_v1alpha1_gateway_proto_depIdxs = []int32{
 	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_mesh_v1alpha1_gateway_proto_init() }
-func file_mesh_v1alpha1_gateway_proto_init() {
-	if File_mesh_v1alpha1_gateway_proto != nil {
+func init() { file_api_mesh_v1alpha1_gateway_proto_init() }
+func file_api_mesh_v1alpha1_gateway_proto_init() {
+	if File_api_mesh_v1alpha1_gateway_proto != nil {
 		return
 	}
-	file_mesh_v1alpha1_selector_proto_init()
+	file_api_mesh_v1alpha1_selector_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_mesh_v1alpha1_gateway_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway); i {
 			case 0:
 				return &v.state
@@ -746,7 +747,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_TLS); i {
 			case 0:
 				return &v.state
@@ -758,7 +759,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_Listener); i {
 			case 0:
 				return &v.state
@@ -770,7 +771,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_Conf); i {
 			case 0:
 				return &v.state
@@ -782,7 +783,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_TLS_Options); i {
 			case 0:
 				return &v.state
@@ -794,7 +795,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_TLS_Conf); i {
 			case 0:
 				return &v.state
@@ -806,7 +807,7 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGateway_Listener_Resources); i {
 			case 0:
 				return &v.state
@@ -823,19 +824,19 @@ func file_mesh_v1alpha1_gateway_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_mesh_v1alpha1_gateway_proto_rawDesc,
+			RawDescriptor: file_api_mesh_v1alpha1_gateway_proto_rawDesc,
 			NumEnums:      2,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_mesh_v1alpha1_gateway_proto_goTypes,
-		DependencyIndexes: file_mesh_v1alpha1_gateway_proto_depIdxs,
-		EnumInfos:         file_mesh_v1alpha1_gateway_proto_enumTypes,
-		MessageInfos:      file_mesh_v1alpha1_gateway_proto_msgTypes,
+		GoTypes:           file_api_mesh_v1alpha1_gateway_proto_goTypes,
+		DependencyIndexes: file_api_mesh_v1alpha1_gateway_proto_depIdxs,
+		EnumInfos:         file_api_mesh_v1alpha1_gateway_proto_enumTypes,
+		MessageInfos:      file_api_mesh_v1alpha1_gateway_proto_msgTypes,
 	}.Build()
-	File_mesh_v1alpha1_gateway_proto = out.File
-	file_mesh_v1alpha1_gateway_proto_rawDesc = nil
-	file_mesh_v1alpha1_gateway_proto_goTypes = nil
-	file_mesh_v1alpha1_gateway_proto_depIdxs = nil
+	File_api_mesh_v1alpha1_gateway_proto = out.File
+	file_api_mesh_v1alpha1_gateway_proto_rawDesc = nil
+	file_api_mesh_v1alpha1_gateway_proto_goTypes = nil
+	file_api_mesh_v1alpha1_gateway_proto_depIdxs = nil
 }

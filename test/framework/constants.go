@@ -27,8 +27,6 @@ const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
-	maxClusters = 4
-
 	redirectPortInbound   = "15006"
 	redirectPortInboundV6 = "15010"
 	redirectPortOutbound  = "15001"
