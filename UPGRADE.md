@@ -31,7 +31,7 @@ Equivalent example valid now:
 docker run kumahq/kumactl:2.3.0 install transparent-proxy --help
 ```
 
-#### Removal of CN from Subject in generated Certificates
+#### Removal of Common Name from generated certificates
 
 This only affects users who rely on generated certificates having a common name set.
 
