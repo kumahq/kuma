@@ -19,6 +19,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
+| controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
