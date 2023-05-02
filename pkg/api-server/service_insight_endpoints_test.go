@@ -38,6 +38,9 @@ var _ = Describe("Service Insight Endpoints", func() {
 
 		err = resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
+
+		err = resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("no-services", core_model.NoMesh), store.CreatedAt(t1))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	createServiceInsight := func(name, mesh string, serviceInsight *mesh_proto.ServiceInsight) {
@@ -69,7 +72,6 @@ var _ = Describe("Service Insight Endpoints", func() {
 				},
 			},
 		})
-
 		createServiceInsight("all-services-mesh-2", "mesh-2", &mesh_proto.ServiceInsight{
 			Services: map[string]*mesh_proto.ServiceInsight_Service{
 				"db": {
@@ -165,6 +167,25 @@ var _ = Describe("Service Insight Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(expected))
 		})
+	})
+
+	It("should return empty entry (fix #6639)", func() {
+		expected := `
+{
+  "total": 0,
+  "items": [],
+  "next": null
+}`
+
+		// when
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/no-services/service-insights")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(response.StatusCode).To(Equal(200))
+		body, err := io.ReadAll(response.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(body).To(MatchJSON(expected))
 	})
 
 	type testCase struct {
