@@ -1,13 +1,10 @@
-TEST_CONFIGS_PATH_ROOT ?= tools/container-structure-test
+TEST_CONTAINER_TESTS_PATH ?= $(KUMA_DIR)/test/container-structure
 
 define TEST_CONTAINER_STRUCTURES
-TEST_CONFIGS_PATH_FILENAME_$(1) ?= $(1)
-TEST_CONFIGS_PATH_$(1) ?= $(KUMA_DIR)/$(TEST_CONFIGS_PATH_ROOT)/$$(TEST_CONFIGS_PATH_FILENAME_$(1)).yaml
-
 .PHONY: test/container-structure/$(1)/$(2)
-test/container-structure/$(1)/$(2): docker/$(1)/$(2)/load
+test/container-structure/$(1)/$(2): $(if $(CI),docker/$(1)/$(2)/load,image/$(1)/$(2))
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--config $$(TEST_CONFIGS_PATH_$(1)) \
+		--config $(if $(RESOLVE_CONTAINER_TEST_FILE),$$(call RESOLVE_CONTAINER_TEST_FILE,$(1)),$(TEST_CONTAINER_TESTS_PATH)/$(1).yaml) \
 		--image $(call build_image,$(1),$(2))
 endef
 
