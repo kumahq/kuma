@@ -44,6 +44,7 @@ type proxyInfo struct {
 	mtx       sync.Mutex
 	proxyType mesh_proto.ProxyType
 	connected bool
+	deleted   bool
 }
 
 var _ DataplaneCallbacks = &DataplaneLifecycle{}
@@ -119,6 +120,11 @@ func (d *DataplaneLifecycle) register(
 	info.mtx.Lock()
 	defer info.mtx.Unlock()
 
+	if info.deleted {
+		// we took info object that was deleted from proxyInfo map by other goroutine, return err so DPP retry registration
+		return errors.Errorf("attempt to concurently register deleted DPP resource, needs retry")
+	}
+
 	log.Info("register proxy")
 
 	err := manager.Upsert(ctx, d.resManager, core_model.MetaToResourceKey(md.Resource.GetMeta()), proxyResource(md.GetProxyType()), func(existing core_model.Resource) error {
@@ -130,6 +136,7 @@ func (d *DataplaneLifecycle) register(
 	if err != nil {
 		log.Info("cannot register proxy", "reason", err.Error())
 		if !loaded {
+			info.deleted = true
 			d.proxyInfos.Delete(proxyKey)
 		}
 		return errors.Wrap(err, "could not register proxy passed in kuma-dp run")
@@ -152,6 +159,11 @@ func (d *DataplaneLifecycle) deregister(
 	}
 
 	info.mtx.Lock()
+	if info.deleted {
+		info.mtx.Unlock()
+		return
+	}
+
 	info.connected = false
 	proxyType := info.proxyType
 	info.mtx.Unlock()
@@ -168,6 +180,10 @@ func (d *DataplaneLifecycle) deregister(
 
 	info.mtx.Lock()
 	defer info.mtx.Unlock()
+
+	if info.deleted {
+		return
+	}
 
 	if info.connected {
 		log.Info("no need to deregister proxy. It has already connected to this instance")
@@ -187,6 +203,7 @@ func (d *DataplaneLifecycle) deregister(
 	}
 
 	d.proxyInfos.Delete(proxyKey)
+	info.deleted = true
 }
 
 // validateUpsert checks if a new data plane proxy can replace the old one.
