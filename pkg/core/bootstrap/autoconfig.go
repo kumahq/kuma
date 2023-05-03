@@ -152,7 +152,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 		return errors.Wrap(err, "could not get a hostname of the machine")
 	}
 	hosts := append([]string{hostname, "localhost"}, ips...)
-	cert, err := tls.NewSelfSignedCert("kuma-control-plane", tls.ServerCertType, tls.DefaultKeyType, hosts...)
+	cert, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, hosts...)
 	if err != nil {
 		return errors.Wrap(err, "failed to auto-generate TLS certificate")
 	}
