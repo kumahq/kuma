@@ -68,6 +68,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -122,6 +129,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address
@@ -232,6 +246,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -286,6 +307,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address

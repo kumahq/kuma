@@ -44,6 +44,13 @@ properties:
                                 type: boolean
                               plain:
                                 type: string
+                              type:
+                                enum:
+                                  - Plain
+                                  - Json
+                                type: string
+                            required:
+                              - type
                             type: object
                           path:
                             description: Path to a file that logs will be written to
@@ -94,6 +101,13 @@ properties:
                                 type: boolean
                               plain:
                                 type: string
+                              type:
+                                enum:
+                                  - Plain
+                                  - Json
+                                type: string
+                            required:
+                              - type
                             type: object
                         required:
                           - address
@@ -190,6 +204,13 @@ properties:
                                 type: boolean
                               plain:
                                 type: string
+                              type:
+                                enum:
+                                  - Plain
+                                  - Json
+                                type: string
+                            required:
+                              - type
                             type: object
                           path:
                             description: Path to a file that logs will be written to
@@ -240,6 +261,13 @@ properties:
                                 type: boolean
                               plain:
                                 type: string
+                              type:
+                                enum:
+                                  - Plain
+                                  - Json
+                                type: string
+                            required:
+                              - type
                             type: object
                         required:
                           - address

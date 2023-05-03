@@ -85,7 +85,16 @@ type FileBackend struct {
 	Path string `json:"path"`
 }
 
+// +kubebuilder:validation:Enum=Plain;Json
+type FormatType string
+
+const (
+	PlainFormatType FormatType = "Plain"
+	JsonFormatType  FormatType = "Json"
+)
+
 type Format struct {
+	Type            FormatType   `json:"type"`
 	Plain           *string      `json:"plain,omitempty"`
 	Json            *[]JsonValue `json:"json,omitempty"`
 	OmitEmptyValues *bool        `json:"omitEmptyValues,omitempty"`

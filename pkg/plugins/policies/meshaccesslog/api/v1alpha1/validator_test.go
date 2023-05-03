@@ -37,6 +37,7 @@ from:
         - type: Tcp
           tcp:
             format:
+              type: Json
               json:
                 - key: "start_time"
                   value: "%START_TIME%"
@@ -50,6 +51,7 @@ to:
         - type: File
           file:
            format:
+             type: Plain
              plain: '{"start_time": "%START_TIME%"}'
            path: '/tmp/logs.txt'
 `),
@@ -121,8 +123,9 @@ from:
       backends:
         - type: File
           file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
+            format:
+              type: Plain
+              plain: '{"start_time": "%START_TIME%"}'
 `,
 				expected: `
 violations:
@@ -142,6 +145,7 @@ from:
         - type: File
           file:
            format:
+             type: Plain
              plain: '{"start_time": "%START_TIME%"}'
            path: '#not_valid'
 `,
@@ -164,6 +168,7 @@ from:
           file:
             path: '/tmp/logs.txt'
             format:
+              type: Json
               json:
                 - value: "%START_TIME%"
 `,
@@ -186,6 +191,7 @@ from:
           file:
             path: '/tmp/logs.txt'
             format:
+              type: Json
               json:
                 - key: "start_time"
 `,
@@ -208,6 +214,7 @@ from:
           file:
             path: '/tmp/logs.txt'
             format:
+              type: Json
               json:
                 - key: '"'
                   value: "%START_TIME%"
@@ -216,30 +223,6 @@ from:
 violations:
   - field: spec.from[0].default.backends[0].file.format.json[0]
     message: is not a valid JSON object`,
-			}),
-			Entry("both 'plain' and 'json' defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - type: Tcp
-          tcp:
-            address: 127.0.0.1:5000
-            format:
-              plain: '{"start_time": "%START_TIME%"}'
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-`,
-				expected: `
-violations:
-- field: spec.from[0].default.backends[0].tcp.format
-  message: 'format must have only one type defined: plain, json'`,
 			}),
 			Entry("'to' defined in MeshGatewayRoute", testCase{
 				inputYaml: `
@@ -254,6 +237,7 @@ to:
         - type: File
           file:
             format:
+              type: Plain
               plain: '{"start_time": "%START_TIME%"}'
             path: '/tmp/logs.txt'
 `,
@@ -301,6 +285,7 @@ from:
         - type: Tcp
           tcp:
             format:
+              type: Json
               json:
                 - key: "start_time"
                   value: "%START_TIME%"
@@ -325,11 +310,13 @@ from:
           file:
             path: '/tmp/logs.txt'
             format:
+              type: Json
               json: []
         - type: Tcp
           tcp:
             address: http://logs.com
             format:
+              type: Json
               json: []
 `,
 				expected: `
@@ -353,11 +340,13 @@ from:
           file:
             path: '/tmp/logs.txt'
             format:
+              type: Plain
               plain: ""
         - type: Tcp
           tcp:
             address: http://logs.com
             format:
+              type: Plain
               plain: ""
 `,
 				expected: `

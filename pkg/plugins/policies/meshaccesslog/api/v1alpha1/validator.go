@@ -128,16 +128,23 @@ func validateBackend(backend Backend) validators.ValidationError {
 func validateFormat(format Format) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (format.Plain != nil) == (format.Json != nil) {
-		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
-	}
-
-	switch {
-	case format.Plain != nil:
-		if *format.Plain == "" {
-			verr.AddViolation("plain", validators.MustNotBeEmpty)
+	switch format.Type {
+	case PlainFormatType:
+		root := validators.RootedAt("plain")
+		if format.Plain == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
 		}
-	case format.Json != nil:
+		if *format.Plain == "" {
+			verr.AddViolationAt(root, validators.MustNotBeEmpty)
+		}
+	case JsonFormatType:
+		root := validators.RootedAt("json")
+		if format.Json == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if len(*format.Json) == 0 {
 			verr.AddViolation("json", validators.MustNotBeEmpty)
 		}
@@ -153,6 +160,8 @@ func validateFormat(format Format) validators.ValidationError {
 				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
+	default:
+		verr.AddViolationAt(validators.Root(), fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
 	return verr
