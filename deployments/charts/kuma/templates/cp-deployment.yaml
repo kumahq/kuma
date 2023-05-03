@@ -94,9 +94,9 @@ spec:
                   key: {{ $element.Key }}
           {{- end }}
           args:
+            - --log-level=info
             - migrate
             - up
-            - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           resources:
             {{- if .Values.controlPlane.resources }}
@@ -146,9 +146,9 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
           args:
-            - run
-            - --log-level={{ .Values.controlPlane.logLevel }}
             - --log-output-path={{ .Values.controlPlane.logOutputPath }}
+            - --log-level={{ .Values.controlPlane.logLevel }}
+            - run
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
