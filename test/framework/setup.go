@@ -598,7 +598,7 @@ func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error 
 }
 
 func CreateCertsFor(names ...string) (string, string, error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
+	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err
 	}
