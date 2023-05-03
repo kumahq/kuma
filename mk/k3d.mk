@@ -1,5 +1,5 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
-
+METALLB_VERSION ?= v0.13.9
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
@@ -99,7 +99,7 @@ endif
 
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.9/config/manifests/metallb-native.yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=90s --for=condition=Ready -n metallb-system --all pods
 	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}') \
 		yq '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(SUBNET)' mk/metallb-k3d.yaml \
