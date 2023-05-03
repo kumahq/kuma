@@ -98,6 +98,14 @@ properties:
                         required:
                           - address
                         type: object
+                      type:
+                        enum:
+                          - Tcp
+                          - File
+                          - OpenTelemetry
+                        type: string
+                    required:
+                      - type
                     type: object
                   type: array
               type: object
@@ -236,6 +244,14 @@ properties:
                         required:
                           - address
                         type: object
+                      type:
+                        enum:
+                          - Tcp
+                          - File
+                          - OpenTelemetry
+                        type: string
+                    required:
+                      - type
                     type: object
                   type: array
               type: object

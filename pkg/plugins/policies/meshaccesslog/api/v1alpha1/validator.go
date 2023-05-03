@@ -84,36 +84,42 @@ func validateDefault(conf Conf) validators.ValidationError {
 func validateBackend(backend Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	var defined int
-	if backend.File != nil {
-		defined++
-	}
-	if backend.Tcp != nil {
-		defined++
-	}
-	if backend.OpenTelemetry != nil {
-		defined++
-	}
-	if defined != 1 {
-		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
-	}
+	switch backend.Type {
+	case FileBackendType:
+		root := validators.RootedAt("file")
+		if backend.File == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
 
-	switch {
-	case backend.File != nil:
 		if backend.File.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(*backend.File.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.File.Format))
 		}
 		isFilePath, _ := govalidator.IsFilePath(backend.File.Path)
 		if !isFilePath {
-			verr.AddViolationAt(validators.RootedAt("file").Field("path"), `file backend requires a valid path`)
+			verr.AddViolationAt(root.Field("path"), `file backend requires a valid path`)
 		}
-	case backend.Tcp != nil:
+	case TCPBackendType:
+		root := validators.RootedAt("tcp")
+		if backend.Tcp == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if backend.Tcp.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(*backend.Tcp.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.Tcp.Format))
 		}
 		if !govalidator.IsURL(backend.Tcp.Address) {
-			verr.AddViolationAt(validators.RootedAt("tcp").Field("address"), `tcp backend requires valid address`)
+			verr.AddViolationAt(root.Field("address"), `tcp backend requires valid address`)
 		}
+	case OtelTelemetryBackendType:
+		root := validators.RootedAt("openTelemetry")
+		if backend.OpenTelemetry == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+	default:
+		verr.AddViolationAt(validators.Root(), fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr

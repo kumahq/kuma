@@ -34,7 +34,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - tcp:
+        - type: Tcp
+          tcp:
             format:
               json:
                 - key: "start_time"
@@ -46,7 +47,8 @@ to:
       name: web-backend
     default:
       backends:
-        - file:
+        - type: File
+          file:
            format:
              plain: '{"start_time": "%START_TIME%"}'
            path: '/tmp/logs.txt'
@@ -60,7 +62,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
 `),
 			Entry("empty backend list", `
@@ -116,7 +119,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
            format:
              plain: '{"start_time": "%START_TIME%"}'
 `,
@@ -135,7 +139,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
            format:
              plain: '{"start_time": "%START_TIME%"}'
            path: '#not_valid'
@@ -155,10 +160,11 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              json:
                 - value: "%START_TIME%"
 `,
 				expected: `
@@ -176,10 +182,11 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              json:
                 - key: "start_time"
 `,
 				expected: `
@@ -197,10 +204,11 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              json:
                 - key: '"'
                   value: "%START_TIME%"
 `,
@@ -219,7 +227,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - tcp:
+        - type: Tcp
+          tcp:
             address: 127.0.0.1:5000
             format:
               plain: '{"start_time": "%START_TIME%"}'
@@ -232,33 +241,6 @@ violations:
 - field: spec.from[0].default.backends[0].tcp.format
   message: 'format must have only one type defined: plain, json'`,
 			}),
-			Entry("both 'tcp' and 'file' defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - tcp:
-            address: 127.0.0.1:5000
-            format:
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-          file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
-`,
-				expected: `
-violations:
-- field: spec.from[0].default.backends[0]
-  message: 'backend must have only one type defined: tcp, file, openTelemetry'`,
-			}),
-
 			Entry("'to' defined in MeshGatewayRoute", testCase{
 				inputYaml: `
 targetRef:
@@ -269,10 +251,11 @@ to:
       kind: Mesh
     default:
       backends:
-        - file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
+        - type: File
+          file:
+            format:
+              plain: '{"start_time": "%START_TIME%"}'
+            path: '/tmp/logs.txt'
 `,
 				expected: `
 violations:
@@ -315,7 +298,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - tcp:
+        - type: Tcp
+          tcp:
             format:
               json:
                 - key: "start_time"
@@ -337,11 +321,13 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
             format:
               json: []
-        - tcp:
+        - type: Tcp
+          tcp:
             address: http://logs.com
             format:
               json: []
@@ -363,11 +349,13 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
             format:
               plain: ""
-        - tcp:
+        - type: Tcp
+          tcp:
             address: http://logs.com
             format:
               plain: ""

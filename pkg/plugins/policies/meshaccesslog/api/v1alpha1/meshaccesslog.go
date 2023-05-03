@@ -40,7 +40,17 @@ type Conf struct {
 	Backends *[]Backend `json:"backends,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Tcp;File;OpenTelemetry
+type BackendType string
+
+const (
+	TCPBackendType           BackendType = "Tcp"
+	FileBackendType          BackendType = "File"
+	OtelTelemetryBackendType BackendType = "OpenTelemetry"
+)
+
 type Backend struct {
+	Type          BackendType  `json:"type"`
 	Tcp           *TCPBackend  `json:"tcp,omitempty"`
 	File          *FileBackend `json:"file,omitempty"`
 	OpenTelemetry *OtelBackend `json:"openTelemetry,omitempty"`
