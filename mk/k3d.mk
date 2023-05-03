@@ -101,9 +101,10 @@ endif
 k3d/configure/metallb:
 	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=90s --for=condition=Ready -n metallb-system --all pods
-	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}') \
-		yq '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(SUBNET)' mk/metallb-k3d.yaml \
-	| KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
+	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}'); if [ $${SUBNET} != "172.18.0.0/16" ]; then \
+		   echo "Unexpected docker network, expecting 172.18.0.0/16"; exit 1; \
+	fi
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml
 
 .PHONY: k3d/wait
 k3d/wait:
