@@ -297,6 +297,10 @@ env:
 {{- end }}
 {{- end }}
 
+{{- define "kuma.controlPlane.tls.general.caSecretName" -}}
+{{ .Values.controlPlane.tls.general.caSecretName | default .Values.controlPlane.tls.general.secretName | default (printf "%s-tls-cert" (include "kuma.name" .)) | quote }}
+{{- end }}
+
 {{- define "kuma.universal.defaultEnv" -}}
 env:
 - name: KUMA_GENERAL_WORK_DIR
