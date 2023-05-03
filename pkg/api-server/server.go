@@ -37,6 +37,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -236,6 +237,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
+			k8sMapper:      k8s.NewMapper(cfg.Store.Kubernetes.SystemNamespace, cfg.Store.Type, k8s.NewSimpleKubeFactory()),
 			mode:           cfg.Mode,
 			resManager:     resManager,
 			descriptor:     definition,

@@ -18,8 +18,10 @@ import (
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 const (
@@ -38,6 +40,7 @@ type resourceEndpoints struct {
 	resManager     manager.ResourceManager
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
+	k8sMapper      k8s.ResourceMapper
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -67,7 +70,20 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve a resource")
 	} else {
-		res := rest.From.Resource(resource)
+		var res interface{}
+		switch request.QueryParameter("format") {
+		case "k8s", "kubernetes":
+			res, err = r.k8sMapper.Map(resource, request.QueryParameter("namespace"))
+			if err != nil {
+				rest_errors.HandleError(response, err, "k8s mapping failed")
+				return
+			}
+		case "universal", "":
+			res = rest.From.Resource(resource)
+		default:
+			rest_errors.WriteError(response, http.StatusBadRequest, types.Error{Title: fmt.Sprintf("invalid format %s", request.QueryParameter("format"))})
+			return
+		}
 		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
 		}
