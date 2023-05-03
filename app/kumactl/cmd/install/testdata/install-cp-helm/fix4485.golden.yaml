@@ -453,9 +453,9 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
           args:
-            - run
-            - --log-level=info
             - --log-output-path=
+            - --log-level=info
+            - run
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
