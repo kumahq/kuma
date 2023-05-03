@@ -79,7 +79,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/controller-tools v0.11.4
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
-	sigs.k8s.io/gateway-api v0.6.2
+	sigs.k8s.io/gateway-api v0.7.0-rc1
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -201,7 +201,5 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230425092642-85f65a531d8a
 
 replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview

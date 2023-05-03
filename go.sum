@@ -921,8 +921,6 @@ github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/ktrysmt/go-bitbucket v0.6.4/go.mod h1:9u0v3hsd2rqCHRIpbir1oP7F58uo5dq19sBYvuMoyQ4=
-github.com/kumahq/gateway-api v0.0.0-20230425092642-85f65a531d8a h1:bYlRldIQ6vCCMqRkEWQDUWl0tmT7frT9J+S2p4dFtKo=
-github.com/kumahq/gateway-api v0.0.0-20230425092642-85f65a531d8a/go.mod h1:C6WReKOvpWp7vMxogDCjZAefwzB7WdnDO07VYuNyb4k=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1 h1:tY2dGQJTYVGkhxAHN154fddcWDRy55Pl4+oLT+FhsHo=
 github.com/kumahq/protoc-gen-kumadoc v0.3.1/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
 github.com/lahabana/terratest v0.42.0-preview h1:67gUui/cTYaOo8VNqj16c32kjOIl9B6oLEJvyr+V7Rc=
@@ -2210,6 +2208,8 @@ sigs.k8s.io/controller-runtime v0.14.6 h1:oxstGVvXGNnMvY7TAESYk+lzr6S3V5VFxQ6d92
 sigs.k8s.io/controller-runtime v0.14.6/go.mod h1:WqIdsAY6JBsjfc/CqO0CORmNtoCtE4S6qbPc9s68h+0=
 sigs.k8s.io/controller-tools v0.11.4 h1:jqXJ/Xb6yBgbgcBbw1YoC3rC+Bt1XZWiLjj0ZHv/GrU=
 sigs.k8s.io/controller-tools v0.11.4/go.mod h1:qcfX7jfcfYD/b7lAhvqAyTbt/px4GpvN88WKLFFv7p8=
+sigs.k8s.io/gateway-api v0.7.0-rc1 h1:dVUmLp5W4QBv9diU99ULf9n5v/incEmdVU98rkSa+7Y=
+sigs.k8s.io/gateway-api v0.7.0-rc1/go.mod h1:Xv0+ZMxX0lu1nSSDIIPEfbVztgNZ+3cfiYrJsa2Ooso=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/structured-merge-diff/v4 v4.0.1/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
