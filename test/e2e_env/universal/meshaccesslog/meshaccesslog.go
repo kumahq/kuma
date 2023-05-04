@@ -104,7 +104,8 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              plain: '%s'
            address: "%s:9999"
@@ -137,7 +138,8 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              json:
              - key: Source
@@ -192,7 +194,8 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              plain: '%s'
            address: "%s:9999"
@@ -238,7 +241,8 @@ spec:
        name: ext-service
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              plain: '%s'
            address: "%s:9999"
@@ -274,7 +278,8 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              plain: '%s'
            address: "%s:9999"
@@ -308,7 +313,8 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
              plain: '%s'
            address: "%s:9999"
