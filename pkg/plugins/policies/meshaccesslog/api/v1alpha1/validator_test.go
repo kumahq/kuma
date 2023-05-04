@@ -356,6 +356,57 @@ violations:
 - field: spec.from[0].default.backends[1].tcp.format.plain
   message: 'must not be empty'`,
 			}),
+			Entry("backend must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: File
+        - type: Tcp
+        - type: OpenTelemetry
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].file
+    message: must be defined
+  - field: spec.from[0].default.backends[1].tcp
+    message: must be defined
+  - field: spec.from[0].default.backends[2].openTelemetry
+    message: must be defined`,
+			}),
+			Entry("format must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              type: Plain
+        - type: Tcp
+          tcp:
+            address: http://logs.com
+            format:
+              type: Json
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backends[0].file.format.plain
+  message: must be defined
+- field: spec.from[0].default.backends[1].tcp.format.json
+  message: must be defined`,
+			}),
 		)
 	})
 })
