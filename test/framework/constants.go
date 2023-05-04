@@ -20,12 +20,16 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	universalKDSPort = 30686
+	kdsPort             = 30685
+	loadBalancerKdsPort = 5685
+	xdsPort             = 5678
 )
 
 const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
+
+	maxClusters = 4
 
 	redirectPortInbound   = "15006"
 	redirectPortInboundV6 = "15010"

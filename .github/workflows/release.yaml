@@ -1,4 +1,5 @@
 name: "release"
+
 on:
   release: {}
   schedule:
@@ -14,6 +15,7 @@ on:
         type: boolean
         default: false
         description: "check that everything is published correctly"
+
 env:
   CHARTS_REPO: "kumahq/charts"
   LEGACY_BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
@@ -31,7 +33,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20.3"
+          go-version: "~1.20.2"
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH

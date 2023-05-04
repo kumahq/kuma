@@ -243,7 +243,7 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	}
 }
 
-func universalZoneRelatedResource(
+func zoneRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	appType AppMode,
 	resourceManifestFunc func(address string, port, advertisedPort int) string,
@@ -278,7 +278,7 @@ func universalZoneRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, universalKDSPort, universalKDSPort)
+		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
 
 		zone := uniCluster.name
 		if uniCluster.controlplane.mode == core.Standalone {
@@ -305,7 +305,7 @@ func IngressUniversal(tokenProvider func(zone string) (string, error)) InstallFu
 		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
 	}
 
-	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
+	return zoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
@@ -313,7 +313,7 @@ func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFun
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
+	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
@@ -410,45 +410,28 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	}
 }
 
-func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
+func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool) InstallFunc {
 	return func(cluster Cluster) error {
-		var opts appDeploymentOptions
-		opts.apply(opt...)
-		args := []string{"ncat", "-lk", "9999", ">", "/nc.out"}
-		opt = append(
-			opt,
-			WithName(name),
-			WithAppname(AppModeTcpSink),
-			WithArgs(args),
-			WithoutDataplane(),
-			WithTransparentProxy(false),
-			WithIPv6(Config.IPV6),
-		)
-		return cluster.DeployApp(opt...)
-	}
-}
-
-func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
-	return func(cluster Cluster) error {
-		var opts appDeploymentOptions
-		opts.apply(opt...)
+		containerName := fmt.Sprintf("%s.%s", name, mesh)
 		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
+		opt := []AppDeploymentOption{
+			WithAppname(name),
+			WithName(name),
+			WithMesh(mesh),
+			WithoutDataplane(),
+			WithDockerContainerName(containerName),
+		}
 		if tls {
-			path, err := DumpTempCerts("localhost", opts.dockerContainerName)
+			path, err := DumpTempCerts("localhost", containerName)
 			Logf("using temp dir: %s", path)
 			if err != nil {
 				return err
 			}
 			args = append(args, "--crt", "/certs/cert.pem", "--key", "/certs/key.pem", "--tls")
-			opts.dockerVolumes = append(opts.dockerVolumes, fmt.Sprintf("%s:/certs", path))
+			opt = append(opt, WithDockerVolumes(path+":/certs"))
 		}
-		opt = append(opt,
-			WithAppname(name),
-			WithName(name),
-			WithoutDataplane(),
-			WithArgs(args),
-			WithDockerVolumes(opts.dockerVolumes...),
-		)
+
+		opt = append(opt, WithArgs(args))
 		return cluster.DeployApp(opt...)
 	}
 }
@@ -598,7 +581,7 @@ func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error 
 }
 
 func CreateCertsFor(names ...string) (string, string, error) {
-	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, names...)
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err
 	}

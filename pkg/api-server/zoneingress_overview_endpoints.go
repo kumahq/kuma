@@ -39,7 +39,6 @@ func (r *zoneIngressOverviewEndpoints) inspectZoneIngress(request *restful.Reque
 	name := request.PathParameter("name")
 
 	if err := r.resourceAccess.ValidateGet(
-		request.Request.Context(),
 		model.ResourceKey{Name: name},
 		mesh.NewZoneIngressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
@@ -83,7 +82,6 @@ func (r *zoneIngressOverviewEndpoints) fetchOverview(ctx context.Context, name s
 
 func (r *zoneIngressOverviewEndpoints) inspectZoneIngresses(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
-		request.Request.Context(),
 		"",
 		mesh.NewZoneIngressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),

@@ -56,7 +56,6 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	for {
 		select {
 		case <-ticker.C:
-			// TODO: make metrics tenant aware https://github.com/kumahq/kuma/issues/6622
 			if err := s.count(ctx); err != nil {
 				log.Error(err, "unable to count resources")
 			}

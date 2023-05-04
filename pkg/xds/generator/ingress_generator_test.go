@@ -673,7 +673,7 @@ var _ = Describe("IngressGenerator", func() {
 							Rules: []v1alpha1.Rule{{
 								Matches: []v1alpha1.Match{{
 									Path: &v1alpha1.PathMatch{
-										Type:  v1alpha1.PathPrefix,
+										Type:  v1alpha1.Prefix,
 										Value: "/v1",
 									},
 								}},

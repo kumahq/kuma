@@ -253,7 +253,7 @@ var _ = Describe("Global Sync", func() {
 			for _, ss := range serverStreams {
 				clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 			}
-			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
+			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(globalSyncer, false, nil, "kuma-system"))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := 0; i < numOfZones; i++ {

@@ -16,6 +16,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func ExternalServicesOnMultizoneUniversal() {
@@ -76,20 +77,22 @@ routing:
 	const defaultMesh = "default"
 
 	var global, zone1, zone2, external Cluster
-	var externalUni *UniversalCluster
 
 	BeforeEach(func() {
 		// External Service non-Kuma Cluster
 		external = NewUniversalCluster(NewTestingT(), clusterName4, Silent)
 
+		// todo(lobkovilya): use test-server as an external service
 		err := NewClusterSetup().
-			Install(TestServerExternalServiceUniversal("es-http", 80, false, WithDockerContainerName("kuma-es-4_es-http"))).
-			Install(TestServerExternalServiceUniversal("es-https", 443, true, WithDockerContainerName("kuma-es-4_es-https"))).
-			Install(TestServerExternalServiceUniversal("es-for-kuma-es-2", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-2"))).
-			Install(TestServerExternalServiceUniversal("es-for-kuma-es-3", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-3"))).
+			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
+			Install(externalservice.Install("es-for-kuma-es-2", externalservice.ExternalServiceCommand(80, "{\\\"instance\\\":\\\"kuma-es-2\\\"}"))).
+			Install(externalservice.Install("es-for-kuma-es-3", externalservice.ExternalServiceCommand(80, "{\\\"instance\\\":\\\"kuma-es-3\\\"}"))).
 			Setup(external)
 		Expect(err).ToNot(HaveOccurred())
-		externalUni = external.(*UniversalCluster)
+
+		externalServiceAddress := externalservice.From(external, externalservice.HttpServer).GetExternalAppAddress()
+		Expect(externalServiceAddress).ToNot(BeEmpty())
 
 		// Global
 		global = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
@@ -143,7 +146,7 @@ routing:
 	})
 
 	It("should route to external-service", func() {
-		err := ResourceUniversal(externalServiceRes(es1, "kuma-es-4_es-http:80", false, nil))(global)
+		err := ResourceUniversal(externalServiceRes(es1, "kuma-es-4_externalservice-http-server:80", false, nil))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -158,7 +161,7 @@ routing:
 
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
-				zone1, "demo-client", "kuma-es-4_es-http:80",
+				zone1, "demo-client", "kuma-es-4_externalservice-http-server:80",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -178,7 +181,7 @@ routing:
 
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
-				zone2, "demo-client", "kuma-es-4_es-http:80",
+				zone2, "demo-client", "kuma-es-4_externalservice-http-server:80",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -191,43 +194,42 @@ routing:
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
 		cert, _ := base64.StdEncoding.DecodeString(otherCert)
-		err := ResourceUniversal(externalServiceRes(es2, "kuma-es-4_es-https:443", true, cert))(global)
+		err := ResourceUniversal(externalServiceRes(es2, "kuma-es-4_externalservice-https-server:443", true, cert))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
 		Eventually(func(g Gomega) {
-			response, err := client.CollectFailure(zone1, "demo-client", "http://kuma-es-4_es-https:443")
+			response, err := client.CollectFailure(zone1, "demo-client", "http://kuma-es-4_externalservice-https-server:443")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(503))
 		}, "1m", "1s").Should(Succeed())
 
-		// when correct cert
-		correctCert, _, err := externalUni.Exec("", "", "es-https", "cat /certs/cert.pem")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(correctCert).ToNot(BeEmpty())
+		// when set proper certificate
+		externalServiceCaCert := externalservice.From(external, externalservice.HttpsServer).GetCert()
+		Expect(externalServiceCaCert).ToNot(BeEmpty())
 
-		err = ResourceUniversal(externalServiceRes(es2, "kuma-es-4_es-https:443", true, []byte(correctCert)))(global)
+		err = ResourceUniversal(externalServiceRes(es2, "kuma-es-4_externalservice-https-server:443", true, []byte(externalServiceCaCert)))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
-				zone1, "demo-client", "http://kuma-es-4_es-https:443",
+				zone1, "demo-client", "http://kuma-es-4_externalservice-https-server:443",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(ContainSubstring("es-https"))
+			g.Expect(stdout).To(ContainSubstring("HTTPS"))
 		}, "1m", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
-				zone2, "demo-client", "http://kuma-es-4_es-https:443",
+				zone2, "demo-client", "http://kuma-es-4_externalservice-https-server:443",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(ContainSubstring("es-https"))
+			g.Expect(stdout).To(ContainSubstring("HTTPS"))
 		}, "1m", "3s").Should(Succeed())
 	})
 
@@ -247,16 +249,16 @@ networking:
 		}
 
 		// given 2 external services with different zone tag
-		Expect(YamlUniversal(externalServiceWithZone("kuma-es-2", "kuma-es-4_es-for-kuma-es-2:80"))(global)).To(Succeed())
-		Expect(YamlUniversal(externalServiceWithZone("kuma-es-3", "kuma-es-4_es-for-kuma-es-3:80"))(global)).To(Succeed())
+		Expect(YamlUniversal(externalServiceWithZone("kuma-es-2", "kuma-es-4_externalservice-es-for-kuma-es-2:80"))(global)).To(Succeed())
+		Expect(YamlUniversal(externalServiceWithZone("kuma-es-3", "kuma-es-4_externalservice-es-for-kuma-es-3:80"))(global)).To(Succeed())
 		// then
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(zone1, "demo-client", "es-for-zones.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
-				HaveKey(Equal("es-for-kuma-es-2")),
-				HaveKey(Equal("es-for-kuma-es-3")),
+				HaveKey(Equal("kuma-es-2")),
+				HaveKey(Equal("kuma-es-3")),
 			),
 		)
 
@@ -268,7 +270,7 @@ networking:
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
-				HaveKey(Equal("es-for-kuma-es-2")),
+				HaveKey(Equal("kuma-es-2")),
 			),
 		)
 	})

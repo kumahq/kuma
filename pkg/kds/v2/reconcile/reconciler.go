@@ -15,20 +15,24 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.Hashing) Reconciler {
+func NewReconciler(
+	hasher envoy_cache.NodeHash,
+	cache envoy_cache.SnapshotCache,
+	generator SnapshotGenerator,
+	mode config_core.CpMode,
+	statsCallbacks xds.StatsCallbacks,
+) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
-		hashingFn:      hashingFn,
 	}
 }
 
@@ -38,13 +42,12 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashingFn      multitenant.Hashing
 
 	lock sync.Mutex
 }
 
-func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
-	id := r.hashId(ctx, node)
+func (r *reconciler) Clear(node *envoy_core.Node) {
+	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
@@ -68,7 +71,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hashId(ctx, node)
+	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
@@ -143,9 +146,4 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
 		}
 	}
-}
-
-func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
-	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
-	return r.hasher.ID(node) + r.hashingFn.ResourceHashKey(ctx)
 }

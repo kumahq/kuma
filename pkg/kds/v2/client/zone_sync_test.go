@@ -35,7 +35,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
 			client_v2.NewDeltaKDSStream(cs, zoneName, ""),
-			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+			sync_store_v2.ZoneSyncCallback(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {

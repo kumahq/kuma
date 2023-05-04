@@ -9,4 +9,4 @@ COPY /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp \
 
 COPY --from=envoy /envoy /usr/bin/envoy
 
-ENTRYPOINT ["/usr/bin/kuma-dp"]
+ENTRYPOINT ["kuma-dp"]

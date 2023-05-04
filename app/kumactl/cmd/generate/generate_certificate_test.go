@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("kumactl generate tls-certificate", func() {
-	var backupNewSelfSignedCert func(tls.CertType, tls.KeyType, ...string) (tls.KeyPair, error)
+	var backupNewSelfSignedCert func(string, tls.CertType, tls.KeyType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
 		backupNewSelfSignedCert = generate.NewSelfSignedCert
 	})
@@ -75,8 +75,9 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 	Context("ECDSA certificates", func() {
 		BeforeEach(func() {
-			generate.NewSelfSignedCert = func(certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
+			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
 				Expect(reflect.ValueOf(keyType)).To(Equal(reflect.ValueOf(tls.ECDSAKeyType)))
+				Expect(commonName).To(Equal("hostname"))
 				Expect(hosts).To(ConsistOf("hostname"))
 				return tls.KeyPair{
 					CertPEM: []byte("CERT"),
@@ -120,8 +121,9 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 	Context("client certificate", func() {
 		BeforeEach(func() {
-			generate.NewSelfSignedCert = func(certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
+			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
 				Expect(reflect.ValueOf(keyType)).To(Equal(reflect.ValueOf(tls.DefaultKeyType)))
+				Expect(commonName).To(Equal("client-name"))
 				Expect(certType).To(Equal(tls.ClientCertType))
 				Expect(hosts).To(ConsistOf("client-name"))
 				return tls.KeyPair{
@@ -167,7 +169,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 	Context("server certificate", func() {
 		BeforeEach(func() {
-			generate.NewSelfSignedCert = func(certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
+			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, keyType tls.KeyType, hosts ...string) (tls.KeyPair, error) {
+				Expect(commonName).To(Equal("kuma1.internal"))
 				Expect(certType).To(Equal(tls.ServerCertType))
 				Expect(hosts).To(ConsistOf("kuma1.internal", "kuma2.internal"))
 				return tls.KeyPair{

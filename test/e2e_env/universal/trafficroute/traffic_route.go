@@ -42,11 +42,11 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "another-test-server"}),
 				WithServiceName("another-test-server"),
 			)).
-			Install(TestServerExternalServiceUniversal("route-es-http", 80, false)).
+			Install(TestServerExternalServiceUniversal("es-http", meshName, 80, false)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 
-		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("route-es-http").GetContainerName(), "80")
+		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http").GetContainerName(), "80")
 	})
 
 	E2EAfterAll(func() {
@@ -201,16 +201,16 @@ conf:
         version: v1
     - weight: 50
       destination:
-        kuma.io/service: route-es-http
+        kuma.io/service: es-http
 `))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ExternalService
-name: route-es-http-1
+name: es-http-1
 mesh: trafficroute
 networking:
   address: %s
 tags:
-  kuma.io/service: route-es-http
+  kuma.io/service: es-http
   kuma.io/protocol: http
 `, esHttpHostPort)))).To(Succeed())
 
@@ -220,7 +220,7 @@ tags:
 			And(
 				HaveLen(2),
 				HaveKey(Equal(`echo-v1`)),
-				HaveKey(Equal(`route-es-http`)),
+				HaveKey(Equal(`es-http`)),
 			),
 		)
 	})
@@ -682,18 +682,18 @@ conf:
         version: v1
     - weight: 50
       destination:
-        kuma.io/service: route-es-http
+        kuma.io/service: es-http
   destination:
     kuma.io/service: test-server
 `)(universal.Cluster)).To(Succeed())
 			Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ExternalService
-name: route-es-http-1
+name: es-http-1
 mesh: trafficroute
 networking:
   address: %s
 tags:
-  kuma.io/service: route-es-http
+  kuma.io/service: es-http
   kuma.io/protocol: http
 `, esHttpHostPort)))).To(Succeed())
 
@@ -703,7 +703,7 @@ tags:
 				And(
 					HaveLen(2),
 					HaveKey(Equal(`echo-v1`)),
-					HaveKey(Equal(`route-es-http`)),
+					HaveKey(Equal(`es-http`)),
 				),
 			)
 		})

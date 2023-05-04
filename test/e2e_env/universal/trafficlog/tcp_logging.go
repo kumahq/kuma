@@ -11,12 +11,14 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func TCPLogging() {
 	Describe("TrafficLog Logging to TCP", func() {
 		meshName := "trafficlog-tcp-logging"
+
 		loggingBackend := `
 type: Mesh
 name: %s
@@ -29,7 +31,7 @@ logging:
     conf:
       address: %s
 `
-		validLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "kuma-3_trafficlog-tcp-logging_tcp-sink:9999")
+		validLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "kuma-3_externalservice-tcp-sink:9999")
 		invalidLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "127.0.0.1:20")
 
 		trafficLog := fmt.Sprintf(`
@@ -44,20 +46,18 @@ destinations:
     kuma.io/service: "*"
 `, meshName)
 		BeforeAll(func() {
-			tcpSinkDockerName := fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
 			err := NewClusterSetup().
 				Install(YamlUniversal(invalidLoggingBackend)). // start with invalid backend to test that it does not break anything
 				Install(YamlUniversal(trafficLog)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
-				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
+				Install(externalservice.Install(externalservice.TcpSink, externalservice.UniversalTCPSink)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
 			Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(universal.Cluster.DeleteApp(AppModeTcpSink)).To(Succeed())
 			Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
@@ -76,13 +76,14 @@ destinations:
 
 			// and traffic is sent between applications
 			var startTimeStr, src, dst string
+			sinkDeployment := universal.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
 					universal.Cluster, AppModeDemoClient, "test-server.mesh",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
+				stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
 				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))

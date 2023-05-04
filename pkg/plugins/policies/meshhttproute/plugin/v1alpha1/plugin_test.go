@@ -66,7 +66,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
 										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
+											Type:  api.Prefix,
 											Value: "/v1",
 										},
 									}},
@@ -88,7 +88,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
 										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
+											Type:  api.Prefix,
 											Value: "/v1",
 										},
 									}},
@@ -101,7 +101,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}, {
 									Matches: []api.Match{{
 										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
+											Type:  api.Prefix,
 											Value: "/v2",
 										},
 									}},
@@ -126,7 +126,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Rules: []api.Rule{{
 							Matches: []api.Match{{
 								Path: &api.PathMatch{
-									Type:  api.PathPrefix,
+									Type:  api.Prefix,
 									Value: "/v1",
 								},
 							}},
@@ -140,7 +140,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						}, {
 							Matches: []api.Match{{
 								Path: &api.PathMatch{
-									Type:  api.PathPrefix,
+									Type:  api.Prefix,
 									Value: "/v2",
 								},
 							}},
@@ -273,7 +273,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
+														Type:  api.Prefix,
 														Value: "/v1",
 													},
 												}},
@@ -286,12 +286,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}, {
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
+														Type:  api.Prefix,
 														Value: "/v2",
 													},
 												}, {
 													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
+														Type:  api.Prefix,
 														Value: "/v3",
 													},
 												}},
@@ -361,7 +361,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
 														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
+															Type:  api.Prefix,
 															Value: "/v1",
 														},
 													}},
@@ -453,7 +453,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
 														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
+															Type:  api.Prefix,
 															Value: "/v1",
 														},
 													}},
@@ -587,7 +587,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
 														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
+															Type:  api.Prefix,
 															Value: "/v1",
 														},
 													}},

@@ -77,7 +77,7 @@ spec:
         - matches:
           - path:
               value: /
-              type: PathPrefix
+              type: Prefix
           default:
             backendRefs:
               - kind: MeshServiceSubset

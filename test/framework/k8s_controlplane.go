@@ -101,22 +101,13 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 	)
 }
 
-func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
-	return k8s.ListServices(c.t,
-		c.GetKubectlOptions(Config.KumaNamespace),
-		metav1.ListOptions{
-			FieldSelector: "metadata.name=" + Config.KumaServiceName,
-		},
-	)[0]
-}
-
-func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
+func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 	return k8s.ListServices(c.t,
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaGlobalZoneSyncServiceName,
 		},
-	)[0]
+	)
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
@@ -214,54 +205,40 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 }
 
 func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {
-	svc := c.GetKumaCPSyncSvc()
-	return "grpc://" + c.getKumaCPAddress(svc, "global-zone-sync")
+	return c.getKumaCPAddress("grpc://", kdsPort, loadBalancerKdsPort)
 }
 
 func (c *K8sControlPlane) GetKDSServerAddress() string {
-	svc := c.GetKumaCPSyncSvc()
-	return "grpcs://" + c.getKumaCPAddress(svc, "global-zone-sync")
+	return c.getKumaCPAddress("grpcs://", kdsPort, loadBalancerKdsPort)
 }
 
 func (c *K8sControlPlane) GetXDSServerAddress() string {
-	svc := c.GetKumaCPSvc()
-	return c.getKumaCPAddress(svc, "dp-server")
+	return c.getKumaCPAddress("", xdsPort, xdsPort)
 }
 
-// A naive implementation to find the Host & Port where a Service is exposing a
-// CP port.
-func (c *K8sControlPlane) getKumaCPAddress(svc v1.Service, portName string) string {
-	var svcPort v1.ServicePort
-	for _, port := range svc.Spec.Ports {
-		if port.Name == portName {
-			svcPort = port
-		}
-	}
-
-	var address string
-	var portNumber int32
-
+// A naive implementation to find the URL where Zone CP exposes its API
+func (c *K8sControlPlane) getKumaCPAddress(
+	protocolPrefix string,
+	port, loadBalancerPort int,
+) string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
-	// IP addresses, accessing this data (hostname) was only tested there,
-	// so the env var was created for that purpose
+	//  IP addresses, accessing this data (hostname) was only tested there,
+	//  so the env var was created for that purpose
 	if Config.UseLoadBalancer {
-		address = svc.Status.LoadBalancer.Ingress[0].IP
+		svc := c.GetKumaCPSvcs()[0]
+
+		address := svc.Status.LoadBalancer.Ingress[0].IP
 
 		if Config.UseHostnameInsteadOfIP {
 			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 
-		portNumber = svcPort.Port
-	} else {
-		pod := c.GetKumaCPPods()[0]
-		address = pod.Status.HostIP
-
-		portNumber = svcPort.NodePort
+		return fmt.Sprintf("%s%s:%d", protocolPrefix, address, loadBalancerPort)
 	}
 
-	return net.JoinHostPort(
-		address, strconv.FormatUint(uint64(portNumber), 10),
-	)
+	pod := c.GetKumaCPPods()[0]
+	return protocolPrefix + net.JoinHostPort(
+		pod.Status.HostIP, strconv.FormatUint(uint64(port), 10))
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {

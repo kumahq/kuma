@@ -129,5 +129,5 @@ var MultiplexService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "api/mesh/v1alpha1/mux.proto",
+	Metadata: "mesh/v1alpha1/mux.proto",
 }

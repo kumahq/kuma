@@ -1,6 +1,5 @@
 module github.com/kumahq/kuma
 
-// DO NOT CHANGE this is updated with `make tidy`
 go 1.20
 
 require (
@@ -16,7 +15,7 @@ require (
 	github.com/containernetworking/plugins v1.2.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.0
-	github.com/envoyproxy/protoc-gen-validate v1.0.0
+	github.com/envoyproxy/protoc-gen-validate v0.10.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.3
@@ -32,8 +31,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
-	github.com/lib/pq v1.10.9
-	github.com/miekg/dns v1.1.54
+	github.com/lib/pq v1.10.8
+	github.com/miekg/dns v1.1.53
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.9.2
@@ -72,12 +71,12 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.3
-	k8s.io/klog/v2 v2.100.1
+	k8s.io/klog/v2 v2.90.1
 	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715
 	k8s.io/kubectl v0.26.3
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/controller-runtime v0.14.6
-	sigs.k8s.io/controller-tools v0.11.4
+	sigs.k8s.io/controller-tools v0.11.3
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
 	sigs.k8s.io/gateway-api v0.6.2
 	sigs.k8s.io/yaml v1.3.0
@@ -185,10 +184,10 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/mod v0.10.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/term v0.7.0 // indirect
-	golang.org/x/tools v0.8.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.110.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -202,6 +201,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230425092642-85f65a531d8a
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20230321154407-f8fe14635590
 
 replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview

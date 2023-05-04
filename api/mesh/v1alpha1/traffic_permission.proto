@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-import "api/mesh/options.proto";
+import "mesh/options.proto";
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "api/mesh/v1alpha1/selector.proto";
+import "mesh/v1alpha1/selector.proto";
 import "kuma-doc/config.proto";
 
 option (doc.config) = {

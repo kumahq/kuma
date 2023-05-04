@@ -39,7 +39,6 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 	name := request.PathParameter("name")
 
 	if err := r.resourceAccess.ValidateGet(
-		request.Request.Context(),
 		model.ResourceKey{Name: name},
 		system.NewZoneResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
@@ -83,7 +82,6 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 
 func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
-		request.Request.Context(),
 		"",
 		system.NewZoneResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),

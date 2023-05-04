@@ -1,8 +1,6 @@
 package access
 
 import (
-	"context"
-
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -29,11 +27,11 @@ func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStat
 	return s
 }
 
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(name string, mesh string, tags map[string][]string, user user.User) error {
 	return s.validateAccess(user)
 }
 
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(ctx context.Context, zone string, user user.User) error {
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(zone string, user user.User) error {
 	return s.validateAccess(user)
 }
 

@@ -176,7 +176,9 @@ func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames 
 	return false
 }
 
-func evaluateGatewayAttachment(
+// EvaluateParentRefAttachment reports whether a route in the given namespace can attach
+// via the given ParentRef.
+func EvaluateParentRefAttachment(
 	ctx context.Context,
 	client kube_client.Client,
 	routeHostnames []gatewayapi.Hostname,
@@ -208,24 +210,4 @@ func evaluateGatewayAttachment(
 	}
 
 	return findRouteListenerAttachment(gateway, routeNs, ref.SectionName)
-}
-
-// EvaluateParentRefAttachment reports whether a route in the given namespace can attach
-// via the given ParentRef.
-func EvaluateParentRefAttachment(
-	ctx context.Context,
-	client kube_client.Client,
-	routeHostnames []gatewayapi.Hostname,
-	routeNs *kube_core.Namespace,
-	ref gatewayapi.ParentReference,
-) (Attachment, error) {
-	switch {
-	case *ref.Group == gatewayapi.Group(gatewayapi.GroupVersion.Group) && *ref.Kind == "Gateway":
-		return evaluateGatewayAttachment(ctx, client, routeHostnames, routeNs, ref)
-	case *ref.Group == kube_core.GroupName && *ref.Kind == "Service":
-		// Attaching to a Service can only affect requests coming from Services
-		// in the same Namespace or requests going to the Service.
-		return Allowed, nil
-	}
-	return Unknown, nil
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -165,7 +164,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	tags[KubeNamespaceTag] = pod.Namespace
 	tags[KubeServiceTag] = svc.Name
 	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
-	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
+	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}

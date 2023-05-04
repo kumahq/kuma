@@ -93,7 +93,7 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 				routeQueryParamsMatch(envoyMatch, match.QueryParams)
 			}
 			routeHeadersMatch(envoyMatch, match.Headers)
-			if match.Path != nil && match.Path.Type == api.PathPrefix {
+			if match.Path != nil && match.Path.Type == api.Prefix {
 				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 			} else {
 				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
@@ -113,7 +113,7 @@ func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.Rou
 				Path: match.Value,
 			},
 		}}
-	case api.PathPrefix:
+	case api.Prefix:
 		if match.Value == "/" {
 			return []*envoy_route.RouteMatch{{
 				PathSpecifier: &envoy_route.RouteMatch_Prefix{

@@ -1,0 +1,1 @@
+import{J as r,M as s,o as e,j as o,w as a,a as c,a2 as _,al as i}from"./index-5f1fbf13.js";const l={};function d(f,m){const n=s("router-view");return e(),o(n,null,{default:a(({Component:t})=>[c(i,{mode:"out-in",name:"fade"},{default:a(()=>[(e(),o(_(t)))]),_:2},1024)]),_:1})}const p=r(l,[["render",d]]);export{p as default};

@@ -94,7 +94,7 @@ func addInspectEnvoyAdminEndpoints(
 
 func inspectDataplaneAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(context.Context, user.User) error,
+	access func(user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -103,7 +103,7 @@ func inspectDataplaneAdmin(
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+		if err := access(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not execute admin operation")
 			return
 		}
@@ -132,7 +132,7 @@ func inspectZoneIngressAdmin(
 	mode core.CpMode,
 	localZone string,
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(context.Context, user.User) error,
+	access func(user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -140,7 +140,7 @@ func inspectZoneIngressAdmin(
 		ctx := request.Request.Context()
 		zoneIngressName := request.PathParameter("zoneingress")
 
-		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+		if err := access(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not execute admin operation")
 			return
 		}
@@ -173,7 +173,7 @@ func inspectZoneIngressAdmin(
 
 func inspectZoneEgressAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(context.Context, user.User) error,
+	access func(user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -181,7 +181,7 @@ func inspectZoneEgressAdmin(
 		ctx := request.Request.Context()
 		name := request.PathParameter("zoneegress")
 
-		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+		if err := access(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not execute admin operation")
 			return
 		}

@@ -14,7 +14,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/gc"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -29,7 +28,7 @@ var _ = Describe("Subscription Finalizer", func() {
 	})
 
 	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
-		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
+		finalizer, err := gc.NewSubscriptionFinalizer(rm, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
 		}, system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())

@@ -54,7 +54,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-//go:embed schema.yaml
+//_DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
 var rawSchema []byte
 
 func init() {

@@ -27,9 +27,6 @@ controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
-  # -- Kuma CP log output path: Defaults to /dev/stdout
-  logOutputPath: ""
-
   # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 
@@ -337,13 +334,27 @@ cni:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for cni
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-    runAsNonRoot: false
-    runAsUser: 0
-    runAsGroup: 0
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 dataPlane:
   image:

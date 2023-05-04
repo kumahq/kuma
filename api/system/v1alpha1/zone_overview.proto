@@ -4,9 +4,9 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
-import "api/mesh/options.proto";
-import "api/system/v1alpha1/zone.proto";
-import "api/system/v1alpha1/zone_insight.proto";
+import "mesh/options.proto";
+import "system/v1alpha1/zone.proto";
+import "system/v1alpha1/zone_insight.proto";
 
 // ZoneOverview defines the projected state of a Zone.
 message ZoneOverview {

@@ -45,7 +45,6 @@ func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, 
 	meshName := request.PathParameter("mesh")
 
 	if err := r.resourceAccess.ValidateGet(
-		request.Request.Context(),
 		core_model.ResourceKey{Mesh: meshName, Name: name},
 		mesh.NewDataplaneOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
@@ -91,7 +90,6 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	meshName := request.PathParameter("mesh")
 
 	if err := r.resourceAccess.ValidateList(
-		request.Request.Context(),
 		meshName,
 		mesh.NewDataplaneOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),

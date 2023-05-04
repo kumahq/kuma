@@ -55,7 +55,7 @@ func GenerateClientCert(ca tls.Certificate, ip string) (tls.Certificate, error) 
 	if err != nil {
 		return tls.Certificate{}, err
 	}
-	pair, err := util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), util_tls.ClientCertType, util_tls.DefaultKeyType, ip)
+	pair, err := util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), ip, util_tls.ClientCertType, util_tls.DefaultKeyType, ip)
 	if err != nil {
 		return tls.Certificate{}, err
 	}
@@ -67,7 +67,7 @@ func GenerateServerCert(ca tls.Certificate, ip string) (tls.Certificate, error) 
 	if err != nil {
 		return tls.Certificate{}, err
 	}
-	pair, err := util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), util_tls.ServerCertType, util_tls.DefaultKeyType, ip)
+	pair, err := util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), ip, util_tls.ServerCertType, util_tls.DefaultKeyType, ip)
 	if err != nil {
 		return tls.Certificate{}, err
 	}

@@ -20,7 +20,6 @@ import (
 	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
@@ -70,7 +69,7 @@ var _ = Describe("Counter", func() {
 			AddressPortGenerator: func(s string) string {
 				return fmt.Sprintf("%s.mesh:80", s)
 			},
-		}, multitenant.SingleTenant)
+		})
 
 		go func() {
 			err := resyncer.Start(stop)

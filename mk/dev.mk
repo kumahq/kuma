@@ -23,10 +23,6 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
-# Change here and `make check` ensures these are used for CI
-K8S_MIN_VERSION = v1.20.15-k3s1
-K8S_MAX_VERSION = v1.26.1-k3s1
-GO_VERSION := 1.20.3
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -48,11 +44,9 @@ K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
 KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
 KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
 PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
 SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
-CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
 # from go-deps
 PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
 PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
@@ -120,6 +114,3 @@ dev/sync-demo:
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
 	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
-
-.PHONY: clean
-clean: clean/build clean/generated clean/docs ## Dev: Clean

@@ -40,13 +40,13 @@ var RSAKeyType KeyType = func() (crypto.Signer, error) {
 
 var DefaultKeyType = RSAKeyType
 
-func NewSelfSignedCert(certType CertType, keyType KeyType, hosts ...string) (KeyPair, error) {
+func NewSelfSignedCert(commonName string, certType CertType, keyType KeyType, hosts ...string) (KeyPair, error) {
 	key, err := keyType()
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
 
-	csr, err := newCert(nil, certType, hosts...)
+	csr, err := newCert(nil, commonName, certType, hosts...)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -75,6 +75,7 @@ func NewSelfSignedCert(certType CertType, keyType KeyType, hosts ...string) (Key
 func NewCert(
 	parent x509.Certificate,
 	parentKey crypto.Signer,
+	commonName string,
 	certType CertType,
 	keyType KeyType,
 	hosts ...string,
@@ -84,7 +85,7 @@ func NewCert(
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
 
-	csr, err := newCert(&parent.Subject, certType, hosts...)
+	csr, err := newCert(&parent.Subject, commonName, certType, hosts...)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -110,7 +111,7 @@ func NewCert(
 	}, nil
 }
 
-func newCert(issuer *pkix.Name, certType CertType, hosts ...string) (x509.Certificate, error) {
+func newCert(issuer *pkix.Name, commonName string, certType CertType, hosts ...string) (x509.Certificate, error) {
 	notBefore := time.Now()
 	notAfter := notBefore.Add(DefaultValidityPeriod)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
@@ -119,8 +120,10 @@ func newCert(issuer *pkix.Name, certType CertType, hosts ...string) (x509.Certif
 		return x509.Certificate{}, errors.Wrap(err, "failed to generate serial number")
 	}
 	csr := x509.Certificate{
-		SerialNumber:          serialNumber,
-		Subject:               pkix.Name{},
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,
 		IsCA:                  issuer == nil,

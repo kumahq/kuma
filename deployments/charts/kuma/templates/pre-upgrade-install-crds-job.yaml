@@ -84,7 +84,7 @@ data:
     fi
   save_crds.sh: |
     set -e
-
+    
     crds="$(kumactl install crds --no-config {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
     if [ -n "${crds}" ]; then
@@ -133,7 +133,8 @@ spec:
              limits:
                cpu: "100m"
                memory: "256Mi"
-          command: ["/kuma/scripts/install_crds.sh"]
+          command:
+            - '/kuma/scripts/install_crds.sh'
           volumeMounts:
             - mountPath: /kuma/crds
               name: crds
@@ -159,8 +160,8 @@ spec:
           - mountPath: /kuma/scripts
             name: scripts
             readOnly: true
-          command: ["sh", "-c"]
-          args: ["/kuma/scripts/save_crds.sh"]
+          args:
+          - '/kuma/scripts/save_crds.sh'
       volumes:
         - name: scripts
           configMap:

@@ -39,7 +39,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.HashingFn())
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -61,11 +61,17 @@ func New(
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
 	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
-		return kds_server.NewZoneInsightSink(accessor, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-		}, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(rt.ResourceManager()), l, rt.HashingFn(), rt.TenantFn())
+		return kds_server.NewZoneInsightSink(
+			accessor,
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
+			},
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
+			},
+			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
+			kds_server.NewZonesInsightStore(rt.ResourceManager()),
+			l)
 	}, log)
 }
 
@@ -104,7 +110,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				reconciler.Clear(ctx, node)
+				reconciler.Clear(node)
 			},
 		}, nil
 	}), nil
@@ -119,8 +125,5 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotC
 type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
-	// TODO: https://github.com/kumahq/kuma/issues/6632 check if it needs to be the same hasher as passed to reconcile
-	// if it's not pkg/kds/global/components_test.go:271 test fails
-	// not sure if it's a problem with the test or the implementation
 	return node.Id
 }

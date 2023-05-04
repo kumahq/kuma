@@ -43,7 +43,7 @@ go_mapping := $(subst $(space),$(empty),$(go_mapping_with_spaces))
 
 PROTOC := $(PROTOC_BIN) \
 	--proto_path=$(PROTOS_DEPS_PATH) \
-	--proto_path=$(KUMA_DIR) \
+	--proto_path=$(KUMA_DIR)/api \
 	--proto_path=.
 
 PROTOC_GO := $(PROTOC) \
@@ -53,3 +53,13 @@ PROTOC_GO := $(PROTOC) \
 	--go_out=$(go_mapping):. \
 	--go-grpc_opt=paths=source_relative \
 	--go-grpc_out=$(go_mapping):.
+
+protoc/%:
+	$(PROTOC) \
+		--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
+		--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC) \
+		--go_opt=paths=source_relative \
+		--go_out=$(go_mapping):api/ \
+		--go-grpc_opt=paths=source_relative \
+		--go-grpc_out=$(go_mapping):api/ \
+		api/$*/*.proto

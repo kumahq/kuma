@@ -14,35 +14,22 @@ type XDSRuntimeContext struct {
 	ServerCallbacks        util_xds.Callbacks
 }
 
-type ContextWithXDS interface {
-	components.Context
-	XDS() XDSRuntimeContext
-}
-
-func WithDefaults(ctx ContextWithXDS) (XDSRuntimeContext, error) {
-	currentXDS := ctx.XDS()
-
-	if currentXDS.DpProxyAuthenticator == nil {
-		dpProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.DpProxy.Type)
-		if err != nil {
-			return XDSRuntimeContext{}, err
-		}
-		currentXDS.DpProxyAuthenticator = dpProxyAuth
+func Default(ctx components.Context) (XDSRuntimeContext, error) {
+	dpProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.DpProxy.Type)
+	if err != nil {
+		return XDSRuntimeContext{}, err
 	}
 
-	if currentXDS.ZoneProxyAuthenticator == nil {
-		zoneProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.ZoneProxy.Type)
-		if err != nil {
-			return XDSRuntimeContext{}, err
-		}
-		currentXDS.ZoneProxyAuthenticator = zoneProxyAuth
+	zoneProxyAuth, err := components.DefaultAuthenticator(ctx, ctx.Config().DpServer.Authn.ZoneProxy.Type)
+	if err != nil {
+		return XDSRuntimeContext{}, err
 	}
 
-	if currentXDS.Hooks == nil {
-		currentXDS.Hooks = &xds_hooks.Hooks{}
-	}
-
-	return currentXDS, nil
+	return XDSRuntimeContext{
+		Hooks:                  &xds_hooks.Hooks{},
+		DpProxyAuthenticator:   dpProxyAuth,
+		ZoneProxyAuthenticator: zoneProxyAuth,
+	}, nil
 }
 
 func (x XDSRuntimeContext) PerProxyTypeAuthenticator() xds_auth.Authenticator {

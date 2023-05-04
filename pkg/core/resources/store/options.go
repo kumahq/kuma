@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -115,10 +114,9 @@ func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
 }
 
 type GetOptions struct {
-	Name           string
-	Mesh           string
-	Version        string
-	KeyFromContext HashKeyFunc
+	Name    string
+	Mesh    string
+	Version string
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -148,23 +146,19 @@ func GetByVersion(version string) GetOptionsFunc {
 	}
 }
 
-func (g *GetOptions) HashCode(ctx context.Context) string {
-	return fmt.Sprintf("%s:%s:%s", g.Name, g.Mesh, g.KeyFromContext(ctx))
+func (g *GetOptions) HashCode() string {
+	return fmt.Sprintf("%s:%s", g.Name, g.Mesh)
 }
 
-type (
-	ListFilterFunc func(rs core_model.Resource) bool
-	HashKeyFunc    func(context.Context) string
-)
+type ListFilterFunc func(rs core_model.Resource) bool
 
 type ListOptions struct {
-	Mesh           string
-	PageSize       int
-	PageOffset     string
-	FilterFunc     ListFilterFunc
-	NameContains   string
-	Ordered        bool
-	KeyFromContext HashKeyFunc
+	Mesh         string
+	PageSize     int
+	PageOffset   string
+	FilterFunc   ListFilterFunc
+	NameContains string
+	Ordered      bool
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -221,6 +215,6 @@ func (l *ListOptions) IsCacheable() bool {
 	return l.FilterFunc == nil
 }
 
-func (l *ListOptions) HashCode(ctx context.Context) string {
-	return fmt.Sprintf("%s:%t:%s:%d:%s:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset, l.KeyFromContext(ctx))
+func (l *ListOptions) HashCode() string {
+	return fmt.Sprintf("%s:%t:%s:%d:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset)
 }

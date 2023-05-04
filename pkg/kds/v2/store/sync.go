@@ -35,7 +35,7 @@ type ResourceSyncer interface {
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
-	Sync(ctx context.Context, upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) error
+	Sync(upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) error
 }
 
 type SyncOption struct {
@@ -77,9 +77,9 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 	}
 }
 
-func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
+func (s *syncResourceStore) Sync(upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
-	ctx := user.Ctx(syncCtx, user.ControlPlane)
+	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	log := s.log.WithValues("type", upstreamResponse.Type)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
@@ -230,7 +230,14 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
-func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
+func ZoneSyncCallback(
+	configToSync map[string]bool,
+	syncer ResourceSyncer,
+	k8sStore bool,
+	localZone string,
+	kubeFactory resources_k8s.KubeFactory,
+	systemNamespace string,
+) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
@@ -247,17 +254,17 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 				}
 			}
 			if upstream.Type == mesh.ZoneIngressType {
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
 				}))
 			}
 			if upstream.Type == system.ConfigType {
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return configToSync[r.GetMeta().GetName()]
 				}))
 			}
 			if upstream.Type == system.GlobalSecretType {
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+				return syncer.Sync(upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
 						zoneingress.ZoneIngressSigningKeyPrefix,
@@ -265,13 +272,12 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 					)
 				}))
 			}
-			return syncer.Sync(ctx, upstream)
+			return syncer.Sync(upstream)
 		},
 	}
 }
 
 func GlobalSyncCallback(
-	ctx context.Context,
 	syncer ResourceSyncer,
 	k8sStore bool,
 	kubeFactory resources_k8s.KubeFactory,
@@ -304,7 +310,7 @@ func GlobalSyncCallback(
 				}
 			}
 
-			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+			return syncer.Sync(upstream, PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
 			}), Zone(upstream.ControlPlaneId))
 		},

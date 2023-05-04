@@ -48,8 +48,6 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-	"github.com/kumahq/kuma/pkg/multitenant"
-	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -72,8 +70,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
-	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
@@ -152,7 +148,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		))
 	}
 
-	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
+	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
 	if err != nil {
 		return nil, err
 	}
@@ -454,12 +450,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(
-			customizableManager,
-			builder.Config().Store.Cache.ExpirationTime.Duration,
-			builder.Metrics(),
-			builder.HashingFn().ResourceHashKey,
-		)
+		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime.Duration, builder.Metrics())
 		if err != nil {
 			return err
 		}

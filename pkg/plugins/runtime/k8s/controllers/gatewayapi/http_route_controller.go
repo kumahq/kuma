@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -15,7 +14,6 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
@@ -24,8 +22,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
@@ -66,29 +62,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	mesh := k8s_util.MeshOfByAnnotation(httpRoute, &ns)
 
-	gatewayRouteSpec, meshRouteSpecs, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
+	spec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if gatewayRouteSpec != nil {
-		if err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, gatewayRouteSpec); err != nil {
+	if spec != nil {
+		if err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
-		}
-	}
-
-	for subName, meshRouteSpec := range meshRouteSpecs {
-		spec := meshRouteSpec
-		route := meshhttproute_k8s.MeshHTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", httpRoute.Name, subName), Namespace: r.SystemNamespace,
-			},
-		}
-		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, &route, func() error {
-			route.Spec = &spec
-			return nil
-		}); err != nil {
-			return kube_ctrl.Result{}, err
 		}
 	}
 
@@ -110,35 +91,33 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	route *gatewayapi.HTTPRoute,
 ) (
 	*mesh_proto.MeshGatewayRoute,
-	map[string]meshhttproute_api.MeshHTTPRoute,
 	ParentConditions,
 	error,
 ) {
 	routeNs := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: route.Namespace}, &routeNs); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return nil, nil, nil, nil
+			return nil, nil, nil
 		} else {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 	}
 
 	routeConf, routeConditions, err := r.gapiToKumaRouteConf(ctx, mesh, route)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-
-	var services []ServiceAndPorts
-	var selectors []*mesh_proto.Selector
 
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
+
+	var selectors []*mesh_proto.Selector
 
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
 		if err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
+			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}
 
 		refConditions := slices.Clone(routeConditions)
@@ -148,29 +127,12 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			// We don't care about this ref
 			continue
 		case attachment.Allowed:
-			switch {
-			case *ref.Kind == gatewayapi.Kind("Gateway") && *ref.Group == gatewayapi.GroupName:
-				selectors = append(
-					selectors,
-					&mesh_proto.Selector{
-						Match: tagsForRef(route, ref),
-					},
-				)
-			case *ref.Kind == gatewayapi.Kind("Service") && *ref.Group == kube_core.GroupName:
-				namespace := route.Namespace
-				if ref.Namespace != nil {
-					namespace = string(*ref.Namespace)
-				}
-				namespacedName := kube_types.NamespacedName{Name: string(ref.Name), Namespace: namespace}
-				var svc kube_core.Service
-				if err := r.Client.Get(ctx, namespacedName, &svc); err != nil {
-					if !kube_apierrs.IsNotFound(err) {
-						return nil, nil, nil, err
-					}
-					continue // TODO what does the spec say? does NoMatchingParent apply?
-				}
-				services = append(services, serviceAndPorts(&svc))
-			}
+			selectors = append(
+				selectors,
+				&mesh_proto.Selector{
+					Match: tagsForRef(route, ref),
+				},
+			)
 		default:
 			var reason string
 			switch refAttachment {
@@ -194,11 +156,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		conditions[ref] = refConditions
 	}
 
-	meshRoutes, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
 	var kumaRoute *mesh_proto.MeshGatewayRoute
 
 	if routeConf != nil && len(selectors) > 0 {
@@ -209,7 +166,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		}
 	}
 
-	return kumaRoute, meshRoutes, conditions, nil
+	return kumaRoute, conditions, nil
 }
 
 func tagsForRef(referrer kube_client.Object, ref gatewayapi.ParentReference) map[string]string {

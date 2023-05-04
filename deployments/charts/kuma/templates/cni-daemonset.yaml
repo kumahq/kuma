@@ -5,7 +5,9 @@ metadata:
   name: {{ include "kuma.name" . }}-cni-node
   namespace: kube-system
   annotations:
-    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
+    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
+    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
   labels: {{- include "kuma.cniLabels" . | nindent 4 }}
 spec:
   selector:
@@ -29,7 +31,7 @@ spec:
       # marks the pod as a critical add-on, ensuring it gets
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
-      priorityClassName: system-node-critical
+      priorityClassName: system-cluster-critical
       {{- with .Values.cni.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -38,6 +40,7 @@ spec:
       tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      hostNetwork: true
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.
         - effect: NoSchedule
@@ -51,8 +54,10 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      {{- if .Values.cni.podSecurityContext }}
       securityContext:
-      {{- toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
+      {{ toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       containers:
         - name: install-cni
           {{- if not .Values.legacy.cni.enabled }}
@@ -92,10 +97,14 @@ spec:
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
           {{- end }}
+          {{- if .Values.experimental.ebpf.enabled }}
+          securityContext:
+            privileged: true
+          {{- else }}
+          {{- if .Values.cni.containerSecurityContext }}
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
-          {{- if .Values.experimental.ebpf.enabled }}
-            privileged: true
+          {{- end }}
           {{- end }}
           {{- if not .Values.experimental.ebpf.enabled }}
           env:
@@ -132,8 +141,6 @@ spec:
               name: host-var-run
               mountPropagation: Bidirectional
             {{- end }}
-            - name: tmp
-              mountPath: /tmp
       volumes:
         # Used to install CNI.
         - name: cni-bin-dir
@@ -153,6 +160,4 @@ spec:
             path: /proc
           name: host-proc
         {{- end }}
-        - name: tmp
-          emptyDir: {}
 {{- end }}

@@ -1,8 +1,6 @@
 package access
 
 import (
-	"context"
-
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -29,7 +27,7 @@ func NewStaticZoneTokenAccess(cfg config_access.GenerateZoneTokenStaticAccessCon
 	return s
 }
 
-func (s *staticZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, zone string, user user.User) error {
+func (s *staticZoneTokenAccess) ValidateGenerateZoneToken(zone string, user user.User) error {
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {
 		if s.groups[group] {

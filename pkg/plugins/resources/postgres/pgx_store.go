@@ -18,7 +18,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
 type pgxResourceStore struct {
@@ -27,8 +26,8 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
-	pool, err := connect(config, customizer)
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
+	pool, err := connect(config)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +41,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}, nil
 }
 
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
+func connect(postgresStoreConfig config.PostgresStoreConfig) (*pgxpool.Pool, error) {
 	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err
@@ -61,7 +60,6 @@ func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_conf
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	customizer.Customize(pgxConfig)
 
 	if err != nil {
 		return nil, err

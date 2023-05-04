@@ -4,11 +4,11 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "api/mesh/options.proto";
+import "mesh/options.proto";
 import "validate/validate.proto";
 import "google/protobuf/wrappers.proto";
 
-import "api/system/v1alpha1/datasource.proto";
+import "system/v1alpha1/datasource.proto";
 import "kuma-doc/config.proto";
 
 option (doc.config) = {

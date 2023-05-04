@@ -119,7 +119,7 @@ var _ = Describe("Auth test", func() {
 
 // we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
 func createCertsForIP(ip string) (string, string) {
-	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
 	dir, err := os.MkdirTemp("", "temp-certs")
 	Expect(err).ToNot(HaveOccurred())

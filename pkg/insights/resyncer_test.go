@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
 	test_insights "github.com/kumahq/kuma/pkg/insights/test"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 )
@@ -55,7 +54,7 @@ var _ = Describe("Insight Persistence", func() {
 			AddressPortGenerator: func(s string) string {
 				return fmt.Sprintf("%s.mesh:80", s)
 			},
-		}, multitenant.SingleTenant)
+		})
 		go func() {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())

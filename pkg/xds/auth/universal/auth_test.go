@@ -44,9 +44,9 @@ var _ = Describe("Authentication flow", func() {
 		resStore = memory.NewStore()
 		resManager = manager.NewResourceManager(resStore)
 
-		Expect(resManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
-		Expect(resManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
-		Expect(resManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
 
 		dpTokenIssuer = builtin.NewDataplaneTokenIssuer(resManager)
 		dataplaneValidator, err := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore, dp_server.DpTokenValidatorConfig{
@@ -66,7 +66,7 @@ var _ = Describe("Authentication flow", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
-		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
+		err = resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -84,7 +84,7 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = authenticator.Authenticate(ctx, given.dpRes, credential)
+			err = authenticator.Authenticate(context.Background(), given.dpRes, credential)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -125,7 +125,7 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = authenticator.Authenticate(ctx, given.dpRes, token)
+			err = authenticator.Authenticate(context.Background(), given.dpRes, token)
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -188,7 +188,7 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error on invalid token", func() {
 		// when
-		err := authenticator.Authenticate(ctx, &dpRes, "this-is-not-valid-jwt-token")
+		err := authenticator.Authenticate(context.Background(), &dpRes, "this-is-not-valid-jwt-token")
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
@@ -205,11 +205,11 @@ var _ = Describe("Authentication flow", func() {
 
 		// and new signing key
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
-		Expect(resManager.DeleteAll(ctx, &system.SecretResourceList{})).To(Succeed())
+		Expect(resManager.DeleteAll(context.Background(), &system.SecretResourceList{})).To(Succeed())
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		// when
-		err = authenticator.Authenticate(ctx, &dpRes, credential)
+		err = authenticator.Authenticate(context.Background(), &dpRes, credential)
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
@@ -242,7 +242,7 @@ var _ = Describe("Authentication flow", func() {
 		var zoneIngressTokenIssuer zoneingress.TokenIssuer
 
 		BeforeEach(func() {
-			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
+			err := resStore.Create(context.Background(), &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)

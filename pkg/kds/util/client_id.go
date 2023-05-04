@@ -8,16 +8,12 @@ import (
 )
 
 func ClientIDFromIncomingCtx(ctx context.Context) (string, error) {
-	return MetadataFromIncomingCtx(ctx, "client-id")
-}
-
-func MetadataFromIncomingCtx(ctx context.Context, key string) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.New("metadata is not provided")
 	}
-	if len(md[key]) == 0 {
+	if len(md["client-id"]) == 0 {
 		return "", errors.New("'client-id' is not present in metadata")
 	}
-	return md[key][0], nil
+	return md["client-id"][0], nil
 }

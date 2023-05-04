@@ -114,7 +114,6 @@ networking:
     redirectPortOutbound: %s
 `
 
-	AppModeTcpSink      = "tcp-sink"
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
