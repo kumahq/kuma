@@ -108,6 +108,7 @@ mtls:
 				client.Resolve("test-server.mesh:80", fmt.Sprintf("[%s]", host)))
 		})
 	})
+
 	It("enabling PERMISSIVE with no failed requests", func() {
 		Expect(universal.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 

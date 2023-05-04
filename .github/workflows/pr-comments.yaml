@@ -5,7 +5,6 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-
 jobs:
   pr_comments:
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
@@ -18,7 +17,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
-        run:  |
+        run: |
           # Ensure the commenter is a maintainer
           if [[ `gh api  '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep ${{ github.event.comment.user.login }}` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
@@ -44,7 +43,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v4
         with:
-          go-version: "~1.20.2"
+          go-version: "1.20.3"
       - uses: actions/cache@v3
         with:
           path: |
@@ -57,11 +56,11 @@ jobs:
       - run: |
           make dev/tools
       - name: format
-        if: contains(github.event.comment.body, '/format')   # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/format') # check the comment if it contains the keywords
         run: |
           make format
       - name: run golden_files
-        if: contains(github.event.comment.body, '/golden_files')  # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/golden_files') # check the comment if it contains the keywords
         run: |
           make test UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes

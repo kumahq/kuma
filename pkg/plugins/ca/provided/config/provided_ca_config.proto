@@ -4,7 +4,7 @@ package kuma.plugins.ca;
 
 option go_package = "github.com/kumahq/kuma/plugins/ca/config";
 
-import "system/v1alpha1/datasource.proto";
+import "api/system/v1alpha1/datasource.proto";
 
 // ProvidedCertificateAuthorityConfig defines configuration for Provided CA
 // plugin

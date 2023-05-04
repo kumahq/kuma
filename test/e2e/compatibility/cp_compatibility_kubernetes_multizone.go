@@ -44,32 +44,30 @@ func CpCompatibilityMultizoneKubernetes() {
 		globalCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
+		E2EDeferCleanup(func() {
+			Expect(globalCluster.DeleteKuma()).To(Succeed())
+			Expect(globalCluster.DismissCluster()).To(Succeed())
+		})
 
 		globalReleaseName = fmt.Sprintf(
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
 
-		E2EDeferCleanup(func() {
-			Expect(globalCluster.DeleteKuma()).To(Succeed())
-			Expect(globalCluster.DismissCluster()).To(Succeed())
-		})
-
 		// Zone CP
 		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-
-		zoneReleaseName = fmt.Sprintf(
-			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
-		)
-
 		E2EDeferCleanup(func() {
 			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())
 		})
+
+		zoneReleaseName = fmt.Sprintf(
+			"kuma-%s",
+			strings.ToLower(random.UniqueId()),
+		)
 	})
 
 	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {

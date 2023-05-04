@@ -14,15 +14,13 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func TestPlugin() {
 	meshName := "meshaccesslog"
-	externalServiceName := "meshaccesslog-" + externalservice.TcpSink
-	externalServiceDeployment := "externalservice-" + externalServiceName
 	var externalServiceDockerName string
+	var tcpSinkDockerName string
 
 	GatewayAddressPort := func(appName string, port int) string {
 		ip := universal.Cluster.GetApp(appName).GetIP()
@@ -31,6 +29,7 @@ func TestPlugin() {
 
 	BeforeAll(func() {
 		externalServiceDockerName = fmt.Sprintf("%s_%s-%s", universal.Cluster.Name(), meshName, "test-server")
+		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal(
@@ -50,7 +49,7 @@ func TestPlugin() {
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
 		Expect(NewClusterSetup().
-			Install(externalservice.Install(externalServiceName, externalservice.UniversalTCPSink)).
+			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster),
 		).To(Succeed())
@@ -65,18 +64,17 @@ func TestPlugin() {
 		}
 
 		Expect(universal.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
-		Expect(universal.Cluster.DeleteDeployment(externalServiceDeployment)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(AppModeTcpSink)).To(Succeed())
 	})
 
 	trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
 	expectTrafficLogged := func(makeRequest func(g Gomega)) (string, string) {
 		var src, dst string
-		sinkDeployment := universal.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 
 		Eventually(func(g Gomega) {
 			makeRequest(g)
 
-			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
+			stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
 			g.Expect(err).ToNot(HaveOccurred())
 			parts := strings.Split(stdout, ",")
 			g.Expect(parts).To(HaveLen(3))
@@ -109,8 +107,8 @@ spec:
        - tcp:
            format:
              plain: '%s'
-           address: "%s_%s:9999"
-`, trafficLogFormat, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {
@@ -148,19 +146,18 @@ spec:
                value: '%%KUMA_DESTINATION_SERVICE%%'
              - key: Start
                value: '%%START_TIME(%%s)%%'
-           address: "%s_%s:9999"
-`, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		var src, dst string
-		sinkDeployment := universal.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
+			stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
 			g.Expect(err).ToNot(HaveOccurred())
 
 			type log struct {
@@ -198,8 +195,8 @@ spec:
        - tcp:
            format:
              plain: '%s'
-           address: "%s_%s:9999"
-`, trafficLogFormat, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		// 52 is empty response but the TCP connection succeeded
@@ -244,8 +241,8 @@ spec:
        - tcp:
            format:
              plain: '%s'
-           address: "%s_%s:9999"
-`, trafficLogFormat, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
 		Expect(YamlUniversal(externalService)(universal.Cluster)).To(Succeed())
 		Expect(YamlUniversal(accesslog)(universal.Cluster)).To(Succeed())
 
@@ -280,8 +277,8 @@ spec:
        - tcp:
            format:
              plain: '%s'
-           address: "%s_%s:9999"
-`, trafficLogFormat, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
 
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
@@ -314,8 +311,8 @@ spec:
        - tcp:
            format:
              plain: '%s'
-           address: "%s_%s:9999"
-`, trafficLogFormat, universal.Cluster.Name(), externalServiceDeployment)
+           address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
 		makeRequest := func(g Gomega) {

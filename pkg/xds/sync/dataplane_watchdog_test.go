@@ -131,7 +131,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 			certs, err := cert.ParseCertsPEM(snapshotReconciler.proxy.EnvoyAdminMTLSCerts.ServerPair.CertPEM)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(certs[0].Subject.CommonName).To(Equal(samples.DataplaneBackend().Spec.Networking.Address))
+			Expect(certs[0].IPAddresses).To(HaveLen(1))
+			Expect(certs[0].IPAddresses[0].String()).To(Equal(samples.DataplaneBackend().Spec.Networking.Address))
 
 			// when address has changed
 			newAddress := "192.168.1.100"
@@ -150,7 +151,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 			certs, err = cert.ParseCertsPEM(snapshotReconciler.proxy.EnvoyAdminMTLSCerts.ServerPair.CertPEM)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(certs[0].Subject.CommonName).To(Equal(newAddress))
+			Expect(certs[0].IPAddresses).To(HaveLen(1))
+			Expect(certs[0].IPAddresses[0].String()).To(Equal(newAddress))
 		})
 
 		It("should not reconcile if mesh hash is the same", func() {

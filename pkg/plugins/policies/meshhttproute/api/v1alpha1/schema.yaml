@@ -340,7 +340,7 @@ properties:
                             type:
                               enum:
                                 - Exact
-                                - Prefix
+                                - PathPrefix
                                 - RegularExpression
                               type: string
                             value:
