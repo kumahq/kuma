@@ -6,10 +6,10 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "kuma-doc/config.proto";
 import "google/protobuf/wrappers.proto";
-import "mesh/options.proto";
-import "mesh/v1alpha1/selector.proto";
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
-import "mesh/v1alpha1/http_method.proto";
+import "api/mesh/v1alpha1/http_method.proto";
 
 option (doc.config) = {
   type : Policy,

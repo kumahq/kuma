@@ -111,9 +111,6 @@ build/artifacts-$(1)-$(2)/test-server:
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
 
-.PHONY: clean
-clean: clean/build ## Dev: Clean
-
 .PHONY: clean/build
 clean/build: clean/ebpf ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"

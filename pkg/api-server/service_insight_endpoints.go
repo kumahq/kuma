@@ -44,7 +44,8 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{},
 			}
 		}
-		res := rest_unversioned.From.Resource(serviceInsight)
+		out := rest.From.Resource(serviceInsight)
+		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
 		res.Spec = stat
 		if err := response.WriteAsJson(res); err != nil {
@@ -71,8 +72,11 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 		return
 	}
 
-	restList := s.expandInsights(serviceInsightList)
-	restList.Total = uint32(len(restList.Items))
+	items := s.expandInsights(serviceInsightList)
+	restList := rest.ResourceList{
+		Total: uint32(len(items)),
+		Items: items,
+	}
 
 	if err := s.paginateResources(request, &restList); err != nil {
 		rest_errors.HandleError(response, err, "Could not paginate resources")
@@ -90,24 +94,27 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 // 2) Mesh+Name is a key on Universal, but not on Kubernetes, so if there are two services of the same name in different Meshes we would have problems with naming.
 // From the API perspective it's better to provide ServiceInsight per Service, not per Mesh.
 // For this reason, this method expand the one ServiceInsight resource for the mesh to resource per service
-func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList) rest.ResourceList {
-	restItems := []*rest_unversioned.Resource{}
+func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList) []rest.Resource {
+	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, stat := range insight.Spec.Services {
-			res := rest_unversioned.From.Resource(insight)
+			out := rest.From.Resource(insight)
+			res := out.(*rest_unversioned.Resource)
 			res.Meta.Name = serviceName
 			res.Spec = stat
-			restItems = append(restItems, res)
+			restItems = append(restItems, out)
 		}
 	}
 
-	sort.Sort(rest_unversioned.ByMeta(restItems))
-
-	restList := rest.ResourceList{}
-	for _, item := range restItems {
-		restList.Items = append(restList.Items, item)
-	}
-	return restList
+	sort.Slice(restItems, func(i, j int) bool {
+		metai := restItems[i].GetMeta()
+		metaj := restItems[j].GetMeta()
+		if metai.Mesh == metaj.Mesh {
+			return metai.Name < metaj.Name
+		}
+		return metai.Mesh < metaj.Mesh
+	})
+	return restItems
 }
 
 // paginateResources paginates resources manually, because we are expanding resources.

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v3.20.0
-// source: mesh/v1alpha1/gateway_route.proto
+// source: api/mesh/v1alpha1/gateway_route.proto
 
 package v1alpha1
 
@@ -57,11 +57,11 @@ func (x MeshGatewayRoute_HttpRoute_Match_Path_MatchType) String() string {
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Path_MatchType) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_gateway_route_proto_enumTypes[0].Descriptor()
+	return file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[0].Descriptor()
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Path_MatchType) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_gateway_route_proto_enumTypes[0]
+	return &file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[0]
 }
 
 func (x MeshGatewayRoute_HttpRoute_Match_Path_MatchType) Number() protoreflect.EnumNumber {
@@ -70,7 +70,7 @@ func (x MeshGatewayRoute_HttpRoute_Match_Path_MatchType) Number() protoreflect.E
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Path_MatchType.Descriptor instead.
 func (MeshGatewayRoute_HttpRoute_Match_Path_MatchType) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 0, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 0, 0}
 }
 
 type MeshGatewayRoute_HttpRoute_Match_Header_MatchType int32
@@ -109,11 +109,11 @@ func (x MeshGatewayRoute_HttpRoute_Match_Header_MatchType) String() string {
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Header_MatchType) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_gateway_route_proto_enumTypes[1].Descriptor()
+	return file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[1].Descriptor()
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Header_MatchType) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_gateway_route_proto_enumTypes[1]
+	return &file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[1]
 }
 
 func (x MeshGatewayRoute_HttpRoute_Match_Header_MatchType) Number() protoreflect.EnumNumber {
@@ -122,7 +122,7 @@ func (x MeshGatewayRoute_HttpRoute_Match_Header_MatchType) Number() protoreflect
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Header_MatchType.Descriptor instead.
 func (MeshGatewayRoute_HttpRoute_Match_Header_MatchType) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 1, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 1, 0}
 }
 
 type MeshGatewayRoute_HttpRoute_Match_Query_MatchType int32
@@ -155,11 +155,11 @@ func (x MeshGatewayRoute_HttpRoute_Match_Query_MatchType) String() string {
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Query_MatchType) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_gateway_route_proto_enumTypes[2].Descriptor()
+	return file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[2].Descriptor()
 }
 
 func (MeshGatewayRoute_HttpRoute_Match_Query_MatchType) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_gateway_route_proto_enumTypes[2]
+	return &file_api_mesh_v1alpha1_gateway_route_proto_enumTypes[2]
 }
 
 func (x MeshGatewayRoute_HttpRoute_Match_Query_MatchType) Number() protoreflect.EnumNumber {
@@ -168,7 +168,7 @@ func (x MeshGatewayRoute_HttpRoute_Match_Query_MatchType) Number() protoreflect.
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Query_MatchType.Descriptor instead.
 func (MeshGatewayRoute_HttpRoute_Match_Query_MatchType) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 2, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 2, 0}
 }
 
 type MeshGatewayRoute struct {
@@ -185,7 +185,7 @@ type MeshGatewayRoute struct {
 func (x *MeshGatewayRoute) Reset() {
 	*x = MeshGatewayRoute{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[0]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -198,7 +198,7 @@ func (x *MeshGatewayRoute) String() string {
 func (*MeshGatewayRoute) ProtoMessage() {}
 
 func (x *MeshGatewayRoute) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[0]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -211,7 +211,7 @@ func (x *MeshGatewayRoute) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *MeshGatewayRoute) GetSelectors() []*Selector {
@@ -248,7 +248,7 @@ type MeshGatewayRoute_Backend struct {
 func (x *MeshGatewayRoute_Backend) Reset() {
 	*x = MeshGatewayRoute_Backend{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[1]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -261,7 +261,7 @@ func (x *MeshGatewayRoute_Backend) String() string {
 func (*MeshGatewayRoute_Backend) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_Backend) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[1]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -274,7 +274,7 @@ func (x *MeshGatewayRoute_Backend) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_Backend.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_Backend) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *MeshGatewayRoute_Backend) GetWeight() uint32 {
@@ -303,7 +303,7 @@ type MeshGatewayRoute_TcpRoute struct {
 func (x *MeshGatewayRoute_TcpRoute) Reset() {
 	*x = MeshGatewayRoute_TcpRoute{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[2]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -316,7 +316,7 @@ func (x *MeshGatewayRoute_TcpRoute) String() string {
 func (*MeshGatewayRoute_TcpRoute) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_TcpRoute) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[2]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +329,7 @@ func (x *MeshGatewayRoute_TcpRoute) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_TcpRoute.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_TcpRoute) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 1}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *MeshGatewayRoute_TcpRoute) GetRules() []*MeshGatewayRoute_TcpRoute_Rule {
@@ -358,7 +358,7 @@ type MeshGatewayRoute_HttpRoute struct {
 func (x *MeshGatewayRoute_HttpRoute) Reset() {
 	*x = MeshGatewayRoute_HttpRoute{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[3]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -371,7 +371,7 @@ func (x *MeshGatewayRoute_HttpRoute) String() string {
 func (*MeshGatewayRoute_HttpRoute) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +384,7 @@ func (x *MeshGatewayRoute_HttpRoute) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2}
 }
 
 func (x *MeshGatewayRoute_HttpRoute) GetHostnames() []string {
@@ -419,7 +419,7 @@ type MeshGatewayRoute_Conf struct {
 func (x *MeshGatewayRoute_Conf) Reset() {
 	*x = MeshGatewayRoute_Conf{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[4]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -432,7 +432,7 @@ func (x *MeshGatewayRoute_Conf) String() string {
 func (*MeshGatewayRoute_Conf) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_Conf) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +445,7 @@ func (x *MeshGatewayRoute_Conf) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_Conf.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_Conf) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 3}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 3}
 }
 
 func (m *MeshGatewayRoute_Conf) GetRoute() isMeshGatewayRoute_Conf_Route {
@@ -496,7 +496,7 @@ type MeshGatewayRoute_TcpRoute_Rule struct {
 func (x *MeshGatewayRoute_TcpRoute_Rule) Reset() {
 	*x = MeshGatewayRoute_TcpRoute_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[6]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -509,7 +509,7 @@ func (x *MeshGatewayRoute_TcpRoute_Rule) String() string {
 func (*MeshGatewayRoute_TcpRoute_Rule) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_TcpRoute_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -522,7 +522,7 @@ func (x *MeshGatewayRoute_TcpRoute_Rule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_TcpRoute_Rule.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_TcpRoute_Rule) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 1, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
 func (x *MeshGatewayRoute_TcpRoute_Rule) GetBackends() []*MeshGatewayRoute_Backend {
@@ -550,7 +550,7 @@ type MeshGatewayRoute_HttpRoute_Match struct {
 func (x *MeshGatewayRoute_HttpRoute_Match) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Match{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[7]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -563,7 +563,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match) String() string {
 func (*MeshGatewayRoute_HttpRoute_Match) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Match) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[7]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +576,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Match) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Match) GetPath() *MeshGatewayRoute_HttpRoute_Match_Path {
@@ -625,7 +625,7 @@ type MeshGatewayRoute_HttpRoute_Filter struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[8]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -638,7 +638,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter) String() string {
 func (*MeshGatewayRoute_HttpRoute_Filter) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -651,7 +651,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1}
 }
 
 func (m *MeshGatewayRoute_HttpRoute_Filter) GetFilter() isMeshGatewayRoute_HttpRoute_Filter_Filter {
@@ -756,7 +756,7 @@ type MeshGatewayRoute_HttpRoute_Rule struct {
 func (x *MeshGatewayRoute_HttpRoute_Rule) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[9]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -769,7 +769,7 @@ func (x *MeshGatewayRoute_HttpRoute_Rule) String() string {
 func (*MeshGatewayRoute_HttpRoute_Rule) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -782,7 +782,7 @@ func (x *MeshGatewayRoute_HttpRoute_Rule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Rule.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Rule) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 2}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 2}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Rule) GetMatches() []*MeshGatewayRoute_HttpRoute_Match {
@@ -826,7 +826,7 @@ type MeshGatewayRoute_HttpRoute_Match_Path struct {
 func (x *MeshGatewayRoute_HttpRoute_Match_Path) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Match_Path{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[10]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -839,7 +839,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Path) String() string {
 func (*MeshGatewayRoute_HttpRoute_Match_Path) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Path) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -852,7 +852,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Path) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Path.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Match_Path) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 0}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Path) GetMatch() MeshGatewayRoute_HttpRoute_Match_Path_MatchType {
@@ -887,7 +887,7 @@ type MeshGatewayRoute_HttpRoute_Match_Header struct {
 func (x *MeshGatewayRoute_HttpRoute_Match_Header) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Match_Header{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[11]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -900,7 +900,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Header) String() string {
 func (*MeshGatewayRoute_HttpRoute_Match_Header) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Header) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[11]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -913,7 +913,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Header) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Header.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Match_Header) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 1}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 1}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Header) GetMatch() MeshGatewayRoute_HttpRoute_Match_Header_MatchType {
@@ -953,7 +953,7 @@ type MeshGatewayRoute_HttpRoute_Match_Query struct {
 func (x *MeshGatewayRoute_HttpRoute_Match_Query) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Match_Query{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[12]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -966,7 +966,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Query) String() string {
 func (*MeshGatewayRoute_HttpRoute_Match_Query) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Query) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[12]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +979,7 @@ func (x *MeshGatewayRoute_HttpRoute_Match_Query) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Match_Query.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Match_Query) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 2}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 0, 2}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Match_Query) GetMatch() MeshGatewayRoute_HttpRoute_Match_Query_MatchType {
@@ -1016,7 +1016,7 @@ type MeshGatewayRoute_HttpRoute_Filter_HeaderFilter struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter_HeaderFilter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[13]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1029,7 +1029,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) String() string {
 func (*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[13]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1042,7 +1042,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) ProtoReflect() protoref
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter_HeaderFilter.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 0}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter) GetSet() []*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header {
@@ -1084,7 +1084,7 @@ type MeshGatewayRoute_HttpRoute_Filter_Mirror struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter_Mirror) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter_Mirror{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[14]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1097,7 +1097,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Mirror) String() string {
 func (*MeshGatewayRoute_HttpRoute_Filter_Mirror) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_Mirror) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[14]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1110,7 +1110,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Mirror) ProtoReflect() protoreflect.M
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter_Mirror.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter_Mirror) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 1}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 1}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_Mirror) GetBackend() *MeshGatewayRoute_Backend {
@@ -1150,7 +1150,7 @@ type MeshGatewayRoute_HttpRoute_Filter_Rewrite struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter_Rewrite) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter_Rewrite{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[15]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1163,7 +1163,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Rewrite) String() string {
 func (*MeshGatewayRoute_HttpRoute_Filter_Rewrite) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_Rewrite) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[15]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1176,7 +1176,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Rewrite) ProtoReflect() protoreflect.
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter_Rewrite.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter_Rewrite) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 2}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 2}
 }
 
 func (m *MeshGatewayRoute_HttpRoute_Filter_Rewrite) GetPath() isMeshGatewayRoute_HttpRoute_Filter_Rewrite_Path {
@@ -1250,7 +1250,7 @@ type MeshGatewayRoute_HttpRoute_Filter_Redirect struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter_Redirect) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter_Redirect{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[16]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1263,7 +1263,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Redirect) String() string {
 func (*MeshGatewayRoute_HttpRoute_Filter_Redirect) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_Redirect) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[16]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1276,7 +1276,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_Redirect) ProtoReflect() protoreflect
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter_Redirect.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter_Redirect) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 3}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 3}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_Redirect) GetScheme() string {
@@ -1326,7 +1326,7 @@ type MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header struct {
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) Reset() {
 	*x = MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[17]
+		mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1339,7 +1339,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) String() string 
 func (*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) ProtoMessage() {}
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_gateway_route_proto_msgTypes[17]
+	mi := &file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1352,7 +1352,7 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) ProtoReflect() p
 
 // Deprecated: Use MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header.ProtoReflect.Descriptor instead.
 func (*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 0, 0}
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP(), []int{0, 2, 1, 0, 0}
 }
 
 func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) GetName() string {
@@ -1369,21 +1369,22 @@ func (x *MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header) GetValue() strin
 	return ""
 }
 
-var File_mesh_v1alpha1_gateway_route_proto protoreflect.FileDescriptor
+var File_api_mesh_v1alpha1_gateway_route_proto protoreflect.FileDescriptor
 
-var file_mesh_v1alpha1_gateway_route_proto_rawDesc = []byte{
-	0x0a, 0x21, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f,
-	0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x5f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x12, 0x12, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x15, 0x6b, 0x75, 0x6d, 0x61, 0x2d, 0x64, 0x6f,
-	0x63, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e,
-	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f,
-	0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12,
-	0x6d, 0x65, 0x73, 0x68, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x1a, 0x1c, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x2f, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x1a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1f, 0x6d, 0x65, 0x73, 0x68, 0x2f,
+var file_api_mesh_v1alpha1_gateway_route_proto_rawDesc = []byte{
+	0x0a, 0x25, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2f, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x5f, 0x72, 0x6f, 0x75, 0x74,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x12, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65,
+	0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x15, 0x6b, 0x75, 0x6d,
+	0x61, 0x2d, 0x64, 0x6f, 0x63, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x62, 0x75, 0x66, 0x2f, 0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x1a, 0x16, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x6f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x20, 0x61, 0x70, 0x69, 0x2f,
+	0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x73, 0x65,
+	0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x23, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f,
 	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x6d, 0x65,
 	0x74, 0x68, 0x6f, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xd8, 0x1c, 0x0a, 0x10, 0x4d,
 	0x65, 0x73, 0x68, 0x47, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x12,
@@ -1625,20 +1626,20 @@ var file_mesh_v1alpha1_gateway_route_proto_rawDesc = []byte{
 }
 
 var (
-	file_mesh_v1alpha1_gateway_route_proto_rawDescOnce sync.Once
-	file_mesh_v1alpha1_gateway_route_proto_rawDescData = file_mesh_v1alpha1_gateway_route_proto_rawDesc
+	file_api_mesh_v1alpha1_gateway_route_proto_rawDescOnce sync.Once
+	file_api_mesh_v1alpha1_gateway_route_proto_rawDescData = file_api_mesh_v1alpha1_gateway_route_proto_rawDesc
 )
 
-func file_mesh_v1alpha1_gateway_route_proto_rawDescGZIP() []byte {
-	file_mesh_v1alpha1_gateway_route_proto_rawDescOnce.Do(func() {
-		file_mesh_v1alpha1_gateway_route_proto_rawDescData = protoimpl.X.CompressGZIP(file_mesh_v1alpha1_gateway_route_proto_rawDescData)
+func file_api_mesh_v1alpha1_gateway_route_proto_rawDescGZIP() []byte {
+	file_api_mesh_v1alpha1_gateway_route_proto_rawDescOnce.Do(func() {
+		file_api_mesh_v1alpha1_gateway_route_proto_rawDescData = protoimpl.X.CompressGZIP(file_api_mesh_v1alpha1_gateway_route_proto_rawDescData)
 	})
-	return file_mesh_v1alpha1_gateway_route_proto_rawDescData
+	return file_api_mesh_v1alpha1_gateway_route_proto_rawDescData
 }
 
-var file_mesh_v1alpha1_gateway_route_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_mesh_v1alpha1_gateway_route_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
-var file_mesh_v1alpha1_gateway_route_proto_goTypes = []interface{}{
+var file_api_mesh_v1alpha1_gateway_route_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_api_mesh_v1alpha1_gateway_route_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_api_mesh_v1alpha1_gateway_route_proto_goTypes = []interface{}{
 	(MeshGatewayRoute_HttpRoute_Match_Path_MatchType)(0),          // 0: kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Path.MatchType
 	(MeshGatewayRoute_HttpRoute_Match_Header_MatchType)(0),        // 1: kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Header.MatchType
 	(MeshGatewayRoute_HttpRoute_Match_Query_MatchType)(0),         // 2: kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Query.MatchType
@@ -1664,7 +1665,7 @@ var file_mesh_v1alpha1_gateway_route_proto_goTypes = []interface{}{
 	(HttpMethod)(0),                                               // 22: kuma.mesh.v1alpha1.HttpMethod
 	(*wrapperspb.DoubleValue)(nil),                                // 23: google.protobuf.DoubleValue
 }
-var file_mesh_v1alpha1_gateway_route_proto_depIdxs = []int32{
+var file_api_mesh_v1alpha1_gateway_route_proto_depIdxs = []int32{
 	21, // 0: kuma.mesh.v1alpha1.MeshGatewayRoute.selectors:type_name -> kuma.mesh.v1alpha1.Selector
 	7,  // 1: kuma.mesh.v1alpha1.MeshGatewayRoute.conf:type_name -> kuma.mesh.v1alpha1.MeshGatewayRoute.Conf
 	8,  // 2: kuma.mesh.v1alpha1.MeshGatewayRoute.Backend.destination:type_name -> kuma.mesh.v1alpha1.MeshGatewayRoute.Backend.DestinationEntry
@@ -1700,15 +1701,15 @@ var file_mesh_v1alpha1_gateway_route_proto_depIdxs = []int32{
 	0,  // [0:28] is the sub-list for field type_name
 }
 
-func init() { file_mesh_v1alpha1_gateway_route_proto_init() }
-func file_mesh_v1alpha1_gateway_route_proto_init() {
-	if File_mesh_v1alpha1_gateway_route_proto != nil {
+func init() { file_api_mesh_v1alpha1_gateway_route_proto_init() }
+func file_api_mesh_v1alpha1_gateway_route_proto_init() {
+	if File_api_mesh_v1alpha1_gateway_route_proto != nil {
 		return
 	}
-	file_mesh_v1alpha1_selector_proto_init()
-	file_mesh_v1alpha1_http_method_proto_init()
+	file_api_mesh_v1alpha1_selector_proto_init()
+	file_api_mesh_v1alpha1_http_method_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute); i {
 			case 0:
 				return &v.state
@@ -1720,7 +1721,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_Backend); i {
 			case 0:
 				return &v.state
@@ -1732,7 +1733,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_TcpRoute); i {
 			case 0:
 				return &v.state
@@ -1744,7 +1745,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute); i {
 			case 0:
 				return &v.state
@@ -1756,7 +1757,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_Conf); i {
 			case 0:
 				return &v.state
@@ -1768,7 +1769,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_TcpRoute_Rule); i {
 			case 0:
 				return &v.state
@@ -1780,7 +1781,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Match); i {
 			case 0:
 				return &v.state
@@ -1792,7 +1793,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter); i {
 			case 0:
 				return &v.state
@@ -1804,7 +1805,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Rule); i {
 			case 0:
 				return &v.state
@@ -1816,7 +1817,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Match_Path); i {
 			case 0:
 				return &v.state
@@ -1828,7 +1829,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Match_Header); i {
 			case 0:
 				return &v.state
@@ -1840,7 +1841,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Match_Query); i {
 			case 0:
 				return &v.state
@@ -1852,7 +1853,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter); i {
 			case 0:
 				return &v.state
@@ -1864,7 +1865,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter_Mirror); i {
 			case 0:
 				return &v.state
@@ -1876,7 +1877,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter_Rewrite); i {
 			case 0:
 				return &v.state
@@ -1888,7 +1889,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter_Redirect); i {
 			case 0:
 				return &v.state
@@ -1900,7 +1901,7 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_gateway_route_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header); i {
 			case 0:
 				return &v.state
@@ -1913,18 +1914,18 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 			}
 		}
 	}
-	file_mesh_v1alpha1_gateway_route_proto_msgTypes[4].OneofWrappers = []interface{}{
+	file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[4].OneofWrappers = []interface{}{
 		(*MeshGatewayRoute_Conf_Tcp)(nil),
 		(*MeshGatewayRoute_Conf_Http)(nil),
 	}
-	file_mesh_v1alpha1_gateway_route_proto_msgTypes[8].OneofWrappers = []interface{}{
+	file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[8].OneofWrappers = []interface{}{
 		(*MeshGatewayRoute_HttpRoute_Filter_RequestHeader)(nil),
 		(*MeshGatewayRoute_HttpRoute_Filter_Mirror_)(nil),
 		(*MeshGatewayRoute_HttpRoute_Filter_Redirect_)(nil),
 		(*MeshGatewayRoute_HttpRoute_Filter_Rewrite_)(nil),
 		(*MeshGatewayRoute_HttpRoute_Filter_ResponseHeader)(nil),
 	}
-	file_mesh_v1alpha1_gateway_route_proto_msgTypes[15].OneofWrappers = []interface{}{
+	file_api_mesh_v1alpha1_gateway_route_proto_msgTypes[15].OneofWrappers = []interface{}{
 		(*MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull)(nil),
 		(*MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch)(nil),
 	}
@@ -1932,19 +1933,19 @@ func file_mesh_v1alpha1_gateway_route_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_mesh_v1alpha1_gateway_route_proto_rawDesc,
+			RawDescriptor: file_api_mesh_v1alpha1_gateway_route_proto_rawDesc,
 			NumEnums:      3,
 			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_mesh_v1alpha1_gateway_route_proto_goTypes,
-		DependencyIndexes: file_mesh_v1alpha1_gateway_route_proto_depIdxs,
-		EnumInfos:         file_mesh_v1alpha1_gateway_route_proto_enumTypes,
-		MessageInfos:      file_mesh_v1alpha1_gateway_route_proto_msgTypes,
+		GoTypes:           file_api_mesh_v1alpha1_gateway_route_proto_goTypes,
+		DependencyIndexes: file_api_mesh_v1alpha1_gateway_route_proto_depIdxs,
+		EnumInfos:         file_api_mesh_v1alpha1_gateway_route_proto_enumTypes,
+		MessageInfos:      file_api_mesh_v1alpha1_gateway_route_proto_msgTypes,
 	}.Build()
-	File_mesh_v1alpha1_gateway_route_proto = out.File
-	file_mesh_v1alpha1_gateway_route_proto_rawDesc = nil
-	file_mesh_v1alpha1_gateway_route_proto_goTypes = nil
-	file_mesh_v1alpha1_gateway_route_proto_depIdxs = nil
+	File_api_mesh_v1alpha1_gateway_route_proto = out.File
+	file_api_mesh_v1alpha1_gateway_route_proto_rawDesc = nil
+	file_api_mesh_v1alpha1_gateway_route_proto_goTypes = nil
+	file_api_mesh_v1alpha1_gateway_route_proto_depIdxs = nil
 }

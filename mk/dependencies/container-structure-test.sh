@@ -5,9 +5,12 @@ set -e
 OUTPUT_DIR=$1/bin
 VERSION="1.15.0"
 NAME="container-structure-test"
-BASE_URL="https://storage.googleapis.com/container-structure-test"
+BASE_URL="https://github.com/GoogleContainerTools/container-structure-test/releases/download"
 CONTAINER_STRUCTURE_TEST="${OUTPUT_DIR}/${NAME}"
 
+if [ "${OS}" == "darwin" ]; then
+  ARCH='amd64'
+fi
 if [ -e "${CONTAINER_STRUCTURE_TEST}" ] && [ "$("${CONTAINER_STRUCTURE_TEST}" version)" == "v${VERSION}" ]; then
   echo "${NAME} v${VERSION} is already installed at ${OUTPUT_DIR}"
   exit
