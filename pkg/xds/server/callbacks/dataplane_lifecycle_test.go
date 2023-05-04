@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -95,7 +96,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 			Node: node,
 		}
 		const streamId = 123
-		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
 
 		// when
 		err := callbacks.OnStreamRequest(streamId, &req)
@@ -139,10 +143,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		authenticator.err = errors.New("rejected")
+		authenticator.err = errors.New("token rejected")
 		req := envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
-				Id: "default.backend-01",
+				Id: "default.dp-01",
 				Metadata: &structpb.Struct{
 					Fields: map[string]*structpb.Value{
 						"dataplane.resource": {
@@ -173,11 +177,15 @@ var _ = Describe("Dataplane Lifecycle", func() {
 			},
 		}
 		const streamId = 123
-		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
 		err = callbacks.OnStreamRequest(streamId, &req)
 
 		// then
 		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("token rejected"))
 	})
 
 	It("should not delete DP when it is not carried in metadata", func() {
@@ -263,10 +271,38 @@ var _ = Describe("Dataplane Lifecycle", func() {
 			Node: node,
 		}
 
+		dp := &core_mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{
+				Mesh: "default",
+				Name: "dp-01",
+			},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        8080,
+							ServicePort: 8081,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), dp, core_store.CreateByKey("dp-01", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
 		const streamId = 123
 
 		// when
-		err := callbacks.OnStreamRequest(streamId, &req)
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
+
+		err = callbacks.OnStreamRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 
 		cancel()
@@ -290,7 +326,8 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				defer GinkgoRecover()
 
 				streamID := int64(streamID + num)
-				nodeID := fmt.Sprintf("default.backend-%d", num)
+				name := fmt.Sprintf("backend-%d", num)
+				nodeID := fmt.Sprintf("default.%s", name)
 
 				// given
 				node := &envoy_core.Node{
@@ -317,7 +354,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
                                     ]
                                   }
                                 }
-                                `, nodeID, num),
+                                `, name, num),
 								},
 							},
 						},
@@ -326,14 +363,17 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				req := envoy_sd.DiscoveryRequest{
 					Node: node,
 				}
-				Expect(callbacks.OnStreamOpen(context.Background(), streamID, "")).To(Succeed())
+				ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+					"authorization": {"token"},
+				})
+				Expect(callbacks.OnStreamOpen(ctx, streamID, "")).To(Succeed())
 
 				// when
 				err := callbacks.OnStreamRequest(streamID, &req)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then dp is created
-				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey(nodeID, "default"))
+				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey(name, "default"))
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
@@ -393,7 +433,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		}
 
 		const streamId = 123
-		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
 		err := callbacks.OnStreamRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 
