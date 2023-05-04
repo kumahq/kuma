@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"math"
 	net_url "net/url"
 	"strconv"
@@ -84,23 +85,14 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	backend := pointer.Deref(conf.Backends)[0]
 	firstBackendPath := backendsPath.Index(0)
 
-	var defined int
-	if backend.Datadog != nil {
-		defined++
-	}
-	if backend.Zipkin != nil {
-		defined++
-	}
-	if backend.OpenTelemetry != nil {
-		defined++
-	}
-	if defined != 1 {
-		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin", "openTelemetry"))
-	}
-
-	if backend.Datadog != nil {
-		datadogBackend := backend.Datadog
+	switch backend.Type {
+	case DatadogBackendType:
 		datadogPath := firstBackendPath.Field("datadog")
+		datadogBackend := backend.Datadog
+		if datadogBackend == nil {
+			verr.AddViolationAt(datadogPath, validators.MustBeDefined)
+			break
+		}
 
 		url, err := net_url.ParseRequestURI(datadogBackend.Url)
 		if err != nil {
@@ -139,17 +131,28 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 				verr.AddViolationAt(datadogPath.Field("url"), nonEmptyField+" "+validators.MustNotBeDefined)
 			}
 		}
-	}
-
-	if backend.Zipkin != nil {
-		zipkinBackend := backend.Zipkin
+	case ZipkinBackendType:
 		zipkinPath := firstBackendPath.Field("zipkin")
+		zipkinBackend := backend.Zipkin
+		if zipkinBackend == nil {
+			verr.AddViolationAt(zipkinPath, validators.MustBeDefined)
+			break
+		}
 
 		if zipkinBackend.Url == "" {
 			verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
 		} else if !govalidator.IsURL(zipkinBackend.Url) {
 			verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
 		}
+	case OpenTelemetryBackendType:
+		otelPath := firstBackendPath.Field("openTelemetry")
+		otelBackend := backend.OpenTelemetry
+		if otelBackend == nil {
+			verr.AddViolationAt(otelPath, validators.MustBeDefined)
+			break
+		}
+	default:
+		verr.AddViolationAt(firstBackendPath, fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr
