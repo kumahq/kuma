@@ -442,6 +442,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -496,10 +503,25 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
+                              type:
+                                enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                                type: string
+                            required:
+                            - type
                             type: object
                           type: array
                       type: object
@@ -598,6 +620,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -652,10 +681,25 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
+                              type:
+                                enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                                type: string
+                            required:
+                            - type
                             type: object
                           type: array
                       type: object

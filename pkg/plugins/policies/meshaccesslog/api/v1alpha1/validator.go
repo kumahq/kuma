@@ -119,7 +119,7 @@ func validateBackend(backend Backend) validators.ValidationError {
 			break
 		}
 	default:
-		verr.AddViolationAt(validators.Root(), fmt.Sprintf("unknown backend type %v", backend.Type))
+		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr
@@ -161,7 +161,7 @@ func validateFormat(format Format) validators.ValidationError {
 			}
 		}
 	default:
-		verr.AddViolationAt(validators.Root(), fmt.Sprintf("unknown backend type %v", format.Type))
+		panic(fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
 	return verr
