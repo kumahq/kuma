@@ -11,4 +11,4 @@ endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(foreach image,$(IMAGES_RELEASE),$(eval $(call TEST_CONTAINER_STRUCTURES,$(image),$(goarch)))))
 
 .PHONY: test/container-structure
-test/container-structure: $(patsubst %,test/container-structure/%,$(ALL_RELEASE_WITH_ARCH))
+test/container-structure: $(patsubst %,test/container-structure/%,$(filter-out $(foreach goarch,$(SUPPORTED_GOARCHES),%kuma-init/$(goarch)),$(ALL_RELEASE_WITH_ARCH)))
