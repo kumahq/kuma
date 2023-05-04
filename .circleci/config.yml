@@ -488,10 +488,10 @@ workflows:
             alias: test/e2e-delta-kds
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [ test/e2e-multizone ]
-              arch: [ amd64 ]
-              deltaKDS: [ true ]
-          requires: [ build, check ]
+              target: [test/e2e-multizone]
+              arch: [amd64]
+              deltaKDS: [true]
+          requires: [build, go_cache-vm-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
