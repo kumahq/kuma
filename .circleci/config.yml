@@ -487,7 +487,7 @@ workflows:
           matrix:
             alias: test/e2e-delta-kds
             parameters:
-              k8sVersion: [ *lastK8sVersion ]
+              k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               deltaKDS: [ true ]
