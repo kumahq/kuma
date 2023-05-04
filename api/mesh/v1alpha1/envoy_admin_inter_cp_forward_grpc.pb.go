@@ -170,5 +170,5 @@ var InterCPEnvoyAdminForwardService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "mesh/v1alpha1/envoy_admin_inter_cp_forward.proto",
+	Metadata: "api/mesh/v1alpha1/envoy_admin_inter_cp_forward.proto",
 }

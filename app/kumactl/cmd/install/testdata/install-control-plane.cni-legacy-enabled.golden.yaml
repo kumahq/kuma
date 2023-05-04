@@ -420,9 +420,7 @@ metadata:
   name: kuma-cni-node
   namespace: kube-system
   annotations:
-    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
-    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
-    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
+    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
   labels:
     app: kuma-cni
     app.kubernetes.io/name: kuma
@@ -450,11 +448,10 @@ spec:
       # marks the pod as a critical add-on, ensuring it gets
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
       nodeSelector:
       
         kubernetes.io/os: linux
-      hostNetwork: true
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.
         - effect: NoSchedule
@@ -468,12 +465,19 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      securityContext:
+        {}
       containers:
         - name: install-cni
           image: "docker.io/kumahq/install-cni:0.0.10"
           imagePullPolicy: IfNotPresent
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep 0 && exec /install-cni.sh" ]
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsGroup: 0
+            runAsNonRoot: false
+            runAsUser: 0
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -502,6 +506,8 @@ spec:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
+            - name: tmp
+              mountPath: /tmp
       volumes:
         # Used to install CNI.
         - name: cni-bin-dir
@@ -510,6 +516,8 @@ spec:
         - name: cni-net-dir
           hostPath:
             path: /etc/cni/multus/net.d
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -620,6 +628,7 @@ spec:
           args:
             - run
             - --log-level=info
+            - --log-output-path=
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680

@@ -7,6 +7,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/sets"
+	clientgo_kube "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
@@ -68,13 +70,18 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
-	var validUniqueListenerPorts kubernetes.PortSet
+	clientset, err := clientgo_kube.NewForConfig(clientConfig)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	var validUniqueListenerPorts kubernetes.PortStack
 	for i := minNodePort; i <= maxNodePort; i++ {
 		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
 	}
 
 	conformanceSuite := suite.New(suite.Options{
 		Client:               client,
+		RESTClient:           clientset.CoreV1().RESTClient().(*rest.RESTClient),
+		RestConfig:           clientConfig,
 		GatewayClassName:     "kuma",
 		CleanupBaseResources: true,
 		Debug:                false,
@@ -83,13 +90,18 @@ func TestConformance(t *testing.T) {
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: sets.New(
+			suite.SupportGateway,
+			suite.SupportHTTPRoute,
+			suite.SupportGatewayClassObservedGenerationBump,
 			suite.SupportHTTPRouteQueryParamMatching,
 			suite.SupportHTTPRouteMethodMatching,
 			suite.SupportHTTPResponseHeaderModification,
 			suite.SupportHTTPRoutePortRedirect,
 			suite.SupportHTTPRouteSchemeRedirect,
 			suite.SupportHTTPRoutePathRedirect,
-			suite.SupportGatewayClassObservedGenerationBump,
+			suite.SupportHTTPRouteHostRewrite,
+			suite.SupportHTTPRoutePathRewrite,
+			suite.SupportMesh,
 		),
 	})
 

@@ -4,4 +4,4 @@ ARG ARCH
 
 COPY /build/artifacts-linux-${ARCH}/kuma-cp/kuma-cp /usr/bin
 
-ENTRYPOINT ["kuma-cp"]
+ENTRYPOINT ["/usr/bin/kuma-cp"]

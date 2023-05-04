@@ -240,5 +240,5 @@ var MonitoringAssignmentDiscoveryService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "observability/v1/mads.proto",
+	Metadata: "api/observability/v1/mads.proto",
 }
