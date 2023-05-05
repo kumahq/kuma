@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
-	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -20,11 +19,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var (
-	clusterName = Kuma1
-	minNodePort = 30080
-	maxNodePort = 30099
-)
+var clusterName = Kuma1
 
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
@@ -73,11 +68,6 @@ func TestConformance(t *testing.T) {
 	clientset, err := clientgo_kube.NewForConfig(clientConfig)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	var validUniqueListenerPorts kubernetes.PortStack
-	for i := minNodePort; i <= maxNodePort; i++ {
-		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
-	}
-
 	conformanceSuite := suite.New(suite.Options{
 		Client:               client,
 		RESTClient:           clientset.CoreV1().RESTClient().(*rest.RESTClient),
@@ -88,7 +78,6 @@ func TestConformance(t *testing.T) {
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
 		},
-		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,
 			suite.SupportHTTPRoute,
