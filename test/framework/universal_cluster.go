@@ -177,7 +177,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		ApiServerPort: app.ports["5681"],
 		SshPort:       app.ports["22"],
 	}
-	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf)
+	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf, c.opts.apiHeaders)
 	if err != nil {
 		return err
 	}

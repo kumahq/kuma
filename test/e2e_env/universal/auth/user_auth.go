@@ -24,6 +24,7 @@ func UserAuth() {
 			"test-admin",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
+			nil,
 		)
 
 		// then the new admin can access secrets
@@ -46,6 +47,7 @@ func UserAuth() {
 			"test-user",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
+			nil,
 		)
 
 		// then the new member can access dataplanes but not secrets because they are not admin

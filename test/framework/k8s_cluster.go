@@ -528,7 +528,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		replicas = c.opts.cpReplicas
 	}
 
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, c.opts.apiHeaders)
 
 	switch mode {
 	case core.Zone:

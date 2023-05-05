@@ -49,6 +49,7 @@ func RestoreState(bytes []byte) {
 		Cluster.Name(),
 		Cluster.Verbose(),
 		state.KumaCp,
+		nil, // headers were not configured in setup
 	)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(Cluster.AddNetworking(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
