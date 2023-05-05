@@ -220,9 +220,9 @@ func EvaluateParentRefAttachment(
 	ref gatewayapi.ParentReference,
 ) (Attachment, error) {
 	switch {
-	case *ref.Group == gatewayapi.Group(gatewayapi.GroupVersion.Group) && *ref.Kind == "Gateway":
+	case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
 		return evaluateGatewayAttachment(ctx, client, routeHostnames, routeNs, ref)
-	case *ref.Group == kube_core.GroupName && *ref.Kind == "Service":
+	case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
 		// Attaching to a Service can only affect requests coming from Services
 		// in the same Namespace or requests going to the Service.
 		return Allowed, nil

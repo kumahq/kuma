@@ -149,14 +149,14 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			continue
 		case attachment.Allowed:
 			switch {
-			case *ref.Kind == gatewayapi.Kind("Gateway") && *ref.Group == gatewayapi.GroupName:
+			case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
 				selectors = append(
 					selectors,
 					&mesh_proto.Selector{
 						Match: tagsForRef(route, ref),
 					},
 				)
-			case *ref.Kind == gatewayapi.Kind("Service") && *ref.Group == kube_core.GroupName:
+			case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
 				namespace := route.Namespace
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
