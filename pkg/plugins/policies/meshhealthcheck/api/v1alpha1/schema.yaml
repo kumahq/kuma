@@ -104,7 +104,7 @@ properties:
                               name:
                                 maxLength: 256
                                 minLength: 1
-                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                 type: string
                               value:
                                 type: string
@@ -123,7 +123,7 @@ properties:
                               name:
                                 maxLength: 256
                                 minLength: 1
-                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                 type: string
                               value:
                                 type: string

@@ -91,7 +91,7 @@ properties:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -115,7 +115,7 @@ properties:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -218,7 +218,7 @@ properties:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -242,7 +242,7 @@ properties:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -304,7 +304,7 @@ properties:
                                 description: Name is the name of the HTTP Header to be matched. Name MUST be lower case as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
                                 maxLength: 256
                                 minLength: 1
-                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                pattern: ^[a-zA-Z0-9!#$%&'*+\-.^_\x60|~]+$
                                 type: string
                               type:
                                 default: Exact
