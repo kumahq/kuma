@@ -47,6 +47,7 @@ type kumaDeploymentOptions struct {
 	runPostgresMigration        bool
 	yamlConfig                  string
 	transparentProxyV1          bool
+	apiHeaders                  []string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -350,6 +351,12 @@ type MeshUpdateFunc func(mesh *mesh_proto.Mesh) *mesh_proto.Mesh
 func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.meshUpdateFuncs[mesh] = append(o.meshUpdateFuncs[mesh], u)
+	})
+}
+
+func WithApiHeaders(headers ...string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.apiHeaders = headers
 	})
 }
 

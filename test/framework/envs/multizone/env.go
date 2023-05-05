@@ -175,6 +175,7 @@ func RestoreState(bytes []byte) {
 		Global.Name(),
 		Global.Verbose(),
 		state.Global.KumaCp,
+		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	Global.SetCp(cp)
@@ -188,6 +189,7 @@ func RestoreState(bytes []byte) {
 		KubeZone1,
 		KubeZone1.Verbose(),
 		1,
+		nil,
 	)
 	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone1.KumaCp)).To(Succeed())
 	KubeZone1.SetCP(kubeCp)
@@ -203,6 +205,7 @@ func RestoreState(bytes []byte) {
 		KubeZone2,
 		KubeZone2.Verbose(),
 		1,
+		nil, // headers were not configured in setup
 	)
 	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone2.KumaCp)).To(Succeed())
 	KubeZone2.SetCP(kubeCp)
@@ -217,6 +220,7 @@ func RestoreState(bytes []byte) {
 		UniZone1.Name(),
 		UniZone1.Verbose(),
 		state.UniZone1.KumaCp,
+		nil, // headers were not configured in setup
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone1.SetCp(cp)
@@ -231,6 +235,7 @@ func RestoreState(bytes []byte) {
 		UniZone2.Name(),
 		UniZone2.Verbose(),
 		state.UniZone2.KumaCp,
+		nil, // headers were not configured in setup
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone2.SetCp(cp)

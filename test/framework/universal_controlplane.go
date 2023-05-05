@@ -31,6 +31,7 @@ func NewUniversalControlPlane(
 	clusterName string,
 	verbose bool,
 	networking UniversalNetworking,
+	apiHeaders []string,
 ) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
 	kumactl := NewKumactlOptions(t, name, verbose)
@@ -47,7 +48,7 @@ func NewUniversalControlPlane(
 		return nil, err
 	}
 
-	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token); err != nil {
+	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
 		return nil, err
 	}
 	return ucp, nil
@@ -148,6 +149,10 @@ func (c *UniversalControlPlane) generateToken(
 }
 
 func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
+	if c.kumactl.Env["KUMA_API_SERVER_AUTHN_TYPE"] != "tokens" {
+		return "", nil
+	}
+
 	return retry.DoWithRetryE(
 		c.t, "fetching user admin token",
 		DefaultRetries,

@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -32,6 +33,7 @@ type K8sControlPlane struct {
 	portFwd    PortFwd
 	verbose    bool
 	replicas   int
+	apiHeaders []string
 }
 
 func NewK8sControlPlane(
@@ -42,6 +44,7 @@ func NewK8sControlPlane(
 	cluster *K8sCluster,
 	verbose bool,
 	replicas int,
+	apiHeaders []string,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	return &K8sControlPlane{
@@ -53,6 +56,7 @@ func NewK8sControlPlane(
 		cluster:    cluster,
 		verbose:    verbose,
 		replicas:   replicas,
+		apiHeaders: apiHeaders,
 	}
 }
 
@@ -131,16 +135,23 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {
-	return http_helper.HttpGetWithRetryWithCustomValidationE(
+	headers := map[string]string{}
+	for _, header := range c.apiHeaders {
+		res := strings.Split(header, "=")
+		headers[res[0]] = res[1]
+	}
+	_, err := http_helper.HTTPDoWithRetryE(
 		c.t,
+		"GET",
 		c.GetGlobalStatusAPI(),
-		&tls.Config{MinVersion: tls.VersionTLS12},
+		nil,
+		headers,
+		http.StatusOK,
 		DefaultRetries,
 		DefaultTimeout,
-		func(statusCode int, body string) bool {
-			return statusCode == http.StatusOK
-		},
+		&tls.Config{MinVersion: tls.VersionTLS12},
 	)
+	return err
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
@@ -177,10 +188,13 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 		return err
 	}
 	token = t
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"] != "tokens" {
+		return "", nil
+	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",

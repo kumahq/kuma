@@ -61,6 +61,7 @@ func RestoreState(bytes []byte) {
 		Cluster,
 		Cluster.Verbose(),
 		1,
+		nil, // headers were not configured in setup
 	)
 	Expect(cp.FinalizeAddWithPortFwd(portFwd)).To(Succeed())
 	Cluster.SetCP(cp)
