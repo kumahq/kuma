@@ -226,7 +226,7 @@ jobs:
       target:
         description: makefile target
         type: string
-        default: "test/e2e"
+        default: "e2e"
       arch:
         description: The golang arch
         type: string
@@ -251,7 +251,7 @@ jobs:
       - when:
           condition:
             or:
-              - {equal: [test/e2e, << parameters.target >>]}
+              - {equal: [e2e, << parameters.target >>]}
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
@@ -278,10 +278,10 @@ jobs:
             }
 
             # Handle invalid test combinations
-            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
-              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
+            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "e2e-universal" ]]; then
+              skip "kind should only be used when testing ipv6 or with e2e-universal"
             fi
-            if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
+            if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
             echo "Continuing tests"
@@ -336,11 +336,11 @@ jobs:
               export KUMA_DELTA_KDS=true
             fi
 
-            if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+            if [[ "<< parameters.target >>" == "e2e" ]]; then
               export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
             fi
             env
-            make ${MAKE_PARAMETERS} CI=true << parameters.target >>
+            make ${MAKE_PARAMETERS} CI=true test/<< parameters.target >>
       - store_test_results:
           path: build/reports
       - store_artifacts:
@@ -464,46 +464,46 @@ workflows:
               arch: [amd64, arm64]
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
-          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+          name: e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
-            alias: test/e2e-legacy
+            alias: e2e-legacy
             parameters:
               k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
               arch: [amd64, arm64]
           parallelism: 3
-          target: test/e2e
+          target: e2e
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
-            alias: test/e2e
+            alias: e2e
             parameters:
               k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
-              target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
+              target: [e2e-kubernetes, e2e-universal, e2e-multizone]
               arch: [amd64, arm64]
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-delta-kds
           matrix:
-            alias: test/e2e-delta-kds
+            alias: e2e-delta-kds
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [test/e2e-multizone]
+              target: [e2e-multizone]
               arch: [amd64]
               deltaKDS: [true]
           requires: [build, go_cache-vm-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
-            alias: test/e2e-calico
+            alias: e2e-calico
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [test/e2e-multizone]
+              target: [e2e-multizone]
               arch: [amd64]
               cniNetworkPlugin: [calico]
           requires: [build, go_cache-vm-amd64]
       - container-structure:
-          name: test/container-structure
+          name: container-structure
           requires: [build]
       - distributions:
-          requires: [test, test/e2e, test/e2e-legacy, test/container-structure]
+          requires: [test, e2e, e2e-legacy, container-structure]
