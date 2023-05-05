@@ -169,7 +169,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					}
 					continue // TODO what does the spec say? does NoMatchingParent apply?
 				}
-				services = append(services, serviceAndPorts(&svc))
+				services = append(services, serviceAndPorts(&svc, ref.Port))
 			}
 		default:
 			var reason string
