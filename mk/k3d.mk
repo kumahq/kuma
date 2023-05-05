@@ -104,7 +104,7 @@ k3d/configure/metallb:
 	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}'); if [ $${SUBNET} != "172.18.0.0/16" ]; then \
 		   echo "Unexpected docker network, expecting 172.18.0.0/16"; exit 1; \
 	fi
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml
 
 .PHONY: k3d/wait
 k3d/wait:
