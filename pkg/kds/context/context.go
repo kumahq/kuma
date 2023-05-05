@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -43,7 +44,8 @@ type Context struct {
 	GlobalResourceMapper reconcile.ResourceMapper
 	ZoneResourceMapper   reconcile.ResourceMapper
 
-	EnvoyAdminRPCs service.EnvoyAdminRPCs
+	EnvoyAdminRPCs           service.EnvoyAdminRPCs
+	ServerStreamInterceptors []grpc.StreamServerInterceptor
 }
 
 func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone string) *Context {
