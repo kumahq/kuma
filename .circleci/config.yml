@@ -235,6 +235,10 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
+      deltaKDS:
+        description: if should run tests with new implementation of KDS
+        type: boolean
+        default: false
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -251,6 +255,7 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
+              - {equal: [true, << parameters.deltaKDS >>]}
               - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
@@ -325,6 +330,10 @@ jobs:
               export MAKE_PARAMETERS="-j1"
             else
               export MAKE_PARAMETERS="-j2"
+            fi
+
+            if [[ "<< parameters.deltaKDS >>" == true ]]; then
+              export KUMA_DELTA_KDS=true
             fi
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
@@ -473,6 +482,16 @@ workflows:
               target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
               arch: [amd64, arm64]
           requires: [build, go_cache-vm-<< matrix.arch >>]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-delta-kds
+          matrix:
+            alias: test/e2e-delta-kds
+            parameters:
+              k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
+              target: [test/e2e-multizone]
+              arch: [amd64]
+              deltaKDS: [true]
+          requires: [build, go_cache-vm-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
