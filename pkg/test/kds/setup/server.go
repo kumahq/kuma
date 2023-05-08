@@ -24,9 +24,8 @@ type testRuntimeContext struct {
 	cfg                      kuma_cp.Config
 	components               []component.Component
 	metrics                  core_metrics.Metrics
-	hashingFn                multitenant.Hashing
 	pgxConfigCustomizationFn config.PgxConfigCustomization
-	tenantFn                 multitenant.Tenant
+	tenants                  multitenant.Tenants
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -41,16 +40,12 @@ func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
 	return t.metrics
 }
 
-func (t *testRuntimeContext) HashingFn() multitenant.Hashing {
-	return t.hashingFn
-}
-
 func (t *testRuntimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 	return t.pgxConfigCustomizationFn
 }
 
-func (t *testRuntimeContext) TenantFn() multitenant.Tenant {
-	return t.tenantFn
+func (t *testRuntimeContext) Tenants() multitenant.Tenants {
+	return t.tenants
 }
 
 func (t *testRuntimeContext) Add(c ...component.Component) error {
@@ -67,8 +62,7 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		rom:                      manager.NewResourceManager(store),
 		cfg:                      kuma_cp.Config{},
 		metrics:                  metrics,
-		tenantFn:                 multitenant.SingleTenant,
-		hashingFn:                multitenant.NoopHashingFn,
+		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
 	}
 	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
@@ -83,8 +77,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		rom:                      manager.NewResourceManager(store),
 		cfg:                      kuma_cp.Config{},
 		metrics:                  metrics,
-		tenantFn:                 multitenant.SingleTenant,
-		hashingFn:                multitenant.NoopHashingFn,
+		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)

@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 func HandleError(response *restful.Response, err error, title string) {
@@ -51,6 +52,8 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleUnauthenticated(unauthenticated, title, response)
 	case err == tokens.IssuerDisabled:
 		handleIssuerDisabled(err, title, response)
+	case err == multitenant.TenantMissingErr:
+		handleTenantMissing(err, title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -181,6 +184,14 @@ func handleUnauthenticated(err *Unauthenticated, title string, response *restful
 		Details: err.Error(),
 	}
 	WriteError(response, 401, kumaErr)
+}
+
+func handleTenantMissing(err error, title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: err.Error(),
+	}
+	WriteError(response, 400, kumaErr)
 }
 
 func WriteError(response *restful.Response, httpStatus int, kumaErr types.Error) {

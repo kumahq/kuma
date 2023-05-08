@@ -58,9 +58,8 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	HashingFn() multitenant.Hashing
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
-	TenantFn() multitenant.Tenant
+	Tenants() multitenant.Tenants
 }
 
 var _ BuilderContext = &Builder{}
@@ -98,8 +97,7 @@ type Builder struct {
 	interCpPool    *client.Pool
 	*runtimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
-	hashingFn                multitenant.Hashing
-	tenantFn                 multitenant.Tenant
+	tenants                  multitenant.Tenants
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -265,9 +263,8 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
-func (b *Builder) WithMultitenancy(tenantFn multitenant.Tenant, hashingFn multitenant.Hashing) *Builder {
-	b.tenantFn = tenantFn
-	b.hashingFn = hashingFn
+func (b *Builder) WithMultitenancy(tenants multitenant.Tenants) *Builder {
+	b.tenants = tenants
 	return b
 }
 
@@ -343,14 +340,11 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.interCpPool == nil {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
-	if b.hashingFn == nil {
-		return nil, errors.Errorf("HashingFn has not been configured")
-	}
 	if b.pgxConfigCustomizationFn == nil {
 		return nil, errors.Errorf("PgxConfigCustomizationFn has not been configured")
 	}
-	if b.tenantFn == nil {
-		return nil, errors.Errorf("TenantFn has not been configured")
+	if b.tenants == nil {
+		return nil, errors.Errorf("Tenants has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -383,8 +377,7 @@ func (b *Builder) Build() (Runtime, error) {
 			meshCache:                b.meshCache,
 			interCpPool:              b.interCpPool,
 			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
-			hashingFn:                b.hashingFn,
-			tenantFn:                 b.tenantFn,
+			tenants:                  b.tenants,
 		},
 		Manager: b.cm,
 	}, nil
@@ -506,14 +499,10 @@ func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
 }
 
-func (b *Builder) HashingFn() multitenant.Hashing {
-	return b.hashingFn
-}
-
 func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 	return b.pgxConfigCustomizationFn
 }
 
-func (b *Builder) TenantFn() multitenant.Tenant {
-	return b.tenantFn
+func (b *Builder) Tenants() multitenant.Tenants {
+	return b.tenants
 }

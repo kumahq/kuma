@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var writerLog = core.Log.WithName("intercp").WithName("catalog").WithName("writer")
@@ -34,6 +35,7 @@ func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, inter
 func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting catalog writer")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	writerLog.Info("replacing a leader in the catalog")
 	if err := r.catalog.ReplaceLeader(ctx, r.instance); err != nil {
 		writerLog.Error(err, "could not replace leader") // continue, it will be replaced in ticker anyways
