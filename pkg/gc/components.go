@@ -65,7 +65,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
-	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.TenantFn(), newTicker, resourceTypes...)
+	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, resourceTypes...)
 	if err != nil {
 		return err
 	}

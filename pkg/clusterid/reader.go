@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("clusterID")
@@ -25,6 +26,7 @@ type clusterIDReader struct {
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {

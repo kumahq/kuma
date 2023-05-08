@@ -80,9 +80,8 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
-	HashingFn() multitenant.Hashing
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
-	TenantFn() multitenant.Tenant
+	Tenants() multitenant.Tenants
 }
 
 type Access struct {
@@ -168,9 +167,8 @@ type runtimeContext struct {
 	tokenIssuers             builtin.TokenIssuers
 	meshCache                *mesh.Cache
 	interCpPool              *client.Pool
-	hashingFn                multitenant.Hashing
 	pgxConfigCustomizationFn config.PgxConfigCustomization
-	tenantFn                 multitenant.Tenant
+	tenants                  multitenant.Tenants
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -285,14 +283,10 @@ func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
 }
 
-func (rc *runtimeContext) HashingFn() multitenant.Hashing {
-	return rc.hashingFn
-}
-
 func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 	return rc.pgxConfigCustomizationFn
 }
 
-func (rc *runtimeContext) TenantFn() multitenant.Tenant {
-	return rc.tenantFn
+func (rc *runtimeContext) Tenants() multitenant.Tenants {
+	return rc.tenants
 }

@@ -72,7 +72,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	builder.WithMultitenancy(multitenant.SingleTenant, multitenant.NoopHashingFn)
+	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
@@ -458,7 +458,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			customizableManager,
 			builder.Config().Store.Cache.ExpirationTime.Duration,
 			builder.Metrics(),
-			builder.HashingFn().ResourceHashKey,
+			builder.Tenants(),
 		)
 		if err != nil {
 			return err

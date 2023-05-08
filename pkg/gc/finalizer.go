@@ -46,10 +46,10 @@ type subscriptionFinalizer struct {
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
 	insights  insightsByType
-	tenantFn  multitenant.Tenant
+	tenants   multitenant.Tenants
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenantFn multitenant.Tenant, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
@@ -63,7 +63,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenantFn multitenant.T
 		types:     types,
 		newTicker: newTicker,
 		insights:  insights,
-		tenantFn:  tenantFn,
+		tenants:   tenants,
 	}, nil
 }
 
@@ -76,7 +76,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				tenantIds, err := f.tenantFn.GetTenantIds(context.TODO())
+				tenantIds, err := f.tenants.GetIDs(context.TODO())
 				if err != nil {
 					finalizerLog.Error(err, "could not get contexts")
 					break
