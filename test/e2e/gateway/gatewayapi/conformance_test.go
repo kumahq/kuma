@@ -98,9 +98,8 @@ func TestConformance(t *testing.T) {
 
 	var passingTests []suite.ConformanceTest
 	for _, test := range tests.ConformanceTests {
+		// This is an easy way to enable/disable single tests when upgrading/debugging
 		switch test.ShortName {
-		case tests.TLSRouteSimpleSameNamespace.ShortName: // we don't support TLSRoute and the required feature is missing in v0.6.2: kubernetes-sigs/gateway-api#1712
-			continue
 		}
 		passingTests = append(passingTests, test)
 	}
