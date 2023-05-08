@@ -22,10 +22,13 @@ type ServiceAndPorts struct {
 	Ports []int32
 }
 
-func serviceAndPorts(svc *kube_core.Service) ServiceAndPorts {
+func serviceAndPorts(svc *kube_core.Service, port *gatewayapi.PortNumber) ServiceAndPorts {
 	var ports []int32
 	for _, port := range svc.Spec.Ports {
 		ports = append(ports, port.Port)
+	}
+	if port != nil {
+		ports = []int32{int32(*port)}
 	}
 	return ServiceAndPorts{
 		Name:  kube_client.ObjectKeyFromObject(svc),
