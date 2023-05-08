@@ -108,7 +108,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: {{.Values.controlPlane.tls.general.caSecretName | default (printf "%s-tls-cert" (include "kuma.name" .)) | quote }}
+            secretName: {{ include "kuma.controlPlane.tls.general.caSecretName" . }}
             items:
               - key: ca.crt
                 path: ca.crt
