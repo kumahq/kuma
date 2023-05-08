@@ -28,8 +28,8 @@ type HeaderMatch struct {
 	// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
 	Type *HeaderMatchType `json:"type,omitempty"`
 
-	// Name is the name of the HTTP Header to be matched. Name MUST be lower case
-	// as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
+	// Name is the name of the HTTP Header to be matched. Name will be matched
+	// in a case-insensitive way (See https://tools.ietf.org/html/rfc7230#section-3.2).
 	Name HeaderName `json:"name"`
 
 	// Value is the value of HTTP Header to be matched.
