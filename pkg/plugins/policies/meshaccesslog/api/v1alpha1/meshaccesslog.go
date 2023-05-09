@@ -40,7 +40,17 @@ type Conf struct {
 	Backends *[]Backend `json:"backends,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Tcp;File;OpenTelemetry
+type BackendType string
+
+const (
+	TCPBackendType           BackendType = "Tcp"
+	FileBackendType          BackendType = "File"
+	OtelTelemetryBackendType BackendType = "OpenTelemetry"
+)
+
 type Backend struct {
+	Type          BackendType  `json:"type"`
 	Tcp           *TCPBackend  `json:"tcp,omitempty"`
 	File          *FileBackend `json:"file,omitempty"`
 	OpenTelemetry *OtelBackend `json:"openTelemetry,omitempty"`
@@ -75,7 +85,16 @@ type FileBackend struct {
 	Path string `json:"path"`
 }
 
+// +kubebuilder:validation:Enum=Plain;Json
+type FormatType string
+
+const (
+	PlainFormatType FormatType = "Plain"
+	JsonFormatType  FormatType = "Json"
+)
+
 type Format struct {
+	Type            FormatType   `json:"type"`
 	Plain           *string      `json:"plain,omitempty"`
 	Json            *[]JsonValue `json:"json,omitempty"`
 	OmitEmptyValues *bool        `json:"omitEmptyValues,omitempty"`

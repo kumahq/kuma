@@ -36,6 +36,7 @@
    "conf": {
     "backends": [
      {
+      "type": "File",
       "file": {
        "path": "/tmp/access.logs"
       }

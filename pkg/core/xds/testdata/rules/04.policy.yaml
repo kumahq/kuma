@@ -9,9 +9,11 @@ spec:
         kind: Mesh
       default:
         backends:
-          - file:
+          - type: File
+            file:
               path: "/tmp/log/1"
-          - file:
+          - type: File
+            file:
               path: "/tmp/log/2"
     - targetRef:
         kind: Mesh
