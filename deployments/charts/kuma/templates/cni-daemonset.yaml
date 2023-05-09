@@ -3,7 +3,7 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: {{ include "kuma.name" . }}-cni-node
-  namespace: kube-system
+  namespace: {{ .Values.cni.namespace }}
   annotations:
     ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
   labels: {{- include "kuma.cniLabels" . | nindent 4 }}

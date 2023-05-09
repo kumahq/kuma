@@ -92,8 +92,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 
-	if rt.Config().Runtime.Kubernetes.NodeTaintController.Enabled {
-		if err := addCniNodeTaintReconciler(mgr, rt.Config().Runtime.Kubernetes.NodeTaintController.CniApp); err != nil {
+	nodeTaintController := rt.Config().Runtime.Kubernetes.NodeTaintController
+	if nodeTaintController.Enabled {
+		if err := addCniNodeTaintReconciler(mgr, nodeTaintController.CniApp, nodeTaintController.CniNamespace); err != nil {
 			return err
 		}
 	}
@@ -101,11 +102,12 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	return nil
 }
 
-func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string) error {
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string, cniNamespace string) error {
 	reconciler := &k8s_controllers.CniNodeTaintReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("NodeTaint"),
-		CniApp: cniApp,
+		Client:       mgr.GetClient(),
+		Log:          core.Log.WithName("controllers").WithName("NodeTaint"),
+		CniApp:       cniApp,
+		CniNamespace: cniNamespace,
 	}
 
 	return reconciler.SetupWithManager(mgr)
