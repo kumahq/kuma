@@ -127,21 +127,6 @@ violations:
   - field: spec.default.backends
     message: must be defined`,
 			}),
-			Entry("no valid backends", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - type: Unknown
-      unknown: {}
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0]
-    message: 'unknown backend type Unknown'`,
-			}),
 			Entry("multiple backends", testCase{
 				inputYaml: `
 targetRef:

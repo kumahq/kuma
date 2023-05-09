@@ -152,7 +152,7 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 			break
 		}
 	default:
-		verr.AddViolationAt(firstBackendPath, fmt.Sprintf("unknown backend type %v", backend.Type))
+		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr
