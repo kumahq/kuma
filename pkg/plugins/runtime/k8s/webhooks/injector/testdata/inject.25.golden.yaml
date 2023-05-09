@@ -117,12 +117,15 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
   - image: busybox
     name: busybox
     resources: {}
@@ -182,4 +185,6 @@ spec:
   - name: default-token-w7dxf
     secret:
       secretName: default-token-w7dxf
+  - emptyDir: {}
+    name: kuma-sidecar-tmp
 status: {}

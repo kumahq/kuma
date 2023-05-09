@@ -109,9 +109,12 @@ spec:
         memory: 164Mi
     securityContext:
       privileged: false
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount/
       name: '{{ template "kong.serviceAccountTokenName" . }}'
       readOnly: true
@@ -155,4 +158,7 @@ spec:
         - NET_ADMIN
         - NET_RAW
       runAsGroup: 0
+  volumes:
+  - emptyDir: {}
+    name: kuma-sidecar-tmp
 status: {}

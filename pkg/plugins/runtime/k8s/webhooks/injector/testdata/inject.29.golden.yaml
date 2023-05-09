@@ -113,8 +113,12 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
   - image: busybox
     name: busybox
     resources: {}
@@ -159,4 +163,7 @@ spec:
         - NET_RAW
       runAsGroup: 0
       runAsUser: 0
+  volumes:
+  - emptyDir: {}
+    name: kuma-sidecar-tmp
 status: {}

@@ -105,12 +105,15 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: token
       readOnly: true
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
   - image: busybox
     name: busybox
     resources: {}
@@ -160,4 +163,6 @@ spec:
           audience: https://kubernetes.default.svc.cluster.local
           expirationSeconds: 7200
           path: token
+  - emptyDir: {}
+    name: kuma-sidecar-tmp
 status: {}
