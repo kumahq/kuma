@@ -13,13 +13,17 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -394,6 +398,70 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			expectedCluster: []string{
 				"outbound_split_cluster_connection_limits_outlier_detection.golden.yaml",
 				"outbound_split_cluster_0_connection_limits_outlier_detection.golden.yaml",
+			},
+		}),
+	)
+
+	type gatewayTestCase struct {
+		name    string
+		toRules core_xds.ToRules
+	}
+	DescribeTable("should generate proper Envoy config for MeshGateways",
+		func(given gatewayTestCase) {
+			Expect(given.name).ToNot(BeEmpty())
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			}
+
+			context := test_xds.CreateSampleMeshContextWith(resources)
+			proxy := xds.Proxy{
+				APIVersion: "v3",
+				Dataplane:  samples.GatewayDataplane(),
+				Policies: xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+						api.MeshCircuitBreakerType: {
+							Type:    api.MeshCircuitBreakerType,
+							ToRules: given.toRules,
+						},
+					},
+				},
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+
+			getResourceYaml := func(list core_xds.ResourceList) []byte {
+				actualResource, err := util_proto.ToYAML(list[0].Resource)
+				Expect(err).ToNot(HaveOccurred())
+				return actualResource
+			}
+
+			// then
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+		},
+		Entry("basic outbound cluster with connection limits", gatewayTestCase{
+			name: "basic",
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{core_xds.Tag{
+							Key:   mesh_proto.ServiceTag,
+							Value: "backend",
+						}},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+						},
+					},
+				},
 			},
 		}),
 	)
