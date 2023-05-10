@@ -280,8 +280,8 @@ Changes that are to be backported should only be critical bug fixes of one of th
 - Security
 - CI/CD (anything related to the release process)
 
-If you think your PR applies and should be backported please add a comment: `@mergifyio backport <release-1.x> <release-1.y>...`.
-Once the PR is approved and merged mergifyio will open a new PR with the backport for each of the branches. If you backport a change it's your responsibility to make sure the backport succeeds.
+If you think your PR applies and should be backported please add the label: `backport`.
+Once the PR is approved and merged the action `backport.yaml` will open a new PR with the backport for each of the maintained branches. If you backport a change it's your responsibility to make sure the backports goes through.
 
 #### Reviewing
 
