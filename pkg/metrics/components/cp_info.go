@@ -53,7 +53,7 @@ func Setup(rt runtime.Runtime) error {
 	// We don't want to use cached ResourceManager because the cache is just for a couple of seconds
 	// and we will be retrieving resources every minute. There is no other place in the system for now that needs all resources from all meshes
 	// therefore it makes no sense to cache all content of the Database in the cache.
-	counter, err := metrics.NewStoreCounter(rt.ResourceManager(), rt.Metrics())
+	counter, err := metrics.NewStoreCounter(rt.ResourceManager(), rt.Metrics(), rt.Tenants())
 	if err != nil {
 		return err
 	}

@@ -54,7 +54,7 @@ var _ = Describe("Counter", func() {
 		resManager = manager.NewResourceManager(store)
 
 		counterTicker := time.NewTicker(500 * time.Millisecond)
-		counter, err := metrics_store.NewStoreCounter(resManager, metrics)
+		counter, err := metrics_store.NewStoreCounter(resManager, metrics, multitenant.SingleTenant)
 		Expect(err).ToNot(HaveOccurred())
 
 		resyncer := insights.NewResyncer(&insights.Config{
