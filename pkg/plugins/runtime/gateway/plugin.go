@@ -57,6 +57,22 @@ func (p *plugin) Order() int {
 	return core_plugins.EnvironmentPreparingOrder - 1
 }
 
+func NewGenerator(zone string) Generator {
+	return Generator{
+		FilterChainGenerators: FilterChainGenerators{
+			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
+				mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
+				mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
+				mesh_proto.MeshGateway_Listener_TCP:   &TCPFilterChainGenerator{},
+			},
+		},
+		ClusterGenerator: ClusterGenerator{
+			Zone: zone,
+		},
+		Zone: zone,
+	}
+}
+
 // NewProxyProfile returns a new resource generator profile for builtin
 // gateway dataplanes.
 func NewProxyProfile(zone string) generator_core.ResourceGenerator {
@@ -66,19 +82,7 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 		generator.TracingProxyGenerator{},
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},
-		Generator{
-			FilterChainGenerators: FilterChainGenerators{
-				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
-					mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
-					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
-					mesh_proto.MeshGateway_Listener_TCP:   &TCPFilterChainGenerator{},
-				},
-			},
-			ClusterGenerator: ClusterGenerator{
-				Zone: zone,
-			},
-			Zone: zone,
-		},
+		NewGenerator(zone),
 		generator_secrets.Generator{},
 	}
 }
