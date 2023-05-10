@@ -14,6 +14,8 @@ type TestEventReaderFactory struct {
 	Reader *TestEventReader
 }
 
-func (t *TestEventReaderFactory) New() events.Listener {
+func (t *TestEventReaderFactory) New(_ string) events.Listener {
 	return t.Reader
 }
+
+func (t *TestEventReaderFactory) Unsubscribe(_ string) {}
