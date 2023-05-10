@@ -1,0 +1,10 @@
+name: backport
+on:
+  pull_request_target:
+    types: [labeled, closed]
+jobs:
+  maybe-backport:
+    uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
+    secrets:
+      appId: ${{ secrets.APP_ID }}
+      appPrivateKey: ${{ secrets.APP_PRIVATE_KEY }}
