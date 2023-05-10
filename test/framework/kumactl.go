@@ -13,7 +13,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
@@ -132,17 +131,6 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
 	cmd := []string{
 		"install", "control-plane",
-	}
-
-	cmd = append(cmd, "--mode", mode)
-	switch mode {
-	case core.Zone:
-		cmd = append(cmd, "--zone", k.CPName)
-		fallthrough
-	case core.Global:
-		if !Config.UseLoadBalancer {
-			cmd = append(cmd, "--use-node-port")
-		}
 	}
 
 	cmd = append(cmd, args...)
