@@ -33,5 +33,6 @@ type Emitter interface {
 }
 
 type ListenerFactory interface {
-	New() Listener
+	New(id string) Listener
+	Unsubscribe(id string)
 }

@@ -12,11 +12,11 @@ import (
 type pqListener struct {
 	listener      *pq.Listener
 	notifications chan *Notification
-	err           error
+	err           chan error
 	mu            sync.Mutex
 }
 
-func (p *pqListener) Error() error {
+func (p *pqListener) Error() chan error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.err
@@ -32,22 +32,24 @@ func (p *pqListener) Close() error {
 	return p.listener.Close()
 }
 
-func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (Listener, error) {
+func NewListener(cfg config.PostgresStoreConfig, log logr.Logger, stop <-chan struct{}) (Listener, error) {
 	connStr, err := cfg.ConnectionString()
 	if err != nil {
 		return nil, err
 	}
 
 	notificationCh := make(chan *Notification)
+	errCh := make(chan error)
 	l := &pqListener{
 		notifications: notificationCh,
+		err:           errCh,
 	}
 
 	reportProblem := func(ev pq.ListenerEventType, err error) {
 		if err != nil {
 			l.mu.Lock()
 			defer l.mu.Unlock()
-			l.err = err
+			l.err <- err
 			// notifications channel is already closed via Close()
 			return
 		}
@@ -63,12 +65,17 @@ func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (Listener, err
 
 	go func() {
 		for {
-			pqNotification, more := <-pqNotificationCh
-			if more {
-				notification := toNotification(pqNotification)
-				notificationCh <- notification
-			} else {
-				break
+			select {
+			case pqNotification, more := <-pqNotificationCh:
+				if more {
+					notification := toNotification(pqNotification)
+					notificationCh <- notification
+				} else {
+					break
+				}
+			case <-stop:
+				log.Info("stop")
+				return
 			}
 		}
 	}()

@@ -140,7 +140,11 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		}
 	}(stop)
 
-	eventReader := r.eventFactory.New()
+	id := core.NewUUID()
+	defer func() {
+		r.eventFactory.Unsubscribe(id)
+	}()
+	eventReader := r.eventFactory.New(id)
 	for {
 		select {
 		case <-stop:
