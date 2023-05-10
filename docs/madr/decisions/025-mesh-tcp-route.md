@@ -11,11 +11,24 @@ Now that we have the [new policy matching resources](./005-policy-matching.md),
 [basic api of `MeshHTTPRoute`](https://github.com/kumahq/kuma/issues/5470)
 implemented, it's time to introduce `MeshTCPRoute`.
 
-`MeshTCPRoute` should allow to
+### Goals
+
+Policy should allow to
 * reroute TCP traffic to different versions of a service or even completely
   different service;
 * split TCP traffic between services with different tags implementing 
-  A/B testing or canary deployments;
+  A/B testing or canary deployments.
+
+### Non-goals
+
+It would be nice for the policy to allow to mirror TCP traffic. Unfortunately
+it seems to be a non-trivial task as according to short research, Envoy doesn't
+support this case out of the box.
+If there will be need for this feature, it should be implemented in the future
+iterations.
+
+Ref:
+- https://github.com/envoyproxy/envoy/issues/18172
 
 ## Considered Options
 
