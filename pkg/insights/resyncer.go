@@ -75,7 +75,7 @@ type resyncer struct {
 
 	registry registry.TypeRegistry
 	now      func() time.Time
-	tenantFn multitenant.Tenant
+	tenantFn multitenant.Tenants
 }
 
 type syncInfo struct {
@@ -91,7 +91,7 @@ type syncInfo struct {
 // during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
 // by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
-func NewResyncer(config *Config, tenantFn multitenant.Tenant) component.Component {
+func NewResyncer(config *Config, tenantFn multitenant.Tenants) component.Component {
 	r := &resyncer{
 		minResyncTimeout:     config.MinResyncTimeout,
 		maxResyncTimeout:     config.MaxResyncTimeout,
@@ -121,7 +121,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		for {
 			select {
 			case now := <-ticker:
-				tenantIds, err := r.tenantFn.GetTenantIds(context.TODO())
+				tenantIds, err := r.tenantFn.GetIDs(context.TODO())
 				if err != nil {
 					log.Error(err, "could not get contexts")
 				}
@@ -146,7 +146,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		case <-stop:
 			return nil
 		case event, ok := <-eventReader.Recv():
-			tenantIds, err := r.tenantFn.GetTenantIds(context.TODO())
+			tenantIds, err := r.tenantFn.GetIDs(context.TODO())
 			if err != nil {
 				log.Error(err, "could not get contexts")
 			}

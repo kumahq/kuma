@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type DefaultsComponent struct {
@@ -22,7 +23,9 @@ type DefaultsComponent struct {
 var _ component.Component = &DefaultsComponent{}
 
 func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
+	ctx, cancelFn := context.WithCancel(ctx)
 	go func() {
 		<-stop
 		cancelFn()

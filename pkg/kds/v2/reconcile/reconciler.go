@@ -21,14 +21,14 @@ import (
 
 var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, hashingFn multitenant.Hashing) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, tenants multitenant.Tenants) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
-		hashingFn:      hashingFn,
+		tenants:        tenants,
 	}
 }
 
@@ -38,26 +38,30 @@ type reconciler struct {
 	generator      SnapshotGenerator
 	mode           config_core.CpMode
 	statsCallbacks xds.StatsCallbacks
-	hashingFn      multitenant.Hashing
+	tenants        multitenant.Tenants
 
 	lock sync.Mutex
 }
 
-func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
-	id := r.hashId(ctx, node)
+func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
+	id, err := r.hashId(ctx, node)
+	if err != nil {
+		return err
+	}
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
 	if err != nil {
-		return
+		return err
 	}
 	r.cache.ClearSnapshot(id)
 	if snapshot == nil {
-		return
+		return nil
 	}
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		r.statsCallbacks.DiscardConfig(snapshot.GetVersion(typ))
 	}
+	return nil
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
@@ -68,7 +72,10 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id := r.hashId(ctx, node)
+	id, err := r.hashId(ctx, node)
+	if err != nil {
+		return err
+	}
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
@@ -145,7 +152,11 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 	}
 }
 
-func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) string {
+func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) (string, error) {
 	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
-	return r.hasher.ID(node) + r.hashingFn.ResourceHashKey(ctx)
+	tenantID, err := r.tenants.GetID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return r.hasher.ID(node) + tenantID, nil
 }

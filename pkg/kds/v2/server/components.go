@@ -39,7 +39,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.HashingFn())
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.Tenants())
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -104,7 +104,9 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				reconciler.Clear(ctx, node)
+				if err := reconciler.Clear(ctx, node); err != nil {
+					log.Error(err, "OnStop() failed")
+				}
 			},
 		}, nil
 	}), nil

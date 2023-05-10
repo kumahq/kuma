@@ -641,7 +641,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: "kuma-tls-cert"
+            secretName: "general-tls-secret"
             items:
               - key: ca.crt
                 path: ca.crt

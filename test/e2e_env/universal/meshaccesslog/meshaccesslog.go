@@ -104,8 +104,10 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Plain
              plain: '%s'
            address: "%s:9999"
 `, trafficLogFormat, tcpSinkDockerName)
@@ -137,8 +139,10 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Json
              json:
              - key: Source
                value: '%%KUMA_SOURCE_SERVICE%%'
@@ -192,8 +196,10 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Plain
              plain: '%s'
            address: "%s:9999"
 `, trafficLogFormat, tcpSinkDockerName)
@@ -238,8 +244,10 @@ spec:
        name: ext-service
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Plain
              plain: '%s'
            address: "%s:9999"
 `, trafficLogFormat, tcpSinkDockerName)
@@ -274,8 +282,10 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Plain
              plain: '%s'
            address: "%s:9999"
 `, trafficLogFormat, tcpSinkDockerName)
@@ -308,8 +318,10 @@ spec:
        kind: Mesh
      default:
        backends:
-       - tcp:
+       - type: Tcp
+         tcp:
            format:
+             type: Plain
              plain: '%s'
            address: "%s:9999"
 `, trafficLogFormat, tcpSinkDockerName)

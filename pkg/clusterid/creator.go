@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type clusterIDCreator struct {
@@ -27,6 +28,7 @@ func (c *clusterIDCreator) NeedLeaderElection() bool {
 
 func (c *clusterIDCreator) create() error {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	resource := config_model.NewConfigResource()
 	err := c.configManager.Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {

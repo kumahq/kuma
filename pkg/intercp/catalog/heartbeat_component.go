@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("heartbeat")
@@ -49,6 +50,7 @@ func NewHeartbeatComponent(
 func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting heartbeats to a leader")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	ticker := time.NewTicker(h.interval)
 
 	for {

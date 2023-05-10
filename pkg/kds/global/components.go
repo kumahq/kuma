@@ -143,6 +143,7 @@ func Setup(rt runtime.Runtime) error {
 	return rt.Add(mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
+		rt.KDSContext().ServerStreamInterceptors,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),

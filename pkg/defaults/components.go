@@ -25,6 +25,10 @@ import (
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
+	if runtime.Config().Defaults.SkipTenantResources {
+		log.V(1).Info("skipping default tenant resources because KUMA_DEFAULTS_SKIP_TENANT_RESOURCES is set to true")
+		return nil
+	}
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
 		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 

@@ -111,12 +111,15 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: coredns-token-9gmrh
       readOnly: true
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
   - args:
     - -conf
     - /etc/coredns/Corefile
@@ -250,4 +253,6 @@ spec:
   - name: coredns-token-9gmrh
     secret:
       secretName: coredns-token-9gmrh
+  - emptyDir: {}
+    name: kuma-sidecar-tmp
 status: {}

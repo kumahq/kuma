@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -162,7 +163,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 
 func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header {
 	return &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header{
-		Name:  string(header.Name),
+		// note that our resources disallow uppercase letters in header names
+		Name:  strings.ToLower(string(header.Name)),
 		Value: header.Value,
 	}
 }
@@ -291,7 +293,8 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 
 	for _, header := range match.Headers {
 		kumaHeader := &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header{
-			Name:  string(header.Name),
+			// note that our resources disallow uppercase letters in header names
+			Name:  strings.ToLower(string(header.Name)),
 			Value: header.Value,
 		}
 
