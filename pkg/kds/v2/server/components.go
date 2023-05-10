@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/v2/util"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -45,6 +46,7 @@ func New(
 		return nil, err
 	}
 	callbacks := util_xds_v3.CallbacksChain{
+		NewTenancyCallbacks(rt.Tenants()),
 		&typeAdjustCallbacks{},
 		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
@@ -121,8 +123,9 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotC
 type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
-	// TODO: https://github.com/kumahq/kuma/issues/6632 check if it needs to be the same hasher as passed to reconcile
-	// if it's not pkg/kds/global/components_test.go:271 test fails
-	// not sure if it's a problem with the test or the implementation
-	return node.Id
+	tenantID, found := util.TenantFromMetadata(node)
+	if !found {
+		return node.Id
+	}
+	return node.Id + ":" + tenantID
 }

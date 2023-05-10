@@ -158,5 +158,6 @@ func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) (string,
 	if err != nil {
 		return "", err
 	}
-	return r.hasher.ID(node) + tenantID, nil
+	util_kds_v2.FillTenantMetadata(tenantID, node)
+	return r.hasher.ID(node), nil
 }

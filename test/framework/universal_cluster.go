@@ -150,7 +150,11 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if mode == core.Zone {
-		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
+		zoneName := c.opts.zoneName
+		if zoneName == "" {
+			zoneName = c.name
+		}
+		env["KUMA_MULTIZONE_ZONE_NAME"] = zoneName
 	}
 
 	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
