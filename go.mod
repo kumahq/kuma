@@ -79,7 +79,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/controller-tools v0.11.4
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
-	sigs.k8s.io/gateway-api v0.7.0-rc1
+	sigs.k8s.io/gateway-api v0.7.0-rc2
 	sigs.k8s.io/yaml v1.3.0
 )
 
