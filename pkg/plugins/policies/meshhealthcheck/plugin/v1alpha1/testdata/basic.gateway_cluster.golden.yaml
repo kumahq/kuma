@@ -1,8 +1,43 @@
+commonLbConfig:
+  healthyPanicThreshold:
+    value: 62.9
+  zoneAwareLbConfig:
+    failTrafficOnPanic: true
 connectTimeout: 10s
 edsClusterConfig:
   edsConfig:
     ads: {}
     resourceApiVersion: V3
+healthChecks:
+- eventLogPath: /tmp/log.txt
+  healthyThreshold: 1
+  httpHealthCheck:
+    expectedStatuses:
+    - end: "201"
+      start: "200"
+    - end: "202"
+      start: "201"
+    path: /health
+    requestHeadersToAdd:
+    - header:
+        key: x-kuma-tags
+        value: '&kuma.io/service=sample-gateway&'
+    - append: true
+      header:
+        key: x-some-header
+        value: value
+    - append: false
+      header:
+        key: x-some-other-header
+        value: value
+  initialJitter: 13s
+  interval: 10s
+  intervalJitter: 15s
+  intervalJitterPercent: 10
+  noTrafficInterval: 16s
+  reuseConnection: true
+  timeout: 2s
+  unhealthyThreshold: 3
 name: backend-26cb64fa4e85e7b7
 perConnectionBufferLimitBytes: 32768
 type: EDS
