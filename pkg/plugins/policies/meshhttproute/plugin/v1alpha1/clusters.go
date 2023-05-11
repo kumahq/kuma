@@ -52,16 +52,21 @@ func generateClusters(
 				}
 
 				switch protocol {
-				case core_mesh.ProtocolHTTP:
-					edsClusterBuilder.Configure(envoy_clusters.Http())
 				case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 					edsClusterBuilder.Configure(envoy_clusters.Http2())
 				default:
+					edsClusterBuilder.Configure(envoy_clusters.Http())
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(clusterName)).
-					Configure(envoy_clusters.Http2())
+					Configure(envoy_clusters.EdsCluster(clusterName))
+
+				switch protocol {
+				case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+					edsClusterBuilder.Configure(envoy_clusters.Http2())
+				default:
+					edsClusterBuilder.Configure(envoy_clusters.Http())
+				}
 
 				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
 					for _, otherMesh := range append(meshCtx.Resources.OtherMeshes().Items, meshCtx.Resource) {
