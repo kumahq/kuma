@@ -22,14 +22,23 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
+	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Multizone Suite")
 }
 
-var _ = SynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
+var (
+	_ = SynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
+	_ = ReportAfterSuite("cleanup", func(report Report) {
+		if Config.CleanupLogsOnSuccess {
+			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
+		}
+	})
+)
 
 var (
 	_ = Describe("Gateway", gateway.GatewayHybrid, Ordered)
