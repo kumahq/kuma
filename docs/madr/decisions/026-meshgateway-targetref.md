@@ -30,10 +30,11 @@ to set policy for incoming traffic is not supported in any policy.
 Part of the reason for this is that the paradigm that `spec.targetRef` tells us
 which sidecars have their config modified by a given policy would no longer apply.
 
-Nevertheless it may be interesting to consider exactly which policies, if any,
-_would_ this make sense for? `MeshTimeout`, for example.
-One could imagine a new kind that applies to non-mesh
-traffic `spec.targetRef.kind: External`.
+### Policies targetting incoming traffic
+
+We should consider which policies make sense with `spec.targetRef.kind: MeshGateway`
+for targetting _incoming traffic_, i.e. not using `spec.to` but rather `spec.from`.
+For this kind of policy we can imagine a new `spec.from.targetRef.kind: External`.
 
 ## Decision Drivers
 
