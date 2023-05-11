@@ -26,7 +26,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
 			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "")
+			res, err := mapper(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -39,7 +39,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo.namespace", Mesh: "default"})
 
 			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "")
+			res, err := mapper(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -52,7 +52,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
 			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "my-ns")
+			res, err := mapper(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -66,7 +66,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "")
+			res, err := mapper(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -80,7 +80,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "my-ns")
+			res, err := mapper(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -98,7 +98,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
 			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "my-ns")
+			res, err := mapper(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))
@@ -110,7 +110,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
 			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper.Map(in, "my-ns")
+			res, err := mapper(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.GetMesh()).To(Equal("default"))

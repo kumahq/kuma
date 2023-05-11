@@ -8,18 +8,11 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
-type ResourceMapper interface {
-	Map(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error)
-}
 type ResourceMapperFunc func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error)
 
-func (f ResourceMapperFunc) Map(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
-	return f(resource, namespace)
-}
-
 // NewKubernetesMapper creates a ResourceMapper that returns the k8s object as is. This is meant to be used when the underlying store is kubernetes
-func NewKubernetesMapper(kubeFactory KubeFactory) ResourceMapper {
-	return ResourceMapperFunc(func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
+func NewKubernetesMapper(kubeFactory KubeFactory) ResourceMapperFunc {
+	return func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
 		res, err := (&SimpleConverter{KubeFactory: kubeFactory}).ToKubernetesObject(resource)
 		if err != nil {
 			return nil, err
@@ -28,13 +21,13 @@ func NewKubernetesMapper(kubeFactory KubeFactory) ResourceMapper {
 			res.SetNamespace(namespace)
 		}
 		return res, err
-	})
+	}
 }
 
 // NewInferenceMapper creates a ResourceMapper that infers a k8s resource from the core_model. Extract namespace from the name if necessary.
 // This mostly useful when the underlying store is not kubernetes but you want to show what a kubernetes version of the policy would be like (in global for example).
-func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) ResourceMapper {
-	return ResourceMapperFunc(func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
+func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) ResourceMapperFunc {
+	return func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
 		rs, err := kubeFactory.NewObject(resource)
 		if err != nil {
 			return nil, err
@@ -59,5 +52,5 @@ func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) Resourc
 		rs.SetCreationTimestamp(v1.NewTime(resource.GetMeta().GetCreationTime()))
 		rs.SetSpec(resource.GetSpec())
 		return rs, nil
-	})
+	}
 }

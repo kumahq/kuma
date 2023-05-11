@@ -40,7 +40,7 @@ type resourceEndpoints struct {
 	resManager     manager.ResourceManager
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
-	k8sMapper      k8s.ResourceMapper
+	k8sMapper      k8s.ResourceMapperFunc
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -73,7 +73,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 		var res interface{}
 		switch request.QueryParameter("format") {
 		case "k8s", "kubernetes":
-			res, err = r.k8sMapper.Map(resource, request.QueryParameter("namespace"))
+			res, err = r.k8sMapper(resource, request.QueryParameter("namespace"))
 			if err != nil {
 				rest_errors.HandleError(response, err, "k8s mapping failed")
 				return

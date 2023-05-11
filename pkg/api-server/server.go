@@ -232,7 +232,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
 
-	var k8sMapper k8s.ResourceMapper
+	var k8sMapper k8s.ResourceMapperFunc
 	switch cfg.Store.Type {
 	case config_store.KubernetesStore:
 		k8sMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
