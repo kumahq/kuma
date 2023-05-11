@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Api() {
 	It("Works with /policies", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
+		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -22,7 +22,7 @@ func Api() {
 	})
 
 	It("Works with /", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress())
+		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress())
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -32,7 +32,7 @@ func Api() {
 	})
 
 	It("Get k8s version of default mesh", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default?format=k8s")
+		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default?format=k8s")
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -44,8 +44,8 @@ func Api() {
 		Expect(res["apiVersion"]).To(Equal("kuma.io/v1alpha1"))
 	})
 
-	It("Get universal version of default mesh", func() {
-		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default")
+	It("Get kubernetes version of default mesh", func() {
+		r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default")
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 

@@ -26,6 +26,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
@@ -37,6 +38,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -230,12 +232,20 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
 
+	var k8sMapper k8s.ResourceMapperFunc
+	switch cfg.Store.Type {
+	case config_store.KubernetesStore:
+		k8sMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
+	default:
+		k8sMapper = k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace, k8s.NewSimpleKubeFactory())
+	}
 	for _, definition := range defs {
 		defType := definition.Name
 		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
+			k8sMapper:      k8sMapper,
 			mode:           cfg.Mode,
 			resManager:     resManager,
 			descriptor:     definition,
