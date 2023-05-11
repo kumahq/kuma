@@ -39,7 +39,7 @@ Policy should allow to
   `MeshTCPRoute`).
 
   In case of `MeshTCPRoute` it doesn't make sense to introduce two types of
-  this policy as the only difference would be te root `targetRef` which in
+  this policy as the only difference would be the root `targetRef` which in
   gateway's case would point to `MeshGateway`. This MADR addresses only
   `MeshTCPRoute` and the first implementation should accept non-MeshGateway 
   root targetRefs only. If there will be consensus to unify `Mesh(.*)Route`
