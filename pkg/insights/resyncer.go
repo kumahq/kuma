@@ -140,10 +140,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		}
 	}(stop)
 
-	eventReader := r.eventFactory.New()
-	defer func() {
-		eventReader.Close()
-	}()
+	eventReader := r.eventFactory.Subscribe()
+	defer eventReader.Close()
 	for {
 		select {
 		case <-stop:

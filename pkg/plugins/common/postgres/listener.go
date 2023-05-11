@@ -2,7 +2,7 @@ package postgres
 
 type Listener interface {
 	Notify() chan *Notification
-	Error() chan error
+	Error() <-chan error
 	Close() error
 }
 

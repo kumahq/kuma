@@ -18,6 +18,6 @@ type TestEventReaderFactory struct {
 	Reader *TestEventReader
 }
 
-func (t *TestEventReaderFactory) New() events.Listener {
+func (t *TestEventReaderFactory) Subscribe() events.Listener {
 	return t.Reader
 }

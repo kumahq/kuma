@@ -25,9 +25,7 @@ type PgxListener struct {
 	stopFn func()
 }
 
-func (l *PgxListener) Error() chan error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (l *PgxListener) Error() <-chan error {
 	return l.err
 }
 

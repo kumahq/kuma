@@ -34,5 +34,5 @@ type Emitter interface {
 }
 
 type ListenerFactory interface {
-	New() Listener
+	Subscribe() Listener
 }

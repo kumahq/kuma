@@ -23,7 +23,7 @@ type EventBus struct {
 	subscribers map[string]chan Event
 }
 
-func (b *EventBus) New() Listener {
+func (b *EventBus) Subscribe() Listener {
 	id := core.NewUUID()
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
