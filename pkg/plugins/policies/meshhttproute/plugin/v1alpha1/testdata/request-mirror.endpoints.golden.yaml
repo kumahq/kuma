@@ -35,11 +35,9 @@ resources:
           filterMetadata:
             envoy.lb:
               env: dev
-              kuma.io/protocol: http
               region: us
               version: v1
             envoy.transport_socket_match:
               env: dev
-              kuma.io/protocol: http
               region: us
               version: v1

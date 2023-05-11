@@ -556,7 +556,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				"payments": []core_xds.Endpoint{{
 					Target: "192.168.0.6",
 					Port:   8086,
-					Tags:   map[string]string{"kuma.io/service": "payments", "kuma.io/protocol": "http", "region": "us", "version": "v1", "env": "dev"},
+					Tags:   map[string]string{"kuma.io/service": "payments", "region": "us", "version": "v1", "env": "dev"},
 					Weight: 1,
 				}},
 			}
