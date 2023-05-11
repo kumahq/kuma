@@ -224,9 +224,9 @@ jobs:
         type: integer
         default: 1
       target:
-        description: makefile target
+        description: makefile target without test/e2e prefix
         type: string
-        default: "e2e"
+        default: ""
       arch:
         description: The golang arch
         type: string
@@ -278,10 +278,10 @@ jobs:
             }
 
             # Handle invalid test combinations
-            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "e2e-universal" ]]; then
+            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "universal" ]]; then
               skip "kind should only be used when testing ipv6 or with e2e-universal"
             fi
-            if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "e2e-universal" ]]; then
+            if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "universal" ]]; then
               skip "universal only runs on kind"
             fi
             echo "Continuing tests"
@@ -336,11 +336,16 @@ jobs:
               export KUMA_DELTA_KDS=true
             fi
 
-            if [[ "<< parameters.target >>" == "e2e" ]]; then
+            if [[ "<< parameters.target >>" == "" ]]; then
               export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
             fi
             env
-            make ${MAKE_PARAMETERS} CI=true test/<< parameters.target >>
+            if [[ "<< parameters.target >>" != "" ]]; then
+              target="test/e2e-<< parameters.target >>"
+            else
+              target="test/e2e"
+            fi
+            make ${MAKE_PARAMETERS} CI=true "${target}"
       - store_test_results:
           path: build/reports
       - store_artifacts:
@@ -464,14 +469,14 @@ workflows:
               arch: [amd64, arm64]
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
-          name: e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+          name: legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
-            alias: e2e-legacy
+            alias: legacy
             parameters:
               k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
               arch: [amd64, arm64]
           parallelism: 3
-          target: e2e
+          target: ""
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
@@ -479,26 +484,26 @@ workflows:
             alias: e2e
             parameters:
               k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
-              target: [e2e-kubernetes, e2e-universal, e2e-multizone]
+              target: [kubernetes, universal, multizone]
               arch: [amd64, arm64]
           requires: [build, go_cache-vm-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-delta-kds
           matrix:
-            alias: e2e-delta-kds
+            alias: delta-kds
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [e2e-multizone]
+              target: [multizone]
               arch: [amd64]
               deltaKDS: [true]
           requires: [build, go_cache-vm-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
-            alias: e2e-calico
+            alias: calico
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [e2e-multizone]
+              target: [multizone]
               arch: [amd64]
               cniNetworkPlugin: [calico]
           requires: [build, go_cache-vm-amd64]
@@ -506,4 +511,4 @@ workflows:
           name: container-structure
           requires: [build]
       - distributions:
-          requires: [test, e2e, e2e-legacy, container-structure]
+          requires: [test, e2e, legacy, container-structure]
