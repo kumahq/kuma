@@ -54,6 +54,24 @@ Policy should allow to
 
 Chosen option: Create a `MeshTCPRoute` policy
 
+### `spec.to[].rules`
+
+At this point there is no plan to introduce address matching capabilities for
+`MeshTCPRoute` in foreseeable future. We try to be as close with structures of
+our policies to the Gateway API as possible. It means, that even if Gateway API
+currently doesn't have plans to support this kind of matching as well (ref.
+[Kubernetes Gateway API GEP-735: TCP and UDP addresses matching](https://gateway-api.sigs.k8s.io/geps/gep-735/)),
+its structures are ready to potentially support it.
+
+As a result every element of the route destination section of the policy
+configuration (`spec.to[]`) contains a `rules` property. This property is a list
+of elements, which potentially will allow to specify `match` configuration.
+
+Implementation of the `MeshTCPRoute` which should be a result of this document,
+should validate that this list will contain only one element. This is due
+to the fact, that without specifying `match`es, it would be nonsensical to
+accept more `rules.`
+
 ### Traffic Rerouting
 
 If `matches` succeeds, the request is routed to the specified destinations
@@ -70,10 +88,11 @@ spec:
   - targetRef:
       kind: MeshService
       name: tcp-backend
-    default:
-      backendRefs:
-      - kind: MeshService
-        name: tcp-other-backend
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: tcp-other-backend
 ```
 
 ### Traffic Split
@@ -91,16 +110,17 @@ spec:
   - targetRef:
       kind: MeshService
       name: tcp-backend
-    default:
-      backendRefs:
-      - weight: 90
-        kind: MeshServiceSubset
-        name: tcp-backend
-        tags:
-          version: v2
-      - weight: 10
-        kind: MeshServiceSubset
-        name: tcp-backend
-        tags:
-          version: v2
+    rules:
+    - default:
+        backendRefs:
+        - weight: 90
+          kind: MeshServiceSubset
+          name: tcp-backend
+          tags:
+            version: v2
+        - weight: 10
+          kind: MeshServiceSubset
+          name: tcp-backend
+          tags:
+            version: v2
 ```
