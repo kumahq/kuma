@@ -4949,6 +4949,12 @@ spec:
                           required:
                           - endpoint
                           type: object
+                        type:
+                          enum:
+                          - Zipkin
+                          - Datadog
+                          - OpenTelemetry
+                          type: string
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
@@ -4973,6 +4979,8 @@ spec:
                           required:
                           - url
                           type: object
+                      required:
+                      - type
                       type: object
                     type: array
                   sampling:
