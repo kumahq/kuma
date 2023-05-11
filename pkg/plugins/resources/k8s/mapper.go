@@ -3,7 +3,6 @@ package k8s
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
@@ -18,20 +17,24 @@ func (f ResourceMapperFunc) Map(resource model.Resource, namespace string) (k8s_
 	return f(resource, namespace)
 }
 
-func NewMapper(systemNamespace string, storeType store.StoreType, kubeFactory KubeFactory) ResourceMapper {
+// NewKubernetesMapper creates a ResourceMapper that returns the k8s object as is. This is meant to be used when the underlying store is kubernetes
+func NewKubernetesMapper(kubeFactory KubeFactory) ResourceMapper {
 	return ResourceMapperFunc(func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
-		if storeType == store.KubernetesStore {
-			// If we're on k8s we should just return the k8s object as is.
-			res, err := (&SimpleConverter{KubeFactory: kubeFactory}).ToKubernetesObject(resource)
-			if err != nil {
-				return nil, err
-			}
-			if namespace != "" {
-				res.SetNamespace(namespace)
-			}
-			return res, err
+		res, err := (&SimpleConverter{KubeFactory: kubeFactory}).ToKubernetesObject(resource)
+		if err != nil {
+			return nil, err
 		}
-		// otherwise we create a k8s resource with the universal object we have.
+		if namespace != "" {
+			res.SetNamespace(namespace)
+		}
+		return res, err
+	})
+}
+
+// NewInferenceMapper creates a ResourceMapper that infers a k8s resource from the core_model. Extract namespace from the name if necessary.
+// This mostly useful when the underlying store is not kubernetes but you want to show what a kubernetes version of the policy would be like (in global for example).
+func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) ResourceMapper {
+	return ResourceMapperFunc(func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
 		rs, err := kubeFactory.NewObject(resource)
 		if err != nil {
 			return nil, err

@@ -26,6 +26,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
@@ -231,13 +232,20 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
 
+	var k8sMapper k8s.ResourceMapper
+	switch cfg.Store.Type {
+	case config_store.KubernetesStore:
+		k8sMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
+	default:
+		k8sMapper = k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace, k8s.NewSimpleKubeFactory())
+	}
 	for _, definition := range defs {
 		defType := definition.Name
 		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			k8sMapper:      k8s.NewMapper(cfg.Store.Kubernetes.SystemNamespace, cfg.Store.Type, k8s.NewSimpleKubeFactory()),
+			k8sMapper:      k8sMapper,
 			mode:           cfg.Mode,
 			resManager:     resManager,
 			descriptor:     definition,

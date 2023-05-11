@@ -6,7 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	store2 "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	core_mtp "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -22,11 +21,11 @@ var _ = Describe("KubernetesStore template", func() {
 		Expect(kubeTypes.RegisterObjectType(&core_mtp.MeshTrafficPermission{}, &k8s_mtp.MeshTrafficPermission{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 
-		It("works passing no namespace on memory store", func() {
+		It("works passing no namespace on inference", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.MemoryStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -35,11 +34,11 @@ var _ = Describe("KubernetesStore template", func() {
 			Expect(res.GetNamespace()).To(Equal("core-ns"))
 		})
 
-		It("works with namespace in name on memory store", func() {
+		It("works with namespace in name on inference", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo.namespace", Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.MemoryStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -48,11 +47,11 @@ var _ = Describe("KubernetesStore template", func() {
 			Expect(res.GetNamespace()).To(Equal("namespace"))
 		})
 
-		It("works passing namespace on memory store", func() {
+		It("works passing namespace on inference", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.MemoryStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -66,7 +65,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.KubernetesStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -80,7 +79,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.KubernetesStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -94,11 +93,11 @@ var _ = Describe("KubernetesStore template", func() {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 
-		It("works with in memory", func() {
+		It("works with inference", func() {
 			in := core_mesh.NewMeshResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.MemoryStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
@@ -110,7 +109,7 @@ var _ = Describe("KubernetesStore template", func() {
 			in := core_mesh.NewMeshResource()
 			in.SetMeta(&k8s.KubernetesMetaAdapter{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "a-namespace", Labels: map[string]string{"hello": "world"}}, Mesh: "default"})
 
-			mapper := k8s.NewMapper("core-ns", store2.KubernetesStore, &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
+			mapper := k8s.NewKubernetesMapper(&k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
 			res, err := mapper.Map(in, "my-ns")
 
 			Expect(err).ToNot(HaveOccurred())
