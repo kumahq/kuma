@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("metrics").WithName("store-counter")
@@ -21,14 +22,15 @@ var log = core.Log.WithName("metrics").WithName("store-counter")
 type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
+	tenants    multitenant.Tenants
 }
 
 var _ component.Component = &storeCounter{}
 
-func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics) (*storeCounter, error) {
+func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenants multitenant.Tenants) (*storeCounter, error) {
 	counts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "resources_count",
-	}, []string{"resource_type"})
+	}, []string{"resource_type", "tenant"})
 
 	if err := metrics.Register(counts); err != nil {
 		return nil, err
@@ -37,6 +39,7 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics
 	return &storeCounter{
 		resManager: resManager,
 		counts:     counts,
+		tenants:    tenants,
 	}, nil
 }
 
@@ -50,14 +53,13 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	log.Info("starting the resource counter")
-	if err := s.count(ctx); err != nil {
+	if err := s.countForAllTenants(ctx); err != nil {
 		log.Error(err, "unable to count resources")
 	}
 	for {
 		select {
 		case <-ticker.C:
-			// TODO: make metrics tenant aware https://github.com/kumahq/kuma/issues/6622
-			if err := s.count(ctx); err != nil {
+			if err := s.countForAllTenants(ctx); err != nil {
 				log.Error(err, "unable to count resources")
 			}
 		case <-stop:
@@ -71,7 +73,20 @@ func (s *storeCounter) NeedLeaderElection() bool {
 	return true
 }
 
-func (s *storeCounter) count(ctx context.Context) error {
+func (s *storeCounter) countForAllTenants(ctx context.Context) error {
+	tenantIDs, err := s.tenants.GetIDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, tenantID := range tenantIDs {
+		if err := s.count(multitenant.WithTenant(ctx, tenantID), tenantID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *storeCounter) count(ctx context.Context, tenantID string) error {
 	resourceCount := map[string]uint32{}
 	if err := s.countGlobalScopedResources(ctx, resourceCount); err != nil {
 		return err
@@ -80,7 +95,7 @@ func (s *storeCounter) count(ctx context.Context) error {
 		return err
 	}
 	for resType, counter := range resourceCount {
-		s.counts.WithLabelValues(resType).Set(float64(counter))
+		s.counts.WithLabelValues(resType, tenantID).Set(float64(counter))
 	}
 	return nil
 }

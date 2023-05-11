@@ -138,7 +138,7 @@ func getParentRefGateway(
 		return nil, err
 	}
 
-	if class.Spec.ControllerName != common.ControllerName {
+	if class == nil || class.Spec.ControllerName != common.ControllerName {
 		return nil, nil
 	}
 

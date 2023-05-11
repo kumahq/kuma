@@ -48,6 +48,7 @@ type kumaDeploymentOptions struct {
 	yamlConfig                  string
 	transparentProxyV1          bool
 	apiHeaders                  []string
+	zoneName                    string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -357,6 +358,12 @@ func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
 func WithApiHeaders(headers ...string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.apiHeaders = headers
+	})
+}
+
+func WithZoneName(zoneName string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneName = zoneName
 	})
 }
 
