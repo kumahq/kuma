@@ -26,6 +26,7 @@ var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
 	Recv() <-chan Event
+	Close()
 }
 
 type Emitter interface {
@@ -33,6 +34,5 @@ type Emitter interface {
 }
 
 type ListenerFactory interface {
-	New(id string) Listener
-	Unsubscribe(id string)
+	New() Listener
 }

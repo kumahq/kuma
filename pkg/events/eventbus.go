@@ -19,7 +19,8 @@ type EventBus struct {
 	subscribers map[string]chan Event
 }
 
-func (b *EventBus) New(id string) Listener {
+func (b *EventBus) New() Listener {
+	id := core.NewUUID()
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
@@ -27,14 +28,12 @@ func (b *EventBus) New(id string) Listener {
 	b.subscribers[id] = events
 	return &reader{
 		events: events,
+		close: func() {
+			b.mtx.Lock()
+			defer b.mtx.Unlock()
+			delete(b.subscribers, id)
+		},
 	}
-}
-
-func (b *EventBus) Unsubscribe(id string) {
-	b.mtx.Lock()
-	defer b.mtx.Unlock()
-
-	delete(b.subscribers, id)
 }
 
 func (b *EventBus) Send(event Event) {
@@ -58,8 +57,13 @@ func (b *EventBus) Send(event Event) {
 
 type reader struct {
 	events chan Event
+	close  func()
 }
 
 func (k *reader) Recv() <-chan Event {
 	return k.events
+}
+
+func (k *reader) Close() {
+	k.close()
 }

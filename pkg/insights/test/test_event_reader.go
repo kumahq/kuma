@@ -10,12 +10,14 @@ func (t *TestEventReader) Recv() <-chan events.Event {
 	return t.Ch
 }
 
+func (t *TestEventReader) Close() {
+	close(t.Ch)
+}
+
 type TestEventReaderFactory struct {
 	Reader *TestEventReader
 }
 
-func (t *TestEventReaderFactory) New(_ string) events.Listener {
+func (t *TestEventReaderFactory) New() events.Listener {
 	return t.Reader
 }
-
-func (t *TestEventReaderFactory) Unsubscribe(_ string) {}
