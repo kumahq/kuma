@@ -48,6 +48,8 @@ func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error 
 			hcm.StreamIdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
 			c.configureRequestTimeout(hcm.GetRouteConfig())
 		}
+		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
+		hcm.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(0)
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
