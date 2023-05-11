@@ -91,6 +91,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
 			Expect(cfg.Store.UnsafeDelete).To(BeTrue())
+			Expect(cfg.Store.EventBus.SendTimeout.Duration).To(Equal(90 * time.Second))
 			Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 			Expect(cfg.Store.Postgres.Port).To(Equal(5432))
 			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
@@ -367,6 +368,8 @@ store:
   upsert:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
+  eventBus:
+    sendTimeout: 90s
 bootstrapServer:
   params:
     adminPort: 1234
@@ -678,6 +681,7 @@ proxy:
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
+				"KUMA_STORE_EVENT_BUS_SEND_TIMEOUT":                                                        "90s",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",

@@ -2,20 +2,24 @@ package events
 
 import (
 	"sync"
+	"time"
 
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 )
 
 var log = core.Log.WithName("event-bus")
 
-func NewEventBus() *EventBus {
+func NewEventBus(cfg store_config.EventBusConfig) *EventBus {
 	return &EventBus{
 		subscribers: map[string]chan Event{},
+		sendTimeout: cfg.SendTimeout.Duration,
 	}
 }
 
 type EventBus struct {
 	mtx         sync.RWMutex
+	sendTimeout time.Duration
 	subscribers map[string]chan Event
 }
 
@@ -48,8 +52,8 @@ func (b *EventBus) Send(event Event) {
 				Type:      e.Type,
 				Key:       e.Key,
 			}:
-			default:
-				log.V(1).Info("failed to sent an event to the subscriber", "id", id, "event", event)
+			case <-time.After(b.sendTimeout):
+				log.V(1).Info("timeout occurred while sending event", "subscriber", id)
 			}
 		}
 	}

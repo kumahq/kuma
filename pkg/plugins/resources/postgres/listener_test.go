@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	postgres_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
@@ -124,7 +125,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 
 func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
 	cfg.DriverName = driverName
-	eventsBus := kuma_events.NewEventBus()
+	eventsBus := kuma_events.NewEventBus(store_config.DefaultEventBusConfig())
 	listener := eventsBus.New()
 	l := postgres_events.NewListener(cfg, eventsBus)
 	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)

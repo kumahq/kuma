@@ -106,7 +106,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
 	})
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
-	builder.WithEventReaderFactory(events.NewEventBus())
+	builder.WithEventReaderFactory(events.NewEventBus(cfg.Store.EventBus))
 	builder.WithAPIManager(customization.NewAPIList())
 	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
 	if err != nil {

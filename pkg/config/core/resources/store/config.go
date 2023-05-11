@@ -37,6 +37,8 @@ type StoreConfig struct {
 	// UnsafeDelete skips validation of resource delete.
 	// For example you don't have to delete all Dataplane objects before you delete a Mesh
 	UnsafeDelete bool `json:"unsafeDelete" envconfig:"kuma_store_unsafe_delete"`
+	// EventBus configuration
+	EventBus EventBusConfig `json:"eventBus"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
@@ -46,6 +48,7 @@ func DefaultStoreConfig() *StoreConfig {
 		Kubernetes: k8s.DefaultKubernetesStoreConfig(),
 		Cache:      DefaultCacheStoreConfig(),
 		Upsert:     DefaultUpsertConfig(),
+		EventBus:   DefaultEventBusConfig(),
 	}
 }
 
@@ -73,6 +76,9 @@ func (s *StoreConfig) Validate() error {
 	}
 	if err := s.Cache.Validate(); err != nil {
 		return errors.Wrap(err, "Cache validation failed")
+	}
+	if err := s.EventBus.Validate(); err != nil {
+		return errors.Wrap(err, "EventBus validation failed")
 	}
 	return nil
 }
@@ -123,3 +129,26 @@ func (u *UpsertConfig) Validate() error {
 }
 
 var _ config.Config = &UpsertConfig{}
+
+var _ config.Config = &EventBusConfig{}
+
+type EventBusConfig struct {
+	// SendTimeout timeout on sending event to the subscriber
+	SendTimeout config_types.Duration `json:"sendTimeout" envconfig:"kuma_store_event_bus_send_timeout"`
+}
+
+func (e EventBusConfig) Sanitize() {
+}
+
+func (e EventBusConfig) Validate() error {
+	if e.SendTimeout.Duration < 0 {
+		return errors.New("SendTimeout cannot be lower than 0")
+	}
+	return nil
+}
+
+func DefaultEventBusConfig() EventBusConfig {
+	return EventBusConfig{
+		SendTimeout: config_types.Duration{Duration: 2 * time.Second},
+	}
+}
