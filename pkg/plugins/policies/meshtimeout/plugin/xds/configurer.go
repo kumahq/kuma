@@ -49,6 +49,9 @@ func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error 
 			c.configureRequestTimeout(hcm.GetRouteConfig())
 		}
 		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
+		if hcm.CommonHttpProtocolOptions == nil {
+			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+		}
 		hcm.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(0)
 		return nil
 	}
