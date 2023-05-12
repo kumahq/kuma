@@ -269,7 +269,6 @@ func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envo
 	// Add edge proxy recommendations.
 	builder.Configure(
 		envoy_listeners.EnablePathNormalization(),
-		envoy_listeners.StripHostPort(),
 		envoy_listeners.AddFilterChainConfigurer(
 			envoy_listeners_v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
 				hcm.UseRemoteAddress = util_proto.Bool(true)
