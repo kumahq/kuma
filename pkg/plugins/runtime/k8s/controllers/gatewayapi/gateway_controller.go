@@ -161,7 +161,10 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh str
 	return instance, nil
 }
 
-const gatewayIndexField = ".metadata.gateway"
+const (
+	gatewayOfRouteIndexField   = ".metadata.gateway"
+	secretsOfGatewayIndexField = ".metadata.secrets"
+)
 
 // gatewaysForRoute returns a function that calculates which MeshGateways might
 // be affected by changes in an HTTPRoute so they can be reconciled.
@@ -305,10 +308,42 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 	}
 }
 
+// gatewaysForSecret returns a function that calculates which Gateways might
+// be affected by changes in a Secret so they can be reconciled.
+func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForSecret")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		secret, ok := obj.(*kube_core.Secret)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to Secret", obj)
+			return nil
+		}
+
+		var gateways gatewayapi.GatewayList
+		if err := client.List(context.Background(), &gateways, kube_client.MatchingFields{
+			secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
+		}); err != nil {
+			l.Error(nil, "unexpected error listing Gateways")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+
+		for i := range gateways.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
+			})
+		}
+
+		return requests
+	}
+}
+
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	// This index helps us list routes that point to a MeshGateway in
 	// attachedListenersForMeshGateway.
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, gatewayIndexField, func(obj kube_client.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, gatewayOfRouteIndexField, func(obj kube_client.Object) []string {
 		route := obj.(*gatewayapi.HTTPRoute)
 
 		var names []string
@@ -326,6 +361,34 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		}
 
 		return names
+	}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.Gateway{}, secretsOfGatewayIndexField, func(obj kube_client.Object) []string {
+		gateway := obj.(*gatewayapi.Gateway)
+
+		var refs []string
+
+		for _, listener := range gateway.Spec.Listeners {
+			if listener.TLS == nil {
+				continue
+			}
+
+			for _, ref := range listener.TLS.CertificateRefs {
+				namespace := gateway.Namespace
+				if ref.Namespace != nil {
+					namespace = string(*ref.Namespace)
+				}
+
+				refs = append(
+					refs,
+					kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String(),
+				)
+			}
+		}
+
+		return refs
 	}); err != nil {
 		return err
 	}
@@ -349,6 +412,10 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &gatewayapi.ReferenceGrant{}},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForGrant(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &kube_core.Secret{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForSecret(r.Log, r.Client)),
 		).
 		Complete(r)
 }
