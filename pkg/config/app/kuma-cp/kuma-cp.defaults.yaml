@@ -82,11 +82,6 @@ store:
   # For example you don't have to delete all Dataplane objects before you delete a Mesh
   unsafeDelete: false # ENV: KUMA_STORE_UNSAFE_DELETE
 
-  # EventBus configuration for components subscribing on store changes
-  eventBus:
-    # SendTimeout timeout on sending event to subscribers
-    sendTimeout: 2s
-
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Parameters of bootstrap configuration
