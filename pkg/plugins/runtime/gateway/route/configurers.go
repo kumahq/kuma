@@ -365,11 +365,14 @@ func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 		if redirect.Port > 0 {
 			envoyRedirect.PortRedirect = redirect.Port
 		} else {
-			// Here explicitly set the port the listener is listening on
-			// because apparently strip_any_host_port actually changes the port
-			// of the request even for redirecting...
-			// Looks like https://github.com/envoyproxy/envoy/issues/19589
-			envoyRedirect.PortRedirect = port
+			switch redirect.Scheme {
+			case "http":
+				envoyRedirect.PortRedirect = 80
+			case "https":
+				envoyRedirect.PortRedirect = 443
+			default:
+				envoyRedirect.PortRedirect = port
+			}
 		}
 		if rewrite := redirect.PathRewrite; rewrite != nil {
 			if rewrite.ReplaceFullPath != nil {
