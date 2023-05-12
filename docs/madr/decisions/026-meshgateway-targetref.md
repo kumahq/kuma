@@ -24,7 +24,7 @@ This MADR does not address narrowing to a specific route resource or route match
 
 ### `spec.to.targetRef`
 
-This MADR also makes clear that currently `spec.to.targetRef` for a `MeshGateway`
+This MADR also makes clear that currently `spec.to.targetRef.kind: MeshGateway`
 to set policy for incoming traffic is not supported in any policy.
 
 Part of the reason for this is that the paradigm that `spec.targetRef` tells us
@@ -57,9 +57,54 @@ Chosen option: `MeshGateway` as `kind` with `targetRef.sectionName`
 
 `targetRef.kind: MeshGateway` applies the policy to all `Dataplanes` matched by
 the matchers on the `MeshGateway` object. Further specifying `sectionName`
-narrows this to a specific listener. In the implementation, we should make sure
-this works even given the merging of more than one `spec.listeners` into
-single Envoy listeners.
+narrows this to a specific listener. `MeshGateway` listeners don't have explicit
+names but users can use a reserved tag to give them a canonical name that
+policies can match on. The Gateway API implementation uses the
+`gateways.kuma.io/listener-name` tag, for example, which we could reuse.
+
+Given:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+metadata:
+  name: edge-gateway
+mesh: default
+spec:
+  selectors:
+    - match:
+        kuma.io/service: edge-gateway
+  conf:
+    listeners:
+      - port: 8080
+        protocol: HTTP
+        tags:
+          gateways.kuma.io/listener-name: http
+      - port: 8443
+        protocol: HTTPS
+        tags:
+          gateways.kuma.io/listener-name: https
+```
+
+We can use the following policy with `sectionName` to target only traffic over
+the `HTTPS` listener.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: SomePolicy
+metadata:
+  name: https-only
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge
+    sectionName: https
+```
+
+In every policy implementation, we should make sure the Envoy config we generate
+is coherent, given that more than one `spec.listeners` can be merged into
+a single Envoy listener. There is no 1-1 correspondence guaranteed between Envoy
+listeners and `MeshGateway` listeners.
 
 ### Positive Consequences
 
