@@ -89,6 +89,7 @@ Listeners:
 Routes:
   Resources:
     tracing-gateway:HTTP:8080:
+      ignorePortInHostMatching: true
       name: tracing-gateway:HTTP:8080
       requestHeadersToRemove:
       - x-kuma-tags

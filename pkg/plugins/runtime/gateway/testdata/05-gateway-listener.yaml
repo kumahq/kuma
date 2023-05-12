@@ -267,6 +267,7 @@ Listeners:
 Routes:
   Resources:
     default-gateway:HTTPS:443:
+      ignorePortInHostMatching: true
       name: default-gateway:HTTPS:443
       requestHeadersToRemove:
       - x-kuma-tags

@@ -339,6 +339,7 @@ Listeners:
 Routes:
   Resources:
     gateway-multihost:HTTPS:9443:
+      ignorePortInHostMatching: true
       name: gateway-multihost:HTTPS:9443
       requestHeadersToRemove:
       - x-kuma-tags

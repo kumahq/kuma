@@ -208,6 +208,7 @@ Listeners:
 Routes:
   Resources:
     edge-gateway:HTTP:8080:
+      ignorePortInHostMatching: true
       name: edge-gateway:HTTP:8080
       requestHeadersToRemove:
       - x-kuma-tags

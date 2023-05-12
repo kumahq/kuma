@@ -195,6 +195,7 @@ Listeners:
 Routes:
   Resources:
     gateway-multihost:HTTP:9080:
+      ignorePortInHostMatching: true
       name: gateway-multihost:HTTP:9080
       requestHeadersToRemove:
       - x-kuma-tags
