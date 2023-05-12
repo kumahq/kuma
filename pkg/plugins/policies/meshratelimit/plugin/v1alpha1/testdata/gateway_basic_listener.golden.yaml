@@ -45,7 +45,6 @@ filterChains:
       serverName: Kuma Gateway
       statPrefix: sample-gateway
       streamIdleTimeout: 5s
-      stripAnyHostPort: true
       useRemoteAddress: true
 listenerFilters:
 - name: envoy.filters.listener.tls_inspector
