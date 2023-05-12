@@ -1,8 +1,11 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -10,6 +13,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -25,7 +29,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshHealthCheckType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshHealthCheckType]
 	if !ok {
 		return nil
@@ -34,6 +38,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 	clusters := policies_xds.GatherClusters(rs)
 
 	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, proxy.Routing); err != nil {
+		return err
+	}
+
+	if err := applyToGateways(ctx, policies.ToRules, clusters.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -54,7 +62,62 @@ func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy
 	return nil
 }
 
-func configure(dataplane *core_mesh.DataplaneResource, rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, cluster *envoy_cluster.Cluster) error {
+func applyToGateways(
+	ctx xds_context.Context,
+	rules core_xds.ToRules,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	proxy *core_xds.Proxy,
+) error {
+	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
+	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
+	if err != nil {
+		return err
+	}
+
+	for _, listenerInfo := range gatewayListenerInfos {
+		for _, hostInfo := range listenerInfo.HostInfos {
+			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
+			for _, dest := range destinations {
+				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
+				if err != nil {
+					continue
+				}
+				cluster, ok := gatewayClusters[clusterName]
+				if !ok {
+					continue
+				}
+
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
+
+				if err := configure(
+					proxy.Dataplane,
+					rules.Rules,
+					core_xds.MeshService(serviceName),
+					toProtocol(listenerInfo.Listener.Protocol),
+					cluster,
+				); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
+	return core_mesh.ParseProtocol(p.String())
+}
+
+func configure(
+	dataplane *core_mesh.DataplaneResource,
+	rules core_xds.Rules,
+	subset core_xds.Subset,
+	protocol core_mesh.Protocol,
+	cluster *envoy_cluster.Cluster,
+) error {
 	var conf api.Conf
 	if computed := rules.Compute(subset); computed != nil {
 		conf = computed.Conf.(api.Conf)
