@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"go/format"
-	"html/template"
 	"log"
 	"os"
 	"sort"
+	"text/template"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -48,6 +48,9 @@ import (
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
 {{- else }}
 // +kubebuilder:resource:categories=kuma,scope=Cluster
+{{- end}}
+{{- range .AdditionalPrinterColumns }}
+// +kubebuilder:printcolumn:{{ . }}
 {{- end}}
 type {{.ResourceType}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
