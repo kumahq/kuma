@@ -72,7 +72,7 @@ should validate that this list will contain only one element. This is due
 to the fact, that without specifying `match`es, it would be nonsensical to
 accept more `rules.`
 
-### `MeshTCPRoute` and highest common precedence in situation of clashes
+### `MeshTCPRoute` and highest common protocol precedence in situation of clashes
 
 In situations of clashes between different protocol routes, policy with protocol
 higher on the OSI model matching both sides of the route takes precedence. One
