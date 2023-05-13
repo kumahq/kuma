@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/api"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
@@ -76,4 +77,5 @@ var (
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+	_ = Describe("Apis", api.Api, Ordered)
 )

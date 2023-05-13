@@ -3537,6 +3537,12 @@ spec:
                           required:
                           - endpoint
                           type: object
+                        type:
+                          enum:
+                          - Zipkin
+                          - Datadog
+                          - OpenTelemetry
+                          type: string
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
@@ -3561,6 +3567,8 @@ spec:
                           required:
                           - url
                           type: object
+                      required:
+                      - type
                       type: object
                     type: array
                   sampling:
@@ -4075,7 +4083,24 @@ spec:
     singular: dataplane
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Service tag of the first inbound
+      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the second inbound
+      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the third inbound
+      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    - description: Service tag of the fourth inbound
+      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
+      name: kuma.io/service
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -4101,6 +4126,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition

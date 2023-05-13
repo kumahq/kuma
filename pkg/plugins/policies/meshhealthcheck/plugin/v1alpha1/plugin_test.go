@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"fmt"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -17,10 +18,13 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -249,6 +253,98 @@ var _ = Describe("MeshHealthCheck", func() {
 				},
 			},
 			expectedClusters: []string{"basic_grpc_health_check_cluster.golden.yaml"},
+		}),
+	)
+
+	type gatewayTestCase struct {
+		name    string
+		toRules core_xds.ToRules
+	}
+	DescribeTable("should generate proper Envoy config for MeshGateways",
+		func(given gatewayTestCase) {
+			Expect(given.name).ToNot(BeEmpty())
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			}
+
+			context := test_xds.CreateSampleMeshContextWith(resources)
+			proxy := xds.Proxy{
+				APIVersion: "v3",
+				Dataplane:  samples.GatewayDataplane(),
+				Policies: xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+						api.MeshHealthCheckType: {
+							Type:    api.MeshHealthCheckType,
+							ToRules: given.toRules,
+						},
+					},
+				},
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+
+			getResourceYaml := func(list core_xds.ResourceList) []byte {
+				actualResource, err := util_proto.ToYAML(list[0].Resource)
+				Expect(err).ToNot(HaveOccurred())
+				return actualResource
+			}
+
+			// then
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+		},
+		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
+			name: "basic",
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Interval:                     test.ParseDuration("10s"),
+							Timeout:                      test.ParseDuration("2s"),
+							UnhealthyThreshold:           pointer.To[int32](3),
+							HealthyThreshold:             pointer.To[int32](1),
+							InitialJitter:                test.ParseDuration("13s"),
+							IntervalJitter:               test.ParseDuration("15s"),
+							IntervalJitterPercent:        pointer.To[int32](10),
+							HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+							FailTrafficOnPanic:           pointer.To(true),
+							EventLogPath:                 pointer.To("/tmp/log.txt"),
+							AlwaysLogHealthCheckFailures: pointer.To(false),
+							NoTrafficInterval:            test.ParseDuration("16s"),
+							Http: &api.HttpHealthCheck{
+								Disabled: pointer.To(false),
+								Path:     pointer.To("/health"),
+								RequestHeadersToAdd: &api.HeaderModifier{
+									Add: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-header",
+											Value: "value",
+										},
+									},
+									Set: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-other-header",
+											Value: "value",
+										},
+									},
+								},
+								ExpectedStatuses: &[]int32{200, 201},
+							},
+							ReuseConnection: pointer.To(true),
+						},
+					},
+				},
+			},
 		}),
 	)
 })

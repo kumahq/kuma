@@ -34,8 +34,18 @@ type Conf struct {
 	Tags *[]Tag `json:"tags,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Zipkin;Datadog;OpenTelemetry
+type BackendType string
+
+const (
+	ZipkinBackendType        BackendType = "Zipkin"
+	DatadogBackendType       BackendType = "Datadog"
+	OpenTelemetryBackendType BackendType = "OpenTelemetry"
+)
+
 // Only one of zipkin, datadog or openTelemetry can be used.
 type Backend struct {
+	Type BackendType `json:"type"`
 	// Zipkin backend configuration.
 	Zipkin *ZipkinBackend `json:"zipkin,omitempty"`
 	// Datadog backend configuration.
