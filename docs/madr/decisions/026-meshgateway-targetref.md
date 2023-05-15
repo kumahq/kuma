@@ -56,7 +56,11 @@ For this kind of policy we can imagine a new `spec.from.targetRef.kind: External
 Chosen option: `MeshGateway` as `kind` with `targetRef.sectionName`
 
 `targetRef.kind: MeshGateway` applies the policy to all `Dataplanes` matched by
-the matchers on the `MeshGateway` object. Further specifying `sectionName`
+the matchers on the `MeshGateway` object and all listeners configured in the
+`MeshGateway`. It has the same semantics as `{ kind: MeshService, name:
+<kuma.io/service matched by the MeshGateway> }`
+
+Further specifying `sectionName`
 narrows this to a specific listener. `MeshGateway` listeners don't have explicit
 names but users can use a reserved tag to give them a canonical name that
 policies can match on. The Gateway API implementation uses the
