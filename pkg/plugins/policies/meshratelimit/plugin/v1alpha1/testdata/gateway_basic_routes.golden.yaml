@@ -1,3 +1,4 @@
+ignorePortInHostMatching: true
 name: sample-gateway:HTTP:8080
 requestHeadersToRemove:
 - x-kuma-tags

@@ -46,7 +46,7 @@ func CreateLogsPath(basePath string) string {
 
 	if len(sr.SpecEvents) == 0 {
 		p := withTimePrefix(basePath)
-		addPath(p)
+		ginkgo.AddReportEntry(p)
 		return p
 	}
 
@@ -75,23 +75,38 @@ func CreateLogsPath(basePath string) string {
 
 	// add only a root level ginkgo.Describe() directory for a cleanup,
 	// i.e "/tmp/060102_150405/mesh-traffic-permissions"
-	addPath(path.Join(append([]string{basePath, timePrefix}, sanitizedPath[:1]...)...))
+	rootSpec := path.Join(path.Join(append([]string{basePath, timePrefix}, sanitizedPath[:1]...)...))
+	spec := path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
 
-	return path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
+	mutex.Lock()
+	if _, ok := pathSet[spec]; !ok {
+		pathSet[spec] = struct{}{}
+		ginkgo.AddReportEntry(rootSpec)
+	}
+	mutex.Unlock()
+
+	return spec
 }
 
 func CleanupIfSuccess(basePath string, report ginkgo.Report) {
-	suiteFailed := false
+	specFailedByLogsPath := map[string]bool{}
 
 	for _, sr := range report.SpecReports {
-		if sr.Failed() {
-			suiteFailed = true
+		if len(sr.ContainerHierarchyTexts) == 0 {
+			continue
 		}
 
-		if !sr.Failed() && len(sr.ContainerHierarchyTexts) != 0 {
-			for _, re := range sr.ReportEntries {
-				_ = os.RemoveAll(re.Name)
-			}
+		for _, re := range sr.ReportEntries {
+			specFailedByLogsPath[re.Name] = specFailedByLogsPath[re.Name] || sr.Failed()
+		}
+	}
+
+	suiteFailed := false
+	for logsPath, failed := range specFailedByLogsPath {
+		if failed {
+			suiteFailed = true
+		} else {
+			_ = os.RemoveAll(logsPath)
 		}
 	}
 
@@ -107,15 +122,6 @@ func find(slice []string, s string) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-func addPath(path string) {
-	mutex.Lock()
-	if _, ok := pathSet[path]; !ok {
-		pathSet[path] = struct{}{}
-		ginkgo.AddReportEntry(path)
-	}
-	mutex.Unlock()
 }
 
 func withTimePrefix(basePath string) string {

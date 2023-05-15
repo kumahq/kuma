@@ -13,13 +13,13 @@ require (
 	github.com/cncf/xds/go v0.0.0-20230310173818-32f1caf87195 // indirect
 	github.com/containerd/cgroups v1.1.0
 	github.com/containernetworking/cni v1.1.2
-	github.com/containernetworking/plugins v1.2.0
+	github.com/containernetworking/plugins v1.3.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.0
-	github.com/envoyproxy/protoc-gen-validate v1.0.0
+	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.4
-	github.com/go-logr/zapr v1.2.3
+	github.com/go-logr/zapr v1.2.4
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/protobuf v1.5.3
@@ -50,7 +50,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/spiffe/go-spiffe/v2 v2.1.4
-	github.com/testcontainers/testcontainers-go v0.20.0
+	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/proto/otlp v0.19.0
@@ -105,7 +105,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v23.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20230228050547-1710fef4ab10 // indirect
+	github.com/google/pprof v0.0.0-20230323073829-e72429f035bd // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect

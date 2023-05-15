@@ -30,4 +30,28 @@ func Api() {
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
 		Expect(res["version"]).ToNot(BeEmpty())
 	})
+
+	It("Get k8s version of default mesh", func() {
+		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default?format=k8s")
+		Expect(err).ToNot(HaveOccurred())
+		defer r.Body.Close()
+
+		res := map[string]interface{}{}
+		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
+		Expect(res).To(HaveKey("kind"))
+		Expect(res["kind"]).To(Equal("Mesh"))
+		Expect(res).To(HaveKey("apiVersion"))
+		Expect(res["apiVersion"]).To(Equal("kuma.io/v1alpha1"))
+	})
+
+	It("Get universal version of default mesh", func() {
+		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/meshes/default")
+		Expect(err).ToNot(HaveOccurred())
+		defer r.Body.Close()
+
+		res := map[string]interface{}{}
+		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
+		Expect(res).To(HaveKey("type"))
+		Expect(res["type"]).To(Equal("Mesh"))
+	})
 }

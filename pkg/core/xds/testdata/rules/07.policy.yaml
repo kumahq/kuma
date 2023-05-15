@@ -9,7 +9,8 @@ spec:
       - name: team
         literal: core
     backends:
-      - zipkin:
+      - type: Zipkin
+        zipkin:
           url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
 ---
 type: MeshTrace
@@ -24,5 +25,6 @@ spec:
       - name: team
         literal: support
     backends:
-      - datadog:
+      - type: Datadog
+        datadog:
           url: http://ingest.datadoghq.eu:8126

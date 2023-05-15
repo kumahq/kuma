@@ -45,6 +45,9 @@ message KumaResourceOptions {
   // Is Experimental indicates if a policy is in experimental state (might not
   // be production ready).
   bool is_experimental = 16;
+
+  // Columns to set using `+kubebuilder::printcolumns`
+  repeated string additional_printer_columns = 17;
 }
 
 message KumaWsOptions {

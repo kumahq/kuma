@@ -61,7 +61,6 @@ Listeners:
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -73,6 +72,7 @@ Listeners:
 Routes:
   Resources:
     logging-gateway:HTTP:8080:
+      ignorePortInHostMatching: true
       name: logging-gateway:HTTP:8080
       requestHeadersToRemove:
       - x-kuma-tags

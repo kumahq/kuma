@@ -3,6 +3,7 @@ Rules:
     backends:
     - datadog:
         url: http://ingest.datadoghq.eu:8126
+      type: Datadog
     tags:
     - literal: support
       name: team

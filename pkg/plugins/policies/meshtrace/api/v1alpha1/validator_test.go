@@ -31,7 +31,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - zipkin:
+    - type: Zipkin
+      zipkin:
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
         apiVersion: httpJson
   tags:
@@ -55,7 +56,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - openTelemetry:
+    - type: OpenTelemetry
+      openTelemetry:
         endpoint: otel-collector:4317
 `),
 
@@ -86,7 +88,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:8126
         splitService: true
 `),
@@ -124,20 +127,6 @@ violations:
   - field: spec.default.backends
     message: must be defined`,
 			}),
-			Entry("no valid backends", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - unknown: {}
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0]
-    message: 'backend must have only one type defined: datadog, zipkin, openTelemetry'`,
-			}),
 			Entry("multiple backends", testCase{
 				inputYaml: `
 targetRef:
@@ -162,7 +151,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - zipkin: {}
+    - type: Zipkin
+      zipkin: {}
 `,
 				expected: `
 violations:
@@ -176,7 +166,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - zipkin:
+    - type: Zipkin
+      zipkin:
         url: not_valid_url
 `,
 				expected: `
@@ -191,7 +182,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: not_valid_url
 `,
 				expected: `
@@ -206,7 +198,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu
 `,
 				expected: `
@@ -221,7 +214,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:999999
 `,
 				expected: `
@@ -236,7 +230,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: sql://intake.datadoghq.eu:8126
 `,
 				expected: `
@@ -251,7 +246,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:8126/some/path
 `,
 				expected: `
@@ -266,7 +262,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:443
   tags:
     - literal: example
@@ -287,7 +284,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:443
   tags:
     - name: example
@@ -305,7 +303,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:443
   sampling:
     overall: 101
@@ -323,7 +322,8 @@ targetRef:
   name: backend
 default:
   backends:
-    - datadog:
+    - type: Datadog
+      datadog:
         url: http://intake.datadoghq.eu:443
   sampling:
     overall: xyz
@@ -339,6 +339,48 @@ violations:
   - field: spec.default.sampling.overall
     message: string is not a number
 `,
+			}),
+			Entry("datadog backend must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: Datadog
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].datadog
+    message: must be defined`,
+			}),
+			Entry("zipkin backend must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: Zipkin
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].zipkin
+    message: must be defined`,
+			}),
+			Entry("openTelemetry backend must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - type: OpenTelemetry
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].openTelemetry
+    message: must be defined`,
 			}),
 		)
 	})

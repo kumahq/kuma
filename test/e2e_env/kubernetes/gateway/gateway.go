@@ -136,12 +136,25 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should proxy to service via HTTP", func() {
+		It("should proxy to service via HTTP without port in host", func() {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/",
 					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("echo-server"))
+			}, "30s", "1s").Should(Succeed())
+		})
+		It("should proxy to service via HTTP with port in host", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/",
+					client.WithHeader("host", "example.kuma.io:8080"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 
