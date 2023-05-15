@@ -124,7 +124,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
 	cfg.DriverName = driverName
 	eventsBus := kuma_events.NewEventBus()
-	listener := eventsBus.New()
+	listener := eventsBus.Subscribe()
 	l := postgres_events.NewListener(cfg, eventsBus)
 	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)
 	go func() {

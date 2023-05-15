@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -140,7 +141,7 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 	})
-	return rt.Add(mux.NewServer(
+	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
 		*rt.Config().Multizone.Global.KDS,
@@ -151,7 +152,7 @@ func Setup(rt runtime.Runtime) error {
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
 		),
-	))
+	)))
 }
 
 func createZoneIfAbsent(log logr.Logger, name string, resManager core_manager.ResourceManager) error {
