@@ -41,14 +41,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	log.Info("start monitoring")
 	for {
 		select {
-<<<<<<< HEAD
 		case n := <-listener.Notify:
-=======
-		case err := <-listener.Error():
-			log.Error(err, "failed to listen on events")
-			return err
-		case n := <-listener.Notify():
->>>>>>> c0953aefb (fix(kuma-cp): make store changes processing more reliable (#6728))
 			if n == nil {
 				continue
 			}
