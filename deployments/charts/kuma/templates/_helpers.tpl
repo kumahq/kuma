@@ -183,6 +183,14 @@ returns: formatted image string
 {{ if eq .Values.controlPlane.mode "zone" }}
   {{ if empty .Values.controlPlane.zone }}
     {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
+  {{ else }}
+    {{ if gt (len .Values.controlPlane.zone) 253 }}
+      {{ fail "controlPlane.zone must be no more than 253 characters" }}
+    {{ else }}
+      {{ if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" .Values.controlPlane.zone) }}
+        {{ fail "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character" }}
+      {{ end }}
+    {{ end }}
   {{ end }}
   {{ if empty .Values.controlPlane.kdsGlobalAddress }}
     {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
