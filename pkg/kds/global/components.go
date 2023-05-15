@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -73,13 +74,61 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
+<<<<<<< HEAD
 	return rt.Add(mux.NewServer(
+=======
+
+	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
+		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		if err != nil {
+			errChan <- err
+		}
+		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log.Info("Global To Zone new session created")
+		if err := createZoneIfAbsent(stream.Context(), log, clientId, rt.ResourceManager()); err != nil {
+			errChan <- errors.Wrap(err, "Global CP could not create a zone")
+		}
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
+			errChan <- err
+		} else {
+			log.V(1).Info("GlobalToZoneSync finished gracefully")
+		}
+	})
+
+	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
+		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		if err != nil {
+			errChan <- err
+		}
+		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
+		sink := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream,
+			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
+		go func() {
+			if err := sink.Receive(); err != nil {
+				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			} else {
+				log.V(1).Info("KDSSyncClient finished gracefully")
+			}
+		}()
+	})
+	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
+>>>>>>> c0953aefb (fix(kuma-cp): make store changes processing more reliable (#6728))
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
+<<<<<<< HEAD
 	))
+=======
+		mux.NewKDSSyncServiceServer(
+			onGlobalToZoneSyncConnect,
+			onZoneToGlobalSyncConnect,
+			rt.KDSContext().GlobalServerFiltersV2,
+		),
+	)))
+>>>>>>> c0953aefb (fix(kuma-cp): make store changes processing more reliable (#6728))
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
