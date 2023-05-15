@@ -75,7 +75,7 @@ func Setup(rt runtime.Runtime) error {
 		}()
 		return nil
 	})
-	return rt.Add(component.NewResilientComponent(kdsGlobalLog ,mux.NewServer(
+	return rt.Add(component.NewResilientComponent(kdsGlobalLog, mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
 		*rt.Config().Multizone.Global.KDS,
