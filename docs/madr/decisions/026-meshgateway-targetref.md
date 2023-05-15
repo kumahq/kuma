@@ -91,7 +91,7 @@ spec:
 ```
 
 We can use the following policy with `sectionName` to target only traffic over
-the `HTTPS` listener.
+the `HTTPS` listener on port `8443`.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -105,8 +105,8 @@ spec:
     sectionName: https
 ```
 
-In every policy implementation, we should make sure the Envoy config we generate
-is coherent, given that more than one `spec.listeners` can be merged into
+Note that in every policy implementation, we must make sure the Envoy config we
+generate is coherent, given that more than one `spec.listeners` can be merged into
 a single Envoy listener. There is no 1-1 correspondence guaranteed between Envoy
 listeners and `MeshGateway` listeners.
 
