@@ -1,15 +1,7 @@
 package postgres
 
-<<<<<<< HEAD
 import (
 	"fmt"
-=======
-type Listener interface {
-	Notify() chan *Notification
-	Error() <-chan error
-	Close() error
-}
->>>>>>> c0953aefb (fix(kuma-cp): make store changes processing more reliable (#6728))
 
 	"github.com/go-logr/logr"
 	"github.com/lib/pq"
