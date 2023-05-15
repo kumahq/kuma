@@ -100,7 +100,6 @@ Listeners:
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -128,6 +127,7 @@ Listeners:
 Routes:
   Resources:
     edge-gateway:HTTPS:8080:
+      ignorePortInHostMatching: true
       name: edge-gateway:HTTPS:8080
       requestHeadersToRemove:
       - x-kuma-tags

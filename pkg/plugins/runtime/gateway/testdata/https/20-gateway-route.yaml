@@ -188,7 +188,6 @@ Listeners:
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -251,7 +250,6 @@ Listeners:
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -314,7 +312,6 @@ Listeners:
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -342,6 +339,7 @@ Listeners:
 Routes:
   Resources:
     gateway-multihost:HTTPS:9443:
+      ignorePortInHostMatching: true
       name: gateway-multihost:HTTPS:9443
       requestHeadersToRemove:
       - x-kuma-tags
