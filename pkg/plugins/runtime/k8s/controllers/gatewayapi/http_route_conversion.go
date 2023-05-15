@@ -403,6 +403,18 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 
 		if s := filter.Scheme; s != nil {
 			redirect.Scheme = *s
+
+			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
+			// this would have been a breaking change for MeshGateway, so handle
+			// it here.
+			if p := filter.Port; p == nil {
+				switch *s {
+				case "http":
+					redirect.Port = 80
+				case "https":
+					redirect.Port = 443
+				}
+			}
 		}
 
 		if h := filter.Hostname; h != nil {
