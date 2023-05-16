@@ -251,7 +251,7 @@ jobs:
       - when:
           condition:
             or:
-              - {equal: [e2e, << parameters.target >>]}
+              - {equal: ["", << parameters.target >>]}
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
