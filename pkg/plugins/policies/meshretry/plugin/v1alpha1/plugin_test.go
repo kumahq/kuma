@@ -1,8 +1,14 @@
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"fmt"
 	"path/filepath"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -30,8 +36,9 @@ var _ = Describe("MeshRetry", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
 		toRules          core_xds.ToRules
-		expectedListener string
+		goldenFilePrefix string
 	}
+
 	DescribeTable("should generate proper Envoy config", func(given testCase) {
 		// given
 		resourceSet := core_xds.NewResourceSet()
@@ -79,11 +86,12 @@ var _ = Describe("MeshRetry", func() {
 		}
 
 		// when
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 
 		// then
-		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
+		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).
+			To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", given.goldenFilePrefix))))
 	},
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
@@ -176,7 +184,7 @@ var _ = Describe("MeshRetry", func() {
 					},
 				},
 			},
-			expectedListener: "http_retry_listener.golden.yaml",
+			goldenFilePrefix: "http",
 		}),
 		Entry("grpc retry", testCase{
 			resources: []core_xds.Resource{{
@@ -224,7 +232,7 @@ var _ = Describe("MeshRetry", func() {
 					},
 				},
 			},
-			expectedListener: "grpc_retry_listener.golden.yaml",
+			goldenFilePrefix: "grpc",
 		}),
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{
@@ -244,12 +252,168 @@ var _ = Describe("MeshRetry", func() {
 					},
 				},
 			},
-			expectedListener: "tcp_retry_listener.golden.yaml",
+			goldenFilePrefix: "tcp",
+		}),
+	)
+
+	type gatewayTestCase struct {
+		toRules          core_xds.ToRules
+		goldenFilePrefix string
+		gateways         []*core_mesh.MeshGatewayResource
+		gatewayRoutes    []*core_mesh.MeshGatewayRouteResource
+	}
+
+	DescribeTable("should generate proper Envoy config for MeshGateways",
+		func(given gatewayTestCase) {
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: given.gateways,
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: given.gatewayRoutes,
+			}
+
+			context := test_xds.CreateSampleMeshContextWith(resources)
+			proxy := xds.Proxy{
+				APIVersion: "v3",
+				Dataplane:  samples.GatewayDataplane(),
+				Policies: xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+						api.MeshRetryType: {
+							Type:    api.MeshRetryType,
+							ToRules: given.toRules,
+						},
+					},
+				},
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			// when
+			plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+
+			// then
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", given.goldenFilePrefix))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.routes.golden.yaml", given.goldenFilePrefix))))
+		},
+		Entry("http retry", gatewayTestCase{
+			goldenFilePrefix: "gateway.http",
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							HTTP: &api.HTTP{
+								NumRetries:    pointer.To[uint32](1),
+								PerTryTimeout: test.ParseDuration("2s"),
+								BackOff: &api.BackOff{
+									BaseInterval: test.ParseDuration("3s"),
+									MaxInterval:  test.ParseDuration("4s"),
+								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("5s"),
+									ResetHeaders: &[]api.ResetHeader{
+										{
+											Name:   "retry-after-http",
+											Format: "Seconds",
+										},
+										{
+											Name:   "x-retry-after-http",
+											Format: "UnixTimestamp",
+										},
+									},
+								},
+								RetryOn: &[]api.HTTPRetryOn{
+									api.All5xx,
+									api.GatewayError,
+									api.Reset,
+									api.Retriable4xx,
+									api.ConnectFailure,
+									api.EnvoyRatelimited,
+									api.RefusedStream,
+									api.Http3PostConnectFailure,
+									api.HttpMethodConnect,
+									api.HttpMethodDelete,
+									api.HttpMethodGet,
+									api.HttpMethodHead,
+									api.HttpMethodOptions,
+									api.HttpMethodPatch,
+									api.HttpMethodPost,
+									api.HttpMethodPut,
+									api.HttpMethodTrace,
+									"429",
+								},
+								RetriableResponseHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+										Name:  "x-retry-regex",
+										Value: ".*",
+									},
+									{
+										Type:  pointer.To(common_api.HeaderMatchExact),
+										Name:  "x-retry-exact",
+										Value: "exact-value",
+									},
+								},
+								RetriableRequestHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchPrefix),
+										Name:  "x-retry-prefix",
+										Value: "prefix-",
+									},
+								},
+								HostSelection: &[]api.Predicate{
+									{
+										PredicateType: "OmitPreviousHosts",
+									},
+									{
+										PredicateType:   "OmitPreviousPriorities",
+										UpdateFrequency: 2,
+									},
+									{
+										PredicateType: "OmitHostsWithTags",
+										Tags: map[string]string{
+											"test": "test",
+										},
+									},
+								},
+								HostSelectionMaxAttempts: pointer.To(int64(2)),
+							},
+						},
+					},
+				},
+			},
+			gateways:      []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}),
+		Entry("tcp retry", gatewayTestCase{
+			goldenFilePrefix: "gateway.tcp",
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							TCP: &api.TCP{
+								MaxConnectAttempt: pointer.To[uint32](21),
+							},
+						},
+					},
+				},
+			},
+			gateways:      []*core_mesh.MeshGatewayResource{samples.GatewayTCPResource()},
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayTCPRoute()},
 		}),
 	)
 })
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
+	if len(list) == 0 {
+		return []byte{}
+	}
 	actualListener, err := util_proto.ToYAML(list[0].Resource)
 	Expect(err).ToNot(HaveOccurred())
 	return actualListener

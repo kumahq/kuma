@@ -78,3 +78,23 @@ func (gr *GatewayRouteBuilder) WithExactMatchHttpRoute(path string, backend stri
 	}
 	return gr
 }
+
+func (gr *GatewayRouteBuilder) WithTCPRoute(backend string) *GatewayRouteBuilder {
+	gr.res.Spec.Conf = &mesh_proto.MeshGatewayRoute_Conf{
+		Route: &mesh_proto.MeshGatewayRoute_Conf_Tcp{
+			Tcp: &mesh_proto.MeshGatewayRoute_TcpRoute{
+				Rules: []*mesh_proto.MeshGatewayRoute_TcpRoute_Rule{{
+					Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+						{
+							Weight: 1,
+							Destination: map[string]string{
+								"kuma.io/service": backend,
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+	return gr
+}
