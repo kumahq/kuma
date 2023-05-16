@@ -93,8 +93,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
-			Enabled: false,
-			CniApp:  "",
+			Enabled:      false,
+			CniApp:       "",
+			CniNamespace: "kube-system",
 		},
 	}
 }
@@ -298,6 +299,8 @@ type NodeTaintController struct {
 	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
 	// Value of app label on CNI pod that indicates if node can be ready.
 	CniApp string `json:"cniApp" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_app"`
+	// Value of CNI namespace.
+	CniNamespace string `json:"cniNamespace" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_namespace"`
 }
 
 func (n *NodeTaintController) Validate() error {
