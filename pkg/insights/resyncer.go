@@ -135,7 +135,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		}
 	}(stop)
 
-	eventReader := r.eventFactory.New()
+	eventReader := r.eventFactory.Subscribe()
+	defer eventReader.Close()
 	for {
 		select {
 		case <-stop:
