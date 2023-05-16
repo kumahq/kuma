@@ -16,6 +16,7 @@ func GenerateRouteConfig(info GatewayListenerInfo) *envoy_routes.RouteConfigurat
 	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion).
 		Configure(
 			envoy_routes.CommonRouteConfiguration(info.Listener.ResourceName),
+			envoy_routes.IgnorePortInHostMatching(),
 			// TODO(jpeach) propagate merged listener tags.
 			// Ideally we would propagate the tags header
 			// to mesh services but not to external services,
