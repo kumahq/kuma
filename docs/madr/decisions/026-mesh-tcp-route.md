@@ -72,24 +72,20 @@ should validate that this list will contain only one element. This is due
 to the fact, that without specifying `match`es, it would be nonsensical to
 accept more `rules.`
 
-### `MeshTCPRoute` and highest common protocol precedence in situation of clashes
+### `MeshTCPRoute` and other types of route policies matching the same root targetRef
 
-In situations of clashes between different protocol routes, policy with protocol
-higher on the OSI model matching both sides of the route takes precedence. One
-side of the route (a source) is target specified in `spec.targetRef`. Other side
-of the route (a destination) is a target specified in `spec.to[].targetRef`.
-
-It means, in a hypothetical situation when sources and destinations targeted by
-`MeshTCPRoute` and `MeshHTTPRoute` policies overlap `MeshHTTPRoute` policy
-will take precedence over `MeshTCPRoute` only when protocols of both - sources
-and destinations will be equal `http` or `http2`.
-
-| source | destination | precedence    |
-|--------|-------------|---------------|
-| tcp    | tcp         | MeshTCPRoute  |
-| tcp    | http        | MeshTCPRoute  |
-| http   | tcp         | MeshTCPRoute  |
-| http   | http        | MeshHTTPRoute |
+For non-gateway targets (not addressed by this MADR) `MeshTCPRoute` policy
+allows to specify expected configuration for outbound "side" of the targets
+matched by `spec.targetRef` specification. Fot this policy to apply,
+the destination targets (specified in `spec.to[]` section) needs to be of `tcp`
+type (as a reminder, `tcp` is currently also a default assumed protocol,
+if not explicitly defined). This means there may be multiple route policies
+(`MeshTCPRoute`, `MeshHTTPRoute` etc.) targeting the same services, without
+potential clashes. If in example both `MeshTCPRoute` and `MeshHTTPRoute`
+policies target the same destination (`spec.to[]`), the destination protocol
+will determine which one will apply (if the destination protocol will be `tcp`
+or undefined `MeshTCPRoute` will apply, if it will be `http` or `http2`
+`MeshHTTPRoute` will apply).
 
 ### Traffic Rerouting
 
