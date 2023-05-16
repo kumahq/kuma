@@ -49,22 +49,20 @@ For this kind of policy we can imagine a new `spec.from.targetRef.kind: External
 - Support `MeshGateway` as a `kind` but also `MeshGatewayListener` where
   `targetRef.listener` can be set
 - Support `MeshGateway` as a `kind` with the option of setting
-  `targetRef.sectionName`
+  `targetRef.sectionName` to match a listener
+- Support `MeshGateway` as a `kind` with the option of setting
+  `targetRef.tags` to match a listener
 
 ## Decision Outcome
 
-Chosen option: `MeshGateway` as `kind` with `targetRef.sectionName`
+Chosen option: `MeshGateway` as `kind` with `targetRef.tags`
 
 `targetRef.kind: MeshGateway` applies the policy to all `Dataplanes` matched by
 the matchers on the `MeshGateway` object and all listeners configured in the
 `MeshGateway`. It has the same semantics as `{ kind: MeshService, name:
 <kuma.io/service matched by the MeshGateway> }`
 
-Further specifying `sectionName`
-narrows this to a specific listener. `MeshGateway` listeners don't have explicit
-names but users can use a reserved tag to give them a canonical name that
-policies can match on. The Gateway API implementation uses the
-`gateways.kuma.io/listener-name` tag, for example, which we could reuse.
+Further specifying `tags` narrows this to specific listeners with matching tags.
 
 Given:
 
@@ -83,14 +81,14 @@ spec:
       - port: 8080
         protocol: HTTP
         tags:
-          gateways.kuma.io/listener-name: http
+          protocol: http
       - port: 8443
         protocol: HTTPS
         tags:
-          gateways.kuma.io/listener-name: https
+          protocol: https
 ```
 
-We can use the following policy with `sectionName` to target only traffic over
+We can use the following policy with `tags` to target only traffic over
 the `HTTPS` listener on port `8443`.
 
 ```yaml
@@ -102,13 +100,29 @@ spec:
   targetRef:
     kind: MeshGateway
     name: edge
-    sectionName: https
+    tags:
+      protocol: https
 ```
 
 Note that in every policy implementation, we must make sure the Envoy config we
 generate is coherent, given that more than one `spec.listeners` can be merged into
 a single Envoy listener. There is no 1-1 correspondence guaranteed between Envoy
 listeners and `MeshGateway` listeners.
+
+### Positive Consequences
+
+- We can target a specific listener
+- Can select one or more listeners
+- Allows for flexibility of using existing `tags` field
+- Gateway API's `sectionName` can be mapped to `tags`
+
+### Negative Consequences
+
+- More overhead than just naming listeners
+
+## Other option
+
+### `MeshGateway` with `targetRef.sectionName`
 
 ### Positive Consequences
 
