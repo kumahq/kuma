@@ -45,6 +45,7 @@ type deployOptions struct {
 	database         string
 	primaryName      string
 	postgresPassword string
+	initScript       string
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -105,5 +106,11 @@ func WithPrimaryName(primaryName string) DeployOptionsFunc {
 func WithPostgresPassword(postgresPassword string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.postgresPassword = postgresPassword
+	}
+}
+
+func WithInitScript(initScript string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.initScript = initScript
 	}
 }
