@@ -229,6 +229,8 @@ runtime:
       enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
       # Value of app label on CNI pod that indicates if node can be ready.
       cniApp: "" # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
+      # Value of CNI namespace.
+      cniNamespace: "kube-system" # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
