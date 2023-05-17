@@ -74,7 +74,7 @@ accept more `rules.`
 
 ### Multiple routes with different types targeting the same destination
 
-If multiple route policies with different types (`MeshTCPProxy`, `MeshHTTPProxy`
+If multiple route policies with different types (`MeshTCPRoute`, `MeshHTTPRoute`
 etc.) both target the same destination, only a single route type should
 be applied.
 
