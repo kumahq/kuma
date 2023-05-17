@@ -57,6 +57,8 @@ For this kind of policy we can imagine a new `spec.from.targetRef.kind: External
 
 Chosen option: `MeshGateway` as `kind` with `targetRef.tags`
 
+### Matching
+
 `targetRef.kind: MeshGateway` applies the policy to all `Dataplanes` matched by
 the matchers on the `MeshGateway` object and all listeners configured in the
 `MeshGateway`. It has the same semantics as `{ kind: MeshService, name:
@@ -108,6 +110,17 @@ Note that in every policy implementation, we must make sure the Envoy config we
 generate is coherent, given that more than one `spec.listeners` can be merged into
 a single Envoy listener. There is no 1-1 correspondence guaranteed between Envoy
 listeners and `MeshGateway` listeners.
+
+### Specificity
+
+The ordering of `kinds` that can affect builtin gateway resources is the
+following:
+
+`Mesh` > `MeshSubset` > `MeshGateway`
+
+In other words, resources that target `Mesh` and `MeshSubset` also target
+builtin gateway resources and are less specific than `MeshGateway`. See [the
+policy matching MADR](./005-policy-matching.md#Overlapping) for more.
 
 ### Positive Consequences
 
