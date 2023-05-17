@@ -22,7 +22,6 @@ apply policies to the specific route.
 - At this moment, MeshHTTPRoute doesn't work with MeshGateway. Defining behaviour of the MeshHTTPRoute for 
   MeshGateway is not in the scope of this MADR.
 
-
 ## Solution
 
 ### What are the allowed targetRefs inside `to[]` when top-level targetRef is MeshHTTPRoute?
@@ -108,8 +107,6 @@ when [#5870](https://github.com/kumahq/kuma/issues/5870) is done.
 - Implement `sectionName` straightaway
 
 #### Decision Outcome
-
-Chosen option: allow referencing individual rules in the future with `sectionName`
 
 Single MeshHTTPRoute policy can have lots of rules, but thanks to the fact that new policies are mergeable it's
 not that difficult to split single MeshHTTPRoute into multiple policies. Smaller MeshHTTPRoutes are more manageable
