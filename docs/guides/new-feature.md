@@ -2,7 +2,7 @@
 
 ## Design
 
-If this is a bigger feature, consider writing a proposal, so we can a void a situation that PR needs to be reimplemented.
+If this is a bigger feature, consider writing a proposal, so we can avoid a situation that PR needs to be reimplemented.
 
 When designing a new feature, consider the following questions
 

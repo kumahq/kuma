@@ -1,6 +1,6 @@
 # Upgrade dependencies
 
-Some dependencies upgrades requires extra steps
+Some dependencies upgrades require extra steps
 
 ## Go Control Plane
 

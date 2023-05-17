@@ -72,7 +72,7 @@ Here's a description of when to use each status
 - rejected: If after a discussion we decided to go against a design or a decision it's still good to keep a trace, we'll therefore merge it .
 - accepted: This has been reviewed and accepted, but it's not implemented yet, or it's just a process change.
 - deprecated: We did it but the feature was removed. It's important to add information about release that will either remove the feature or point to the PR and version that's removing it.
-- superseded: There's anoter MADR that seems to be a better approach to this problem at stake.
+- superseded: There's another MADR that seems to be a better approach to this problem at stake.
 - implemented in: The PR/Issue and Kuma version this feature was added. If this is a new process some information on the first times this is done.
 
 #### What happens when a MADR is accepted
