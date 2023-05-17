@@ -116,6 +116,9 @@ However, there is [experimental proposal](https://gateway-api.sigs.k8s.io/geps/g
 in Gateway API to introduce `sectionName` for targeting individual rules. For Kuma this would mean adding `sectionName` 
 field inside the `TargetRef`.
 
+To sum up, we can live without the ability to target individual rules and given the fact that Gateway API proposal 
+is still experimental we should provide initial implementation without the `sectionName`.
+
 ### Validation
 
 It's important to introduce extra validation for all policies that support `spec.targetRef.kind: MeshHTTPRoute`. 
