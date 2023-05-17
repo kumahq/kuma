@@ -72,20 +72,23 @@ should validate that this list will contain only one element. This is due
 to the fact, that without specifying `match`es, it would be nonsensical to
 accept more `rules.`
 
-### `MeshTCPRoute` and other types of route policies matching the same root targetRef
+### Multiple routes with different types targeting the same destination
 
-For non-gateway targets (not addressed by this MADR) `MeshTCPRoute` policy
-allows to specify expected configuration for outbound "side" of the targets
-matched by `spec.targetRef` specification. Fot this policy to apply,
-the destination targets (specified in `spec.to[]` section) needs to be of `tcp`
-type (as a reminder, `tcp` is currently also a default assumed protocol,
-if not explicitly defined). This means there may be multiple route policies
-(`MeshTCPRoute`, `MeshHTTPRoute` etc.) targeting the same services, without
-potential clashes. If in example both `MeshTCPRoute` and `MeshHTTPRoute`
-policies target the same destination (`spec.to[]`), the destination protocol
-will determine which one will apply (if the destination protocol will be `tcp`
-or undefined `MeshTCPRoute` will apply, if it will be `http` or `http2`
-`MeshHTTPRoute` will apply).
+If multiple route policies with different types (`MeshTCPProxy`, `MeshHTTPProxy`
+etc.) both target the same destination, only a single route type should
+be applied.
+
+This decision is dictated by our attempt to be as close as possible to
+the Gateway API, which specifies following:
+
+> Route type specificity is defined in the following order (first one wins):
+> 
+> * GRPCRoute
+> * HTTPRoute
+> * TLSRoute
+> * TCPRoute
+>
+> ref. [Kubernetes Gateway API GEP-1426: xRoutes Mesh Binding](https://gateway-api.sigs.k8s.io/geps/gep-1426/#route-types)
 
 ### Traffic Rerouting
 
