@@ -6,5 +6,5 @@ jobs:
   maybe-backport:
     uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
     secrets:
-      appId: ${{ secrets.APP_ID }}
-      appPrivateKey: ${{ secrets.APP_PRIVATE_KEY }}
+      app_id: ${{ secrets.APP_ID }}
+      private_key: ${{ secrets.APP_PRIVATE_KEY }}
