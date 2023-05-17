@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +31,23 @@ var (
 var (
 	prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 	logger                   = core.Log.WithName("metrics-hijacker")
+
+	// Prometheus scraper supports multiple content types. Lower the number, higher the priority.
+	prometheusContentTypePriorities = map[string]int{
+		string(expfmt.FmtOpenMetrics_1_0_0): 0,
+		string(expfmt.FmtOpenMetrics_0_0_1): 1,
+		string(expfmt.FmtText):              2,
+		string(expfmt.FmtProtoDelim):        3,
+		string(expfmt.FmtUnknown):           4,
+	}
+	// Reverse mapping of prometheusContentTypePriorities for faster lookup.
+	prometheusPriorityContentType = func(ctPriorities map[string]int) map[int]string {
+		reverseMapping := map[int]string{}
+		for k, v := range ctPriorities {
+			reverseMapping[v] = k
+		}
+		return reverseMapping
+	}(prometheusContentTypePriorities)
 )
 
 var _ component.Component = &Hijacker{}
@@ -162,10 +180,18 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		close(out)
 	}()
 
+	// Tracks unique content type priorities returned by applications in sorted order.
+	// As there are only a few content types supported by prometheus scraper,
+	// we can use a simple array instead of a map.
+	ctPriorities := make([]bool, len(prometheusContentTypePriorities))
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			out <- s.getStats(ctx, req, app)
+			content, contentType := s.getStats(ctx, req, app)
+			out <- content
+			if content != nil && contentType != "" {
+				ctPriorities[prometheusContentTypePriorities[contentType]] = true
+			}
 		}(app)
 	}
 
@@ -173,8 +199,28 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
-		// default format returned by prometheus
-		writer.Header().Set("content-type", string(expfmt.FmtText))
+		// We should not simply use the highest priority content type even if `application/openmetrics-text`
+		// is the superset of `text/plain`, as it might not be
+		// supported by the applications or the user might be using older prom scraper.
+		// So it's better to choose the highest negotiated content type between the apps and the scraper.
+		ct := ""
+		for priority := range ctPriorities {
+			if ctPriorities[priority] {
+				ct = prometheusPriorityContentType[priority]
+				break
+			}
+		}
+		if ct == "" {
+			// If no content type returned by applications,
+			// try to use max supported accept header, else use default.
+			acceptHeaders := strings.Split(req.Header.Get("accept"), ",")
+			if len(acceptHeaders) > 0 {
+				ct = acceptHeaders[0]
+			} else {
+				ct = string(expfmt.FmtOpenMetrics_1_0_0)
+			}
+		}
+		writer.Header().Set("content-type", ct)
 		for resp := range out {
 			if _, err := writer.Write(resp); err != nil {
 				logger.Error(err, "error while writing the response")
@@ -186,11 +232,11 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) []byte {
+func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, string) {
 	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
-		return nil
+		return nil, ""
 	}
 	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
@@ -208,25 +254,26 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
-		return nil
+		return nil, ""
 	}
 
+	respContentType := resp.Header.Get("content-type")
 	var bodyBytes []byte
 	if app.Mutator != nil {
 		buf := new(bytes.Buffer)
 		if err := app.Mutator(resp.Body, buf); err != nil {
 			logger.Error(err, "failed while mutating data", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil
+			return nil, respContentType
 		}
 		bodyBytes = buf.Bytes()
 	} else {
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil
+			return nil, respContentType
 		}
 	}
-	return bodyBytes
+	return bodyBytes, respContentType
 }
 
 func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
