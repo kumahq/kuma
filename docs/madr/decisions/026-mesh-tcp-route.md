@@ -14,10 +14,13 @@ implemented, it's time to introduce `MeshTCPRoute`.
 ### Goals
 
 Policy should allow to
-* reroute TCP traffic to different versions of a service or even completely
-  different service;
-* split TCP traffic between services with different tags implementing 
+* reroute TCP traffic<sup>1</sup> to different versions of a service or even
+  completely different service;
+* split TCP traffic<sup>1</sup> between services with different tags implementing 
   A/B testing or canary deployments.
+
+<sup>1</sup> TCP traffic includes HTTP, HTTP2 and GRPC traffic if no overlapping
+policy with higher specificity applies
 
 ### Non-goals
 
