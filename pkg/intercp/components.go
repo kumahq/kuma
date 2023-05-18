@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	"github.com/kumahq/kuma/pkg/intercp/server"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("inter-cp")
@@ -47,6 +48,7 @@ func Setup(rt runtime.Runtime) error {
 	go pool.StartCleanup(rt.AppContext(), time.NewTicker(10*time.Second))
 
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
 		certs, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
 		if err != nil {
