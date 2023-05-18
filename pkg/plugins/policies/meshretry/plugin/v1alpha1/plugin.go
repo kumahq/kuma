@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -11,6 +14,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -26,33 +30,47 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshRetryType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshRetryType]
 	if !ok {
 		return nil
 	}
 
 	listeners := policies_xds.GatherListeners(rs)
+	routes := policies_xds.GatherRoutes(rs)
 
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
+		return err
+	}
+
+	if err := applyToGateway(ctx, policies.ToRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
+func applyToOutbounds(
+	rules core_xds.ToRules,
+	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
+	dataplane *core_mesh.DataplaneResource,
+	routing core_xds.Routing,
+) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+
+		configurer := plugin_xds.Configurer{
+			Retry:    core_xds.ComputeConf[api.Conf](rules.Rules, core_xds.MeshService(serviceName)),
+			Protocol: policies_xds.InferProtocol(routing, serviceName),
+		}
+
 		listener, ok := outboundListeners[oface]
 		if !ok {
 			continue
 		}
 
-		protocol := policies_xds.InferProtocol(routing, serviceName)
-
-		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, listener); err != nil {
+		if err := configurer.ConfigureListener(listener); err != nil {
 			return err
 		}
 	}
@@ -60,21 +78,46 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 	return nil
 }
 
-func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, listener *envoy_listener.Listener) error {
-	var conf api.Conf
-	if computed := rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
+func applyToGateway(
+	ctx xds_context.Context,
+	rules core_xds.ToRules,
+	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
+	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	proxy *core_xds.Proxy,
+) error {
+	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
 
-	configurer := plugin_xds.Configurer{
-		Retry:    &conf,
-		Protocol: protocol,
+	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
+	if err != nil {
+		return err
 	}
 
-	for _, filterChain := range listener.FilterChains {
-		if err := configurer.Configure(filterChain); err != nil {
+	for _, listenerInfo := range gatewayListerInfos {
+		configurer := plugin_xds.Configurer{
+			Retry:    core_xds.ComputeConf[api.Conf](rules.Rules, core_xds.MeshSubset()),
+			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),
+		}
+
+		listener, ok := gatewayListeners[core_xds.InboundListener{
+			Address: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
+			Port:    listenerInfo.Listener.Port,
+		}]
+		if !ok {
+			continue
+		}
+
+		if err := configurer.ConfigureListener(listener); err != nil {
+			return err
+		}
+
+		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
+		if !ok {
+			continue
+		}
+
+		if err := configurer.ConfigureRoute(route); err != nil {
 			return err
 		}
 	}

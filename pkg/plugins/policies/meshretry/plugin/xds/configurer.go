@@ -36,6 +36,69 @@ type Configurer struct {
 	Protocol core_mesh.Protocol
 }
 
+func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
+	if c.Retry == nil {
+		return nil
+	}
+
+	for _, fc := range ln.FilterChains {
+		if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
+			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
+				proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
+				return nil
+			})
+		} else {
+			return v3.UpdateHTTPConnectionManager(fc, func(manager *envoy_hcm.HttpConnectionManager) error {
+				return c.ConfigureRoute(manager.GetRouteConfig())
+			})
+		}
+	}
+
+	return nil
+}
+
+func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
+	if c.Retry == nil || route == nil {
+		return nil
+	}
+
+	var policy *envoy_route.RetryPolicy
+	var err error
+
+	switch c.Protocol {
+	case "http":
+		policy, err = genHttpRetryPolicy(c.Retry.HTTP)
+		if err != nil {
+			return err
+		}
+	case "grpc":
+		policy = genGrpcRetryPolicy(c.Retry.GRPC)
+	default:
+		return nil
+	}
+
+	for _, virtualHost := range route.VirtualHosts {
+		virtualHost.RetryPolicy = policy
+	}
+
+	return nil
+}
+
+func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
+	if conf == nil || len(*conf) == 0 {
+		return ""
+	}
+	var retryOn []string
+
+	for _, item := range *conf {
+		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
+		// so we need to convert it
+		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
+	}
+
+	return strings.Join(retryOn, ",")
+}
+
 func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 	if conf == nil {
 		return nil
@@ -312,61 +375,6 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 		}
 	}
 	return strings.Join(retryOn, ","), retriableStatusCodes, retriableMethods
-}
-
-func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
-	if conf == nil || len(*conf) == 0 {
-		return ""
-	}
-	var retryOn []string
-
-	for _, item := range *conf {
-		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
-		// so we need to convert it
-		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
-	}
-
-	return strings.Join(retryOn, ",")
-}
-
-func (c *Configurer) Configure(
-	filterChain *envoy_listener.FilterChain,
-) error {
-	if c.Retry == nil {
-		return nil
-	}
-
-	if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
-		return v3.UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
-			proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
-			return nil
-		})
-	} else {
-		updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
-			var policy *envoy_route.RetryPolicy
-			var err error
-
-			switch c.Protocol {
-			case "http":
-				policy, err = genHttpRetryPolicy(c.Retry.HTTP)
-				if err != nil {
-					return err
-				}
-			case "grpc":
-				policy = genGrpcRetryPolicy(c.Retry.GRPC)
-			default:
-				return nil
-			}
-
-			for _, virtualHost := range manager.GetRouteConfig().VirtualHosts {
-				virtualHost.RetryPolicy = policy
-			}
-
-			return nil
-		}
-
-		return v3.UpdateHTTPConnectionManager(filterChain, updateFunc)
-	}
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {

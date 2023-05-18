@@ -8,6 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -102,6 +103,13 @@ func (rs Rules) Compute(sub Subset) *Rule {
 		if rule.Subset.IsSubset(sub) {
 			return rule
 		}
+	}
+	return nil
+}
+
+func ComputeConf[T any](rs Rules, sub Subset) *T {
+	if computed := rs.Compute(sub); computed != nil {
+		return pointer.To(computed.Conf.(T))
 	}
 	return nil
 }

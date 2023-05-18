@@ -1,0 +1,20 @@
+address:
+  socketAddress:
+    address: 192.168.0.1
+    portValue: 8080
+enableReusePort: true
+filterChains:
+- filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      cluster: backend-26cb64fa4e85e7b7
+      maxConnectAttempts: 21
+      statPrefix: sample-gateway
+listenerFilters:
+- name: envoy.filters.listener.tls_inspector
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+name: sample-gateway:TCP:8080
+perConnectionBufferLimitBytes: 32768
+trafficDirection: INBOUND
