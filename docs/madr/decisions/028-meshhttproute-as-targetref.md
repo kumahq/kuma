@@ -29,7 +29,8 @@ apply policies to the specific route.
 #### Considered Options
 
 - only `targetRef{kind: Mesh}` is allowed
-- both `targetRef{kind: Mesh}` and `targetRef{kind: MeshService}` are allowed ✅
+- allow only `targetRef{kind: Mesh}` in the beginning and later add support for `targetRef{kind: MeshService}` ✅
+- both `targetRef{kind: Mesh}` and `targetRef{kind: MeshService}` are allowed
 
 #### Decision Outcome
 
@@ -70,7 +71,7 @@ spec:
           numRetries: 10 # only route on 'web' outbound listener is affected ('orders' is not affected)
 ```
 
-It's possible `MeshRetry` to target outbound that doesn't have `route-1`, i.e:
+But now it's possible for `MeshRetry` to target outbound that doesn't have `route-1`, i.e:
 
 ```yaml
 type: MeshRetry
@@ -87,16 +88,18 @@ spec:
           numRetries: 12
 ```
 
-in that case we should not configure routes on the `backend` listener and show error status to the user
-when [#5870](https://github.com/kumahq/kuma/issues/5870) is done.
+in that case we should not configure routes on the `backend` listener and show error status to the user.
+Since [#5870](https://github.com/kumahq/kuma/issues/5870) is not implemented and in order to reduce initial complexity
+the chosen option is implementing `targetRef{kind: Mesh}` first and adding support for `targetRef{kind: MeshService}`
+in the future if necessary.
 
 #### Positive Consequences
 
-- more fine-grained configuration
+- less surprising behaviour when targeting the outbound that wasn't targeted by route
 
 #### Negative Consequences
 
-- could be surprising if policy targets outbound that wasn't targeted by route
+- less fine-grained configuration
 
 ### Do we allow reference individual rules inside the MeshHTTPRoute?
 
@@ -138,3 +141,149 @@ spec:
         http:
           requestTimeout: 5s
 ```
+
+### Referencing the same route from multiple policies
+
+When several MeshHTTPRoute policies target the same DPP the resulted configuration is a merge of configuration
+from these policies. For example: 
+
+```yaml
+type: MeshHTTPRoute
+name: route-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: web
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default:
+            filters:
+              - type: RequestHeaderModifier
+                requestHeaderModifier:
+                  set:
+                    - name: x-custom-header
+                      value: xyz
+---
+type: MeshHTTPRoute
+name: route-2
+spec:
+  targetRef: 
+    kind: MeshService
+    name: frontend
+  to:
+    - targetRef:
+        kind: MeshService
+        name: web
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend
+                tags:
+                  version: "1.0"
+                weight: 90
+              - kind: MeshServiceSubset
+                name: backend
+                tags:
+                  version: "2.0"
+                weight: 10
+```
+
+After merging, the configuration on `frontend` DPP will have only 1 HTTP route:
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: Exact
+          value: /
+    default:
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: x-custom-header
+                value: xyz
+      backendRefs:
+        - kind: MeshServiceSubset
+          name: backend
+          tags:
+            version: "1.0"
+          weight: 90
+        - kind: MeshServiceSubset
+          name: backend
+          tags:
+            version: "2.0"
+          weight: 10
+```
+
+so we have situation when 2 MeshHTTPRoutes `route-1` and `route-2` ended up as a single route in Envoy.
+
+This means when 2 different MeshRetry policies are targeting `route-1` and `route-2` they're competing for the same spot in Envoy:
+
+```yaml
+type: MeshRetry
+name: mr-1
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default: 
+        http:
+          numRetries: 100
+          retryOn:
+            - "5xx"
+---
+type: MeshRetry
+name: mr-2
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: route-2
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 500
+```
+
+In order to solve the ambiguity we have to define the order in which the policies are applied. 
+When 2 MeshRetry are targeting the same Envoy route the order should be decided based on the MeshHTTPRoutes order.
+The process of computing configuration should be somewhat like:
+
+1. Build routes map where keys are `matches[]` and values are `conf`.
+2. For each key we can say what MeshHTTPRoutes contributed to it (in our case its `route-1` and `route-2`)
+3. Both for `route-1` and `route-2` compute MeshRetry configurations
+4. Merge MeshRetry configurations for `route-1` and `route-2` using the order "route-2 is more specific than route-1"
+5. Resulted configuration could be sent to Envoy
+
+In our example we'll get the following configuration for the envoy route:
+
+```yaml
+default:
+  http:
+    numRetries: 500
+    retryOn:
+      - "5xx"
+```
+
+### Inspect API
+
+In Kuma GUI in `To` column we have to display not only the outbound's name, but also `rule[].matches` list, because
+this list uniquely identifies routes in Envoy. 
+
+
