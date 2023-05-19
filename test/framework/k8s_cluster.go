@@ -307,6 +307,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string) error {
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	argsMap := map[string]string{
+		"--mode":                      mode,
 		"--namespace":                 Config.KumaNamespace,
 		"--control-plane-repository":  Config.KumaCPImageRepo,
 		"--dataplane-repository":      Config.KumaDPImageRepo,
@@ -332,7 +333,15 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	switch mode {
 	case core.Zone:
+		zoneName := c.opts.zoneName
+		if zoneName == "" {
+			zoneName = c.GetKumactlOptions().CPName
+		}
+		argsMap["--zone"] = zoneName
 		argsMap["--kds-global-address"] = c.opts.globalAddress
+	}
+	if !Config.UseLoadBalancer {
+		argsMap["--use-node-port"] = ""
 	}
 
 	if c.opts.zoneIngress {
@@ -445,7 +454,11 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
 	case core.Zone:
-		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
+		zoneName := c.opts.zoneName
+		if zoneName == "" {
+			zoneName = c.GetKumactlOptions().CPName
+		}
+		values["controlPlane.zone"] = zoneName
 		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
 	}
 
@@ -528,7 +541,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		replicas = c.opts.cpReplicas
 	}
 
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, c.opts.apiHeaders)
 
 	switch mode {
 	case core.Zone:

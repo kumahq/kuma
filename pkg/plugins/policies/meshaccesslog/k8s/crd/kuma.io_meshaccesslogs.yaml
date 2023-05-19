@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.3
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -69,6 +68,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -123,10 +129,25 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
+                              type:
+                                enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                                type: string
+                            required:
+                            - type
                             type: object
                           type: array
                       type: object
@@ -225,6 +246,13 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -279,10 +307,25 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
+                              type:
+                                enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                                type: string
+                            required:
+                            - type
                             type: object
                           type: array
                       type: object

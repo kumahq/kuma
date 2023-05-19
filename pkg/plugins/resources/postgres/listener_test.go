@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_events "github.com/kumahq/kuma/pkg/events"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 	"github.com/kumahq/kuma/pkg/util/channels"
@@ -112,7 +113,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
 		cfg.DriverName = postgres_config.DriverNamePgx
-		pStore, err = NewPgxStore(metrics, cfg)
+		pStore, err = NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn)
 	} else {
 		cfg.DriverName = postgres_config.DriverNamePq
 		pStore, err = NewPqStore(metrics, cfg)
@@ -124,7 +125,7 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
 	cfg.DriverName = driverName
 	eventsBus := kuma_events.NewEventBus()
-	listener := eventsBus.New()
+	listener := eventsBus.Subscribe()
 	l := postgres_events.NewListener(cfg, eventsBus)
 	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)
 	go func() {

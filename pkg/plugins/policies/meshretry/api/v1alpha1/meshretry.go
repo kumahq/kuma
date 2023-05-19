@@ -154,6 +154,13 @@ type HTTP struct {
 	// RetriableRequestHeaders is an HTTP headers which must be present in the request
 	// for retries to be attempted.
 	RetriableRequestHeaders *[]common_api.HeaderMatch `json:"retriableRequestHeaders,omitempty"`
+	// HostSelection is a list of predicates that dictate how hosts should be selected
+	// when requests are retried.
+	HostSelection *[]Predicate `json:"hostSelection,omitempty"`
+	// HostSelectionMaxAttempts is the maximum number of times host selection will be
+	// reattempted before giving up, at which point the host that was last selected will
+	// be routed to. If unspecified, this will default to retrying once.
+	HostSelectionMaxAttempts *int64 `json:"hostSelectionMaxAttempts,omitempty"`
 }
 type GRPCRetryOn string
 
@@ -222,6 +229,26 @@ type RateLimitedBackOff struct {
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 300 seconds.
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
+}
+
+type PredicateType string
+
+var (
+	OmitPreviousHosts      PredicateType = "OmitPreviousHosts"
+	OmitHostsWithTags      PredicateType = "OmitHostsWithTags"
+	OmitPreviousPriorities PredicateType = "OmitPreviousPriorities"
+)
+
+type Predicate struct {
+	// Type is requested predicate mode. Available values are OmitPreviousHosts, OmitHostsWithTags,
+	// and OmitPreviousPriorities.
+	PredicateType PredicateType `json:"predicate"`
+	// Tags is a map of metadata to match against for selecting the omitted hosts. Required if Type is
+	// OmitHostsWithTags
+	Tags map[string]string `json:"tags,omitempty"`
+	// UpdateFrequency is how often the priority load should be updated based on previously attempted priorities.
+	// Used for OmitPreviousPriorities. Default is 2 if not set.
+	UpdateFrequency int32 `json:"updateFrequency,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Seconds;UnixTimestamp

@@ -9,6 +9,9 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoy_host_meta "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/omit_host_metadata/v3"
+	envoy_prev_hosts "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/previous_hosts/v3"
+	envoy_prev_priority "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -17,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_meta "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
 const (
@@ -30,6 +34,69 @@ const (
 type Configurer struct {
 	Retry    *api.Conf
 	Protocol core_mesh.Protocol
+}
+
+func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
+	if c.Retry == nil {
+		return nil
+	}
+
+	for _, fc := range ln.FilterChains {
+		if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
+			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
+				proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
+				return nil
+			})
+		} else {
+			return v3.UpdateHTTPConnectionManager(fc, func(manager *envoy_hcm.HttpConnectionManager) error {
+				return c.ConfigureRoute(manager.GetRouteConfig())
+			})
+		}
+	}
+
+	return nil
+}
+
+func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
+	if c.Retry == nil || route == nil {
+		return nil
+	}
+
+	var policy *envoy_route.RetryPolicy
+	var err error
+
+	switch c.Protocol {
+	case "http":
+		policy, err = genHttpRetryPolicy(c.Retry.HTTP)
+		if err != nil {
+			return err
+		}
+	case "grpc":
+		policy = genGrpcRetryPolicy(c.Retry.GRPC)
+	default:
+		return nil
+	}
+
+	for _, virtualHost := range route.VirtualHosts {
+		virtualHost.RetryPolicy = policy
+	}
+
+	return nil
+}
+
+func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
+	if conf == nil || len(*conf) == 0 {
+		return ""
+	}
+	var retryOn []string
+
+	for _, item := range *conf {
+		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
+		// so we need to convert it
+		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
+	}
+
+	return strings.Join(retryOn, ",")
 }
 
 func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
@@ -72,9 +139,9 @@ func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 	return &policy
 }
 
-func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
+func genHttpRetryPolicy(conf *api.HTTP) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
-		return nil
+		return nil, nil
 	}
 
 	policy := envoy_route.RetryPolicy{
@@ -144,7 +211,17 @@ func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
 		}
 	}
 
-	return &policy
+	if conf.HostSelection != nil {
+		if err := configureHostSelectionPredicates(conf.HostSelection, &policy); err != nil {
+			return nil, err
+		}
+	}
+
+	if conf.HostSelectionMaxAttempts != nil {
+		policy.HostSelectionRetryMaxAttempts = *conf.HostSelectionMaxAttempts
+	}
+
+	return &policy, nil
 }
 
 func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff) *envoy_route.RetryPolicy_RateLimitedRetryBackOff {
@@ -163,6 +240,63 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	}
 
 	return rateLimitedRetryBackoff
+}
+
+func configureHostSelectionPredicates(hostSelection *[]api.Predicate, policy *envoy_route.RetryPolicy) error {
+	var retryHostPredicates []*envoy_route.RetryPolicy_RetryHostPredicate
+	for _, hostSelect := range pointer.Deref(hostSelection) {
+		switch hostSelect.PredicateType {
+		case api.OmitPreviousHosts:
+			prevHosts, err := util_proto.MarshalAnyDeterministic(
+				&envoy_prev_hosts.PreviousHostsPredicate{},
+			)
+			if err != nil {
+				return err
+			}
+			retryHostPredicates = append(retryHostPredicates,
+				&envoy_route.RetryPolicy_RetryHostPredicate{
+					Name: "envoy.retry_host_predicates.previous_hosts",
+					ConfigType: &envoy_route.RetryPolicy_RetryHostPredicate_TypedConfig{
+						TypedConfig: prevHosts,
+					},
+				},
+			)
+		case api.OmitHostsWithTags:
+			taggedHosts, err := util_proto.MarshalAnyDeterministic(
+				&envoy_host_meta.OmitHostMetadataConfig{
+					MetadataMatch: envoy_meta.LbMetadata(hostSelect.Tags),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			retryHostPredicates = append(retryHostPredicates,
+				&envoy_route.RetryPolicy_RetryHostPredicate{
+					Name: "envoy.retry_host_predicates.omit_host_metadata",
+					ConfigType: &envoy_route.RetryPolicy_RetryHostPredicate_TypedConfig{
+						TypedConfig: taggedHosts,
+					},
+				},
+			)
+		case api.OmitPreviousPriorities:
+			prevPriorities, err := util_proto.MarshalAnyDeterministic(
+				&envoy_prev_priority.PreviousPrioritiesConfig{
+					UpdateFrequency: hostSelect.UpdateFrequency,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			policy.RetryPriority = &envoy_route.RetryPolicy_RetryPriority{
+				Name: "envoy.retry_priorities.previous_priorities",
+				ConfigType: &envoy_route.RetryPolicy_RetryPriority_TypedConfig{
+					TypedConfig: prevPriorities,
+				},
+			}
+		}
+	}
+	policy.RetryHostPredicate = retryHostPredicates
+	return nil
 }
 
 func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
@@ -241,57 +375,6 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 		}
 	}
 	return strings.Join(retryOn, ","), retriableStatusCodes, retriableMethods
-}
-
-func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
-	if conf == nil || len(*conf) == 0 {
-		return ""
-	}
-	var retryOn []string
-
-	for _, item := range *conf {
-		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
-		// so we need to convert it
-		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
-	}
-
-	return strings.Join(retryOn, ",")
-}
-
-func (c *Configurer) Configure(
-	filterChain *envoy_listener.FilterChain,
-) error {
-	if c.Retry == nil {
-		return nil
-	}
-
-	if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
-		return v3.UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
-			proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
-			return nil
-		})
-	} else {
-		updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
-			var policy *envoy_route.RetryPolicy
-
-			switch c.Protocol {
-			case "http":
-				policy = genHttpRetryPolicy(c.Retry.HTTP)
-			case "grpc":
-				policy = genGrpcRetryPolicy(c.Retry.GRPC)
-			default:
-				return nil
-			}
-
-			for _, virtualHost := range manager.GetRouteConfig().VirtualHosts {
-				virtualHost.RetryPolicy = policy
-			}
-
-			return nil
-		}
-
-		return v3.UpdateHTTPConnectionManager(filterChain, updateFunc)
-	}
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {

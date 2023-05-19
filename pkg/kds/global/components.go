@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -91,7 +92,7 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
-		if err := createZoneIfAbsent(log, session.PeerID(), rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(session.ClientStream().Context(), log, session.PeerID(), rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
@@ -113,7 +114,7 @@ func Setup(rt runtime.Runtime) error {
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
 		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(log, clientId, rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(stream.Context(), log, clientId, rt.ResourceManager()); err != nil {
 			errChan <- errors.Wrap(err, "Global CP could not create a zone")
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
@@ -131,7 +132,7 @@ func Setup(rt runtime.Runtime) error {
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
 		sink := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream,
-			kds_sync_store_v2.GlobalSyncCallback(resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
+			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
 		go func() {
 			if err := sink.Receive(); err != nil {
 				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
@@ -140,9 +141,10 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 	})
-	return rt.Add(mux.NewServer(
+	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
+		rt.KDSContext().ServerStreamInterceptors,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
@@ -151,11 +153,11 @@ func Setup(rt runtime.Runtime) error {
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
 		),
-	))
+	)))
 }
 
-func createZoneIfAbsent(log logr.Logger, name string, resManager core_manager.ResourceManager) error {
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
+func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
 	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err

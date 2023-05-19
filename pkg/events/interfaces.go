@@ -20,12 +20,14 @@ type ResourceChangedEvent struct {
 	Operation Op
 	Type      model.ResourceType
 	Key       model.ResourceKey
+	TenantID  string
 }
 
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
 	Recv() <-chan Event
+	Close()
 }
 
 type Emitter interface {
@@ -33,5 +35,5 @@ type Emitter interface {
 }
 
 type ListenerFactory interface {
-	New() Listener
+	Subscribe() Listener
 }

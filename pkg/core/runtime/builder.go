@@ -26,6 +26,8 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
@@ -56,6 +58,8 @@ type BuilderContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
+	PgxConfigCustomizationFn() config.PgxConfigCustomization
+	Tenants() multitenant.Tenants
 }
 
 var _ BuilderContext = &Builder{}
@@ -92,6 +96,8 @@ type Builder struct {
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
 	*runtimeInfo
+	pgxConfigCustomizationFn config.PgxConfigCustomization
+	tenants                  multitenant.Tenants
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -257,6 +263,16 @@ func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
 	return b
 }
 
+func (b *Builder) WithMultitenancy(tenants multitenant.Tenants) *Builder {
+	b.tenants = tenants
+	return b
+}
+
+func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomization) *Builder {
+	b.pgxConfigCustomizationFn = pgxConfigCustomizationFn
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -324,36 +340,44 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.interCpPool == nil {
 		return nil, errors.Errorf("InterCP client pool has not been configured")
 	}
+	if b.pgxConfigCustomizationFn == nil {
+		return nil, errors.Errorf("PgxConfigCustomizationFn has not been configured")
+	}
+	if b.tenants == nil {
+		return nil, errors.Errorf("Tenants has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:            b.cfg,
-			rm:             b.rm,
-			rom:            b.rom,
-			rs:             b.rs,
-			ss:             b.ss,
-			cam:            b.cam,
-			dsl:            b.dsl,
-			ext:            b.ext,
-			configm:        b.configm,
-			leadInfo:       b.leadInfo,
-			lif:            b.lif,
-			eac:            b.eac,
-			metrics:        b.metrics,
-			erf:            b.erf,
-			apim:           b.apim,
-			xds:            b.xds,
-			cap:            b.cap,
-			dps:            b.dps,
-			kdsctx:         b.kdsctx,
-			rv:             b.rv,
-			au:             b.au,
-			acc:            b.acc,
-			appCtx:         b.appCtx,
-			extraReportsFn: b.extraReportsFn,
-			tokenIssuers:   b.tokenIssuers,
-			meshCache:      b.meshCache,
-			interCpPool:    b.interCpPool,
+			cfg:                      b.cfg,
+			rm:                       b.rm,
+			rom:                      b.rom,
+			rs:                       b.rs,
+			ss:                       b.ss,
+			cam:                      b.cam,
+			dsl:                      b.dsl,
+			ext:                      b.ext,
+			configm:                  b.configm,
+			leadInfo:                 b.leadInfo,
+			lif:                      b.lif,
+			eac:                      b.eac,
+			metrics:                  b.metrics,
+			erf:                      b.erf,
+			apim:                     b.apim,
+			xds:                      b.xds,
+			cap:                      b.cap,
+			dps:                      b.dps,
+			kdsctx:                   b.kdsctx,
+			rv:                       b.rv,
+			au:                       b.au,
+			acc:                      b.acc,
+			appCtx:                   b.appCtx,
+			extraReportsFn:           b.extraReportsFn,
+			tokenIssuers:             b.tokenIssuers,
+			meshCache:                b.meshCache,
+			interCpPool:              b.interCpPool,
+			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
+			tenants:                  b.tenants,
 		},
 		Manager: b.cm,
 	}, nil
@@ -473,4 +497,12 @@ func (b *Builder) InterCPClientPool() *client.Pool {
 
 func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
 	return b.xds
+}
+
+func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
+	return b.pgxConfigCustomizationFn
+}
+
+func (b *Builder) Tenants() multitenant.Tenants {
+	return b.tenants
 }

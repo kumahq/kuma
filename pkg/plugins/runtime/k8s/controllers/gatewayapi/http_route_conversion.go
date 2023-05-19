@@ -3,11 +3,13 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -161,7 +163,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 
 func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header {
 	return &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header{
-		Name:  string(header.Name),
+		// note that our resources disallow uppercase letters in header names
+		Name:  strings.ToLower(string(header.Name)),
 		Value: header.Value,
 	}
 }
@@ -169,6 +172,66 @@ func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_
 type ResolvedRefsConditionFalse struct {
 	Reason  string
 	Message string
+}
+
+func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
+	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
+) (map[string]string, *ResolvedRefsConditionFalse, error) {
+	unresolvedBackendTags := map[string]string{
+		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
+	}
+
+	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
+
+	gk := policyRef.GroupKindReferredTo()
+	namespacedName := policyRef.NamespacedNameReferredTo()
+
+	switch {
+	case gk.Kind == "Service" && gk.Group == "":
+		// References to Services are required by GAPI to include a port
+		port := int32(*ref.Port)
+
+		svc := &kube_core.Service{}
+		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				return unresolvedBackendTags,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
+					},
+					nil
+			}
+			return nil, nil, err
+		}
+
+		return map[string]string{
+			mesh_proto.ServiceTag: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
+		}, nil, nil
+	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
+		resource := core_mesh.NewExternalServiceResource()
+		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
+			if store.IsResourceNotFound(err) {
+				return unresolvedBackendTags,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
+					},
+					nil
+			}
+			return nil, nil, err
+		}
+
+		return map[string]string{
+			mesh_proto.ServiceTag: resource.Spec.GetService(),
+		}, nil, nil
+	}
+
+	return unresolvedBackendTags,
+		&ResolvedRefsConditionFalse{
+			Reason:  string(gatewayapi.RouteReasonInvalidKind),
+			Message: "backend reference must be Service or externalservice.kuma.io",
+		},
+		nil
 }
 
 // gapiToKumaRef checks a reference and tries to resolve if it's supported by
@@ -197,52 +260,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			nil
 	}
 
-	switch {
-	case gk.Kind == "Service" && gk.Group == "":
-		// References to Services are required by GAPI to include a port
-		port := int32(*ref.Port)
-
-		svc := &kube_core.Service{}
-		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				return unresolvedBackendTags,
-					&ResolvedRefsConditionFalse{
-						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
-						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
-					},
-					nil
-			}
-			return nil, nil, err
-		}
-
-		return map[string]string{
-			mesh_proto.ServiceTag: k8s_util.ServiceTagFor(svc, &port),
-		}, nil, nil
-	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
-		resource := core_mesh.NewExternalServiceResource()
-		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
-			if store.IsResourceNotFound(err) {
-				return unresolvedBackendTags,
-					&ResolvedRefsConditionFalse{
-						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
-						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
-					},
-					nil
-			}
-			return nil, nil, err
-		}
-
-		return map[string]string{
-			mesh_proto.ServiceTag: resource.Spec.GetService(),
-		}, nil, nil
-	}
-
-	return unresolvedBackendTags,
-		&ResolvedRefsConditionFalse{
-			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service or externalservice.kuma.io",
-		},
-		nil
+	return r.uncheckedGapiToKumaRef(ctx, mesh, objectNamespace, ref)
 }
 
 func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRoute_HttpRoute_Match, error) {
@@ -275,7 +293,8 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 
 	for _, header := range match.Headers {
 		kumaHeader := &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header{
-			Name:  string(header.Name),
+			// note that our resources disallow uppercase letters in header names
+			Name:  strings.ToLower(string(header.Name)),
 			Value: header.Value,
 		}
 
@@ -291,7 +310,7 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 
 	for _, query := range match.QueryParams {
 		kumaQuery := &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query{
-			Name:  query.Name,
+			Name:  string(query.Name),
 			Value: query.Value,
 		}
 
@@ -384,6 +403,18 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 
 		if s := filter.Scheme; s != nil {
 			redirect.Scheme = *s
+
+			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
+			// this would have been a breaking change for MeshGateway, so handle
+			// it here.
+			if p := filter.Port; p == nil {
+				switch *s {
+				case "http":
+					redirect.Port = 80
+				case "https":
+					redirect.Port = 443
+				}
+			}
 		}
 
 		if h := filter.Hostname; h != nil {

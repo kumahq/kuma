@@ -1,5 +1,4 @@
 name: "Helm Charts"
-
 # This workflow provides two things:
 # On explicit dispatch, it packages, uploads and releases the chart to the
 # charts repo.
@@ -21,17 +20,13 @@ on:
         required: false
         default: false
         type: boolean
-
 env:
-  CR_VERSION: 1.3.0
-
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_OWNER: ${{ github.repository_owner }}
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
-
 jobs:
   package:
     name: Package
@@ -39,8 +34,7 @@ jobs:
     outputs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - uses: actions/cache@v3

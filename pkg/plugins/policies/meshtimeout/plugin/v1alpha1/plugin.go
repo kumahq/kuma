@@ -190,6 +190,8 @@ func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.
 		if computed := rules.Compute(subset); computed != nil {
 			conf = computed.Conf.(api.Conf)
 		} else {
+			// We're not touching outbounds if there are no rules for them.
+			// Normally we expect default MeshTimeout policy to define ".to[].targetRef.kind: Mesh"
 			return nil
 		}
 	}

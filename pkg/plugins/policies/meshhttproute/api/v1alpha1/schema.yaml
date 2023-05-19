@@ -1,3 +1,4 @@
+type: object
 properties:
   type:
     description: 'the type of the resource'
@@ -339,7 +340,7 @@ properties:
                             type:
                               enum:
                                 - Exact
-                                - Prefix
+                                - PathPrefix
                                 - RegularExpression
                               type: string
                             value:

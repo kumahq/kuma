@@ -9,7 +9,12 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
 )
+
+const defaultServiceAccountName = "system:serviceaccount:kuma-system:kuma-control-plane"
+
+var logger = core.Log.WithName("kubernetes-config")
 
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 	return &KubernetesRuntimeConfig{
@@ -17,7 +22,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Port: 5443,
 		},
 		ControlPlaneServiceName: "kuma-control-plane",
-		ServiceAccountName:      "system:serviceaccount:kuma-system:kuma-control-plane",
+		ServiceAccountName:      defaultServiceAccountName,
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -92,8 +97,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
-			Enabled: false,
-			CniApp:  "",
+			Enabled:      false,
+			CniApp:       "",
+			CniNamespace: "kube-system",
 		},
 	}
 }
@@ -109,7 +115,11 @@ type KubernetesRuntimeConfig struct {
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
+	// Deprecated: Use AllowedUsers instead.
 	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
+	// List of names of Service Accounts that admission requests are allowed.
+	// This list is appended with Control Plane's Service Account and generic-garbage-collector
+	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 	// NodeTaintController that prevents applications from scheduling until CNI is ready.
@@ -301,6 +311,8 @@ type NodeTaintController struct {
 	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
 	// Value of app label on CNI pod that indicates if node can be ready.
 	CniApp string `json:"cniApp" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_app"`
+	// Value of CNI namespace.
+	CniNamespace string `json:"cniNamespace" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_namespace"`
 }
 
 func (n *NodeTaintController) Validate() error {
@@ -325,6 +337,9 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 	}
 	if c.MarshalingCacheExpirationTime.Duration < 0 {
 		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
+	}
+	if c.ServiceAccountName != defaultServiceAccountName {
+		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedUsers.")
 	}
 	return errs
 }

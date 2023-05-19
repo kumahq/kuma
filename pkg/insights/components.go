@@ -29,6 +29,6 @@ func Setup(rt runtime.Runtime) error {
 			return fmt.Sprintf("%s.%s:%d", svc, rt.Config().DNSServer.Domain, rt.Config().DNSServer.ServiceVipPort)
 		},
 		Now: core.Now,
-	})
+	}, rt.Tenants())
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }

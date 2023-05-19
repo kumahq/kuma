@@ -58,5 +58,6 @@ injector:
 marshalingCacheExpirationTime: 5m0s
 nodeTaintController:
   cniApp: ""
+  cniNamespace: kube-system
   enabled: false
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane

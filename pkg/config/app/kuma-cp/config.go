@@ -30,6 +30,8 @@ var _ config.Config = &Defaults{}
 type Defaults struct {
 	// If true, it skips creating the default Mesh
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	// If true, it skips creating the default tenant resources
+	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 }
 
 func (d *Defaults) Sanitize() {

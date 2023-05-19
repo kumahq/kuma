@@ -1,13 +1,13 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images-${GOARCH}
 KUMA_VERSION ?= master
 
-DOCKER_REPO ?= docker.io
-DOCKER_REGISTRY ?= kumahq
+DOCKER_SERVER ?= docker.io
+DOCKER_REGISTRY ?= $(DOCKER_SERVER)/kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
 define build_image
-$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REPO)/$(DOCKER_REGISTRY)/,$(1)))
+$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)))
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
@@ -128,8 +128,8 @@ docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 
 .PHONY: docker/login
 docker/login:
-	$(call GATE_PUSH,docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REPO))
+	$(call GATE_PUSH,docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_SERVER))
 
 .PHONY: docker/logout
 docker/logout:
-	$(call GATE_PUSH,docker logout $(DOCKER_REPO))
+	$(call GATE_PUSH,docker logout $(DOCKER_SERVER))

@@ -4,9 +4,9 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "mesh/options.proto";
-import "mesh/v1alpha1/metrics.proto";
-import "mesh/v1alpha1/envoy_admin.proto";
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/metrics.proto";
+import "api/mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -27,6 +27,10 @@ message Dataplane {
   option (kuma.mesh.resource).kds.send_to_global = true;
   option (kuma.mesh.resource).ws.name = "dataplane";
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).additional_printer_columns = "description=\"Service tag of the first inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/service\']`,name=\"kuma.io/service\",type=string";
+  option (kuma.mesh.resource).additional_printer_columns = "description=\"Service tag of the second inbound\",JSONPath=`.spec.networking.inbound[1].tags[\'kuma\\.io/service\']`,name=\"kuma.io/service\",type=string";
+  option (kuma.mesh.resource).additional_printer_columns = "description=\"Service tag of the third inbound\",JSONPath=`.spec.networking.inbound[2].tags[\'kuma\\.io/service\']`,name=\"kuma.io/service\",type=string";
+  option (kuma.mesh.resource).additional_printer_columns = "description=\"Service tag of the fourth inbound\",JSONPath=`.spec.networking.inbound[3].tags[\'kuma\\.io/service\']`,name=\"kuma.io/service\",type=string";
 
   // Networking describes inbound and outbound interfaces of a data plane proxy.
   message Networking {

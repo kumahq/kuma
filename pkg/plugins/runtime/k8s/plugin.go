@@ -92,8 +92,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 
-	if rt.Config().Runtime.Kubernetes.NodeTaintController.Enabled {
-		if err := addCniNodeTaintReconciler(mgr, rt.Config().Runtime.Kubernetes.NodeTaintController.CniApp); err != nil {
+	nodeTaintController := rt.Config().Runtime.Kubernetes.NodeTaintController
+	if nodeTaintController.Enabled {
+		if err := addCniNodeTaintReconciler(mgr, nodeTaintController.CniApp, nodeTaintController.CniNamespace); err != nil {
 			return err
 		}
 	}
@@ -101,11 +102,12 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	return nil
 }
 
-func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string) error {
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string, cniNamespace string) error {
 	reconciler := &k8s_controllers.CniNodeTaintReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("NodeTaint"),
-		CniApp: cniApp,
+		Client:       mgr.GetClient(),
+		Log:          core.Log.WithName("controllers").WithName("NodeTaint"),
+		CniApp:       cniApp,
+		CniNamespace: cniNamespace,
 	}
 
 	return reconciler.SetupWithManager(mgr)
@@ -232,7 +234,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("could not find composite validator in the extensions context")
 	}
 
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Runtime.Kubernetes.ServiceAccountName)
+	allowedUsers := append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector")
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, allowedUsers)
 	composite.AddValidator(handler)
 
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)

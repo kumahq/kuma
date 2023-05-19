@@ -31,7 +31,8 @@ spec:
       - name: team
         literal: core
     backends:
-      - zipkin:
+      - type: Zipkin
+        zipkin:
           url: %s
 `, meshName, url)
 }

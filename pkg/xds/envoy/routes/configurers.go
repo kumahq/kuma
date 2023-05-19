@@ -110,3 +110,12 @@ func CommonRouteConfiguration(name string) RouteConfigurationBuilderOpt {
 			Name: name,
 		})
 }
+
+func IgnorePortInHostMatching() RouteConfigurationBuilderOpt {
+	return AddRouteConfigurationConfigurer(
+		v3.RouteConfigurationConfigureFunc(func(rc *envoy_route.RouteConfiguration) error {
+			rc.IgnorePortInHostMatching = true
+			return nil
+		}),
+	)
+}

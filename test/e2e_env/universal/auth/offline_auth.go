@@ -87,6 +87,7 @@ dpServer:
 			"test-admin",
 			universal.GetKuma().GetAPIServerAddress(),
 			token,
+			[]string{},
 		)
 
 		// then the new admin can access secrets

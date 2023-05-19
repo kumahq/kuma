@@ -1,0 +1,9 @@
+schemaVersion: 2.0.0
+
+commandTests:
+- name: "kumactl binary should return version"
+  command: kumactl
+  args: ["version"]
+
+metadataTest:
+  entrypoint: ["/usr/bin/kumactl"]

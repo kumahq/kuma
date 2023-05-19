@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 GO_MODULE=$1
 
 IMPORTS_FILE="pkg/plugins/policies/imports.go"

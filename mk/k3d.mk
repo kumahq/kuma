@@ -1,5 +1,5 @@
-CI_K3S_VERSION ?= v1.20.15-k3s1
-
+CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
+METALLB_VERSION ?= v0.13.9
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
@@ -43,6 +43,8 @@ K3D_NETWORK_CNI ?= flannel
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
+	--k3s-arg '--disable=servicelb@server:0' \
+    --volume '$(subst @,\@,$(TOP))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
@@ -54,7 +56,7 @@ endif
 
 ifdef CI
 ifeq ($(GOOS),linux)
-ifneq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
+ifneq (,$(findstring legacy,$(CIRCLE_JOB)))
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 endif
@@ -87,18 +89,28 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
 	$(MAKE) k3d/configure/ebpf
+	$(MAKE) k3d/configure/metallb
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
 ifeq ($(GOOS),darwin)
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
 endif
+
+.PHONY: k3d/configure/metallb
+k3d/configure/metallb:
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=90s --for=condition=Ready -n metallb-system --all pods
+	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}'); if [ $${SUBNET} != "172.18.0.0/16" ]; then \
+		   echo "Unexpected docker network, expecting 172.18.0.0/16"; exit 1; \
+	fi
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml
 
 .PHONY: k3d/wait
 k3d/wait:
 	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; \
 	do echo "Waiting for the cluster to come up" && sleep 1; done
 
 .PHONY: k3d/stop

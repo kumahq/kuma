@@ -19,6 +19,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
+| controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
@@ -27,8 +28,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | controlPlane.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.tolerations | list | `[]` | Tolerations for the Kuma Control Plane pods |
 | controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
@@ -90,6 +91,7 @@ A Helm chart for the Kuma Control Plane
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.tolerations | list | `[]` | Tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
+| cni.namespace | string | `"kube-system"` | Set the CNI namespace |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
@@ -102,7 +104,7 @@ A Helm chart for the Kuma Control Plane
 | cni.resources.requests.memory | string | `"100Mi"` |  |
 | cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
-| cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
+| cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -118,8 +120,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | ingress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | ingress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | ingress.service.enabled | bool | `true` | Whether to create a Service resource. |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -143,8 +145,8 @@ A Helm chart for the Kuma Control Plane
 | egress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | egress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | egress.resources.requests.cpu | string | `"50m"` |  |
 | egress.resources.requests.memory | string | `"64Mi"` |  |
 | egress.resources.limits.cpu | string | `"1000m"` |  |

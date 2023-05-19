@@ -3,10 +3,12 @@ package framework
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -19,6 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 )
 
+var _ ControlPlane = &K8sControlPlane{}
+
 type K8sControlPlane struct {
 	t          testing.TestingT
 	mode       core.CpMode
@@ -29,6 +33,7 @@ type K8sControlPlane struct {
 	portFwd    PortFwd
 	verbose    bool
 	replicas   int
+	apiHeaders []string
 }
 
 func NewK8sControlPlane(
@@ -39,6 +44,7 @@ func NewK8sControlPlane(
 	cluster *K8sCluster,
 	verbose bool,
 	replicas int,
+	apiHeaders []string,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	return &K8sControlPlane{
@@ -50,6 +56,7 @@ func NewK8sControlPlane(
 		cluster:    cluster,
 		verbose:    verbose,
 		replicas:   replicas,
+		apiHeaders: apiHeaders,
 	}
 }
 
@@ -98,13 +105,22 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 	)
 }
 
-func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
+func (c *K8sControlPlane) GetKumaCPSvc() v1.Service {
+	return k8s.ListServices(c.t,
+		c.GetKubectlOptions(Config.KumaNamespace),
+		metav1.ListOptions{
+			FieldSelector: "metadata.name=" + Config.KumaServiceName,
+		},
+	)[0]
+}
+
+func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
 	return k8s.ListServices(c.t,
 		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
 			FieldSelector: "metadata.name=" + Config.KumaGlobalZoneSyncServiceName,
 		},
-	)
+	)[0]
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
@@ -119,16 +135,23 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {
-	return http_helper.HttpGetWithRetryWithCustomValidationE(
+	headers := map[string]string{}
+	for _, header := range c.apiHeaders {
+		res := strings.Split(header, "=")
+		headers[res[0]] = res[1]
+	}
+	_, err := http_helper.HTTPDoWithRetryE(
 		c.t,
+		"GET",
 		c.GetGlobalStatusAPI(),
-		&tls.Config{MinVersion: tls.VersionTLS12},
+		nil,
+		headers,
+		http.StatusOK,
 		DefaultRetries,
 		DefaultTimeout,
-		func(statusCode int, body string) bool {
-			return statusCode == http.StatusOK
-		},
+		&tls.Config{MinVersion: tls.VersionTLS12},
 	)
+	return err
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
@@ -165,10 +188,13 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 		return err
 	}
 	token = t
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
+		return "", nil
+	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
@@ -202,38 +228,54 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 }
 
 func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {
-	return c.getKDSServerAddress(false)
+	svc := c.GetKumaCPSyncSvc()
+	return "grpc://" + c.getKumaCPAddress(svc, "global-zone-sync")
 }
 
 func (c *K8sControlPlane) GetKDSServerAddress() string {
-	return c.getKDSServerAddress(true)
+	svc := c.GetKumaCPSyncSvc()
+	return "grpcs://" + c.getKumaCPAddress(svc, "global-zone-sync")
 }
 
-// A naive implementation to find the URL where Zone CP exposes its API
-func (c *K8sControlPlane) getKDSServerAddress(secure bool) string {
-	protocol := "grpcs"
-	if !secure {
-		protocol = "grpc"
+func (c *K8sControlPlane) GetXDSServerAddress() string {
+	svc := c.GetKumaCPSvc()
+	return c.getKumaCPAddress(svc, "dp-server")
+}
+
+// A naive implementation to find the Host & Port where a Service is exposing a
+// CP port.
+func (c *K8sControlPlane) getKumaCPAddress(svc v1.Service, portName string) string {
+	var svcPort v1.ServicePort
+	for _, port := range svc.Spec.Ports {
+		if port.Name == portName {
+			svcPort = port
+		}
 	}
 
-	// As EKS and AWS generally returns dns records of load balancers instead of
-	//  IP addresses, accessing this data (hostname) was only tested there,
-	//  so the env var was created for that purpose
-	if Config.UseLoadBalancer {
-		svc := c.GetKumaCPSvcs()[0]
+	var address string
+	var portNumber int32
 
-		address := svc.Status.LoadBalancer.Ingress[0].IP
+	// As EKS and AWS generally returns dns records of load balancers instead of
+	// IP addresses, accessing this data (hostname) was only tested there,
+	// so the env var was created for that purpose
+	if Config.UseLoadBalancer {
+		address = svc.Status.LoadBalancer.Ingress[0].IP
 
 		if Config.UseHostnameInsteadOfIP {
 			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 
-		return protocol + "://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+		portNumber = svcPort.Port
+	} else {
+		pod := c.GetKumaCPPods()[0]
+		address = pod.Status.HostIP
+
+		portNumber = svcPort.NodePort
 	}
 
-	pod := c.GetKumaCPPods()[0]
-	return protocol + "://" + net.JoinHostPort(
-		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
+	return net.JoinHostPort(
+		address, strconv.FormatUint(uint64(portNumber), 10),
+	)
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
@@ -311,6 +353,17 @@ func (c *K8sControlPlane) GenerateZoneIngressLegacyToken(zone string) (string, e
 
 func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
 	data := fmt.Sprintf(`{"zone": "%s", "scope": ["egress"]}`, zone)
+
+	return c.generateToken("/zone", data)
+}
+
+func (c *K8sControlPlane) GenerateZoneToken(zone string, scope []string) (string, error) {
+	scopeJson, err := json.Marshal(scope)
+	if err != nil {
+		return "", err
+	}
+
+	data := fmt.Sprintf(`'{"zone": "%s", "scope": %s}'`, zone, scopeJson)
 
 	return c.generateToken("/zone", data)
 }

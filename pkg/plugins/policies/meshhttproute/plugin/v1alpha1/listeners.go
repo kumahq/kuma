@@ -8,7 +8,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -119,7 +118,7 @@ func prepareRoutes(
 	catchAllMatch := []api.Match{{
 		Path: &api.PathMatch{
 			Value: "/",
-			Type:  api.Prefix,
+			Type:  api.PathPrefix,
 		},
 	}}
 
@@ -191,13 +190,6 @@ func makeHTTPSplit(
 		service := ref.Name
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
-		}
-
-		switch plugins_xds.InferProtocol(proxy.Routing, service) {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-		default:
-			// We don't support splitting if at least one of the backendRefs is not HTTP
-			return nil
 		}
 
 		clusterName := getClusterName(ref, sc)

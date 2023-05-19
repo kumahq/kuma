@@ -11,11 +11,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 )
 
-type Clusters interface {
-	GetCluster(name string) Cluster
-	Cluster
-}
-
 type InstallationMode string
 
 var (
@@ -52,6 +47,8 @@ type kumaDeploymentOptions struct {
 	runPostgresMigration        bool
 	yamlConfig                  string
 	transparentProxyV1          bool
+	apiHeaders                  []string
+	zoneName                    string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -358,6 +355,18 @@ func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
 	})
 }
 
+func WithApiHeaders(headers ...string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.apiHeaders = headers
+	})
+}
+
+func WithZoneName(zoneName string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneName = zoneName
+	})
+}
+
 // WithoutDataplane suppresses the automatic configuration of kuma-dp
 // in the application container. This is useful when the test requires a
 // container that is not bound to the mesh.
@@ -565,11 +574,13 @@ type ControlPlane interface {
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
+	GetXDSServerAddress() string
 	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
+	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)
 }

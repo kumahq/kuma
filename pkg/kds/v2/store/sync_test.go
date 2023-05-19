@@ -61,7 +61,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -84,7 +84,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = removedResources
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -121,7 +121,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			model.WithoutMesh("mesh-10"),
 		}
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -152,7 +152,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -173,7 +173,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 
 		// when
-		err := syncer.Sync(upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+		err := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetName() != "mesh-1"
 		}))
 
@@ -200,7 +200,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		Expect(syncer.Sync(upstreamResponse)).To(Succeed())
+		Expect(syncer.Sync(context.Background(), upstreamResponse)).To(Succeed())
 
 		// then resource's version is the same
 		actual := mesh.NewMeshResource()

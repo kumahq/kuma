@@ -34,8 +34,10 @@ from:
       kind: Mesh
     default:
       backends:
-        - tcp:
+        - type: Tcp
+          tcp:
             format:
+              type: Json
               json:
                 - key: "start_time"
                   value: "%START_TIME%"
@@ -46,8 +48,10 @@ to:
       name: web-backend
     default:
       backends:
-        - file:
+        - type: File
+          file:
            format:
+             type: Plain
              plain: '{"start_time": "%START_TIME%"}'
            path: '/tmp/logs.txt'
 `),
@@ -60,7 +64,8 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
 `),
 			Entry("empty backend list", `
@@ -116,9 +121,11 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
+        - type: File
+          file:
+            format:
+              type: Plain
+              plain: '{"start_time": "%START_TIME%"}'
 `,
 				expected: `
 violations:
@@ -135,8 +142,10 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
            format:
+             type: Plain
              plain: '{"start_time": "%START_TIME%"}'
            path: '#not_valid'
 `,
@@ -155,10 +164,12 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              type: Json
+              json:
                 - value: "%START_TIME%"
 `,
 				expected: `
@@ -176,10 +187,12 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              type: Json
+              json:
                 - key: "start_time"
 `,
 				expected: `
@@ -197,10 +210,12 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
-           path: '/tmp/logs.txt'
-           format:
-             json:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              type: Json
+              json:
                 - key: '"'
                   value: "%START_TIME%"
 `,
@@ -209,56 +224,6 @@ violations:
   - field: spec.from[0].default.backends[0].file.format.json[0]
     message: is not a valid JSON object`,
 			}),
-			Entry("both 'plain' and 'json' defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - tcp:
-            address: 127.0.0.1:5000
-            format:
-              plain: '{"start_time": "%START_TIME%"}'
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-`,
-				expected: `
-violations:
-- field: spec.from[0].default.backends[0].tcp.format
-  message: 'format must have only one type defined: plain, json'`,
-			}),
-			Entry("both 'tcp' and 'file' defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - tcp:
-            address: 127.0.0.1:5000
-            format:
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-          file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
-`,
-				expected: `
-violations:
-- field: spec.from[0].default.backends[0]
-  message: 'backend must have only one type defined: tcp, file, openTelemetry'`,
-			}),
-
 			Entry("'to' defined in MeshGatewayRoute", testCase{
 				inputYaml: `
 targetRef:
@@ -269,10 +234,12 @@ to:
       kind: Mesh
     default:
       backends:
-        - file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
+        - type: File
+          file:
+            format:
+              type: Plain
+              plain: '{"start_time": "%START_TIME%"}'
+            path: '/tmp/logs.txt'
 `,
 				expected: `
 violations:
@@ -315,8 +282,10 @@ from:
       kind: Mesh
     default:
       backends:
-        - tcp:
+        - type: Tcp
+          tcp:
             format:
+              type: Json
               json:
                 - key: "start_time"
                   value: "%START_TIME%"
@@ -337,13 +306,17 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
             format:
+              type: Json
               json: []
-        - tcp:
+        - type: Tcp
+          tcp:
             address: http://logs.com
             format:
+              type: Json
               json: []
 `,
 				expected: `
@@ -363,13 +336,17 @@ from:
       kind: Mesh
     default:
       backends:
-        - file:
+        - type: File
+          file:
             path: '/tmp/logs.txt'
             format:
+              type: Plain
               plain: ""
-        - tcp:
+        - type: Tcp
+          tcp:
             address: http://logs.com
             format:
+              type: Plain
               plain: ""
 `,
 				expected: `
@@ -378,6 +355,57 @@ violations:
   message: 'must not be empty'
 - field: spec.from[0].default.backends[1].tcp.format.plain
   message: 'must not be empty'`,
+			}),
+			Entry("backend must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: File
+        - type: Tcp
+        - type: OpenTelemetry
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backends[0].file
+    message: must be defined
+  - field: spec.from[0].default.backends[1].tcp
+    message: must be defined
+  - field: spec.from[0].default.backends[2].openTelemetry
+    message: must be defined`,
+			}),
+			Entry("format must be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+            format:
+              type: Plain
+        - type: Tcp
+          tcp:
+            address: http://logs.com
+            format:
+              type: Json
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backends[0].file.format.plain
+  message: must be defined
+- field: spec.from[0].default.backends[1].tcp.format.json
+  message: must be defined`,
 			}),
 		)
 	})

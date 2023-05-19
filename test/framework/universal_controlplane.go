@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 
@@ -12,6 +13,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
+
+var _ ControlPlane = &UniversalControlPlane{}
 
 type UniversalControlPlane struct {
 	t            testing.TestingT
@@ -28,6 +31,7 @@ func NewUniversalControlPlane(
 	clusterName string,
 	verbose bool,
 	networking UniversalNetworking,
+	apiHeaders []string,
 ) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
 	kumactl := NewKumactlOptions(t, name, verbose)
@@ -44,7 +48,7 @@ func NewUniversalControlPlane(
 		return nil, err
 	}
 
-	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token); err != nil {
+	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token, apiHeaders); err != nil {
 		return nil, err
 	}
 	return ucp, nil
@@ -64,6 +68,10 @@ func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
 
 func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return c.getKDSServerAddress(true)
+}
+
+func (c *UniversalControlPlane) GetXDSServerAddress() string {
+	return net.JoinHostPort(c.cpNetworking.IP, "5678")
 }
 
 func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
@@ -194,6 +202,20 @@ func (c *UniversalControlPlane) GenerateZoneIngressLegacyToken(zone string) (str
 
 func (c *UniversalControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
 	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["egress"]}'`, zone)
+
+	return c.generateToken("/zone", data)
+}
+
+func (c *UniversalControlPlane) GenerateZoneToken(
+	zone string,
+	scope []string,
+) (string, error) {
+	scopeJson, err := json.Marshal(scope)
+	if err != nil {
+		return "", err
+	}
+
+	data := fmt.Sprintf(`'{"zone": "%s", "scope": %s}'`, zone, scopeJson)
 
 	return c.generateToken("/zone", data)
 }

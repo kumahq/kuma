@@ -77,7 +77,7 @@ kind/load/images:
 	for image in ${KUMA_IMAGES}; do $(KIND) load docker-image $$image --name=$(KIND_CLUSTER_NAME); done
 
 .PHONY: kind/load
-kind/load: images kind/load/images
+kind/load: images docker/tag kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load

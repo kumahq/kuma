@@ -86,7 +86,7 @@ func validatePath(match *PathMatch) validators.ValidationError {
 	switch match.Type {
 	case RegularExpression:
 		break
-	case Prefix:
+	case PathPrefix:
 		if match.Value == "/" {
 			break
 		}
@@ -148,7 +148,7 @@ func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError 
 
 func hasAnyMatchesWithoutPrefix(matches []Match) bool {
 	for _, match := range matches {
-		if match.Path == nil || match.Path.Type != Prefix {
+		if match.Path == nil || match.Path.Type != PathPrefix {
 			return true
 		}
 	}

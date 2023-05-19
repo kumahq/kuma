@@ -1,5 +1,4 @@
 name: "release"
-
 on:
   release: {}
   schedule:
@@ -15,7 +14,6 @@ on:
         type: boolean
         default: false
         description: "check that everything is published correctly"
-
 env:
   CHARTS_REPO: "kumahq/charts"
   LEGACY_BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
@@ -24,7 +22,7 @@ env:
   PULP_URL: "https://download.konghq.com/kuma-binaries-release/"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
   RELEASE: ${{ inputs.release || '0.0.0' }}
-  CHECK: ${{ inputs.check }}
+  CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
   MIN_VERSION: "1.2.0"
 jobs:
@@ -33,7 +31,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v4
         with:
-          go-version: "~1.20.2"
+          go-version: "1.20.3"
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
@@ -49,7 +47,7 @@ jobs:
         run: |
           release-tool release changelog --repo ${{ github.repository }} --release ${{ env.RELEASE }}
       - name: check-helm
-        if: fromJSON(env.CHECK)
+        if: env.RELEASE != '0.0.0' && fromJSON(env.CHECK)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -65,7 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         if: fromJSON(env.CHECK) && !(startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --url ${{ env.PULP_URL }}
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --base-url ${{ env.PULP_URL }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -97,7 +95,7 @@ jobs:
         run: |
           release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true

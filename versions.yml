@@ -29,33 +29,37 @@
   endOfLifeDate: "2023-04-12"
   branch: release-1.6
 - edition: kuma
-  version: 1.7.5
+  version: 1.7.6
   release: 1.7.x
   releaseDate: "2022-06-16"
   endOfLifeDate: "2023-06-16"
   branch: release-1.7
 - edition: kuma
-  version: 1.8.4
+  version: 1.8.5
   release: 1.8.x
   releaseDate: "2022-08-24"
   endOfLifeDate: "2023-08-24"
   branch: release-1.8
 - edition: kuma
-  version: 2.0.3
+  version: 2.0.4
   release: 2.0.x
   releaseDate: "2022-11-04"
   endOfLifeDate: "2023-11-04"
   branch: release-2.0
 - edition: kuma
-  version: 2.1.1
+  version: 2.1.2
   release: 2.1.x
-  latest: true
   releaseDate: "2023-02-01"
   endOfLifeDate: "2024-02-01"
   branch: release-2.1
 - edition: kuma
+  version: 2.2.1
+  release: 2.2.x
+  latest: true
+  releaseDate: "2023-04-14"
+  endOfLifeDate: "2024-04-14"
+  branch: release-2.2
+- edition: kuma
   version: preview
   release: dev
-  releaseDate: "2020-01-01"
-  endOfLifeDate: "2030-01-01"
   branch: master

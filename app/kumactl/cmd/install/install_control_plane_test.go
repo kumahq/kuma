@@ -355,6 +355,18 @@ controlPlane:
 			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone'",
 		}),
+		Entry("--zone is missing when installing zone", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone"},
+			errorMsg:  "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'",
+		}),
+		Entry("--zone is more than 253 characters", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
+			errorMsg:  "controlPlane.zone must be no more than 253 characters",
+		}),
+		Entry("--zone format is invalid when installing zone", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "Invalid_z0ne"},
+			errorMsg:  "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character",
+		}),
 		Entry("--kds-global-address is not valid URL", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "unable to parse url: parse \"192.168.0.1:1234\"",

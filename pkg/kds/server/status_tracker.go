@@ -60,6 +60,7 @@ type streamState struct {
 	mu           sync.RWMutex  // protects access to the fields below
 	zone         string
 	subscription *system_proto.KDSSubscription
+	ctx          context.Context
 }
 
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
@@ -80,6 +81,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 	state := &streamState{
 		stop:         make(chan struct{}),
 		subscription: subscription,
+		ctx:          ctx,
 	}
 	// save
 	c.streams[streamID] = state
@@ -126,7 +128,7 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryR
 		if err := readVersion(req.Node.GetMetadata(), state.subscription.Version); err != nil {
 			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.GetMetadata())
 		}
-		go c.createStatusSink(state, c.log).Start(state.stop)
+		go c.createStatusSink(state, c.log).Start(state.ctx, state.stop)
 	}
 
 	// update Dataplane status

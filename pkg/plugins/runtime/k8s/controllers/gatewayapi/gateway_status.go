@@ -94,7 +94,7 @@ func attachedRoutesForListeners(
 ) (AttachedRoutesForListeners, error) {
 	var routes gatewayapi.HTTPRouteList
 	if err := client.List(ctx, &routes, kube_client.MatchingFields{
-		gatewayIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+		gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
 	}); err != nil {
 		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
 	}

@@ -1,8 +1,11 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -10,6 +13,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -46,6 +50,10 @@ func (p plugin) Apply(
 	}
 
 	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane); err != nil {
+		return err
+	}
+
+	if err := applyToGateways(ctx, policies.ToRules, clusters.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -94,6 +102,49 @@ func applyToOutbounds(
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), cluster); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToGateways(
+	ctx xds_context.Context,
+	rules core_xds.ToRules,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	proxy *core_xds.Proxy,
+) error {
+	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
+	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
+	if err != nil {
+		return err
+	}
+
+	for _, listenerInfo := range gatewayListenerInfos {
+		for _, hostInfo := range listenerInfo.HostInfos {
+			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
+			for _, dest := range destinations {
+				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
+				if err != nil {
+					continue
+				}
+				cluster, ok := gatewayClusters[clusterName]
+				if !ok {
+					continue
+				}
+
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
+
+				if err := configure(
+					rules.Rules,
+					core_xds.MeshService(serviceName),
+					cluster,
+				); err != nil {
+					return err
+				}
+			}
 		}
 	}
 

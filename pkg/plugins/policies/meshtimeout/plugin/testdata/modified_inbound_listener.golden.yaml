@@ -8,6 +8,8 @@ filterChains:
   - name: envoy.filters.network.http_connection_manager
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      commonHttpProtocolOptions:
+        idleTimeout: 0s
       httpFilters:
       - name: envoy.filters.http.router
         typedConfig:

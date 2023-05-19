@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -106,6 +107,22 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
+
+	sidecarTmp := kube_core.Volume{
+		Name: "kuma-sidecar-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{},
+		},
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
+
+	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
+		Name:      sidecarTmp.Name,
+		MountPath: "/tmp",
+		ReadOnly:  false,
+	})
+	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
+
 	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {
 		return err
@@ -159,9 +176,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-
-		// inject kuma init container as first
-		pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {

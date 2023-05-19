@@ -162,6 +162,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
+			Expect(cfg.Runtime.Kubernetes.AllowedUsers).To(Equal([]string{"allowed-usr-1", "allowed-usr-2"}))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniApp).To(Equal("kuma-cni"))
 
@@ -210,7 +211,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
-
+			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -247,6 +248,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
+			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -425,10 +427,12 @@ runtime:
     dataplaneCleanupAge: 1h
   kubernetes:
     serviceAccountName: custom-sa
+    allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
     controlPlaneServiceName: custom-control-plane
     nodeTaintController:
       enabled: true
       cniApp: kuma-cni
+      cniNamespace: kuma-system
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -536,6 +540,7 @@ dnsServer:
   serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
+  skipTenantResources: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -712,8 +717,10 @@ proxy:
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
+				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP":                                    "kuma-cni",
+				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE":                              "kuma-system",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -793,6 +800,7 @@ proxy:
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
+				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",

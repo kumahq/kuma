@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v3.20.0
-// source: mesh/v1alpha1/dataplane.proto
+// source: api/mesh/v1alpha1/dataplane.proto
 
 package v1alpha1
 
@@ -60,11 +60,11 @@ func (x Dataplane_Networking_Gateway_GatewayType) String() string {
 }
 
 func (Dataplane_Networking_Gateway_GatewayType) Descriptor() protoreflect.EnumDescriptor {
-	return file_mesh_v1alpha1_dataplane_proto_enumTypes[0].Descriptor()
+	return file_api_mesh_v1alpha1_dataplane_proto_enumTypes[0].Descriptor()
 }
 
 func (Dataplane_Networking_Gateway_GatewayType) Type() protoreflect.EnumType {
-	return &file_mesh_v1alpha1_dataplane_proto_enumTypes[0]
+	return &file_api_mesh_v1alpha1_dataplane_proto_enumTypes[0]
 }
 
 func (x Dataplane_Networking_Gateway_GatewayType) Number() protoreflect.EnumNumber {
@@ -73,7 +73,7 @@ func (x Dataplane_Networking_Gateway_GatewayType) Number() protoreflect.EnumNumb
 
 // Deprecated: Use Dataplane_Networking_Gateway_GatewayType.Descriptor instead.
 func (Dataplane_Networking_Gateway_GatewayType) EnumDescriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2, 0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2, 0}
 }
 
 // Dataplane defines a configuration of a side-car proxy.
@@ -105,7 +105,7 @@ type Dataplane struct {
 func (x *Dataplane) Reset() {
 	*x = Dataplane{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[0]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -118,7 +118,7 @@ func (x *Dataplane) String() string {
 func (*Dataplane) ProtoMessage() {}
 
 func (x *Dataplane) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[0]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -131,7 +131,7 @@ func (x *Dataplane) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane.ProtoReflect.Descriptor instead.
 func (*Dataplane) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Dataplane) GetNetworking() *Dataplane_Networking {
@@ -201,7 +201,7 @@ type Dataplane_Networking struct {
 func (x *Dataplane_Networking) Reset() {
 	*x = Dataplane_Networking{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[1]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -214,7 +214,7 @@ func (x *Dataplane_Networking) String() string {
 func (*Dataplane_Networking) ProtoMessage() {}
 
 func (x *Dataplane_Networking) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[1]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +227,7 @@ func (x *Dataplane_Networking) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Networking.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0}
 }
 
 func (x *Dataplane_Networking) GetAddress() string {
@@ -294,7 +294,7 @@ type Dataplane_Probes struct {
 func (x *Dataplane_Probes) Reset() {
 	*x = Dataplane_Probes{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[2]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -307,7 +307,7 @@ func (x *Dataplane_Probes) String() string {
 func (*Dataplane_Probes) ProtoMessage() {}
 
 func (x *Dataplane_Probes) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[2]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +320,7 @@ func (x *Dataplane_Probes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Probes.ProtoReflect.Descriptor instead.
 func (*Dataplane_Probes) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1}
 }
 
 func (x *Dataplane_Probes) GetPort() uint32 {
@@ -393,7 +393,7 @@ type Dataplane_Networking_Inbound struct {
 func (x *Dataplane_Networking_Inbound) Reset() {
 	*x = Dataplane_Networking_Inbound{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[3]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -406,7 +406,7 @@ func (x *Dataplane_Networking_Inbound) String() string {
 func (*Dataplane_Networking_Inbound) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[3]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -419,7 +419,7 @@ func (x *Dataplane_Networking_Inbound) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Networking_Inbound.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Inbound) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
 func (x *Dataplane_Networking_Inbound) GetPort() uint32 {
@@ -504,7 +504,7 @@ type Dataplane_Networking_Outbound struct {
 func (x *Dataplane_Networking_Outbound) Reset() {
 	*x = Dataplane_Networking_Outbound{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[4]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -517,7 +517,7 @@ func (x *Dataplane_Networking_Outbound) String() string {
 func (*Dataplane_Networking_Outbound) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Outbound) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[4]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,7 +530,7 @@ func (x *Dataplane_Networking_Outbound) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Networking_Outbound.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Outbound) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 1}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
 func (x *Dataplane_Networking_Outbound) GetAddress() string {
@@ -590,7 +590,7 @@ type Dataplane_Networking_Gateway struct {
 func (x *Dataplane_Networking_Gateway) Reset() {
 	*x = Dataplane_Networking_Gateway{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[5]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -603,7 +603,7 @@ func (x *Dataplane_Networking_Gateway) String() string {
 func (*Dataplane_Networking_Gateway) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Gateway) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[5]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -616,7 +616,7 @@ func (x *Dataplane_Networking_Gateway) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Networking_Gateway.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Gateway) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2}
 }
 
 func (x *Dataplane_Networking_Gateway) GetTags() map[string]string {
@@ -661,7 +661,7 @@ type Dataplane_Networking_TransparentProxying struct {
 func (x *Dataplane_Networking_TransparentProxying) Reset() {
 	*x = Dataplane_Networking_TransparentProxying{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[6]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -674,7 +674,7 @@ func (x *Dataplane_Networking_TransparentProxying) String() string {
 func (*Dataplane_Networking_TransparentProxying) ProtoMessage() {}
 
 func (x *Dataplane_Networking_TransparentProxying) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[6]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +687,7 @@ func (x *Dataplane_Networking_TransparentProxying) ProtoReflect() protoreflect.M
 
 // Deprecated: Use Dataplane_Networking_TransparentProxying.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_TransparentProxying) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 3}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 3}
 }
 
 func (x *Dataplane_Networking_TransparentProxying) GetRedirectPortInbound() uint32 {
@@ -739,7 +739,7 @@ type Dataplane_Networking_Inbound_Health struct {
 func (x *Dataplane_Networking_Inbound_Health) Reset() {
 	*x = Dataplane_Networking_Inbound_Health{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[8]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -752,7 +752,7 @@ func (x *Dataplane_Networking_Inbound_Health) String() string {
 func (*Dataplane_Networking_Inbound_Health) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_Health) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[8]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -765,7 +765,7 @@ func (x *Dataplane_Networking_Inbound_Health) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use Dataplane_Networking_Inbound_Health.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Inbound_Health) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 1}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 1}
 }
 
 func (x *Dataplane_Networking_Inbound_Health) GetReady() bool {
@@ -798,7 +798,7 @@ type Dataplane_Networking_Inbound_ServiceProbe struct {
 func (x *Dataplane_Networking_Inbound_ServiceProbe) Reset() {
 	*x = Dataplane_Networking_Inbound_ServiceProbe{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[9]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -811,7 +811,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe) String() string {
 func (*Dataplane_Networking_Inbound_ServiceProbe) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[9]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -824,7 +824,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe) ProtoReflect() protoreflect.
 
 // Deprecated: Use Dataplane_Networking_Inbound_ServiceProbe.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Inbound_ServiceProbe) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 2}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 2}
 }
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe) GetInterval() *durationpb.Duration {
@@ -871,7 +871,7 @@ type Dataplane_Networking_Inbound_ServiceProbe_Tcp struct {
 func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) Reset() {
 	*x = Dataplane_Networking_Inbound_ServiceProbe_Tcp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[10]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -884,7 +884,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) String() string {
 func (*Dataplane_Networking_Inbound_ServiceProbe_Tcp) ProtoMessage() {}
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[10]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -897,7 +897,7 @@ func (x *Dataplane_Networking_Inbound_ServiceProbe_Tcp) ProtoReflect() protorefl
 
 // Deprecated: Use Dataplane_Networking_Inbound_ServiceProbe_Tcp.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_Inbound_ServiceProbe_Tcp) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 2, 0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 0, 2, 0}
 }
 
 type Dataplane_Probes_Endpoint struct {
@@ -918,7 +918,7 @@ type Dataplane_Probes_Endpoint struct {
 func (x *Dataplane_Probes_Endpoint) Reset() {
 	*x = Dataplane_Probes_Endpoint{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[13]
+		mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -931,7 +931,7 @@ func (x *Dataplane_Probes_Endpoint) String() string {
 func (*Dataplane_Probes_Endpoint) ProtoMessage() {}
 
 func (x *Dataplane_Probes_Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_dataplane_proto_msgTypes[13]
+	mi := &file_api_mesh_v1alpha1_dataplane_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -944,7 +944,7 @@ func (x *Dataplane_Probes_Endpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Dataplane_Probes_Endpoint.ProtoReflect.Descriptor instead.
 func (*Dataplane_Probes_Endpoint) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1, 0}
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
 func (x *Dataplane_Probes_Endpoint) GetInboundPort() uint32 {
@@ -968,16 +968,17 @@ func (x *Dataplane_Probes_Endpoint) GetPath() string {
 	return ""
 }
 
-var File_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
+var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
-var file_mesh_v1alpha1_dataplane_proto_rawDesc = []byte{
-	0x0a, 0x1d, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f,
-	0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
-	0x12, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x31, 0x1a, 0x12, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
+var file_api_mesh_v1alpha1_dataplane_proto_rawDesc = []byte{
+	0x0a, 0x21, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x12, 0x12, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x16, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73,
+	0x68, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
+	0x1f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x1a, 0x23, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
 	0x68, 0x61, 0x31, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x5f, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e,
@@ -986,7 +987,7 @@ var file_mesh_v1alpha1_dataplane_proto_rawDesc = []byte{
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2f,
 	0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x15,
 	0x6b, 0x75, 0x6d, 0x61, 0x2d, 0x64, 0x6f, 0x63, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xce, 0x15, 0x0a, 0x09, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xc1, 0x1a, 0x0a, 0x09, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c,
 	0x61, 0x6e, 0x65, 0x12, 0x48, 0x0a, 0x0a, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x69, 0x6e,
 	0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d,
 	0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x61, 0x74,
@@ -1153,35 +1154,74 @@ var file_mesh_v1alpha1_dataplane_proto_rawDesc = []byte{
 	0x64, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0x88, 0xb5,
 	0x18, 0x01, 0x52, 0x0b, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x50, 0x61, 0x74, 0x68, 0x12,
 	0x18, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0x88,
-	0xb5, 0x18, 0x01, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x3a, 0x5b, 0xaa, 0x8c, 0x89, 0xa6, 0x01,
-	0x13, 0x0a, 0x11, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x52, 0x65, 0x73, 0x6f,
-	0x75, 0x72, 0x63, 0x65, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x0b, 0x12, 0x09, 0x44, 0x61, 0x74, 0x61,
-	0x70, 0x6c, 0x61, 0x6e, 0x65, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x06, 0x22, 0x04, 0x6d, 0x65, 0x73,
-	0x68, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x04, 0x52, 0x02, 0x08, 0x01, 0xaa, 0x8c, 0x89, 0xa6, 0x01,
-	0x0d, 0x3a, 0x0b, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0xaa, 0x8c,
-	0x89, 0xa6, 0x01, 0x02, 0x58, 0x01, 0x42, 0x48, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x68, 0x71, 0x2f, 0x6b, 0x75, 0x6d, 0x61,
-	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0x8a, 0xb5, 0x18, 0x1a, 0x50, 0x02, 0xa2, 0x01, 0x09, 0x44, 0x61, 0x74, 0x61, 0x70,
-	0x6c, 0x61, 0x6e, 0x65, 0xf2, 0x01, 0x09, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0xb5, 0x18, 0x01, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x3a, 0xcd, 0x05, 0xaa, 0x8c, 0x89, 0xa6,
+	0x01, 0x13, 0x0a, 0x11, 0x44, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x52, 0x65, 0x73,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x0b, 0x12, 0x09, 0x44, 0x61, 0x74,
+	0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x06, 0x22, 0x04, 0x6d, 0x65,
+	0x73, 0x68, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x04, 0x52, 0x02, 0x08, 0x01, 0xaa, 0x8c, 0x89, 0xa6,
+	0x01, 0x0d, 0x3a, 0x0b, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0xaa,
+	0x8c, 0x89, 0xa6, 0x01, 0x02, 0x58, 0x01, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x95, 0x01, 0x8a, 0x01,
+	0x91, 0x01, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x3d, 0x22, 0x53,
+	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x20, 0x74, 0x61, 0x67, 0x20, 0x6f, 0x66, 0x20, 0x74, 0x68,
+	0x65, 0x20, 0x66, 0x69, 0x72, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22,
+	0x2c, 0x4a, 0x53, 0x4f, 0x4e, 0x50, 0x61, 0x74, 0x68, 0x3d, 0x60, 0x2e, 0x73, 0x70, 0x65, 0x63,
+	0x2e, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x69, 0x6e, 0x67, 0x2e, 0x69, 0x6e, 0x62, 0x6f,
+	0x75, 0x6e, 0x64, 0x5b, 0x30, 0x5d, 0x2e, 0x74, 0x61, 0x67, 0x73, 0x5b, 0x27, 0x6b, 0x75, 0x6d,
+	0x61, 0x5c, 0x2e, 0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x27, 0x5d, 0x60,
+	0x2c, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x22, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x69, 0x6f, 0x2f, 0x73,
+	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x22, 0x2c, 0x74, 0x79, 0x70, 0x65, 0x3d, 0x73, 0x74, 0x72,
+	0x69, 0x6e, 0x67, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x96, 0x01, 0x8a, 0x01, 0x92, 0x01, 0x64, 0x65,
+	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x3d, 0x22, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x20, 0x74, 0x61, 0x67, 0x20, 0x6f, 0x66, 0x20, 0x74, 0x68, 0x65, 0x20, 0x73, 0x65,
+	0x63, 0x6f, 0x6e, 0x64, 0x20, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22, 0x2c, 0x4a, 0x53,
+	0x4f, 0x4e, 0x50, 0x61, 0x74, 0x68, 0x3d, 0x60, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x6e, 0x65,
+	0x74, 0x77, 0x6f, 0x72, 0x6b, 0x69, 0x6e, 0x67, 0x2e, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64,
+	0x5b, 0x31, 0x5d, 0x2e, 0x74, 0x61, 0x67, 0x73, 0x5b, 0x27, 0x6b, 0x75, 0x6d, 0x61, 0x5c, 0x2e,
+	0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x27, 0x5d, 0x60, 0x2c, 0x6e, 0x61,
+	0x6d, 0x65, 0x3d, 0x22, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x22, 0x2c, 0x74, 0x79, 0x70, 0x65, 0x3d, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67,
+	0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x95, 0x01, 0x8a, 0x01, 0x91, 0x01, 0x64, 0x65, 0x73, 0x63, 0x72,
+	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x3d, 0x22, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x20,
+	0x74, 0x61, 0x67, 0x20, 0x6f, 0x66, 0x20, 0x74, 0x68, 0x65, 0x20, 0x74, 0x68, 0x69, 0x72, 0x64,
+	0x20, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22, 0x2c, 0x4a, 0x53, 0x4f, 0x4e, 0x50, 0x61,
+	0x74, 0x68, 0x3d, 0x60, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72,
+	0x6b, 0x69, 0x6e, 0x67, 0x2e, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x5b, 0x32, 0x5d, 0x2e,
+	0x74, 0x61, 0x67, 0x73, 0x5b, 0x27, 0x6b, 0x75, 0x6d, 0x61, 0x5c, 0x2e, 0x69, 0x6f, 0x2f, 0x73,
+	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x27, 0x5d, 0x60, 0x2c, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x22,
+	0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x22,
+	0x2c, 0x74, 0x79, 0x70, 0x65, 0x3d, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xaa, 0x8c, 0x89, 0xa6,
+	0x01, 0x96, 0x01, 0x8a, 0x01, 0x92, 0x01, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x3d, 0x22, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x20, 0x74, 0x61, 0x67, 0x20,
+	0x6f, 0x66, 0x20, 0x74, 0x68, 0x65, 0x20, 0x66, 0x6f, 0x75, 0x72, 0x74, 0x68, 0x20, 0x69, 0x6e,
+	0x62, 0x6f, 0x75, 0x6e, 0x64, 0x22, 0x2c, 0x4a, 0x53, 0x4f, 0x4e, 0x50, 0x61, 0x74, 0x68, 0x3d,
+	0x60, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x69, 0x6e,
+	0x67, 0x2e, 0x69, 0x6e, 0x62, 0x6f, 0x75, 0x6e, 0x64, 0x5b, 0x33, 0x5d, 0x2e, 0x74, 0x61, 0x67,
+	0x73, 0x5b, 0x27, 0x6b, 0x75, 0x6d, 0x61, 0x5c, 0x2e, 0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76,
+	0x69, 0x63, 0x65, 0x27, 0x5d, 0x60, 0x2c, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x22, 0x6b, 0x75, 0x6d,
+	0x61, 0x2e, 0x69, 0x6f, 0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x22, 0x2c, 0x74, 0x79,
+	0x70, 0x65, 0x3d, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x42, 0x48, 0x5a, 0x28, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x68, 0x71, 0x2f, 0x6b,
+	0x75, 0x6d, 0x61, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x8a, 0xb5, 0x18, 0x1a, 0x50, 0x02, 0xa2, 0x01, 0x09, 0x44, 0x61,
+	0x74, 0x61, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0xf2, 0x01, 0x09, 0x64, 0x61, 0x74, 0x61, 0x70, 0x6c,
+	0x61, 0x6e, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_mesh_v1alpha1_dataplane_proto_rawDescOnce sync.Once
-	file_mesh_v1alpha1_dataplane_proto_rawDescData = file_mesh_v1alpha1_dataplane_proto_rawDesc
+	file_api_mesh_v1alpha1_dataplane_proto_rawDescOnce sync.Once
+	file_api_mesh_v1alpha1_dataplane_proto_rawDescData = file_api_mesh_v1alpha1_dataplane_proto_rawDesc
 )
 
-func file_mesh_v1alpha1_dataplane_proto_rawDescGZIP() []byte {
-	file_mesh_v1alpha1_dataplane_proto_rawDescOnce.Do(func() {
-		file_mesh_v1alpha1_dataplane_proto_rawDescData = protoimpl.X.CompressGZIP(file_mesh_v1alpha1_dataplane_proto_rawDescData)
+func file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP() []byte {
+	file_api_mesh_v1alpha1_dataplane_proto_rawDescOnce.Do(func() {
+		file_api_mesh_v1alpha1_dataplane_proto_rawDescData = protoimpl.X.CompressGZIP(file_api_mesh_v1alpha1_dataplane_proto_rawDescData)
 	})
-	return file_mesh_v1alpha1_dataplane_proto_rawDescData
+	return file_api_mesh_v1alpha1_dataplane_proto_rawDescData
 }
 
-var file_mesh_v1alpha1_dataplane_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_mesh_v1alpha1_dataplane_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
-var file_mesh_v1alpha1_dataplane_proto_goTypes = []interface{}{
+var file_api_mesh_v1alpha1_dataplane_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_mesh_v1alpha1_dataplane_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_api_mesh_v1alpha1_dataplane_proto_goTypes = []interface{}{
 	(Dataplane_Networking_Gateway_GatewayType)(0), // 0: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.GatewayType
 	(*Dataplane)(nil),                                // 1: kuma.mesh.v1alpha1.Dataplane
 	(*Dataplane_Networking)(nil),                     // 2: kuma.mesh.v1alpha1.Dataplane.Networking
@@ -1202,7 +1242,7 @@ var file_mesh_v1alpha1_dataplane_proto_goTypes = []interface{}{
 	(*durationpb.Duration)(nil),       // 17: google.protobuf.Duration
 	(*wrapperspb.UInt32Value)(nil),    // 18: google.protobuf.UInt32Value
 }
-var file_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
+var file_api_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
 	2,  // 0: kuma.mesh.v1alpha1.Dataplane.networking:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking
 	15, // 1: kuma.mesh.v1alpha1.Dataplane.metrics:type_name -> kuma.mesh.v1alpha1.MetricsBackend
 	3,  // 2: kuma.mesh.v1alpha1.Dataplane.probes:type_name -> kuma.mesh.v1alpha1.Dataplane.Probes
@@ -1230,15 +1270,15 @@ var file_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
 	0,  // [0:20] is the sub-list for field type_name
 }
 
-func init() { file_mesh_v1alpha1_dataplane_proto_init() }
-func file_mesh_v1alpha1_dataplane_proto_init() {
-	if File_mesh_v1alpha1_dataplane_proto != nil {
+func init() { file_api_mesh_v1alpha1_dataplane_proto_init() }
+func file_api_mesh_v1alpha1_dataplane_proto_init() {
+	if File_api_mesh_v1alpha1_dataplane_proto != nil {
 		return
 	}
-	file_mesh_v1alpha1_metrics_proto_init()
-	file_mesh_v1alpha1_envoy_admin_proto_init()
+	file_api_mesh_v1alpha1_metrics_proto_init()
+	file_api_mesh_v1alpha1_envoy_admin_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane); i {
 			case 0:
 				return &v.state
@@ -1250,7 +1290,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking); i {
 			case 0:
 				return &v.state
@@ -1262,7 +1302,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Probes); i {
 			case 0:
 				return &v.state
@@ -1274,7 +1314,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Inbound); i {
 			case 0:
 				return &v.state
@@ -1286,7 +1326,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Outbound); i {
 			case 0:
 				return &v.state
@@ -1298,7 +1338,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Gateway); i {
 			case 0:
 				return &v.state
@@ -1310,7 +1350,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_TransparentProxying); i {
 			case 0:
 				return &v.state
@@ -1322,7 +1362,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Inbound_Health); i {
 			case 0:
 				return &v.state
@@ -1334,7 +1374,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Inbound_ServiceProbe); i {
 			case 0:
 				return &v.state
@@ -1346,7 +1386,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Networking_Inbound_ServiceProbe_Tcp); i {
 			case 0:
 				return &v.state
@@ -1358,7 +1398,7 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 				return nil
 			}
 		}
-		file_mesh_v1alpha1_dataplane_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_api_mesh_v1alpha1_dataplane_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Dataplane_Probes_Endpoint); i {
 			case 0:
 				return &v.state
@@ -1375,19 +1415,19 @@ func file_mesh_v1alpha1_dataplane_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_mesh_v1alpha1_dataplane_proto_rawDesc,
+			RawDescriptor: file_api_mesh_v1alpha1_dataplane_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_mesh_v1alpha1_dataplane_proto_goTypes,
-		DependencyIndexes: file_mesh_v1alpha1_dataplane_proto_depIdxs,
-		EnumInfos:         file_mesh_v1alpha1_dataplane_proto_enumTypes,
-		MessageInfos:      file_mesh_v1alpha1_dataplane_proto_msgTypes,
+		GoTypes:           file_api_mesh_v1alpha1_dataplane_proto_goTypes,
+		DependencyIndexes: file_api_mesh_v1alpha1_dataplane_proto_depIdxs,
+		EnumInfos:         file_api_mesh_v1alpha1_dataplane_proto_enumTypes,
+		MessageInfos:      file_api_mesh_v1alpha1_dataplane_proto_msgTypes,
 	}.Build()
-	File_mesh_v1alpha1_dataplane_proto = out.File
-	file_mesh_v1alpha1_dataplane_proto_rawDesc = nil
-	file_mesh_v1alpha1_dataplane_proto_goTypes = nil
-	file_mesh_v1alpha1_dataplane_proto_depIdxs = nil
+	File_api_mesh_v1alpha1_dataplane_proto = out.File
+	file_api_mesh_v1alpha1_dataplane_proto_rawDesc = nil
+	file_api_mesh_v1alpha1_dataplane_proto_goTypes = nil
+	file_api_mesh_v1alpha1_dataplane_proto_depIdxs = nil
 }

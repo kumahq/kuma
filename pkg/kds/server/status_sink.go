@@ -16,21 +16,14 @@ import (
 )
 
 type ZoneInsightSink interface {
-	Start(stop <-chan struct{})
+	Start(ctx context.Context, stop <-chan struct{})
 }
 
 type ZoneInsightStore interface {
-	Upsert(zone string, subscription *system_proto.KDSSubscription) error
+	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(
-	accessor StatusAccessor,
-	flushTicker func() *time.Ticker,
-	generationTicker func() *time.Ticker,
-	flushBackoff time.Duration,
-	store ZoneInsightStore,
-	log logr.Logger,
-) ZoneInsightSink {
+func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -52,7 +45,7 @@ type zoneInsightSink struct {
 	log              logr.Logger
 }
 
-func (s *zoneInsightSink) Start(stop <-chan struct{}) {
+func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
 
@@ -74,7 +67,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			return
 		}
 
-		if err := s.store.Upsert(zone, currentState); err != nil {
+		if err := s.store.Upsert(ctx, zone, currentState); err != nil {
 			if store.IsResourceConflict(err) {
 				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
 			} else {
@@ -90,7 +83,6 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		select {
 		case <-flushTicker.C:
 			flush()
-			time.Sleep(s.flushBackoff)
 		case <-stop:
 			flush()
 			return
@@ -108,8 +100,8 @@ type zoneInsightStore struct {
 	resManager manager.ResourceManager
 }
 
-func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
-	ctx := user.Ctx(context.TODO(), user.ControlPlane)
+func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
+	ctx = user.Ctx(ctx, user.ControlPlane)
 
 	key := core_model.ResourceKey{
 		Name: zone,

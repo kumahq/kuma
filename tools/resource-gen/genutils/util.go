@@ -43,45 +43,47 @@ func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
 }
 
 type ResourceInfo struct {
-	ResourceName           string
-	ResourceType           string
-	ProtoType              string
-	Selectors              []string
-	SkipRegistration       bool
-	SkipKubernetesWrappers bool
-	ScopeNamespace         bool
-	Global                 bool
-	KumactlSingular        string
-	KumactlPlural          string
-	WsReadOnly             bool
-	WsAdminOnly            bool
-	WsPath                 string
-	KdsDirection           string
-	AllowToInspect         bool
-	StorageVersion         bool
-	IsPolicy               bool
-	SingularDisplayName    string
-	PluralDisplayName      string
-	IsExperimental         bool
+	ResourceName             string
+	ResourceType             string
+	ProtoType                string
+	Selectors                []string
+	SkipRegistration         bool
+	SkipKubernetesWrappers   bool
+	ScopeNamespace           bool
+	Global                   bool
+	KumactlSingular          string
+	KumactlPlural            string
+	WsReadOnly               bool
+	WsAdminOnly              bool
+	WsPath                   string
+	KdsDirection             string
+	AllowToInspect           bool
+	StorageVersion           bool
+	IsPolicy                 bool
+	SingularDisplayName      string
+	PluralDisplayName        string
+	IsExperimental           bool
+	AdditionalPrinterColumns []string
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	r := KumaResourceForMessage(desc)
 
 	out := ResourceInfo{
-		ResourceType:           r.Type,
-		ResourceName:           r.Name,
-		ProtoType:              string(desc.Name()),
-		Selectors:              SelectorsForMessage(desc),
-		SkipRegistration:       r.SkipRegistration,
-		SkipKubernetesWrappers: r.SkipKubernetesWrappers,
-		Global:                 r.Global,
-		ScopeNamespace:         r.ScopeNamespace,
-		AllowToInspect:         r.AllowToInspect,
-		StorageVersion:         r.StorageVersion,
-		SingularDisplayName:    core_model.DisplayName(r.Type),
-		PluralDisplayName:      r.PluralDisplayName,
-		IsExperimental:         r.IsExperimental,
+		ResourceType:             r.Type,
+		ResourceName:             r.Name,
+		ProtoType:                string(desc.Name()),
+		Selectors:                SelectorsForMessage(desc),
+		SkipRegistration:         r.SkipRegistration,
+		SkipKubernetesWrappers:   r.SkipKubernetesWrappers,
+		Global:                   r.Global,
+		ScopeNamespace:           r.ScopeNamespace,
+		AllowToInspect:           r.AllowToInspect,
+		StorageVersion:           r.StorageVersion,
+		SingularDisplayName:      core_model.DisplayName(r.Type),
+		PluralDisplayName:        r.PluralDisplayName,
+		IsExperimental:           r.IsExperimental,
+		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

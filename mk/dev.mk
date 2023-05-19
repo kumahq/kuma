@@ -12,12 +12,21 @@ KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
+ifdef CI
+        # tools version is irrelevant on CI as we checkout only 1 branch at a time.
+	CI_TOOLS_VERSION=ci
+endif
+
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
 	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+# Change here and `make check` ensures these are used for CI
+K8S_MIN_VERSION = v1.22.9-k3s1
+K8S_MAX_VERSION = v1.27.1-k3s1
+GO_VERSION := 1.20.3
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -39,9 +48,11 @@ K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
 KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
+CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
 KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
 PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
 SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
+CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
 # from go-deps
 PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
 PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
@@ -109,3 +120,6 @@ dev/sync-demo:
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
 	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+
+.PHONY: clean
+clean: clean/build clean/generated clean/docs ## Dev: Clean

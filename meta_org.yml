@@ -1,0 +1,95 @@
+# Repo labels common to all repositories in https://github.com/kumahq
+# This file is automatically synced from https://github.com/kumahq/.github/blob/main/org_labels.yml and will be overridden if modified elsewhere.
+default:
+  labels:
+    - color: ffaa00
+      name: triage/pending
+      description: "This issue will be looked at on the next triage meeting"
+    - color: ffaa00
+      name: triage/accepted
+      description: "The issue was reviewed and is complete enough to start working on it"
+    - color: ffaa00
+      name: triage/needs-information
+      description: "Reviewed and some extra information was asked to the reporter"
+    - color: ffaa00
+      name: triage/stale
+      description: "Inactive for some time. It will be triaged again"
+    - color: ffaa00
+      name: triage/rotten
+      description: "closed due to lack of information for too long, rejected feature..."
+    - color: ffaa00
+      name: triage/duplicated
+      description: "already exists"
+    - color: ffaa00
+      name: triage/needs-reproducing
+      description: "Someone else should try to reproduce this"
+    - color: ffaa00
+      name: triage/not-reproducible
+      description: "Couldn't reproduce this issue. If you add information remove this label and reopen the issue"
+    - color: c7def8
+      name: kind/bug
+      description: "A bug"
+    - color: c7def8
+      name: kind/cleanup
+      description: "Cleanup/refactor an existing component/code"
+    - color: c7def8
+      name: kind/support
+      description: "Support issue"
+    - color: c7def8
+      name: kind/feature
+      description: "New feature"
+    - color: c7def8
+      name: kind/docs
+      description: "About docs"
+    - color: c7def8
+      name: kind/design
+      description: "Design doc or related"
+    - color: c7def8
+      name: kind/improvement
+      description: "Improvement on an existing feature"
+    - color: e11d21
+      name: breaking-change
+    - color: 7057ff
+      name: good first issue
+      description: "Good for newcomers"
+    - color: e11d21
+      name: security
+      delete: true
+    # a bunch of labels to remove
+    - name: bug
+      delete: true
+    - name: feature
+      delete: true
+    - name: duplicate
+      delete: true
+    - name: documentation
+      delete: true
+    - name: enhancement
+      delete: true
+    - name: help wanted
+      delete: true
+    - name: invalid
+      delete: true
+    - name: kubernetes
+      delete: true
+    - name: policies
+      delete: true
+    - name: pr/do not merge
+      delete: true
+    - name: question
+      delete: true
+    - name: wontfix
+      delete: true
+    - name: triage
+      delete: true
+  milestones:
+    - title: backlog
+      description: "Issues that are being tracked for interest but not assigned to a specific release yet"
+    - title: 2.3.x
+      description: "2.3.x release"
+    - title: 2.4.x
+      description: "2.4.x release"
+    - title: 2.5.x
+      description: "2.5.x release"
+    - title: 2.6.x
+      description: "2.6.x release"

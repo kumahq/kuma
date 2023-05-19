@@ -8,6 +8,7 @@
    "conf": {
     "backends": [
      {
+      "type": "Zipkin",
       "zipkin": {
        "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
       }
@@ -36,6 +37,7 @@
    "conf": {
     "backends": [
      {
+      "type": "File",
       "file": {
        "path": "/tmp/access.logs"
       }

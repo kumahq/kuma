@@ -63,6 +63,7 @@ type server struct {
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
+	streamInterceptors   []grpc.StreamServerInterceptor
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -71,6 +72,7 @@ var _ component.Component = &server{}
 func NewServer(
 	callbacks Callbacks,
 	filters []Filter,
+	streamInterceptors []grpc.StreamServerInterceptor,
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
@@ -83,6 +85,7 @@ func NewServer(
 		metrics:              metrics,
 		serviceServer:        serviceServer,
 		kdsSyncServiceServer: kdsSyncServiceServer,
+		streamInterceptors:   streamInterceptors,
 	}
 }
 
@@ -117,6 +120,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 			return err
 		}
 		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
+	}
+	for _, interceptor := range s.streamInterceptors {
+		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(interceptor))
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 

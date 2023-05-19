@@ -13,7 +13,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
@@ -134,17 +133,6 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		"install", "control-plane",
 	}
 
-	cmd = append(cmd, "--mode", mode)
-	switch mode {
-	case core.Zone:
-		cmd = append(cmd, "--zone", k.CPName)
-		fallthrough
-	case core.Global:
-		if !Config.UseLoadBalancer {
-			cmd = append(cmd, "--use-node-port")
-		}
-	}
-
 	cmd = append(cmd, args...)
 
 	return k.RunKumactlAndGetOutputV(
@@ -160,7 +148,7 @@ func (k *KumactlOptions) KumactlInstallObservability(namespace string, component
 	return k.RunKumactlAndGetOutput(args...)
 }
 
-func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string) error {
+func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string, headers []string) error {
 	_, err := retry.DoWithRetryE(k.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			args := []string{
@@ -168,6 +156,9 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 				"--overwrite",
 				"--name", name,
 				"--address", address,
+			}
+			if len(headers) > 0 {
+				args = append(args, "--headers", strings.Join(headers, ","))
 			}
 			if token != "" {
 				args = append(args,
@@ -184,6 +175,10 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 		})
 
 	return err
+}
+
+func (k *KumactlOptions) KumactlConfigControlPlanesSwitch(name string) error {
+	return k.RunKumactl("config", "control-planes", "switch", "--name", name)
 }
 
 // KumactlUpdateObject fetches an object and updates it after the update function is applied to it.

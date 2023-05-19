@@ -406,7 +406,7 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 		}
-		gatewayGenerator := gatewayGenerator()
+		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -425,22 +425,6 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	actualResource, err := util_proto.ToYAML(list[0].Resource)
 	Expect(err).ToNot(HaveOccurred())
 	return actualResource
-}
-
-func gatewayGenerator() gateway_plugin.Generator {
-	return gateway_plugin.Generator{
-		FilterChainGenerators: gateway_plugin.FilterChainGenerators{
-			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]gateway_plugin.FilterChainGenerator{
-				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
-			},
-		},
-		ClusterGenerator: gateway_plugin.ClusterGenerator{
-			Zone: "test-zone",
-		},
-		Zone: "test-zone",
-	}
 }
 
 func httpOutboundListener() envoy_common.NamedResource {

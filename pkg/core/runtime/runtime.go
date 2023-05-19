@@ -26,6 +26,8 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
@@ -78,6 +80,8 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
+	PgxConfigCustomizationFn() config.PgxConfigCustomization
+	Tenants() multitenant.Tenants
 }
 
 type Access struct {
@@ -135,34 +139,36 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg            kuma_cp.Config
-	rm             core_manager.ResourceManager
-	rs             core_store.ResourceStore
-	ss             store.SecretStore
-	cs             core_store.ResourceStore
-	rom            core_manager.ReadOnlyResourceManager
-	cam            ca.Managers
-	dsl            datasource.Loader
-	ext            context.Context
-	configm        config_manager.ConfigManager
-	leadInfo       component.LeaderInfo
-	lif            lookup.LookupIPFunc
-	eac            admin.EnvoyAdminClient
-	metrics        metrics.Metrics
-	erf            events.ListenerFactory
-	apim           api_server.APIInstaller
-	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
-	dps            *dp_server.DpServer
-	kdsctx         *kds_context.Context
-	rv             ResourceValidators
-	au             authn.Authenticator
-	acc            Access
-	appCtx         context.Context
-	extraReportsFn ExtraReportsFn
-	tokenIssuers   builtin.TokenIssuers
-	meshCache      *mesh.Cache
-	interCpPool    *client.Pool
+	cfg                      kuma_cp.Config
+	rm                       core_manager.ResourceManager
+	rs                       core_store.ResourceStore
+	ss                       store.SecretStore
+	cs                       core_store.ResourceStore
+	rom                      core_manager.ReadOnlyResourceManager
+	cam                      ca.Managers
+	dsl                      datasource.Loader
+	ext                      context.Context
+	configm                  config_manager.ConfigManager
+	leadInfo                 component.LeaderInfo
+	lif                      lookup.LookupIPFunc
+	eac                      admin.EnvoyAdminClient
+	metrics                  metrics.Metrics
+	erf                      events.ListenerFactory
+	apim                     api_server.APIInstaller
+	xds                      xds_runtime.XDSRuntimeContext
+	cap                      secrets.CaProvider
+	dps                      *dp_server.DpServer
+	kdsctx                   *kds_context.Context
+	rv                       ResourceValidators
+	au                       authn.Authenticator
+	acc                      Access
+	appCtx                   context.Context
+	extraReportsFn           ExtraReportsFn
+	tokenIssuers             builtin.TokenIssuers
+	meshCache                *mesh.Cache
+	interCpPool              *client.Pool
+	pgxConfigCustomizationFn config.PgxConfigCustomization
+	tenants                  multitenant.Tenants
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -275,4 +281,12 @@ func (rc *runtimeContext) MeshCache() *mesh.Cache {
 
 func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
+}
+
+func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomization {
+	return rc.pgxConfigCustomizationFn
+}
+
+func (rc *runtimeContext) Tenants() multitenant.Tenants {
+	return rc.tenants
 }

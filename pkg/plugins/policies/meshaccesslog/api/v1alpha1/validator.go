@@ -84,36 +84,42 @@ func validateDefault(conf Conf) validators.ValidationError {
 func validateBackend(backend Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	var defined int
-	if backend.File != nil {
-		defined++
-	}
-	if backend.Tcp != nil {
-		defined++
-	}
-	if backend.OpenTelemetry != nil {
-		defined++
-	}
-	if defined != 1 {
-		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
-	}
+	switch backend.Type {
+	case FileBackendType:
+		root := validators.RootedAt("file")
+		if backend.File == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
 
-	switch {
-	case backend.File != nil:
 		if backend.File.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(*backend.File.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.File.Format))
 		}
 		isFilePath, _ := govalidator.IsFilePath(backend.File.Path)
 		if !isFilePath {
-			verr.AddViolationAt(validators.RootedAt("file").Field("path"), `file backend requires a valid path`)
+			verr.AddViolationAt(root.Field("path"), `file backend requires a valid path`)
 		}
-	case backend.Tcp != nil:
+	case TCPBackendType:
+		root := validators.RootedAt("tcp")
+		if backend.Tcp == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if backend.Tcp.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(*backend.Tcp.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.Tcp.Format))
 		}
 		if !govalidator.IsURL(backend.Tcp.Address) {
-			verr.AddViolationAt(validators.RootedAt("tcp").Field("address"), `tcp backend requires valid address`)
+			verr.AddViolationAt(root.Field("address"), `tcp backend requires valid address`)
 		}
+	case OtelTelemetryBackendType:
+		root := validators.RootedAt("openTelemetry")
+		if backend.OpenTelemetry == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+	default:
+		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr
@@ -122,16 +128,23 @@ func validateBackend(backend Backend) validators.ValidationError {
 func validateFormat(format Format) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (format.Plain != nil) == (format.Json != nil) {
-		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
-	}
-
-	switch {
-	case format.Plain != nil:
-		if *format.Plain == "" {
-			verr.AddViolation("plain", validators.MustNotBeEmpty)
+	switch format.Type {
+	case PlainFormatType:
+		root := validators.RootedAt("plain")
+		if format.Plain == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
 		}
-	case format.Json != nil:
+		if *format.Plain == "" {
+			verr.AddViolationAt(root, validators.MustNotBeEmpty)
+		}
+	case JsonFormatType:
+		root := validators.RootedAt("json")
+		if format.Json == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if len(*format.Json) == 0 {
 			verr.AddViolation("json", validators.MustNotBeEmpty)
 		}
@@ -147,6 +160,8 @@ func validateFormat(format Format) validators.ValidationError {
 				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
+	default:
+		panic(fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
 	return verr
