@@ -20,6 +20,7 @@ type ResourceChangedEvent struct {
 	Operation Op
 	Type      model.ResourceType
 	Key       model.ResourceKey
+	TenantID  string
 }
 
 var ListenerStoppedErr = errors.New("listener closed")
