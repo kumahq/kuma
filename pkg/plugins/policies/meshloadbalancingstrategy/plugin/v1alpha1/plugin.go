@@ -72,7 +72,7 @@ func (p plugin) configureDPP(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) er
 		conf := computed.Conf.(api.Conf)
 
 		if listener, ok := listeners.Outbound[oface]; ok {
-			if err := p.generateLDS(listener, conf.LoadBalancer); err != nil {
+			if err := p.configureListener(listener, conf.LoadBalancer); err != nil {
 				return err
 			}
 		}
@@ -84,12 +84,12 @@ func (p plugin) configureDPP(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) er
 	// we configure clusters in a separate loop to avoid configuring the same cluster twice
 	for serviceName, conf := range serviceConfs {
 		if cluster, ok := clusters.Outbound[serviceName]; ok {
-			if err := p.generateCDS(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
 				return err
 			}
 		}
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
-			if err := p.generateCDS(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
 				return err
 			}
 		}
@@ -162,7 +162,7 @@ func (p plugin) isLocalityAware(fr core_xds.FromRules) bool {
 	return false
 }
 
-func (p plugin) generateLDS(l *envoy_listener.Listener, lbConf *api.LoadBalancer) error {
+func (p plugin) configureListener(l *envoy_listener.Listener, lbConf *api.LoadBalancer) error {
 	if lbConf == nil {
 		return nil
 	}
@@ -203,7 +203,7 @@ func (p plugin) generateLDS(l *envoy_listener.Listener, lbConf *api.LoadBalancer
 	})
 }
 
-func (p plugin) generateCDS(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
+func (p plugin) configureCluster(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
 	if lbConf == nil {
 		return nil
 	}
