@@ -55,9 +55,9 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2beta, use metrics
+    # -- For clusters that do support autoscaling/v2, use metrics
     metrics:
       - type: Resource
         resource:
@@ -402,9 +402,9 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2beta, use metrics
+    # -- For clusters that do support autoscaling/v2, use metrics
     metrics:
       - type: Resource
         resource:
@@ -500,9 +500,9 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2beta, use metrics
+    # -- For clusters that do support autoscaling/v2, use metrics
     metrics:
       - type: Resource
         resource:
