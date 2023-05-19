@@ -40,11 +40,7 @@ func (b *EventBus) Send(event Event) {
 	switch e := event.(type) {
 	case ResourceChangedEvent:
 		for _, channel := range b.subscribers {
-			channel <- ResourceChangedEvent{
-				Operation: e.Operation,
-				Type:      e.Type,
-				Key:       e.Key,
-			}
+			channel <- e
 		}
 	}
 }

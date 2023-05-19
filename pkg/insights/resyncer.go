@@ -147,47 +147,41 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		case <-stop:
 			return nil
 		case event, ok := <-eventReader.Recv():
-			tenantIds, err := r.tenantFn.GetIDs(context.TODO())
-			if err != nil {
-				log.Error(err, "could not get contexts")
+			if !ok {
+				return errors.New("end of events channel")
 			}
-			for _, tenantId := range tenantIds {
-				if !ok {
-					return errors.New("end of events channel")
-				}
 
-				resourceChanged, ok := event.(events.ResourceChangedEvent)
-				if !ok {
-					continue
-				}
+			resourceChanged, ok := event.(events.ResourceChangedEvent)
+			if !ok {
+				continue
+			}
 
-				desc, err := r.registry.DescriptorFor(resourceChanged.Type)
-				if err != nil {
-					log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+			if err != nil {
+				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+			}
+			if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
+				r.deleteRateLimiter(resourceChanged.Key.Name)
+			}
+			if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
+				continue
+			}
+			if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
+				if err := r.createOrUpdateServiceInsight(multitenant.WithTenant(context.TODO(), resourceChanged.TenantID), resourceChanged.Key.Mesh, time.Now()); err != nil {
+					log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 				}
-				if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
-					r.deleteRateLimiter(resourceChanged.Key.Name)
-				}
-				if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
-					continue
-				}
-				if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
-					if err := r.createOrUpdateServiceInsight(multitenant.WithTenant(context.TODO(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
-						log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
-					}
-				}
-				if desc.Scope == model.ScopeGlobal {
-					continue
-				}
-				if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
-					// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
-					// because that's how we find online/offline Dataplane's status
-					continue
-				}
-				if err := r.createOrUpdateMeshInsight(multitenant.WithTenant(context.TODO(), tenantId), resourceChanged.Key.Mesh, time.Now()); err != nil {
-					log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
-					continue
-				}
+			}
+			if desc.Scope == model.ScopeGlobal {
+				continue
+			}
+			if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
+				// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
+				// because that's how we find online/offline Dataplane's status
+				continue
+			}
+			if err := r.createOrUpdateMeshInsight(multitenant.WithTenant(context.TODO(), resourceChanged.TenantID), resourceChanged.Key.Mesh, time.Now()); err != nil {
+				log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
+				continue
 			}
 		}
 	}

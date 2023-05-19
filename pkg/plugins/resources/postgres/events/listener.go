@@ -61,9 +61,10 @@ func (k *listener) Start(stop <-chan struct{}) error {
 			obj := &struct {
 				Action string `json:"action"`
 				Data   struct {
-					Name string `json:"name"`
-					Mesh string `json:"mesh"`
-					Type string `json:"type"`
+					Name     string `json:"name"`
+					Mesh     string `json:"mesh"`
+					Type     string `json:"type"`
+					TenantID string `json:"tenant_id"` // It is always empty with current implementation
 				}
 			}{}
 			if err := json.Unmarshal([]byte(n.Payload), obj); err != nil {
@@ -86,6 +87,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 				Operation: op,
 				Type:      model.ResourceType(obj.Data.Type),
 				Key:       model.ResourceKey{Mesh: obj.Data.Mesh, Name: obj.Data.Name},
+				TenantID:  obj.Data.TenantID,
 			})
 		case <-stop:
 			log.Info("stop")
