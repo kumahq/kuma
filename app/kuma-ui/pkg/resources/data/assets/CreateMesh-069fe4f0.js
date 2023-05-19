@@ -1,7 +1,0 @@
-import{f as l}from"./kongponents.es-6cc20401.js";import{O as u,a as _,b as m}from"./OnboardingPage-24927c8e.js";import{d as h,r as b,c as f,b as g,w as a,o as v,g as s,h as e,i as o,t as y,e as n,P as x,p as S,m as A}from"./index-c271a676.js";import{u as C}from"./store-7a329c21.js";import{_ as N}from"./_plugin-vue_export-helper-c27b6911.js";const r=t=>(S("data-v-bc48623a"),t=t(),A(),t),k={class:"mb-4 text-center"},B=r(()=>o("i",null,"default",-1)),D=r(()=>o("p",{class:"mt-4 text-center"},`
-        This mesh is empty. Next, you add services and their data plane proxies.
-      `,-1)),M=h({__name:"CreateMesh",setup(t){const c=[{label:"Name",key:"name"},{label:"Services",key:"servicesAmount"},{label:"DPPs",key:"dppsAmount"}],i=C(),d=b({total:1,data:[{name:"default",servicesAmount:0,dppsAmount:0}]}),p=f(()=>i.getters["config/getMulticlusterStatus"]?"onboarding-multi-zone":"onboarding-configuration-types");return(O,P)=>(v(),g(u,null,{header:a(()=>[s(_,null,{title:a(()=>[e(`
-          Create the mesh
-        `)]),_:1})]),content:a(()=>[o("p",k,[e(`
-        When you install, `+y(n(x))+" creates a ",1),B,e(` mesh, but you can add as many meshes as you need.
-      `)]),e(),s(n(l),{class:"table",fetcher:()=>d.value,headers:c,"disable-pagination":""},null,8,["fetcher"]),e(),D]),navigation:a(()=>[s(m,{"next-step":"onboarding-add-services","previous-step":p.value},null,8,["previous-step"])]),_:1}))}});const H=N(M,[["__scopeId","data-v-bc48623a"]]);export{H as default};
