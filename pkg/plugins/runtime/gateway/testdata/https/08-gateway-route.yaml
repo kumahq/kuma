@@ -3,10 +3,10 @@ Clusters:
     exact-service-6c25eaca226749f3:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
@@ -31,10 +31,10 @@ Clusters:
     prefix-service-bfa07e23a84b267b:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
@@ -61,35 +61,35 @@ Endpoints:
     exact-service-6c25eaca226749f3:
       clusterName: exact-service-6c25eaca226749f3
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.9
-                portValue: 20009
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.9
+                    portValue: 20009
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
     prefix-service-bfa07e23a84b267b:
       clusterName: prefix-service-bfa07e23a84b267b
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.10
-                portValue: 20010
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.10
+                    portValue: 20010
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTPS:8080:
@@ -99,73 +99,73 @@ Listeners:
           portValue: 8080
       enableReusePort: true
       filterChains:
-      - filterChainMatch:
-          serverNames:
-          - echo.example.com
-          transportProtocol: tls
-        filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
+        - filterChainMatch:
+            serverNames:
+              - echo.example.com
+            transportProtocol: tls
+          filters:
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-default
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-            commonTlsContext:
-              alpnProtocols:
-              - h2
-              - http/1.1
-              tlsCertificateSdsSecretConfigs:
-              - name: cert.rsa:secret:echo-example-com-server-cert
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-              tlsParams:
-                tlsMinimumProtocolVersion: TLSv1_2
-            requireClientCertificate: false
+                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                commonHttpProtocolOptions:
+                  headersWithUnderscoresAction: REJECT_REQUEST
+                  idleTimeout: 300s
+                http2ProtocolOptions:
+                  allowConnect: true
+                  initialConnectionWindowSize: 1048576
+                  initialStreamWindowSize: 65536
+                  maxConcurrentStreams: 100
+                httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
+                  - name: gzip-compress
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                      compressorLibrary:
+                        name: gzip
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                      responseDirectionConfig:
+                        disableOnEtagHeader: true
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      startChildSpan: true
+                mergeSlashes: true
+                normalizePath: true
+                pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+                rds:
+                  configSource:
+                    ads: {}
+                    resourceApiVersion: V3
+                  routeConfigName: edge-gateway:HTTPS:8080
+                requestHeadersTimeout: 0.500s
+                serverName: Kuma Gateway
+                statPrefix: gateway-default
+                streamIdleTimeout: 5s
+                useRemoteAddress: true
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              commonTlsContext:
+                alpnProtocols:
+                  - h2
+                  - http/1.1
+                tlsCertificateSdsSecretConfigs:
+                  - name: cert.rsa:secret:echo-example-com-server-cert
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+                tlsParams:
+                  tlsMinimumProtocolVersion: TLSv1_2
+              requireClientCertificate: false
       listenerFilters:
-      - name: envoy.filters.listener.tls_inspector
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: edge-gateway:HTTPS:8080
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND
@@ -175,61 +175,61 @@ Routes:
       ignorePortInHostMatching: true
       name: edge-gateway:HTTPS:8080
       requestHeadersToRemove:
-      - x-kuma-tags
+        - x-kuma-tags
       validateClusters: false
       virtualHosts:
-      - domains:
-        - echo.example.com
-        name: echo.example.com
-        requireTls: ALL
-        responseHeadersToAdd:
-        - append: false
-          header:
-            key: Strict-Transport-Security
-            value: max-age=31536000; includeSubDomains
-        routes:
-        - match:
-            path: /api
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: exact-service-6c25eaca226749f3
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-        - match:
-            prefix: /api/
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: prefix-service-bfa07e23a84b267b
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
+        - domains:
+            - echo.example.com
+          name: echo.example.com
+          requireTls: ALL
+          responseHeadersToAdd:
+            - append: false
+              header:
+                key: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+          routes:
+            - match:
+                path: /api
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 15s
+                weightedClusters:
+                  clusters:
+                    - name: exact-service-6c25eaca226749f3
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-default&'
+                      weight: 1
+            - match:
+                prefix: /api/
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 15s
+                weightedClusters:
+                  clusters:
+                    - name: prefix-service-bfa07e23a84b267b
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-default&'
+                      weight: 1
 Runtimes:
   Resources:
     gateway.listeners:

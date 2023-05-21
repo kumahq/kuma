@@ -10,6 +10,6 @@ metadata:
     kuma.io/container-patches: container-patch-1
 spec:
   containers:
-  - name: busybox
-    image: busybox
-    resources: {}
+    - name: busybox
+      image: busybox
+      resources: {}

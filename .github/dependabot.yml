@@ -9,15 +9,14 @@ updates:
       - "dependencies"
     groups:
       k8s-libs:
-          patterns:
-            - "k8s.io/*"
+        patterns:
+          - "k8s.io/*"
       go.opentelemetry.io/otel:
-          patterns:
-            - "go.opentelemetry.io/otel*"
+        patterns:
+          - "go.opentelemetry.io/otel*"
       go.opentelemetry.io/contrib:
-          patterns:
-            - "go.opentelemetry.io/contrib/*"
-
+        patterns:
+          - "go.opentelemetry.io/contrib/*"
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
     schedule:
@@ -25,11 +24,10 @@ updates:
     open-pull-requests-limit: 15
     labels:
       - "dependencies"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 15
     labels:
-      - "dependencies"      
+      - "dependencies"

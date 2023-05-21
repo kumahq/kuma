@@ -12,7 +12,6 @@ spec:
     - name: container-2
       ports:
         - containerPort: 7070
-
 status:
   podIP: 192.168.0.1
   containerStatuses:

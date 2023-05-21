@@ -17,5 +17,3 @@ spec:
           version: v1
       default:
         action: Deny
-
-

@@ -11,9 +11,9 @@ spec:
         prometheus.io/scrape: 'true'
     spec:
       containers:
-      # Expose the prometheus metrics on default port
-      - name: manager
-        ports:
-        - containerPort: 8080
-          name: metrics
-          protocol: TCP
+        # Expose the prometheus metrics on default port
+        - name: manager
+          ports:
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP

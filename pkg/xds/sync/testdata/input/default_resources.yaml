@@ -14,16 +14,16 @@ name: service-1
 networking:
   address: 192.168.0.1
   inbound:
-  - port: 8080
-    servicePort: 80
-    tags:
-      kuma.io/service: frontend
-      version: "v1"
+    - port: 8080
+      servicePort: 80
+      tags:
+        kuma.io/service: frontend
+        version: "v1"
   outbound:
-  - port: 80
-    address: 1.1.1.1
-    tags:
-      kuma.io/service: backend
+    - port: 80
+      address: 1.1.1.1
+      tags:
+        kuma.io/service: backend
 ---
 type: Dataplane
 mesh: default
@@ -31,11 +31,11 @@ name: service-2
 networking:
   address: 192.168.0.2
   inbound:
-  - port: 8080
-    servicePort: 80
-    tags:
-      kuma.io/service: backend
-      version: "v1"
+    - port: 8080
+      servicePort: 80
+      tags:
+        kuma.io/service: backend
+        version: "v1"
 ---
 type: Dataplane
 mesh: default
@@ -51,14 +51,14 @@ type: MeshGateway
 mesh: default
 name: cross-mesh-gateway
 selectors:
-- match:
-    kuma.io/service: cross-mesh-gateway
+  - match:
+      kuma.io/service: cross-mesh-gateway
 conf:
   listeners:
-  - port: 8080
-    protocol: HTTP
-    crossMesh: true
-    hostname: gateway.mesh
+    - port: 8080
+      protocol: HTTP
+      crossMesh: true
+      hostname: gateway.mesh
 ---
 type: ZoneIngress
 name: zone-ingress-zone-1
@@ -69,10 +69,10 @@ networking:
   port: 30003
   advertisedPort: 30004
 availableServices:
-- tags:
-    kuma.io/service: service-in-zone-1
-  instances: 1
-  mesh: default
+  - tags:
+      kuma.io/service: service-in-zone-1
+    instances: 1
+    mesh: default
 ---
 type: ZoneIngress
 name: zone-ingress-1-zone-2
@@ -83,16 +83,16 @@ networking:
   port: 20002
   advertisedPort: 20003
 availableServices:
-- tags:
-    kuma.io/service: service-in-zone-2
-  instances: 1
-  mesh: default
-- tags:
-    kuma.io/service: external-service-in-zone-2
-    kuma.io/zone: "zone-2"
-  instances: 1
-  mesh: default
-  externalService: true
+  - tags:
+      kuma.io/service: service-in-zone-2
+    instances: 1
+    mesh: default
+  - tags:
+      kuma.io/service: external-service-in-zone-2
+      kuma.io/zone: "zone-2"
+    instances: 1
+    mesh: default
+    externalService: true
 ---
 type: ZoneIngress
 name: zone-ingress-2-zone-2

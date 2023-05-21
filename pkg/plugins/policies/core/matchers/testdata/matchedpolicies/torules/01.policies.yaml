@@ -40,4 +40,3 @@ spec:
       default:
         http:
           requestTimeout: 3s
-

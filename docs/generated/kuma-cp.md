@@ -5,17 +5,14 @@ Here are all options to configure the control-plane:
 environment: universal # ENV: KUMA_ENVIRONMENT
 # Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
 mode: standalone # ENV: KUMA_MODE
-
 # Resource Store configuration
 store:
   # Type of Store used in the Control Plane. Available values are: "kubernetes", "postgres" or "memory"
   type: memory # ENV: KUMA_STORE_TYPE
-
   # Kubernetes Store configuration (used when store.type=kubernetes)
   kubernetes:
     # Namespace where Control Plane is installed to.
     systemNamespace: kuma-system # ENV: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-
   # Postgres Store configuration (used when store.type=postgres)
   postgres:
     # Host of the Postgres DB
@@ -46,7 +43,7 @@ store:
     maxOpenConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
-    maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    maxIdleConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -66,25 +63,21 @@ store:
     # MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
     # to re-establish the database connection after connection loss.
     maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
-
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
     # If true then cache is enabled
     enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
     expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
-
   # Upsert (get and update) configuration
   upsert:
     # Base time for exponential backoff on upsert operations when retry is enabled
     conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
     # Max retries on upsert (get and update) operation when retry is enabled
     conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
-
   # If true, skips validation of resource delete.
   # For example you don't have to delete all Dataplane objects before you delete a Mesh
   unsafeDelete: false # ENV: KUMA_STORE_UNSAFE_DELETE
-
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # Parameters of bootstrap configuration
@@ -101,7 +94,6 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
-
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
@@ -122,7 +114,6 @@ monitoringAssignmentServer:
   tlsMaxVersion: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION
   # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
   tlsCipherSuites: [] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES
-
 # Envoy XDS server configuration
 xdsServer:
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
@@ -137,7 +128,6 @@ xdsServer:
   # Disabling this may cause race conditions that one instance of CP removes proxy object
   # while proxy is connected to another instance of the CP.
   dataplaneDeregistrationDelay: 10s # ENV: KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY
-
 # API Server configuration
 apiServer:
   # HTTP configuration of the API Server
@@ -199,7 +189,6 @@ apiServer:
         # - kid: 2
         #   keyFile: /keys/public.pem
         publicKeys: []
-
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
@@ -217,7 +206,6 @@ apiServer:
     rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
     # The path to serve the GUI from
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
-
 # Environment-specific configuration
 runtime:
   # Kubernetes-specific configuration
@@ -261,7 +249,7 @@ runtime:
       # VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
       virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
-      caCertFile:  # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+      caCertFile: # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
       # SidecarContainer defines configuration of the Kuma sidecar container.
       sidecarContainer:
         # Image name.
@@ -322,15 +310,15 @@ runtime:
         image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
       # ContainerPatches is an optional list of ContainerPatch names which will be applied
       # to init and sidecar containers if workload is not annotated with a patch list.
-      containerPatches: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES
+      containerPatches: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES
       # Configuration for a traffic that is intercepted by sidecar
       sidecarTraffic:
         # List of inbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
-        excludeInboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
+        excludeInboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
-        excludeOutboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
       builtinDNS:
         # Use the built-in DNS
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
@@ -379,14 +367,12 @@ runtime:
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
-
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
   # If true, it skips creating the default tenant resources
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
-
 # Metrics configuration
 metrics:
   dataplane:
@@ -409,12 +395,10 @@ metrics:
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
-
 # Reports configuration
 reports:
   # If true then usage stats will be reported
   enabled: false # ENV: KUMA_REPORTS_ENABLED
-
 # General configuration
 general:
   # dnsCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
@@ -433,7 +417,6 @@ general:
   # Kuma stores in this directory autogenerated entities like certificates.
   # If empty then the working directory is $HOME/.kuma
   workDir: "" # ENV: KUMA_GENERAL_WORK_DIR
-
 # DNS Server configuration
 dnsServer:
   # The domain that the server will resolve the services for
@@ -444,7 +427,6 @@ dnsServer:
   serviceVipEnabled: true # ENV: KUMA_DNS_SERVER_SERVICE_VIP_ENABLED
   # The port to use along with the `<kuma.io/service>.mesh` dns entry
   serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
-
 # Multizone mode
 multizone:
   global:
@@ -495,7 +477,6 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF
-
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -514,7 +495,6 @@ diagnostics:
   tlsMaxVersion: # ENV: KUMA_DIAGNOSTICS_TLS_MAX_VERSION
   # TlsCipherSuites the list of cipher suites
   tlsCipherSuites: [] # ENV: KUMA_DIAGNOSTICS_TLS_CIPHER_SUITES
-
 # Dataplane Server configuration that servers API like Bootstrap/XDS for the Dataplane.
 dpServer:
   # Port of the DP Server
@@ -618,7 +598,6 @@ dpServer:
       healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
-
 # Intercommunication CP configuration
 interCp:
   # Catalog configuration. Catalog keeps a record of all live CP instances in the zone.
@@ -639,8 +618,7 @@ interCp:
     # TlsMaxVersion the maximum version of TLS
     tlsMaxVersion: # ENV: KUMA_INTER_CP_SERVER_TLS_MAX_VERSION
     # TlsCipherSuites the list of cipher suites
-    tlsCipherSuites: [ ] # ENV: KUMA_INTER_CP_SERVER_TLS_CIPHER_SUITES
-
+    tlsCipherSuites: [] # ENV: KUMA_INTER_CP_SERVER_TLS_CIPHER_SUITES
 # Access Control configuration
 access:
   # Type of access strategy (available values: "static")
@@ -673,20 +651,19 @@ access:
       groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS
     viewConfigDump:
       # List of users that are allowed to get envoy config dump
-      users: [ ] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
+      users: [] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
       # List of groups that are allowed to get envoy config dump
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
+      groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
     viewStats:
       # List of users that are allowed to get envoy stats
-      users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_USERS
+      users: [] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_USERS
       # List of groups that are allowed to get envoy stats
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS
+      groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS
     viewClusters:
       # List of users that are allowed to get envoy clusters
-      users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS
+      users: [] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS
       # List of groups that are allowed to get envoy clusters
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS
-
+      groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS
 # Configuration of experimental features of Kuma
 experimental:
   # If true, experimental Gateway API is enabled
@@ -707,13 +684,11 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
-
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
     # connections to a builtin gateway data plane proxy
     globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
-
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317

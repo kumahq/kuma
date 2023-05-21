@@ -37,6 +37,16 @@ fmt/ci:
 	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "actions/setup-go*") | .with.go-version) |= "$(GO_VERSION)"'
 	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
 
+.PHONY: fmt/yaml
+fmt/yaml:
+	find . -name '*.yaml' -o -name '*.yml' -type f | \
+		grep -v deployments/charts/kuma/templates | \
+		grep -v app/kumactl/data/install | \
+		grep -v tools/policy-gen/templates | \
+		grep -v 'golden.yaml' | \
+		grep -v 'template.yaml' | \
+		xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq eval -i
+
 .PHONY: helm-lint
 helm-lint:
 	find ./deployments/charts -maxdepth 1 -mindepth 1 -type d -exec $(HELM) lint --strict {} \;
@@ -50,7 +60,7 @@ ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format/common
-format/common: generate docs tidy ginkgo/unfocus fmt/ci
+format/common: generate tidy ginkgo/unfocus fmt/ci docs fmt/yaml
 
 .PHONY: format
 format: fmt format/common

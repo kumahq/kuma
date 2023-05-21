@@ -10,7 +10,6 @@ sidecarContainer:
   gid: 5678
   adminPort: 9901
   drainTime: 31s
-
   readinessProbe:
     initialDelaySeconds: 11
     timeoutSeconds: 13

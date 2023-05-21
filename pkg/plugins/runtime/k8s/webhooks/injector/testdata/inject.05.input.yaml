@@ -7,6 +7,6 @@ metadata:
 spec:
   automountServiceAccountToken: false
   containers:
-  - name: busybox
-    image: busybox
-    resources: {}
+    - name: busybox
+      image: busybox
+      resources: {}

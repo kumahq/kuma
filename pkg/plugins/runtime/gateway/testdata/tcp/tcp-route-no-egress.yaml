@@ -3,64 +3,64 @@ Clusters:
     external-httpbin-8490df2e58a77ae0:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 12s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: external-httpbin
         endpoints:
-        - lbEndpoints:
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin-1.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-1
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-1
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin-2.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-2
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-2
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin-3.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-3
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-3
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin-4.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-4
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-4
+          - lbEndpoints:
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: httpbin-1.com
+                      portValue: 443
+                loadBalancingWeight: 1
+                metadata:
+                  filterMetadata:
+                    envoy.lb:
+                      kuma.io/external-service-name: external-httpbin-1
+                    envoy.transport_socket_match:
+                      kuma.io/external-service-name: external-httpbin-1
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: httpbin-2.com
+                      portValue: 443
+                loadBalancingWeight: 1
+                metadata:
+                  filterMetadata:
+                    envoy.lb:
+                      kuma.io/external-service-name: external-httpbin-2
+                    envoy.transport_socket_match:
+                      kuma.io/external-service-name: external-httpbin-2
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: httpbin-3.com
+                      portValue: 443
+                loadBalancingWeight: 1
+                metadata:
+                  filterMetadata:
+                    envoy.lb:
+                      kuma.io/external-service-name: external-httpbin-3
+                    envoy.transport_socket_match:
+                      kuma.io/external-service-name: external-httpbin-3
+              - endpoint:
+                  address:
+                    socketAddress:
+                      address: httpbin-4.com
+                      portValue: 443
+                loadBalancingWeight: 1
+                metadata:
+                  filterMetadata:
+                    envoy.lb:
+                      kuma.io/external-service-name: external-httpbin-4
+                    envoy.transport_socket_match:
+                      kuma.io/external-service-name: external-httpbin-4
       name: external-httpbin-8490df2e58a77ae0
       outlierDetection:
         enforcingConsecutive5xx: 0
@@ -70,38 +70,38 @@ Clusters:
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
-      - match:
-          kuma.io/external-service-name: external-httpbin-1
-        name: httpbin-1.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin-1.com
-      - match:
-          kuma.io/external-service-name: external-httpbin-2
-        name: httpbin-2.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin-2.com
-      - match:
-          kuma.io/external-service-name: external-httpbin-3
-        name: httpbin-3.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin-3.com
-      - match:
-          kuma.io/external-service-name: external-httpbin-4
-        name: httpbin-4.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin-4.com
+        - match:
+            kuma.io/external-service-name: external-httpbin-1
+          name: httpbin-1.com
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              sni: httpbin-1.com
+        - match:
+            kuma.io/external-service-name: external-httpbin-2
+          name: httpbin-2.com
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              sni: httpbin-2.com
+        - match:
+            kuma.io/external-service-name: external-httpbin-3
+          name: httpbin-3.com
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              sni: httpbin-3.com
+        - match:
+            kuma.io/external-service-name: external-httpbin-4
+          name: httpbin-4.com
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              sni: httpbin-4.com
       type: STRICT_DNS
 Endpoints:
   Resources: {}
@@ -114,17 +114,17 @@ Listeners:
           portValue: 8080
       enableReusePort: true
       filterChains:
-      - filters:
-        - name: envoy.filters.network.tcp_proxy
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-            cluster: external-httpbin-8490df2e58a77ae0
-            maxConnectAttempts: 5
-            statPrefix: gateway-default
+        - filters:
+            - name: envoy.filters.network.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                cluster: external-httpbin-8490df2e58a77ae0
+                maxConnectAttempts: 5
+                statPrefix: gateway-default
       listenerFilters:
-      - name: envoy.filters.listener.tls_inspector
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: edge-gateway:TCP:8080
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND

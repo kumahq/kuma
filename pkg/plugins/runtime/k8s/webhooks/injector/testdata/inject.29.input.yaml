@@ -8,6 +8,6 @@ metadata:
     kuma.io/builtin-dns-port: "25053"
 spec:
   containers:
-  - name: busybox
-    image: busybox
-    resources: {}
+    - name: busybox
+      image: busybox
+      resources: {}

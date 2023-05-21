@@ -1,10 +1,10 @@
 contexts:
-- controlPlane: test1
-  defaults:
-    mesh: demo
-  name: test1
-- controlPlane: example
-  name: example
+  - controlPlane: test1
+    defaults:
+      mesh: demo
+    name: test1
+  - controlPlane: example
+    name: example
 controlPlanes:
   - coordinates:
       apiServer:

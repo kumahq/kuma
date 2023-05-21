@@ -5,9 +5,9 @@ metadata:
   labels:
     run: busybox
   annotations:
-    ignore-check.kube-linter.io/privileged-container : "ebpf requires privileged-container"
+    ignore-check.kube-linter.io/privileged-container: "ebpf requires privileged-container"
 spec:
   containers:
-  - name: busybox
-    image: busybox
-    resources: {}
+    - name: busybox
+      image: busybox
+      resources: {}

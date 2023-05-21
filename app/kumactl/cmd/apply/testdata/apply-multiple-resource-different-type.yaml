@@ -6,18 +6,18 @@ type: Dataplane
 networking:
   address: 2.2.2.2
   inbound:
-  - address: 1.1.1.1
-    port: 80
-    servicePort: 8080
-    tags:
-      kuma.io/service: "web"
-      service: web
-      version: "1.0"
-      env: production
+    - address: 1.1.1.1
+      port: 80
+      servicePort: 8080
+      tags:
+        kuma.io/service: "web"
+        service: web
+        version: "1.0"
+        env: production
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+    - port: 3000
+      tags:
+        kuma.io/service: postgres
 ---
 type: Secret
 name: sample

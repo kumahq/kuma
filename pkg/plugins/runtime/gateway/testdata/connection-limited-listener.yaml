@@ -11,11 +11,11 @@ Listeners:
           portValue: 443
       enableReusePort: true
       filterChains:
-      - {}
+        - {}
       listenerFilters:
-      - name: envoy.filters.listener.tls_inspector
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: default-gateway:TCP:443
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND

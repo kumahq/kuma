@@ -7,4 +7,3 @@ networking:
     type: BUILTIN
     tags:
       kuma.io/service: gateway-default
-

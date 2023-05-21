@@ -3,10 +3,10 @@ Clusters:
     echo-service-4d89cd662308223d:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
@@ -31,10 +31,10 @@ Clusters:
     echo-service-11405a82852416ac:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 300s
       edsClusterConfig:
         edsConfig:
@@ -59,10 +59,10 @@ Clusters:
     echo-service-ff1f8bb571f3bfa4:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 20s
       edsClusterConfig:
         edsConfig:
@@ -89,51 +89,51 @@ Endpoints:
     echo-service-4d89cd662308223d:
       clusterName: echo-service-4d89cd662308223d
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.6
+                    portValue: 20006
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
     echo-service-11405a82852416ac:
       clusterName: echo-service-11405a82852416ac
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.6
+                    portValue: 20006
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
     echo-service-ff1f8bb571f3bfa4:
       clusterName: echo-service-ff1f8bb571f3bfa4
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.6
+                    portValue: 20006
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
 Listeners:
   Resources:
     gateway-multihost:HTTPS:9443:
@@ -143,199 +143,199 @@ Listeners:
           portValue: 9443
       enableReusePort: true
       filterChains:
-      - filterChainMatch:
-          serverNames:
-          - two.example.com
-          transportProtocol: tls
-        filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
+        - filterChainMatch:
+            serverNames:
+              - two.example.com
+            transportProtocol: tls
+          filters:
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
+                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                commonHttpProtocolOptions:
+                  headersWithUnderscoresAction: REJECT_REQUEST
+                  idleTimeout: 300s
+                http2ProtocolOptions:
+                  allowConnect: true
+                  initialConnectionWindowSize: 1048576
+                  initialStreamWindowSize: 65536
+                  maxConcurrentStreams: 100
+                httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
+                  - name: gzip-compress
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                      compressorLibrary:
+                        name: gzip
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                      responseDirectionConfig:
+                        disableOnEtagHeader: true
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      startChildSpan: true
+                mergeSlashes: true
+                normalizePath: true
+                pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+                rds:
+                  configSource:
+                    ads: {}
+                    resourceApiVersion: V3
+                  routeConfigName: gateway-multihost:HTTPS:9443
+                requestHeadersTimeout: 0.500s
+                serverName: Kuma Gateway
+                statPrefix: gateway-multihost
+                streamIdleTimeout: 5s
+                useRemoteAddress: true
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              commonTlsContext:
+                alpnProtocols:
+                  - h2
+                  - http/1.1
+                tlsCertificateSdsSecretConfigs:
+                  - name: cert.rsa:secret:echo-example-com-server-cert
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+                tlsParams:
+                  tlsMinimumProtocolVersion: TLSv1_2
+              requireClientCertificate: false
+        - filterChainMatch:
+            serverNames:
+              - three.example.com
+            transportProtocol: tls
+          filters:
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
+                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                commonHttpProtocolOptions:
+                  headersWithUnderscoresAction: REJECT_REQUEST
+                  idleTimeout: 300s
+                http2ProtocolOptions:
+                  allowConnect: true
+                  initialConnectionWindowSize: 1048576
+                  initialStreamWindowSize: 65536
+                  maxConcurrentStreams: 100
+                httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
+                  - name: gzip-compress
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                      compressorLibrary:
+                        name: gzip
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                      responseDirectionConfig:
+                        disableOnEtagHeader: true
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      startChildSpan: true
+                mergeSlashes: true
+                normalizePath: true
+                pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+                rds:
+                  configSource:
+                    ads: {}
+                    resourceApiVersion: V3
+                  routeConfigName: gateway-multihost:HTTPS:9443
+                requestHeadersTimeout: 0.500s
+                serverName: Kuma Gateway
+                statPrefix: gateway-multihost
+                streamIdleTimeout: 5s
+                useRemoteAddress: true
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              commonTlsContext:
+                alpnProtocols:
+                  - h2
+                  - http/1.1
+                tlsCertificateSdsSecretConfigs:
+                  - name: cert.rsa:secret:echo-example-com-server-cert
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+                tlsParams:
+                  tlsMinimumProtocolVersion: TLSv1_2
+              requireClientCertificate: false
+        - filterChainMatch:
+            serverNames:
+              - one.example.com
+            transportProtocol: tls
+          filters:
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-multihost
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-            commonTlsContext:
-              alpnProtocols:
-              - h2
-              - http/1.1
-              tlsCertificateSdsSecretConfigs:
-              - name: cert.rsa:secret:echo-example-com-server-cert
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-              tlsParams:
-                tlsMinimumProtocolVersion: TLSv1_2
-            requireClientCertificate: false
-      - filterChainMatch:
-          serverNames:
-          - three.example.com
-          transportProtocol: tls
-        filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-multihost
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-            commonTlsContext:
-              alpnProtocols:
-              - h2
-              - http/1.1
-              tlsCertificateSdsSecretConfigs:
-              - name: cert.rsa:secret:echo-example-com-server-cert
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-              tlsParams:
-                tlsMinimumProtocolVersion: TLSv1_2
-            requireClientCertificate: false
-      - filterChainMatch:
-          serverNames:
-          - one.example.com
-          transportProtocol: tls
-        filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-multihost
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-            commonTlsContext:
-              alpnProtocols:
-              - h2
-              - http/1.1
-              tlsCertificateSdsSecretConfigs:
-              - name: cert.rsa:secret:echo-example-com-server-cert
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-              tlsParams:
-                tlsMinimumProtocolVersion: TLSv1_2
-            requireClientCertificate: false
+                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                commonHttpProtocolOptions:
+                  headersWithUnderscoresAction: REJECT_REQUEST
+                  idleTimeout: 300s
+                http2ProtocolOptions:
+                  allowConnect: true
+                  initialConnectionWindowSize: 1048576
+                  initialStreamWindowSize: 65536
+                  maxConcurrentStreams: 100
+                httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
+                  - name: gzip-compress
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                      compressorLibrary:
+                        name: gzip
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                      responseDirectionConfig:
+                        disableOnEtagHeader: true
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      startChildSpan: true
+                mergeSlashes: true
+                normalizePath: true
+                pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+                rds:
+                  configSource:
+                    ads: {}
+                    resourceApiVersion: V3
+                  routeConfigName: gateway-multihost:HTTPS:9443
+                requestHeadersTimeout: 0.500s
+                serverName: Kuma Gateway
+                statPrefix: gateway-multihost
+                streamIdleTimeout: 5s
+                useRemoteAddress: true
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              commonTlsContext:
+                alpnProtocols:
+                  - h2
+                  - http/1.1
+                tlsCertificateSdsSecretConfigs:
+                  - name: cert.rsa:secret:echo-example-com-server-cert
+                    sdsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+                tlsParams:
+                  tlsMinimumProtocolVersion: TLSv1_2
+              requireClientCertificate: false
       listenerFilters:
-      - name: envoy.filters.listener.tls_inspector
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: gateway-multihost:HTTPS:9443
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND
@@ -345,102 +345,102 @@ Routes:
       ignorePortInHostMatching: true
       name: gateway-multihost:HTTPS:9443
       requestHeadersToRemove:
-      - x-kuma-tags
+        - x-kuma-tags
       validateClusters: false
       virtualHosts:
-      - domains:
-        - two.example.com
-        name: two.example.com
-        requireTls: ALL
-        responseHeadersToAdd:
-        - append: false
-          header:
-            key: Strict-Transport-Security
-            value: max-age=31536000; includeSubDomains
-        routes:
-        - match:
-            prefix: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 20s
-            weightedClusters:
-              clusters:
-              - name: echo-service-ff1f8bb571f3bfa4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-multihost&'
-                weight: 1
-      - domains:
-        - three.example.com
-        name: three.example.com
-        requireTls: ALL
-        responseHeadersToAdd:
-        - append: false
-          header:
-            key: Strict-Transport-Security
-            value: max-age=31536000; includeSubDomains
-        routes:
-        - match:
-            prefix: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 30s
-            weightedClusters:
-              clusters:
-              - name: echo-service-11405a82852416ac
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-multihost&'
-                weight: 1
-      - domains:
-        - one.example.com
-        name: one.example.com
-        requireTls: ALL
-        responseHeadersToAdd:
-        - append: false
-          header:
-            key: Strict-Transport-Security
-            value: max-age=31536000; includeSubDomains
-        routes:
-        - match:
-            prefix: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 10s
-            weightedClusters:
-              clusters:
-              - name: echo-service-4d89cd662308223d
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-multihost&'
-                weight: 1
+        - domains:
+            - two.example.com
+          name: two.example.com
+          requireTls: ALL
+          responseHeadersToAdd:
+            - append: false
+              header:
+                key: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+          routes:
+            - match:
+                prefix: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 20s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-ff1f8bb571f3bfa4
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-multihost&'
+                      weight: 1
+        - domains:
+            - three.example.com
+          name: three.example.com
+          requireTls: ALL
+          responseHeadersToAdd:
+            - append: false
+              header:
+                key: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+          routes:
+            - match:
+                prefix: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 30s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-11405a82852416ac
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-multihost&'
+                      weight: 1
+        - domains:
+            - one.example.com
+          name: one.example.com
+          requireTls: ALL
+          responseHeadersToAdd:
+            - append: false
+              header:
+                key: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains
+          routes:
+            - match:
+                prefix: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 10s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-4d89cd662308223d
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-multihost&'
+                      weight: 1
 Runtimes:
   Resources:
     gateway.listeners:

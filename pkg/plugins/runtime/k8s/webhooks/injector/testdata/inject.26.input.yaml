@@ -17,6 +17,6 @@ spec:
               expirationSeconds: 7200
               audience: "https://kubernetes.default.svc.cluster.local"
   containers:
-  - name: busybox
-    image: busybox
-    resources: {}
+    - name: busybox
+      image: busybox
+      resources: {}

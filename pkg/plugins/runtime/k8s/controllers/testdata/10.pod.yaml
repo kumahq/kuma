@@ -27,6 +27,5 @@ spec:
           port: 19000
         initialDelaySeconds: 3
         periodSeconds: 3
-
 status:
   podIP: 192.168.0.1

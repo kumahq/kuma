@@ -4,18 +4,18 @@ type: Dataplane
 networking:
   address: 2.2.2.2
   inbound:
-  - address: 1.1.1.1
-    port: 80
-    servicePort: 8080
-    tags:
-      kuma.io/service: "web"
-      service: web
-      version: "1.0"
-      env: production
+    - address: 1.1.1.1
+      port: 80
+      servicePort: 8080
+      tags:
+        kuma.io/service: "web"
+        service: web
+        version: "1.0"
+        env: production
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+    - port: 3000
+      tags:
+        kuma.io/service: postgres
 ---
 name: sample2
 mesh: default
@@ -23,15 +23,15 @@ type: Dataplane
 networking:
   address: 3.3.3.3
   inbound:
-  - address: 1.1.1.1
-    port: 80
-    servicePort: 8080
-    tags:
-      "kuma.io/service": "web"
-      service: web
-      version: "2.0"
-      env: staging
+    - address: 1.1.1.1
+      port: 80
+      servicePort: 8080
+      tags:
+        "kuma.io/service": "web"
+        service: web
+        version: "2.0"
+        env: staging
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+    - port: 3000
+      tags:
+        kuma.io/service: postgres

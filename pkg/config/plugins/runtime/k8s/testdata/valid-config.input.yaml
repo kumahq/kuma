@@ -13,18 +13,17 @@ injector:
     gid: 3456
     adminPort: 45678
     drainTime: 15s
-
     readinessProbe:
       initialDelaySeconds: 11
-      timeoutSeconds:      13
-      periodSeconds:       15
-      successThreshold:    11
-      failureThreshold:    112
+      timeoutSeconds: 13
+      periodSeconds: 15
+      successThreshold: 11
+      failureThreshold: 112
     livenessProbe:
       initialDelaySeconds: 260
-      timeoutSeconds:      23
-      periodSeconds:       25
-      failureThreshold:    212
+      timeoutSeconds: 23
+      periodSeconds: 25
+      failureThreshold: 212
     resources:
       requests:
         cpu: 150m

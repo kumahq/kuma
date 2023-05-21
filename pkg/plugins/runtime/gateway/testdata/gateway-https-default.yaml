@@ -2,16 +2,16 @@ type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
-- match:
-    kuma.io/service: gateway-default
+  - match:
+      kuma.io/service: gateway-default
 conf:
   listeners:
-  - hostname: echo.example.com
-    port: 8080
-    protocol: HTTPS
-    tls:
-      mode: TERMINATE
-      certificates:
-      - secret: echo-example-com-server-cert
-    tags:
-      port: http/8080
+    - hostname: echo.example.com
+      port: 8080
+      protocol: HTTPS
+      tls:
+        mode: TERMINATE
+        certificates:
+          - secret: echo-example-com-server-cert
+      tags:
+        port: http/8080

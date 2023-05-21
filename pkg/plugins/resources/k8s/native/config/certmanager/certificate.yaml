@@ -11,13 +11,13 @@ spec:
 apiVersion: certmanager.k8s.io/v1alpha1
 kind: Certificate
 metadata:
-  name: serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
+  name: serving-cert # this name should match the one appeared in kustomizeconfig.yaml
   namespace: kuma-system
 spec:
   # $(SERVICENAME) and $(NAMESPACE) will be substituted by kustomize
   commonName: $(SERVICENAME).$(NAMESPACE).svc
   dnsNames:
-  - $(SERVICENAME).$(NAMESPACE).svc.cluster.local
+    - $(SERVICENAME).$(NAMESPACE).svc.cluster.local
   issuerRef:
     kind: Issuer
     name: selfsigned-issuer

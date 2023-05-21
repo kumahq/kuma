@@ -3,10 +3,10 @@ Clusters:
     echo-service-9f149ed9e14091ca:
       circuitBreakers:
         thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
+          - maxConnections: 1024
+            maxPendingRequests: 1024
+            maxRequests: 1024
+            maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
@@ -33,19 +33,19 @@ Endpoints:
     echo-service-9f149ed9e14091ca:
       clusterName: echo-service-9f149ed9e14091ca
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.1.6
+                    portValue: 20006
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
@@ -55,53 +55,53 @@ Listeners:
           portValue: 8080
       enableReusePort: true
       filterChains:
-      - filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-default
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
+                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                commonHttpProtocolOptions:
+                  headersWithUnderscoresAction: REJECT_REQUEST
+                  idleTimeout: 300s
+                http2ProtocolOptions:
+                  allowConnect: true
+                  initialConnectionWindowSize: 1048576
+                  initialStreamWindowSize: 65536
+                  maxConcurrentStreams: 100
+                httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
+                  - name: gzip-compress
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                      compressorLibrary:
+                        name: gzip
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                      responseDirectionConfig:
+                        disableOnEtagHeader: true
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      startChildSpan: true
+                mergeSlashes: true
+                normalizePath: true
+                pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+                rds:
+                  configSource:
+                    ads: {}
+                    resourceApiVersion: V3
+                  routeConfigName: edge-gateway:HTTP:8080
+                requestHeadersTimeout: 0.500s
+                serverName: Kuma Gateway
+                statPrefix: gateway-default
+                streamIdleTimeout: 5s
+                useRemoteAddress: true
       listenerFilters:
-      - name: envoy.filters.listener.tls_inspector
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+        - name: envoy.filters.listener.tls_inspector
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: edge-gateway:HTTP:8080
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND
@@ -111,95 +111,95 @@ Routes:
       ignorePortInHostMatching: true
       name: edge-gateway:HTTP:8080
       requestHeadersToRemove:
-      - x-kuma-tags
+        - x-kuma-tags
       validateClusters: false
       virtualHosts:
-      - domains:
-        - foo.example.com
-        name: foo.example.com
-        routes:
-        - match:
-            path: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: echo-service-9f149ed9e14091ca
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-      - domains:
-        - bar.example.com
-        name: bar.example.com
-        routes:
-        - match:
-            path: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: echo-service-9f149ed9e14091ca
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-      - domains:
-        - '*.example.com'
-        name: '*.example.com'
-        routes:
-        - match:
-            path: /
-          route:
-            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: echo-service-9f149ed9e14091ca
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-      - domains:
-        - '*'
-        name: '*'
-        routes:
-        - directResponse:
-            body:
-              inlineString: |
-                This is a Kuma MeshGateway. No routes match this MeshGateway!
-            status: 404
-          match:
-            prefix: /
+        - domains:
+            - foo.example.com
+          name: foo.example.com
+          routes:
+            - match:
+                path: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 15s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-9f149ed9e14091ca
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-default&'
+                      weight: 1
+        - domains:
+            - bar.example.com
+          name: bar.example.com
+          routes:
+            - match:
+                path: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 15s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-9f149ed9e14091ca
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-default&'
+                      weight: 1
+        - domains:
+            - '*.example.com'
+          name: '*.example.com'
+          routes:
+            - match:
+                path: /
+              route:
+                clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+                idleTimeout: 5s
+                retryPolicy:
+                  numRetries: 5
+                  perTryTimeout: 16s
+                  retryBackOff:
+                    baseInterval: 0.025s
+                    maxInterval: 0.250s
+                  retryOn: gateway-error,connect-failure,refused-stream
+                timeout: 15s
+                weightedClusters:
+                  clusters:
+                    - name: echo-service-9f149ed9e14091ca
+                      requestHeadersToAdd:
+                        - header:
+                            key: x-kuma-tags
+                            value: '&kuma.io/service=gateway-default&'
+                      weight: 1
+        - domains:
+            - '*'
+          name: '*'
+          routes:
+            - directResponse:
+                body:
+                  inlineString: |
+                    This is a Kuma MeshGateway. No routes match this MeshGateway!
+                status: 404
+              match:
+                prefix: /
 Runtimes:
   Resources:
     gateway.listeners:

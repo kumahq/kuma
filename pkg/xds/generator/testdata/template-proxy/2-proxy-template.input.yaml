@@ -1,6 +1,6 @@
 conf:
   imports:
-      - default-proxy
+    - default-proxy
   modifications:
     - cluster:
         operation: patch

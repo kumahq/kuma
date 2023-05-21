@@ -10,5 +10,5 @@ spec:
   template:
     spec:
       containers:
-      - name: app
-        image: app-image
+        - name: app
+          image: app-image

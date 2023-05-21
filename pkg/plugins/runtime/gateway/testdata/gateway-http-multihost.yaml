@@ -2,22 +2,22 @@ type: MeshGateway
 mesh: default
 name: gateway-multihost
 selectors:
-- match:
-    kuma.io/service: gateway-multihost
+  - match:
+      kuma.io/service: gateway-multihost
 conf:
   listeners:
-  - hostname: one.example.com
-    port: 9080
-    protocol: HTTP
-    tags:
-      hostname: one.example.com
-  - hostname: two.example.com
-    port: 9080
-    protocol: HTTP
-    tags:
-      hostname: two.example.com
-  - hostname: three.example.com
-    port: 9080
-    protocol: HTTP
-    tags:
-      hostname: three.example.com
+    - hostname: one.example.com
+      port: 9080
+      protocol: HTTP
+      tags:
+        hostname: one.example.com
+    - hostname: two.example.com
+      port: 9080
+      protocol: HTTP
+      tags:
+        hostname: two.example.com
+    - hostname: three.example.com
+      port: 9080
+      protocol: HTTP
+      tags:
+        hostname: three.example.com

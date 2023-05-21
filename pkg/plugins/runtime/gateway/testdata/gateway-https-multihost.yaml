@@ -2,34 +2,34 @@ type: MeshGateway
 mesh: default
 name: gateway-multihost
 selectors:
-- match:
-    kuma.io/service: gateway-multihost
+  - match:
+      kuma.io/service: gateway-multihost
 conf:
   listeners:
-  - hostname: one.example.com
-    port: 9443
-    protocol: HTTPS
-    tags:
-      hostname: one.example.com
-    tls:
-      mode: TERMINATE
-      certificates:
-      - secret: echo-example-com-server-cert
-  - hostname: two.example.com
-    port: 9443
-    protocol: HTTPS
-    tags:
-      hostname: two.example.com
-    tls:
-      mode: TERMINATE
-      certificates:
-      - secret: echo-example-com-server-cert
-  - hostname: three.example.com
-    port: 9443
-    protocol: HTTPS
-    tags:
-      hostname: three.example.com
-    tls:
-      mode: TERMINATE
-      certificates:
-      - secret: echo-example-com-server-cert
+    - hostname: one.example.com
+      port: 9443
+      protocol: HTTPS
+      tags:
+        hostname: one.example.com
+      tls:
+        mode: TERMINATE
+        certificates:
+          - secret: echo-example-com-server-cert
+    - hostname: two.example.com
+      port: 9443
+      protocol: HTTPS
+      tags:
+        hostname: two.example.com
+      tls:
+        mode: TERMINATE
+        certificates:
+          - secret: echo-example-com-server-cert
+    - hostname: three.example.com
+      port: 9443
+      protocol: HTTPS
+      tags:
+        hostname: three.example.com
+      tls:
+        mode: TERMINATE
+        certificates:
+          - secret: echo-example-com-server-cert
