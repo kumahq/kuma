@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"github.com/kumahq/kuma/pkg/core"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -11,11 +10,12 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("MeshTCPRoute")
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshTCPRoute")
+)
 
-type plugin struct {
-}
+type plugin struct {}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
