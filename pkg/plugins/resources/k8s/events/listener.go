@@ -86,7 +86,7 @@ func resourceKey(obj model.KubernetesObject) core_model.ResourceKey {
 	}
 }
 
-func (k *listener) OnAdd(obj interface{}) {
+func (k *listener) OnAdd(obj interface{}, _ bool) {
 	kobj := obj.(model.KubernetesObject)
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
