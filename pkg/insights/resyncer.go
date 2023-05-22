@@ -161,9 +161,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
 			}
 			if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
-				r.deleteRateLimiter(resourceChanged.Key.Name)
+				r.deleteRateLimiter(resourceChanged.Key.Name, resourceChanged.TenantID)
 			}
-			if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
+			if !r.getRateLimiter(resourceChanged.Key.Mesh, resourceChanged.TenantID).Allow() {
 				continue
 			}
 			if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
@@ -187,18 +187,20 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *resyncer) getRateLimiter(mesh string) *rate.Limiter {
-	if _, ok := r.rateLimiters[mesh]; !ok {
-		r.rateLimiters[mesh] = r.rateLimiterFactory()
+func (r *resyncer) getRateLimiter(mesh string, tenantID string) *rate.Limiter {
+	key := mesh + ":" + tenantID
+	if _, ok := r.rateLimiters[key]; !ok {
+		r.rateLimiters[key] = r.rateLimiterFactory()
 	}
-	return r.rateLimiters[mesh]
+	return r.rateLimiters[key]
 }
 
-func (r *resyncer) deleteRateLimiter(mesh string) {
-	if _, ok := r.rateLimiters[mesh]; !ok {
+func (r *resyncer) deleteRateLimiter(mesh string, tenantID string) {
+	key := mesh + ":" + tenantID
+	if _, ok := r.rateLimiters[key]; !ok {
 		return
 	}
-	delete(r.rateLimiters, mesh)
+	delete(r.rateLimiters, key)
 }
 
 func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context, now time.Time) error {
