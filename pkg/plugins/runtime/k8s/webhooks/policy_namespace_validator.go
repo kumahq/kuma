@@ -15,9 +15,8 @@ type PolicyNamespaceValidator struct {
 	SystemNamespace string
 }
 
-func (p *PolicyNamespaceValidator) InjectDecoder(decoder *admission.Decoder) error {
+func (p *PolicyNamespaceValidator) InjectDecoder(decoder *admission.Decoder) {
 	p.Decoder = decoder
-	return nil
 }
 
 func (p *PolicyNamespaceValidator) Handle(ctx context.Context, request admission.Request) admission.Response {

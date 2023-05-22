@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -269,14 +270,19 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	},
 	)
 
-	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.WebHook())
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
+	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	})
+
+	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.IntoWebhook(mgr.GetScheme()))
+	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{Decoder: kube_admission.NewDecoder(mgr.GetScheme())}})
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
+		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
@@ -284,13 +290,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if gatewayAPICRDsPresent(mgr) {
-		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode)
+		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode, mgr.GetScheme())
 		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
 	}
-
-	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-	})
 
 	return nil
 }
@@ -317,10 +319,11 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		CoreRegistry: core_registry.Global(),
 		K8sRegistry:  k8s_registry.Global(),
 		Scheme:       mgr.GetScheme(),
+		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
-	defaultMutator := k8s_webhooks.DefaultingWebhookFor(converter)
+	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)
 	return nil
 }
