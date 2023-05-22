@@ -14,7 +14,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -132,9 +131,12 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
 	}
 
-	return cluster.DefaultNewClient(kubeCache, config, kube_client.Options{
+	return kube_client.New(config, kube_client.Options{
 		Scheme: scheme,
 		Mapper: restMapper,
+		Cache: &kube_client.CacheOptions{
+			Reader: kubeCache,
+		},
 	})
 }
 
