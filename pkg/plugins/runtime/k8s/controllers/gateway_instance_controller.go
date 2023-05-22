@@ -24,7 +24,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -429,7 +428,7 @@ const serviceKey string = ".metadata.service"
 func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("gateway-to-gateway-instance-mapper")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
 		l = l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
 
@@ -449,7 +448,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 		for _, serviceName := range serviceNames {
 			instances := &mesh_k8s.MeshGatewayInstanceList{}
 			if err := client.List(
-				context.Background(), instances, kube_client.MatchingFields{serviceKey: serviceName},
+				ctx, instances, kube_client.MatchingFields{serviceKey: serviceName},
 			); err != nil {
 				l.Error(err, "failed to fetch GatewayInstances")
 			}
@@ -498,6 +497,6 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		// before the event as well as the object after. In the case of
 		// unbinding a Gateway from one Instance to another, we end up
 		// reconciling both Instances.
-		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
+		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }
