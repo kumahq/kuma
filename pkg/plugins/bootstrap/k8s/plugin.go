@@ -98,10 +98,10 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	kubeCache, err := cache.New(config, cache.Options{
-		Scheme:    scheme,
-		Mapper:    restMapper,
-		Resync:    &resyncPeriod,
-		Namespace: systemNamespace,
+		Scheme:     scheme,
+		Mapper:     restMapper,
+		SyncPeriod: &resyncPeriod,
+		Namespaces: []string{systemNamespace},
 	})
 	if err != nil {
 		return nil, err
