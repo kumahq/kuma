@@ -17,10 +17,6 @@ func (x *To) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
 
-func (x *To) GetDefault() interface{} {
-	return x.Default
-}
-
 func (x *MeshTCPRoute) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
 	for i := range x.To {

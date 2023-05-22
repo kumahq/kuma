@@ -7,6 +7,12 @@ import (
 
 // MeshTCPRoute
 // +kuma:policy:singular_display_name=Mesh TCP Route
+//
+// This policy defines its own `GetDefault` method so that it can have the given
+// structure for deserialization but still use the generic policy merging
+// machinery.
+//
+// +kuma:policy:skip_get_default=true
 // +kuma:policy:skip_registration=true
 type MeshTCPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
