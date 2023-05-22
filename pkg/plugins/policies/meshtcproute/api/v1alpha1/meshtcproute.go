@@ -32,7 +32,7 @@ type To struct {
 	// targetRef and the targetRef in this entry.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=1
-	Rules []Rule `json:"rules,omitempty"`
+	Rules []Rule `json:"rules"`
 }
 
 type Rule struct {

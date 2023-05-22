@@ -111,6 +111,7 @@ properties:
                   type: object
               type: object
           required:
+            - rules
             - targetRef
           type: object
         type: array
