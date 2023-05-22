@@ -15,7 +15,7 @@ var (
 	log                           = core.Log.WithName("MeshTCPRoute")
 )
 
-type plugin struct {}
+type plugin struct{}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
