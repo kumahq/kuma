@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -235,7 +236,11 @@ func createStructuredListWatch(gvk schema.GroupVersionKind, ip *specificInformer
 		return nil, err
 	}
 
-	client, err := apiutil.RESTClientForGVK(gvk, false, ip.config, ip.codecs)
+	httpClient, err := rest.HTTPClientFor(ip.config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create HTTP client from Manager config")
+	}
+	client, err := apiutil.RESTClientForGVK(gvk, false, ip.config, ip.codecs, httpClient)
 	if err != nil {
 		return nil, err
 	}
