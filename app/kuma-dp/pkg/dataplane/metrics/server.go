@@ -190,7 +190,13 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 			content, contentType := s.getStats(ctx, req, app)
 			out <- content
 			if content != nil && contentType != "" {
-				ctPriorities[prometheusContentTypePriorities[contentType]] = true
+				// skip unknown content type
+				priorityIdx, valid := prometheusContentTypePriorities[contentType]
+				if !valid {
+					return
+				}
+				// if contentType is not found in the priorities map, it will return 0
+				ctPriorities[priorityIdx] = true
 			}
 		}(app)
 	}
@@ -214,9 +220,10 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 			// If no content type returned by applications,
 			// try to use max supported accept header, else use default.
 			acceptHeaders := strings.Split(req.Header.Get("accept"), ",")
-			if len(acceptHeaders) > 0 {
-				ct = acceptHeaders[0]
-			} else {
+			ct = acceptHeaders[0]
+
+			// if accept header is not found in the priorities map, use default
+			if _, ok := prometheusContentTypePriorities[ct]; !ok {
 				ct = string(expfmt.FmtOpenMetrics_1_0_0)
 			}
 		}
