@@ -21,8 +21,26 @@ type MeshTCPRoute struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// To list makes a match between the consumed services and corresponding
 	// configurations
+	// +kubebuilder:validation:MinItems=1
 	To []To `json:"to,omitempty"`
 }
+
+// At this point there is no plan to introduce address matching
+// capabilities for `MeshTCPRoute` in foreseeable future. We try to be
+// as close with structures of our policies to the Gateway API
+// as possible. It means, that even if Gateway API currently doesn't
+// have plans to support this kind of matching as well (ref.
+// Kubernetes Gateway API GEP-735: TCP and UDP addresses matching -
+// https://gateway-api.sigs.k8s.io/geps/gep-735/), its structures
+// are ready to potentially support it.
+//
+// As a result every element of the route destination section of
+// the policy configuration (`spec.to[]`) contains a `rules` property.
+// This property is a list of elements, which potentially will allow
+// to specify `match` configuration.
+//
+// Without specifying `match`es, it would be nonsensical to accept more
+// than 1 `rule`.
 
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of

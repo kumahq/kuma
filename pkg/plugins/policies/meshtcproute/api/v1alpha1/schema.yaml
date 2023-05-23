@@ -114,6 +114,7 @@ properties:
             - rules
             - targetRef
           type: object
+        minItems: 1
         type: array
     required:
       - targetRef
