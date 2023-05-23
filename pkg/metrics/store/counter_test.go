@@ -66,7 +66,6 @@ var _ = Describe("Counter", func() {
 				return tickCh
 			},
 			Registry: registry.Global(),
-			Now:      nil,
 			AddressPortGenerator: func(s string) string {
 				return fmt.Sprintf("%s.mesh:80", s)
 			},
