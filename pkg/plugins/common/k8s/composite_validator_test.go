@@ -21,8 +21,7 @@ type denyingValidator struct{}
 
 var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
-func (d *denyingValidator) InjectDecoder(*kube_admission.Decoder) error {
-	return nil
+func (d *denyingValidator) InjectDecoder(*kube_admission.Decoder) {
 }
 
 func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_admission.Response {
@@ -39,10 +38,13 @@ var _ = Describe("Composite Validator", func() {
 	var kubeTypes k8s_registry.TypeRegistry
 
 	BeforeEach(func() {
+		scheme := kube_runtime.NewScheme()
+		Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
+
 		composite := k8s_common.CompositeValidator{}
 		composite.AddValidator(&denyingValidator{})
 
-		handler = composite.WebHook()
+		handler = composite.IntoWebhook(scheme)
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
 		err := kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{

@@ -28,9 +28,8 @@ type GatewayInstanceValidator struct {
 	resourceManager manager.ResourceManager
 }
 
-func (h *GatewayInstanceValidator) InjectDecoder(d *admission.Decoder) error {
+func (h *GatewayInstanceValidator) InjectDecoder(d *admission.Decoder) {
 	h.decoder = d
-	return nil
 }
 
 func (h *GatewayInstanceValidator) Handle(ctx context.Context, req admission.Request) admission.Response {

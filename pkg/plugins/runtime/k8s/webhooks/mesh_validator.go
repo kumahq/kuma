@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -33,9 +33,8 @@ type MeshValidator struct {
 	unsafeDelete bool
 }
 
-func (h *MeshValidator) InjectDecoder(d *admission.Decoder) error {
+func (h *MeshValidator) InjectDecoder(d *admission.Decoder) {
 	h.decoder = d
-	return nil
 }
 
 func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
