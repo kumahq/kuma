@@ -14,7 +14,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -23,6 +22,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -637,7 +637,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":     "example",
 				"version": "0.1",
 			},
-			appProtocol: utilpointer.String("http"),
+			appProtocol: pointer.To("http"),
 			expected: map[string]string{
 				"app":                      "example",
 				"version":                  "0.1",
@@ -847,7 +847,7 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("appProtocol has an empty value", testCase{
-			appProtocol: utilpointer.String(""),
+			appProtocol: pointer.To(""),
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
@@ -858,19 +858,19 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected: "http", // we want to support both ways of providing protocol
 		}),
 		Entry("appProtocol has an unknown value", testCase{
-			appProtocol: utilpointer.String("not-yet-supported-protocol"),
+			appProtocol: pointer.To("not-yet-supported-protocol"),
 			expected:    "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a lowercase value", testCase{
-			appProtocol: utilpointer.String("HtTp"),
+			appProtocol: pointer.To("HtTp"),
 			expected:    "http", // we want Kuma's behavior to be straightforward to a user (copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a known value: http", testCase{
-			appProtocol: utilpointer.String("http"),
+			appProtocol: pointer.To("http"),
 			expected:    "http",
 		}),
 		Entry("appProtocol has a known value: tcp", testCase{
-			appProtocol: utilpointer.String("tcp"),
+			appProtocol: pointer.To("tcp"),
 			expected:    "tcp",
 		}),
 		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{

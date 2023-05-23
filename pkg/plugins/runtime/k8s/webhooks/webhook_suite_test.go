@@ -45,8 +45,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
 
-	decoder, err = kube_admission.NewDecoder(scheme)
-	Expect(err).ToNot(HaveOccurred())
+	decoder = kube_admission.NewDecoder(scheme)
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).ToNot(HaveOccurred())

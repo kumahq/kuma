@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	admission "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -14,10 +15,11 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
-func NewGatewayAPIMultizoneValidator(cpMode config_core.CpMode) *kube_admission.Webhook {
+func NewGatewayAPIMultizoneValidator(cpMode config_core.CpMode, scheme *runtime.Scheme) *kube_admission.Webhook {
 	return &kube_admission.Webhook{
 		Handler: &GatewayAPIMultizoneValidator{
-			CpMode: cpMode,
+			CpMode:  cpMode,
+			Decoder: kube_admission.NewDecoder(scheme),
 		},
 	}
 }
@@ -30,11 +32,6 @@ type GatewayAPIMultizoneValidator struct {
 }
 
 var _ kube_webhook.AdmissionHandler = &GatewayAPIMultizoneValidator{}
-
-func (g *GatewayAPIMultizoneValidator) InjectDecoder(d *kube_admission.Decoder) error {
-	g.Decoder = d
-	return nil
-}
 
 func (g *GatewayAPIMultizoneValidator) Handle(_ context.Context, req kube_admission.Request) kube_admission.Response {
 	if req.Operation == admission.Create {

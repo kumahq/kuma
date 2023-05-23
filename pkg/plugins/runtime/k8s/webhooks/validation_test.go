@@ -42,10 +42,11 @@ var _ = Describe("Validation", func() {
 		func(given testCase) {
 			// given
 			allowedUsers := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
+			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, allowedUsers)
+			handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 			webhook := &kube_admission.Webhook{
-				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, allowedUsers),
+				Handler: handler,
 			}
-			Expect(webhook.InjectScheme(scheme)).To(Succeed())
 
 			obj, err := k8s_registry.Global().NewObject(given.objTemplate)
 			Expect(err).ToNot(HaveOccurred())

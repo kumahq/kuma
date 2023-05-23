@@ -24,7 +24,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 	It("should map ingress to list of meshes", func() {
 		l := log.NewLogger(log.InfoLevel)
 		mapper := controllers.DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
-		requests := mapper(&mesh_k8s.Dataplane{
+		requests := mapper(context.Background(), &mesh_k8s.Dataplane{
 			Mesh: "mesh-1",
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
@@ -102,7 +102,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 				Expect(k8sClient.Create(ctx, &pod)).To(Succeed())
 			}
 			mapper := controllers.ServiceToConfigMapsMapper(k8sClient, l, "ns")
-			requests := mapper(&givenService)
+			requests := mapper(context.Background(), &givenService)
 			requestsStr := []string{}
 			for _, r := range requests {
 				requestsStr = append(requestsStr, r.Name)

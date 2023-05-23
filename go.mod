@@ -17,7 +17,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.3.0
-	github.com/go-logr/zapr v1.2.3
+	github.com/go-logr/zapr v1.2.4
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/protobuf v1.5.3
@@ -76,7 +76,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	k8s.io/kubectl v0.29.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	sigs.k8s.io/controller-runtime v0.14.6
+	sigs.k8s.io/controller-runtime v0.15.3
 	sigs.k8s.io/controller-tools v0.11.3
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
 	sigs.k8s.io/gateway-api v0.6.2
@@ -193,7 +193,7 @@ require (
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

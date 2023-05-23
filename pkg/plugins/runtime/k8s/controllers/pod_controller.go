@@ -16,7 +16,6 @@ import (
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -369,19 +368,19 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods in the same namespace)
-		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
 		// on ExternalService update reconcile affected Pods (all Pods in the same mesh)
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToPodsMapper(r.Log, mgr.GetClient()))).
-		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, kube_handler.EnqueueRequestsFromMapFunc(ConfigMapToPodsMapper(r.Log, r.SystemNamespace, mgr.GetClient()))).
+		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_core.ConfigMap{}, kube_handler.EnqueueRequestsFromMapFunc(ConfigMapToPodsMapper(r.Log, r.SystemNamespace, mgr.GetClient()))).
 		Complete(r)
 }
 
 func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		// List Pods in the same namespace as a Service
 		pods := &kube_core.PodList{}
-		if err := client.List(context.Background(), pods, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace())); err != nil {
 			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
 			return nil
 		}
@@ -398,7 +397,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 
 func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("external-service-to-pods-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ExternalService)
 		if !ok {
 			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -407,7 +406,7 @@ func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_
 
 		// List Dataplanes in the same Mesh as the original
 		dataplanes := &mesh_k8s.DataplaneList{}
-		if err := client.List(context.Background(), dataplanes); err != nil {
+		if err := client.List(ctx, dataplanes); err != nil {
 			l.WithValues("dataplane", obj.GetName()).Error(err, "failed to fetch Dataplanes")
 			return nil
 		}
@@ -433,7 +432,7 @@ func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_
 
 func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("configmap-to-pods-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		if obj.GetNamespace() != ns {
 			return nil
 		}
@@ -444,7 +443,7 @@ func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) 
 
 		// List Dataplanes in the same Mesh as the original
 		dataplanes := &mesh_k8s.DataplaneList{}
-		if err := client.List(context.Background(), dataplanes); err != nil {
+		if err := client.List(ctx, dataplanes); err != nil {
 			l.WithValues("dataplane", obj.GetName()).Error(err, "failed to fetch Dataplanes")
 			return nil
 		}
