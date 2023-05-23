@@ -20,6 +20,7 @@ type DeploymentOpts struct {
 	EnableProbes       bool
 	PodAnnotations     map[string]string
 	NodeSelector       map[string]string
+	protocol           string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -31,6 +32,7 @@ func DefaultDeploymentOpts() DeploymentOpts {
 		WaitingToBeReady: true,
 		PodAnnotations:   map[string]string{},
 		EnableProbes:     true,
+		protocol:         "http",
 	}
 }
 
@@ -111,6 +113,12 @@ func WithoutProbes() DeploymentOptsFn {
 func WithNodeSelector(selector map[string]string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.NodeSelector = selector
+	}
+}
+
+func WithProtocol(protocol string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.protocol = protocol
 	}
 }
 
