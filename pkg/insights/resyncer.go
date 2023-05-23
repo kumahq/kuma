@@ -69,7 +69,7 @@ type resyncer struct {
 	// info provides an information about the last sync for both ServiceInsight and MeshInsight
 	// Previously this data was stored in the Resource itself, but since resyncer runs only on leader
 	// we can just save this in memory and save requests to the DB.
-	infos                map[model.ResourceKey]syncInfo
+	infos                map[string]syncInfo
 	infosMux             sync.RWMutex
 	addressPortGenerator func(string) string
 
@@ -99,7 +99,7 @@ func NewResyncer(config *Config, tenantFn multitenant.Tenants) component.Compone
 		rm:                   config.ResourceManager,
 		rateLimiterFactory:   config.RateLimiterFactory,
 		rateLimiters:         map[string]*rate.Limiter{},
-		infos:                map[model.ResourceKey]syncInfo{},
+		infos:                map[string]syncInfo{},
 		registry:             config.Registry,
 		addressPortGenerator: config.AddressPortGenerator,
 		now:                  config.Now,
@@ -161,9 +161,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
 			}
 			if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
-				r.deleteRateLimiter(resourceChanged.Key.Name)
+				r.deleteRateLimiter(resourceChanged.Key.Name, resourceChanged.TenantID)
 			}
-			if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
+			if !r.getRateLimiter(resourceChanged.Key.Mesh, resourceChanged.TenantID).Allow() {
 				continue
 			}
 			if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
@@ -187,18 +187,20 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *resyncer) getRateLimiter(mesh string) *rate.Limiter {
-	if _, ok := r.rateLimiters[mesh]; !ok {
-		r.rateLimiters[mesh] = r.rateLimiterFactory()
+func (r *resyncer) getRateLimiter(mesh string, tenantID string) *rate.Limiter {
+	key := mesh + ":" + tenantID
+	if _, ok := r.rateLimiters[key]; !ok {
+		r.rateLimiters[key] = r.rateLimiterFactory()
 	}
-	return r.rateLimiters[mesh]
+	return r.rateLimiters[key]
 }
 
-func (r *resyncer) deleteRateLimiter(mesh string) {
-	if _, ok := r.rateLimiters[mesh]; !ok {
+func (r *resyncer) deleteRateLimiter(mesh string, tenantID string) {
+	key := mesh + ":" + tenantID
+	if _, ok := r.rateLimiters[key]; !ok {
 		return
 	}
-	delete(r.rateLimiters, mesh)
+	delete(r.rateLimiters, key)
 }
 
 func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context, now time.Time) error {
@@ -207,7 +209,7 @@ func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context, now time.T
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need := r.needResyncServiceInsight(mesh.GetMeta().GetName()); !need {
+		if need := r.needResyncServiceInsight(ctx, mesh.GetMeta().GetName()); !need {
 			continue
 		}
 		err := r.createOrUpdateServiceInsight(ctx, mesh.GetMeta().GetName(), now)
@@ -308,11 +310,11 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 	}
 
 	key := ServiceInsightKey(mesh)
-	info, _ := r.getInfo(key)
+	info, _ := r.getInfo(ctx, key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update ServiceInsight because the resource is the same")
 		info.lastSync = now
-		r.setInfo(key, info)
+		r.setInfo(ctx, key, info)
 		return nil
 	}
 
@@ -333,7 +335,7 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 		return err
 	}
 	log.V(1).Info("ServiceInsights updated")
-	r.setInfo(key, syncInfo{
+	r.setInfo(ctx, key, syncInfo{
 		resource: insight,
 		lastSync: now,
 	})
@@ -346,7 +348,7 @@ func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context, now time.Time
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need := r.needResyncMeshInsight(mesh.GetMeta().GetName()); !need {
+		if need := r.needResyncMeshInsight(ctx, mesh.GetMeta().GetName()); !need {
 			continue
 		}
 		err := r.createOrUpdateMeshInsight(ctx, mesh.GetMeta().GetName(), now)
@@ -471,11 +473,11 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, n
 	}
 
 	key := MeshInsightKey(mesh)
-	info, _ := r.getInfo(key)
+	info, _ := r.getInfo(ctx, key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update MeshInsight because the resource is the same")
 		info.lastSync = now
-		r.setInfo(key, info)
+		r.setInfo(ctx, key, info)
 		return nil
 	}
 
@@ -496,7 +498,7 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, n
 		return err
 	}
 	log.V(1).Info("MeshInsight updated")
-	r.setInfo(key, syncInfo{
+	r.setInfo(ctx, key, syncInfo{
 		resource: insight,
 		lastSync: now,
 	})
@@ -557,32 +559,34 @@ func getOrDefault(version string) string {
 	return version
 }
 
-func (r *resyncer) needResyncServiceInsight(mesh string) bool {
-	info, exist := r.getInfo(ServiceInsightKey(mesh))
+func (r *resyncer) needResyncServiceInsight(ctx context.Context, mesh string) bool {
+	info, exist := r.getInfo(ctx, ServiceInsightKey(mesh))
 	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
 }
 
-func (r *resyncer) needResyncMeshInsight(mesh string) bool {
-	info, exist := r.getInfo(MeshInsightKey(mesh))
+func (r *resyncer) needResyncMeshInsight(ctx context.Context, mesh string) bool {
+	info, exist := r.getInfo(ctx, MeshInsightKey(mesh))
 	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
 }
 
-func (r *resyncer) getInfo(key model.ResourceKey) (syncInfo, bool) {
+func (r *resyncer) getInfo(ctx context.Context, key model.ResourceKey) (syncInfo, bool) {
 	r.infosMux.RLock()
 	defer r.infosMux.RUnlock()
-	info, ok := r.infos[key]
+	tenantID, _ := multitenant.TenantFromCtx(ctx)
+	info, ok := r.infos[key.Name+key.Mesh+":"+tenantID]
 	return info, ok
 }
 
-func (r *resyncer) setInfo(key model.ResourceKey, info syncInfo) {
+func (r *resyncer) setInfo(ctx context.Context, key model.ResourceKey, info syncInfo) {
 	r.infosMux.Lock()
-	r.infos[key] = info
+	tenantID, _ := multitenant.TenantFromCtx(ctx)
+	r.infos[key.Name+key.Mesh+":"+tenantID] = info
 	r.infosMux.Unlock()
 }
 
 func (r *resyncer) clearInfos() {
 	r.infosMux.Lock()
-	r.infos = map[model.ResourceKey]syncInfo{}
+	r.infos = map[string]syncInfo{}
 	r.infosMux.Unlock()
 }
 

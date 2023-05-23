@@ -21,7 +21,7 @@ func (k *k8SDeployment) Name() string {
 }
 
 func (k *k8SDeployment) service() *corev1.Service {
-	appProtocol := "http"
+	appProtocol := k.opts.protocol
 	if len(k.opts.healthcheckTCPArgs) > 0 {
 		appProtocol = "tcp"
 	}
