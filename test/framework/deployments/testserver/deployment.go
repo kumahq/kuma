@@ -116,7 +116,7 @@ func WithNodeSelector(selector map[string]string) DeploymentOptsFn {
 	}
 }
 
-func WithProtocol(protocol string) DeploymentOptsFn {
+func WithServicePortAppProtocol(protocol string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.protocol = protocol
 	}
