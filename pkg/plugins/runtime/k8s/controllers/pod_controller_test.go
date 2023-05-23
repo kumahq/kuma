@@ -648,7 +648,7 @@ var _ = Describe("PodReconciler", func() {
 				},
 			}),
 		}
-		requests := mapper(es)
+		requests := mapper(context.Background(), es)
 		requestsStr := []string{}
 		for _, r := range requests {
 			requestsStr = append(requestsStr, r.Name)

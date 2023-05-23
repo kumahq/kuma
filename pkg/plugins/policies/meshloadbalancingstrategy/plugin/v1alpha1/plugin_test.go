@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -15,8 +16,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -42,7 +46,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		resources []core_xds.Resource
 		proxy     *core_xds.Proxy
 	}
-	DescribeTable("Apply",
+	DescribeTable("Apply to sidecar Dataplanes",
 		func(given testCase) {
 			resources := core_xds.NewResourceSet()
 			for _, res := range given.resources {
@@ -352,6 +356,93 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+	)
+	type gatewayTestCase struct {
+		name    string
+		toRules core_xds.ToRules
+	}
+	DescribeTable("should generate proper Envoy config for MeshGateways",
+		func(given gatewayTestCase) {
+			Expect(given.name).ToNot(BeEmpty())
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			}
+
+			context := test_xds.CreateSampleMeshContextWith(resources)
+			proxy := core_xds.Proxy{
+				APIVersion: "v3",
+				Dataplane:  samples.GatewayDataplane(),
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						v1alpha1.MeshLoadBalancingStrategyType: {
+							Type:    v1alpha1.MeshLoadBalancingStrategyType,
+							ToRules: given.toRules,
+						},
+					},
+				},
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+
+			getResourceYaml := func(list core_xds.ResourceList) []byte {
+				actualResource, err := util_proto.ToYAML(list[0].Resource)
+				Expect(err).ToNot(HaveOccurred())
+				return actualResource
+			}
+
+			// then
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_listener.golden.yaml", given.name))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_route.golden.yaml", given.name))))
+		},
+		Entry("basic outbound cluster", gatewayTestCase{
+			name: "basic",
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: v1alpha1.Conf{
+							LoadBalancer: &v1alpha1.LoadBalancer{
+								Type: v1alpha1.RingHashType,
+								RingHash: &v1alpha1.RingHash{
+									MinRingSize:  pointer.To[uint32](100),
+									MaxRingSize:  pointer.To[uint32](1000),
+									HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
+									HashPolicies: &[]v1alpha1.HashPolicy{
+										{
+											Type: v1alpha1.QueryParameterType,
+											QueryParameter: &v1alpha1.QueryParameter{
+												Name: "queryparam",
+											},
+											Terminal: pointer.To(true),
+										},
+										{
+											Type: v1alpha1.ConnectionType,
+											Connection: &v1alpha1.Connection{
+												SourceIP: pointer.To(true),
+											},
+											Terminal: pointer.To(false),
 										},
 									},
 								},

@@ -1782,7 +1782,8 @@ spec:
                     description: 'Requests describes the minimum amount of compute
                       resources required. If Requests is omitted for a container,
                       it defaults to Limits if that is explicitly specified, otherwise
-                      to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      to an implementation-defined value. Requests cannot exceed Limits.
+                      More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
               serviceTemplate:
@@ -2730,6 +2731,8 @@ spec:
                                 type: array
                             type: object
                           matches:
+                            description: Matches describes how to match HTTP requests
+                              this rule should be applied to.
                             items:
                               properties:
                                 headers:
@@ -2818,6 +2821,7 @@ spec:
                                     type: object
                                   type: array
                               type: object
+                            minItems: 1
                             type: array
                         required:
                         - default

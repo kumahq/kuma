@@ -35,6 +35,9 @@ type To struct {
 }
 
 type Rule struct {
+	// Matches describes how to match HTTP requests this rule should be applied
+	// to.
+	// +kubebuilder:validation:MinItems=1
 	Matches []Match `json:"matches" policyMerge:"mergeKey"`
 	// Default holds routing rules that can be merged with rules from other
 	// policies.

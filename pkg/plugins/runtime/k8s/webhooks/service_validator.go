@@ -14,14 +14,14 @@ import (
 
 // ServiceValidator validates Kuma-specific annotations on Services.
 type ServiceValidator struct {
-	decoder *admission.Decoder
+	Decoder *admission.Decoder
 }
 
 // Handle admits a Service only if Kuma-specific annotations have proper values.
 func (v *ServiceValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	svc := &kube_core.Service{}
 
-	err := v.decoder.Decode(req, svc)
+	err := v.Decoder.Decode(req, svc)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -47,9 +47,4 @@ func (v *ServiceValidator) validate(svc *kube_core.Service) error {
 		}
 	}
 	return verr.OrNil()
-}
-
-func (v *ServiceValidator) InjectDecoder(d *admission.Decoder) error {
-	v.decoder = d
-	return nil
 }

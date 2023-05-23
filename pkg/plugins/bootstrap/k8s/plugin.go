@@ -14,7 +14,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -22,11 +21,11 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -52,8 +51,10 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	mgr, err := kube_ctrl.NewManager(
 		config,
 		kube_ctrl.Options{
-			Scheme:   scheme,
-			NewCache: kuma_kube_cache.New,
+			Scheme: scheme,
+			Cache: cache.Options{
+				UnsafeDisableDeepCopy: pointer.To(true),
+			},
 			// Admission WebHook Server
 			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
 			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
@@ -97,10 +98,10 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	kubeCache, err := cache.New(config, cache.Options{
-		Scheme:    scheme,
-		Mapper:    restMapper,
-		Resync:    &resyncPeriod,
-		Namespace: systemNamespace,
+		Scheme:     scheme,
+		Mapper:     restMapper,
+		SyncPeriod: &resyncPeriod,
+		Namespaces: []string{systemNamespace},
 	})
 	if err != nil {
 		return nil, err
@@ -130,9 +131,12 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
 	}
 
-	return cluster.DefaultNewClient(kubeCache, config, kube_client.Options{
+	return kube_client.New(config, kube_client.Options{
 		Scheme: scheme,
 		Mapper: restMapper,
+		Cache: &kube_client.CacheOptions{
+			Reader: kubeCache,
+		},
 	})
 }
 
