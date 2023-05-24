@@ -18,14 +18,17 @@ func (r *MeshTCPRouteResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
+	return matcher_validators.ValidateTargetRef(
+		targetRef,
+		&matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+			},
 		},
-	})
+	)
 }
 
 func validateTo(to []To) validators.ValidationError {
@@ -33,11 +36,17 @@ func validateTo(to []To) validators.ValidationError {
 
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.MeshService,
-			},
-		}))
+
+		verr.AddErrorAt(
+			path.Field("targetRef"),
+			matcher_validators.ValidateTargetRef(toItem.TargetRef,
+				&matcher_validators.ValidateTargetRefOpts{
+					SupportedKinds: []common_api.TargetRefKind{
+						common_api.MeshService,
+					},
+				},
+			),
+		)
 		verr.AddErrorAt(path.Field("rules"), validateRules(toItem.Rules))
 	}
 
@@ -49,28 +58,34 @@ func validateRules(rules []Rule) validators.ValidationError {
 
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
-		verr.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(rule.Default.BackendRefs))
+
+		verr.AddErrorAt(path.Field("default").Field("backendRefs"),
+			validateBackendRefs(rule.Default.BackendRefs),
+		)
 	}
 
 	return verr
 }
 
-func validateBackendRefs(backendRefs *[]BackendRef) validators.ValidationError {
+func validateBackendRefs(backendRefs []BackendRef) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if backendRefs == nil {
 		return verr
 	}
 
-	for i, backendRef := range *backendRefs {
+	for i, backendRef := range backendRefs {
 		verr.AddErrorAt(
 			validators.Root().Index(i),
-			matcher_validators.ValidateTargetRef(backendRef.TargetRef, &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
-					common_api.MeshServiceSubset,
+			matcher_validators.ValidateTargetRef(
+				backendRef.TargetRef,
+				&matcher_validators.ValidateTargetRefOpts{
+					SupportedKinds: []common_api.TargetRefKind{
+						common_api.MeshService,
+						common_api.MeshServiceSubset,
+					},
 				},
-			}),
+			),
 		)
 	}
 

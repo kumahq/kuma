@@ -26,11 +26,6 @@ to:
 - targetRef:
     kind: MeshService
     name: backend
-  rules:
-  - default:
-      backendRefs:
-      - kind: MeshService
-        name: other
 `),
 		ErrorCase("spec.to.targetRef error",
 			validators.Violation{
@@ -47,11 +42,6 @@ to:
 - targetRef:
     kind: BlahBlah
     name: backend
-  rules:
-  - default:
-      backendRefs:
-      - kind: MeshService
-        name: other
 `),
 		ErrorCase("invalid backendRefs",
 			validators.Violation{
@@ -78,7 +68,7 @@ to:
 	)
 	DescribeValidCases(
 		api.NewMeshTCPRouteResource,
-		Entry("accepts valid resource", `
+		Entry("accepts valid resource with to.rules", `
 type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
@@ -94,6 +84,18 @@ to:
       backendRefs:
       - kind: MeshService
         name: other
+`),
+		Entry("accepts valid resource without to.rules", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
 `),
 	)
 })
