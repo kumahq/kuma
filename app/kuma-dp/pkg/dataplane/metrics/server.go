@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -32,22 +32,22 @@ var (
 	prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 	logger                   = core.Log.WithName("metrics-hijacker")
 
-	// Prometheus scraper supports multiple content types. Lower the number, higher the priority.
-	prometheusContentTypePriorities = map[string]int{
-		string(expfmt.FmtOpenMetrics_1_0_0): 0,
-		string(expfmt.FmtOpenMetrics_0_0_1): 1,
-		string(expfmt.FmtText):              2,
-		string(expfmt.FmtProtoDelim):        3,
-		string(expfmt.FmtUnknown):           4,
+	// holds prometheus content types in order of priority.
+	prometheusPriorityContentType = []expfmt.Format{
+		expfmt.FmtOpenMetrics_1_0_0,
+		expfmt.FmtOpenMetrics_0_0_1,
+		expfmt.FmtText,
+		expfmt.FmtUnknown,
 	}
-	// Reverse mapping of prometheusContentTypePriorities for faster lookup.
-	prometheusPriorityContentType = func(ctPriorities map[string]int) map[int]string {
-		reverseMapping := map[int]string{}
-		for k, v := range ctPriorities {
-			reverseMapping[v] = k
+
+	// Reverse mapping of prometheusPriorityContentType for faster lookup.
+	prometheusPriorityContentTypeLookup = func(expformats []expfmt.Format) map[expfmt.Format]int32 {
+		reverseMapping := map[expfmt.Format]int32{}
+		for priority, format := range expformats {
+			reverseMapping[format] = int32(priority)
 		}
 		return reverseMapping
-	}(prometheusContentTypePriorities)
+	}(prometheusPriorityContentType)
 )
 
 var _ component.Component = &Hijacker{}
@@ -171,33 +171,27 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	out := make(chan []byte, len(s.applicationsToScrape))
+	contentTypes := make(chan expfmt.Format, len(s.applicationsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
 	wg.Add(len(s.applicationsToScrape))
 	go func() {
 		wg.Wait()
-		close(done)
 		close(out)
+		close(contentTypes)
+		close(done)
 	}()
 
-	// Tracks unique content type priorities returned by applications in sorted order.
-	// As there are only a few content types supported by prometheus scraper,
-	// we can use a simple array instead of a map.
-	ctPriorities := make([]bool, len(prometheusContentTypePriorities))
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
 			content, contentType := s.getStats(ctx, req, app)
 			out <- content
-			if content != nil && contentType != "" {
-				// skip unknown content type
-				priorityIdx, valid := prometheusContentTypePriorities[contentType]
-				if !valid {
-					return
-				}
-				// if contentType is not found in the priorities map, it will return 0
-				ctPriorities[priorityIdx] = true
-			}
+
+			// It's possible to track the highest priority content type seen,
+			// but that would require mutex.
+			// I would prefer to calculate it later at one go
+			contentTypes <- expfmt.Format(contentType)
 		}(app)
 	}
 
@@ -205,29 +199,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
-		// We should not simply use the highest priority content type even if `application/openmetrics-text`
-		// is the superset of `text/plain`, as it might not be
-		// supported by the applications or the user might be using older prom scraper.
-		// So it's better to choose the highest negotiated content type between the apps and the scraper.
-		ct := ""
-		for priority := range ctPriorities {
-			if ctPriorities[priority] {
-				ct = prometheusPriorityContentType[priority]
-				break
-			}
-		}
-		if ct == "" {
-			// If no content type returned by applications,
-			// try to use max supported accept header, else use default.
-			acceptHeaders := strings.Split(req.Header.Get("accept"), ",")
-			ct = acceptHeaders[0]
-
-			// if accept header is not found in the priorities map, use default
-			if _, ok := prometheusContentTypePriorities[ct]; !ok {
-				ct = string(expfmt.FmtOpenMetrics_1_0_0)
-			}
-		}
-		writer.Header().Set("content-type", ct)
+		writer.Header().Set("content-type", string(selectContentType(contentTypes, req.Header)))
 		for resp := range out {
 			if _, err := writer.Write(resp); err != nil {
 				logger.Error(err, "error while writing the response")
@@ -237,6 +209,39 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
+}
+
+// selectContentType selects the highest priority content type supported by the applications.
+// If no valid content type is returned by the applications, it returns the highest priority
+// content type supported by the scraper.
+func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header) expfmt.Format {
+	// Tracks highest negotiated content type priority.
+	// Lower number means higher priority
+	//
+	// We should not simply use the highest priority content type even if `application/openmetrics-text`
+	// is the superset of `text/plain`, as it might not be
+	// supported by the applications or the user might be using older prom scraper.
+	// So it's better to choose the highest negotiated content type between the apps and the scraper.
+	var ctPriority int32 = math.MaxInt32
+	ct := expfmt.FmtUnknown
+	for contentType := range contentTypes {
+		priority, valid := prometheusPriorityContentTypeLookup[contentType]
+		if !valid {
+			continue
+		}
+		if priority < ctPriority {
+			ctPriority = priority
+			ct = contentType
+		}
+	}
+
+	// If no valid content type is returned by the applications,
+	// use the highest priority content type supported by the scraper.
+	if ct == expfmt.FmtUnknown {
+		ct = expfmt.NegotiateIncludingOpenMetrics(reqHeader)
+	}
+
+	return ct
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, string) {
@@ -270,14 +275,14 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 		buf := new(bytes.Buffer)
 		if err := app.Mutator(resp.Body, buf); err != nil {
 			logger.Error(err, "failed while mutating data", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil, respContentType
+			return nil, ""
 		}
 		bodyBytes = buf.Bytes()
 	} else {
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil, respContentType
+			return nil, ""
 		}
 	}
 	return bodyBytes, respContentType
