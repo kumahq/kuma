@@ -3,7 +3,7 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.20.3"
+    default: "1.20.4"
   first_k8s_version:
     type: string
     default: "v1.22.9-k3s1"
