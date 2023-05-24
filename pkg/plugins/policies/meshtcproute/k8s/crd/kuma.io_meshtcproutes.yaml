@@ -111,13 +111,15 @@ spec:
                                       minimum: 0
                                       type: integer
                                   type: object
+                                minItems: 1
                                 type: array
+                            required:
+                            - backendRefs
                             type: object
                         required:
                         - default
                         type: object
                       maxItems: 1
-                      minItems: 1
                       type: array
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -149,7 +151,6 @@ spec:
                           type: object
                       type: object
                   required:
-                  - rules
                   - targetRef
                   type: object
                 minItems: 1
