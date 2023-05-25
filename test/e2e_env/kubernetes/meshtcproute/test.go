@@ -124,7 +124,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should split traffic between internal and external services " +
+	It("should split traffic between internal and external services "+
 		"with mixed (tcp and http) protocols", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
