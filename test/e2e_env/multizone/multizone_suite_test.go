@@ -1,4 +1,4 @@
-package auth_test
+package multizone_test
 
 import (
 	"testing"
@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshhttproute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtcproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
@@ -49,6 +50,7 @@ var (
 	_ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 	_ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+	_ = PDescribe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 	_ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)

@@ -183,6 +183,7 @@ rules:
       - meshproxypatches
       - meshratelimits
       - meshretries
+      - meshtcproutes
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
@@ -388,7 +389,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: b9822568086e4d4c40b4c64eab08b01c89ba323fa1b122987193ece2734cb4e8
+        checksum/tls-secrets: ee6892afab29a67bc0284f76da1e9fb8684f356964e6f8e1558184a535e30820
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -730,6 +731,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -775,6 +777,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -903,6 +906,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions

@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtcproute"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
@@ -77,5 +78,6 @@ var (
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+	_ = PDescribe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
 )
