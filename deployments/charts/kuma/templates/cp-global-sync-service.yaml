@@ -17,9 +17,9 @@ spec:
   ports:
     - port: {{ .Values.controlPlane.globalZoneSyncService.port }}
       appProtocol: {{ .Values.controlPlane.globalZoneSyncService.protocol }}
-  {{- if eq .Values.controlPlane.globalZoneSyncService.type "NodePort" }}
-      nodePort: 30685
-  {{- end }}
+      {{- if and (eq .Values.controlPlane.globalZoneSyncService.type "NodePort") .Values.controlPlane.globalZoneSyncService.nodePort }}
+      nodePort: {{ .Values.controlPlane.globalZoneSyncService.nodePort }}
+      {{- end }}
       name: global-zone-sync
   selector:
     app: {{ include "kuma.name" . }}-control-plane

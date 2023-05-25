@@ -72,13 +72,9 @@ func (in *RuleConf) DeepCopyInto(out *RuleConf) {
 	*out = *in
 	if in.BackendRefs != nil {
 		in, out := &in.BackendRefs, &out.BackendRefs
-		*out = new([]BackendRef)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]BackendRef, len(*in))
-			for i := range *in {
-				(*in)[i].DeepCopyInto(&(*out)[i])
-			}
+		*out = make([]BackendRef, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }

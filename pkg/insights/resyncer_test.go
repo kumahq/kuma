@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/time/rate"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -31,25 +32,26 @@ var _ = Describe("Insight Persistence", func() {
 
 	var stopCh chan struct{}
 	var tickCh chan time.Time
+	var eventCh chan events.Event
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
 
 		stopCh = make(chan struct{})
 		tickCh = make(chan time.Time)
+		eventCh = make(chan events.Event)
 
 		resyncer := insights.NewResyncer(&insights.Config{
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
-			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: make(chan events.Event)}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) <-chan time.Time {
 				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
 			},
-			Now: func() time.Time {
-				Fail("This shouldn't be used as not tests use the event factory")
-				return start
+			RateLimiterFactory: func() *rate.Limiter {
+				return rate.NewLimiter(rate.Inf, 1)
 			},
 			Registry: registry.Global(),
 			AddressPortGenerator: func(s string) string {
@@ -1012,6 +1014,25 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		}).Should(Succeed())
+	})
+
+	It("should sync on events", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
 	})
 })

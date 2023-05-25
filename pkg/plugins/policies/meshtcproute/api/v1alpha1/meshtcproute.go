@@ -48,9 +48,8 @@ type To struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
-	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=1
-	Rules []Rule `json:"rules"`
+	Rules []Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
@@ -60,11 +59,12 @@ type Rule struct {
 }
 
 type RuleConf struct {
-	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
+	// +kubebuilder:validation:MinItems=1
+	BackendRefs []BackendRef `json:"backendRefs"`
 }
 
 type BackendRef struct {
-	common_api.TargetRef `json:",omitempty"`
+	common_api.TargetRef `json:","`
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=1
 	Weight *uint `json:"weight,omitempty"`

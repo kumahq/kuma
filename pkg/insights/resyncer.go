@@ -53,7 +53,6 @@ type Config struct {
 	Tick                 func(d time.Duration) <-chan time.Time
 	RateLimiterFactory   func() *rate.Limiter
 	AddressPortGenerator func(string) string
-	Now                  func() time.Time
 }
 
 type resyncer struct {
@@ -74,7 +73,6 @@ type resyncer struct {
 	addressPortGenerator func(string) string
 
 	registry registry.TypeRegistry
-	now      func() time.Time
 	tenantFn multitenant.Tenants
 }
 
@@ -102,7 +100,6 @@ func NewResyncer(config *Config, tenantFn multitenant.Tenants) component.Compone
 		infos:                map[string]syncInfo{},
 		registry:             config.Registry,
 		addressPortGenerator: config.AddressPortGenerator,
-		now:                  config.Now,
 		tenantFn:             tenantFn,
 	}
 
@@ -171,7 +168,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 				}
 			}
-			if desc.Scope == model.ScopeGlobal {
+			if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
 				continue
 			}
 			if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
@@ -179,7 +176,11 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				// because that's how we find online/offline Dataplane's status
 				continue
 			}
-			if err := r.createOrUpdateMeshInsight(multitenant.WithTenant(context.TODO(), resourceChanged.TenantID), resourceChanged.Key.Mesh, time.Now()); err != nil {
+			meshName := resourceChanged.Key.Mesh
+			if desc.Name == core_mesh.MeshType {
+				meshName = resourceChanged.Key.Name
+			}
+			if err := r.createOrUpdateMeshInsight(multitenant.WithTenant(context.TODO(), resourceChanged.TenantID), meshName, time.Now()); err != nil {
 				log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 				continue
 			}

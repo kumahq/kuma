@@ -111,6 +111,14 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   service:
+    apiServer:
+      http:
+        # -- Port on which Http api server Service is exposed on Node for service of type NodePort
+        nodePort: 30681
+      https:
+        # -- Port on which Https api server Service is exposed on Node for service of type NodePort
+        nodePort: 30682
+
     # -- Whether to create a service resource.
     enabled: true
 
@@ -150,6 +158,8 @@ controlPlane:
     loadBalancerIP:
     # -- Additional annotations to put on the Global Zone Sync Service
     annotations: { }
+    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
+    nodePort: 30685
     # -- Port on which Global Zone Sync Service is exposed
     port: 5685
     # -- Protocol of the Global Zone Sync service port
