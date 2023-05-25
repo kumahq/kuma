@@ -77,6 +77,14 @@ type Match struct {
 	RegexQuery []KeyValue // param -> regex
 }
 
+func (m Match) numHeaderMatches() int {
+	return len(m.ExactHeader) + len(m.RegexHeader) + len(m.AbsentHeader) + len(m.PresentHeader)
+}
+
+func (m Match) numQueryParamMatches() int {
+	return len(m.ExactQuery) + len(m.RegexQuery)
+}
+
 // Action describes how a HTTP request should be dispatched.
 type Action struct {
 	Forward  []Destination
