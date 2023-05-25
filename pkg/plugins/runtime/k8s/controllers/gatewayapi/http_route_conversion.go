@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -24,22 +25,19 @@ import (
 
 func (r *HTTPRouteReconciler) gapiToKumaRule(
 	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, rule gatewayapi.HTTPRouteRule,
-) (*mesh_proto.MeshGatewayRoute_HttpRoute_Rule, *ResolvedRefsConditionFalse, error) {
+) (*mesh_proto.MeshGatewayRoute_HttpRoute_Rule, []kube_meta.Condition, error) {
 	var backends []*mesh_proto.MeshGatewayRoute_Backend
 
-	var condition *ResolvedRefsConditionFalse
+	var conditions []kube_meta.Condition
 
 	for _, backend := range rule.BackendRefs {
-		ref := backend.BackendObjectReference
-
-		destination, refCondition, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, ref)
+		destination, refCondition, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, backend.BackendObjectReference)
 		if err != nil {
-			return nil, condition, err
+			return nil, conditions, err
 		}
 
-		if refCondition != nil {
-			condition = refCondition
-		}
+		refCondition.AddIfFalseAndNotPresent(&conditions)
+
 		backends = append(backends, &mesh_proto.MeshGatewayRoute_Backend{
 			// Weight has a default of 1
 			Weight:      uint32(*backend.Weight),
@@ -63,9 +61,9 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 	var foundBackendlessFilter bool
 
 	for _, filter := range rule.Filters {
-		kumaFilters, filterCondition, err := r.gapiToKumaFilters(ctx, mesh, route.Namespace, filter)
+		kumaFilters, filterConditions, err := r.gapiToKumaFilters(ctx, mesh, route.Namespace, filter)
 		if err != nil {
-			return nil, condition, err
+			return nil, conditions, err
 		}
 
 		switch filter.Type {
@@ -73,23 +71,25 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 			foundBackendlessFilter = true
 		}
 
-		if filterCondition != nil {
-			condition = filterCondition
-		} else {
+		for _, condition := range filterConditions {
+			if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+				kube_apimeta.SetStatusCondition(&conditions, condition)
+			}
+		}
+		if len(filterConditions) == 0 {
 			filters = append(filters, kumaFilters...)
 		}
 	}
 
 	var kumaRule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule
 	if len(backends) > 0 || foundBackendlessFilter {
-		// TODO Make sure this results in a 500
 		kumaRule = &mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
 			Matches:  matches,
 			Filters:  filters,
 			Backends: backends,
 		}
 	}
-	return kumaRule, condition, nil
+	return kumaRule, conditions, nil
 }
 
 // gapiToKumaRouteConf converts the route into a route spec and returns any
@@ -106,17 +106,20 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		hostnames = append(hostnames, string(hn))
 	}
 
-	var resolvedRefFalse *ResolvedRefsConditionFalse
 	var rules []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule
 
+	var conditions []kube_meta.Condition
+
 	for _, rule := range route.Spec.Rules {
-		kumaRule, ruleCondition, err := r.gapiToKumaRule(ctx, mesh, route, rule)
+		kumaRule, conversionConditions, err := r.gapiToKumaRule(ctx, mesh, route, rule)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "couldn't convert HTTPRoute to Kuma GatewayRoute")
 		}
 
-		if ruleCondition != nil {
-			resolvedRefFalse = ruleCondition
+		for _, condition := range conversionConditions {
+			if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+				kube_apimeta.SetStatusCondition(&conditions, condition)
+			}
 		}
 
 		if kumaRule != nil {
@@ -124,27 +127,21 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		}
 	}
 
-	conditions := []kube_meta.Condition{
-		// TODO: reflect the true state from the actual gateway of this
-		// route
+	for _, condition := range []kube_meta.Condition{
 		{
 			Type:   string(gatewayapi.RouteConditionAccepted),
 			Status: kube_meta.ConditionTrue,
 			Reason: string(gatewayapi.RouteReasonAccepted),
+		}, {
+			Type:   string(gatewayapi.RouteConditionResolvedRefs),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.RouteReasonResolvedRefs),
 		},
+	} {
+		if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+			kube_apimeta.SetStatusCondition(&conditions, condition)
+		}
 	}
-
-	resolvedRefCondition := kube_meta.Condition{
-		Type:   string(gatewayapi.RouteConditionResolvedRefs),
-		Status: kube_meta.ConditionTrue,
-		Reason: string(gatewayapi.RouteReasonResolvedRefs),
-	}
-	if resolvedRefFalse != nil {
-		resolvedRefCondition.Status = kube_meta.ConditionFalse
-		resolvedRefCondition.Reason = resolvedRefFalse.Reason
-		resolvedRefCondition.Message = resolvedRefFalse.Message
-	}
-	conditions = append(conditions, resolvedRefCondition)
 
 	var routeConf *mesh_proto.MeshGatewayRoute_Conf
 	if len(rules) > 0 {
@@ -172,6 +169,18 @@ func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_
 type ResolvedRefsConditionFalse struct {
 	Reason  string
 	Message string
+}
+
+func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_meta.Condition) {
+	if c != nil && kube_apimeta.FindStatusCondition(*conditions, string(gatewayapi.RouteConditionResolvedRefs)) == nil {
+		condition := kube_meta.Condition{
+			Type:    string(gatewayapi.RouteReasonResolvedRefs),
+			Status:  kube_meta.ConditionFalse,
+			Reason:  c.Reason,
+			Message: c.Message,
+		}
+		kube_apimeta.SetStatusCondition(conditions, condition)
+	}
 }
 
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
@@ -346,10 +355,10 @@ func pathRewriteToKuma(modifier gatewayapi.HTTPPathModifier) *mesh_proto.MeshGat
 
 func (r *HTTPRouteReconciler) gapiToKumaFilters(
 	ctx context.Context, mesh string, namespace string, filter gatewayapi.HTTPRouteFilter,
-) ([]*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, *ResolvedRefsConditionFalse, error) {
+) ([]*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, []kube_meta.Condition, error) {
 	var kumaFilters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
-	var condition *ResolvedRefsConditionFalse
+	var conditions []kube_meta.Condition
 
 	switch filter.Type {
 	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
@@ -380,9 +389,8 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 		if err != nil {
 			return nil, nil, err
 		}
-		if refCondition != nil {
-			condition = refCondition
-		}
+
+		refCondition.AddIfFalseAndNotPresent(&conditions)
 
 		mirror := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Mirror{
 			Backend: &mesh_proto.MeshGatewayRoute_Backend{
@@ -486,5 +494,5 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 		return nil, nil, fmt.Errorf("unsupported filter type %q", filter.Type)
 	}
 
-	return kumaFilters, condition, nil
+	return kumaFilters, conditions, nil
 }
