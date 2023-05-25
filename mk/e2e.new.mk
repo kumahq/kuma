@@ -111,8 +111,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 # Run only with -j and K8S_CLUSTER_TOOL=k3d (which is the default value)
 .PHONY: test/e2e/debug
 test/e2e/debug: $(E2E_DEPS_TARGETS)
-	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
-	$(MAKE) build/kumactl images
+	$(MAKE) -j $(K8SCLUSTERS_START_TARGETS) build/kumactl images
 	$(MAKE) docker/tag
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters

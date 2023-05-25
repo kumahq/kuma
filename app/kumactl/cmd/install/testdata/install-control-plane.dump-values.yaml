@@ -162,6 +162,8 @@ controlPlane:
     nodePort: 30685
     # -- Port on which Global Zone Sync Service is exposed
     port: 5685
+    # -- Protocol of the Global Zone Sync service port
+    protocol: grpc
 
   defaults:
     # -- Whether to skip creating the default Mesh
