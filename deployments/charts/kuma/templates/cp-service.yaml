@@ -20,9 +20,15 @@ spec:
     - port: 5681
       name: http-api-server
       appProtocol: http
+      {{- if and (eq .Values.controlPlane.service.type "NodePort") .Values.controlPlane.service.apiServer.http.nodePort }}
+      nodePort: {{ .Values.controlPlane.service.apiServer.http.nodePort }}
+      {{- end }}
     - port: 5682
       name: https-api-server
       appProtocol: http
+      {{- if and (eq .Values.controlPlane.service.type "NodePort") .Values.controlPlane.service.apiServer.https.nodePort }}
+      nodePort: {{ .Values.controlPlane.service.apiServer.https.nodePort }}
+      {{- end }}
     {{- if ne .Values.controlPlane.environment "universal" }}
     - port: 443
       name: https-admission-server

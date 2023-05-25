@@ -16,10 +16,10 @@ spec:
   {{- end }}
   ports:
     - port: {{ .Values.controlPlane.globalZoneSyncService.port }}
-      appProtocol: grpc
-  {{- if eq .Values.controlPlane.globalZoneSyncService.type "NodePort" }}
-      nodePort: 30685
-  {{- end }}
+      appProtocol: {{ .Values.controlPlane.globalZoneSyncService.protocol }}
+      {{- if and (eq .Values.controlPlane.globalZoneSyncService.type "NodePort") .Values.controlPlane.globalZoneSyncService.nodePort }}
+      nodePort: {{ .Values.controlPlane.globalZoneSyncService.nodePort }}
+      {{- end }}
       name: global-zone-sync
   selector:
     app: {{ include "kuma.name" . }}-control-plane
