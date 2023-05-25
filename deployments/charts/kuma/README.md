@@ -55,6 +55,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.nodePort | int | `30685` | Port on which Global Zone Sync Service is exposed on Node for service of type NodePort |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
+| controlPlane.globalZoneSyncService.protocol | string | `"grpc"` | Protocol of the Global Zone Sync service port |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
