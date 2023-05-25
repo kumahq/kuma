@@ -1,5 +1,11 @@
 package v1alpha1
 
+type PolicyDefault struct {
+	Rules []Rule
+}
+
 func (x *To) GetDefault() interface{} {
-	return x.Rules[0]
+	return PolicyDefault{
+		Rules: x.Rules,
+	}
 }
