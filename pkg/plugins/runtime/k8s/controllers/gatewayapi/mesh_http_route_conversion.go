@@ -12,6 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -39,8 +40,8 @@ func serviceAndPorts(svc *kube_core.Service, port *gatewayapi.PortNumber) Servic
 
 func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, svcs []ServiceAndPorts,
-) (map[string]v1alpha1.MeshHTTPRoute, error) {
-	routes := map[string]v1alpha1.MeshHTTPRoute{}
+) (map[string]core_model.ResourceSpec, error) {
+	routes := map[string]core_model.ResourceSpec{}
 
 	for _, svcRef := range svcs {
 		for _, port := range svcRef.Ports {
@@ -75,8 +76,11 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 					Kind: common_api.Mesh,
 				}
 			}
-			routeSubName := fmt.Sprintf("%s-%s-%d", svcRef.Name.Name, svcRef.Name.Namespace, port)
-			routes[routeSubName] = v1alpha1.MeshHTTPRoute{
+			routeSubName := fmt.Sprintf(
+				"%s-%s-%s.%s.%d",
+				route.Name, route.Namespace, svcRef.Name.Name, svcRef.Name.Namespace, port,
+			)
+			routes[routeSubName] = &v1alpha1.MeshHTTPRoute{
 				TargetRef: targetRef,
 				To:        to,
 			}

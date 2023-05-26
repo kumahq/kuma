@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -15,7 +14,6 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -24,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/k8s/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
@@ -51,8 +48,18 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		if kube_apierrs.IsNotFound(err) {
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
-			err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGatewayRoute{}, "", nil)
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
+			if err := common.ReconcileLabelledObject(
+				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGatewayRoute{}, "", nil,
+			); err != nil {
+				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
+			}
+			if err := common.ReconcileLabelledObject(
+				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, r.SystemNamespace, nil,
+			); err != nil {
+				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
+			}
+
+			return kube_ctrl.Result{}, nil
 		}
 
 		return kube_ctrl.Result{}, err
@@ -81,19 +88,10 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		}
 	}
 
-	for subName, meshRouteSpec := range meshRouteSpecs {
-		spec := meshRouteSpec
-		route := meshhttproute_k8s.MeshHTTPRoute{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", httpRoute.Name, subName), Namespace: r.SystemNamespace,
-			},
-		}
-		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, &route, func() error {
-			route.Spec = &spec
-			return nil
-		}); err != nil {
-			return kube_ctrl.Result{}, err
-		}
+	if err := common.ReconcileLabelledObject(
+		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, r.SystemNamespace, meshRouteSpecs,
+	); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
 	}
 
 	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
@@ -114,7 +112,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	route *gatewayapi.HTTPRoute,
 ) (
 	*mesh_proto.MeshGatewayRoute,
-	map[string]meshhttproute_api.MeshHTTPRoute,
+	map[string]core_model.ResourceSpec,
 	ParentConditions,
 	error,
 ) {
