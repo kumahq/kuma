@@ -77,6 +77,7 @@ func Test() {
 	})
 
 	It("should use MeshTCPRoute if any MeshTCPRoutes are present", func() {
+		// given
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
