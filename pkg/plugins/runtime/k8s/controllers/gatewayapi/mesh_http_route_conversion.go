@@ -253,11 +253,11 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(ctx context.Context, mesh, ro
 
 		var path *v1alpha1.PathRewrite
 		if gapiPath := redirect.Path; gapiPath != nil {
-			var ok bool
-			*path, ok = fromGAPIPath(*gapiPath)
+			meshPath, ok := fromGAPIPath(*gapiPath)
 			if !ok {
 				return v1alpha1.Filter{}, false
 			}
+			path = &meshPath
 		}
 
 		return v1alpha1.Filter{
@@ -275,11 +275,11 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(ctx context.Context, mesh, ro
 
 		var path *v1alpha1.PathRewrite
 		if gapiPath := rewrite.Path; gapiPath != nil {
-			var ok bool
-			*path, ok = fromGAPIPath(*gapiPath)
+			meshPath, ok := fromGAPIPath(*gapiPath)
 			if !ok {
 				return v1alpha1.Filter{}, false
 			}
+			path = &meshPath
 		}
 
 		return v1alpha1.Filter{
