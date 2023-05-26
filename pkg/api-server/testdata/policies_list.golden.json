@@ -113,6 +113,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshTCPRoute",
+   "readOnly": false,
+   "path": "meshtcproutes",
+   "singularDisplayName": "Mesh TCP Route",
+   "pluralDisplayName": "Mesh TCP Routes",
+   "isExperimental": false
+  },
+  {
    "name": "MeshTimeout",
    "readOnly": false,
    "path": "meshtimeouts",

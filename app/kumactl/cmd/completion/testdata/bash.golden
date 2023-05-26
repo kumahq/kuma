@@ -2386,6 +2386,76 @@ _kumactl_get_meshretry()
     noun_aliases=()
 }
 
+_kumactl_get_meshtcproute()
+{
+    last_command="kumactl_get_meshtcproute"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshtcproutes()
+{
+    last_command="kumactl_get_meshtcproutes"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_meshtimeout()
 {
     last_command="kumactl_get_meshtimeout"
@@ -3549,6 +3619,8 @@ _kumactl_get()
     commands+=("meshratelimits")
     commands+=("meshretries")
     commands+=("meshretry")
+    commands+=("meshtcproute")
+    commands+=("meshtcproutes")
     commands+=("meshtimeout")
     commands+=("meshtimeouts")
     commands+=("meshtrace")
@@ -4124,6 +4196,36 @@ _kumactl_inspect_meshretry()
     noun_aliases=()
 }
 
+_kumactl_inspect_meshtcproute()
+{
+    last_command="kumactl_inspect_meshtcproute"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_inspect_meshtimeout()
 {
     last_command="kumactl_inspect_meshtimeout"
@@ -4664,6 +4766,7 @@ _kumactl_inspect()
     commands+=("meshproxypatch")
     commands+=("meshratelimit")
     commands+=("meshretry")
+    commands+=("meshtcproute")
     commands+=("meshtimeout")
     commands+=("meshtrace")
     commands+=("meshtrafficpermission")

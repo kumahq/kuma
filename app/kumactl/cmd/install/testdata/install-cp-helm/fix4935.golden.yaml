@@ -244,6 +244,7 @@ rules:
       - meshproxypatches
       - meshratelimits
       - meshretries
+      - meshtcproutes
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
@@ -631,7 +632,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: abac59589c4ca4987ebcfc82191fd461b0bd3b7392c1ef39d505d6c052d44ad4
+        checksum/tls-secrets: 7b6ae860b2e6214ea9bd8283136caf4596a9e217a60e28e709a2e781f9676180
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -1113,6 +1114,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -1158,6 +1160,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -1285,6 +1288,7 @@ webhooks:
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions

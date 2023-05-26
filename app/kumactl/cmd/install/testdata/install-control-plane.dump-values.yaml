@@ -704,6 +704,7 @@ plugins:
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}
+    meshtcproutes: {}
     meshtimeouts: {}
     meshtraces: {}
     meshtrafficpermissions: {}

@@ -61,6 +61,8 @@ Show Kuma resources.
 * [kumactl get meshratelimits](kumactl_get_meshratelimits.md)	 - Show MeshRateLimit
 * [kumactl get meshretries](kumactl_get_meshretries.md)	 - Show MeshRetry
 * [kumactl get meshretry](kumactl_get_meshretry.md)	 - Show a single MeshRetry resource
+* [kumactl get meshtcproute](kumactl_get_meshtcproute.md)	 - Show a single MeshTCPRoute resource
+* [kumactl get meshtcproutes](kumactl_get_meshtcproutes.md)	 - Show MeshTCPRoute
 * [kumactl get meshtimeout](kumactl_get_meshtimeout.md)	 - Show a single MeshTimeout resource
 * [kumactl get meshtimeouts](kumactl_get_meshtimeouts.md)	 - Show MeshTimeout
 * [kumactl get meshtrace](kumactl_get_meshtrace.md)	 - Show a single MeshTrace resource
