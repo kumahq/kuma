@@ -13,7 +13,6 @@ import (
 // machinery.
 //
 // +kuma:policy:skip_get_default=true
-// +kuma:policy:skip_registration=true
 type MeshTCPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

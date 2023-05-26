@@ -10,6 +10,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshretry"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission"

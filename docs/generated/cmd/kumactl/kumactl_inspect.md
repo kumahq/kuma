@@ -41,6 +41,7 @@ Inspect Kuma resources.
 * [kumactl inspect meshproxypatch](kumactl_inspect_meshproxypatch.md)	 - Inspect MeshProxyPatch
 * [kumactl inspect meshratelimit](kumactl_inspect_meshratelimit.md)	 - Inspect MeshRateLimit
 * [kumactl inspect meshretry](kumactl_inspect_meshretry.md)	 - Inspect MeshRetry
+* [kumactl inspect meshtcproute](kumactl_inspect_meshtcproute.md)	 - Inspect MeshTCPRoute
 * [kumactl inspect meshtimeout](kumactl_inspect_meshtimeout.md)	 - Inspect MeshTimeout
 * [kumactl inspect meshtrace](kumactl_inspect_meshtrace.md)	 - Inspect MeshTrace
 * [kumactl inspect meshtrafficpermission](kumactl_inspect_meshtrafficpermission.md)	 - Inspect MeshTrafficPermission
