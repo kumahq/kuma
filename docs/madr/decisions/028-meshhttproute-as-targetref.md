@@ -286,4 +286,3 @@ default:
 In Kuma GUI in `To` column we have to display not only the outbound's name, but also `rule[].matches` list, because
 this list uniquely identifies routes in Envoy. 
 
-
