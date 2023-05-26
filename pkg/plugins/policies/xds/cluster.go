@@ -11,6 +11,7 @@ import (
 type Cluster struct {
 	service           string
 	name              string
+	weight            uint32
 	tags              tags.Tags
 	mesh              string
 	isExternalService bool
@@ -18,6 +19,7 @@ type Cluster struct {
 
 func (c *Cluster) Service() string { return c.service }
 func (c *Cluster) Name() string    { return c.name }
+func (c *Cluster) Weight() uint32  { return c.weight }
 func (c *Cluster) Tags() tags.Tags { return c.tags }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
@@ -41,7 +43,7 @@ type ClusterBuilder struct {
 }
 
 func NewClusterBuilder() *ClusterBuilder {
-	return &ClusterBuilder{}
+	return (&ClusterBuilder{}).WithWeight(1)
 }
 
 func (b *ClusterBuilder) Build() *Cluster {
@@ -71,6 +73,13 @@ func (b *ClusterBuilder) WithName(name string) *ClusterBuilder {
 		if len(cluster.service) == 0 {
 			cluster.service = name
 		}
+	}))
+	return b
+}
+
+func (b *ClusterBuilder) WithWeight(weight uint32) *ClusterBuilder {
+	b.opts = append(b.opts, newClusterOptFunc(func(cluster *Cluster) {
+		cluster.weight = weight
 	}))
 	return b
 }
