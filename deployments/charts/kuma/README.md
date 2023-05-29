@@ -190,6 +190,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
+| experimental.deltaKds | bool | `false` | If true, it uses new API for resource synchronization |
 | legacy.transparentProxy | bool | `false` | If true, use the legacy transparent proxy engine |
 | legacy.cni.enabled | bool | `false` | If true, it installs legacy version of the CNI |
 | legacy.cni.image.registry | string | `"docker.io/kumahq"` | CNI v1 image registry |
