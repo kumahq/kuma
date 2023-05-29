@@ -50,7 +50,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		if kube_apierrs.IsNotFound(err) {
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
-			err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGateway{}, nil)
+			err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGateway{}, "", nil)
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshGateway.kuma.io")
 		}
 
@@ -88,7 +88,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 
 	var gatewayInstance *mesh_k8s.MeshGatewayInstance
 	if gatewaySpec != nil {
-		if err := common.ReconcileLabelledObject(ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGateway{}, gatewaySpec); err != nil {
+		resources := map[string]core_model.ResourceSpec{
+			common.OwnedPolicyName(req.NamespacedName): gatewaySpec,
+		}
+		if err := common.ReconcileLabelledObject(
+			ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGateway{}, "", resources,
+		); err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
 		}
 
