@@ -34,6 +34,11 @@ func Test() {
 				testserver.WithNamespace(namespace),
 			)).
 			Install(testserver.Install(
+				testserver.WithName("test-http-server-2"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
+			Install(testserver.Install(
 				testserver.WithName("test-tcp-server"),
 				testserver.WithServicePortAppProtocol("tcp"),
 				testserver.WithMesh(meshName),
@@ -240,6 +245,103 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("external-tcp-service"))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should use MeshHTTPRoute if both MeshTCPRoute and MeshHTTPRoute "+
+		"are present and point to the same source and destination", func() {
+		// given
+		Eventually(func(g Gomega) {
+			g.Expect(client.CollectEchoResponse(
+				kubernetes.Cluster,
+				"test-client",
+				"test-http-server_meshtcproute_svc_80.mesh",
+				client.FromKubernetesPod(namespace, "test-client"),
+			)).Error().To(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+metadata:
+  name: external-tcp-service-mtcpr
+mesh: %s
+spec:
+  tags:
+    kuma.io/service: external-tcp-service
+    kuma.io/protocol: tcp
+  networking:
+    # .svc.cluster.local is needed, otherwise Kubernetes will resolve this
+    # to the real IP
+    address: external-tcp-service.%s.svc.cluster.local:80
+`, meshName, namespace)))).To(Succeed())
+
+		// when
+		meshRoutes := func(meshName string, namespace string) string {
+			meshHTTPRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_%s_svc_80
+  to:
+  - targetRef:
+      kind: MeshService
+      name: test-http-server_meshtcproute_svc_80
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: test-http-server-2_meshtcproute_svc_80
+`, Config.KumaNamespace, meshName, namespace)
+			meshTCPRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTCPRoute
+metadata:
+  name: tcp-route
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_%s_svc_80
+  to:
+  - targetRef:
+      kind: MeshService
+      name: test-http-server_meshtcproute_svc_80
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: external-tcp-service
+`, Config.KumaNamespace, meshName, namespace)
+			return fmt.Sprintf("%s\n---%s", meshTCPRoute, meshHTTPRoute)
+		}
+
+		Expect(YamlK8s(meshRoutes(meshName, namespace))(kubernetes.Cluster)).
+			To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			response, err := client.CollectEchoResponse(
+				kubernetes.Cluster,
+				"test-client",
+				"test-http-server_meshtcproute_svc_80.mesh",
+				client.FromKubernetesPod(namespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(HavePrefix("test-http-server-2"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
