@@ -216,7 +216,7 @@ spec:
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"test-client",
-				"test-tcp-server_meshtcproute_svc_80.mesh",
+				"test-http-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
