@@ -248,7 +248,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should use MeshHTTPRoute if both MeshTCPRoutes and MeshHTTPRoute "+
+	It("should use MeshHTTPRoute if both MeshTCPRoute and MeshHTTPRoute "+
 		"are present and point to the same source and destination", func() {
 		// given
 		Eventually(func(g Gomega) {
