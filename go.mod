@@ -21,7 +21,7 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.4
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/golang-migrate/migrate/v4 v4.15.2
+	github.com/golang-migrate/migrate/v4 v4.16.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.8.0
@@ -89,10 +89,10 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/logging v1.7.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
-	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.187 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
@@ -157,7 +157,7 @@ require (
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
-	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
@@ -172,7 +172,7 @@ require (
 	github.com/pquerna/otp v1.2.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -185,7 +185,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
