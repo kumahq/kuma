@@ -13,6 +13,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var clientLog = core.Log.WithName("intercp").WithName("envoyadmin").WithName("client")
@@ -159,7 +160,7 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 }
 
 func (f *forwardingKdsEnvoyAdminClient) clientForInstanceID(ctx context.Context, instanceID string) (mesh_proto.InterCPEnvoyAdminForwardServiceClient, error) {
-	instance, err := catalog.InstanceOfID(ctx, f.cat, instanceID)
+	instance, err := catalog.InstanceOfID(multitenant.WithTenant(ctx, multitenant.GlobalTenantID), f.cat, instanceID)
 	if err != nil {
 		return nil, err
 	}
