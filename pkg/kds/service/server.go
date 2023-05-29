@@ -71,6 +71,9 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 }
 
 func ClientID(ctx context.Context, zone string) string {
-	tenantID, _ := multitenant.TenantFromCtx(ctx)
+	tenantID, ok := multitenant.TenantFromCtx(ctx)
+	if !ok {
+		return zone
+	}
 	return fmt.Sprintf("%s:%s", zone, tenantID)
 }
