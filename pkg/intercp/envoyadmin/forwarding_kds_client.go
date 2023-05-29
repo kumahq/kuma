@@ -58,6 +58,7 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 }
 
 func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
@@ -83,6 +84,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
@@ -108,6 +110,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
