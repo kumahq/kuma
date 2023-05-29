@@ -41,58 +41,6 @@ func serviceAndPorts(svc *kube_core.Service, port *gatewayapi.PortNumber) Servic
 func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, svcs []ServiceAndPorts,
 ) (map[string]core_model.ResourceSpec, error) {
-	routes := map[string]core_model.ResourceSpec{}
-
-	for _, svcRef := range svcs {
-		for _, port := range svcRef.Ports {
-			p := port
-
-			rules, err := r.gapiToMeshRouteRules(ctx, mesh, route)
-			if err != nil {
-				return nil, err
-			}
-			serviceName := k8s_util.ServiceTag(
-				svcRef.Name,
-				&p,
-			)
-
-			to := []v1alpha1.To{{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
-				},
-				Rules: rules,
-			}}
-			// consumer route
-			targetRef := common_api.TargetRef{
-				Kind: common_api.MeshSubset,
-				Tags: map[string]string{
-					controllers.KubeNamespaceTag: route.Namespace,
-				},
-			}
-			// producer route
-			if route.Namespace == svcRef.Name.Namespace {
-				targetRef = common_api.TargetRef{
-					Kind: common_api.Mesh,
-				}
-			}
-			routeSubName := fmt.Sprintf(
-				"%s-%s-%s.%s.%d",
-				route.Name, route.Namespace, svcRef.Name.Name, svcRef.Name.Namespace, port,
-			)
-			routes[routeSubName] = &v1alpha1.MeshHTTPRoute{
-				TargetRef: targetRef,
-				To:        to,
-			}
-		}
-	}
-
-	return routes, nil
-}
-
-func (r *HTTPRouteReconciler) gapiToMeshRouteRules(
-	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute,
-) ([]v1alpha1.Rule, error) {
 	var rules []v1alpha1.Rule
 	for _, rule := range route.Spec.Rules {
 		kumaRule, err := r.gapiToKumaMeshRule(ctx, mesh, route, rule)
@@ -103,7 +51,53 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteRules(
 		rules = append(rules, kumaRule)
 	}
 
-	return rules, nil
+	routes := map[string]core_model.ResourceSpec{}
+
+	for _, svcRef := range svcs {
+		// consumer route
+		targetRef := common_api.TargetRef{
+			Kind: common_api.MeshSubset,
+			Tags: map[string]string{
+				controllers.KubeNamespaceTag: route.Namespace,
+			},
+		}
+		// producer route
+		if route.Namespace == svcRef.Name.Namespace {
+			targetRef = common_api.TargetRef{
+				Kind: common_api.Mesh,
+			}
+		}
+
+		var tos []v1alpha1.To
+
+		for _, port := range svcRef.Ports {
+			p := port
+
+			serviceName := k8s_util.ServiceTag(
+				svcRef.Name,
+				&p,
+			)
+
+			tos = append(tos, v1alpha1.To{
+				TargetRef: common_api.TargetRef{
+					Kind: common_api.MeshService,
+					Name: serviceName,
+				},
+				Rules: rules,
+			})
+		}
+
+		routeSubName := fmt.Sprintf(
+			"%s-%s-%s.%s",
+			route.Name, route.Namespace, svcRef.Name.Name, svcRef.Name.Namespace,
+		)
+		routes[routeSubName] = &v1alpha1.MeshHTTPRoute{
+			TargetRef: targetRef,
+			To:        tos,
+		}
+	}
+
+	return routes, nil
 }
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(

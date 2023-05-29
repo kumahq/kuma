@@ -303,6 +303,10 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
+{{- if .Values.experimental.deltaKds }}
+- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  value: "true"
+{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}

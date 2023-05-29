@@ -32,6 +32,7 @@ func NewServer(adminClient admin.EnvoyAdminClient, resManager manager.ReadOnlyRe
 }
 
 func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest) (*mesh_proto.XDSConfigResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "XDSConfig", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {
@@ -49,6 +50,7 @@ func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest
 }
 
 func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh_proto.StatsResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "Stats", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {
@@ -66,6 +68,7 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 }
 
 func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) (*mesh_proto.ClustersResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "Clusters", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {

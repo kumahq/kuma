@@ -1,11 +1,15 @@
 package service
 
 import (
+	"context"
+	"fmt"
+
 	"google.golang.org/grpc"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
 
@@ -50,17 +54,26 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	if err != nil {
 		return err
 	}
-	core.Log.Info("Envoy Admin RPC stream started", "rpc", rpcName, "zone", zone)
-	rpc.ClientConnected(zone, stream)
-	defer rpc.ClientDisconnected(zone)
+	clientID := ClientID(stream.Context(), zone)
+	core.Log.Info("Envoy Admin RPC stream started", "rpc", rpcName, "clientID", clientID)
+	rpc.ClientConnected(clientID, stream)
+	defer rpc.ClientDisconnected(clientID)
 	for {
 		resp, err := recv()
 		if err != nil {
 			return err
 		}
-		core.Log.V(1).Info("Envoy Admin RPC response received", "rpc", rpc, "zone", zone, "requestId", resp.GetRequestId())
-		if err := rpc.ResponseReceived(zone, resp); err != nil {
+		core.Log.V(1).Info("Envoy Admin RPC response received", "rpc", rpc, "clientID", clientID, "requestId", resp.GetRequestId())
+		if err := rpc.ResponseReceived(clientID, resp); err != nil {
 			return err
 		}
 	}
+}
+
+func ClientID(ctx context.Context, zone string) string {
+	tenantID, ok := multitenant.TenantFromCtx(ctx)
+	if !ok {
+		return zone
+	}
+	return fmt.Sprintf("%s:%s", zone, tenantID)
 }

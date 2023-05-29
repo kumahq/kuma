@@ -38,7 +38,8 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, err
 	}
 	reqId := core.NewUUID()
-	err = k.rpcs.XDSConfigDump.Send(zone, &mesh_proto.XDSConfigRequest{
+	clientID := service.ClientID(ctx, zone)
+	err = k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -48,9 +49,9 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, errors.Wrapf(err, "could not send XDSConfigRequest")
 	}
 
-	defer k.rpcs.XDSConfigDump.DeleteWatch(zone, reqId)
+	defer k.rpcs.XDSConfigDump.DeleteWatch(clientID, reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.XDSConfigDump.WatchResponse(zone, reqId, ch); err != nil {
+	if err := k.rpcs.XDSConfigDump.WatchResponse(clientID, reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 
@@ -75,7 +76,8 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 		return nil, err
 	}
 	reqId := core.NewUUID()
-	err = k.rpcs.Stats.Send(zone, &mesh_proto.StatsRequest{
+	clientID := service.ClientID(ctx, zone)
+	err = k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -85,9 +87,9 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 		return nil, errors.Wrapf(err, "could not send StatsRequest")
 	}
 
-	defer k.rpcs.Stats.DeleteWatch(zone, reqId)
+	defer k.rpcs.Stats.DeleteWatch(clientID, reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Stats.WatchResponse(zone, reqId, ch); err != nil {
+	if err := k.rpcs.Stats.WatchResponse(clientID, reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 
@@ -112,7 +114,8 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 		return nil, err
 	}
 	reqId := core.NewUUID()
-	err = k.rpcs.Clusters.Send(zone, &mesh_proto.ClustersRequest{
+	clientID := service.ClientID(ctx, zone)
+	err = k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -122,9 +125,9 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 		return nil, errors.Wrapf(err, "could not send ClustersRequest")
 	}
 
-	defer k.rpcs.Clusters.DeleteWatch(zone, reqId)
+	defer k.rpcs.Clusters.DeleteWatch(clientID, reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Clusters.WatchResponse(zone, reqId, ch); err != nil {
+	if err := k.rpcs.Clusters.WatchResponse(clientID, reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 

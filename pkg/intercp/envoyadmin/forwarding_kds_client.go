@@ -13,6 +13,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var clientLog = core.Log.WithName("intercp").WithName("envoyadmin").WithName("client")
@@ -58,6 +59,7 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 }
 
 func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
@@ -83,6 +85,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
@@ -108,6 +111,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
@@ -156,7 +160,7 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 }
 
 func (f *forwardingKdsEnvoyAdminClient) clientForInstanceID(ctx context.Context, instanceID string) (mesh_proto.InterCPEnvoyAdminForwardServiceClient, error) {
-	instance, err := catalog.InstanceOfID(ctx, f.cat, instanceID)
+	instance, err := catalog.InstanceOfID(multitenant.WithTenant(ctx, multitenant.GlobalTenantID), f.cat, instanceID)
 	if err != nil {
 		return nil, err
 	}
