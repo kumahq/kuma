@@ -1,4 +1,4 @@
-package v1alpha1
+package meshroute
 
 import (
 	"github.com/pkg/errors"
@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-func generateClusters(
+func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,

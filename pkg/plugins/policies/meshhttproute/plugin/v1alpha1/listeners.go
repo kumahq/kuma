@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"reflect"
 
 	"golang.org/x/exp/slices"
@@ -10,8 +9,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -27,7 +27,7 @@ func generateListeners(
 	servicesAcc envoy_common.ServicesAccumulator,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	splitCounter := &splitCounter{}
+	splitCounter := &meshroute_xds.SplitCounter{}
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
@@ -158,23 +158,10 @@ func prepareRoutes(
 	return routes
 }
 
-// Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag
-// We generate a separate Envoy cluster with _X_ suffix. SplitCounter ensures that we have different X for every split in one Dataplane
-// Each split is distinct for the whole Dataplane so we can avoid accidental cluster overrides.
-type splitCounter struct {
-	counter int
-}
-
-func (s *splitCounter) getAndIncrement() int {
-	counter := s.counter
-	s.counter++
-	return counter
-}
-
 func makeHTTPSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[string]string,
-	sc *splitCounter,
+	sc *meshroute_xds.SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []api.BackendRef,
 ) []*plugins_xds.Split {
@@ -192,7 +179,7 @@ func makeHTTPSplit(
 			continue
 		}
 
-		clusterName := getClusterName(ref, sc)
+		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
 		refHash := ref.TargetRef.Hash()
 
@@ -230,22 +217,4 @@ func makeHTTPSplit(
 	}
 
 	return split
-}
-
-func getClusterName(ref api.BackendRef, sc *splitCounter) string {
-	name := ref.Name
-
-	if len(ref.Tags) > 0 {
-		name = envoy_names.GetSplitClusterName(name, sc.getAndIncrement())
-	}
-
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		name = fmt.Sprintf("%s_%s", name, mesh)
-	}
-
-	return name
 }

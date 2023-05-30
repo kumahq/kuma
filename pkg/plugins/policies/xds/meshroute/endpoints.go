@@ -1,4 +1,4 @@
-package v1alpha1
+package meshroute
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func generateEndpoints(
+func GenerateEndpoints(
 	proxy *core_xds.Proxy,
 	ctx xds_context.Context,
 	services envoy_common.Services,
@@ -22,18 +22,31 @@ func generateEndpoints(
 		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
-			for _, cluster := range services[serviceName].Clusters() {
+		service := services[serviceName]
+		meshCtx := ctx.Mesh
+
+		if !service.HasExternalService() || meshCtx.Resource.ZoneEgressEnabled() {
+			for _, cluster := range service.Clusters() {
 				var endpoints core_xds.EndpointMap
 				if cluster.Mesh() != "" {
-					endpoints = ctx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
+					endpoints = meshCtx.CrossMeshEndpoints[cluster.Mesh()]
 				} else {
-					endpoints = ctx.Mesh.EndpointMap
+					endpoints = meshCtx.EndpointMap
 				}
 
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(user.Ctx(context.TODO(), user.ControlPlane), proxy.Dataplane.GetMeta().GetMesh(), ctx.Mesh.Hash, cluster, proxy.APIVersion, endpoints)
+				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
+					user.Ctx(context.TODO(), user.ControlPlane),
+					proxy.Dataplane.GetMeta().GetMesh(),
+					meshCtx.Hash,
+					cluster,
+					proxy.APIVersion,
+					endpoints,
+				)
 				if err != nil {
-					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
+					return nil, errors.Wrapf(err,
+						"could not get ClusterLoadAssignment for %s",
+						serviceName,
+					)
 				}
 
 				resources.Add(&core_xds.Resource{
