@@ -41,7 +41,7 @@ func getResource(
 	return actual
 }
 
-var _ = PDescribe("MeshTCPRoute", func() {
+var _ = Describe("MeshTCPRoute", func() {
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
