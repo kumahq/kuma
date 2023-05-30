@@ -40,6 +40,7 @@ var _ = Describe("MeshAccessLog", func() {
 		fromRules         core_xds.FromRules
 		expectedListeners []string
 		expectedClusters  []string
+		inbounds          []*mesh_proto.Dataplane_Networking_Inbound
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -99,6 +100,9 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 				},
+			}
+			if len(given.inbounds) > 0 {
+				proxy.Dataplane.Spec.Networking.Inbound = given.inbounds
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -165,6 +169,108 @@ var _ = Describe("MeshAccessLog", func() {
                           textFormatSource:
                               inlineString: |
                                 [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "backend" "other-service" "" "%UPSTREAM_HOST%"
+                      path: /tmp/log
+                  httpFilters:
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  routeConfig:
+                    name: outbound:backend
+                    validateClusters: false
+                    requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=web&'
+                    virtualHosts:
+                    - domains:
+                      - '*'
+                      name: backend
+                      routes:
+                      - match:
+                          prefix: /
+                        route:
+                          cluster: backend
+                          timeout: 0s
+                  statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			},
+		}),
+		Entry("basic outbound route with 2 inbounds", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(
+							HttpOutboundRoute(
+								"backend",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					},
+				},
+			},
+			inbounds: []*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+					},
+					Address: "127.0.0.1",
+					Port:    17777,
+				},
+				{
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "some-other-backend",
+					},
+					Address: "127.0.0.1",
+					Port:    27777,
+				},
+			},
+			expectedListeners: []string{
+				`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  accessLog:
+                  - name: envoy.access_loggers.file
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                      logFormat:
+                          textFormatSource:
+                              inlineString: |
+                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "unknown" "other-service" "" "%UPSTREAM_HOST%"
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
