@@ -1,0 +1,45 @@
+resources:
+- name: backend-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-_0_
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8004
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: tcp
+              region: eu
+            envoy.transport_socket_match:
+              kuma.io/protocol: tcp
+              region: eu
+- name: backend-_1_
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-_1_
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8005
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: us
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: us
+- name: other-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: other-backend
