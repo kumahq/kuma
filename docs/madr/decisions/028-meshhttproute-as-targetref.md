@@ -12,7 +12,7 @@ apply policies to the specific route.
 
 ### Goals
 
-- Define the behaviour of `targetRef{kind: MeshHTTPRoute}` in the top-level targetRef.
+- Define the behaviour of `targetRef{kind: MeshHTTPRoute}`
 
 ### Non-goals
 
@@ -23,6 +23,67 @@ apply policies to the specific route.
   MeshGateway is not in the scope of this MADR.
 
 ## Solution
+
+### Should `targetRef{kind: MeshHTTPRoute}` be used as a top-level targetRef or inside the `to[]`?
+
+#### Considered Options
+
+- use `targetRef{kind: MeshHTTPRoute}` inside the `to[]`
+- use `targetRef{kind: MeshHTTPRoute}` as a top-level targetRef ✅
+
+#### Decision Outcome
+
+These approaches have different semantic. When top-level targetRef selects DPPs and `to[]` selects MeshHTTPRoute:
+
+```yaml
+type: MeshRetry
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: route-1
+      default: 
+        http:
+          numRetries: 12
+```
+
+then MeshRetry policy is attached to all `backend` DPPs and only if there is `route-1` on the DPP then we configure it.
+This approach potentially leads to the surprising behaviour when there is no `route-1` on the `backend` DPP
+and so the retry configuration won't be applied. 
+
+Another downside of this approach is `route-1` has retry policy only when applied on `backend` DPPs. Even if other 
+services have `route-1` they won't get the same retry policy. If it's fair to assume that same routes most likely have 
+the same configuration then this approach leads to the increasing the number of policies with duplicated configurations.
+
+Alternatively, top-level targetRef can select `MeshHTTPRoute`:
+
+```yaml
+type: MeshRetry
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default: 
+        http:
+          numRetries: 12
+```
+
+In this case MeshRetry policy is attached to `route-1` and so it's attached to all DPPs with `route-1`.
+
+#### Positive Consequences
+
+- attaching policy to route affects all the DPPs where this route is applied
+- less surprising behaviour, impossible by design to target non-existing route on DPP
+
+#### Negative Consequences
+
+- not found 
 
 ### What are the allowed targetRefs inside `to[]` when top-level targetRef is MeshHTTPRoute?
 
@@ -284,6 +345,29 @@ default:
 ### Inspect API
 
 In Kuma GUI in `To` column we have to display not only the outbound's name, but also `rule[].matches` list, because
-this list uniquely identifies routes in Envoy. 
+this list uniquely identifies routes in Envoy:
 
-
+```yaml
+total: 1
+items:
+  - type: DestinationSubset
+    name: backend
+    addresses:
+      - 10.3.2.3:2300
+      - 240.0.0.0:80
+    service: backend
+    tags:
+      kuma.io/service: backend
+    policyType: MeshRetry
+    subset: {}
+    matches: # new field only for DestinationSubsets
+      - path:
+          value: "/v1"
+          type: PathPrefix
+    conf:
+      http:
+        numRetries: 10
+    origins:
+      - mesh: default
+        name: mal-1
+```
