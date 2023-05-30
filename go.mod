@@ -10,12 +10,12 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cilium/ebpf v0.10.0
-	github.com/cncf/xds/go v0.0.0-20230310173818-32f1caf87195 // indirect
+	github.com/cncf/xds/go v0.0.0-20230428030218-4003588d1b74 // indirect
 	github.com/containerd/cgroups v1.1.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.3.0
 	github.com/emicklei/go-restful/v3 v3.10.2
-	github.com/envoyproxy/go-control-plane v0.11.0
+	github.com/envoyproxy/go-control-plane v0.11.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.4
@@ -62,7 +62,7 @@ require (
 	golang.org/x/sys v0.8.0
 	golang.org/x/text v0.9.0
 	golang.org/x/time v0.3.0
-	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4
+	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -84,8 +84,13 @@ require (
 )
 
 require (
+	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
+)
+
+require (
 	cloud.google.com/go v0.110.0 // indirect
-	cloud.google.com/go/compute v1.18.0 // indirect
+	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/logging v1.7.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
@@ -128,7 +133,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230323073829-e72429f035bd // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.1 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -177,7 +182,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/stretchr/testify v1.8.3 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/urfave/cli v1.22.12 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -191,7 +196,7 @@ require (
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
-	google.golang.org/api v0.110.0 // indirect
+	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
