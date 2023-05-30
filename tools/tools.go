@@ -9,4 +9,5 @@ package tools
 
 import (
 	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
+	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
 )
