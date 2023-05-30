@@ -11,7 +11,7 @@ PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -f '{{.Version}}' -m git
 PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -f '{{.Version}}' -m github.com/kumahq/protoc-gen-kumadoc)
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
-    google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(go list -f '{{.Version}}' -m google.golang.org/grpc/cmd/protoc-gen-go-grpc) \
+    google.golang.org/grpc/cmd/protoc-gen-go-grpc@v.1.1.0 \
     ${PGV} \
     ${PGKUMADOC} \
     github.com/onsi/ginkgo/v2/ginkgo@$(go list -f '{{.Version}}' -m github.com/onsi/ginkgo/v2) \
