@@ -81,7 +81,7 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends); err != nil {
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, inbound.GetService(), backends); err != nil {
 			return err
 		}
 	}
@@ -206,10 +206,9 @@ func configureInbound(
 	fromRules xds.Rules,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
+	serviceName string,
 	backendsAcc *plugin_xds.EndpointAccumulator,
 ) error {
-	serviceName := dataplane.Spec.GetIdentifyingService()
-
 	var conf api.Conf
 	// `from` section of MeshAccessLog only allows Mesh targetRef
 	if computed := fromRules.Compute(core_xds.MeshSubset()); computed != nil {
@@ -246,7 +245,12 @@ func configureOutbound(
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
 ) error {
-	sourceService := dataplane.Spec.GetIdentifyingService()
+	sourceService := mesh_proto.ServiceUnknown
+	if len(dataplane.Spec.Networking.Inbound) == 1 {
+		sourceService = dataplane.Spec.Networking.Inbound[0].GetService()
+	} else if dataplane.Spec.IsBuiltinGateway() {
+		sourceService = dataplane.Spec.Networking.Gateway.Tags[mesh_proto.ServiceTag]
+	}
 
 	var conf api.Conf
 	if computed := toRules.Rules.Compute(subset); computed != nil {
