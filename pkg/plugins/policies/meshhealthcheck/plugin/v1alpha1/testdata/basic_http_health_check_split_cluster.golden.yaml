@@ -4,7 +4,11 @@ commonLbConfig:
   zoneAwareLbConfig:
     failTrafficOnPanic: true
 healthChecks:
-- eventLogPath: /tmp/log.txt
+- eventLogger:
+  - name: envoy.health_check.event_sinks.file
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.health_check.event_sinks.file.v3.HealthCheckEventFileSink
+      eventLogPath: /tmp/log.txt
   healthyThreshold: 1
   httpHealthCheck:
     expectedStatuses:
