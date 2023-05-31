@@ -85,3 +85,41 @@ var _ = Describe("Select Content Type", func() {
 		Expect(actualContentType).To(Equal(expfmt.FmtText))
 	})
 })
+
+var _ = Describe("Response Format", func() {
+	type testCase struct {
+		contentType    string
+		expectedFormat expfmt.Format
+	}
+	DescribeTable("should",
+		func(given testCase) {
+			h := make(http.Header)
+			h.Set(hdrContentType, given.contentType)
+			Expect(responseFormat(h)).To(Equal(given.expectedFormat))
+		},
+		Entry("return FmtProtoDelim for a 'delimited protobuf content type' response", testCase{
+			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited",
+			expectedFormat: expfmt.FmtProtoDelim,
+		}),
+		Entry("return FmtUnknown for a 'text protobuf content type' response", testCase{
+			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text",
+			expectedFormat: expfmt.FmtUnknown,
+		}),
+		Entry("return FmtText for a 'text plain with v0.0.4 content type' response", testCase{
+			contentType:    "text/plain; version=0.0.4",
+			expectedFormat: expfmt.FmtText,
+		}),
+		Entry("return FmtOpenMetrics_1_0_0 for a 'openmetrics v1.0.0 content type' response", testCase{
+			contentType:    "application/openmetrics-text; version=1.0.0",
+			expectedFormat: expfmt.FmtOpenMetrics_1_0_0,
+		}),
+		Entry("return FmtOpenMetrics_0_0_1 for a 'openmetrics v0.0.1 content type' response", testCase{
+			contentType:    "application/openmetrics-text; version=0.0.1",
+			expectedFormat: expfmt.FmtOpenMetrics_0_0_1,
+		}),
+		Entry("return FmtUnknown for a 'invalid content type' response", testCase{
+			contentType:    "application/invalid",
+			expectedFormat: expfmt.FmtUnknown,
+		}),
+	)
+})

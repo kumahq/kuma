@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -191,7 +192,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 			// It's possible to track the highest priority content type seen,
 			// but that would require mutex.
 			// I would prefer to calculate it later at one go
-			contentTypes <- expfmt.Format(contentType)
+			contentTypes <- contentType
 		}(app)
 	}
 
@@ -199,7 +200,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
-		writer.Header().Set("content-type", string(selectContentType(contentTypes, req.Header)))
+		writer.Header().Set(hdrContentType, string(selectContentType(contentTypes, req.Header)))
 		for resp := range out {
 			if _, err := writer.Write(resp); err != nil {
 				logger.Error(err, "error while writing the response")
@@ -244,7 +245,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 	return ct
 }
 
-func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, string) {
+func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
 	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
@@ -269,7 +270,8 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 		return nil, ""
 	}
 
-	respContentType := resp.Header.Get("content-type")
+	respContentType := responseFormat(resp.Header)
+
 	var bodyBytes []byte
 	if app.Mutator != nil {
 		buf := new(bytes.Buffer)
@@ -301,4 +303,53 @@ func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
 
 func (s *Hijacker) NeedLeaderElection() bool {
 	return false
+}
+
+const (
+	hdrContentType           = "Content-Type"
+	textType                 = "text/plain"
+	textVersion              = "0.0.4"
+	openmetricsType          = "application/openmetrics-text"
+	openmetricsVersion_1_0_0 = "1.0.0"
+	openmetricsVersion_0_0_1 = "0.0.1"
+	protoType                = `application/vnd.google.protobuf`
+	protoProtocol            = `io.prometheus.client.MetricFamily`
+)
+
+// responseFormat extracts the correct format from a HTTP response header.
+// If no matching format can be found FormatUnknown is returned.
+func responseFormat(h http.Header) expfmt.Format {
+	ct := h.Get(hdrContentType)
+
+	mediatype, params, err := mime.ParseMediaType(ct)
+	if err != nil {
+		return expfmt.FmtUnknown
+	}
+
+	version := params["version"]
+
+	switch mediatype {
+	case protoType:
+		p := params["proto"]
+		e := params["encoding"]
+		// only delimited encoding is supported by prometheus scraper
+		if p == protoProtocol && e == "delimited" {
+			return expfmt.FmtProtoDelim
+		}
+
+	case textType:
+		if version == textVersion {
+			return expfmt.FmtText
+		}
+
+	case openmetricsType:
+		if version == openmetricsVersion_0_0_1 {
+			return expfmt.FmtOpenMetrics_0_0_1
+		}
+		if version == openmetricsVersion_1_0_0 {
+			return expfmt.FmtOpenMetrics_1_0_0
+		}
+	}
+
+	return expfmt.FmtUnknown
 }
