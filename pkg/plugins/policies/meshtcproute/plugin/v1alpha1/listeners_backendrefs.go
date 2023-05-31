@@ -8,7 +8,7 @@ import (
 
 func matchingHTTPRuleExist(
 	toRulesHTTP core_xds.Rules,
-	serviceName string,
+	service core_xds.Subset,
 	protocol core_mesh.Protocol,
 ) bool {
 	switch protocol {
@@ -18,7 +18,7 @@ func matchingHTTPRuleExist(
 	}
 
 	for _, httpRule := range toRulesHTTP {
-		if httpRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
+		if httpRule.Subset.IsSubset(service) {
 			return true
 		}
 	}
@@ -28,10 +28,10 @@ func matchingHTTPRuleExist(
 
 func getTCPBackendRefs(
 	toRulesTCP core_xds.Rules,
-	serviceName string,
+	service core_xds.Subset,
 ) []api.BackendRef {
 	for _, tcpRule := range toRulesTCP {
-		if tcpRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
+		if tcpRule.Subset.IsSubset(service) {
 			return tcpRule.Conf.(api.Rule).Default.BackendRefs
 		}
 	}
@@ -45,12 +45,14 @@ func getBackendRefs(
 	serviceName string,
 	protocol core_mesh.Protocol,
 ) []api.BackendRef {
+	service := core_xds.MeshService(serviceName)
+
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
 	// precedence over the latter
-	if matchingHTTPRuleExist(toRulesHTTP, serviceName, protocol) {
+	if matchingHTTPRuleExist(toRulesHTTP, service, protocol) {
 		return nil
 	}
 
-	return getTCPBackendRefs(toRulesTCP, serviceName)
+	return getTCPBackendRefs(toRulesTCP, service)
 }
