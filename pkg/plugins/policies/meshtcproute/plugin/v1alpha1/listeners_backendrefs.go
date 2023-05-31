@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 )
 
@@ -17,23 +18,19 @@ func matchingHTTPRuleExist(
 		return false
 	}
 
-	for _, httpRule := range toRulesHTTP {
-		if httpRule.Subset.IsSubset(service) {
-			return true
-		}
-	}
-
-	return false
+	return core_xds.ComputeConf[meshhttproute_api.PolicyDefault](
+		toRulesHTTP,
+		service,
+	) != nil
 }
 
 func getTCPBackendRefs(
 	toRulesTCP core_xds.Rules,
 	service core_xds.Subset,
 ) []api.BackendRef {
-	for _, tcpRule := range toRulesTCP {
-		if tcpRule.Subset.IsSubset(service) {
-			return tcpRule.Conf.(api.Rule).Default.BackendRefs
-		}
+	conf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
+	if conf != nil {
+		return conf.Default.BackendRefs
 	}
 
 	return nil
