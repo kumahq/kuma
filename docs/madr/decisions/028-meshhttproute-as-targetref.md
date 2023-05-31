@@ -83,7 +83,7 @@ In this case MeshRetry policy is attached to `route-1` and so it's attached to a
 
 #### Negative Consequences
 
-- not found 
+- to figure if a policy applies to a DPP we need first to get the routes that affect the DPP
 
 ### What are the allowed targetRefs inside `to[]` when top-level targetRef is MeshHTTPRoute?
 
