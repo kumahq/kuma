@@ -667,6 +667,16 @@ func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
 	})
 }
 
+func RouteActionIdleTimeout(timeout time.Duration) RouteConfigurer {
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute(); p != nil {
+			p.IdleTimeout = util_proto.Duration(timeout)
+		}
+
+		return nil
+	})
+}
+
 // RouteActionDirectResponse sets the direct response for a route
 func RouteActionDirectResponse(status uint32, respStr string) RouteConfigurer {
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
