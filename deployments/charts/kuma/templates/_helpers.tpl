@@ -172,6 +172,9 @@ returns: formatted image string
 {{- define "kuma.parentEnv" -}}
 {{- end -}}
 
+{{- define "kuma.parentSecrets" -}}
+{{- end -}}
+
 {{- define "kuma.defaultEnv" -}}
 {{ if (and (eq .Values.controlPlane.environment "universal") (not (eq .Values.controlPlane.mode "global"))) }}
   {{ fail "Currently you can only run universal mode on kubernetes in a global mode, this limitation might be lifted in the future" }}
