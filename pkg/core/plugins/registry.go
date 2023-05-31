@@ -144,9 +144,6 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.bootstrap[name] = bp
 	}
 	if rsp, ok := plugin.(ResourceStorePlugin); ok {
-		if old, exists := r.resourceStore[name]; exists {
-			return pluginAlreadyRegisteredError(resourceStorePlugin, name, old, rsp)
-		}
 		r.resourceStore[name] = rsp
 	}
 	if ssp, ok := plugin.(SecretStorePlugin); ok {
