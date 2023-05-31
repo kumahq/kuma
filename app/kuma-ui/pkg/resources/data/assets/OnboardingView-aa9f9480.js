@@ -1,0 +1,1 @@
+import{x as a,o as e,b as o,w as n,g as s,s as c,T as _}from"./index-139fff7d.js";import{_ as i}from"./_plugin-vue_export-helper-c27b6911.js";const m={};function f(d,l){const t=a("router-view");return e(),o(t,null,{default:n(({Component:r})=>[s(_,{mode:"out-in",name:"fade"},{default:n(()=>[(e(),o(c(r)))]),_:2},1024)]),_:1})}const w=i(m,[["render",f]]);export{w as default};
