@@ -424,8 +424,24 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 		},
-	}),
-	)
+	}), Entry("no-default-idle-timeout", gatewayTestCase{
+		toRules: core_xds.ToRules{
+			Rules: []*core_xds.Rule{
+				{
+					Subset: core_xds.Subset{},
+					Conf: api.Conf{
+						ConnectionTimeout: test.ParseDuration("10s"),
+						IdleTimeout:       test.ParseDuration("1h"),
+						Http: &api.Http{
+							RequestTimeout:        test.ParseDuration("5s"),
+							MaxStreamDuration:     test.ParseDuration("10m"),
+							MaxConnectionDuration: test.ParseDuration("10m"),
+						},
+					},
+				},
+			},
+		},
+	}))
 })
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
