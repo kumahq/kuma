@@ -7,6 +7,7 @@ import (
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_healthchecks "github.com/envoyproxy/go-control-plane/envoy/extensions/health_check/event_sinks/file/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -302,7 +303,13 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 		hc.IntervalJitterPercent = uint32(*conf.IntervalJitterPercent)
 	}
 	if conf.EventLogPath != nil {
-		hc.EventLogPath = *conf.EventLogPath
+		config := envoy_healthchecks.HealthCheckEventFileSink{
+			EventLogPath: *conf.EventLogPath,
+		}
+		hc.EventLogger = []*envoy_core.TypedExtensionConfig{{
+			Name:        "envoy.health_check.event_sinks.file",
+			TypedConfig: util_proto.MustMarshalAny(&config),
+		}}
 	}
 	if conf.AlwaysLogHealthCheckFailures != nil {
 		hc.AlwaysLogHealthCheckFailures = *conf.AlwaysLogHealthCheckFailures

@@ -325,6 +325,71 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 		}()),
+		Entry("mixed-tcp-and-http-outbounds", func() outboundsTestCase {
+			outboundTargets := core_xds.EndpointMap{
+				"backend": []core_xds.Endpoint{{
+					Target: "192.168.0.4",
+					Port:   8084,
+					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "eu"},
+					Weight: 1,
+				}, {
+					Target: "192.168.0.5",
+					Port:   8084,
+					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
+					Weight: 1,
+				}},
+				"other-tcp": []core_xds.Endpoint{{
+					Target: "192.168.0.10",
+					Port:   8084,
+					Tags:   map[string]string{"kuma.io/service": "other-tcp", "kuma.io/protocol": "tcp", "region": "eu"},
+					Weight: 1,
+				}},
+			}
+			return outboundsTestCase{
+				xdsContext: xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{
+						Secrets: &xds.TestSecrets{},
+					},
+					Mesh: xds_context.MeshContext{
+						Resource:    samples.MeshDefault(),
+						EndpointMap: outboundTargets,
+					},
+				},
+				proxy: core_xds.Proxy{
+					APIVersion: xds_envoy.APIV3,
+					Dataplane:  samples.DataplaneWeb(),
+					Routing: core_xds.Routing{
+						OutboundTargets: outboundTargets,
+					},
+					Policies: core_xds.MatchedPolicies{
+						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+							api.MeshHTTPRouteType: {
+								ToRules: core_xds.ToRules{
+									Rules: core_xds.Rules{{
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/",
+													},
+												}},
+												Default: api.RuleConf{
+													BackendRefs: &[]api.BackendRef{{
+														TargetRef: builders.TargetRefService("backend"),
+														Weight:    pointer.To(uint(100)),
+													}},
+												},
+											}},
+										},
+									}},
+								},
+							},
+						},
+					},
+				},
+			}
+		}()),
 		Entry("header-modifiers", func() outboundsTestCase {
 			outboundTargets := core_xds.EndpointMap{
 				"backend": []core_xds.Endpoint{{
