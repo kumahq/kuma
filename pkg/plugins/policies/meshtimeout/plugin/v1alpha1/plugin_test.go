@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -365,26 +366,10 @@ var _ = Describe("MeshTimeout", func() {
 		}),
 	)
 
-	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
-		// given
-		toRules := core_xds.ToRules{
-			Rules: []*core_xds.Rule{
-				{
-					Subset: core_xds.Subset{},
-					Conf: api.Conf{
-						ConnectionTimeout: test.ParseDuration("10s"),
-						IdleTimeout:       test.ParseDuration("1h"),
-						Http: &api.Http{
-							RequestTimeout:        test.ParseDuration("5s"),
-							StreamIdleTimeout:     test.ParseDuration("1s"),
-							MaxStreamDuration:     test.ParseDuration("10m"),
-							MaxConnectionDuration: test.ParseDuration("10m"),
-						},
-					},
-				},
-			},
-		}
-
+	type gatewayTestCase struct {
+		toRules core_xds.ToRules
+	}
+	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
 		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
@@ -401,7 +386,7 @@ var _ = Describe("MeshTimeout", func() {
 				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 					api.MeshTimeoutType: {
 						Type:    api.MeshTimeoutType,
-						ToRules: toRules,
+						ToRules: given.toRules,
 					},
 				},
 			},
@@ -414,11 +399,33 @@ var _ = Describe("MeshTimeout", func() {
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
 
+		nameSplit := strings.Split(GinkgoT().Name(), " ")
+		name := nameSplit[len(nameSplit)-1]
+
 		// then
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_listener.golden.yaml")))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_cluster.golden.yaml")))
-		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_route.golden.yaml")))
-	})
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
+	}, Entry("basic", gatewayTestCase{
+		toRules: core_xds.ToRules{
+			Rules: []*core_xds.Rule{
+				{
+					Subset: core_xds.Subset{},
+					Conf: api.Conf{
+						ConnectionTimeout: test.ParseDuration("10s"),
+						IdleTimeout:       test.ParseDuration("1h"),
+						Http: &api.Http{
+							RequestTimeout:        test.ParseDuration("5s"),
+							StreamIdleTimeout:     test.ParseDuration("1s"),
+							MaxStreamDuration:     test.ParseDuration("10m"),
+							MaxConnectionDuration: test.ParseDuration("10m"),
+						},
+					},
+				},
+			},
+		},
+	}),
+	)
 })
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
