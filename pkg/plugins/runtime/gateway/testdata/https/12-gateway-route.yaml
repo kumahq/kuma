@@ -154,6 +154,7 @@ Routes:
             path: /lang/json
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -181,6 +182,7 @@ Routes:
             path: /app/json
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -208,6 +210,7 @@ Routes:
             prefix: /lang/json/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

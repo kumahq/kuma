@@ -235,6 +235,7 @@ Routes:
             path: /api
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -255,6 +256,7 @@ Routes:
             prefix: /api/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -275,6 +277,7 @@ Routes:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             requestMirrorPolicies:
             - cluster: echo-mirror-3dd740a2de879d4c
               runtimeFraction:

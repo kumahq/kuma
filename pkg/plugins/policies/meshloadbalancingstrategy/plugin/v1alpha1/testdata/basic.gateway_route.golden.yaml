@@ -18,6 +18,7 @@ virtualHosts:
         terminal: true
       - connectionProperties:
           sourceIp: true
+      idleTimeout: 5s
       weightedClusters:
         clusters:
         - name: backend-26cb64fa4e85e7b7

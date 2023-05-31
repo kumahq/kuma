@@ -158,6 +158,7 @@ Routes:
             path: /prefix/a
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             regexRewrite:
               pattern:
                 googleRe2: {}
@@ -190,6 +191,7 @@ Routes:
             prefix: /prefix/a/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             prefixRewrite: /a/
             retryPolicy:
               numRetries: 5
