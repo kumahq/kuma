@@ -7,6 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -50,8 +51,9 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
+		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
 		var routes []xds.OutboundRoute
-		for _, route := range prepareRoutes(rules, serviceName) {
+		for _, route := range prepareRoutes(rules, serviceName, protocol) {
 			split := makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
 			if split == nil {
 				continue
@@ -106,12 +108,21 @@ func generateListeners(
 func prepareRoutes(
 	toRules []ToRouteRule,
 	serviceName string,
+	protocol core_mesh.Protocol,
 ) []Route {
 	var rules []api.Rule
 
 	for _, toRule := range toRules {
 		if toRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
 			rules = toRule.Rules
+		}
+	}
+
+	if len(rules) == 0 {
+		switch protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		default:
+			return nil
 		}
 	}
 
