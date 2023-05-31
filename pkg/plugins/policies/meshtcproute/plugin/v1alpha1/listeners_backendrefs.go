@@ -7,7 +7,7 @@ import (
 )
 
 func matchingHTTPRuleExist(
-	httpRules core_xds.Rules,
+	toRulesHTTP core_xds.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
 ) bool {
@@ -17,7 +17,7 @@ func matchingHTTPRuleExist(
 		return false
 	}
 
-	for _, httpRule := range httpRules {
+	for _, httpRule := range toRulesHTTP {
 		if httpRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
 			return true
 		}
@@ -27,10 +27,10 @@ func matchingHTTPRuleExist(
 }
 
 func getTCPBackendRefs(
-	tcpRules core_xds.Rules,
+	toRulesTCP core_xds.Rules,
 	serviceName string,
 ) []api.BackendRef {
-	for _, tcpRule := range tcpRules {
+	for _, tcpRule := range toRulesTCP {
 		if tcpRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
 			return tcpRule.Conf.(api.Rule).Default.BackendRefs
 		}
@@ -40,17 +40,17 @@ func getTCPBackendRefs(
 }
 
 func getBackendRefs(
-	tcpRules core_xds.Rules,
-	httpRules core_xds.Rules,
+	toRulesTCP core_xds.Rules,
+	toRulesHTTP core_xds.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
 ) []api.BackendRef {
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
 	// precedence over the latter
-	if matchingHTTPRuleExist(httpRules, serviceName, protocol) {
+	if matchingHTTPRuleExist(toRulesHTTP, serviceName, protocol) {
 		return nil
 	}
 
-	return getTCPBackendRefs(tcpRules, serviceName)
+	return getTCPBackendRefs(toRulesTCP, serviceName)
 }
