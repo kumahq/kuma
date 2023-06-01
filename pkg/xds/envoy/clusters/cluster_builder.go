@@ -14,7 +14,7 @@ import (
 // The goal of ClusterBuilderOpt is to facilitate fluent ClusterBuilder API.
 type ClusterBuilderOpt interface {
 	// ApplyTo adds ClusterConfigurer(s) to the ClusterBuilder.
-	ApplyTo(config *ClusterBuilderConfig)
+	ApplyTo(builder *ClusterBuilder)
 }
 
 func NewClusterBuilder(apiVersion core_xds.APIVersion) *ClusterBuilder {
@@ -27,13 +27,14 @@ func NewClusterBuilder(apiVersion core_xds.APIVersion) *ClusterBuilder {
 // by applying a series of ClusterConfigurers.
 type ClusterBuilder struct {
 	apiVersion core_xds.APIVersion
-	config     ClusterBuilderConfig
+	// A series of ClusterConfigurers to apply to Envoy cluster.
+	configurers []v3.ClusterConfigurer
 }
 
 // Configure configures ClusterBuilder by adding individual ClusterConfigurers.
 func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 	for _, opt := range opts {
-		opt.ApplyTo(&b.config)
+		opt.ApplyTo(b)
 	}
 	return b
 }
@@ -43,7 +44,7 @@ func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
 		cluster := envoy_api.Cluster{}
-		for _, configurer := range b.config.ConfigurersV3 {
+		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&cluster); err != nil {
 				return nil, err
 			}
@@ -63,20 +64,14 @@ func (b *ClusterBuilder) MustBuild() envoy.NamedResource {
 	return cluster
 }
 
-// ClusterBuilderConfig holds configuration of a ClusterBuilder.
-type ClusterBuilderConfig struct {
-	// A series of ClusterConfigurers to apply to Envoy cluster.
-	ConfigurersV3 []v3.ClusterConfigurer
-}
-
-// Add appends a given ClusterConfigurer to the end of the chain.
-func (c *ClusterBuilderConfig) AddV3(configurer v3.ClusterConfigurer) {
-	c.ConfigurersV3 = append(c.ConfigurersV3, configurer)
+// AddConfigurer appends a given ClusterConfigurer to the end of the chain.
+func (b *ClusterBuilder) AddConfigurer(configurer v3.ClusterConfigurer) {
+	b.configurers = append(b.configurers, configurer)
 }
 
 // ClusterBuilderOptFunc is a convenience type adapter.
-type ClusterBuilderOptFunc func(config *ClusterBuilderConfig)
+type ClusterBuilderOptFunc func(config *ClusterBuilder)
 
-func (f ClusterBuilderOptFunc) ApplyTo(config *ClusterBuilderConfig) {
-	f(config)
+func (f ClusterBuilderOptFunc) ApplyTo(builder *ClusterBuilder) {
+	f(builder)
 }

@@ -17,8 +17,8 @@ func (n *NameConfigurer) Configure(c *envoy_cluster.Cluster) error {
 }
 
 func WithName(name string) clusters_builder.ClusterBuilderOpt {
-	return clusters_builder.ClusterBuilderOptFunc(func(config *clusters_builder.ClusterBuilderConfig) {
-		config.AddV3(&NameConfigurer{Name: name})
+	return clusters_builder.ClusterBuilderOptFunc(func(builder *clusters_builder.ClusterBuilder) {
+		builder.AddConfigurer(&NameConfigurer{Name: name})
 	})
 }
 
