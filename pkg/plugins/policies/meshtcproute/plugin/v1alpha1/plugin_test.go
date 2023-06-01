@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -89,7 +90,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 											Rules: []api.Rule{
 												{
 													Default: api.RuleConf{
-														BackendRefs: []api.BackendRef{
+														BackendRefs: []common_api.BackendRef{
 															{
 																TargetRef: builders.TargetRefServiceSubset(
 																	"backend",
@@ -122,7 +123,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 						Subset: core_xds.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []api.BackendRef{
+								BackendRefs: []common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefServiceSubset(
 											"backend",
@@ -252,7 +253,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
-							BackendRefs: []api.BackendRef{
+							BackendRefs: []common_api.BackendRef{
 								{
 									TargetRef: builders.TargetRefServiceSubset(
 										"backend",
@@ -347,7 +348,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
-							BackendRefs: []api.BackendRef{
+							BackendRefs: []common_api.BackendRef{
 								{
 									TargetRef: builders.TargetRefService(
 										"tcp-backend",
@@ -430,7 +431,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
-							BackendRefs: []api.BackendRef{
+							BackendRefs: []common_api.BackendRef{
 								{
 									TargetRef: builders.TargetRefService(
 										"tcp-backend",
@@ -457,7 +458,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 									},
 								},
 								Default: meshhttproute_api.RuleConf{
-									BackendRefs: &[]meshhttproute_api.BackendRef{
+									BackendRefs: &[]common_api.BackendRef{
 										{
 											TargetRef: builders.TargetRefService("http-backend"),
 											Weight:    pointer.To(uint(1)),
@@ -543,7 +544,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
-							BackendRefs: []api.BackendRef{
+							BackendRefs: []common_api.BackendRef{
 								{
 									TargetRef: builders.TargetRefService(
 										"tcp-backend",
@@ -570,7 +571,7 @@ var _ = PDescribe("MeshTCPRoute", func() {
 									},
 								},
 								Default: meshhttproute_api.RuleConf{
-									BackendRefs: &[]meshhttproute_api.BackendRef{
+									BackendRefs: &[]common_api.BackendRef{
 										{
 											TargetRef: builders.TargetRefService("http-backend"),
 											Weight:    pointer.To(uint(1)),

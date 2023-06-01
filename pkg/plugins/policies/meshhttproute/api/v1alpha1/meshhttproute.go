@@ -89,8 +89,8 @@ type QueryParamsMatch struct {
 }
 
 type RuleConf struct {
-	Filters     *[]Filter     `json:"filters,omitempty"`
-	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
+	Filters     *[]Filter                `json:"filters,omitempty"`
+	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror
@@ -198,11 +198,4 @@ type Filter struct {
 	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty"`
 	URLRewrite             *URLRewrite      `json:"urlRewrite,omitempty"`
 	RequestMirror          *RequestMirror   `json:"requestMirror,omitempty"`
-}
-
-type BackendRef struct {
-	common_api.TargetRef `json:",omitempty"`
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:default=1
-	Weight *uint `json:"weight,omitempty"`
 }

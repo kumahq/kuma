@@ -56,3 +56,11 @@ func (in *TargetRef) Hash() string {
 	}
 	return fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh)
 }
+
+// BackendRef defines where to forward traffic.
+type BackendRef struct {
+	TargetRef `json:","`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:default=1
+	Weight *uint `json:"weight,omitempty"`
+}

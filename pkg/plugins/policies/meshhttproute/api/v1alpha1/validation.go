@@ -255,7 +255,7 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 	return errs
 }
 
-func validateBackendRefs(backendRefs *[]BackendRef) validators.ValidationError {
+func validateBackendRefs(backendRefs *[]common_api.BackendRef) validators.ValidationError {
 	var errs validators.ValidationError
 
 	if backendRefs == nil {

@@ -62,7 +62,7 @@ func generateListeners(
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
 					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
-						[]api.BackendRef{{
+						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
 						}})
@@ -152,7 +152,7 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
-			route.BackendRefs = []api.BackendRef{{
+			route.BackendRefs = []common_api.BackendRef{{
 				TargetRef: common_api.TargetRef{
 					Kind: common_api.MeshService,
 					Name: serviceName,
@@ -174,7 +174,7 @@ func makeHTTPSplit(
 	clusterCache map[string]string,
 	sc *meshroute_xds.SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []api.BackendRef,
+	refs []common_api.BackendRef,
 ) []*plugins_xds.Split {
 	var split []*plugins_xds.Split
 

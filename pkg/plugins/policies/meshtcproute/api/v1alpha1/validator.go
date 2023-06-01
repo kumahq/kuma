@@ -67,7 +67,7 @@ func validateRules(rules []Rule) validators.ValidationError {
 	return verr
 }
 
-func validateBackendRefs(backendRefs []BackendRef) validators.ValidationError {
+func validateBackendRefs(backendRefs []common_api.BackendRef) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if backendRefs == nil {
