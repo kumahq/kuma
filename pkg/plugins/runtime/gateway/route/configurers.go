@@ -180,6 +180,7 @@ func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
 
 func RouteAppendHeader(name string, value string) *envoy_config_core.HeaderValueOption {
 	return &envoy_config_core.HeaderValueOption{
+		AppendAction: envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 		Header: &envoy_config_core.HeaderValue{
 			Key:   http.CanonicalHeaderKey(name),
 			Value: value,
