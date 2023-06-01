@@ -13,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type ZoneInsightSink interface {
@@ -55,6 +56,13 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	var lastStoredState *system_proto.KDSSubscription
 	var generation uint32
 
+	gracefulCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	tenantId, ok := multitenant.TenantFromCtx(ctx)
+	if ok {
+		gracefulCtx = multitenant.WithTenant(gracefulCtx, tenantId)
+	}
+
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
 		select {
@@ -67,7 +75,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 			return
 		}
 
-		if err := s.store.Upsert(ctx, zone, currentState); err != nil {
+		if err := s.store.Upsert(gracefulCtx, zone, currentState); err != nil {
 			if store.IsResourceConflict(err) {
 				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
 			} else {
@@ -85,6 +93,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 			flush()
 		case <-stop:
 			flush()
+			cancel()
 			return
 		}
 	}
