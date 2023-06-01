@@ -544,7 +544,7 @@ func RouteActionRetryMethods(httpMethod ...string) RouteConfigurer {
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		p := r.GetRoute().GetRetryPolicy()
-		if p != nil {
+		if p == nil {
 			return nil
 		}
 
