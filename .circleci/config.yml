@@ -179,6 +179,7 @@ jobs:
           paths:
             - "/home/circleci/go/pkg/mod"
             - "/home/circleci/.kuma-dev"
+            - "/home/circleci/.cache/go-build"
   test:
     parameters:
       target:
@@ -384,6 +385,7 @@ jobs:
           paths:
             - "/home/circleci/go/pkg/mod"
             - "/home/circleci/.kuma-dev"
+            - "/home/circleci/.cache/go-build"
       - persist_to_workspace:
           root: build
           paths:
