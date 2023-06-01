@@ -105,7 +105,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 ) (v1alpha1.Rule, error) {
 	var matches []v1alpha1.Match
 	var filters []v1alpha1.Filter
-	var backendRefs []v1alpha1.BackendRef
+	var backendRefs []common_api.BackendRef
 
 	for _, gapiMatch := range rule.Matches {
 		match, ok := r.gapiToKumaMeshMatch(gapiMatch)
@@ -133,7 +133,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 			return v1alpha1.Rule{}, err
 		}
 
-		backendRefs = append(backendRefs, v1alpha1.BackendRef{
+		backendRefs = append(backendRefs, common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
 				Name: ref[mesh_proto.ServiceTag],

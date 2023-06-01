@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -19,7 +20,7 @@ var _ core_plugins.PolicyPlugin = &plugin{}
 type Route struct {
 	Matches     []api.Match
 	Filters     []api.Filter
-	BackendRefs []api.BackendRef
+	BackendRefs []common_api.BackendRef
 }
 
 type RuleAcc struct {

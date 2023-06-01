@@ -678,7 +678,7 @@ var _ = Describe("IngressGenerator", func() {
 									},
 								}},
 								Default: v1alpha1.RuleConf{
-									BackendRefs: &[]v1alpha1.BackendRef{{
+									BackendRefs: &[]common_api.BackendRef{{
 										TargetRef: common_api.TargetRef{
 											Kind: common_api.MeshServiceSubset,
 											Name: "backend",

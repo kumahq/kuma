@@ -1379,6 +1379,9 @@ spec:
                             properties:
                               backendRefs:
                                 items:
+                                  description: BackendRef defines structure that allows
+                                    describing weighted attaching point to various
+                                    objects
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
@@ -3505,6 +3508,9 @@ spec:
                             properties:
                               backendRefs:
                                 items:
+                                  description: BackendRef defines structure that allows
+                                    describing weighted attaching point to various
+                                    objects
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
