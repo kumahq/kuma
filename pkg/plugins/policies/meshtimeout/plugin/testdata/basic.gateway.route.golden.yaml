@@ -12,13 +12,8 @@ virtualHosts:
       path: /
     route:
       clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-      hashPolicy:
-      - queryParameter:
-          name: queryparam
-        terminal: true
-      - connectionProperties:
-          sourceIp: true
-      idleTimeout: 5s
+      idleTimeout: 1s
+      timeout: 5s
       weightedClusters:
         clusters:
         - name: backend-26cb64fa4e85e7b7

@@ -84,6 +84,7 @@ virtualHosts:
       path: /
     route:
       clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      idleTimeout: 5s
       weightedClusters:
         clusters:
         - name: backend-26cb64fa4e85e7b7

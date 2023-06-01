@@ -29,8 +29,8 @@ filterChains:
               prefix: /
             route:
               cluster: backend
+              idleTimeout: 1800s
               timeout: 15s
       statPrefix: outbound_127_0_0_1_10001
-      streamIdleTimeout: 1800s
 name: outbound:127.0.0.1:10001
 trafficDirection: OUTBOUND

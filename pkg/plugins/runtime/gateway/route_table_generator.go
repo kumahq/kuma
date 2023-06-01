@@ -67,6 +67,7 @@ func GenerateVirtualHost(
 			route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
 			route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
 			route.RouteSetRewriteHostToBackendHostname(e.Rewrite != nil && e.Rewrite.HostToBackendHostname),
+			route.RouteActionIdleTimeout(DefaultStreamIdleTimeout),
 		)
 
 		// Generate a retry policy for this route, if there is one.

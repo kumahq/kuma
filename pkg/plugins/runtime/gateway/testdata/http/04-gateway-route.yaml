@@ -151,6 +151,7 @@ Routes:
             path: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             requestMirrorPolicies:
             - cluster: echo-mirror-90205ae37cc0294e
               runtimeFraction:

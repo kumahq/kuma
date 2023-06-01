@@ -41,13 +41,7 @@ func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error 
 	}
 
 	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		if c.Conf.Http != nil {
-			hcm.StreamIdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
-			c.configureRequestTimeout(hcm.GetRouteConfig())
-		} else {
-			hcm.StreamIdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
-			c.configureRequestTimeout(hcm.GetRouteConfig())
-		}
+		c.configureRequestTimeout(hcm.GetRouteConfig())
 		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
 		if hcm.CommonHttpProtocolOptions == nil {
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
@@ -108,6 +102,11 @@ func (c *Configurer) ConfigureRouteAction(routeAction *envoy_route.RouteAction) 
 		routeAction.Timeout = toProtoDurationOrDefault(c.Conf.Http.RequestTimeout, defaultRequestTimeout)
 	} else {
 		routeAction.Timeout = util_proto.Duration(defaultRequestTimeout)
+	}
+	if c.Conf.Http != nil && c.Conf.Http.StreamIdleTimeout != nil {
+		routeAction.IdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
+	} else if routeAction.IdleTimeout == nil {
+		routeAction.IdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
 	}
 }
 

@@ -121,6 +121,7 @@ Routes:
             path: /prefix
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             regexRewrite:
               pattern:
                 regex: .*
@@ -145,6 +146,7 @@ Routes:
             prefix: /prefix/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             prefixRewrite: /
             retryPolicy:
               numRetries: 5
