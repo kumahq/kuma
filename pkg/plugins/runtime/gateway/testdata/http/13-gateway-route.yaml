@@ -267,7 +267,6 @@ Routes:
                 weight: 1
         - match:
             safeRegex:
-              googleRe2: {}
               regex: /match/foo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

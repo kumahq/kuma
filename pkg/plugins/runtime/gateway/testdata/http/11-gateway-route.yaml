@@ -167,12 +167,10 @@ Routes:
             - name: Content-Type
               stringMatch:
                 safeRegex:
-                  googleRe2: {}
                   regex: application/.*
             - name: Language
               stringMatch:
                 safeRegex:
-                  googleRe2: {}
                   regex: .*sh
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

@@ -149,7 +149,6 @@ Routes:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             regexRewrite:
               pattern:
-                googleRe2: {}
                 regex: .*
               substitution: /a
             retryPolicy:

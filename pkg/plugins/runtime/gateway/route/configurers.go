@@ -21,15 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-func regexOf(regex string) *envoy_type_matcher.RegexMatcher {
-	return &envoy_type_matcher.RegexMatcher{
-		Regex: regex,
-		EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-			GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-		},
-	}
-}
-
 // RouteMatchExactPath updates the route to match the exact path. This
 // replaces any previous path match specification.
 func RouteMatchExactPath(path string) RouteConfigurer {
@@ -69,7 +60,7 @@ func RouteMatchRegexPath(regex string) RouteConfigurer {
 
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.Match.PathSpecifier = &envoy_config_route.RouteMatch_SafeRegex{
-			SafeRegex: regexOf(regex),
+			SafeRegex: &envoy_type_matcher.RegexMatcher{Regex: regex},
 		}
 	})
 }
@@ -107,8 +98,14 @@ func RouteMatchRegexHeader(name string, regex string) RouteConfigurer {
 		r.Match.Headers = append(r.Match.Headers,
 			&envoy_config_route.HeaderMatcher{
 				Name: name,
-				HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: regexOf(regex),
+				HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_StringMatch{
+					StringMatch: &envoy_type_matcher.StringMatcher{
+						MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher.RegexMatcher{
+								Regex: regex,
+							},
+						},
+					},
 				},
 			},
 		)
@@ -166,7 +163,7 @@ func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		matcher := envoy_type_matcher.StringMatcher{
 			MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
-				SafeRegex: regexOf(regex),
+				SafeRegex: &envoy_type_matcher.RegexMatcher{Regex: regex},
 			},
 		}
 
@@ -183,7 +180,6 @@ func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
 
 func RouteAppendHeader(name string, value string) *envoy_config_core.HeaderValueOption {
 	return &envoy_config_core.HeaderValueOption{
-		Append: util_proto.Bool(true),
 		Header: &envoy_config_core.HeaderValue{
 			Key:   http.CanonicalHeaderKey(name),
 			Value: value,
@@ -193,7 +189,7 @@ func RouteAppendHeader(name string, value string) *envoy_config_core.HeaderValue
 
 func RouteReplaceHeader(name string, value string) *envoy_config_core.HeaderValueOption {
 	return &envoy_config_core.HeaderValueOption{
-		Append: util_proto.Bool(false),
+		AppendAction: envoy_config_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		Header: &envoy_config_core.HeaderValue{
 			Key:   http.CanonicalHeaderKey(name),
 			Value: value,
@@ -277,7 +273,7 @@ func RouteDeleteRequestHeader(name string) RouteConfigurer {
 	})
 }
 
-// RouteDeleteRequestHeader deletes the given header from the HTTP response.
+// RouteDeleteResponseHeader deletes the given header from the HTTP response.
 func RouteDeleteResponseHeader(name string) RouteConfigurer {
 	if name == "" {
 		return RouteConfigureFunc(nil)
@@ -344,7 +340,7 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 }
 
 // RouteActionRedirect configures the route to automatically response
-// with a HTTP redirection. This replaces any previous action specification.
+// with an HTTP redirection. This replaces any previous action specification.
 func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 	if redirect == nil {
 		return RouteConfigureFunc(nil)
@@ -372,9 +368,6 @@ func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 				envoyRedirect.PathRewriteSpecifier = &envoy_config_route.RedirectAction_RegexRewrite{
 					RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
 						Pattern: &envoy_type_matcher.RegexMatcher{
-							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-								GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-							},
 							Regex: `.*`,
 						},
 						Substitution: *rewrite.ReplaceFullPath,
@@ -431,9 +424,6 @@ func RouteRewrite(rewrite *Rewrite) RouteConfigurer {
 		if rewrite.ReplaceFullPath != nil {
 			action.RegexRewrite = &envoy_type_matcher.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher.RegexMatcher{
-					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-					},
 					Regex: `.*`,
 				},
 				Substitution: *rewrite.ReplaceFullPath,

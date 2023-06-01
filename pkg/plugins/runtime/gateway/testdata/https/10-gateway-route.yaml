@@ -250,13 +250,13 @@ Routes:
         - match:
             headers:
             - name: Content-Type
-              safeRegexMatch:
-                googleRe2: {}
-                regex: application/.*
+              stringMatch:
+                safeRegex:
+                  regex: application/.*
             - name: Language
-              safeRegexMatch:
-                googleRe2: {}
-                regex: .*sh
+              stringMatch:
+                safeRegex:
+                  regex: .*sh
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
