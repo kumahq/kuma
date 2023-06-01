@@ -25,6 +25,9 @@
 {{- end }}
 {{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
 {{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
+{{- $defaultSecrets := include "kuma.parentSecrets" . | fromYaml }}
+{{- $extraSecrets := .Values.controlPlane.extraSecrets }}
+{{- $mergedSecrets := merge $extraSecrets $defaultSecrets }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -241,10 +244,11 @@ spec:
               mountPath: {{ $extraConfigMap.mountPath }}
               readOnly: {{ $extraConfigMap.readOnly }}
           {{- end }}
-          {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
-            - name: {{ $extraSecret.name }}
-              mountPath: {{ $extraSecret.mountPath }}
-              readOnly: {{ $extraSecret.readOnly }}
+          {{- range $mergedSecret := $mergedSecrets }}
+            - name: {{ $mergedSecret.name }}
+              mountPath: {{ $mergedSecret.mountPath }}
+              subPath: {{ $mergedSecret.subPath }}
+              readOnly: {{ $mergedSecret.readOnly }}
           {{- end }}
             - name: tmp
               mountPath: /tmp
@@ -323,10 +327,10 @@ spec:
           configMap:
             name: {{ $extraConfigMap.name }}
         {{- end }}
-        {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
-        - name: {{ $extraSecret.name }}
+        {{- range $mergedSecret := $mergedSecrets }}
+        - name: {{ $mergedSecret.name }}
           secret:
-            secretName: {{ $extraSecret.name }}
+            secretName: {{ $mergedSecret.name }}
         {{- end }}
         - name: tmp
           emptyDir: {}
