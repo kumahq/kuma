@@ -150,20 +150,18 @@ Routes:
         - match:
             path: /
           requestHeadersToAdd:
-          - append: false
+          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: Set-Header-One
               value: one
-          - append: false
+          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: Set-Header-Two
               value: two
-          - append: true
-            header:
+          - header:
               key: Append-Forwarded
               value: "yes"
-          - append: true
-            header:
+          - header:
               key: Append-Forwarded
               value: please
           requestHeadersToRemove:
