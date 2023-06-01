@@ -57,8 +57,7 @@ func (in *TargetRef) Hash() string {
 	return fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh)
 }
 
-// BackendRef defines structure that allows describing weighted attaching point
-// to various objects
+// BackendRef defines where to forward traffic.
 type BackendRef struct {
 	TargetRef `json:","`
 	// +kubebuilder:validation:Minimum=0
