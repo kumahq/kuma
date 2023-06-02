@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -30,6 +32,23 @@ var (
 var (
 	prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 	logger                   = core.Log.WithName("metrics-hijacker")
+
+	// holds prometheus content types in order of priority.
+	prometheusPriorityContentType = []expfmt.Format{
+		expfmt.FmtOpenMetrics_1_0_0,
+		expfmt.FmtOpenMetrics_0_0_1,
+		expfmt.FmtText,
+		expfmt.FmtUnknown,
+	}
+
+	// Reverse mapping of prometheusPriorityContentType for faster lookup.
+	prometheusPriorityContentTypeLookup = func(expformats []expfmt.Format) map[expfmt.Format]int32 {
+		reverseMapping := map[expfmt.Format]int32{}
+		for priority, format := range expformats {
+			reverseMapping[format] = int32(priority)
+		}
+		return reverseMapping
+	}(prometheusPriorityContentType)
 )
 
 var _ component.Component = &Hijacker{}
@@ -153,19 +172,27 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	out := make(chan []byte, len(s.applicationsToScrape))
+	contentTypes := make(chan expfmt.Format, len(s.applicationsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
 	wg.Add(len(s.applicationsToScrape))
 	go func() {
 		wg.Wait()
-		close(done)
 		close(out)
+		close(contentTypes)
+		close(done)
 	}()
 
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			out <- s.getStats(ctx, req, app)
+			content, contentType := s.getStats(ctx, req, app)
+			out <- content
+
+			// It's possible to track the highest priority content type seen,
+			// but that would require mutex.
+			// I would prefer to calculate it later at one go
+			contentTypes <- contentType
 		}(app)
 	}
 
@@ -173,8 +200,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
-		// default format returned by prometheus
-		writer.Header().Set("content-type", string(expfmt.FmtText))
+		writer.Header().Set(hdrContentType, string(selectContentType(contentTypes, req.Header)))
 		for resp := range out {
 			if _, err := writer.Write(resp); err != nil {
 				logger.Error(err, "error while writing the response")
@@ -186,11 +212,44 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) []byte {
+// selectContentType selects the highest priority content type supported by the applications.
+// If no valid content type is returned by the applications, it returns the highest priority
+// content type supported by the scraper.
+func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header) expfmt.Format {
+	// Tracks highest negotiated content type priority.
+	// Lower number means higher priority
+	//
+	// We should not simply use the highest priority content type even if `application/openmetrics-text`
+	// is the superset of `text/plain`, as it might not be
+	// supported by the applications or the user might be using older prom scraper.
+	// So it's better to choose the highest negotiated content type between the apps and the scraper.
+	var ctPriority int32 = math.MaxInt32
+	ct := expfmt.FmtUnknown
+	for contentType := range contentTypes {
+		priority, valid := prometheusPriorityContentTypeLookup[contentType]
+		if !valid {
+			continue
+		}
+		if priority < ctPriority {
+			ctPriority = priority
+			ct = contentType
+		}
+	}
+
+	// If no valid content type is returned by the applications,
+	// use the highest priority content type supported by the scraper.
+	if ct == expfmt.FmtUnknown {
+		ct = expfmt.NegotiateIncludingOpenMetrics(reqHeader)
+	}
+
+	return ct
+}
+
+func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) ([]byte, expfmt.Format) {
 	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
-		return nil
+		return nil, ""
 	}
 	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
@@ -208,25 +267,27 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
-		return nil
+		return nil, ""
 	}
+
+	respContentType := responseFormat(resp.Header)
 
 	var bodyBytes []byte
 	if app.Mutator != nil {
 		buf := new(bytes.Buffer)
 		if err := app.Mutator(resp.Body, buf); err != nil {
 			logger.Error(err, "failed while mutating data", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil
+			return nil, ""
 		}
 		bodyBytes = buf.Bytes()
 	} else {
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
-			return nil
+			return nil, ""
 		}
 	}
-	return bodyBytes
+	return bodyBytes, respContentType
 }
 
 func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
@@ -242,4 +303,53 @@ func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
 
 func (s *Hijacker) NeedLeaderElection() bool {
 	return false
+}
+
+const (
+	hdrContentType           = "Content-Type"
+	textType                 = "text/plain"
+	textVersion              = "0.0.4"
+	openmetricsType          = "application/openmetrics-text"
+	openmetricsVersion_1_0_0 = "1.0.0"
+	openmetricsVersion_0_0_1 = "0.0.1"
+	protoType                = `application/vnd.google.protobuf`
+	protoProtocol            = `io.prometheus.client.MetricFamily`
+)
+
+// responseFormat extracts the correct format from a HTTP response header.
+// If no matching format can be found FormatUnknown is returned.
+func responseFormat(h http.Header) expfmt.Format {
+	ct := h.Get(hdrContentType)
+
+	mediatype, params, err := mime.ParseMediaType(ct)
+	if err != nil {
+		return expfmt.FmtUnknown
+	}
+
+	version := params["version"]
+
+	switch mediatype {
+	case protoType:
+		p := params["proto"]
+		e := params["encoding"]
+		// only delimited encoding is supported by prometheus scraper
+		if p == protoProtocol && e == "delimited" {
+			return expfmt.FmtProtoDelim
+		}
+
+	case textType:
+		if version == textVersion {
+			return expfmt.FmtText
+		}
+
+	case openmetricsType:
+		if version == openmetricsVersion_0_0_1 {
+			return expfmt.FmtOpenMetrics_0_0_1
+		}
+		if version == openmetricsVersion_1_0_0 {
+			return expfmt.FmtOpenMetrics_1_0_0
+		}
+	}
+
+	return expfmt.FmtUnknown
 }

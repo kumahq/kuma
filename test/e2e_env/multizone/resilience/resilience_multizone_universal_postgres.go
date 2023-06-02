@@ -160,4 +160,20 @@ func ResilienceMultizoneUniversalPostgres() {
 			return zoneUniversal.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
 		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
+
+	It("should mark zone as offline when zone control-plane is down", func() {
+		// given zone connected to global
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainSubstring("Online"))
+
+		// when Zone CP is killed
+		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then zone is offline immediately
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "10s", "1s").Should(ContainSubstring("Offline"))
+	})
 }

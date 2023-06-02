@@ -190,6 +190,13 @@ func makeHTTPSplit(
 			continue
 		}
 
+		switch plugins_xds.InferProtocol(proxy.Routing, service) {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		default:
+			// We don't support splitting if at least one of the backendRefs is not HTTP
+			return nil
+		}
+
 		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
 		refHash := ref.TargetRef.Hash()
