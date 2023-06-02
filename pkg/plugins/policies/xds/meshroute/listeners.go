@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 // SplitCounter
@@ -29,7 +29,7 @@ func GetClusterName(
 	sc *SplitCounter,
 ) string {
 	if len(tags) > 0 {
-		name = names.GetSplitClusterName(name, sc.GetAndIncrement())
+		name = envoy_names.GetSplitClusterName(name, sc.GetAndIncrement())
 	}
 
 	// The mesh tag is present here if this destination is generated
