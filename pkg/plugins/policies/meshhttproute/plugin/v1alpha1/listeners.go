@@ -168,4 +168,3 @@ func prepareRoutes(
 
 	return routes
 }
-
