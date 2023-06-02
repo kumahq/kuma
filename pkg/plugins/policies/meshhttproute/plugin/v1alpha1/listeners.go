@@ -193,12 +193,13 @@ func makeSplit(
 		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
 		refHash := ref.TargetRef.Hash()
+		refWeight := uint32(pointer.DerefOr(ref.Weight, 1))
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
 			split = append(split, plugins_xds.NewSplitBuilder().
 				WithClusterName(existingClusterName).
-				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+				WithWeight(refWeight).
 				WithExternalService(isExternalService).
 				Build())
 			continue
@@ -208,7 +209,7 @@ func makeSplit(
 
 		split = append(split, plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
-			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+			WithWeight(refWeight).
 			WithExternalService(isExternalService).
 			Build())
 
