@@ -6,6 +6,7 @@
 **Code quality**
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5576/badge)](https://bestpractices.coreinfrastructure.org/projects/5576)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge) (https://api.securityscorecards.dev/projects/github.com/kumahq/kuma})
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
 
 **Releases**
@@ -28,12 +29,19 @@ Built by Envoy contributors at Kong 🦍.
 
 [![][kuma-gui]][kuma-url]
 
-**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [Slack chat](https://kuma.io/community).
+## Get Started 
 
 [Installation](https://kuma.io/install) |
 [Documentation](https://kuma.io/docs) |
-[Community + Slack Chat](https://kuma.io/community) |
-[Blog](https://konghq.com/blog)
+
+## Get Involved
+
+- [Join the Kuma Slack](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1wi2o3uok-x0KmKJiSzjQy7NgNkC8IAA) or the #kuma channel in the [CNCF Slack](https://slack.cncf.io/). 
+- Attend a Community Call - Hosted monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
+- Follow us on [Twitter](https://twitter.com/kumamesh)
+- Read the [blog](https://kuma.io/blog/)
+
+**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [community channels](https://kuma.io/community)
 
 ## Summary
 
