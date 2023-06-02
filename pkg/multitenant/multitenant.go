@@ -39,4 +39,13 @@ func TenantFromCtx(ctx context.Context) (string, bool) {
 	return value, ok
 }
 
+// CopyIntoCtx copies tenant information from src context to dst context
+func CopyIntoCtx(src context.Context, dst context.Context) context.Context {
+	tenantId, ok := TenantFromCtx(src)
+	if !ok {
+		return dst
+	}
+	return WithTenant(dst, tenantId)
+}
+
 var TenantMissingErr = errors.New("tenant is missing")

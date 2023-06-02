@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -63,9 +63,11 @@ var _ = Describe("Forwarding KDS Client", func() {
 
 	createZoneInsightConnectedToGlobal := func(insight string, globalInstanceID string) {
 		zoneInsight := system.NewZoneInsightResource()
-		zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &v1alpha1.KDSSubscription{
-			GlobalInstanceId: globalInstanceID,
-		})
+		zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{
+			ConfigDumpGlobalInstanceId: globalInstanceID,
+			StatsGlobalInstanceId:      globalInstanceID,
+			ClustersGlobalInstanceId:   globalInstanceID,
+		}
 		err := resManager.Create(context.Background(), zoneInsight, core_store.CreateByKey(insight, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	}
