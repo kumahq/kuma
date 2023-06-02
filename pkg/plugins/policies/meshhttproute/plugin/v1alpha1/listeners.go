@@ -54,14 +54,14 @@ func generateListeners(
 		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
+			split := makeSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
 			if split == nil {
 				continue
 			}
 			for _, filter := range route.Filters {
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
-					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+					_ = makeSplit(proxy, clusterCache, splitCounter, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
@@ -169,7 +169,7 @@ func prepareRoutes(
 	return routes
 }
 
-func makeHTTPSplit(
+func makeSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[string]string,
 	sc *meshroute_xds.SplitCounter,
