@@ -195,6 +195,19 @@ func (sa ServicesAccumulator) Services() Services {
 	return sa.services
 }
 
+// Clusters returns a slice of all clusters gathered in all accumulated
+// services. This is a convenience method, which may be used whenever there is
+// need to configure tcpProxy with weighted clusters (like in MeshTCPProxy)
+func (sa ServicesAccumulator) Clusters() []Cluster {
+	var clusters []Cluster
+
+	for _, service := range sa.services {
+		clusters = append(clusters, service.clusters...)
+	}
+
+	return clusters
+}
+
 func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 	for _, c := range clusters {
 		if sa.services[c.Service()] == nil {
