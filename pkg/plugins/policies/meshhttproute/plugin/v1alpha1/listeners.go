@@ -177,6 +177,8 @@ func makeSplit(
 	refs []common_api.BackendRef,
 ) []*plugins_xds.Split {
 	var split []*plugins_xds.Split
+	clusterBuilders := map[string]*plugins_xds.ClusterBuilder{}
+	weights := map[string]uint32{}
 
 	for _, ref := range refs {
 		switch ref.Kind {
@@ -194,6 +196,7 @@ func makeSplit(
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
 		refHash := ref.TargetRef.Hash()
 		refWeight := uint32(pointer.DerefOr(ref.Weight, 1))
+		weights[refHash] += refWeight
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
@@ -225,7 +228,11 @@ func makeSplit(
 			clusterBuilder.WithMesh(mesh)
 		}
 
-		servicesAcc.Add(clusterBuilder.Build())
+		clusterBuilders[refHash] = clusterBuilder
+	}
+
+	for refHash, clusterBuilder := range clusterBuilders {
+		servicesAcc.Add(clusterBuilder.WithWeight(weights[refHash]).Build())
 	}
 
 	return split
