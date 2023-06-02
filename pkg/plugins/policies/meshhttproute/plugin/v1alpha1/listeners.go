@@ -54,14 +54,14 @@ func generateListeners(
 		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := makeSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
+			split := meshroute_xds.MakeSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
 			if split == nil {
 				continue
 			}
 			for _, filter := range route.Filters {
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
-					_ = makeSplit(proxy, clusterCache, splitCounter, servicesAcc,
+					_ = meshroute_xds.MakeSplit(proxy, clusterCache, splitCounter, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
@@ -169,71 +169,3 @@ func prepareRoutes(
 	return routes
 }
 
-func makeSplit(
-	proxy *core_xds.Proxy,
-	clusterCache map[string]string,
-	sc *meshroute_xds.SplitCounter,
-	servicesAcc envoy_common.ServicesAccumulator,
-	refs []common_api.BackendRef,
-) []*plugins_xds.Split {
-	var split []*plugins_xds.Split
-	clusterBuilders := map[string]*plugins_xds.ClusterBuilder{}
-	weights := map[string]uint32{}
-
-	for _, ref := range refs {
-		switch ref.Kind {
-		case common_api.MeshService, common_api.MeshServiceSubset:
-		default:
-			continue
-		}
-
-		service := ref.Name
-		if pointer.DerefOr(ref.Weight, 1) == 0 {
-			continue
-		}
-
-		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
-		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
-		refHash := ref.TargetRef.Hash()
-		refWeight := uint32(pointer.DerefOr(ref.Weight, 1))
-		weights[refHash] += refWeight
-
-		if existingClusterName, ok := clusterCache[refHash]; ok {
-			// cluster already exists, so adding only split
-			split = append(split, plugins_xds.NewSplitBuilder().
-				WithClusterName(existingClusterName).
-				WithWeight(refWeight).
-				WithExternalService(isExternalService).
-				Build())
-			continue
-		}
-
-		clusterCache[refHash] = clusterName
-
-		split = append(split, plugins_xds.NewSplitBuilder().
-			WithClusterName(clusterName).
-			WithWeight(refWeight).
-			WithExternalService(isExternalService).
-			Build())
-
-		clusterBuilder := plugins_xds.NewClusterBuilder().
-			WithService(service).
-			WithName(clusterName).
-			WithTags(envoy_tags.Tags(ref.Tags).
-				WithTags(mesh_proto.ServiceTag, ref.Name).
-				WithoutTags(mesh_proto.MeshTag)).
-			WithExternalService(isExternalService)
-
-		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-			clusterBuilder.WithMesh(mesh)
-		}
-
-		clusterBuilders[refHash] = clusterBuilder
-	}
-
-	for refHash, clusterBuilder := range clusterBuilders {
-		servicesAcc.Add(clusterBuilder.WithWeight(weights[refHash]).Build())
-	}
-
-	return split
-}

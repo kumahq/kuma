@@ -3,8 +3,14 @@ package meshroute
 import (
 	"fmt"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 // SplitCounter
@@ -41,4 +47,73 @@ func GetClusterName(
 	}
 
 	return name
+}
+
+func MakeSplit(
+	proxy *core_xds.Proxy,
+	clusterCache map[string]string,
+	sc *SplitCounter,
+	servicesAcc envoy_common.ServicesAccumulator,
+	refs []common_api.BackendRef,
+) []*plugins_xds.Split {
+	var split []*plugins_xds.Split
+	clusterBuilders := map[string]*plugins_xds.ClusterBuilder{}
+	weights := map[string]uint32{}
+
+	for _, ref := range refs {
+		switch ref.Kind {
+		case common_api.MeshService, common_api.MeshServiceSubset:
+		default:
+			continue
+		}
+
+		service := ref.Name
+		if pointer.DerefOr(ref.Weight, 1) == 0 {
+			continue
+		}
+
+		clusterName := GetClusterName(ref.Name, ref.Tags, sc)
+		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
+		refHash := ref.TargetRef.Hash()
+		refWeight := uint32(pointer.DerefOr(ref.Weight, 1))
+		weights[refHash] += refWeight
+
+		if existingClusterName, ok := clusterCache[refHash]; ok {
+			// cluster already exists, so adding only split
+			split = append(split, plugins_xds.NewSplitBuilder().
+				WithClusterName(existingClusterName).
+				WithWeight(refWeight).
+				WithExternalService(isExternalService).
+				Build())
+			continue
+		}
+
+		clusterCache[refHash] = clusterName
+
+		split = append(split, plugins_xds.NewSplitBuilder().
+			WithClusterName(clusterName).
+			WithWeight(refWeight).
+			WithExternalService(isExternalService).
+			Build())
+
+		clusterBuilder := plugins_xds.NewClusterBuilder().
+			WithService(service).
+			WithName(clusterName).
+			WithTags(envoy_tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, ref.Name).
+				WithoutTags(mesh_proto.MeshTag)).
+			WithExternalService(isExternalService)
+
+		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+			clusterBuilder.WithMesh(mesh)
+		}
+
+		clusterBuilders[refHash] = clusterBuilder
+	}
+
+	for refHash, clusterBuilder := range clusterBuilders {
+		servicesAcc.Add(clusterBuilder.WithWeight(weights[refHash]).Build())
+	}
+
+	return split
 }
