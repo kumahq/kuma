@@ -56,12 +56,8 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	var lastStoredState *system_proto.KDSSubscription
 	var generation uint32
 
-	gracefulCtx, cancel := context.WithCancel(context.Background())
+	gracefulCtx, cancel := context.WithCancel(multitenant.CopyIntoCtx(ctx, context.Background()))
 	defer cancel()
-	tenantId, ok := multitenant.TenantFromCtx(ctx)
-	if ok {
-		gracefulCtx = multitenant.WithTenant(gracefulCtx, tenantId)
-	}
 
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
@@ -117,5 +113,5 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		return zoneInsight.Spec.UpdateSubscription(subscription)
-	})
+	}, manager.WithConflictRetry(100*time.Millisecond, 10)) // we need retry because Envoy Admin RPC may also update the insight.
 }
