@@ -93,7 +93,6 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 			flush()
 		case <-stop:
 			flush()
-			cancel()
 			return
 		}
 	}
