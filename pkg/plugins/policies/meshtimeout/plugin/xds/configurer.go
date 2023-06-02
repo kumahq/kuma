@@ -16,6 +16,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -30,12 +31,12 @@ const (
 	defaultMaxConnectionDuration = 0
 )
 
-type Configurer struct {
+type ListenerConfigurer struct {
 	Conf     api.Conf
 	Protocol core_mesh.Protocol
 }
 
-func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error {
+func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
 	if listener == nil {
 		return nil
 	}
@@ -69,8 +70,26 @@ func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error 
 	return nil
 }
 
-func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
-	cluster.ConnectTimeout = toProtoDurationOrDefault(c.Conf.ConnectionTimeout, defaultConnectionTimeout)
+type ClusterConfigurer struct {
+	ConnectionTimeout         *kube_meta.Duration
+	IdleTimeout               *kube_meta.Duration
+	HTTPMaxStreamDuration     *kube_meta.Duration
+	HTTPMaxConnectionDuration *kube_meta.Duration
+	Protocol                  core_mesh.Protocol
+}
+
+func ClusterConfigurerFromConf(conf api.Conf, protocol core_mesh.Protocol) ClusterConfigurer {
+	return ClusterConfigurer{
+		ConnectionTimeout:         conf.ConnectionTimeout,
+		IdleTimeout:               conf.IdleTimeout,
+		HTTPMaxStreamDuration:     pointer.Deref(conf.Http).MaxStreamDuration,
+		HTTPMaxConnectionDuration: pointer.Deref(conf.Http).MaxConnectionDuration,
+		Protocol:                  protocol,
+	}
+}
+
+func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
+	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, defaultConnectionTimeout)
 	switch c.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		err := clusters_v3.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
@@ -78,14 +97,9 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
 			commonHttp := options.CommonHttpProtocolOptions
-			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.Conf.IdleTimeout, defaultIdleTimeout)
-			if c.Conf.Http != nil {
-				commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.Conf.Http.MaxStreamDuration, defaultMaxStreamDuration)
-				commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.Conf.Http.MaxConnectionDuration, defaultMaxConnectionDuration)
-			} else {
-				commonHttp.MaxStreamDuration = util_proto.Duration(defaultMaxStreamDuration)
-				commonHttp.MaxConnectionDuration = util_proto.Duration(defaultMaxConnectionDuration)
-			}
+			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.IdleTimeout, defaultIdleTimeout)
+			commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.HTTPMaxStreamDuration, defaultMaxStreamDuration)
+			commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.HTTPMaxConnectionDuration, defaultMaxConnectionDuration)
 		})
 		if err != nil {
 			return err
@@ -94,27 +108,31 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func (c *Configurer) ConfigureRouteAction(routeAction *envoy_route.RouteAction) {
+func ConfigureRouteAction(
+	routeAction *envoy_route.RouteAction,
+	httpRequestTimeout *kube_meta.Duration,
+	httpStreamIdleTimeout *kube_meta.Duration,
+) {
 	if routeAction == nil {
 		return
 	}
-	if c.Conf.Http != nil {
-		routeAction.Timeout = toProtoDurationOrDefault(c.Conf.Http.RequestTimeout, defaultRequestTimeout)
-	} else {
-		routeAction.Timeout = util_proto.Duration(defaultRequestTimeout)
-	}
-	if c.Conf.Http != nil && c.Conf.Http.StreamIdleTimeout != nil {
-		routeAction.IdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
+	routeAction.Timeout = toProtoDurationOrDefault(httpRequestTimeout, defaultRequestTimeout)
+	if httpStreamIdleTimeout != nil {
+		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, defaultStreamIdleTimeout)
 	} else if routeAction.IdleTimeout == nil {
 		routeAction.IdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
 	}
 }
 
-func (c *Configurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
-				c.ConfigureRouteAction(route.GetRoute())
+				ConfigureRouteAction(
+					route.GetRoute(),
+					pointer.Deref(c.Conf.Http).RequestTimeout,
+					pointer.Deref(c.Conf.Http).StreamIdleTimeout,
+				)
 			}
 		}
 	}
