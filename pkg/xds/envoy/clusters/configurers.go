@@ -12,20 +12,20 @@ import (
 )
 
 func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
 	})
 }
 
 func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
 	})
 }
 
 func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.ClientSideMTLSConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
 			UpstreamMesh:     mesh,
 			UpstreamService:  upstreamService,
@@ -37,8 +37,8 @@ func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResourc
 }
 
 func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.ClientSideMTLSConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
 			UpstreamMesh:     upstreamMesh,
 			UpstreamService:  upstreamService,
@@ -51,8 +51,8 @@ func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_me
 
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
 func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.ClientSideMTLSConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
 			UpstreamMesh:     mesh,
 			UpstreamService:  "*",
@@ -64,37 +64,37 @@ func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *cor
 }
 
 func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.ClientSideTLSConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideTLSConfigurer{
 			Endpoints: endpoints,
 		})
 	})
 }
 
 func EdsCluster(name string) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.EdsClusterConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.EdsClusterConfigurer{
 			Name: name,
 		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
 // ProvidedEndpointCluster sets the cluster with the defined endpoints, this is useful when endpoints are not discovered using EDS, so we don't use EdsCluster
 func ProvidedEndpointCluster(name string, hasIPv6 bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.ProvidedEndpointClusterConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
 			Name:      name,
 			Endpoints: endpoints,
 			HasIPv6:   hasIPv6,
 		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
 func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.HealthCheckConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
 			Protocol:    protocol,
 		})
@@ -118,24 +118,24 @@ func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheck
 //     version: v1
 //     Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
 func LbSubset(tagSets envoy_tags.TagKeysSlice) ClusterBuilderOptFunc {
-	return func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.LbSubsetConfigurer{
+	return func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.LbSubsetConfigurer{
 			TagKeysSets: tagSets,
 		})
 	}
 }
 
 func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.LbConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.LbConfigurer{
 			Lb: lb,
 		})
 	})
 }
 
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.TimeoutConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.TimeoutConfigurer{
 			Protocol: protocol,
 			Conf:     timeout,
 		})
@@ -143,25 +143,25 @@ func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) Clus
 }
 
 func DefaultTimeout() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.TimeoutConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.TimeoutConfigurer{
 			Protocol: core_mesh.ProtocolTCP,
 		})
 	})
 }
 
 func PassThroughCluster(name string) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.PassThroughClusterConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.PassThroughClusterConfigurer{
 			Name: name,
 		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
 func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.UpstreamBindConfigConfigurer{
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.UpstreamBindConfigConfigurer{
 			Address: address,
 			Port:    port,
 		})
@@ -169,27 +169,27 @@ func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
 }
 
 func ConnectionBufferLimit(bytes uint32) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(v3.ClusterMustConfigureFunc(func(c *envoy_cluster.Cluster) {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(v3.ClusterMustConfigureFunc(func(c *envoy_cluster.Cluster) {
 			c.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
 		}))
 	})
 }
 
 func Http2() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.Http2Configurer{})
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.Http2Configurer{})
 	})
 }
 
 func Http2FromEdge() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.Http2Configurer{EdgeProxyWindowSizes: true})
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.Http2Configurer{EdgeProxyWindowSizes: true})
 	})
 }
 
 func Http() ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.HttpConfigurer{})
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.HttpConfigurer{})
 	})
 }
