@@ -31,17 +31,17 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Get Started 
 
-[Installation](https://kuma.io/install) |
-[Documentation](https://kuma.io/docs) |
+- [Installation](https://kuma.io/install)
+- [Documentation](https://kuma.io/docs)
 
 ## Get Involved
 
 - [Join the Kuma Slack](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1wi2o3uok-x0KmKJiSzjQy7NgNkC8IAA) or the #kuma channel in the [CNCF Slack](https://slack.cncf.io/). 
-- Attend a Community Call - Hosted monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
+- Attend a [Community Call](https://docs.google.com/document/d/1HgnK3wJIEg8uFlivdrhrPZYWTpElWWu3mhFDXj-bMWQ/edit?usp=sharing) monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
 - Follow us on [Twitter](https://twitter.com/kumamesh)
 - Read the [blog](https://kuma.io/blog/)
 
-**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [community channels](https://kuma.io/community)
+**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [community channels](https://kuma.io/community).
 
 ## Summary
 
