@@ -25,7 +25,7 @@ COREDNS_VERSION = v1.10.1
 # List of binaries that we have build/release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
 # List of binaries that we have build/test build roles for.
-BUILD_TEST_BINARIES := test-server
+BUILD_TEST_BINARIES += test-server
 
 # This is a list of all architecture supported, this means we'll define targets for all these architectures
 SUPPORTED_GOARCHES ?= amd64 arm64

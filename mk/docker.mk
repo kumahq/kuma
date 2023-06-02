@@ -11,7 +11,7 @@ $(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
-IMAGES_TEST = kuma-universal
+IMAGES_TEST += kuma-universal
 KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 
 .PHONY: images/show
