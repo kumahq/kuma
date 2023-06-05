@@ -206,6 +206,11 @@
             
                 Tags defines set of required tags. You can specify '*' in value to
                 require non empty value of tag
+
+- `skipCreatingInitialDefaultPolicies` (optional, repeated)
+
+    List of policies to skip creating by default when the mesh is created.
+    e.g. TrafficPermission, MeshRetry, etc.
 ## CertificateAuthorityBackend
 
 - `name` (required)
