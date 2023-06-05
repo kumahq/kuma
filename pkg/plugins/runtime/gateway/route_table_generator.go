@@ -72,7 +72,7 @@ func GenerateVirtualHost(
 
 		// Generate a retry policy for this route, if there is one.
 		routeBuilder.Configure(
-			retryRouteConfigurers(
+			RetryRouteConfigurers(
 				route.InferForwardingProtocol(e.Action.Forward),
 				match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RetryType),
 			)...,
@@ -167,8 +167,8 @@ func GenerateVirtualHost(
 	return vh, nil
 }
 
-// retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
-func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) []route.RouteConfigurer {
+// RetryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
+func RetryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) []route.RouteConfigurer {
 	retry, _ := policy.(*core_mesh.RetryResource)
 	if retry == nil {
 		return nil
