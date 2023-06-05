@@ -45,6 +45,8 @@
         
             - `TCP`
         
+            - `TLS`
+        
             - `HTTP`
         
             - `HTTPS`    
@@ -62,7 +64,9 @@
             
                 - `NONE`
             
-                - `TERMINATE`    
+                - `TERMINATE`
+            
+                - `PASSTHROUGH`    
             
             - `certificates` (optional, repeated)
             
