@@ -37,32 +37,34 @@ type descriptor struct {
 	generation uint32
 }
 
+type TenantID string
+
 type insightMap map[core_model.ResourceKey]*descriptor
 
 type insightsByType map[core_model.ResourceType]insightMap
+
+type tenantInsights map[TenantID]insightsByType
 
 type subscriptionFinalizer struct {
 	rm        manager.ResourceManager
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
-	insights  insightsByType
+	insights  tenantInsights
 	tenants   multitenant.Tenants
 }
 
 func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
-	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
 			return nil, errors.Errorf("%q type is not an Insight", typ)
 		}
-		insights[typ] = map[core_model.ResourceKey]*descriptor{}
 	}
 
 	return &subscriptionFinalizer{
 		rm:        rm,
 		types:     types,
 		newTicker: newTicker,
-		insights:  insights,
+		insights:  tenantInsights{},
 		tenants:   tenants,
 	}, nil
 }
@@ -82,6 +84,12 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 					break
 				}
 				for _, tenantId := range tenantIds {
+					if _, found := f.insights[TenantID(tenantId)]; !found {
+						f.insights[TenantID(tenantId)] = insightsByType{}
+					}
+					if _, found := f.insights[TenantID(tenantId)][typ]; !found {
+						f.insights[TenantID(tenantId)][typ] = insightMap{}
+					}
 					ctx := multitenant.WithTenant(context.TODO(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
 						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
@@ -102,8 +110,13 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		return err
 	}
 
+	tenantId, ok := multitenant.TenantFromCtx(ctx)
+	if !ok {
+		return multitenant.TenantMissingErr
+	}
+
 	// delete items from the map that don't exist in the upstream
-	f.removeDeletedInsights(insights)
+	f.removeDeletedInsights(insights, tenantId)
 
 	for _, item := range insights.GetItems() {
 		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
@@ -111,15 +124,15 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		insight := item.GetSpec().(generic.Insight)
 
 		if !insight.IsOnline() {
-			delete(f.insights[typ], key)
+			delete(f.insights[TenantID(tenantId)][typ], key)
 			continue
 		}
 
-		old, ok := f.insights[typ][key]
+		old, ok := f.insights[TenantID(tenantId)][typ][key]
 		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
 			// something changed since the last check, either subscriptionId or generation were updated
 			// don't finalize the subscription, update map with fresh data
-			f.insights[typ][key] = &descriptor{
+			f.insights[TenantID(tenantId)][typ][key] = &descriptor{
 				id:         insight.GetLastSubscription().GetId(),
 				generation: insight.GetLastSubscription().GetGeneration(),
 			}
@@ -137,19 +150,19 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			log.Error(err, "unable to finalize subscription")
 			return err
 		}
-		delete(f.insights[typ], key)
+		delete(f.insights[TenantID(tenantId)][typ], key)
 	}
 	return nil
 }
 
-func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.ResourceList) {
+func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.ResourceList, tenantId string) {
 	byResourceKey := map[core_model.ResourceKey]bool{}
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
 	}
-	for rk := range f.insights[insights.GetItemType()] {
+	for rk := range f.insights[TenantID(tenantId)][insights.GetItemType()] {
 		if !byResourceKey[rk] {
-			delete(f.insights[insights.GetItemType()], rk)
+			delete(f.insights[TenantID(tenantId)][insights.GetItemType()], rk)
 		}
 	}
 }
