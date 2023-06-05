@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -15,18 +14,6 @@ import (
 
 // Buffer defaults.
 const DefaultConnectionBuffer = 32 * 1024
-
-func SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	switch p {
-	case mesh_proto.MeshGateway_Listener_HTTP,
-		mesh_proto.MeshGateway_Listener_HTTPS,
-		mesh_proto.MeshGateway_Listener_TCP,
-		mesh_proto.MeshGateway_Listener_TLS:
-		return true
-	default:
-		return false
-	}
-}
 
 type RuntimeResoureLimitListener struct {
 	Name            string

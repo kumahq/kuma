@@ -211,11 +211,6 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	var limits []RuntimeResoureLimitListener
 
 	for _, info := range listenerInfos {
-		// This is checked by the gateway validator
-		if !SupportsProtocol(info.Listener.Protocol) {
-			return nil, errors.New("no support for protocol")
-		}
-
 		cdsResources, err := g.generateCDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
