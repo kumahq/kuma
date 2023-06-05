@@ -390,6 +390,15 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
+			Routing: core_xds.Routing{
+				OutboundTargets: core_xds.EndpointMap{
+					"backend": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "http",
+						},
+					}},
+				},
+			},
 		}
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
@@ -410,7 +419,7 @@ var _ = Describe("MeshTimeout", func() {
 		toRules: core_xds.ToRules{
 			Rules: []*core_xds.Rule{
 				{
-					Subset: core_xds.Subset{},
+					Subset: core_xds.MeshSubset(),
 					Conf: api.Conf{
 						ConnectionTimeout: test.ParseDuration("10s"),
 						IdleTimeout:       test.ParseDuration("1h"),
@@ -428,7 +437,7 @@ var _ = Describe("MeshTimeout", func() {
 		toRules: core_xds.ToRules{
 			Rules: []*core_xds.Rule{
 				{
-					Subset: core_xds.Subset{},
+					Subset: core_xds.MeshSubset(),
 					Conf: api.Conf{
 						ConnectionTimeout: test.ParseDuration("10s"),
 						IdleTimeout:       test.ParseDuration("1h"),
