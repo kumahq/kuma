@@ -20,7 +20,8 @@ func SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	switch p {
 	case mesh_proto.MeshGateway_Listener_HTTP,
 		mesh_proto.MeshGateway_Listener_HTTPS,
-		mesh_proto.MeshGateway_Listener_TCP:
+		mesh_proto.MeshGateway_Listener_TCP,
+		mesh_proto.MeshGateway_Listener_TLS:
 		return true
 	default:
 		return false

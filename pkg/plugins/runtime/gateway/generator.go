@@ -375,15 +375,7 @@ func MakeGatewayListener(
 
 		allRoutes := match.Routes(meshContext.Resources.GatewayRoutes().Items, l.GetTags())
 
-		var routes []*core_mesh.MeshGatewayRouteResource
-		switch listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP,
-			mesh_proto.MeshGateway_Listener_HTTPS,
-			mesh_proto.MeshGateway_Listener_TCP:
-
-			routes = route.FilterProtocols(allRoutes, listener.Protocol)
-		default:
-		}
+		routes := route.FilterProtocols(allRoutes, listener.Protocol)
 
 		host := GatewayHost{
 			Hostname: hostname,

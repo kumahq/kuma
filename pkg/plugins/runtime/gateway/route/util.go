@@ -63,7 +63,8 @@ func FilterProtocols(routes []*core_mesh.MeshGatewayRouteResource, protocol mesh
 				filtered = append(filtered, route)
 			}
 		case *mesh_proto.MeshGatewayRoute_Conf_Tcp:
-			if protocol == mesh_proto.MeshGateway_Listener_TCP {
+			if protocol == mesh_proto.MeshGateway_Listener_TCP ||
+				protocol == mesh_proto.MeshGateway_Listener_TLS {
 				filtered = append(filtered, route)
 			}
 		default:
