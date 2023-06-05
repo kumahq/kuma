@@ -36,7 +36,7 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Get Involved
 
-- [Join the Kuma Slack](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1wi2o3uok-x0KmKJiSzjQy7NgNkC8IAA) or the #kuma channel in the [CNCF Slack](https://slack.cncf.io/). 
+- [Join the Kuma Slack](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1wi2o3uok-x0KmKJiSzjQy7NgNkC8IAA) or the #kuma channel in the [CNCF Slack](https://slack.cncf.io/) exists but is not actively in use. 
 - Attend a [Community Call](https://docs.google.com/document/d/1HgnK3wJIEg8uFlivdrhrPZYWTpElWWu3mhFDXj-bMWQ/edit?usp=sharing) monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
 - Follow us on [Twitter](https://twitter.com/kumamesh)
 - Read the [blog](https://kuma.io/blog/)
