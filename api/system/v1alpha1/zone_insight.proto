@@ -20,6 +20,18 @@ message ZoneInsight {
 
   // List of KDS subscriptions created by a given Zone Kuma CP.
   repeated KDSSubscription subscriptions = 1;
+
+  // Statistics about Envoy Admin Streams
+  EnvoyAdminStreams envoy_admin_streams = 2;
+}
+
+message EnvoyAdminStreams {
+  // Global instance ID that handles XDS Config Dump streams.
+  string config_dump_global_instance_id = 1;
+  // Global instance ID that handles Stats streams.
+  string stats_global_instance_id = 2;
+  // Global instance ID that handles Clusters streams.
+  string clusters_global_instance_id = 3;
 }
 
 // KDSSubscription describes a single KDS subscription

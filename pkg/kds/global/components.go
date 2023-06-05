@@ -147,7 +147,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.KDSContext().ServerStreamInterceptors,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
-		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
+		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs, rt.ResourceManager(), rt.GetInstanceId()),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
