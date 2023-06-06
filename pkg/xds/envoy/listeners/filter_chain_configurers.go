@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common_v2 "github.com/kumahq/kuma/pkg/xds/envoy/common"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
@@ -194,11 +195,12 @@ func Retry(
 	if retry == nil {
 		return FilterChainBuilderOptFunc(nil)
 	}
-
-	return AddFilterChainConfigurer(&v3.RetryConfigurer{
-		Retry:    retry,
-		Protocol: protocol,
-	})
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			for _, virtualHost := range hcm.GetRouteConfig().VirtualHosts {
+				virtualHost.RetryPolicy = envoy_common_v2.RetryConfig(retry, protocol)
+			}
+	}))
 }
 
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) FilterChainBuilderOpt {

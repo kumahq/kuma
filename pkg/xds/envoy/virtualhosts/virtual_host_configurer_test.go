@@ -1,4 +1,4 @@
-package routes_test
+package virtualhosts_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"

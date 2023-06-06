@@ -10,8 +10,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGateway!\n"
@@ -20,19 +20,19 @@ const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGa
 func GenerateVirtualHost(
 	ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost, routes []route.Entry,
 ) (
-	*envoy_routes.VirtualHostBuilder, error,
+	*envoy_virtual_hosts.VirtualHostBuilder, error,
 ) {
-	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		envoy_routes.CommonVirtualHost(host.Hostname),
-		envoy_routes.DomainNames(host.Hostname),
+	vh := envoy_virtual_hosts.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
+		envoy_virtual_hosts.CommonVirtualHost(host.Hostname),
+		envoy_virtual_hosts.DomainNames(host.Hostname),
 	)
 
 	// Ensure that we get TLS on HTTPS protocol listeners or crossMesh.
 	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS || info.Listener.CrossMesh {
 		vh.Configure(
-			envoy_routes.RequireTLS(),
+			envoy_virtual_hosts.RequireTLS(),
 			// Set HSTS header to 1 year.
-			envoy_routes.SetResponseHeader(
+			envoy_virtual_hosts.SetResponseHeader(
 				"Strict-Transport-Security",
 				"max-age=31536000; includeSubDomains",
 			),
@@ -174,53 +174,8 @@ func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) [
 		return nil
 	}
 
-	methodStrings := func(methods []mesh_proto.HttpMethod) []string {
-		var names []string
-		for _, m := range methods {
-			if m != mesh_proto.HttpMethod_NONE {
-				names = append(names, m.String())
-			}
-		}
-		return names
-	}
-
-	grpcConditionStrings := func(conditions []mesh_proto.Retry_Conf_Grpc_RetryOn) []string {
-		var names []string
-		for _, c := range conditions {
-			names = append(names, c.String())
-		}
-		return names
-	}
-
-	configurers := []route.RouteConfigurer{
+	return []route.RouteConfigurer{
 		route.RouteActionRetryDefault(protocol),
+		route.RouteActionRetry(retry, protocol),
 	}
-
-	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-		conf := retry.Spec.GetConf().GetHttp()
-		configurers = append(configurers,
-			route.RouteActionRetryOnStatus(conf.GetRetriableStatusCodes()...),
-			route.RouteActionRetryMethods(methodStrings(conf.GetRetriableMethods())...),
-			route.RouteActionRetryTimeout(conf.GetPerTryTimeout().AsDuration()),
-			route.RouteActionRetryCount(conf.GetNumRetries().GetValue()),
-			route.RouteActionRetryBackoff(
-				conf.GetBackOff().GetBaseInterval().AsDuration(),
-				conf.GetBackOff().GetMaxInterval().AsDuration()),
-			route.RouteActionHttpRetryOn(conf.GetRetryOn()),
-		)
-	case core_mesh.ProtocolGRPC:
-		conf := retry.Spec.GetConf().GetGrpc()
-		configurers = append(configurers,
-			route.RouteActionRetryOnConditions(grpcConditionStrings(conf.GetRetryOn())...),
-			route.RouteActionRetryTimeout(conf.GetPerTryTimeout().AsDuration()),
-			route.RouteActionRetryCount(conf.GetNumRetries().GetValue()),
-			route.RouteActionRetryBackoff(
-				conf.GetBackOff().GetBaseInterval().AsDuration(),
-				conf.GetBackOff().GetMaxInterval().AsDuration()),
-			route.RouteActionGrpcRetryOn(conf.GetRetryOn()),
-		)
-	}
-
-	return configurers
 }

@@ -1,11 +1,9 @@
-package v3
+package common
 
 import (
 	"strings"
 
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -20,11 +18,6 @@ const (
 	GrpcRetryOnDefault              = "cancelled,connect-failure," +
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
-
-type RetryConfigurer struct {
-	Retry    *core_mesh.RetryResource
-	Protocol core_mesh.Protocol
-}
 
 func genGrpcRetryPolicy(
 	conf *mesh_proto.Retry_Conf_Grpc,
@@ -150,33 +143,20 @@ func GrpcRetryOn(conf []mesh_proto.Retry_Conf_Grpc_RetryOn) string {
 	return strings.Join(retryOn, ",")
 }
 
-func (c *RetryConfigurer) Configure(
-	filterChain *envoy_listener.FilterChain,
-) error {
-	if c.Retry == nil {
+func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *envoy_route.RetryPolicy {
+	if retry == nil {
 		return nil
 	}
-
-	updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
-		var policy *envoy_route.RetryPolicy
-
-		switch c.Protocol {
-		case "http":
-			policy = genHttpRetryPolicy(c.Retry.Spec.Conf.GetHttp())
-		case "grpc":
-			policy = genGrpcRetryPolicy(c.Retry.Spec.Conf.GetGrpc())
-		default:
-			return nil
-		}
-
-		for _, virtualHost := range manager.GetRouteConfig().VirtualHosts {
-			virtualHost.RetryPolicy = policy
-		}
-
+	var policy *envoy_route.RetryPolicy
+	switch protocol {
+	case "http":
+		policy = genHttpRetryPolicy(retry.Spec.Conf.GetHttp())
+	case "grpc":
+		policy = genGrpcRetryPolicy(retry.Spec.Conf.GetGrpc())
+	default:
 		return nil
 	}
-
-	return UpdateHTTPConnectionManager(filterChain, updateFunc)
+	return policy	
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {

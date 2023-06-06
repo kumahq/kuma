@@ -1,4 +1,4 @@
-package v3_test
+package common_test
 
 import (
 	"time"
