@@ -127,9 +127,13 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 		return err
 	}
 
-	others, err := r.findOtherDataplanes(ctx, pod, &ns)
-	if err != nil {
-		return err
+	var others []*mesh_k8s.Dataplane
+	// we don't need other Dataplane objects when outbounds are stored in ConfigMap
+	if !r.PodConverter.KubeOutboundsAsVIPs {
+		others, err = r.findOtherDataplanes(ctx, pod, &ns)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services, others); err != nil {
