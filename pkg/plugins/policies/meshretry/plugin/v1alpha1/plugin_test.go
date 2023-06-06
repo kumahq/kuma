@@ -444,7 +444,7 @@ func tcpListener(port uint32) envoy_common.NamedResource {
 	return NewListenerBuilder(envoy_common.APIV3).
 		Configure(OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(TcpProxy(
+			Configure(TcpProxyDeprecated(
 				fmt.Sprintf("outbound:127.0.0.1:%d", port),
 				envoy_common.NewCluster(
 					envoy_common.WithService("backend"),

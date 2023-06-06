@@ -111,12 +111,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			case core_mesh.ProtocolKafka:
 				filterChainBuilder.
 					Configure(envoy_listeners.Kafka(localClusterName)).
-					Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+					Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			case core_mesh.ProtocolTCP:
 				fallthrough
 			default:
 				// configuration for non-HTTP cases
-				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+				filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			}
 			if serverSideMTLS {
 				filterChainBuilder.

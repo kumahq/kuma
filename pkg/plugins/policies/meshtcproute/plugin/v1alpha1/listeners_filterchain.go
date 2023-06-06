@@ -11,7 +11,7 @@ func buildFilterChain(
 	serviceName string,
 	splits []envoy_common.Split,
 ) envoy_listeners.ListenerBuilderOpt {
-	tcpProxy := envoy_listeners.TCPProxyFromSplits(serviceName, splits...)
+	tcpProxy := envoy_listeners.TCPProxy(serviceName, splits...)
 	builder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 		Configure(tcpProxy)
 

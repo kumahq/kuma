@@ -86,7 +86,7 @@ func (s *splitAdapter) Weight() uint32           { return s.weight }
 func (s *splitAdapter) LBMetadata() tags.Tags    { return s.lbMetadata }
 func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
 
-func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
 		splits = append(splits, &splitAdapter{
@@ -103,7 +103,7 @@ func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBui
 	})
 }
 
-func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
 		splits = append(splits, &splitAdapter{
@@ -120,7 +120,7 @@ func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) Fi
 	})
 }
 
-func TCPProxyFromSplits(statsName string, splits ...envoy_common.Split) FilterChainBuilderOpt {
+func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
 		Splits:      splits,

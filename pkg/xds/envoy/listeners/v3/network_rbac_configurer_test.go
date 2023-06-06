@@ -32,7 +32,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(TcpProxy(given.statsName, given.clusters...)).
+					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).
 				Build()
 			// then
