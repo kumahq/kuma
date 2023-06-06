@@ -173,14 +173,6 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 					path.Index(i).Field("tls").Field("mode"),
 					"mode is not supported on HTTPS listeners")
 			}
-		case mesh_proto.MeshGateway_Listener_TLS:
-			// TODO support termination
-			switch l.GetTls().GetMode() {
-			case mesh_proto.MeshGateway_TLS_TERMINATE:
-				err.AddViolationAt(
-					path.Index(i).Field("tls").Field("mode"),
-					"mode is not yet supported on TLS listeners")
-			}
 		}
 
 		if tls := l.GetTls(); tls != nil && !l.GetCrossMesh() {
