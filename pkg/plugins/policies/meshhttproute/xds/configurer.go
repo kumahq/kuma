@@ -1,7 +1,6 @@
 package xds
 
 import (
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"strings"
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
