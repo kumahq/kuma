@@ -146,7 +146,7 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: NewListenerBuilder(envoy_common.APIV3).
 						Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-							Configure(TcpProxy(
+							Configure(TcpProxyDeprecated(
 								"127.0.0.1:10002",
 								envoy_common.NewCluster(
 									envoy_common.WithService("backend"),

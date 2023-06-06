@@ -12,13 +12,13 @@ import (
 
 type TcpProxyConfigurer struct {
 	StatsName string
-	// Clusters to forward traffic to.
-	Clusters    []envoy_common.Cluster
+	// Splits to forward traffic to.
+	Splits      []envoy_common.Split
 	UseMetadata bool
 }
 
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	if len(c.Clusters) == 0 {
+	if len(c.Splits) == 0 {
 		return nil
 	}
 	tcpProxy := c.tcpProxy()
@@ -42,24 +42,24 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
 	}
 
-	if len(c.Clusters) == 1 {
+	if len(c.Splits) == 1 {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
-			Cluster: c.Clusters[0].Name(),
+			Cluster: c.Splits[0].ClusterName(),
 		}
 		if c.UseMetadata {
-			proxy.MetadataMatch = envoy_metadata.LbMetadata(c.Clusters[0].Tags())
+			proxy.MetadataMatch = envoy_metadata.LbMetadata(c.Splits[0].LBMetadata())
 		}
 		return &proxy
 	}
 
 	var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
-	for _, cluster := range c.Clusters {
+	for _, split := range c.Splits {
 		weightedCluster := &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
-			Name:   cluster.Name(),
-			Weight: cluster.Weight(),
+			Name:   split.ClusterName(),
+			Weight: split.Weight(),
 		}
 		if c.UseMetadata {
-			weightedCluster.MetadataMatch = envoy_metadata.LbMetadata(cluster.Tags())
+			weightedCluster.MetadataMatch = envoy_metadata.LbMetadata(split.LBMetadata())
 		}
 		weightedClusters = append(weightedClusters, weightedCluster)
 	}

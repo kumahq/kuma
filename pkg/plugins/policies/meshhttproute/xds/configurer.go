@@ -12,12 +12,13 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type RoutesConfigurer struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
-	Split                   []*plugins_xds.Split
+	Split                   []envoy_common.Split
 	BackendRefToClusterName map[string]string
 }
 
@@ -200,7 +201,7 @@ func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.Que
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(split []*plugins_xds.Split) bool {
+func (c RoutesConfigurer) hasExternal(split []envoy_common.Split) bool {
 	for _, s := range split {
 		if s.HasExternalService() {
 			return true
@@ -209,7 +210,7 @@ func (c RoutesConfigurer) hasExternal(split []*plugins_xds.Split) bool {
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(split []*plugins_xds.Split) *envoy_route.RouteAction {
+func (c RoutesConfigurer) routeAction(split []envoy_common.Split) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{
 		// this timeout should be updated by the MeshTimeout plugin
 		Timeout: util_proto.Duration(0),

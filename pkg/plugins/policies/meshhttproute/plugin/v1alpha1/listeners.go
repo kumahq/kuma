@@ -10,7 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -52,17 +52,17 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
-		protocol := policies_xds.InferProtocol(proxy.Routing, serviceName)
+		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
+			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
 			if split == nil {
 				continue
 			}
 			for _, filter := range route.Filters {
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
-					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+					_ = meshroute_xds.MakeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
@@ -168,72 +168,4 @@ func prepareRoutes(
 	}
 
 	return routes
-}
-
-func makeHTTPSplit(
-	proxy *core_xds.Proxy,
-	clusterCache map[string]string,
-	sc *meshroute_xds.SplitCounter,
-	servicesAcc envoy_common.ServicesAccumulator,
-	refs []common_api.BackendRef,
-) []*policies_xds.Split {
-	var split []*policies_xds.Split
-
-	for _, ref := range refs {
-		switch ref.Kind {
-		case common_api.MeshService, common_api.MeshServiceSubset:
-		default:
-			continue
-		}
-
-		service := ref.Name
-		if pointer.DerefOr(ref.Weight, 1) == 0 {
-			continue
-		}
-
-		switch policies_xds.InferProtocol(proxy.Routing, service) {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-		default:
-			// We don't support splitting if at least one of the backendRefs is not HTTP
-			return nil
-		}
-
-		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
-		isExternalService := policies_xds.HasExternalService(proxy.Routing, service)
-		refHash := ref.TargetRef.Hash()
-
-		if existingClusterName, ok := clusterCache[refHash]; ok {
-			// cluster already exists, so adding only split
-			split = append(split, policies_xds.NewSplitBuilder().
-				WithClusterName(existingClusterName).
-				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-				WithExternalService(isExternalService).
-				Build())
-			continue
-		}
-
-		clusterCache[refHash] = clusterName
-
-		split = append(split, policies_xds.NewSplitBuilder().
-			WithClusterName(clusterName).
-			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
-			WithExternalService(isExternalService).
-			Build())
-
-		clusterBuilder := policies_xds.NewClusterBuilder().
-			WithService(service).
-			WithName(clusterName).
-			WithTags(envoy_tags.Tags(ref.Tags).
-				WithTags(mesh_proto.ServiceTag, ref.Name).
-				WithoutTags(mesh_proto.MeshTag)).
-			WithExternalService(isExternalService)
-
-		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-			clusterBuilder.WithMesh(mesh)
-		}
-
-		servicesAcc.Add(clusterBuilder.Build())
-	}
-
-	return split
 }

@@ -25,7 +25,7 @@ func generateListeners(
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[string]struct{}{}
+	clusterCache := map[string]string{}
 	sc := &meshroute_xds.SplitCounter{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	routing := proxy.Routing
@@ -43,9 +43,8 @@ func generateListeners(
 			continue
 		}
 
-		clusters := getClusters(routing, clusterCache, sc, servicesAccumulator,
-			backendRefs)
-		filterChain := buildFilterChain(proxy, serviceName, clusters)
+		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, sc, servicesAccumulator, backendRefs)
+		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)
 		if err != nil {

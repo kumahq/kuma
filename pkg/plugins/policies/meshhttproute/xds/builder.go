@@ -15,7 +15,7 @@ import (
 type OutboundRoute struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
-	Split                   []*plugins_xds.Split
+	Split                   []envoy_common.Split
 	BackendRefToClusterName map[string]string
 }
 
