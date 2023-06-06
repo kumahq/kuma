@@ -157,7 +157,6 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 	if err := f.resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err
 	}
-	zoneInsightRes.Spec.GetEnvoyAdminStreams().GetConfigDumpGlobalInstanceId()
 	streams := zoneInsightRes.Spec.GetEnvoyAdminStreams()
 	var globalInstanceID string
 	switch rpcName {
