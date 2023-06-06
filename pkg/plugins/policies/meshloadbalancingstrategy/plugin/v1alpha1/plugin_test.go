@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -202,10 +202,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
-							ToRules: core_xds.ToRules{
-								Rules: []*rules.Rule{
+							ToRules: core_rules.ToRules{
+								Rules: []*core_rules.Rule{
 									{
-										Subset: rules.MeshService("backend"),
+										Subset: core_rules.MeshService("backend"),
 										Conf: v1alpha1.Conf{
 											LoadBalancer: &v1alpha1.LoadBalancer{
 												Type: v1alpha1.RandomType,
@@ -213,7 +213,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 									{
-										Subset: rules.MeshService("payment"),
+										Subset: core_rules.MeshService("payment"),
 										Conf: v1alpha1.Conf{
 											LoadBalancer: &v1alpha1.LoadBalancer{
 												Type: v1alpha1.RingHashType,
@@ -335,8 +335,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"eds-cluster": {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
-										FromRules: core_xds.FromRules{
-											Rules: map[core_xds.InboundListener]rules.Rules{
+										FromRules: core_rules.FromRules{
+											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
 												},
@@ -351,8 +351,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"static-cluster": {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
-										FromRules: core_xds.FromRules{
-											Rules: map[core_xds.InboundListener]rules.Rules{
+										FromRules: core_rules.FromRules{
+											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
 												},
@@ -369,7 +369,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 	)
 	type gatewayTestCase struct {
 		name    string
-		toRules core_xds.ToRules
+		toRules core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -419,10 +419,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: v1alpha1.Conf{
 							LoadBalancer: &v1alpha1.LoadBalancer{
 								Type: v1alpha1.RingHashType,

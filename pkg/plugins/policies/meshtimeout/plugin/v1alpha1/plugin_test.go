@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
@@ -33,8 +33,8 @@ import (
 var _ = Describe("MeshTimeout", func() {
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		toRules           core_xds.ToRules
-		fromRules         core_xds.FromRules
+		toRules           core_rules.ToRules
+		fromRules         core_rules.FromRules
 		expectedListeners []string
 		expectedClusters  []string
 	}
@@ -115,10 +115,10 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName("other-service-_0_"),
 				},
 			},
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
@@ -162,10 +162,10 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName("second-service"),
 				},
 			},
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{rules.Tag{
+						Subset: core_rules.Subset{core_rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -192,14 +192,14 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    80,
-					}: []*rules.Rule{
+					}: []*core_rules.Rule{
 						{
-							Subset: rules.Subset{},
+							Subset: core_rules.Subset{},
 							Conf: api.Conf{
 								ConnectionTimeout: test.ParseDuration("10s"),
 								IdleTimeout:       test.ParseDuration("1h"),
@@ -230,10 +230,10 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{
+						Subset: core_rules.Subset{
 							{
 								Key:   mesh_proto.ServiceTag,
 								Value: "other-service",
@@ -272,10 +272,10 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{
+						Subset: core_rules.Subset{
 							{
 								Key:   mesh_proto.ServiceTag,
 								Value: "other-service",
@@ -314,14 +314,14 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    80,
-					}: []*rules.Rule{
+					}: []*core_rules.Rule{
 						{
-							Subset: rules.Subset{},
+							Subset: core_rules.Subset{},
 							Conf: api.Conf{
 								ConnectionTimeout: test.ParseDuration("10s"),
 								IdleTimeout:       test.ParseDuration("1h"),
@@ -368,7 +368,7 @@ var _ = Describe("MeshTimeout", func() {
 	)
 
 	type gatewayTestCase struct {
-		toRules core_xds.ToRules
+		toRules core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
@@ -417,10 +417,10 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 	}, Entry("basic", gatewayTestCase{
-		toRules: core_xds.ToRules{
-			Rules: []*rules.Rule{
+		toRules: core_rules.ToRules{
+			Rules: []*core_rules.Rule{
 				{
-					Subset: rules.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf: api.Conf{
 						ConnectionTimeout: test.ParseDuration("10s"),
 						IdleTimeout:       test.ParseDuration("1h"),
@@ -435,10 +435,10 @@ var _ = Describe("MeshTimeout", func() {
 			},
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
-		toRules: core_xds.ToRules{
-			Rules: []*rules.Rule{
+		toRules: core_rules.ToRules{
+			Rules: []*core_rules.Rule{
 				{
-					Subset: rules.MeshSubset(),
+					Subset: core_rules.MeshSubset(),
 					Conf: api.Conf{
 						ConnectionTimeout: test.ParseDuration("10s"),
 						IdleTimeout:       test.ParseDuration("1h"),

@@ -1,7 +1,7 @@
 package v1alpha1_test
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -32,7 +32,7 @@ import (
 var _ = Describe("MeshFaultInjection", func() {
 	type sidecarTestCase struct {
 		resources         []*core_xds.Resource
-		fromRules         core_xds.FromRules
+		fromRules         core_rules.FromRules
 		expectedListeners []string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -115,10 +115,10 @@ var _ = Describe("MeshFaultInjection", func() {
 						)).MustBuild(),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: rules.Subset{
+						Subset: core_rules.Subset{
 							{
 								Key:   "kuma.io/service",
 								Value: "demo-client",
@@ -144,7 +144,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Http: &[]api.FaultInjectionConf{
 								{
@@ -172,10 +172,10 @@ var _ = Describe("MeshFaultInjection", func() {
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
-		fromRules := core_xds.FromRules{
-			Rules: map[core_xds.InboundListener]rules.Rules{
+		fromRules := core_rules.FromRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: rules.Subset{},
+					Subset: core_rules.Subset{},
 					Conf: api.Conf{
 						Http: &[]api.FaultInjectionConf{
 							{

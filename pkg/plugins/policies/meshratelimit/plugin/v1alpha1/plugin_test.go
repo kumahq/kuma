@@ -1,7 +1,6 @@
 package v1alpha1_test
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -36,7 +36,7 @@ import (
 var _ = Describe("MeshRateLimit", func() {
 	type sidecarTestCase struct {
 		resources            []*core_xds.Resource
-		fromRules            core_xds.FromRules
+		fromRules            core_rules.FromRules
 		inboundRateLimitsMap core_xds.InboundRateLimitsMap
 		expectedListeners    []string
 	}
@@ -119,10 +119,10 @@ var _ = Describe("MeshRateLimit", func() {
 						)).MustBuild(),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -153,7 +153,7 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -210,10 +210,10 @@ var _ = Describe("MeshRateLimit", func() {
 						)).MustBuild(),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -289,10 +289,10 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
 			}},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
@@ -330,10 +330,10 @@ var _ = Describe("MeshRateLimit", func() {
 						),
 					)).MustBuild(),
 			}},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -358,10 +358,10 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
 			}},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
@@ -398,10 +398,10 @@ var _ = Describe("MeshRateLimit", func() {
 						),
 					)).MustBuild(),
 			}},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]rules.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -419,10 +419,10 @@ var _ = Describe("MeshRateLimit", func() {
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
-		fromRules := core_xds.FromRules{
-			Rules: map[core_xds.InboundListener]rules.Rules{
+		fromRules := core_rules.FromRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: rules.Subset{},
+					Subset: core_rules.Subset{},
 					Conf: api.Conf{
 						Local: &api.Local{
 							HTTP: &api.LocalHTTP{

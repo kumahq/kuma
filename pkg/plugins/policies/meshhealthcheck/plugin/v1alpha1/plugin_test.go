@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"path/filepath"
 
@@ -17,6 +16,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -41,7 +41,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	grpcServiceTag := "echo-grpc"
 	type testCase struct {
 		resources        []core_xds.Resource
-		toRules          core_xds.ToRules
+		toRules          core_rules.ToRules
 		expectedClusters []string
 	}
 	httpClusters := []core_xds.Resource{
@@ -165,10 +165,10 @@ var _ = Describe("MeshHealthCheck", func() {
 		},
 		Entry("HTTP HealthCheck", testCase{
 			resources: httpClusters,
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
 							Timeout:                      test.ParseDuration("2s"),
@@ -213,10 +213,10 @@ var _ = Describe("MeshHealthCheck", func() {
 		}),
 		Entry("TCP HealthCheck", testCase{
 			resources: tcpCluster,
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -236,10 +236,10 @@ var _ = Describe("MeshHealthCheck", func() {
 
 		Entry("gRPC HealthCheck", testCase{
 			resources: grpcCluster,
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -259,7 +259,7 @@ var _ = Describe("MeshHealthCheck", func() {
 
 	type gatewayTestCase struct {
 		name    string
-		toRules core_xds.ToRules
+		toRules core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -305,10 +305,10 @@ var _ = Describe("MeshHealthCheck", func() {
 		},
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
 			name: "basic",
-			toRules: core_xds.ToRules{
-				Rules: []*rules.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: rules.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
 							Timeout:                      test.ParseDuration("2s"),

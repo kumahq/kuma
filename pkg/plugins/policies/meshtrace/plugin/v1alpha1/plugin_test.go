@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -27,7 +27,7 @@ import (
 var _ = Describe("MeshTrace", func() {
 	type testCase struct {
 		resources         []core_xds.Resource
-		singleItemRules   core_xds.SingleItemRules
+		singleItemRules   core_rules.SingleItemRules
 		expectedListeners []string
 		expectedClusters  []string
 	}
@@ -108,10 +108,10 @@ var _ = Describe("MeshTrace", func() {
 		},
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),
-			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*rules.Rule{
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: []rules.Tag{},
+						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -246,10 +246,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("inbound/outbound for opentelemetry", testCase{
 			resources: inboundAndOutbound(),
-			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*rules.Rule{
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: []rules.Tag{},
+						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -381,10 +381,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
-			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*rules.Rule{
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: []rules.Tag{},
+						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Sampling: &api.Sampling{
 								Random: pointer.To(intstr.FromInt(50)),
@@ -472,10 +472,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("sampling is empty", testCase{
 			resources: inboundAndOutbound(),
-			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*rules.Rule{
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: []rules.Tag{},
+						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -566,10 +566,10 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),
-			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*rules.Rule{
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: []rules.Tag{},
+						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{},
 						},
