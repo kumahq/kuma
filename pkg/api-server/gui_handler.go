@@ -38,6 +38,9 @@ type GuiConfig struct {
 	Version     string `json:"version"`
 	BasedOnKuma string `json:"basedOnKuma,omitempty"`
 	Product     string `json:"product"`
+	Mode        string `json:"mode"`
+	Environment string `json:"environment"`
+	ReadOnly    bool   `json:"apiReadOnly"`
 }
 
 func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.Handler, error) {
