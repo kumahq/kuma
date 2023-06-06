@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -13,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
@@ -94,8 +96,22 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 }
 
 func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, instance string) error {
+	key := model.ResourceKey{Name: zone}
+
+	// wait for Zone to be created, only then we can create Zone Insight
+	err := retry.Do(
+		ctx,
+		retry.WithMaxRetries(30, retry.NewConstant(1*time.Second)),
+		func(ctx context.Context) error {
+			return retry.RetryableError(g.resManager.Get(ctx, system.NewZoneResource(), core_store.GetBy(key)))
+		},
+	)
+	if err != nil {
+		return err
+	}
+
 	zoneInsight := system.NewZoneInsightResource()
-	return manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone}, zoneInsight, func(resource model.Resource) error {
+	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
 		if zoneInsight.Spec.EnvoyAdminStreams == nil {
 			zoneInsight.Spec.EnvoyAdminStreams = &v1alpha1.EnvoyAdminStreams{}
 		}

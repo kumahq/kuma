@@ -199,7 +199,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),
@@ -255,7 +255,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),
@@ -314,7 +314,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),
@@ -376,7 +376,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),
@@ -433,7 +433,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("other-service"),
@@ -447,7 +447,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27778", "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27778",
 							envoy_common.NewCluster(
 								envoy_common.WithService("foo-service"),
@@ -461,7 +461,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27779", "127.0.0.1", 27779, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27779",
 							envoy_common.NewCluster(
 								envoy_common.WithService("bar-service"),
@@ -650,7 +650,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),
@@ -710,7 +710,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
+						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
 								envoy_common.WithService("backend"),

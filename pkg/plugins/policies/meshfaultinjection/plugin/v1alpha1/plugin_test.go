@@ -110,7 +110,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Resource: NewListenerBuilder(envoy_common.APIV3).
 						Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-							Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
 				},
 			},

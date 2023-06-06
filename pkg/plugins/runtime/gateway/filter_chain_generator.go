@@ -422,7 +422,7 @@ func (g *TCPFilterChainGenerator) Generate(
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
 	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
-		envoy_listeners.TcpProxy(service, clusters...),
+		envoy_listeners.TcpProxyDeprecated(service, clusters...),
 		envoy_listeners.NetworkAccessLog(
 			ctx.Mesh.Resource.Meta.GetName(),
 			envoy.TrafficDirectionInbound,
