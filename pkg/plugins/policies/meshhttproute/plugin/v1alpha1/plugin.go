@@ -1,9 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -11,6 +8,9 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"

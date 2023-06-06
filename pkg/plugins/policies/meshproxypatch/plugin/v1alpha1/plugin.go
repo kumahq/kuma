@@ -1,13 +1,13 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )

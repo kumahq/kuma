@@ -1,9 +1,10 @@
 package rules_test
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 )
 
 var _ = Describe("MergeConfs", func() {

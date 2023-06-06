@@ -1,8 +1,9 @@
 package rules_test
 
 import (
-	"github.com/kumahq/kuma/pkg/test"
 	"testing"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestRules(t *testing.T) {

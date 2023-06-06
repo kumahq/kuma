@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"

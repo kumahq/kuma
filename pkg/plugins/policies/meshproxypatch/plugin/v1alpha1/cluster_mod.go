@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

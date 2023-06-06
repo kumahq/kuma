@@ -2,9 +2,6 @@ package v1alpha1
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -12,6 +9,9 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"

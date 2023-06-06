@@ -2,8 +2,6 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,6 +12,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"

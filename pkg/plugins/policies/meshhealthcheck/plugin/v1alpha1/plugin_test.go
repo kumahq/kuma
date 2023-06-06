@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"fmt"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -17,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"

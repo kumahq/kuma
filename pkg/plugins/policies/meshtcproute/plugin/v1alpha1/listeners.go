@@ -1,13 +1,13 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"

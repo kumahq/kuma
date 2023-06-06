@@ -1,9 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -14,6 +11,9 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"

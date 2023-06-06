@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/pkg/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 const (

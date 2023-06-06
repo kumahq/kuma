@@ -2,9 +2,6 @@ package v1alpha1
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -16,6 +13,9 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"

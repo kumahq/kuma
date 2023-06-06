@@ -2,10 +2,10 @@ package xds_test
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"

@@ -3,10 +3,10 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"

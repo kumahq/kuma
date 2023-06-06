@@ -1,13 +1,13 @@
 package validators_test
 
 import (
-	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
 )
 
 var _ = Describe("JsonPatchBlock Validator", func() {
