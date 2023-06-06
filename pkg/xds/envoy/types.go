@@ -24,6 +24,13 @@ type Cluster interface {
 	IsExternalService() bool
 }
 
+type Split interface {
+	ClusterName() string
+	Weight() uint32
+	LBMetadata() tags.Tags
+	HasExternalService() bool
+}
+
 // Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go
 type ClusterImpl struct {
 	service           string

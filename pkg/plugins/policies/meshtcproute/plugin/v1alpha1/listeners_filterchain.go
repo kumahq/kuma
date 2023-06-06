@@ -9,9 +9,9 @@ import (
 func buildFilterChain(
 	proxy *core_xds.Proxy,
 	serviceName string,
-	clusters []envoy_common.Cluster,
+	splits []envoy_common.Split,
 ) envoy_listeners.ListenerBuilderOpt {
-	tcpProxy := envoy_listeners.TcpProxy(serviceName, clusters...)
+	tcpProxy := envoy_listeners.TCPProxyFromSplits(serviceName, splits...)
 	builder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 		Configure(tcpProxy)
 

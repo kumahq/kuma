@@ -50,13 +50,35 @@ func GetClusterName(
 	return name
 }
 
+func MakeTCPSplit(
+	proxy *core_xds.Proxy,
+	clusterCache map[string]string,
+	sc *SplitCounter,
+	servicesAcc envoy_common.ServicesAccumulator,
+	refs []common_api.BackendRef,
+) []envoy_common.Split {
+	return makeSplit(
+		proxy,
+		map[core_mesh.Protocol]struct{}{
+			core_mesh.ProtocolUnknown: {},
+			core_mesh.ProtocolTCP:     {},
+			core_mesh.ProtocolHTTP:    {},
+			core_mesh.ProtocolHTTP2:   {},
+		},
+		clusterCache,
+		sc,
+		servicesAcc,
+		refs,
+	)
+}
+
 func MakeHTTPSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[string]string,
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-) []*plugins_xds.Split {
+) []envoy_common.Split {
 	return makeSplit(
 		proxy,
 		map[core_mesh.Protocol]struct{}{
@@ -77,8 +99,8 @@ func makeSplit(
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-) []*plugins_xds.Split {
-	var split []*plugins_xds.Split
+) []envoy_common.Split {
+	var split []envoy_common.Split
 
 	for _, ref := range refs {
 		switch ref.Kind {
