@@ -94,96 +94,21 @@ func (g *HTTPSFilterChainGenerator) Generate(
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
 	for _, host := range hosts {
-		hostResources := core_xds.NewResourceSet()
-		log.V(1).Info("generating filter chain",
-			"hostname", host.Hostname,
-		)
+		log.V(1).Info("generating filter chain", "hostname", host.Hostname)
 
 		builder := newHTTPFilterChain(ctx.Mesh, info)
 
-		builder.Configure(
-			envoy_listeners.MatchTransportProtocol("tls"),
+		hostResources, err := configureTLS(
+			ctx,
+			info,
+			host.TLS,
+			[]string{host.Hostname},
+			builder,
+			[]string{"h2", "http/1.1"},
 		)
-
-		mode := mesh_proto.MeshGateway_TLS_NONE
-		if host.TLS != nil {
-			mode = host.TLS.GetMode()
-		}
-
-		downstream := newDownstreamTypedConfig()
-
-		switch mode {
-		case mesh_proto.MeshGateway_TLS_TERMINATE:
-			builder.Configure(
-				envoy_listeners.MatchServerNames(host.Hostname),
-			)
-
-			// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
-			for _, cert := range host.TLS.GetCertificates() {
-				secret, err := g.generateCertificateSecret(ctx.Mesh, host, cert)
-				if err != nil {
-					return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
-				}
-
-				if hostResources.Contains(secret.Name, secret) {
-					return nil, nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
-				}
-
-				resource := NewResource(secret.Name, secret)
-
-				hostResources.Add(resource)
-
-				downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(
-					downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs, envoy_tls_v3.NewSecretConfigSource(resource.Name),
-				)
-			}
-
-		case mesh_proto.MeshGateway_TLS_NONE:
-			if !info.Listener.CrossMesh {
-				return nil, nil, errors.Errorf("unsupported TLS mode %q", mode)
-			}
-
-			// We don't match on the SNI here since it won't be the hostname
-			// here but rather an SNI based on the kuma.io/service
-			builder.Configure(envoy_listeners.MatchApplicationProtocols("kuma"))
-
-			if !ctx.Mesh.Resource.MTLSEnabled() {
-				return nil, nil, errors.New("mTLS must be enabled for crossMesh-enabled MeshGateways")
-			}
-
-			var err error
-			// We generate a downstream context using the envoy helpers
-			// and we don't want to match a SAN because it can be any mesh
-			downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(info.Proxy.SecretsTracker.RequestAllInOneCa(), info.Proxy.SecretsTracker.RequestIdentityCert())
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
-			}
-
-			downstream.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.MatchTypedSubjectAltNames = nil
-
-			hostResources.AddSet(resources)
-
-		default:
-			return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
-		}
-
-		any, err := util_proto.MarshalAnyDeterministic(downstream)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		builder.Configure(
-			envoy_listeners.AddFilterChainConfigurer(envoy_listeners_v3.FilterChainMustConfigureFunc(
-				func(chain *envoy_listener.FilterChain) {
-					chain.TransportSocket = &envoy_config_core.TransportSocket{
-						Name: "envoy.transport_sockets.tls",
-						ConfigType: &envoy_config_core.TransportSocket_TypedConfig{
-							TypedConfig: any,
-						},
-					}
-				}),
-			),
-		)
 
 		filterChainBuilders = append(filterChainBuilders, builder)
 
@@ -193,9 +118,9 @@ func (g *HTTPSFilterChainGenerator) Generate(
 	return resources, filterChainBuilders, nil
 }
 
-func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
+func generateCertificateSecret(
 	ctx xds_context.MeshContext,
-	host GatewayHost,
+	hostnames []string,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
 	data, err := ctx.DataSourceLoader.Load(user.Ctx(context.TODO(), user.ControlPlane), ctx.Resource.GetMeta().GetName(), secret)
@@ -221,7 +146,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 		// different key types, we need to use the key type
 		// to disambiguate when the certificate is provided as
 		// inline data.
-		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", host.Hostname)
+		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", names.Join(hostnames...))
 	default:
 		return nil, errors.Errorf("unsupported datasource type %T", d)
 	}
@@ -229,11 +154,11 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	return tlsSecret, err
 }
 
-func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext {
+func newDownstreamTypedConfig(alpnProtocols []string) *envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext {
 	conf := &envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext{
 		CommonTlsContext: &envoy_extensions_transport_sockets_tls_v3.CommonTlsContext{
 			TlsParams:     &envoy_extensions_transport_sockets_tls_v3.TlsParameters{},
-			AlpnProtocols: []string{"h2", "http/1.1"},
+			AlpnProtocols: alpnProtocols,
 		},
 	}
 
@@ -393,6 +318,8 @@ func (g *TCPFilterChainGenerator) Generate(
 ) {
 	log.V(1).Info("generating filter chain", "protocol", info.Listener.Protocol)
 
+	resources := core_xds.NewResourceSet()
+
 	var clusters []envoy.Cluster
 	var allDests []route.Destination
 	var sniNames []string
@@ -437,11 +364,123 @@ func (g *TCPFilterChainGenerator) Generate(
 	)
 
 	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
-		builder.Configure(
-			envoy_listeners.MatchTransportProtocol("tls"),
-			envoy_listeners.MatchServerNames(sniNames...),
+		tlsResources, err := configureTLS(
+			ctx,
+			info,
+			info.HostInfos[0].Host.TLS,
+			sniNames,
+			builder,
+			nil,
 		)
+		resources = resources.AddSet(tlsResources)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
-	return nil, []*envoy_listeners.FilterChainBuilder{builder}, nil
+	return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
+}
+
+func configureTLS(
+	ctx xds_context.Context,
+	listener GatewayListenerInfo,
+	tls *mesh_proto.MeshGateway_TLS_Conf,
+	hostnames []string,
+	builder *envoy_listeners.FilterChainBuilder,
+	alpnProtocols []string,
+) (
+	*core_xds.ResourceSet, error,
+) {
+	builder.Configure(
+		envoy_listeners.MatchTransportProtocol("tls"),
+	)
+
+	resources := core_xds.NewResourceSet()
+
+	downstream := newDownstreamTypedConfig(alpnProtocols)
+
+	mode := mesh_proto.MeshGateway_TLS_NONE
+	if tls != nil {
+		mode = tls.GetMode()
+	}
+
+	switch mode {
+	case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
+		builder.Configure(
+			envoy_listeners.MatchServerNames(hostnames...),
+		)
+		return resources, nil
+	case mesh_proto.MeshGateway_TLS_TERMINATE:
+		builder.Configure(
+			envoy_listeners.MatchServerNames(hostnames...),
+		)
+
+		// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
+		for _, cert := range tls.GetCertificates() {
+			secret, err := generateCertificateSecret(ctx.Mesh, hostnames, cert)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to generate TLS certificate")
+			}
+
+			if resources.Contains(secret.Name, secret) {
+				return nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
+			}
+
+			resource := NewResource(secret.Name, secret)
+
+			resources.Add(resource)
+
+			downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(
+				downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs, envoy_tls_v3.NewSecretConfigSource(resource.Name),
+			)
+		}
+
+	case mesh_proto.MeshGateway_TLS_NONE:
+		if !listener.Listener.CrossMesh {
+			return nil, errors.Errorf("unsupported TLS mode %q", mode)
+		}
+
+		// We don't match on the SNI here since it won't be the hostname
+		// here but rather an SNI based on the kuma.io/service
+		builder.Configure(envoy_listeners.MatchApplicationProtocols("kuma"))
+
+		if !ctx.Mesh.Resource.MTLSEnabled() {
+			return nil, errors.New("mTLS must be enabled for crossMesh-enabled MeshGateways")
+		}
+
+		var err error
+		// We generate a downstream context using the envoy helpers
+		// and we don't want to match a SAN because it can be any mesh
+		downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(
+			listener.Proxy.SecretsTracker.RequestAllInOneCa(),
+			listener.Proxy.SecretsTracker.RequestIdentityCert(),
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
+		}
+
+		downstream.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.MatchTypedSubjectAltNames = nil
+	default:
+		return nil, errors.Errorf("unsupported TLS mode %q", tls.GetMode())
+	}
+
+	any, err := util_proto.MarshalAnyDeterministic(downstream)
+	if err != nil {
+		return nil, err
+	}
+
+	builder.Configure(
+		envoy_listeners.AddFilterChainConfigurer(envoy_listeners_v3.FilterChainMustConfigureFunc(
+			func(chain *envoy_listener.FilterChain) {
+				chain.TransportSocket = &envoy_config_core.TransportSocket{
+					Name: "envoy.transport_sockets.tls",
+					ConfigType: &envoy_config_core.TransportSocket_TypedConfig{
+						TypedConfig: any,
+					},
+				}
+			}),
+		),
+	)
+
+	return resources, nil
 }
