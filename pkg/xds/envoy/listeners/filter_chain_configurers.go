@@ -89,6 +89,7 @@ func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
 func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
 		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			weight:             cluster.Weight(),
@@ -106,6 +107,7 @@ func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBui
 func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	var splits []envoy_common.Split
 	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
 		splits = append(splits, &splitAdapter{
 			clusterName:        cluster.Name(),
 			weight:             cluster.Weight(),

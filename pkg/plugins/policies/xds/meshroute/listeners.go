@@ -111,9 +111,5 @@ func MakeSplit(
 		clusterBuilders[refHash] = clusterBuilder
 	}
 
-	for refHash, clusterBuilder := range clusterBuilders {
-		servicesAcc.Add(clusterBuilder.WithWeight(weights[refHash]).Build())
-	}
-
 	return split
 }
