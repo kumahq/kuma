@@ -13,10 +13,10 @@ import (
 
 type RequestMirrorConfigurer struct {
 	requestMirror           api.RequestMirror
-	backendRefToClusterName map[string]string
+	backendRefToClusterName map[common_api.TargetRefHash]string
 }
 
-func NewRequestMirror(requestMirror api.RequestMirror, backendRefToClusterName map[string]string) *RequestMirrorConfigurer {
+func NewRequestMirror(requestMirror api.RequestMirror, backendRefToClusterName map[common_api.TargetRefHash]string) *RequestMirrorConfigurer {
 	return &RequestMirrorConfigurer{
 		requestMirror:           requestMirror,
 		backendRefToClusterName: backendRefToClusterName,

@@ -13,7 +13,7 @@ import (
 
 func getClusters(
 	routing core_xds.Routing,
-	clusterCache map[string]struct{},
+	clusterCache map[common_api.TargetRefHash]struct{},
 	sc *meshroute_xds.SplitCounter,
 	servicesAccumulator envoy_common.ServicesAccumulator,
 	backendRefs []common_api.BackendRef,

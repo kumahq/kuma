@@ -7,6 +7,7 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
@@ -18,7 +19,7 @@ type RoutesConfigurer struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
 	Split                   []*plugins_xds.Split
-	BackendRefToClusterName map[string]string
+	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
