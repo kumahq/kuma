@@ -17,11 +17,17 @@ import (
 type Cluster interface {
 	Service() string
 	Name() string
-	Weight() uint32
 	Mesh() string
 	Tags() tags.Tags
 	Hash() string
 	IsExternalService() bool
+}
+
+type Split interface {
+	ClusterName() string
+	Weight() uint32
+	LBMetadata() tags.Tags
+	HasExternalService() bool
 }
 
 // Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go

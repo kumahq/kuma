@@ -212,7 +212,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 					Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, nil))
 			default:
 				filterChainBuilder.Configure(
-					envoy_listeners.TcpProxyWithMetadata(serviceName, cluster),
+					envoy_listeners.TcpProxyDeprecatedWithMetadata(serviceName, cluster),
 				)
 			}
 

@@ -186,7 +186,7 @@ func (*InternalServicesGenerator) addFilterChains(
 					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchServerNames(sni),
-						envoy_listeners.TcpProxyWithMetadata(clusterName, envoy_common.NewCluster(
+						envoy_listeners.TcpProxyDeprecatedWithMetadata(clusterName, envoy_common.NewCluster(
 							envoy_common.WithName(clusterName),
 							envoy_common.WithService(serviceName),
 							envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),

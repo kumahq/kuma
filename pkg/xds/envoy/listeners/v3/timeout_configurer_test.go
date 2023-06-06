@@ -55,7 +55,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(OutboundListener("outbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(TcpProxy("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
+					Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
 					Configure(Timeout(given.timeout, core_mesh.ProtocolTCP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -289,7 +289,7 @@ trafficDirection: OUTBOUND`,
 		listener, err := NewListenerBuilder(envoy_common.APIV3).
 			Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-				Configure(TcpProxy("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
+				Configure(TcpProxyDeprecated("localhost:8080", envoy_common.NewCluster(envoy_common.WithName("backend")))).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolTCP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())

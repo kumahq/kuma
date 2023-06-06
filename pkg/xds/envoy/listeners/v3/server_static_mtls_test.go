@@ -31,7 +31,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
 			Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 				Configure(ServerSideStaticMTLS(certs)).
-				Configure(TcpProxy("localhost:8080", cluster)))).
+				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).
 			Build()
 
 		// then
