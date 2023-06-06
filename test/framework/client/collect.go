@@ -226,6 +226,33 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 	return cmd
 }
 
+func CollectTLSResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	stdin string,
+	fn ...CollectResponsesOptsFn,
+) (string, error) {
+	opts := CollectOptions(destination, fn...)
+	cmd := []string{"bash", "-c", fmt.Sprintf("echo '%s' | timeout 5 openssl s_client -verify_quiet -quiet -ign_eof -connect %s 2>/dev/null", stdin, opts.ShellEscaped(opts.URL))}
+
+	var appPodName string
+	if opts.namespace != "" && opts.application != "" {
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	stdout, stderr, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	if err != nil {
+		return "", fmt.Errorf("stderr: '%s', %v", stderr, err)
+	}
+
+	return stdout, nil
+}
+
 func CollectTCPResponse(
 	cluster framework.Cluster,
 	container string,
