@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -27,7 +28,7 @@ func matchingHTTPRuleExist(
 func getTCPBackendRefs(
 	toRulesTCP core_xds.Rules,
 	service core_xds.Subset,
-) []api.BackendRef {
+) []common_api.BackendRef {
 	conf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
 	if conf != nil {
 		return conf.Default.BackendRefs
@@ -41,7 +42,7 @@ func getBackendRefs(
 	toRulesHTTP core_xds.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
-) []api.BackendRef {
+) []common_api.BackendRef {
 	service := core_xds.MeshService(serviceName)
 
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
