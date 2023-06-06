@@ -37,13 +37,13 @@ type descriptor struct {
 	generation uint32
 }
 
-type TenantID string
+type tenantID string
 
 type insightMap map[core_model.ResourceKey]*descriptor
 
 type insightsByType map[core_model.ResourceType]insightMap
 
-type tenantInsights map[TenantID]insightsByType
+type tenantInsights map[tenantID]insightsByType
 
 type subscriptionFinalizer struct {
 	rm        manager.ResourceManager
@@ -77,18 +77,18 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case now := <-ticker.C:
+			tenantIds, err := f.tenants.GetIDs(context.TODO())
+			if err != nil {
+				finalizerLog.Error(err, "could not get contexts")
+				break
+			}
 			for _, typ := range f.types {
-				tenantIds, err := f.tenants.GetIDs(context.TODO())
-				if err != nil {
-					finalizerLog.Error(err, "could not get contexts")
-					break
-				}
 				for _, tenantId := range tenantIds {
-					if _, found := f.insights[TenantID(tenantId)]; !found {
-						f.insights[TenantID(tenantId)] = insightsByType{}
+					if _, found := f.insights[tenantID(tenantId)]; !found {
+						f.insights[tenantID(tenantId)] = insightsByType{}
 					}
-					if _, found := f.insights[TenantID(tenantId)][typ]; !found {
-						f.insights[TenantID(tenantId)][typ] = insightMap{}
+					if _, found := f.insights[tenantID(tenantId)][typ]; !found {
+						f.insights[tenantID(tenantId)][typ] = insightMap{}
 					}
 					ctx := multitenant.WithTenant(context.TODO(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
@@ -124,15 +124,15 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		insight := item.GetSpec().(generic.Insight)
 
 		if !insight.IsOnline() {
-			delete(f.insights[TenantID(tenantId)][typ], key)
+			delete(f.insights[tenantID(tenantId)][typ], key)
 			continue
 		}
 
-		old, ok := f.insights[TenantID(tenantId)][typ][key]
+		old, ok := f.insights[tenantID(tenantId)][typ][key]
 		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
 			// something changed since the last check, either subscriptionId or generation were updated
 			// don't finalize the subscription, update map with fresh data
-			f.insights[TenantID(tenantId)][typ][key] = &descriptor{
+			f.insights[tenantID(tenantId)][typ][key] = &descriptor{
 				id:         insight.GetLastSubscription().GetId(),
 				generation: insight.GetLastSubscription().GetGeneration(),
 			}
@@ -150,7 +150,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			log.Error(err, "unable to finalize subscription")
 			return err
 		}
-		delete(f.insights[TenantID(tenantId)][typ], key)
+		delete(f.insights[tenantID(tenantId)][typ], key)
 	}
 	return nil
 }
@@ -160,9 +160,9 @@ func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.Resour
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
 	}
-	for rk := range f.insights[TenantID(tenantId)][insights.GetItemType()] {
+	for rk := range f.insights[tenantID(tenantId)][insights.GetItemType()] {
 		if !byResourceKey[rk] {
-			delete(f.insights[TenantID(tenantId)][insights.GetItemType()], rk)
+			delete(f.insights[tenantID(tenantId)][insights.GetItemType()], rk)
 		}
 	}
 }
