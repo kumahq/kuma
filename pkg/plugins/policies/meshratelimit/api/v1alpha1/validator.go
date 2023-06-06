@@ -1,11 +1,11 @@
 package v1alpha1
 
 import (
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
 func (r *MeshRateLimitResource) validate() error {

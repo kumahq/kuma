@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 	"strings"
 
@@ -202,9 +203,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
 							ToRules: core_xds.ToRules{
-								Rules: []*core_xds.Rule{
+								Rules: []*rules.Rule{
 									{
-										Subset: core_xds.MeshService("backend"),
+										Subset: rules.MeshService("backend"),
 										Conf: v1alpha1.Conf{
 											LoadBalancer: &v1alpha1.LoadBalancer{
 												Type: v1alpha1.RandomType,
@@ -212,7 +213,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 									{
-										Subset: core_xds.MeshService("payment"),
+										Subset: rules.MeshService("payment"),
 										Conf: v1alpha1.Conf{
 											LoadBalancer: &v1alpha1.LoadBalancer{
 												Type: v1alpha1.RingHashType,
@@ -335,7 +336,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								"eds-cluster": {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_xds.FromRules{
-											Rules: map[core_xds.InboundListener]core_xds.Rules{
+											Rules: map[core_xds.InboundListener]rules.Rules{
 												{}: {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
 												},
@@ -351,7 +352,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								"static-cluster": {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										FromRules: core_xds.FromRules{
-											Rules: map[core_xds.InboundListener]core_xds.Rules{
+											Rules: map[core_xds.InboundListener]rules.Rules{
 												{}: {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
 												},
@@ -419,9 +420,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: v1alpha1.Conf{
 							LoadBalancer: &v1alpha1.LoadBalancer{
 								Type: v1alpha1.RingHashType,

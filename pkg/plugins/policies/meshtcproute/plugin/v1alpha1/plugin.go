@@ -1,14 +1,14 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -49,13 +49,13 @@ func (p plugin) Apply(
 
 	services := servicesAccumulator.Services()
 
-	clusters, err := meshroute_xds.GenerateClusters(proxy, ctx.Mesh, services)
+	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute_xds.GenerateEndpoints(proxy, ctx, services)
+	endpoints, err := meshroute.GenerateEndpoints(proxy, ctx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}

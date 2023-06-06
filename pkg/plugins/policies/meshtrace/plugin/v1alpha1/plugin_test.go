@@ -2,6 +2,8 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -14,7 +16,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -108,9 +109,9 @@ var _ = Describe("MeshTrace", func() {
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: []core_xds.Tag{},
+						Subset: []rules.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -246,9 +247,9 @@ var _ = Describe("MeshTrace", func() {
 		Entry("inbound/outbound for opentelemetry", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: []core_xds.Tag{},
+						Subset: []rules.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -381,9 +382,9 @@ var _ = Describe("MeshTrace", func() {
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: []core_xds.Tag{},
+						Subset: []rules.Tag{},
 						Conf: api.Conf{
 							Sampling: &api.Sampling{
 								Random: pointer.To(intstr.FromInt(50)),
@@ -472,9 +473,9 @@ var _ = Describe("MeshTrace", func() {
 		Entry("sampling is empty", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: []core_xds.Tag{},
+						Subset: []rules.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -566,9 +567,9 @@ var _ = Describe("MeshTrace", func() {
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: []core_xds.Tag{},
+						Subset: []rules.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{},
 						},

@@ -1,10 +1,9 @@
-package xds_test
+package rules_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
 var _ = Describe("MergeConfs", func() {
@@ -35,7 +34,7 @@ var _ = Describe("MergeConfs", func() {
 			}
 
 			// when
-			merged, err := xds.MergeConfs(policies)
+			merged, err := rules.MergeConfs(policies)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -238,7 +237,7 @@ var _ = Describe("MergeConfs", func() {
 				givens = append(givens, p)
 			}
 
-			merged, err := xds.MergeConfs(givens)
+			merged, err := rules.MergeConfs(givens)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(merged).To(Equal(given.expected))
 		},

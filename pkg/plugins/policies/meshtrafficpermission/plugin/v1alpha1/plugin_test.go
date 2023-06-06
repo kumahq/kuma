@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -94,12 +95,12 @@ var _ = Describe("Apply", func() {
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					policies_api.MeshTrafficPermissionType: {
 						FromRules: core_xds.FromRules{
-							Rules: map[core_xds.InboundListener]core_xds.Rules{
+							Rules: map[core_xds.InboundListener]rules.Rules{
 								{
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Subset: []core_xds.Tag{
+										Subset: []rules.Tag{
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{

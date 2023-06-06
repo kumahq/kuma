@@ -2,10 +2,10 @@ package xds_test
 
 import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"

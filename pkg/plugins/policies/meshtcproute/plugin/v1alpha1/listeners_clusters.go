@@ -4,8 +4,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -33,10 +33,10 @@ func getClusters(
 		}
 
 		clusterName := meshroute_xds.GetClusterName(ref.Name, ref.Tags, sc)
-		isExternalService := plugins_xds.HasExternalService(routing, ref.Name)
+		isExternalService := xds.HasExternalService(routing, ref.Name)
 		refHash := ref.TargetRef.Hash()
 
-		clusterBuilder := plugins_xds.NewClusterBuilder().
+		clusterBuilder := xds.NewClusterBuilder().
 			WithService(serviceName).
 			WithName(clusterName).
 			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).

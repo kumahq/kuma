@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -24,11 +25,11 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		gateway = xds_topology.SelectGateway(gateways.Items, dpp.Spec.Matches)
 	}
 
-	matchedPoliciesByInbound := map[core_xds.InboundListener][]core_model.Resource{}
+	matchedPoliciesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
 
 	for _, policy := range policies.GetItems() {
-		spec, ok := policy.GetSpec().(core_xds.Policy)
+		spec, ok := policy.GetSpec().(core_model.Policy)
 		if !ok {
 			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
 		}
@@ -52,17 +53,17 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		sort.Sort(ByTargetRef(ps))
 	}
 
-	fr, err := core_xds.BuildFromRules(matchedPoliciesByInbound)
+	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
-	tr, err := core_xds.BuildToRules(dpPolicies)
+	tr, err := core_rules.BuildToRules(dpPolicies)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
-	sr, err := core_xds.BuildSingleItemRules(dpPolicies)
+	sr, err := core_rules.BuildSingleItemRules(dpPolicies)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
@@ -77,7 +78,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
+func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_rules.InboundListener {
 	switch tr.Kind {
 	case common_api.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)
@@ -96,16 +97,16 @@ func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.Datapla
 		}
 		return inboundsSelectedByTags(tags, dpp, gateway)
 	default:
-		return []core_xds.InboundListener{}
+		return []core_rules.InboundListener{}
 	}
 }
 
-func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
-	result := []core_xds.InboundListener{}
+func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_rules.InboundListener {
+	result := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
 		if mesh_proto.TagSelector(tags).Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
-			result = append(result, core_xds.InboundListener{
+			result = append(result, core_rules.InboundListener{
 				Address: intf.DataplaneIP,
 				Port:    intf.DataplanePort,
 			})
@@ -119,7 +120,7 @@ func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneReso
 				listener.GetTags(),
 			)
 			if mesh_proto.TagSelector(tags).Matches(listenerTags) {
-				result = append(result, core_xds.InboundListener{
+				result = append(result, core_rules.InboundListener{
 					Address: dpp.Spec.GetNetworking().GetAddress(),
 					Port:    listener.Port,
 				})
@@ -134,8 +135,8 @@ type ByTargetRef []core_model.Resource
 func (b ByTargetRef) Len() int { return len(b) }
 
 func (b ByTargetRef) Less(i, j int) bool {
-	r1, ok1 := b[i].GetSpec().(core_xds.Policy)
-	r2, ok2 := b[j].GetSpec().(core_xds.Policy)
+	r1, ok1 := b[i].GetSpec().(core_model.Policy)
+	r2, ok2 := b[j].GetSpec().(core_model.Policy)
 	if !(ok1 && ok2) {
 		panic("resource doesn't support TargetRef matching")
 	}

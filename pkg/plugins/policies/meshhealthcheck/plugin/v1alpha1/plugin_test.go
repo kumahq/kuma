@@ -2,6 +2,8 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -17,7 +19,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -165,9 +166,9 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("HTTP HealthCheck", testCase{
 			resources: httpClusters,
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
 							Timeout:                      test.ParseDuration("2s"),
@@ -213,9 +214,9 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("TCP HealthCheck", testCase{
 			resources: tcpCluster,
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -236,9 +237,9 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("gRPC HealthCheck", testCase{
 			resources: grpcCluster,
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -305,9 +306,9 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
 			name: "basic",
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
 							Timeout:                      test.ParseDuration("2s"),

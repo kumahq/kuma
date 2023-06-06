@@ -1,4 +1,4 @@
-package xds
+package rules
 
 import (
 	"encoding/json"

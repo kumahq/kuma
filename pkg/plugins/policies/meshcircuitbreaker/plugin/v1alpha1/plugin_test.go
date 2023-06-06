@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -133,9 +134,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -156,9 +157,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -179,9 +180,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -202,9 +203,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -226,9 +227,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -250,13 +251,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    builders.FirstInboundPort,
-					}: []*core_xds.Rule{
+					}: []*rules.Rule{
 						{
-							Subset: core_xds.Subset{},
+							Subset: rules.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 							},
@@ -275,13 +276,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    builders.FirstInboundPort,
-					}: []*core_xds.Rule{
+					}: []*rules.Rule{
 						{
-							Subset: core_xds.Subset{},
+							Subset: rules.Subset{},
 							Conf: api.Conf{
 								OutlierDetection: genOutlierDetection(false),
 							},
@@ -300,13 +301,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    builders.FirstInboundPort,
-					}: []*core_xds.Rule{
+					}: []*rules.Rule{
 						{
-							Subset: core_xds.Subset{},
+							Subset: rules.Subset{},
 							Conf: api.Conf{
 								OutlierDetection: genOutlierDetection(true),
 							},
@@ -325,13 +326,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    builders.FirstInboundPort,
-					}: []*core_xds.Rule{
+					}: []*rules.Rule{
 						{
-							Subset: core_xds.Subset{},
+							Subset: rules.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(false),
@@ -351,13 +352,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{
 						Address: "127.0.0.1",
 						Port:    builders.FirstInboundPort,
-					}: []*core_xds.Rule{
+					}: []*rules.Rule{
 						{
-							Subset: core_xds.Subset{},
+							Subset: rules.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(true),
@@ -382,9 +383,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -451,9 +452,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{
 			name: "basic",
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "backend",
 						}},

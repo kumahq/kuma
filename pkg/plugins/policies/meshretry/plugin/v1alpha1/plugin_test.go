@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -99,9 +100,9 @@ var _ = Describe("MeshRetry", func() {
 				Resource: httpListener(10001),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](1),
@@ -192,9 +193,9 @@ var _ = Describe("MeshRetry", func() {
 				Resource: httpListener(10002),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: rules.Subset{rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "grpc-service",
 						}},
@@ -240,9 +241,9 @@ var _ = Describe("MeshRetry", func() {
 				Resource: tcpListener(10003),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
 								MaxConnectAttempt: pointer.To[uint32](21),
@@ -302,9 +303,9 @@ var _ = Describe("MeshRetry", func() {
 		Entry("http retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.http",
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](1),
@@ -392,9 +393,9 @@ var _ = Describe("MeshRetry", func() {
 		Entry("tcp retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.tcp",
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
 								MaxConnectAttempt: pointer.To[uint32](21),

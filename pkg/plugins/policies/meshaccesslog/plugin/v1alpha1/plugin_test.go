@@ -2,6 +2,8 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,7 +16,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -133,9 +134,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -209,9 +210,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -265,9 +266,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -324,9 +325,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -386,9 +387,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -484,9 +485,9 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{{
+						Subset: rules.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -499,7 +500,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_xds.Subset{{
+						Subset: rules.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "foo-service",
 						}},
@@ -512,7 +513,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_xds.Subset{{
+						Subset: rules.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "bar-service",
 						}},
@@ -660,9 +661,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -720,9 +721,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -796,9 +797,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{{
+						Subset: rules.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other",
 						}},
@@ -873,9 +874,9 @@ var _ = Describe("MeshAccessLog", func() {
 					)).MustBuild(),
 			}},
 			fromRules: core_xds.FromRules{
-				Rules: map[xds.InboundListener]xds.Rules{
+				Rules: map[xds.InboundListener]rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -1038,9 +1039,9 @@ var _ = Describe("MeshAccessLog", func() {
 					).MustBuild(),
 			}},
 			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{

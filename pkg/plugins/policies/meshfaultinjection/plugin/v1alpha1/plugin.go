@@ -2,6 +2,9 @@ package v1alpha1
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
@@ -9,10 +12,8 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -53,8 +54,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 }
 
 func applyToInbounds(
-	fromRules core_xds.FromRules,
-	inboundListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	fromRules core_rules.FromRules,
+	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
@@ -64,7 +65,7 @@ func applyToInbounds(
 			continue
 		}
 
-		listenerKey := core_xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
@@ -86,8 +87,8 @@ func applyToInbounds(
 
 func applyToGateways(
 	ctx xds_context.Context,
-	fromRules core_xds.FromRules,
-	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	fromRules core_rules.FromRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
 	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -101,7 +102,7 @@ func applyToGateways(
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
 		protocol := core_mesh.ParseProtocol(mesh_proto.MeshGateway_Listener_Protocol_name[int32(listenerInfo.Listener.Protocol)])
-		listenerKey := core_xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
 		}
@@ -122,7 +123,7 @@ func applyToGateways(
 }
 
 func configure(
-	fromRules core_xds.Rules,
+	fromRules core_rules.Rules,
 	listener *envoy_listener.Listener,
 	protocol core_mesh.Protocol,
 ) error {

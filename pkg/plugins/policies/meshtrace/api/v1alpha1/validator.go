@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 	"math"
 	net_url "net/url"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 

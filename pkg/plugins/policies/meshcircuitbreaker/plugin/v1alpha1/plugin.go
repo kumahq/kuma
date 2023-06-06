@@ -2,6 +2,9 @@ package v1alpha1
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
@@ -9,10 +12,8 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -61,14 +62,14 @@ func (p plugin) Apply(
 }
 
 func applyToInbounds(
-	fromRules core_xds.FromRules,
+	fromRules core_rules.FromRules,
 	inboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
 	for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
-		listenerKey := core_xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
@@ -83,7 +84,7 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configure(rules, core_xds.MeshSubset(), cluster); err != nil {
+		if err := configure(rules, core_rules.MeshSubset(), cluster); err != nil {
 			return err
 		}
 	}
@@ -92,7 +93,7 @@ func applyToInbounds(
 }
 
 func applyToOutbounds(
-	rules core_xds.ToRules,
+	rules core_rules.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
@@ -100,7 +101,7 @@ func applyToOutbounds(
 	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, core_xds.MeshService(serviceName), cluster); err != nil {
+		if err := configure(rules.Rules, core_rules.MeshService(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -110,7 +111,7 @@ func applyToOutbounds(
 
 func applyToGateways(
 	ctx xds_context.Context,
-	rules core_xds.ToRules,
+	rules core_rules.ToRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	proxy *core_xds.Proxy,
 ) error {
@@ -139,7 +140,7 @@ func applyToGateways(
 
 				if err := configure(
 					rules.Rules,
-					core_xds.MeshService(serviceName),
+					core_rules.MeshService(serviceName),
 					cluster,
 				); err != nil {
 					return err
@@ -152,8 +153,8 @@ func applyToGateways(
 }
 
 func configure(
-	rules core_xds.Rules,
-	subset core_xds.Subset,
+	rules core_rules.Rules,
+	subset core_rules.Subset,
 	cluster *envoy_cluster.Cluster,
 ) error {
 	if computed := rules.Compute(subset); computed != nil {

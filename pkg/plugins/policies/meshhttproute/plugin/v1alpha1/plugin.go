@@ -1,6 +1,9 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -8,9 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -29,7 +30,7 @@ type RuleAcc struct {
 }
 
 type ToRouteRule struct {
-	Subset core_xds.Subset
+	Subset rules.Subset
 	Rules  []api.Rule
 	Origin []core_model.ResourceMeta
 }
@@ -85,13 +86,13 @@ func ApplyToOutbounds(
 
 	services := servicesAcc.Services()
 
-	clusters, err := meshroute_xds.GenerateClusters(proxy, ctx.Mesh, services)
+	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute_xds.GenerateEndpoints(proxy, ctx, services)
+	endpoints, err := meshroute.GenerateEndpoints(proxy, ctx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}

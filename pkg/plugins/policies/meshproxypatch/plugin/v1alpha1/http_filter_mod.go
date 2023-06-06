@@ -4,12 +4,12 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"

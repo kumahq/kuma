@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 	"strings"
 	"time"
@@ -118,9 +119,9 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			},
 			expectedRoutes: core_xds.ToRules{
-				Rules: core_xds.Rules{
+				Rules: rules.Rules{
 					{
-						Subset: core_xds.MeshService("backend"),
+						Subset: rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -249,7 +250,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			rules := core_xds.Rules{
+			rules := rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -344,7 +345,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			rules := core_xds.Rules{
+			rules := rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -427,7 +428,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			tcpRules := core_xds.Rules{
+			tcpRules := rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -444,7 +445,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			httpRules := core_xds.Rules{
+			httpRules := rules.Rules{
 				{
 					Conf: meshhttproute_api.PolicyDefault{
 						Rules: []meshhttproute_api.Rule{
@@ -540,7 +541,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			tcpRules := core_xds.Rules{
+			tcpRules := rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -557,7 +558,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			httpRules := core_xds.Rules{
+			httpRules := rules.Rules{
 				{
 					Conf: meshhttproute_api.PolicyDefault{
 						Rules: []meshhttproute_api.Rule{

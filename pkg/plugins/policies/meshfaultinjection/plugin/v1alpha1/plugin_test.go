@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -115,9 +116,9 @@ var _ = Describe("MeshFaultInjection", func() {
 				},
 			},
 			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+				Rules: map[core_xds.InboundListener]rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_xds.Subset{
+						Subset: rules.Subset{
 							{
 								Key:   "kuma.io/service",
 								Value: "demo-client",
@@ -143,7 +144,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							Http: &[]api.FaultInjectionConf{
 								{
@@ -172,9 +173,9 @@ var _ = Describe("MeshFaultInjection", func() {
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
 		fromRules := core_xds.FromRules{
-			Rules: map[core_xds.InboundListener]core_xds.Rules{
+			Rules: map[core_xds.InboundListener]rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: core_xds.Subset{},
+					Subset: rules.Subset{},
 					Conf: api.Conf{
 						Http: &[]api.FaultInjectionConf{
 							{

@@ -5,10 +5,10 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

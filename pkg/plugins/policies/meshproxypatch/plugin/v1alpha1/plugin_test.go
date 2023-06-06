@@ -2,6 +2,8 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -10,7 +12,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -63,9 +64,9 @@ var _ = Describe("MeshProxyPatch", func() {
 				},
 			},
 			rules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+				Rules: []*rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: rules.Subset{},
 						Conf: api.Conf{
 							AppendModifications: []api.Modification{
 								{
