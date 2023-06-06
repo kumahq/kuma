@@ -4,7 +4,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -17,7 +16,7 @@ func getClusters(
 	clusterCache map[string]struct{},
 	sc *meshroute_xds.SplitCounter,
 	servicesAccumulator envoy_common.ServicesAccumulator,
-	backendRefs []api.BackendRef,
+	backendRefs []common_api.BackendRef,
 ) []envoy_common.Cluster {
 	var clusters []envoy_common.Cluster
 
