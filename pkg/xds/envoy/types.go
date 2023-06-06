@@ -17,7 +17,6 @@ import (
 type Cluster interface {
 	Service() string
 	Name() string
-	Weight() uint32
 	Mesh() string
 	Tags() tags.Tags
 	Hash() string
