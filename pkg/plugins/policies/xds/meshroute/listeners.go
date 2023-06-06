@@ -55,8 +55,8 @@ func MakeSplit(
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-) []*plugins_xds.Split {
-	var split []*plugins_xds.Split
+) []envoy_common.Split {
+	var split []envoy_common.Split
 	clusterBuilders := map[string]*plugins_xds.ClusterBuilder{}
 	weights := map[string]uint32{}
 
