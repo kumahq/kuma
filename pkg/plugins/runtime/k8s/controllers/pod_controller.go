@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -49,6 +51,7 @@ type PodReconciler struct {
 	Persistence       *vips.Persistence
 	ResourceConverter k8s_common.Converter
 	SystemNamespace   string
+	Metric            *prometheus.HistogramVec
 }
 
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -103,6 +106,10 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 }
 
 func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
+	start := core.Now()
+	defer func() {
+		r.Metric.WithLabelValues("reconcile_dp").Observe(core.Now().Sub(start).Seconds())
+	}()
 	dp := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
 	}
@@ -220,6 +227,10 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 }
 
 func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
+	start := core.Now()
+	defer func() {
+		r.Metric.WithLabelValues("find_matching_services").Observe(core.Now().Sub(start).Seconds())
+	}()
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}
 	if err := r.List(ctx, allServices, kube_client.InNamespace(pod.Namespace)); err != nil {
@@ -235,6 +246,10 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 }
 
 func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
+	start := core.Now()
+	defer func() {
+		r.Metric.WithLabelValues("find_other_dp").Observe(core.Now().Sub(start).Seconds())
+	}()
 	// List all Dataplanes
 	allDataplanes := &mesh_k8s.DataplaneList{}
 	if err := r.List(ctx, allDataplanes); err != nil {
@@ -268,6 +283,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	start := core.Now()
+	defer func() {
+		r.Metric.WithLabelValues("create_or_update_dp").Observe(core.Now().Sub(start).Seconds())
+	}()
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
