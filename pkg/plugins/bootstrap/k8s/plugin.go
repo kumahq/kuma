@@ -68,10 +68,8 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
 			NewClient: func(config *rest.Config, options kube_client.Options) (kube_client.Client, error) {
-				log := core.Log.WithName("kube-manager")
-				log.Info("Creating new k8s client with changed config")
-				// config.QPS = 2000
-				// config.Burst = 1000
+				config.QPS = b.Config().Runtime.Kubernetes.ClientConfig.Qps
+				config.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
 				return client.New(config, options)
 			},
 		},
