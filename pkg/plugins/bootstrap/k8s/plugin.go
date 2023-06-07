@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -66,6 +67,13 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
+			NewClient: func(config *rest.Config, options kube_client.Options) (kube_client.Client, error) {
+				log := core.Log.WithName("kube-manager")
+				log.Info("Creating new k8s client with changed config")
+				config.QPS = 2000
+				config.Burst = 1000
+				return client.New(config, options)
+			},
 		},
 	)
 	if err != nil {
