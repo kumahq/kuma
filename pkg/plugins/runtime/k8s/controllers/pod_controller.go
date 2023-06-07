@@ -108,6 +108,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	start := core.Now()
 	defer func() {
+		log.Info("reconciled", "time", core.Now().Sub(start).Seconds())
 		r.Metric.WithLabelValues("reconcile_dp").Observe(core.Now().Sub(start).Seconds())
 	}()
 	dp := &mesh_k8s.Dataplane{
