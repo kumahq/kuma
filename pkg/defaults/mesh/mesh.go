@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -41,7 +42,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
 	}
 
-	if contains(skippedPolicies, "*") {
+	if slices.Contains(skippedPolicies, "*") {
 		log.Info("skipping all default policy creation", "mesh", meshName)
 		return nil
 	}
@@ -62,7 +63,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 		resource := resourceBuilder()
 
 		var msg string
-		if !contains(skippedPolicies, string(resource.Descriptor().Name)) {
+		if !slices.Contains(skippedPolicies, string(resource.Descriptor().Name)) {
 			err, created := ensureDefaultResource(ctx, resManager, resource, key)
 			if err != nil {
 				return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
@@ -94,13 +95,4 @@ func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManag
 		return errors.Wrap(err, "could not create a resource"), false
 	}
 	return nil, true
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-	return false
 }

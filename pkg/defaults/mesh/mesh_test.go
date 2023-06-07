@@ -107,7 +107,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
 		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
-		// then default TrafficRoute doesn't exist
+		// then default TrafficRoute does exist
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 

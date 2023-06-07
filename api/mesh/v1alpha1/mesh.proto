@@ -76,8 +76,9 @@ message Mesh {
   Constraints constraints = 7;
 
   // List of policies to skip creating by default when the mesh is created.
-  // e.g. TrafficPermission, MeshRetry, etc.
-  repeated string skipCreatingInitialDefaultPolicies = 8;
+  // e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
+  // policies.
+  repeated string skipCreatingInitialPolicies = 8;
 
   message DataplaneProxyConstraints {
 
