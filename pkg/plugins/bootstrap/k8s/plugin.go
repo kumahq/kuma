@@ -70,8 +70,8 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			NewClient: func(config *rest.Config, options kube_client.Options) (kube_client.Client, error) {
 				log := core.Log.WithName("kube-manager")
 				log.Info("Creating new k8s client with changed config")
-				config.QPS = 2000
-				config.Burst = 1000
+				// config.QPS = 2000
+				// config.Burst = 1000
 				return client.New(config, options)
 			},
 		},
