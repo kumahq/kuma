@@ -76,7 +76,7 @@ check: format/common lint ## Dev: Run code checks (go fmt, go vet, ...)
 		echo "The following files are untracked:"; \
 		untracked; \
 	fi; \
-	if [ $$(git --no-pager diff | wc -l) -gt 0 ]; then \
+	if [ $$(diff | wc -l) -gt 0 ]; then \
 		FAILED=true; \
 		echo "The following changes (result of code generators and code checks) have been detected:"; \
 		diff; \
