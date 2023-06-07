@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/prometheus/client_golang/prometheus"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -285,6 +286,7 @@ var _ = Describe("PodReconciler", func() {
 			SystemNamespace:   "kuma-system",
 			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
 			ResourceConverter: k8s.NewSimpleConverter(),
+			Metric:            prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "test"}, []string{"label1"}),
 		}
 	})
 

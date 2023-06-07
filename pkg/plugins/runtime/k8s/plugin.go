@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -179,6 +180,13 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		Metric: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Name: "pod_controller",
+			Help: "Summary of pod reconclie operations",
+		}, []string{"operation"}),
+	}
+	if err := rt.Metrics().Register(reconciler.Metric); err != nil {
+		return err
 	}
 	return reconciler.SetupWithManager(mgr)
 }
