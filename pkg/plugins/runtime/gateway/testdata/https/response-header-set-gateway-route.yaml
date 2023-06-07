@@ -145,6 +145,7 @@ Routes:
         routes:
         - match:
             prefix: /
+          name: route_0
           responseHeadersToAdd:
           - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:

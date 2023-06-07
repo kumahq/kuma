@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: route_0_0
                 route:
                   cluster: backend
                   requestMirrorPolicies:
@@ -42,6 +43,7 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: route_0_1
                 route:
                   cluster: backend
                   requestMirrorPolicies:
@@ -54,6 +56,7 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s

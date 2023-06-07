@@ -207,6 +207,7 @@ Routes:
         routes:
         - match:
             prefix: /
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -232,6 +233,7 @@ Routes:
         routes:
         - match:
             prefix: /
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -257,6 +259,7 @@ Routes:
         routes:
         - match:
             prefix: /
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

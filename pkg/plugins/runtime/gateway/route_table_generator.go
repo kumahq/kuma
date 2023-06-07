@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 
@@ -40,11 +41,11 @@ func GenerateVirtualHost(
 	}
 
 	if len(routes) == 0 {
-		routeBuilder := route.RouteBuilder{}
+		routeBuilder := route.NewRouteBuilder("route_default")
 
 		routeBuilder.Configure(route.RouteMatchPrefixPath("/"))
 		routeBuilder.Configure(route.RouteActionDirectResponse(http.StatusNotFound, emptyGatewayMsg))
-		vh.Configure(route.VirtualHostRoute(&routeBuilder))
+		vh.Configure(route.VirtualHostRoute(routeBuilder))
 
 		return vh, nil
 	}
@@ -56,8 +57,8 @@ func GenerateVirtualHost(
 	// Sort routing table entries so the most specific match comes first.
 	sort.Sort(route.Sorter(routes))
 
-	for _, e := range routes {
-		routeBuilder := route.RouteBuilder{}
+	for i, e := range routes {
+		routeBuilder := route.NewRouteBuilder(fmt.Sprintf("route_%d", i))
 		routeBuilder.Configure(
 			route.RouteMatchExactPath(e.Match.ExactPath),
 			route.RouteMatchPrefixPath(e.Match.PrefixPath),
@@ -161,7 +162,7 @@ func GenerateVirtualHost(
 
 		routeBuilder.Configure(route.RouteRewrite(e.Rewrite))
 
-		vh.Configure(route.VirtualHostRoute(&routeBuilder))
+		vh.Configure(route.VirtualHostRoute(routeBuilder))
 	}
 
 	return vh, nil

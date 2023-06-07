@@ -145,6 +145,7 @@ Routes:
         routes:
         - match:
             path: /otherprefix/a
+          name: route_0
           redirect:
             portRedirect: 8080
             regexRewrite:
@@ -155,6 +156,7 @@ Routes:
             stripQuery: true
         - match:
             path: /prefix/a
+          name: route_1
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -180,6 +182,7 @@ Routes:
                 weight: 1
         - match:
             prefix: /otherprefix/a/
+          name: route_2
           redirect:
             portRedirect: 8080
             prefixRewrite: /a/
@@ -187,6 +190,7 @@ Routes:
             stripQuery: true
         - match:
             prefix: /prefix/a/
+          name: route_3
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

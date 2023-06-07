@@ -149,6 +149,7 @@ Routes:
               stringMatch:
                 exact: PUT
             path: /app/json
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             hostRewriteLiteral: newhost.example.com

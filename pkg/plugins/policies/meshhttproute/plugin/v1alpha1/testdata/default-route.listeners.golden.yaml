@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   prefix: /
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s

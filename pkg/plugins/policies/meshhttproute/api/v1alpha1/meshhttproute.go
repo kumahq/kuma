@@ -51,6 +51,7 @@ type Match struct {
 	// are ANDed together such that all listed matches must succeed.
 	QueryParams []QueryParamsMatch       `json:"queryParams,omitempty"`
 	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
+	Name        string                   `json:"name"`
 }
 
 // +kubebuilder:validation:Enum=Exact;PathPrefix;RegularExpression

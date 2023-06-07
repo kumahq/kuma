@@ -101,6 +101,7 @@ Routes:
         routes:
         - match:
             path: /
+          name: route_0
           redirect:
             hostRedirect: example.com
             portRedirect: 8080

@@ -233,6 +233,7 @@ Routes:
         routes:
         - match:
             path: /match/bar
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -254,6 +255,7 @@ Routes:
                 weight: 1
         - match:
             path: /match/baz
+          name: route_1
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -275,6 +277,7 @@ Routes:
                 weight: 1
         - match:
             prefix: /match/baz/
+          name: route_2
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -297,6 +300,7 @@ Routes:
         - match:
             safeRegex:
               regex: /match/foo
+          name: route_3
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

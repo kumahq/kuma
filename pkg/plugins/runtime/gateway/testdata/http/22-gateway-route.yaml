@@ -163,6 +163,7 @@ Routes:
         routes:
         - match:
             path: /v2
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -184,6 +185,7 @@ Routes:
                 weight: 1
         - match:
             path: /
+          name: route_1
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -214,6 +216,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
 Runtimes:
   Resources:
     gateway.listeners:

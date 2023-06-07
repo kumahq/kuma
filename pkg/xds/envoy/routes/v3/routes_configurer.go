@@ -21,6 +21,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	for i := range c.Routes {
 		route := c.Routes[i]
 		envoyRoute := &envoy_route.Route{
+			Name:  route.Name,
 			Match: c.routeMatch(route.Match),
 			Action: &envoy_route.Route_Route{
 				Route: c.routeAction(route.Clusters, route.Modify),

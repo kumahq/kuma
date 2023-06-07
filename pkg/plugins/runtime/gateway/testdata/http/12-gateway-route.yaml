@@ -126,6 +126,7 @@ Routes:
               stringMatch:
                 exact: gibberish
             path: /lang/json
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -154,6 +155,7 @@ Routes:
               stringMatch:
                 exact: application/json
             path: /app/json
+          name: route_1
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -182,6 +184,7 @@ Routes:
               stringMatch:
                 exact: gibberish
             prefix: /lang/json/
+          name: route_2
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

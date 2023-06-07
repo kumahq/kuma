@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: route_0_0
                 redirect:
                   schemeRedirect: other
                 requestHeadersToAdd:
@@ -64,6 +65,7 @@ resources:
                 - response-header-to-remove
               - match:
                   prefix: /v1/
+                name: route_0_1
                 redirect:
                   schemeRedirect: other
                 requestHeadersToAdd:
@@ -98,6 +100,7 @@ resources:
                 - response-header-to-remove
               - match:
                   prefix: /
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s

@@ -30,31 +30,37 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: route_0_1
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   path: /v2
+                name: route_0_0
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   prefix: /v2/
+                name: route_0_1
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   path: /v3
+                name: route_1_0
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   prefix: /v3/
+                name: route_1_1
                 route:
                   cluster: backend-_0_
                   timeout: 0s
@@ -64,11 +70,13 @@ resources:
                   - name: v1
                     stringMatch:
                       exact: "true"
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s

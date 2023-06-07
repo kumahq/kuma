@@ -290,6 +290,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
       - domains:
         - bar.example.com
         name: bar.example.com
@@ -307,6 +308,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
       - domains:
         - '*.example.com'
         name: '*.example.com'
@@ -324,6 +326,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
       - domains:
         - '*'
         name: '*'
@@ -341,6 +344,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
 Runtimes:
   Resources:
     gateway.listeners:

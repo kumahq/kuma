@@ -119,6 +119,7 @@ Routes:
         routes:
         - match:
             path: /
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

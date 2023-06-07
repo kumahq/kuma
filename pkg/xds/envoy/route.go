@@ -9,6 +9,7 @@ type Route struct {
 	Modify    *mesh_proto.TrafficRoute_Http_Modify
 	RateLimit *mesh_proto.RateLimit
 	Clusters  []Cluster
+	Name      string
 }
 
 func NewRouteFromCluster(cluster Cluster) Route {

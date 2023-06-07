@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: route_0_0
                 route:
                   cluster: backend
                   regexRewrite:
@@ -40,12 +41,14 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: route_0_1
                 route:
                   cluster: backend
                   prefixRewrite: /v2
                   timeout: 0s
               - match:
                   prefix: /
+                name: route_0_0
                 route:
                   cluster: backend
                   timeout: 0s

@@ -145,6 +145,7 @@ Routes:
         routes:
         - match:
             path: /service/echo
+          name: route_0
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s

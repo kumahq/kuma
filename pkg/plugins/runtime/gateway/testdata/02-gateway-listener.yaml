@@ -136,6 +136,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
     edge-gateway:HTTP:9090:
       ignorePortInHostMatching: true
       name: edge-gateway:HTTP:9090
@@ -154,6 +155,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
 Runtimes:
   Resources:
     gateway.listeners:

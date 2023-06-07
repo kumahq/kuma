@@ -89,6 +89,7 @@ Routes:
             status: 404
           match:
             prefix: /
+          name: route_default
 Runtimes:
   Resources:
     gateway.listeners:

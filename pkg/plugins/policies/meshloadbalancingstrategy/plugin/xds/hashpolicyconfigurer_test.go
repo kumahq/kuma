@@ -16,6 +16,7 @@ import (
 var _ = Describe("HashPolicyConfigurer", func() {
 	type testCase struct {
 		hashPolicies []api.HashPolicy
+		routeName    string
 		expected     string
 	}
 
@@ -25,7 +26,7 @@ var _ = Describe("HashPolicyConfigurer", func() {
 			configurer := &xds.HashPolicyConfigurer{
 				HashPolicies: given.hashPolicies,
 			}
-			rb, err := (&route.RouteBuilder{}).Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+			rb, err := route.NewRouteBuilder(given.routeName).Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				envoyRoute.Action = &envoy_route.Route_Route{
 					Route: &envoy_route.RouteAction{},
 				}
@@ -50,8 +51,10 @@ var _ = Describe("HashPolicyConfigurer", func() {
 					},
 				},
 			},
+			routeName: "header-hash",
 			expected: `
 match: {}
+name: header-hash
 route:
   hashPolicy:
     - header:
@@ -68,8 +71,10 @@ route:
 					},
 				},
 			},
+			routeName: "cookie-hash",
 			expected: `
 match: {}
+name: cookie-hash
 route:
   hashPolicy:
     - cookie:
@@ -86,8 +91,10 @@ route:
 					},
 				},
 			},
+			routeName: "connection-hash",
 			expected: `
 match: {}
+name: connection-hash
 route:
   hashPolicy:
     - connectionProperties:
@@ -102,8 +109,10 @@ route:
 					},
 				},
 			},
+			routeName: "query-hash",
 			expected: `
 match: {}
+name: query-hash
 route:
   hashPolicy:
     - queryParameter:
@@ -118,8 +127,10 @@ route:
 					},
 				},
 			},
+			routeName: "filter-state-hash",
 			expected: `
 match: {}
+name: filter-state-hash
 route:
   hashPolicy:
     - filterState:
@@ -164,8 +175,10 @@ route:
 					Terminal: pointer.To(true),
 				},
 			},
+			routeName: "multiple-hash",
 			expected: `
 match: {}
+name: multiple-hash
 route:
   hashPolicy:
     - filterState:

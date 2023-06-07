@@ -334,6 +334,8 @@ properties:
                             - PUT
                             - TRACE
                           type: string
+                        name:
+                          type: string
                         path:
                           properties:
                             type:
@@ -370,6 +372,8 @@ properties:
                               - value
                             type: object
                           type: array
+                      required:
+                        - name
                       type: object
                     minItems: 1
                     type: array

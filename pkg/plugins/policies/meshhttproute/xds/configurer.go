@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"fmt"
 	"strings"
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -25,7 +26,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	matches := c.routeMatch(c.Matches)
 
 	for _, match := range matches {
-		rb := &route.RouteBuilder{}
+		rb := route.NewRouteBuilder(match.name)
 
 		rb.Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 			// todo: create configurers for Match and Action
@@ -68,6 +69,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 type routeMatch struct {
 	routeMatch  *envoy_route.RouteMatch
 	prefixMatch bool
+	name        string
 }
 
 // routeMatch returns a list of RouteMatches given a list of MeshHTTPRoute matches
@@ -76,7 +78,7 @@ type routeMatch struct {
 func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 	var allEnvoyMatches []routeMatch
 
-	for _, match := range matches {
+	for i, match := range matches {
 		var envoyMatches []*envoy_route.RouteMatch
 
 		if match.Path != nil {
@@ -85,7 +87,7 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 			envoyMatches = []*envoy_route.RouteMatch{{}}
 		}
 
-		for _, envoyMatch := range envoyMatches {
+		for j, envoyMatch := range envoyMatches {
 			if match.Method != nil {
 				c.routeMethodMatch(envoyMatch, *match.Method)
 			}
@@ -94,9 +96,17 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 			}
 			routeHeadersMatch(envoyMatch, match.Headers)
 			if match.Path != nil && match.Path.Type == api.PathPrefix {
-				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{
+					routeMatch:  envoyMatch,
+					prefixMatch: true,
+					name:        fmt.Sprintf("route_%d_%d", i, j),
+				})
 			} else {
-				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{
+					routeMatch:  envoyMatch,
+					prefixMatch: false,
+					name:        fmt.Sprintf("route_%d_%d", i, j),
+				})
 			}
 		}
 	}

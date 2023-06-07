@@ -78,7 +78,6 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 			hcm.HttpFilters = append(hcm.HttpFilters, router)
 			return nil
 		})
-
 		return &filterChain, nil
 
 	default:

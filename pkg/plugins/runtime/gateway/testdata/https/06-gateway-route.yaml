@@ -175,6 +175,7 @@ Routes:
         routes:
         - match:
             path: /
+          name: route_0
           requestHeadersToAdd:
           - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
