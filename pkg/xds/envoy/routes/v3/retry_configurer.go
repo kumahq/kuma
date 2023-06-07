@@ -1,4 +1,4 @@
-package common
+package v3
 
 import (
 	"strings"
@@ -156,7 +156,7 @@ func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *e
 	default:
 		return nil
 	}
-	return policy	
+	return policy
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {

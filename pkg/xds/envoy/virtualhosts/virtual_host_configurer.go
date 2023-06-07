@@ -7,10 +7,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_common_v2 "github.com/kumahq/kuma/pkg/xds/envoy/common"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
-
 
 func CommonVirtualHost(name string) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
@@ -79,7 +77,7 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 func Retry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
-			vh.RetryPolicy = envoy_common_v2.RetryConfig(retry, protocol)
+			vh.RetryPolicy = v3.RetryConfig(retry, protocol)
 		}),
 	)
 }

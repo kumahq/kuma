@@ -14,8 +14,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy/common"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
@@ -513,9 +513,9 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			p.RetryOn = envoy_common.HttpRetryOnDefault
+			p.RetryOn = envoy_routes.HttpRetryOnDefault
 		case core_mesh.ProtocolGRPC:
-			p.RetryOn = envoy_common.GrpcRetryOnDefault
+			p.RetryOn = envoy_routes.GrpcRetryOnDefault
 		}
 
 		route.RetryPolicy = p
@@ -533,7 +533,7 @@ func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_mesh.Protoco
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		route := r.GetRoute()
-		route.RetryPolicy = envoy_common.RetryConfig(retry, protocol)
+		route.RetryPolicy = envoy_routes.RetryConfig(retry, protocol)
 		return nil
 	})
 }

@@ -1,4 +1,4 @@
-package v3_test
+package virtualhosts_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -6,7 +6,7 @@ import (
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 var _ = Describe("CommonVirtualHostConfigurer", func() {

@@ -23,9 +23,14 @@ func TagsHeader(tags mesh_proto.MultiValueTagSet) RouteConfigurationBuilderOpt {
 
 func VirtualHost(builder *envoy_virtual_hosts.VirtualHostBuilder) RouteConfigurationBuilderOpt {
 	return AddRouteConfigurationConfigurer(
-		&RouteConfigurationVirtualHostConfigurerV3{
-			builder: builder,
-		})
+		v3.RouteConfigurationConfigureFunc(func(rc *envoy_route.RouteConfiguration) error {
+			virtualHost, err := builder.Build()
+			if err != nil {
+				return err
+			}
+			rc.VirtualHosts = append(rc.VirtualHosts, virtualHost.(*envoy_route.VirtualHost))
+			return nil
+		}))
 }
 
 func CommonRouteConfiguration(name string) RouteConfigurationBuilderOpt {
