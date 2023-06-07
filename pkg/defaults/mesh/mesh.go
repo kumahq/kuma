@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
