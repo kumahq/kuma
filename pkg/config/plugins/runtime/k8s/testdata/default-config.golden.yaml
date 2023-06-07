@@ -2,6 +2,9 @@ admissionServer:
   address: ""
   certDir: ""
   port: 5443
+clientConfig:
+  burstQps: 100
+  qps: 100
 controlPlaneServiceName: kuma-control-plane
 injector:
   builtinDNS:
