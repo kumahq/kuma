@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -47,10 +46,13 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	if err != nil {
 		return err
 	}
-	config := kube_ctrl.GetConfigOrDie()
+	restClientConfig := kube_ctrl.GetConfigOrDie()
+	restClientConfig.QPS = float32(b.Config().Runtime.Kubernetes.ClientConfig.Qps)
+	restClientConfig.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
+
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
 	mgr, err := kube_ctrl.NewManager(
-		config,
+		restClientConfig,
 		kube_ctrl.Options{
 			Scheme: scheme,
 			Cache: cache.Options{
@@ -67,18 +69,13 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
-			NewClient: func(config *rest.Config, options kube_client.Options) (kube_client.Client, error) {
-				config.QPS = b.Config().Runtime.Kubernetes.ClientConfig.Qps
-				config.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
-				return client.New(config, options)
-			},
 		},
 	)
 	if err != nil {
 		return err
 	}
 
-	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, config, mgr.GetRESTMapper())
+	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, restClientConfig, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}

@@ -212,7 +212,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
-			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(float32(100)))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
