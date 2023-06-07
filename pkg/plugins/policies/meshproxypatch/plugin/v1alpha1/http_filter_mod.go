@@ -9,7 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"

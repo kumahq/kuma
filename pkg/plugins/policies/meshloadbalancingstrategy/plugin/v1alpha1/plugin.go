@@ -13,10 +13,11 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -64,7 +65,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 func (p plugin) configureDPP(
 	proxy *core_xds.Proxy,
-	toRules core_xds.ToRules,
+	toRules core_rules.ToRules,
 	listeners policies_xds.Listeners,
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
@@ -75,7 +76,7 @@ func (p plugin) configureDPP(
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 
-		computed := toRules.Rules.Compute(core_xds.MeshService(serviceName))
+		computed := toRules.Rules.Compute(core_rules.MeshService(serviceName))
 		if computed == nil {
 			continue
 		}
@@ -134,8 +135,8 @@ func configureEndpoints(
 func (p plugin) configureGateway(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
-	rules core_xds.ToRules,
-	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	rules core_rules.ToRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
@@ -149,13 +150,13 @@ func (p plugin) configureGateway(
 		return err
 	}
 
-	conf := core_xds.ComputeConf[api.Conf](rules.Rules, core_xds.MeshSubset())
+	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 	if conf == nil {
 		return nil
 	}
 
 	for _, listenerInfo := range gatewayListenerInfos {
-		listener, ok := gatewayListeners[core_xds.InboundListener{
+		listener, ok := gatewayListeners[core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			Port:    listenerInfo.Listener.Port,
 		}]
@@ -235,7 +236,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 // Zone egress is a single point for multiple clients. At this moment we don't support different
 // configurations based on the client, that's why locality awareness is enabled if at least one
 // client requires it to be enabled.
-func (p plugin) isLocalityAware(fr core_xds.FromRules) bool {
+func (p plugin) isLocalityAware(fr core_rules.FromRules) bool {
 	for _, rules := range fr.Rules {
 		for _, r := range rules {
 			conf := r.Conf.(api.Conf)

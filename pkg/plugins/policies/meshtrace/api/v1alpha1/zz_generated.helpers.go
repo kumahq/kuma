@@ -6,7 +6,7 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func (x *MeshTrace) GetTargetRef() common_api.TargetRef {
@@ -17,7 +17,7 @@ func (x *MeshTrace) GetDefault() interface{} {
 	return x.Default
 }
 
-func (x *MeshTrace) GetPolicyItem() core_xds.PolicyItem {
+func (x *MeshTrace) GetPolicyItem() core_model.PolicyItem {
 	return &policyItem{
 		MeshTrace: x,
 	}
@@ -28,7 +28,7 @@ type policyItem struct {
 	*MeshTrace
 }
 
-var _ core_xds.PolicyItem = &policyItem{}
+var _ core_model.PolicyItem = &policyItem{}
 
 func (p *policyItem) GetTargetRef() common_api.TargetRef {
 	return common_api.TargetRef{Kind: common_api.Mesh}

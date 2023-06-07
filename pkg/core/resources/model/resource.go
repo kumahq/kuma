@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 const (
@@ -303,4 +305,29 @@ type ResourceWithAddress interface {
 func ZoneOfResource(res Resource) string {
 	parts := strings.Split(res.GetMeta().GetName(), ".")
 	return parts[0]
+}
+
+type PolicyItem interface {
+	GetTargetRef() common_api.TargetRef
+	GetDefault() interface{}
+}
+
+type Policy interface {
+	ResourceSpec
+	GetTargetRef() common_api.TargetRef
+}
+
+type PolicyWithToList interface {
+	Policy
+	GetToList() []PolicyItem
+}
+
+type PolicyWithFromList interface {
+	Policy
+	GetFromList() []PolicyItem
+}
+
+type PolicyWithSingleItem interface {
+	Policy
+	GetPolicyItem() PolicyItem
 }

@@ -1,4 +1,4 @@
-package xds_test
+package rules_test
 
 import (
 	"os"
@@ -10,8 +10,8 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -22,17 +22,17 @@ var _ = Describe("Rules", func() {
 	Describe("SubsetIter", func() {
 		It("should return all possible subsets for the given set of tags", func() {
 			// given
-			tags := []xds.Tag{
+			tags := []core_rules.Tag{
 				{Key: "k1", Value: "v1"},
 				{Key: "k2", Value: "v2"},
 				{Key: "k3", Value: "v3"},
 			}
 
 			// when
-			iter := xds.NewSubsetIter(tags)
+			iter := core_rules.NewSubsetIter(tags)
 
 			// then
-			expected := [][]xds.Tag{
+			expected := [][]core_rules.Tag{
 				{
 					{Key: "k1", Not: true, Value: "v1"},
 					{Key: "k2", Value: "v2"},
@@ -83,29 +83,29 @@ var _ = Describe("Rules", func() {
 
 		It("should handle empty tags", func() {
 			// given
-			tags := []xds.Tag{}
+			tags := []core_rules.Tag{}
 
 			// when
-			iter := xds.NewSubsetIter(tags)
+			iter := core_rules.NewSubsetIter(tags)
 
 			// then
 			empty := iter.Next()
-			Expect(empty).To(Equal(xds.Subset{}))
+			Expect(empty).To(Equal(core_rules.Subset{}))
 		})
 
 		It("should handle tags with equal keys", func() {
 			// given
-			tags := []xds.Tag{
+			tags := []core_rules.Tag{
 				{Key: "zone", Value: "us-east"},
 				{Key: "env", Value: "dev"},
 				{Key: "env", Value: "prod"},
 			}
 
 			// when
-			iter := xds.NewSubsetIter(tags)
+			iter := core_rules.NewSubsetIter(tags)
 
 			// then
-			expected := []xds.Subset{
+			expected := []core_rules.Subset{
 				{
 					{Key: "zone", Value: "us-east"},
 					{Key: "env", Value: "prod"},
@@ -156,11 +156,11 @@ var _ = Describe("Rules", func() {
 
 				policies := util_yaml.SplitYAML(string(policiesBytes))
 
-				listener := xds.InboundListener{
+				listener := core_rules.InboundListener{
 					Address: "127.0.0.1",
 					Port:    80,
 				}
-				policiesByInbound := map[xds.InboundListener][]core_model.Resource{}
+				policiesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
 
 				for _, policyBytes := range policies {
 					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
@@ -169,7 +169,7 @@ var _ = Describe("Rules", func() {
 				}
 
 				// when
-				rules, err := xds.BuildFromRules(policiesByInbound)
+				rules, err := core_rules.BuildFromRules(policiesByInbound)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -224,7 +224,7 @@ var _ = Describe("Rules", func() {
 				}
 
 				// when
-				rules, err := xds.BuildToRules(policies)
+				rules, err := core_rules.BuildToRules(policies)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -255,7 +255,7 @@ var _ = Describe("Rules", func() {
 				}
 
 				// when
-				rules, err := xds.BuildSingleItemRules(policies)
+				rules, err := core_rules.BuildSingleItemRules(policies)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -277,8 +277,8 @@ var _ = Describe("Rules", func() {
 
 	Describe("Eval", func() {
 		type testCase struct {
-			rules    xds.Rules
-			subset   xds.Subset
+			rules    core_rules.Rules
+			subset   core_rules.Subset
 			confYAML []byte
 		}
 
@@ -294,9 +294,9 @@ var _ = Describe("Rules", func() {
 				}
 			},
 			Entry("single matched rule", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -304,16 +304,16 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("single matched not", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -321,15 +321,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val2"},
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("single matched rule, rule and subset with negation", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -337,30 +337,30 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("empty set is a superset for all subset", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{}, // empty set
+						Subset: []core_rules.Tag{}, // empty set
 						Conf: meshtrafficpermission_api.Conf{
 							Action: "Allow",
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("no rules matched, rule with negation, subset without key", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -368,15 +368,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key2", Value: "val2"},
 				},
 				confYAML: nil,
 			}),
 			Entry("no rules matched, subset has key which is not presented in superset", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -384,15 +384,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key2", Value: "val2"}, // key2 is not in rules[0].Subset
 				},
 				confYAML: nil,
 			}),
 			Entry("no rules matched, subset has key with another value", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -400,15 +400,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val2"}, // val2 is not equal to rules[0].Subset["key1"]
 				},
 				confYAML: nil,
 			}),
 			Entry("no rules matched, rule with negation", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -416,15 +416,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1"}, // rule has "key1: !val1"
 				},
 				confYAML: nil,
 			}),
 			Entry("no rules matched, subset with negation", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: []xds.Tag{
+						Subset: []core_rules.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -432,15 +432,15 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1", Not: true}, // rule has "key1: val1"
 				},
 				confYAML: nil,
 			}),
 			Entry("the first matched conf is taken", testCase{
-				rules: xds.Rules{
+				rules: core_rules.Rules{
 					{
-						Subset: xds.Subset{
+						Subset: core_rules.Subset{
 							{Key: "key1", Value: "val1"}, // not matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -448,7 +448,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 					{
-						Subset: xds.Subset{
+						Subset: core_rules.Subset{
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -456,13 +456,13 @@ var _ = Describe("Rules", func() {
 						},
 					},
 					{
-						Subset: xds.Subset{}, // matched but not the first
+						Subset: core_rules.Subset{}, // matched but not the first
 						Conf: meshtrafficpermission_api.Conf{
 							Action: "AllowWithShadowDeny",
 						},
 					},
 				},
-				subset: []xds.Tag{
+				subset: []core_rules.Tag{
 					{Key: "key2", Value: "val2"},
 					{Key: "key3", Value: "val3"},
 				},

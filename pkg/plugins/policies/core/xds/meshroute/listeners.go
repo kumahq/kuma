@@ -7,7 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"

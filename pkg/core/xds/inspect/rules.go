@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -23,7 +24,7 @@ type RuleAttachment struct {
 	Service    string
 	Tags       map[string]string
 	PolicyType core_model.ResourceType
-	Rule       core_xds.Rule
+	Rule       core_rules.Rule
 }
 
 func (r *RuleAttachment) AddAddress(address string) {
@@ -64,14 +65,14 @@ func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]cor
 }
 
 func getInboundRuleAttachments(
-	fromRules map[core_xds.InboundListener]core_xds.Rules,
+	fromRules map[core_rules.InboundListener]core_rules.Rules,
 	networking *mesh_proto.Dataplane_Networking,
 	typ core_model.ResourceType,
 ) []RuleAttachment {
-	inboundServices := map[core_xds.InboundListener]tags.Tags{}
+	inboundServices := map[core_rules.InboundListener]tags.Tags{}
 	for _, inbound := range networking.GetInbound() {
 		iface := networking.ToInboundInterface(inbound)
-		inboundServices[core_xds.InboundListener{
+		inboundServices[core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}] = inbound.GetTags()
@@ -99,7 +100,7 @@ func getInboundRuleAttachments(
 	return attachments
 }
 
-func getOutboundRuleAttachments(rules core_xds.Rules, networking *mesh_proto.Dataplane_Networking, typ core_model.ResourceType, domainsByAddress map[string][]string) []RuleAttachment {
+func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.Dataplane_Networking, typ core_model.ResourceType, domainsByAddress map[string][]string) []RuleAttachment {
 	var attachments []RuleAttachment
 	byUniqueClusterName := map[string]*RuleAttachment{}
 	for _, outbound := range networking.Outbound {
@@ -111,7 +112,7 @@ func getOutboundRuleAttachments(rules core_xds.Rules, networking *mesh_proto.Dat
 		}
 		attachment := byUniqueClusterName[name]
 		if attachment == nil {
-			subset := core_xds.SubsetFromTags(outboundTags)
+			subset := core_rules.SubsetFromTags(outboundTags)
 			computedRule := rules.Compute(subset)
 			if computedRule == nil {
 				continue

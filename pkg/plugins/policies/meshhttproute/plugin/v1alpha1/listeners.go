@@ -9,10 +9,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -113,7 +114,7 @@ func prepareRoutes(
 	var rules []api.Rule
 
 	for _, toRule := range toRules {
-		if toRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
+		if toRule.Subset.IsSubset(core_rules.MeshService(serviceName)) {
 			rules = toRule.Rules
 		}
 	}

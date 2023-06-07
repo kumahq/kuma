@@ -13,7 +13,7 @@ import (
 	kubectl_output "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 )
