@@ -5,8 +5,8 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 

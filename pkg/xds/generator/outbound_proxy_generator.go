@@ -151,7 +151,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		case core_mesh.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
-				Configure(envoy_listeners.TcpProxy(serviceName, routes.Clusters()...)).
+				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
 				Configure(envoy_listeners.NetworkAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -167,7 +167,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
-				Configure(envoy_listeners.TcpProxy(serviceName, routes.Clusters()...)).
+				Configure(envoy_listeners.TcpProxyDeprecated(serviceName, routes.Clusters()...)).
 				Configure(envoy_listeners.NetworkAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,

@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -46,7 +47,7 @@ var _ = Describe("MeshTCPRoute", func() {
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
-		expectedRoutes core_xds.ToRules
+		expectedRoutes core_rules.ToRules
 	}
 
 	DescribeTable("MatchedPolicies",
@@ -117,10 +118,10 @@ var _ = Describe("MeshTCPRoute", func() {
 					},
 				},
 			},
-			expectedRoutes: core_xds.ToRules{
-				Rules: core_xds.Rules{
+			expectedRoutes: core_rules.ToRules{
+				Rules: core_rules.Rules{
 					{
-						Subset: core_xds.MeshService("backend"),
+						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -249,7 +250,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			rules := core_xds.Rules{
+			rules := core_rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -289,7 +290,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			policies := core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshTCPRouteType: {
-						ToRules: core_xds.ToRules{Rules: rules},
+						ToRules: core_rules.ToRules{Rules: rules},
 					},
 				},
 			}
@@ -344,7 +345,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			rules := core_xds.Rules{
+			rules := core_rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -364,7 +365,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			policies := core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshTCPRouteType: {
-						ToRules: core_xds.ToRules{Rules: rules},
+						ToRules: core_rules.ToRules{Rules: rules},
 					},
 				},
 			}
@@ -427,7 +428,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			tcpRules := core_xds.Rules{
+			tcpRules := core_rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -444,7 +445,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			httpRules := core_xds.Rules{
+			httpRules := core_rules.Rules{
 				{
 					Conf: meshhttproute_api.PolicyDefault{
 						Rules: []meshhttproute_api.Rule{
@@ -474,10 +475,10 @@ var _ = Describe("MeshTCPRoute", func() {
 			policies := core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshTCPRouteType: {
-						ToRules: core_xds.ToRules{Rules: tcpRules},
+						ToRules: core_rules.ToRules{Rules: tcpRules},
 					},
 					meshhttproute_api.MeshHTTPRouteType: {
-						ToRules: core_xds.ToRules{Rules: httpRules},
+						ToRules: core_rules.ToRules{Rules: httpRules},
 					},
 				},
 			}
@@ -540,7 +541,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			tcpRules := core_xds.Rules{
+			tcpRules := core_rules.Rules{
 				{
 					Conf: api.Rule{
 						Default: api.RuleConf{
@@ -557,7 +558,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			httpRules := core_xds.Rules{
+			httpRules := core_rules.Rules{
 				{
 					Conf: meshhttproute_api.PolicyDefault{
 						Rules: []meshhttproute_api.Rule{
@@ -587,10 +588,10 @@ var _ = Describe("MeshTCPRoute", func() {
 			policies := core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshTCPRouteType: {
-						ToRules: core_xds.ToRules{Rules: tcpRules},
+						ToRules: core_rules.ToRules{Rules: tcpRules},
 					},
 					meshhttproute_api.MeshHTTPRouteType: {
-						ToRules: core_xds.ToRules{Rules: httpRules},
+						ToRules: core_rules.ToRules{Rules: httpRules},
 					},
 				},
 			}

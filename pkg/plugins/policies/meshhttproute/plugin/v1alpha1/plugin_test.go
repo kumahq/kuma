@@ -16,6 +16,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -43,7 +44,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
-		expectedRoutes core_xds.ToRules
+		expectedRoutes core_rules.ToRules
 	}
 	DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 		routes, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).MatchedPolicies(given.dataplane, given.resources)
@@ -118,10 +119,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			},
 		},
-		expectedRoutes: core_xds.ToRules{
-			Rules: core_xds.Rules{
+		expectedRoutes: core_rules.ToRules{
+			Rules: core_rules.Rules{
 				{
-					Subset: core_xds.MeshService("backend"),
+					Subset: core_rules.MeshService("backend"),
 					Conf: api.PolicyDefault{
 						Rules: []api.Rule{{
 							Matches: []api.Match{{
@@ -222,9 +223,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
-										Subset: core_xds.MeshService("some-nonexistent-service"),
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{{
+										Subset: core_rules.MeshService("some-nonexistent-service"),
 										Conf:   api.PolicyDefault{},
 									}},
 								},
@@ -267,8 +268,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{{
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -364,8 +365,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{{
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -418,10 +419,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{
 										{
-											Subset: core_xds.MeshService("backend"),
+											Subset: core_rules.MeshService("backend"),
 											Conf: api.PolicyDefault{
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
@@ -510,10 +511,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{
 										{
-											Subset: core_xds.MeshService("backend"),
+											Subset: core_rules.MeshService("backend"),
 											Conf: api.PolicyDefault{
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
@@ -572,10 +573,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{
 										{
-											Subset: core_xds.MeshService("backend"),
+											Subset: core_rules.MeshService("backend"),
 											Conf: api.PolicyDefault{
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
@@ -644,10 +645,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Policies: core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
-								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{
 										{
-											Subset: core_xds.MeshService("backend"),
+											Subset: core_rules.MeshService("backend"),
 											Conf: api.PolicyDefault{
 												Rules: []api.Rule{{
 													Matches: []api.Match{{

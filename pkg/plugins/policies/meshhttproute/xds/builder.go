@@ -6,7 +6,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -16,7 +15,7 @@ import (
 type OutboundRoute struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
-	Split                   []*plugins_xds.Split
+	Split                   []envoy_common.Split
 	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 

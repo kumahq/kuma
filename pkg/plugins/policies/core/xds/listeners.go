@@ -6,16 +6,17 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 type Listeners struct {
-	Inbound         map[xds.InboundListener]*envoy_listener.Listener
+	Inbound         map[core_rules.InboundListener]*envoy_listener.Listener
 	Outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
-	Egress          map[xds.InboundListener]*envoy_listener.Listener
-	Gateway         map[xds.InboundListener]*envoy_listener.Listener
+	Egress          map[core_rules.InboundListener]*envoy_listener.Listener
+	Gateway         map[core_rules.InboundListener]*envoy_listener.Listener
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
 	DirectAccess    map[generator.Endpoint]*envoy_listener.Listener
@@ -23,9 +24,9 @@ type Listeners struct {
 
 func GatherListeners(rs *xds.ResourceSet) Listeners {
 	listeners := Listeners{
-		Inbound:      map[xds.InboundListener]*envoy_listener.Listener{},
+		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
-		Gateway:      map[xds.InboundListener]*envoy_listener.Listener{},
+		Gateway:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		DirectAccess: map[generator.Endpoint]*envoy_listener.Listener{},
 	}
 
@@ -40,12 +41,12 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				DataplanePort: address.GetPortValue(),
 			}] = listener
 		case generator.OriginInbound:
-			listeners.Inbound[xds.InboundListener{
+			listeners.Inbound[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
 		case egress_generator.OriginEgress:
-			listeners.Inbound[xds.InboundListener{
+			listeners.Inbound[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
@@ -62,7 +63,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Port:    address.GetPortValue(),
 			}] = listener
 		case metadata.OriginGateway:
-			listeners.Gateway[xds.InboundListener{
+			listeners.Gateway[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener

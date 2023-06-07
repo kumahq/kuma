@@ -27,7 +27,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(TcpProxyWithMetadata(given.statsName, given.clusters...)))).
+					Configure(TcpProxyDeprecatedWithMetadata(given.statsName, given.clusters...)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -123,7 +123,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(TcpProxy(given.statsName, given.clusters...)))).
+					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

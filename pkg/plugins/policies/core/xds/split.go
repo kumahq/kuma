@@ -1,14 +1,18 @@
 package xds
 
+import "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+
 type Split struct {
 	clusterName string
 	weight      uint32
+	lbMetadata  tags.Tags
 
 	hasExternalService bool
 }
 
 func (s *Split) ClusterName() string      { return s.clusterName }
 func (s *Split) Weight() uint32           { return s.weight }
+func (s *Split) LBMetadata() tags.Tags    { return s.lbMetadata }
 func (s *Split) HasExternalService() bool { return s.hasExternalService }
 
 type NewSplitOpt interface {

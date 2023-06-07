@@ -13,6 +13,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
@@ -72,18 +73,59 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 	})
 }
 
-func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+type splitAdapter struct {
+	clusterName string
+	weight      uint32
+	lbMetadata  tags.Tags
+
+	hasExternalService bool
+}
+
+func (s *splitAdapter) ClusterName() string      { return s.clusterName }
+func (s *splitAdapter) Weight() uint32           { return s.weight }
+func (s *splitAdapter) LBMetadata() tags.Tags    { return s.lbMetadata }
+func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
+
+func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+	var splits []envoy_common.Split
+	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
+		splits = append(splits, &splitAdapter{
+			clusterName:        cluster.Name(),
+			weight:             cluster.Weight(),
+			lbMetadata:         cluster.Tags(),
+			hasExternalService: cluster.IsExternalService(),
+		})
+	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
-		Clusters:    clusters,
+		Splits:      splits,
 		UseMetadata: false,
 	})
 }
 
-func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+	var splits []envoy_common.Split
+	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
+		splits = append(splits, &splitAdapter{
+			clusterName:        cluster.Name(),
+			weight:             cluster.Weight(),
+			lbMetadata:         cluster.Tags(),
+			hasExternalService: cluster.IsExternalService(),
+		})
+	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
-		Clusters:    clusters,
+		Splits:      splits,
+		UseMetadata: true,
+	})
+}
+
+func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
+		StatsName:   statsName,
+		Splits:      splits,
 		UseMetadata: true,
 	})
 }

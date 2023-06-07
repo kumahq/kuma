@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -34,7 +35,7 @@ import (
 var _ = Describe("MeshRetry", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
-		toRules          core_xds.ToRules
+		toRules          core_rules.ToRules
 		goldenFilePrefix string
 	}
 
@@ -98,10 +99,10 @@ var _ = Describe("MeshRetry", func() {
 				Origin:   generator.OriginOutbound,
 				Resource: httpListener(10001),
 			}},
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](1),
@@ -191,10 +192,10 @@ var _ = Describe("MeshRetry", func() {
 				Origin:   generator.OriginOutbound,
 				Resource: httpListener(10002),
 			}},
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{core_xds.Tag{
+						Subset: core_rules.Subset{core_rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "grpc-service",
 						}},
@@ -239,10 +240,10 @@ var _ = Describe("MeshRetry", func() {
 				Origin:   generator.OriginOutbound,
 				Resource: tcpListener(10003),
 			}},
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
 								MaxConnectAttempt: pointer.To[uint32](21),
@@ -256,7 +257,7 @@ var _ = Describe("MeshRetry", func() {
 	)
 
 	type gatewayTestCase struct {
-		toRules          core_xds.ToRules
+		toRules          core_rules.ToRules
 		goldenFilePrefix string
 		gateways         []*core_mesh.MeshGatewayResource
 		gatewayRoutes    []*core_mesh.MeshGatewayRouteResource
@@ -301,10 +302,10 @@ var _ = Describe("MeshRetry", func() {
 		},
 		Entry("http retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.http",
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](1),
@@ -391,10 +392,10 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("tcp retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.tcp",
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
 								MaxConnectAttempt: pointer.To[uint32](21),
@@ -444,7 +445,7 @@ func tcpListener(port uint32) envoy_common.NamedResource {
 	return NewListenerBuilder(envoy_common.APIV3).
 		Configure(OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(TcpProxy(
+			Configure(TcpProxyDeprecated(
 				fmt.Sprintf("outbound:127.0.0.1:%d", port),
 				envoy_common.NewCluster(
 					envoy_common.WithService("backend"),

@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -22,12 +23,12 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 
 	p := policies.GetItems()[0]
 
-	if _, ok := p.GetSpec().(core_xds.Policy); !ok {
+	if _, ok := p.GetSpec().(core_model.Policy); !ok {
 		return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
 	}
 
-	_, isFrom := p.GetSpec().(core_xds.PolicyWithFromList)
-	_, isTo := p.GetSpec().(core_xds.PolicyWithToList)
+	_, isFrom := p.GetSpec().(core_model.PolicyWithFromList)
+	_, isTo := p.GetSpec().(core_model.PolicyWithToList)
 
 	if isFrom && isTo {
 		return core_xds.TypedMatchingPolicies{}, errors.Errorf("zone egress doesn't support policies that have both 'from' and 'to'")
@@ -37,7 +38,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 		return core_xds.TypedMatchingPolicies{}, nil
 	}
 
-	var fr core_xds.FromRules
+	var fr core_rules.FromRules
 	var err error
 	if isFrom {
 		fr, err = processFromRules(es, policies)
@@ -57,11 +58,11 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 func processFromRules(
 	es *core_mesh.ExternalServiceResource,
 	rl core_model.ResourceList,
-) (core_xds.FromRules, error) {
+) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range rl.GetItems() {
-		spec := policy.GetSpec().(core_xds.Policy)
+		spec := policy.GetSpec().(core_model.Policy)
 		if !externalServiceSelectedByTargetRef(spec.GetTargetRef(), es) {
 			continue
 		}
@@ -70,7 +71,7 @@ func processFromRules(
 
 	sort.Sort(ByTargetRef(matchedPolicies))
 
-	return core_xds.BuildFromRules(map[core_xds.InboundListener][]core_model.Resource{
+	return core_rules.BuildFromRules(map[core_rules.InboundListener][]core_model.Resource{
 		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
 	})
 }
@@ -115,15 +116,15 @@ func processFromRules(
 func processToRules(
 	es *core_mesh.ExternalServiceResource,
 	rl core_model.ResourceList,
-) (core_xds.FromRules, error) {
+) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range rl.GetItems() {
-		spec := policy.GetSpec().(core_xds.Policy)
+		spec := policy.GetSpec().(core_model.Policy)
 
-		to, ok := spec.(core_xds.PolicyWithToList)
+		to, ok := spec.(core_model.PolicyWithToList)
 		if !ok {
-			return core_xds.FromRules{}, nil
+			return core_rules.FromRules{}, nil
 		}
 
 		for _, item := range to.GetToList() {
@@ -135,28 +136,28 @@ func processToRules(
 
 	sort.Sort(ByTargetRef(matchedPolicies))
 
-	toList := []core_xds.PolicyItemWithMeta{}
+	toList := []core_rules.PolicyItemWithMeta{}
 	for _, policy := range matchedPolicies {
-		for _, item := range policy.GetSpec().(core_xds.PolicyWithToList).GetToList() {
+		for _, item := range policy.GetSpec().(core_model.PolicyWithToList).GetToList() {
 			if !externalServiceSelectedByTargetRef(item.GetTargetRef(), es) {
 				continue
 			}
 			// convert 'to' policyItem to 'from' policyItem
 			artificial := &artificialPolicyItem{
 				conf:      item.GetDefault(),
-				targetRef: policy.GetSpec().(core_xds.Policy).GetTargetRef(),
+				targetRef: policy.GetSpec().(core_model.Policy).GetTargetRef(),
 			}
-			toList = append(toList, core_xds.BuildPolicyItemsWithMeta([]core_xds.PolicyItem{artificial},
+			toList = append(toList, core_rules.BuildPolicyItemsWithMeta([]core_model.PolicyItem{artificial},
 				policy.GetMeta())...)
 		}
 	}
 
-	rules, err := core_xds.BuildRules(toList)
+	rules, err := core_rules.BuildRules(toList)
 	if err != nil {
-		return core_xds.FromRules{}, err
+		return core_rules.FromRules{}, err
 	}
 
-	return core_xds.FromRules{Rules: map[core_xds.InboundListener]core_xds.Rules{
+	return core_rules.FromRules{Rules: map[core_rules.InboundListener]core_rules.Rules{
 		{}: rules,
 	}}, nil
 }

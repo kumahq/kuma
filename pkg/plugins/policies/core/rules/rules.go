@@ -1,6 +1,8 @@
-package xds
+package rules
 
 import (
+	"encoding"
+	"fmt"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -10,6 +12,40 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
+
+type InboundListener struct {
+	Address string
+	Port    uint32
+}
+
+// We need to implement TextMarshaler because InboundListener is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundListener{}
+
+func (i InboundListener) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i InboundListener) String() string {
+	return fmt.Sprintf("%s:%d", i.Address, i.Port)
+}
+
+type FromRules struct {
+	Rules map[InboundListener]Rules
+}
+
+type ToRules struct {
+	Rules Rules
+}
+
+type SingleItemRules struct {
+	Rules Rules
+}
+
+type PolicyItemWithMeta struct {
+	core_model.PolicyItem
+	core_model.ResourceMeta
+}
 
 // Tag is a key-value pair. If Not is true then Key != Value
 type Tag struct {
@@ -121,7 +157,7 @@ func BuildFromRules(
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []PolicyItemWithMeta{}
 		for _, p := range policies {
-			policyWithFrom, ok := p.GetSpec().(PolicyWithFromList)
+			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
 			if !ok {
 				return FromRules{}, nil
 			}
@@ -139,7 +175,7 @@ func BuildFromRules(
 func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		policyWithTo, ok := mp.GetSpec().(PolicyWithToList)
+		policyWithTo, ok := mp.GetSpec().(core_model.PolicyWithToList)
 		if !ok {
 			return ToRules{}, nil
 		}
@@ -155,10 +191,21 @@ func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	return ToRules{Rules: rules}, nil
 }
 
+func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {
+	var result []PolicyItemWithMeta
+	for _, item := range items {
+		result = append(result, PolicyItemWithMeta{
+			PolicyItem:   item,
+			ResourceMeta: meta,
+		})
+	}
+	return result
+}
+
 func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRules, error) {
 	items := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		policyWithSingleItem, ok := mp.GetSpec().(PolicyWithSingleItem)
+		policyWithSingleItem, ok := mp.GetSpec().(core_model.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
 			return SingleItemRules{}, nil

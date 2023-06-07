@@ -6,9 +6,10 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds/meshroute"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -18,14 +19,14 @@ import (
 
 func generateListeners(
 	proxy *core_xds.Proxy,
-	toRulesTCP core_xds.Rules,
+	toRulesTCP rules.Rules,
 	servicesAccumulator envoy_common.ServicesAccumulator,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[common_api.TargetRefHash]struct{}{}
+	clusterCache := map[common_api.TargetRefHash]string{}
 	sc := &meshroute_xds.SplitCounter{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	routing := proxy.Routing
@@ -43,9 +44,8 @@ func generateListeners(
 			continue
 		}
 
-		clusters := getClusters(routing, clusterCache, sc, servicesAccumulator,
-			backendRefs)
-		filterChain := buildFilterChain(proxy, serviceName, clusters)
+		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, sc, servicesAccumulator, backendRefs)
+		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)
 		if err != nil {
