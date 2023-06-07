@@ -163,10 +163,23 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 		case mesh_proto.MeshGateway_Listener_NONE:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "cannot be empty")
 		case mesh_proto.MeshGateway_Listener_HTTPS:
-			if l.GetCrossMesh() {
+			switch {
+			case l.GetCrossMesh():
 				err.AddViolationAt(path.Index(i).Field("protocol"), "protocol is not supported with crossMesh")
-			} else if l.GetTls() == nil {
+			case l.GetTls() == nil:
 				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
+			case l.GetTls().GetMode() == mesh_proto.MeshGateway_TLS_PASSTHROUGH:
+				err.AddViolationAt(
+					path.Index(i).Field("tls").Field("mode"),
+					"mode is not supported on HTTPS listeners")
+			}
+		case mesh_proto.MeshGateway_Listener_TLS:
+			// TODO support termination
+			switch l.GetTls().GetMode() {
+			case mesh_proto.MeshGateway_TLS_TERMINATE:
+				err.AddViolationAt(
+					path.Index(i).Field("tls").Field("mode"),
+					"mode is not yet supported on TLS listeners")
 			}
 		}
 

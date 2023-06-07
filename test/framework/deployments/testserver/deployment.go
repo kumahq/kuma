@@ -21,6 +21,8 @@ type DeploymentOpts struct {
 	PodAnnotations     map[string]string
 	NodeSelector       map[string]string
 	protocol           string
+	tlsKey             string
+	tlsCrt             string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -47,6 +49,13 @@ func WithMesh(mesh string) DeploymentOptsFn {
 func WithName(name string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Name = name
+	}
+}
+
+func WithTLS(key, crt string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.tlsKey = key
+		opts.tlsCrt = crt
 	}
 }
 

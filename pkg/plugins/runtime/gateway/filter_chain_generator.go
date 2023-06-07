@@ -78,7 +78,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	return nil, []*envoy_listeners.FilterChainBuilder{newFilterChain(ctx.Mesh, info)}, nil
+	return nil, []*envoy_listeners.FilterChainBuilder{newHTTPFilterChain(ctx.Mesh, info)}, nil
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
@@ -99,7 +99,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			"hostname", host.Hostname,
 		)
 
-		builder := newFilterChain(ctx.Mesh, info)
+		builder := newHTTPFilterChain(ctx.Mesh, info)
 
 		builder.Configure(
 			envoy_listeners.MatchTransportProtocol("tls"),
@@ -251,7 +251,7 @@ func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.Downs
 	return conf
 }
 
-func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
+func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
@@ -383,7 +383,7 @@ func newSecretError(i int, msg string) error {
 	return err.OrNil()
 }
 
-// TCPFilterChainGenerator generates a filter chain for a TCP listener.
+// TCPFilterChainGenerator generates a filter chain for a TCP or TLS listener.
 type TCPFilterChainGenerator struct{}
 
 func (g *TCPFilterChainGenerator) Generate(
@@ -391,14 +391,16 @@ func (g *TCPFilterChainGenerator) Generate(
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
-	log.V(1).Info("generating filter chain", "protocol", "TCP")
+	log.V(1).Info("generating filter chain", "protocol", info.Listener.Protocol)
 
 	var clusters []envoy.Cluster
 	var allDests []route.Destination
+	var sniNames []string
 
 	for _, host := range info.HostInfos {
 		dests := routeDestinations(host.Entries)
 		allDests = append(allDests, dests...)
+		sniNames = append(sniNames, host.Host.Hostname)
 
 		for _, dest := range dests {
 			cluster := envoy.NewCluster(
@@ -422,7 +424,7 @@ func (g *TCPFilterChainGenerator) Generate(
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
 	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
-		envoy_listeners.TcpProxy(service, clusters...),
+		envoy_listeners.TcpProxyDeprecated(service, clusters...),
 		envoy_listeners.NetworkAccessLog(
 			ctx.Mesh.Resource.Meta.GetName(),
 			envoy.TrafficDirectionInbound,
@@ -433,6 +435,13 @@ func (g *TCPFilterChainGenerator) Generate(
 		),
 		envoy_listeners.MaxConnectAttempts(retryPolicy),
 	)
+
+	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
+		builder.Configure(
+			envoy_listeners.MatchTransportProtocol("tls"),
+			envoy_listeners.MatchServerNames(sniNames...),
+		)
+	}
 
 	return nil, []*envoy_listeners.FilterChainBuilder{builder}, nil
 }
