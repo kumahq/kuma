@@ -112,17 +112,6 @@ tags: {}
 				},
 			},
 		}),
-		Entry("MeshGatewayRoute", testCase{
-			inputYaml: `
-kind: MeshGatewayRoute
-name: backend-gateway-route
-`,
-			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGatewayRoute,
-				},
-			},
-		}),
 	)
 
 	DescribeTable("should return as much individual errors as possible with",
@@ -344,41 +333,6 @@ kind: MeshGatewayRoute
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.Mesh,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported
-`,
-		}),
-		Entry("MeshGatewayRoute without name with mesh and tags", testCase{
-			inputYaml: `
-kind: MeshGatewayRoute
-mesh: mesh-1
-tags:
-  tag1: value1
-`,
-			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGatewayRoute,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.name
-    message: must be set with kind MeshGatewayRoute
-  - field: targetRef.mesh
-    message: cannot be set with kind MeshGatewayRoute
-`,
-		}),
-		Entry("MeshHTTPRoute when it's not supported", testCase{
-			inputYaml: `
-kind: MeshHTTPRoute
-`,
-			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshGatewayRoute,
 				},
 			},
 			expected: `
