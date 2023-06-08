@@ -48,7 +48,7 @@ message MeshGateway {
       // that the MeshGateway can't decipher the TLS stream except for the
       // ClientHello message of the TLS protocol. The certificate field
       // is ignored in this mode.
-      // PASSTHROUGH = 2;
+      PASSTHROUGH = 2;
     }
 
     message Options {
@@ -88,10 +88,10 @@ message MeshGateway {
     enum Protocol {
       NONE = 0;
       TCP = 1;
+      TLS = 3;
       HTTP = 4;
       HTTPS = 5;
       // UDP = 2;
-      // TLS = 3;
     }
 
     // Hostname specifies the virtual hostname to match for protocol types that

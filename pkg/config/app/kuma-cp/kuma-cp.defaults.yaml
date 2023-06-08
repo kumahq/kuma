@@ -351,6 +351,14 @@ runtime:
         # Path where compiled eBPF programs are placed
         programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
+    # Kubernetes client configuration
+    clientConfig:
+      # Qps defines maximum requests kubernetes client is allowed to make per second.
+      # Default value 100. If set to 0 kube-client default value of 5 will be used.
+      qps: 100
+      # BurstQps defines maximum burst requests kubernetes client is allowed to make per second
+      # Default value 100. If set to 0 kube-client default value of 10 will be used.
+      burstQps: 100
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC

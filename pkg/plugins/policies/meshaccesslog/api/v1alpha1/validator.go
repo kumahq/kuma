@@ -7,7 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 )
 
 func (r *MeshAccessLogResource) validate() error {
@@ -19,7 +19,6 @@ func (r *MeshAccessLogResource) validate() error {
 	}
 	verr.AddErrorAt(path, validateTo(r.Spec.To))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
-	verr.AddErrorAt(path, validateIncompatibleCombinations(r.Spec))
 	return verr.OrNil()
 }
 
@@ -30,7 +29,6 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
-			common_api.MeshGatewayRoute,
 		},
 	})
 	return targetRefErr
@@ -164,14 +162,5 @@ func validateFormat(format Format) validators.ValidationError {
 		panic(fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
-	return verr
-}
-
-func validateIncompatibleCombinations(spec *MeshAccessLog) validators.ValidationError {
-	var verr validators.ValidationError
-	targetRef := spec.GetTargetRef().Kind
-	if targetRef == common_api.MeshGatewayRoute && len(spec.To) > 0 {
-		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
-	}
 	return verr
 }

@@ -6,7 +6,7 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func (x *MeshFaultInjection) GetTargetRef() common_api.TargetRef {
@@ -21,8 +21,8 @@ func (x *From) GetDefault() interface{} {
 	return x.Default
 }
 
-func (x *MeshFaultInjection) GetFromList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
+func (x *MeshFaultInjection) GetFromList() []core_model.PolicyItem {
+	var result []core_model.PolicyItem
 	for i := range x.From {
 		item := x.From[i]
 		result = append(result, &item)

@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -38,6 +39,13 @@ spec:
       protocol: TCP
       tags:
         protocol: tcp
+    - port: 8082
+      protocol: TLS
+      tls:
+        mode: PASSTHROUGH
+      hostname: example-passthrough.kuma.io
+      tags:
+        protocol: tls
 `
 
 	BeforeAll(func() {
@@ -327,6 +335,87 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response).Should(Equal("response"))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("TLS", func() {
+		tcpRoute := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayRoute
+metadata:
+  name: mtls-gateway-tls-passthrough
+mesh: gateway-mtls
+spec:
+  selectors:
+  - match:
+      kuma.io/service: mtls-edge-gateway
+      protocol: tls
+  conf:
+    tcp:
+      rules:
+      - backends:
+        - destination:
+            kuma.io/service: tls-server_gateway-mtls_svc_443
+`
+
+		BeforeAll(func() {
+			cert, key, err := CreateCertsFor("example.kuma.io")
+			Expect(err).To(Succeed())
+
+			setup := NewClusterSetup().
+				Install(YamlK8s(tcpRoute)).
+				Install(testserver.Install(
+					testserver.WithMesh(meshName),
+					testserver.WithName("tls-server"),
+					testserver.WithTLS(key, cert),
+					testserver.WithNamespace(namespace),
+				))
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
+		})
+
+		It("should passthrough TLS connections", func() {
+			Eventually(func(g Gomega) {
+				clusterIP, err := k8s.RunKubectlAndGetOutputE(
+					kubernetes.Cluster.GetTesting(),
+					kubernetes.Cluster.GetKubectlOptions(namespace),
+					"get", "service", "mtls-edge-gateway", "-ojsonpath={.spec.clusterIP}",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"https://example-passthrough.kuma.io:8082/",
+					client.Resolve("example-passthrough.kuma.io:8082", clusterIP),
+					client.Insecure(),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(HavePrefix("tls-server"))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should not passthrough TLS connections that don't match SNI", func() {
+			Consistently(func(g Gomega) {
+				clusterIP, err := k8s.RunKubectlAndGetOutputE(
+					kubernetes.Cluster.GetTesting(),
+					kubernetes.Cluster.GetKubectlOptions(namespace),
+					"get", "service", "mtls-edge-gateway", "-ojsonpath={.spec.clusterIP}",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				g.Expect(err).ToNot(HaveOccurred())
+				status, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client",
+					"https://example-other-hostname.kuma.io:8082/",
+					client.Resolve("example-other-hostname.kuma.io:8082", clusterIP),
+					client.Insecure(),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(status.Exitcode).To(Equal(35))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

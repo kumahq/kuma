@@ -236,36 +236,10 @@ violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
 			}),
-			Entry("not allow targetRef to be MeshGatewayRoute when http and tcp set", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGatewayRoute
-  name: web-frontend
-from:
-- targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    local:
-      http:
-        requestRate:
-          num: 100
-          interval: 500ms
-      tcp:
-        connectionRate:
-          num: 100
-          interval: 500ms`,
-				expected: `
-violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
-  - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
-			}),
 			Entry("not allow from to be MeshService", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -279,15 +253,13 @@ from:
           interval: 500ms`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
 			}),
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -295,15 +267,13 @@ from:
   default: {}`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].default.local
     message: must be defined`,
 			}),
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -312,8 +282,6 @@ from:
     local: {}`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].default.local
     message: 'must have at least one defined: tcp, http'`,
 			}),

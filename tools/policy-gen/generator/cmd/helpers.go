@@ -53,7 +53,7 @@ package {{.version}}
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
@@ -72,8 +72,8 @@ func (x *From) GetDefault() interface{} {
 }
 {{- end }}
 
-func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
+func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
+	var result []core_model.PolicyItem
 	for i  := range x.From {
 		item := x.From[i]
 		result = append(result, &item)
@@ -93,8 +93,8 @@ func (x *To) GetDefault() interface{} {
 }
 {{- end }}
 
-func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
+func (x *{{.name}}) GetToList() []core_model.PolicyItem {
+	var result []core_model.PolicyItem
 	for i := range(x.To) {
 		item := x.To[i]
 		result = append(result, &item)
@@ -111,7 +111,7 @@ func (x *{{.name}}) GetDefault() interface{} {
 }
 {{- end }}
 
-func (x *{{.name}}) GetPolicyItem() core_xds.PolicyItem {
+func (x *{{.name}}) GetPolicyItem() core_model.PolicyItem {
 	return &policyItem{
 		{{.name}}: x,
 	}
@@ -122,7 +122,7 @@ type policyItem struct {
 	*{{.name}}
 }
 
-var _ core_xds.PolicyItem = &policyItem{}
+var _ core_model.PolicyItem = &policyItem{}
 
 func (p *policyItem) GetTargetRef() common_api.TargetRef {
 	return common_api.TargetRef{Kind: common_api.Mesh}

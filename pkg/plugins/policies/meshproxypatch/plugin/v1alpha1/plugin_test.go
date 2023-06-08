@@ -8,9 +8,10 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -22,7 +23,7 @@ import (
 var _ = Describe("MeshProxyPatch", func() {
 	type testCase struct {
 		resources        []core_xds.Resource
-		rules            core_xds.SingleItemRules
+		rules            core_rules.SingleItemRules
 		expectedClusters []string
 	}
 
@@ -62,10 +63,10 @@ var _ = Describe("MeshProxyPatch", func() {
 						MustBuild(),
 				},
 			},
-			rules: core_xds.SingleItemRules{
-				Rules: []*core_xds.Rule{
+			rules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
 					{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							AppendModifications: []api.Modification{
 								{

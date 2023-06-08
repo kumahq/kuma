@@ -1851,6 +1851,76 @@ conf:
 		),
 	}
 
+	tlsEntries := []TableEntry{
+		Entry("generates clusters for TLS passthrough",
+			"tcp-route.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  zoneEgress: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8443
+    protocol: TLS
+    hostname: "api.kuma.io"
+    tls:
+        mode: PASSTHROUGH
+    tags:
+      port: tls/8443
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: tcp
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: false
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: external-or-api
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: external-httpbin
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+	}
 	handleArg := func(arg interface{}) {
 		switch val := arg.(type) {
 		case WithoutResource:
@@ -1937,6 +2007,31 @@ conf:
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "tcp", goldenFileName)))
 			},
 			tcpEntries,
+		)
+	})
+
+	Context("with a TLS gateway", func() {
+		DescribeTable("generating xDS resources",
+			func(goldenFileName string, fixtureResources ...string) {
+				// given
+				// #nosec G404 -- used just for tests
+				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
+				r.Shuffle(len(fixtureResources), func(i, j int) {
+					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
+				})
+				for _, resource := range fixtureResources {
+					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				}
+
+				// when
+				snap, err := Do()
+				Expect(err).To(Succeed())
+
+				// then
+				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+					To(matchers.MatchGoldenYAML(path.Join("testdata", "tls", goldenFileName)))
+			},
+			tlsEntries,
 		)
 	})
 })

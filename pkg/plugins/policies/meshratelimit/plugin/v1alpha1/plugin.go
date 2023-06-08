@@ -9,10 +9,11 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -39,8 +40,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	listeners := policies_xds.GatherListeners(rs)
-	routes := policies_xds.GatherRoutes(rs)
+	listeners := xds.GatherListeners(rs)
+	routes := xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -53,8 +54,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 func applyToGateways(
 	ctx xds_context.Context,
-	fromRules core_xds.FromRules,
-	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	fromRules core_rules.FromRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 ) error {
@@ -68,7 +69,7 @@ func applyToGateways(
 	for _, listenerInfo := range gatewayListerInfos {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
-		listenerKey := core_xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
 		}
@@ -94,8 +95,8 @@ func applyToGateways(
 }
 
 func applyToInbounds(
-	fromRules core_xds.FromRules,
-	inboundListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	fromRules core_rules.FromRules,
+	inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
@@ -104,7 +105,7 @@ func applyToInbounds(
 			continue
 		}
 
-		listenerKey := core_xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
@@ -125,13 +126,13 @@ func applyToInbounds(
 }
 
 func configure(
-	fromRules core_xds.Rules,
+	fromRules core_rules.Rules,
 	listener *envoy_listener.Listener,
 	route *envoy_route.RouteConfiguration,
 ) error {
 	var conf api.Conf
 	// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
-	if computed := fromRules.Compute(core_xds.MeshSubset()); computed != nil {
+	if computed := fromRules.Compute(core_rules.MeshSubset()); computed != nil {
 		conf = computed.Conf.(api.Conf)
 	} else {
 		return nil

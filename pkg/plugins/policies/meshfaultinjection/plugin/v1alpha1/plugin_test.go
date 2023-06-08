@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -31,7 +32,7 @@ import (
 var _ = Describe("MeshFaultInjection", func() {
 	type sidecarTestCase struct {
 		resources         []*core_xds.Resource
-		fromRules         core_xds.FromRules
+		fromRules         core_rules.FromRules
 		expectedListeners []string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -114,10 +115,10 @@ var _ = Describe("MeshFaultInjection", func() {
 						)).MustBuild(),
 				},
 			},
-			fromRules: core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_xds.Subset{
+						Subset: core_rules.Subset{
 							{
 								Key:   "kuma.io/service",
 								Value: "demo-client",
@@ -143,7 +144,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_xds.Subset{},
+						Subset: core_rules.Subset{},
 						Conf: api.Conf{
 							Http: &[]api.FaultInjectionConf{
 								{
@@ -171,10 +172,10 @@ var _ = Describe("MeshFaultInjection", func() {
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
-		fromRules := core_xds.FromRules{
-			Rules: map[core_xds.InboundListener]core_xds.Rules{
+		fromRules := core_rules.FromRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: core_xds.Subset{},
+					Subset: core_rules.Subset{},
 					Conf: api.Conf{
 						Http: &[]api.FaultInjectionConf{
 							{

@@ -97,6 +97,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			CniApp:       "",
 			CniNamespace: "kube-system",
 		},
+		ClientConfig: ClientConfig{
+			Qps:      100,
+			BurstQps: 100,
+		},
 	}
 }
 
@@ -125,9 +129,11 @@ type KubernetesRuntimeConfig struct {
 }
 
 type ClientConfig struct {
-	// Qps defines maximum requests kubernetes client is allowed to make per second
-	Qps float32 `json:"qps" envconfig:"kuma_runtime_kubernetes_client_config_qps"`
+	// Qps defines maximum requests kubernetes client is allowed to make per second.
+	// Default value 100. If set to 0 kube-client default value of 5 will be used.
+	Qps int `json:"qps" envconfig:"kuma_runtime_kubernetes_client_config_qps"`
 	// BurstQps defines maximum burst requests kubernetes client is allowed to make per second
+	// Default value 100. If set to 0 kube-client default value of 10 will be used.
 	BurstQps int `json:"burstQps" envconfig:"kuma_runtime_kubernetes_client_config_burst_qps"`
 }
 
