@@ -2,6 +2,7 @@ package rules
 
 import (
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -13,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 type InboundListener struct {
@@ -377,9 +377,9 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		if ss1.NumPositive() != ss2.NumPositive() {
 			return ss1.NumPositive() > ss2.NumPositive()
 		}
-		h1, _ := sha256.HashAny(ss1)
-		h2, _ := sha256.HashAny(ss2)
-		return h1 > h2
+		h1, _ := json.Marshal(ss1)
+		h2, _ := json.Marshal(ss2)
+		return string(h1) > string(h2)
 	})
 
 	return rules, nil
