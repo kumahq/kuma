@@ -3,17 +3,17 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-	"gonum.org/v1/gonum/graph/simple"
-	"gonum.org/v1/gonum/graph/topo"
 	"sort"
 
 	"github.com/pkg/errors"
+	"gonum.org/v1/gonum/graph/simple"
+	"gonum.org/v1/gonum/graph/topo"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 type InboundListener struct {
