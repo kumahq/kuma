@@ -16,7 +16,6 @@ var (
 	MeshSubset        TargetRefKind = "MeshSubset"
 	MeshService       TargetRefKind = "MeshService"
 	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
-	MeshGatewayRoute  TargetRefKind = "MeshGatewayRoute"
 	MeshHTTPRoute     TargetRefKind = "MeshHTTPRoute"
 )
 
@@ -25,8 +24,7 @@ var order = map[TargetRefKind]int{
 	MeshSubset:        2,
 	MeshService:       3,
 	MeshServiceSubset: 4,
-	MeshGatewayRoute:  5,
-	MeshHTTPRoute:     6,
+	MeshHTTPRoute:     5,
 }
 
 func (k TargetRefKind) Less(o TargetRefKind) bool {

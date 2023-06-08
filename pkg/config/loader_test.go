@@ -212,6 +212,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -498,6 +500,9 @@ runtime:
         cgroupPath: /faz/daz/zaz
         tcAttachIface: veth1
         programsSourcePath: /kuma/baz
+    clientConfig:
+      qps: 100
+      burstQps: 100
 reports:
   enabled: false
 general:
@@ -765,6 +770,8 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
+				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS":                                                "100",
+				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS":                                          "100",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",

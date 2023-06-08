@@ -227,6 +227,32 @@ conf:
       options:
 `),
 
+		ErrorCases("has TLS + TERMINATE",
+			[]validators.Violation{{
+				Field:   "conf.listeners[0].tls.mode",
+				Message: "mode is not yet supported on TLS listeners",
+			}, {
+				Field:   "conf.listeners[0].tls.certificates",
+				Message: "cannot be empty in TLS termination mode",
+			}}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - protocol: TLS
+    port: 99
+    tags:
+      name: https
+    tls:
+      mode: TERMINATE
+`),
+
 		ErrorCase("is missing a TLS termination secret",
 			validators.Violation{
 				Field:   "conf.listeners[0].tls.certificates",
@@ -315,6 +341,30 @@ conf:
     crossMesh: true
     tags:
       name: https
+`),
+
+		ErrorCase("HTTPS and PASSTHROUGH",
+			validators.Violation{
+				Field:   "conf.listeners[0].tls.mode",
+				Message: "mode is not supported on HTTPS listeners",
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - hostname: "foo.example.com"
+    protocol: HTTPS
+    port: 99
+    tags:
+      name: https
+    tls:
+      mode: PASSTHROUGH
 `),
 
 		ErrorCase("crossMesh and multiple services",

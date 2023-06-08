@@ -64,6 +64,7 @@ func NewGenerator(zone string) Generator {
 				mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_TCP:   &TCPFilterChainGenerator{},
+				mesh_proto.MeshGateway_Listener_TLS:   &TCPFilterChainGenerator{},
 			},
 		},
 		ClusterGenerator: ClusterGenerator{

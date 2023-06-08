@@ -179,7 +179,14 @@ func NewApiServer(
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
 	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{
-		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma,
+		BaseGuiPath: basePath,
+		ApiUrl:      apiUrl,
+		Version:     version.Build.Version,
+		Product:     version.Product,
+		BasedOnKuma: version.Build.BasedOnKuma,
+		Mode:        cfg.Mode,
+		Environment: cfg.Environment,
+		ReadOnly:    cfg.ApiServer.ReadOnly,
 	})
 	if err != nil {
 		return nil, err

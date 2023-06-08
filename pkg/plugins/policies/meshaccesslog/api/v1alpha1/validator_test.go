@@ -224,28 +224,6 @@ violations:
   - field: spec.from[0].default.backends[0].file.format.json[0]
     message: is not a valid JSON object`,
 			}),
-			Entry("'to' defined in MeshGatewayRoute", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGatewayRoute
-  name: some-mesh-gateway-route
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - type: File
-          file:
-            format:
-              type: Plain
-              plain: '{"start_time": "%START_TIME%"}'
-            path: '/tmp/logs.txt'
-`,
-				expected: `
-violations:
-- field: spec.to
-  message: 'cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound'`,
-			}),
 			Entry("'default' not defined in to", testCase{
 				inputYaml: `
 targetRef:
