@@ -46,10 +46,13 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	if err != nil {
 		return err
 	}
-	config := kube_ctrl.GetConfigOrDie()
+	restClientConfig := kube_ctrl.GetConfigOrDie()
+	restClientConfig.QPS = float32(b.Config().Runtime.Kubernetes.ClientConfig.Qps)
+	restClientConfig.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
+
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
 	mgr, err := kube_ctrl.NewManager(
-		config,
+		restClientConfig,
 		kube_ctrl.Options{
 			Scheme: scheme,
 			Cache: cache.Options{
@@ -72,7 +75,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		return err
 	}
 
-	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, config, mgr.GetRESTMapper())
+	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, restClientConfig, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
