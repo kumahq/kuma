@@ -301,7 +301,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if i == j {
 				continue
 			}
-			if intersect(subsets[i], subsets[j]) {
+			if subsets[i].Intersect(subsets[j]) {
 				g.SetEdge(simple.Edge{F: simple.Node(i), T: simple.Node(j)})
 			}
 		}
@@ -383,19 +383,6 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	})
 
 	return rules, nil
-}
-
-func intersect(s1, s2 Subset) bool {
-	m1 := map[string]string{}
-	for _, t := range s1 {
-		m1[t.Key] = t.Value
-	}
-	for _, t := range s2 {
-		if v, ok := m1[t.Key]; ok && v != t.Value {
-			return false
-		}
-	}
-	return true
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {
