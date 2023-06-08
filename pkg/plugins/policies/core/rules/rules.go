@@ -3,6 +3,9 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
+	"gonum.org/v1/gonum/graph/simple"
+	"gonum.org/v1/gonum/graph/topo"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -73,10 +76,53 @@ func (ss Subset) IsSubset(other Subset) bool {
 			return false
 		}
 		for _, otherTag := range oTags {
-			if otherTag.Value == tag.Value && otherTag.Not != tag.Not {
+			if !singleDimSubset(tag, otherTag) {
 				return false
 			}
-			if otherTag.Value != tag.Value && !otherTag.Not && !tag.Not {
+		}
+	}
+	return true
+}
+
+func singleDimSubset(t1, t2 Tag) bool {
+	if t1.Key != t2.Key {
+		return false
+	}
+	if t1.Not == t2.Not {
+		return t1.Value == t2.Value
+	}
+	if t1.Not {
+		return t1.Value != t2.Value
+	}
+	if t2.Not {
+		return false
+	}
+	panic("impossible")
+}
+
+// Intersect returns true if potentially we can get an element that belongs both to 'other' and current set.
+// Empty set intersects with all sets.
+func (ss Subset) Intersect(other Subset) bool {
+	if len(ss) == 0 || len(other) == 0 {
+		return true
+	}
+	otherByKeysOnlyPositive := map[string][]Tag{}
+	for _, t := range other {
+		if t.Not {
+			continue
+		}
+		otherByKeysOnlyPositive[t.Key] = append(otherByKeysOnlyPositive[t.Key], t)
+	}
+	for _, tag := range ss {
+		if tag.Not {
+			continue
+		}
+		oTags, ok := otherByKeysOnlyPositive[tag.Key]
+		if !ok {
+			return true
+		}
+		for _, otherTag := range oTags {
+			if otherTag != tag {
 				return false
 			}
 		}
@@ -233,76 +279,123 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	rules := Rules{}
 
-	// 1. Each targetRef should be represented as a list of tags
-	tagSet := map[Tag]bool{}
+	// 1. Convert list of rules into the list of subsets
+	var subsets []Subset
 	for _, item := range list {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
 		}
-		for _, t := range ss {
-			tagSet[t] = true
-		}
-	}
-	tags := []Tag{}
-	for tag := range tagSet {
-		tags = append(tags, tag)
+		subsets = append(subsets, ss)
 	}
 
-	sort.Slice(tags, func(i, j int) bool {
-		if tags[i].Key != tags[j].Key {
-			return tags[i].Key < tags[j].Key
-		}
-		return tags[i].Value < tags[j].Value
-	})
+	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
+	g := simple.NewUndirectedGraph()
 
-	// 2. Iterate over all possible combinations with negations
-	iter := NewSubsetIter(tags)
-	for {
-		ss := iter.Next()
-		if ss == nil {
-			break
+	for nodeId := range subsets {
+		g.AddNode(simple.Node(nodeId))
+	}
+
+	for i := range subsets {
+		for j := range subsets {
+			if i == j {
+				continue
+			}
+			if intersect(subsets[i], subsets[j]) {
+				g.SetEdge(simple.Edge{F: simple.Node(i), T: simple.Node(j)})
+			}
 		}
-		// 3. For each combination determine a configuration
-		confs := []interface{}{}
-		// confs := []PolicyConf{}
-		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
-		for i := 0; i < len(list); i++ {
-			item := list[i]
-			itemSubset, err := asSubset(item.GetTargetRef())
+	}
+
+	// 3. Construct rules for all connected components of the graph independently
+	components := topo.ConnectedComponents(g)
+
+	for _, nodes := range components {
+		tagSet := map[Tag]bool{}
+		for _, node := range nodes {
+			for _, t := range subsets[node.ID()] {
+				tagSet[t] = true
+			}
+		}
+
+		tags := []Tag{}
+		for tag := range tagSet {
+			tags = append(tags, tag)
+		}
+
+		sort.Slice(tags, func(i, j int) bool {
+			if tags[i].Key != tags[j].Key {
+				return tags[i].Key < tags[j].Key
+			}
+			return tags[i].Value < tags[j].Value
+		})
+
+		// 4. Iterate over all possible combinations with negations
+		iter := NewSubsetIter(tags)
+		for {
+			ss := iter.Next()
+			if ss == nil {
+				break
+			}
+			// 3. For each combination determine a configuration
+			confs := []interface{}{}
+			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+			for i := 0; i < len(list); i++ {
+				item := list[i]
+				itemSubset, err := asSubset(item.GetTargetRef())
+				if err != nil {
+					return nil, err
+				}
+				if itemSubset.IsSubset(ss) {
+					confs = append(confs, item.GetDefault())
+					distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+				}
+			}
+			merged, err := MergeConfs(confs)
 			if err != nil {
 				return nil, err
 			}
-			if itemSubset.IsSubset(ss) {
-				confs = append(confs, item.GetDefault())
-				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+			if merged != nil {
+				var origins []core_model.ResourceMeta
+				for _, origin := range distinctOrigins {
+					origins = append(origins, origin)
+				}
+				sort.Slice(origins, func(i, j int) bool {
+					return origins[i].GetName() < origins[j].GetName()
+				})
+				rules = append(rules, &Rule{
+					Subset: ss,
+					Conf:   merged,
+					Origin: origins,
+				})
 			}
-		}
-		merged, err := MergeConfs(confs)
-		if err != nil {
-			return nil, err
-		}
-		if merged != nil {
-			var origins []core_model.ResourceMeta
-			for _, origin := range distinctOrigins {
-				origins = append(origins, origin)
-			}
-			sort.Slice(origins, func(i, j int) bool {
-				return origins[i].GetName() < origins[j].GetName()
-			})
-			rules = append(rules, &Rule{
-				Subset: ss,
-				Conf:   merged,
-				Origin: origins,
-			})
 		}
 	}
 
 	sort.SliceStable(rules, func(i, j int) bool {
-		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
+		ss1, ss2 := rules[i].Subset, rules[j].Subset
+		if ss1.NumPositive() != ss2.NumPositive() {
+			return ss1.NumPositive() > ss2.NumPositive()
+		}
+		h1, _ := sha256.HashAny(ss1)
+		h2, _ := sha256.HashAny(ss2)
+		return h1 > h2
 	})
 
 	return rules, nil
+}
+
+func intersect(s1, s2 Subset) bool {
+	m1 := map[string]string{}
+	for _, t := range s1 {
+		m1[t.Key] = t.Value
+	}
+	for _, t := range s2 {
+		if v, ok := m1[t.Key]; ok && v != t.Value {
+			return false
+		}
+	}
+	return true
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {

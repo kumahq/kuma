@@ -1,7 +1,7 @@
 Rules:
   127.0.0.1:80:
   - Conf:
-      action: Deny
+      action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -11,7 +11,7 @@ Rules:
     Subset:
     - Key: kuma.io/service
       Not: false
-      Value: web
+      Value: api
   - Conf:
       action: Deny
     Origin:
@@ -37,7 +37,7 @@ Rules:
       Not: false
       Value: backend
   - Conf:
-      action: AllowWithShadowDeny
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -47,4 +47,4 @@ Rules:
     Subset:
     - Key: kuma.io/service
       Not: false
-      Value: api
+      Value: web
