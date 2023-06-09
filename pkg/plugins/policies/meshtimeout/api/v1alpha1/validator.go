@@ -89,7 +89,6 @@ func validateDefault(path validators.PathBuilder, conf Conf, topLevelKind common
 
 	verr.Add(validateHttp(path.Field("http"), conf.Http))
 	return verr
-
 }
 
 func validateHttp(path validators.PathBuilder, http *Http) validators.ValidationError {

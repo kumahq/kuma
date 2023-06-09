@@ -4,7 +4,6 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -16,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -280,7 +280,7 @@ func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range mhr.Spec.To {
 		for _, mhrRule := range mhrRules.Rules {
-			//matchesJson, err := json.Marshal(mhrRule.Matches)
+			// matchesJson, err := json.Marshal(mhrRule.Matches)
 			//if err != nil {
 			//	return nil, err
 			//}
@@ -295,7 +295,7 @@ func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
 						Name: mhrRules.TargetRef.Name,
 						Tags: map[string]string{
 							RuleMatchesHashTag: matchesHash,
-							//"__matches-json__": string(matchesJson),
+							// "__matches-json__": string(matchesJson),
 						},
 					},
 					conf: to.GetDefault(),
