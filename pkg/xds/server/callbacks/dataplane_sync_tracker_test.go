@@ -53,7 +53,7 @@ var _ = Describe("Sync", func() {
 			typ := ""
 			n := &envoy_core.Node{Id: "my-node"}
 			req := &envoy_sd.DiscoveryRequest{}
-			
+
 			By("simulating Envoy connecting to the Control Plane")
 			// when
 			err := callbacks.OnStreamOpen(ctx, streamID, typ)
