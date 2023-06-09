@@ -225,10 +225,12 @@ conf:
 
 		It("should mark host as unhealthy if it doesn't reply on health checks when Permissive mTLS enabled", func() {
 			// check that test-server-mtls is healthy
-			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("response"))
+			Eventually(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("response"))
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another 'recv' line
 			Expect(YamlUniversal(healthCheck(meshName, "test-server-mtls", "foo", "baz"))(env.Cluster)).To(Succeed())
@@ -243,12 +245,13 @@ conf:
 				return strings.Contains(stdout, "health_flags::/failed_active_hc")
 			}, "30s", "500ms").Should(BeTrue())
 
-			cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
-			stdout, _, _ = env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
-
-			// there is no real attempt to setup a connection with test-server, but Envoy may return either
-			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
-			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+			Consistently(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				stdout, _, _ := env.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
+				// there is no real attempt to setup a connection with test-server, but Envoy may return either
+				// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+				g.Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+			}).Should(Succeed())
 		})
 	}, Ordered)
 }
