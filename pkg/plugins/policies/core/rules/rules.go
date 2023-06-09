@@ -280,10 +280,6 @@ func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range mhr.Spec.To {
 		for _, mhrRule := range mhrRules.Rules {
-			// matchesJson, err := json.Marshal(mhrRule.Matches)
-			//if err != nil {
-			//	return nil, err
-			//}
 			matchesHash, err := sha256.HashAny(mhrRule.Matches)
 			if err != nil {
 				return nil, err
@@ -295,7 +291,6 @@ func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
 						Name: mhrRules.TargetRef.Name,
 						Tags: map[string]string{
 							RuleMatchesHashTag: matchesHash,
-							// "__matches-json__": string(matchesJson),
 						},
 					},
 					conf: to.GetDefault(),

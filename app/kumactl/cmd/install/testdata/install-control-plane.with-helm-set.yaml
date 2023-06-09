@@ -336,6 +336,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -370,6 +371,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -861,6 +863,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -1086,6 +1089,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -1163,6 +1167,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -1206,6 +1211,7 @@ spec:
                                       - MeshService
                                       - MeshServiceSubset
                                       - MeshGatewayRoute
+                                      - MeshHTTPRoute
                                       type: string
                                     mesh:
                                       description: Mesh is reserved for future use
@@ -1299,6 +1305,7 @@ spec:
                                               - MeshService
                                               - MeshServiceSubset
                                               - MeshGatewayRoute
+                                              - MeshHTTPRoute
                                               type: string
                                             mesh:
                                               description: Mesh is reserved for future
@@ -1591,6 +1598,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -1709,6 +1717,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -2045,6 +2054,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -2552,6 +2562,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -2745,6 +2756,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -2779,6 +2791,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -2895,6 +2908,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -3214,6 +3228,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -3291,6 +3306,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -3334,6 +3350,7 @@ spec:
                                       - MeshService
                                       - MeshServiceSubset
                                       - MeshGatewayRoute
+                                      - MeshHTTPRoute
                                       type: string
                                     mesh:
                                       description: Mesh is reserved for future use
@@ -3378,6 +3395,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -3507,6 +3525,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -3541,6 +3560,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -3621,6 +3641,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -3846,6 +3867,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -3936,6 +3958,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -3970,6 +3993,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -5056,6 +5080,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -5090,6 +5115,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -5234,6 +5260,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -5567,6 +5594,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -5601,6 +5629,7 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
+                    - MeshHTTPRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -5885,6 +5914,7 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
+                          - MeshHTTPRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify

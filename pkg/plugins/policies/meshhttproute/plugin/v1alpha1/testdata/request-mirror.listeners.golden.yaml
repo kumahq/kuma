@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: ikkP+4Pu4MWzR5TBOyq/EqNuz/qRPvuP/6SIrISr730=
                 route:
                   cluster: backend
                   requestMirrorPolicies:
@@ -42,6 +43,7 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: ikkP+4Pu4MWzR5TBOyq/EqNuz/qRPvuP/6SIrISr730=
                 route:
                   cluster: backend
                   requestMirrorPolicies:
@@ -54,6 +56,7 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /
+                name: qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=
                 route:
                   cluster: backend
                   timeout: 0s

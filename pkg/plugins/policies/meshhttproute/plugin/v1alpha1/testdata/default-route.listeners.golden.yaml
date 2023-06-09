@@ -30,6 +30,7 @@ resources:
               routes:
               - match:
                   prefix: /
+                name: qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=
                 route:
                   cluster: backend
                   timeout: 0s
