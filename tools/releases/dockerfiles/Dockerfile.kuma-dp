@@ -5,7 +5,7 @@ ARG ENVOY_VERSION
 ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
+ADD /build/artifacts-linux-$ARCH/envoy/envoy /usr/bin/envoy
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 
 COPY /tools/releases/templates/LICENSE \
