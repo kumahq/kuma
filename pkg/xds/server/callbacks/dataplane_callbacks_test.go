@@ -42,7 +42,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 	countingCallbacks := &countingDpCallbacks{}
 	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(countingCallbacks))
 
-	node :=  &envoy_core.Node{
+	node := &envoy_core.Node{
 		Id: "default.example",
 		Metadata: &structpb.Struct{
 			Fields: map[string]*structpb.Value{

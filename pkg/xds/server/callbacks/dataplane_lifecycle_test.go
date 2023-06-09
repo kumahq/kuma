@@ -319,10 +319,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
                               }
                             }
                             `, nodeID, num),
+								},
 							},
 						},
-					},
-				}}
+					}}
 				req := envoy_sd.DiscoveryRequest{
 					Node: node,
 				}
