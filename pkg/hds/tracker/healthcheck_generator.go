@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
+	"github.com/kumahq/kuma/pkg/util/net"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -89,7 +90,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}
 
-		healthChecks = append(healthChecks, &envoy_service_health.ClusterHealthCheck{
+		hc := &envoy_service_health.ClusterHealthCheck{
 			ClusterName: names.GetLocalClusterName(intf.WorkloadPort),
 			LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 				Endpoints: []*envoy_endpoint.Endpoint{{
@@ -117,7 +118,17 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 					},
 				},
 			},
-		})
+		}
+
+		if dp.IsUsingTransparentProxy() && (intf.WorkloadIP != mesh.IPv4Loopback.String() || intf.WorkloadIP != mesh.IPv6Loopback.String()) {
+			if net.IsAddressIPv6(intf.WorkloadIP) {
+				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv6, 0)
+			} else {
+				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv4, 0)
+			}
+		}
+
+		healthChecks = append(healthChecks, hc)
 	}
 
 	hcs := &envoy_service_health.HealthCheckSpecifier{
@@ -158,6 +169,17 @@ func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.
 						Path: "/ready",
 					},
 				},
+			},
+		},
+	}
+}
+
+func (g *SnapshotGenerator) upstreamBindConfig(addr string, port uint32) *envoy_core.BindConfig {
+	return &envoy_core.BindConfig{
+		SourceAddress: &envoy_core.SocketAddress{
+			Address: addr,
+			PortSpecifier: &envoy_core.SocketAddress_PortValue{
+				PortValue: port,
 			},
 		},
 	}
