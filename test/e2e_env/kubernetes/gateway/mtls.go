@@ -1,7 +1,9 @@
 package gateway
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -45,10 +47,35 @@ spec:
         mode: PASSTHROUGH
       hostname: example-passthrough.kuma.io
       tags:
-        protocol: tls
+        name: tls-passthrough
+    - port: 8083
+      protocol: TLS
+      tls:
+        mode: TERMINATE
+        certificates:
+        - secret: example-kuma-io-certificate
+      tags:
+        name: tls-terminate
 `
 
 	BeforeAll(func() {
+		httpsSecret := func() string {
+			cert, key, err := CreateCertsFor("example.kuma.io")
+			Expect(err).To(Succeed())
+			secretData := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+			return fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-kuma-io-certificate
+  namespace: %s
+  labels:
+    kuma.io/mesh: gateway-mtls
+data:
+  value: %s
+type: system.kuma.io/secret
+`, Config.KumaNamespace, secretData)
+		}
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -57,6 +84,7 @@ spec:
 				testserver.WithName("demo-client"),
 				testserver.WithNamespace(clientNamespace),
 			)).
+			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(MkGatewayInstance("mtls-edge-gateway", namespace, meshName))).
 			Setup(kubernetes.Cluster)
@@ -340,7 +368,7 @@ spec:
 	})
 
 	Context("TLS", func() {
-		tcpRoute := `
+		tlsServerRoute := `
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayRoute
 metadata:
@@ -350,7 +378,7 @@ spec:
   selectors:
   - match:
       kuma.io/service: mtls-edge-gateway
-      protocol: tls
+      name: tls-passthrough
   conf:
     tcp:
       rules:
@@ -358,18 +386,43 @@ spec:
         - destination:
             kuma.io/service: tls-server_gateway-mtls_svc_443
 `
+		tcpServerRoute := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayRoute
+metadata:
+  name: mtls-gateway-tls-terminate
+mesh: gateway-mtls
+spec:
+  selectors:
+  - match:
+      kuma.io/service: mtls-edge-gateway
+      name: tls-terminate
+  conf:
+    tcp:
+      rules:
+      - backends:
+        - destination:
+            kuma.io/service: tcp-server_gateway-mtls_svc_80
+`
 
 		BeforeAll(func() {
 			cert, key, err := CreateCertsFor("example.kuma.io")
 			Expect(err).To(Succeed())
 
 			setup := NewClusterSetup().
-				Install(YamlK8s(tcpRoute)).
+				Install(YamlK8s(tlsServerRoute)).
+				Install(YamlK8s(tcpServerRoute)).
 				Install(testserver.Install(
 					testserver.WithMesh(meshName),
 					testserver.WithName("tls-server"),
 					testserver.WithTLS(key, cert),
 					testserver.WithNamespace(namespace),
+				)).
+				Install(testserver.Install(
+					testserver.WithMesh(meshName),
+					testserver.WithName("tcp-server"),
+					testserver.WithNamespace(namespace),
+					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
 				))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
@@ -416,6 +469,17 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(status.Exitcode).To(Equal(35))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should terminate TLS and proxy TCP connections", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectTLSResponse(kubernetes.Cluster, "demo-client", "mtls-edge-gateway.gateway-mtls:8083", "request",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response).Should(Equal("response"))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

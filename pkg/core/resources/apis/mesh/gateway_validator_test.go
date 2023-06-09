@@ -98,6 +98,25 @@ conf:
       connectionLimit: 2
 `,
 		),
+		Entry("TLS listener with TERMINATE", `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - port: 443
+    protocol: TLS
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: example-kuma-io-certificate
+`,
+		),
 	)
 
 	DescribeErrorCases(
@@ -225,32 +244,6 @@ conf:
       name: https
     tls:
       options:
-`),
-
-		ErrorCases("has TLS + TERMINATE",
-			[]validators.Violation{{
-				Field:   "conf.listeners[0].tls.mode",
-				Message: "mode is not yet supported on TLS listeners",
-			}, {
-				Field:   "conf.listeners[0].tls.certificates",
-				Message: "cannot be empty in TLS termination mode",
-			}}, `
-type: MeshGateway
-name: gateway
-mesh: default
-selectors:
-  - match:
-      kuma.io/service: gateway
-tags:
-  product: edge
-conf:
-  listeners:
-  - protocol: TLS
-    port: 99
-    tags:
-      name: https
-    tls:
-      mode: TERMINATE
 `),
 
 		ErrorCase("is missing a TLS termination secret",
