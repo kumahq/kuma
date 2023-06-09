@@ -3,11 +3,11 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"gonum.org/v1/gonum/graph"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
