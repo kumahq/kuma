@@ -138,7 +138,6 @@ properties:
               - MeshSubset
               - MeshService
               - MeshServiceSubset
-              - MeshGatewayRoute
               - MeshHTTPRoute
             type: string
           mesh:
