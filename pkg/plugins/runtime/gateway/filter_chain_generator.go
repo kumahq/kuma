@@ -415,7 +415,6 @@ func configureTLS(
 			envoy_listeners.MatchServerNames(hostnames...),
 		)
 
-		// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
 		for _, cert := range tls.GetCertificates() {
 			secret, err := generateCertificateSecret(ctx.Mesh, hostnames, cert)
 			if err != nil {
