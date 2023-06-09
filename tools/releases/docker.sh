@@ -9,7 +9,6 @@ KUMA_DOCKER_REPO="${KUMA_DOCKER_REPO:-docker.io}"
 KUMA_DOCKER_REPO_ORG="${KUMA_DOCKER_REPO_ORG:-${KUMA_DOCKER_REPO}/kumahq}"
 KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd}"
 BUILD_INFO=$("${SCRIPT_DIR}/../releases/version.sh")
-ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
@@ -19,7 +18,6 @@ function build() {
       msg "Building $component..."
       build_args=(
         --build-arg ARCH="${arch}"
-        --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
         --build-arg BASE_IMAGE_ARCH="${arch}"
       )
       additional_args=()
