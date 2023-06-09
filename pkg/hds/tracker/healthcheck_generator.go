@@ -20,6 +20,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 type SnapshotGenerator struct {

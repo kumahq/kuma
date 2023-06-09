@@ -100,12 +100,12 @@ networking:
     redirectPortOutbound: 15001
 `,
 			hdsConfig: &dp_server.HdsConfig{
-				Interval: config_types.Duration{Duration: 8 * time.Second},
+				Interval: 8 * time.Second,
 				Enabled:  true,
 				CheckDefaults: &dp_server.HdsCheck{
-					Interval:           config_types.Duration{Duration: 1 * time.Second},
-					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
-					Timeout:            config_types.Duration{Duration: 3 * time.Second},
+					Interval:           1 * time.Second,
+					NoTrafficInterval:  2 * time.Second,
+					Timeout:            3 * time.Second,
 					HealthyThreshold:   4,
 					UnhealthyThreshold: 5,
 				},

@@ -21,19 +21,21 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Mesh: "default",
 		Name: "example",
 	}
-	req := envoy_sd.DiscoveryRequest{
-		Node: &envoy_core.Node{
-			Id: "default.example",
-			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"dataplane.dns.port": {
-						Kind: &structpb.Value_StringValue{
-							StringValue: "9090",
-						},
+
+	node := &envoy_core.Node{
+		Id: "default.example",
+		Metadata: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"dataplane.dns.port": {
+					Kind: &structpb.Value_StringValue{
+						StringValue: "9090",
 					},
 				},
 			},
 		},
+	}
+	req := envoy_sd.DiscoveryRequest{
+		Node: node,
 	}
 	const streamId = 123
 
@@ -51,7 +53,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(metadata.GetDNSPort()).To(Equal(uint32(9090)))
 
 		// when
-		callbacks.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId, node)
 
 		// then metadata should be deleted
 		metadata = tracker.Metadata(dpKey)
