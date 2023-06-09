@@ -51,8 +51,9 @@ var _ = Describe("Sync", func() {
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
+			n := &envoy_core.Node{Id: "my-node"}
 			req := &envoy_sd.DiscoveryRequest{}
-
+			
 			By("simulating Envoy connecting to the Control Plane")
 			// when
 			err := callbacks.OnStreamOpen(ctx, streamID, typ)
@@ -67,7 +68,7 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			callbacks.OnStreamClosed(streamID)
+			callbacks.OnStreamClosed(streamID, n)
 
 			// then
 			// expect no panic
@@ -90,10 +91,11 @@ var _ = Describe("Sync", func() {
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
+			node := &envoy_core.Node{
+				Id: "demo.example",
+			}
 			req := &envoy_sd.DiscoveryRequest{
-				Node: &envoy_core.Node{
-					Id: "demo.example",
-				},
+				Node: node,
 			}
 
 			By("simulating Envoy connecting to the Control Plane")
@@ -122,7 +124,7 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			callbacks.OnStreamClosed(streamID)
+			callbacks.OnStreamClosed(streamID, node)
 
 			By("waiting for Watchdog to get stopped")
 			// when
@@ -145,6 +147,7 @@ var _ = Describe("Sync", func() {
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID := int64(1)
+			n := &envoy_core.Node{Id: "default.backend-01"}
 			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
 			err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
@@ -171,7 +174,7 @@ var _ = Describe("Sync", func() {
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when first stream is closed
-			callbacks.OnStreamClosed(1)
+			callbacks.OnStreamClosed(1, n)
 
 			// then watchdog is still active because other stream is opened
 			Eventually(func() int32 {
@@ -179,7 +182,7 @@ var _ = Describe("Sync", func() {
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when other stream is closed
-			callbacks.OnStreamClosed(2)
+			callbacks.OnStreamClosed(2, n)
 
 			// then no watchdog is stopped
 			Eventually(func() int32 {

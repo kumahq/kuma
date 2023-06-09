@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -76,7 +77,7 @@ func newResourceWarmingForcer(cache envoy_cache.SnapshotCache, hasher envoy_cach
 	}
 }
 
-func (r *resourceWarmingForcer) OnStreamClosed(streamID int64) {
+func (r *resourceWarmingForcer) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 	r.Lock()
 	defer r.Unlock()
 	delete(r.lastEndpointNonces, streamID)
