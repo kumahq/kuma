@@ -2,9 +2,10 @@ package rules
 
 import (
 	"encoding"
-	"encoding/json"
 	"fmt"
+	"gonum.org/v1/gonum/graph"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	"gonum.org/v1/gonum/graph/simple"
@@ -310,6 +311,10 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	// 3. Construct rules for all connected components of the graph independently
 	components := topo.ConnectedComponents(g)
 
+	sort.SliceStable(components, func(i, j int) bool {
+		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
+	})
+
 	for _, nodes := range components {
 		tagSet := map[Tag]bool{}
 		for _, node := range nodes {
@@ -337,7 +342,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
-			// 3. For each combination determine a configuration
+			// 5. For each combination determine a configuration
 			confs := []interface{}{}
 			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 			for i := 0; i < len(list); i++ {
@@ -373,16 +378,18 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	}
 
 	sort.SliceStable(rules, func(i, j int) bool {
-		ss1, ss2 := rules[i].Subset, rules[j].Subset
-		if ss1.NumPositive() != ss2.NumPositive() {
-			return ss1.NumPositive() > ss2.NumPositive()
-		}
-		h1, _ := json.Marshal(ss1)
-		h2, _ := json.Marshal(ss2)
-		return string(h1) > string(h2)
+		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
 
 	return rules, nil
+}
+
+func toStringList(nodes []graph.Node) []string {
+	rv := make([]string, 0, len(nodes))
+	for _, id := range nodes {
+		rv = append(rv, fmt.Sprintf("%d", id.ID()))
+	}
+	return rv
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {
