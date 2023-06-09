@@ -104,6 +104,12 @@ else
 	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
 endif
 
+.PHONY: build/envoy
+build/envoy:
+	mkdir -p $(BUILD_ARTIFACTS_DIR)/envoy && \
+	[ -f $(BUILD_ARTIFACTS_DIR)/envoy/envoy ] || \
+	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(GOOS)-$(GOARCH)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(GOOS)_$(GOARCH)).tar.gz | tar -C $(BUILD_ARTIFACTS_DIR)/envoy -xz
+
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
 	$(Build_Go_Application) ./test/server
@@ -163,6 +169,14 @@ build/test-server/linux-amd64:
 .PHONY: build/test-server/linux-arm64
 build/test-server/linux-arm64:
 	GOOS=linux GOARCH=arm64 $(MAKE) build/test-server
+
+.PHONY: build/envoy/linux-amd64
+build/envoy/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/envoy
+
+.PHONY: build/envoy/linux-arm64
+build/envoy/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/envoy
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean

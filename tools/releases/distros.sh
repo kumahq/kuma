@@ -9,14 +9,14 @@ source "${SCRIPT_DIR}/../common.sh"
 # if present, second is the distribution and third is the envoy distribution
 # without a distribution we package only kumactl as a static binary
 DISTRIBUTIONS=(
-  linux:debian:alpine:amd64
-  linux:ubuntu:alpine:amd64
-  linux:rhel:centos:amd64
-  linux:centos:centos:amd64
+  linux:debian:linux:amd64
+  linux:ubuntu:linux:amd64
+  linux:rhel:linux:amd64
+  linux:centos:linux:amd64
   darwin:darwin:darwin:amd64
   linux:::amd64
-  linux:debian:alpine:arm64
-  linux:ubuntu:alpine:arm64
+  linux:debian:linux:arm64
+  linux:ubuntu:linux:arm64
   darwin:darwin:darwin:arm64
   linux:::arm64
 )
@@ -26,7 +26,6 @@ PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
 BUILD_INFO=$("${SCRIPT_DIR}/../releases/version.sh")
-ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
@@ -105,7 +104,7 @@ function create_tarball() {
   get_ebpf_programs "$arch" "$system" "$kuma_dir"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
-  cp -p "$artifact_dir/envoy/envoy-$ENVOY_VERSION-$envoy_distro" "$kuma_dir/bin"
+  cp -p "$artifact_dir/envoy/envoy" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-cp/kuma-cp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-dp/kuma-dp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kumactl/kumactl" "$kuma_dir/bin"
