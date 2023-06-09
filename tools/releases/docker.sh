@@ -22,7 +22,6 @@ function build() {
       msg "Building $component..."
       build_args=(
         --build-arg ARCH="${arch}"
-        --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
         --platform="linux/${arch}"
       )
       additional_args=()
