@@ -369,6 +369,7 @@ var _ = Describe("MeshTimeout", func() {
 
 	type gatewayTestCase struct {
 		toRules core_rules.ToRules
+		routes  []*core_mesh.MeshGatewayRouteResource
 	}
 	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
@@ -376,7 +377,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 		}
 		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
 		context := test_xds.CreateSampleMeshContextWith(resources)
@@ -394,6 +395,11 @@ var _ = Describe("MeshTimeout", func() {
 			Routing: core_xds.Routing{
 				OutboundTargets: core_xds.EndpointMap{
 					"backend": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "http",
+						},
+					}},
+					"other-service": []core_xds.Endpoint{{
 						Tags: map[string]string{
 							"kuma.io/protocol": "http",
 						},
@@ -446,6 +452,26 @@ var _ = Describe("MeshTimeout", func() {
 							RequestTimeout:        test.ParseDuration("5s"),
 							MaxStreamDuration:     test.ParseDuration("10m"),
 							MaxConnectionDuration: test.ParseDuration("10m"),
+						},
+					},
+				},
+			},
+		},
+	}), Entry("no-route-level-timeouts", gatewayTestCase{
+		routes: []*core_mesh.MeshGatewayRouteResource{
+			builders.GatewayRoute().
+				WithName("sample-gateway-route").
+				WithGateway("sample-gateway").
+				WithExactMatchHttpRoute("/", "backend", "other-service").
+				Build(),
+		},
+		toRules: core_rules.ToRules{
+			Rules: []*core_rules.Rule{
+				{
+					Subset: core_rules.MeshService("backend"),
+					Conf: api.Conf{
+						Http: &api.Http{
+							RequestTimeout: test.ParseDuration("24s"),
 						},
 					},
 				},
