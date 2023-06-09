@@ -1,6 +1,7 @@
 package matchers
 
 import (
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -10,7 +11,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 

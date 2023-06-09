@@ -1,0 +1,33 @@
+Rules:
+  - Conf:
+      http:
+        requestTimeout: 3s
+    Origin:
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-1
+        type: MeshTimeout
+    Subset:
+      - Key: __matches-json__
+        Not: false
+        Value: '[{"path":{"value":"/","type":"Exact"}}]'
+      - Key: kuma.io/service
+        Not: false
+        Value: test-server
+  - Conf:
+      http:
+        requestTimeout: 3s
+    Origin:
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mtp-1
+        type: MeshTimeout
+    Subset:
+      - Key: __matches-json__
+        Not: false
+        Value: '[{"path":{"value":"/v1","type":"PathPrefix"}},{"method":"POST"}]'
+      - Key: kuma.io/service
+        Not: false
+        Value: another-test-server

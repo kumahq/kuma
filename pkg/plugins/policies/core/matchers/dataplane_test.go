@@ -2,6 +2,9 @@ package matchers_test
 
 import (
 	"bytes"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +29,7 @@ var _ = Describe("MatchedPolicies", func() {
 	}
 
 	generateTableEntries := func(testDir string) []TableEntry {
+		defer GinkgoRecover()
 		var res []TableEntry
 		files, err := os.ReadDir(testDir)
 		Expect(err).ToNot(HaveOccurred())
@@ -59,15 +63,30 @@ var _ = Describe("MatchedPolicies", func() {
 			// given DPP resource
 			dpp := readDPP(given.dppFile)
 
-			// given MeshTrafficPermissions
-			resources := readPolicies(given.policiesFile)
+			// given policies
+			resources, resTypes := readPolicies(given.policiesFile)
+
+			// we're expecting all policies in the file to have the same type or to be mixed with MeshHTTPRoutes
+			Expect(resTypes).To(Or(HaveLen(1), HaveLen(2)))
+
+			var resType core_model.ResourceType
+			switch {
+			case len(resTypes) == 1:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[1] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[0] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[1]
+			}
 
 			// when
-			policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
+			policies, err := matchers.MatchedPolicies(resType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			matchedPolicyList := &policies_api.MeshTrafficPermissionResourceList{}
+			matchedPolicyList, err := registry.Global().NewList(resType)
+			Expect(err).ToNot(HaveOccurred())
+
 			for _, policy := range policies.DataplanePolicies {
 				Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
 			}
@@ -85,7 +104,7 @@ var _ = Describe("MatchedPolicies", func() {
 			dpp := readDPP(given.dppFile)
 
 			// given MeshTrafficPermissions
-			resources := readPolicies(given.policiesFile)
+			resources, _ := readPolicies(given.policiesFile)
 
 			// when
 			policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
@@ -99,11 +118,44 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "fromrules")),
 	)
 
+	DescribeTable("should return ToRules",
+		func(given testCase) {
+			// given DPP resource
+			dpp := readDPP(given.dppFile)
+
+			// given policies
+			resources, resTypes := readPolicies(given.policiesFile)
+
+			// we're expecting all policies in the file to have the same type or to be mixed with MeshHTTPRoutes
+			Expect(resTypes).To(Or(HaveLen(1), HaveLen(2)))
+
+			var resType core_model.ResourceType
+			switch {
+			case len(resTypes) == 1:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[1] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[0] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[1]
+			}
+
+			// when
+			policies, err := matchers.MatchedPolicies(resType, dpp, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(policies.ToRules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+		},
+		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "torules")),
+	)
+
 	DescribeTable("should match MeshGateways",
 		func(given testCase) {
 			dpp := readDPP(given.dppFile)
 
-			resources := readPolicies(given.policiesFile)
+			resources, _ := readPolicies(given.policiesFile)
 
 			policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())

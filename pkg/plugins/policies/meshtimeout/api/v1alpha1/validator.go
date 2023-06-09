@@ -13,8 +13,8 @@ func (r *MeshTimeoutResource) validate() error {
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateFrom(r.Spec.From, r.Spec.TargetRef.Kind))
+	verr.AddErrorAt(path, validateTo(r.Spec.To, r.Spec.TargetRef.Kind))
 	return verr.OrNil()
 }
 
@@ -25,12 +25,13 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.MeshHTTPRoute,
 		},
 	})
 	return targetRefErr
 }
 
-func validateFrom(from []From) validators.ValidationError {
+func validateFrom(from []From, topLevelKind common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
@@ -41,12 +42,12 @@ func validateFrom(from []From) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, fromItem.Default))
+		verr.Add(validateDefault(defaultField, fromItem.Default, topLevelKind))
 	}
 	return verr
 }
 
-func validateTo(to []To) validators.ValidationError {
+func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
@@ -58,12 +59,12 @@ func validateTo(to []To) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, toItem.Default))
+		verr.Add(validateDefault(defaultField, toItem.Default, topLevelKind))
 	}
 	return verr
 }
 
-func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
+func validateDefault(path validators.PathBuilder, conf Conf, topLevelKind common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if conf.ConnectionTimeout == nil && conf.IdleTimeout == nil && conf.Http == nil {
@@ -71,11 +72,24 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		return verr
 	}
 
+	if topLevelKind == common_api.MeshHTTPRoute {
+		msg := "can't be specified when top-level TargetRef is referencing MeshHTTPRoute"
+
+		verr.Add(validators.ValidateNil(path.Field("connectionTimeout"), conf.ConnectionTimeout, msg))
+		verr.Add(validators.ValidateNil(path.Field("idleTimeout"), conf.IdleTimeout, msg))
+		if http := conf.Http; http != nil {
+			httpPath := path.Field("http")
+			verr.Add(validators.ValidateNil(httpPath.Field("maxStreamDuration"), http.MaxStreamDuration, msg))
+			verr.Add(validators.ValidateNil(httpPath.Field("maxConnectionDuration"), http.MaxConnectionDuration, msg))
+		}
+	}
+
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("connectionTimeout"), conf.ConnectionTimeout))
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("idleTimeout"), conf.IdleTimeout))
 
 	verr.Add(validateHttp(path.Field("http"), conf.Http))
 	return verr
+
 }
 
 func validateHttp(path validators.PathBuilder, http *Http) validators.ValidationError {

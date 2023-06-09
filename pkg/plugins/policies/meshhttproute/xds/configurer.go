@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	"strings"
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -25,6 +26,11 @@ type RoutesConfigurer struct {
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Matches)
 
+	h, err := sha256.HashAny(c.Matches)
+	if err != nil {
+		return err
+	}
+
 	for _, match := range matches {
 		rb := &route.RouteBuilder{}
 
@@ -35,6 +41,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 				Route: c.routeAction(c.Split),
 			}
 			envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
+			envoyRoute.Name = h
 		}))
 
 		// We pass the information about whether this match was created from

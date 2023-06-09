@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -13,8 +14,17 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
+
+const RuleMatchesHashTag = "__rule-matches-hash__"
+
+type ResolvedResource struct {
+	core_model.Resource
+
+	ResolvedTargetRefs map[common_api.TargetRefHash]core_model.Resource
+}
 
 type InboundListener struct {
 	Address string
@@ -130,6 +140,10 @@ func (ss Subset) Intersect(other Subset) bool {
 	return true
 }
 
+func (ss Subset) WithTag(key, value string, not bool) Subset {
+	return append(ss, Tag{Key: key, Value: value, Not: not})
+}
+
 func MeshSubset() Subset {
 	return Subset{}
 }
@@ -221,12 +235,11 @@ func BuildFromRules(
 func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		policyWithTo, ok := mp.GetSpec().(core_model.PolicyWithToList)
-		if !ok {
-			return ToRules{}, nil
+		tl, err := buildToList(mp)
+		if err != nil {
+			return ToRules{}, err
 		}
-		BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())
-		toList = append(toList, BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())...)
+		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
 	}
 
 	rules, err := BuildRules(toList)
@@ -235,6 +248,76 @@ func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	}
 
 	return ToRules{Rules: rules}, nil
+}
+
+func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
+	policyWithTo, ok := p.GetSpec().(core_model.PolicyWithToList)
+	if !ok {
+		return nil, nil
+	}
+
+	if policyWithTo.GetTargetRef().Kind != common_api.MeshHTTPRoute {
+		return policyWithTo.GetToList(), nil
+	}
+
+	resolvedMap := p.(*ResolvedResource).ResolvedTargetRefs
+	var mhr *v1alpha1.MeshHTTPRouteResource
+
+	switch policyWithTo.GetTargetRef().Kind {
+	case common_api.MeshHTTPRoute:
+		resolved, ok := resolvedMap[policyWithTo.GetTargetRef().Hash()]
+		if !ok {
+			return nil, errors.New("can't resolve MeshHTTPRoute policy")
+		}
+		mhr, ok = resolved.(*v1alpha1.MeshHTTPRouteResource)
+		if !ok {
+			return nil, errors.New("resolved MeshHTTPRoute policy has wrong type")
+		}
+	default:
+		return policyWithTo.GetToList(), nil
+	}
+
+	rv := []core_model.PolicyItem{}
+	for _, mhrRules := range mhr.Spec.To {
+		for _, mhrRule := range mhrRules.Rules {
+			//matchesJson, err := json.Marshal(mhrRule.Matches)
+			//if err != nil {
+			//	return nil, err
+			//}
+			matchesHash, err := sha256.HashAny(mhrRule.Matches)
+			if err != nil {
+				return nil, err
+			}
+			for _, to := range policyWithTo.GetToList() {
+				rv = append(rv, &artificialPolicyItem{
+					targetRef: common_api.TargetRef{
+						Kind: common_api.MeshServiceSubset,
+						Name: mhrRules.TargetRef.Name,
+						Tags: map[string]string{
+							RuleMatchesHashTag: matchesHash,
+							//"__matches-json__": string(matchesJson),
+						},
+					},
+					conf: to.GetDefault(),
+				})
+			}
+		}
+	}
+
+	return rv, nil
+}
+
+type artificialPolicyItem struct {
+	conf      interface{}
+	targetRef common_api.TargetRef
+}
+
+func (a *artificialPolicyItem) GetTargetRef() common_api.TargetRef {
+	return a.targetRef
+}
+
+func (a *artificialPolicyItem) GetDefault() interface{} {
+	return a.conf
 }
 
 func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {

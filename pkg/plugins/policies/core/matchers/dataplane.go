@@ -1,16 +1,19 @@
 package matchers
 
 import (
-	"sort"
-
+	"fmt"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/pkg/errors"
+	"sort"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -28,13 +31,13 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 	matchedPoliciesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
 
-	for _, policy := range policies.GetItems() {
-		spec, ok := policy.GetSpec().(core_model.Policy)
-		if !ok {
-			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
-		}
+	resolvedPolicies, err := resolveTargetRefs(policies.GetItems(), resources)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
 
-		selectedInbounds := inboundsSelectedByTargetRef(spec.GetTargetRef(), dpp, gateway)
+	for _, policy := range resolvedPolicies {
+		selectedInbounds := inboundsSelectedByPolicy(policy, dpp, gateway)
 		if len(selectedInbounds) == 0 {
 			// DPP is not matched by the policy
 			continue
@@ -70,35 +73,111 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 
 	return core_xds.TypedMatchingPolicies{
 		Type:              rType,
-		DataplanePolicies: dpPolicies,
+		DataplanePolicies: unresolve(dpPolicies),
 		FromRules:         fr,
 		ToRules:           tr,
 		SingleItemRules:   sr,
 	}, nil
 }
 
-// inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_rules.InboundListener {
-	switch tr.Kind {
+// inboundsSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
+func inboundsSelectedByPolicy(
+	policyResource core_model.Resource,
+	dpp *core_mesh.DataplaneResource,
+	gateway *core_mesh.MeshGatewayResource,
+) []core_rules.InboundListener {
+	policy := policyResource.GetSpec().(core_model.Policy)
+
+	switch policy.GetTargetRef().Kind {
 	case common_api.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)
 	case common_api.MeshSubset:
-		return inboundsSelectedByTags(tr.Tags, dpp, gateway)
+		return inboundsSelectedByTags(policy.GetTargetRef().Tags, dpp, gateway)
 	case common_api.MeshService:
 		return inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: tr.Name,
+			mesh_proto.ServiceTag: policy.GetTargetRef().Name,
 		}, dpp, gateway)
 	case common_api.MeshServiceSubset:
 		tags := map[string]string{
-			mesh_proto.ServiceTag: tr.Name,
+			mesh_proto.ServiceTag: policy.GetTargetRef().Name,
 		}
-		for k, v := range tr.Tags {
+		for k, v := range policy.GetTargetRef().Tags {
 			tags[k] = v
 		}
 		return inboundsSelectedByTags(tags, dpp, gateway)
+	case common_api.MeshHTTPRoute:
+		rr, ok := policyResource.(*core_rules.ResolvedResource)
+		if !ok {
+			panic(fmt.Sprintf("provided policy is referencing %v but not resolved", common_api.MeshHTTPRoute))
+		}
+		mhr, ok := rr.ResolvedTargetRefs[policy.GetTargetRef().Hash()]
+		if !ok {
+			panic(fmt.Sprintf("can't resolve %v targetRef", common_api.MeshHTTPRoute))
+		}
+		return inboundsSelectedByPolicy(mhr, dpp, gateway)
 	default:
 		return []core_rules.InboundListener{}
 	}
+}
+
+func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources) ([]core_model.Resource, error) {
+	rv := []core_model.Resource{}
+
+	for _, r := range rl {
+		policy := r.GetSpec().(core_model.Policy)
+
+		switch policy.GetTargetRef().Kind {
+		case common_api.MeshHTTPRoute:
+			mhr, err := resolveMeshHTTPRouteRef(r.GetMeta(), policy.GetTargetRef().Name, resources)
+			if err != nil {
+				return nil, err
+			}
+			rv = append(rv, &core_rules.ResolvedResource{
+				Resource: r,
+				ResolvedTargetRefs: map[common_api.TargetRefHash]core_model.Resource{
+					policy.GetTargetRef().Hash(): mhr,
+				},
+			})
+		default:
+			rv = append(rv, r)
+		}
+	}
+
+	return rv, nil
+}
+
+func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, resources xds_context.Resources) (*meshhttproute_api.MeshHTTPRouteResource, error) {
+	mhrs := resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType)
+	for _, item := range mhrs.GetItems() {
+		if isReferenced(refMeta, refName, item.GetMeta()) {
+			return item.(*meshhttproute_api.MeshHTTPRouteResource), nil
+		}
+	}
+	return nil, errors.Errorf("MeshHTTPRoute %v not found", refName)
+}
+
+func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta core_model.ResourceMeta) bool {
+	if len(refMeta.GetNameExtensions()) == 0 {
+		return refName == resourceMeta.GetName()
+	}
+
+	if ns := refMeta.GetNameExtensions()[controllers.KubeNamespaceTag]; ns != "" {
+		return util_k8s.K8sNamespacedNameToCoreName(refName, ns) == resourceMeta.GetName()
+	}
+
+	return false
+}
+
+func unresolve(rl []core_model.Resource) []core_model.Resource {
+	rv := []core_model.Resource{}
+	for _, r := range rl {
+		if resolved, ok := r.(*core_rules.ResolvedResource); ok {
+			rv = append(rv, resolved.Resource)
+		} else {
+			rv = append(rv, r)
+		}
+	}
+	return rv
 }
 
 func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_rules.InboundListener {
