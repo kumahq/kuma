@@ -16,7 +16,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: n9QKVWRLyvNRp0UbwBUG1xn23eHj90pZlr3nMj14CM4=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: false
     Value: test-server
@@ -32,7 +32,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: true
-    Value: n9QKVWRLyvNRp0UbwBUG1xn23eHj90pZlr3nMj14CM4=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: false
     Value: test-server
@@ -48,7 +48,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: n9QKVWRLyvNRp0UbwBUG1xn23eHj90pZlr3nMj14CM4=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: true
     Value: test-server
@@ -64,7 +64,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: true
-    Value: n9QKVWRLyvNRp0UbwBUG1xn23eHj90pZlr3nMj14CM4=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: true
     Value: test-server

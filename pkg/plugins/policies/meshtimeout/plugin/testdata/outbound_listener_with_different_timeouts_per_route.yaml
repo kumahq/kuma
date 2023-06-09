@@ -31,18 +31,16 @@ filterChains:
                 stringMatch:
                   exact: GET
               path: /another-backend
-            name: Lv6cpFf/JzQZSvl97nnZZFjFcZQbqoejHncFutEisJQ=
+            name: U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=
             route:
               cluster: other-service
-              idleTimeout: 888s
-              timeout: 88s
+              timeout: 0s
           - match:
               prefix: /
-            name: qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=
+            name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
               cluster: other-service
-              idleTimeout: 999s
-              timeout: 99s
+              timeout: 0s
       statPrefix: outbound_127_0_0_1_10001
 name: outbound:127.0.0.1:10001
 trafficDirection: OUTBOUND

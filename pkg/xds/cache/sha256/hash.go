@@ -1,10 +1,9 @@
 package sha256
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/gob"
+	"encoding/json"
 )
 
 func Hash(s string) string {
@@ -14,9 +13,9 @@ func Hash(s string) string {
 }
 
 func HashAny(a any) (string, error) {
-	var b bytes.Buffer
-	if err := gob.NewEncoder(&b).Encode(a); err != nil {
+	bytes, err := json.Marshal(a)
+	if err != nil {
 		return "", err
 	}
-	return Hash(b.String()), nil
+	return Hash(string(bytes)), nil
 }

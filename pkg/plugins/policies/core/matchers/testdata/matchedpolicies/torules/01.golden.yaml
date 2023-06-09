@@ -11,10 +11,10 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: n9QKVWRLyvNRp0UbwBUG1xn23eHj90pZlr3nMj14CM4=
+    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
   - Key: kuma.io/service
     Not: false
-    Value: test-server
+    Value: another-test-server
 - Conf:
     http:
       requestTimeout: 3s
@@ -27,7 +27,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: 2yzVoYsw/guUcSHu63K2Tvul/GU2JbI4z2qBOjXenw4=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: false
-    Value: another-test-server
+    Value: test-server
