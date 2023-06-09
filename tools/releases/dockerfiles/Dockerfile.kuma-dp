@@ -1,10 +1,9 @@
 ARG BASE_IMAGE_ARCH=amd64
 
 FROM debian:11 as envoy
-ARG ENVOY_VERSION
 ARG ARCH
 
-ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /envoy
+ADD /build/artifacts-linux-$ARCH/envoy/envoy /envoy
 
 RUN apt-get update && \
     apt-get install -y libcap2-bin
