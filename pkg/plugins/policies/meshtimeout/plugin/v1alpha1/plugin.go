@@ -181,11 +181,20 @@ func applyToGateway(
 		return err
 	}
 	for _, listenerInfo := range gatewayListerInfos {
+		conf := getConf(toRules.Rules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
-		if !ok {
-			continue
+
+		if conf != nil && ok {
+			for _, vh := range route.VirtualHosts {
+				for _, r := range vh.Routes {
+					plugin_xds.ConfigureRouteAction(
+						r.GetRoute(),
+						pointer.Deref(conf.Http).RequestTimeout,
+						pointer.Deref(conf.Http).StreamIdleTimeout,
+					)
+				}
+			}
 		}
-		routeActionsPerCluster := routeActionPerCluster(route)
 
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
@@ -195,11 +204,6 @@ func applyToGateway(
 					continue
 				}
 				cluster, ok := gatewayClusters[clusterName]
-				if !ok {
-					continue
-				}
-
-				routeActions, ok := routeActionsPerCluster[clusterName]
 				if !ok {
 					continue
 				}
@@ -218,14 +222,6 @@ func applyToGateway(
 					cluster,
 				); err != nil {
 					return err
-				}
-
-				for _, routeAction := range routeActions {
-					plugin_xds.ConfigureRouteAction(
-						routeAction,
-						pointer.Deref(conf.Http).RequestTimeout,
-						pointer.Deref(conf.Http).StreamIdleTimeout,
-					)
 				}
 			}
 		}
@@ -247,25 +243,6 @@ func getConf(
 			return nil
 		}
 	}
-}
-
-func routeActionPerCluster(route *envoy_route.RouteConfiguration) map[string][]*envoy_route.RouteAction {
-	actions := map[string][]*envoy_route.RouteAction{}
-	for _, vh := range route.VirtualHosts {
-		for _, r := range vh.Routes {
-			routeAction := r.GetRoute()
-			if routeAction == nil {
-				continue
-			}
-			cluster := routeAction.GetWeightedClusters().GetClusters()[0].Name
-			if actions[cluster] == nil {
-				actions[cluster] = []*envoy_route.RouteAction{routeAction}
-			} else {
-				actions[cluster] = append(actions[cluster], routeAction)
-			}
-		}
-	}
-	return actions
 }
 
 func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
