@@ -418,7 +418,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
 			return nil
 		}
-
+		l.Info("Reconciling pods", "p", pods.Items)
 		var req []kube_reconile.Request
 		for _, pod := range pods.Items {
 			req = append(req, kube_reconile.Request{
