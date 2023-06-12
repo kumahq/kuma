@@ -32,14 +32,22 @@ func Test() {
 
 		err = NewClusterSetup().
 			Install(TestServerUniversal("dp-echo-2", meshName,
-				WithArgs([]string{"echo", "--instance", "zone2"}),
-				WithServiceVersion("v2"),
+				WithArgs([]string{"echo", "--instance", "zone2-v1"}),
+				WithServiceVersion("v1"),
 			)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(TestServerUniversal("dp-echo-3", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2-v2"}),
+				WithServiceVersion("v2"),
+			)).
+			Setup(multizone.UniZone2)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
+			Install(TestServerUniversal("dp-echo-4", meshName,
 				WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 				WithServiceName("alias-test-server"),
 				WithServiceVersion("v2"),
@@ -95,6 +103,50 @@ spec:
 					Not(HaveKey(MatchRegexp(`^zone1.*`))),
 					Not(HaveKey(MatchRegexp(`^zone2.*`))),
 					HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
+				),
+			)
+		}, "30s", "500ms").Should(Succeed())
+	})
+
+	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-1
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+          - path:
+              value: /
+              type: PathPrefix
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: test-server
+                weight: 1
+                tags:
+                  version: v1
+              - kind: MeshServiceSubset
+                name: test-server
+                weight: 1
+                tags:
+                  version: v2
+`, meshName))(multizone.Global)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response).To(
+				And(
+					HaveKey(MatchRegexp(`^zone2-v1.*`)),
+					HaveKey(MatchRegexp(`^zone2-v2.*`)),
 				),
 			)
 		}, "30s", "500ms").Should(Succeed())

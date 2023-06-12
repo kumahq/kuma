@@ -141,6 +141,169 @@ var _ = Describe("Rules", func() {
 		})
 	})
 
+	Describe("IsSubset", func() {
+		type testCase struct {
+			s1, s2   core_rules.Subset
+			isSubset bool
+		}
+
+		DescribeTable("should respond if s2 is subset of s1",
+			func(given testCase) {
+				Expect(given.s1.IsSubset(given.s2)).To(Equal(given.isSubset))
+			},
+			Entry("entry 1", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Value: "v2"},
+				},
+				isSubset: false,
+			}),
+			Entry("entry 2", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+					{Key: "version", Value: "v2"},
+				},
+				isSubset: true,
+			}),
+			Entry("entry 3", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Value: "v2"},
+				},
+				isSubset: true,
+			}),
+			Entry("entry 4", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				isSubset: true,
+			}),
+			Entry("entry 5", testCase{
+				s1: []core_rules.Tag{},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				isSubset: true,
+			}),
+			Entry("entry 6", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+					{Key: "version", Value: "v1"},
+				},
+				s2:       []core_rules.Tag{},
+				isSubset: false,
+			}),
+			Entry("entry 7", testCase{
+				s1: []core_rules.Tag{
+					{Key: "key1", Not: true, Value: "val1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "key1", Value: "val2"},
+				},
+				isSubset: true,
+			}),
+			Entry("entry 8", testCase{
+				s1: []core_rules.Tag{
+					{Key: "key1", Not: true, Value: "val1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "key1", Value: "val2"},
+					{Key: "key2", Value: "val3"},
+				},
+				isSubset: true,
+			}),
+		)
+	})
+
+	Describe("Intersect", func() {
+		type testCase struct {
+			s1, s2    core_rules.Subset
+			intersect bool
+		}
+
+		DescribeTable("should respond if s1 and s2 have intersection",
+			func(given testCase) {
+				Expect(given.s1.Intersect(given.s2)).To(Equal(given.intersect))
+			},
+			Entry("entry 1", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Value: "v2"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 2", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+					{Key: "version", Value: "v2"},
+				},
+				intersect: false,
+			}),
+			Entry("entry 3", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Value: "v2"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 4", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 5", testCase{
+				s1: []core_rules.Tag{},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 6", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2:        []core_rules.Tag{},
+				intersect: true,
+			}),
+		)
+	})
+
 	Describe("BuildRules", func() {
 		type testCase struct {
 			policyFile string
@@ -207,6 +370,11 @@ var _ = Describe("Rules", func() {
 				policyFile: "multiple-mtp.policy.yaml",
 				goldenFile: "multiple-mtp.golden.yaml",
 				typ:        string(meshaccesslog_api.MeshAccessLogType),
+			}),
+			Entry("MeshTrafficPermission with mix of MeshService and MeshServiceSubset", testCase{
+				policyFile: "mtp-mix-ms-and-mss.policy.yaml",
+				goldenFile: "mtp-mix-ms-and-mss.golden.yaml",
+				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
 			}),
 		)
 
