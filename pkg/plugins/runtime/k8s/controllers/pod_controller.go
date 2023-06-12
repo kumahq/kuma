@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -57,7 +56,7 @@ type PodReconciler struct {
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	start := core.Now()
 	defer func() {
-		r.Metric.WithLabelValues("reconcile_all").Observe(core.Now().Sub(start).Seconds())
+		r.Metric.WithLabelValues("reconcile_all", "").Observe(core.Now().Sub(start).Seconds())
 	}()
 	log := r.Log.WithValues("pod", req.NamespacedName)
 	log.V(1).Info("reconcile")
@@ -112,7 +111,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	start := core.Now()
 	defer func() {
-		r.Metric.WithLabelValues("reconcile_dp").Observe(core.Now().Sub(start).Seconds())
+		r.Metric.WithLabelValues("reconcile_dp", pod.Name).Observe(core.Now().Sub(start).Seconds())
 	}()
 	dp := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
@@ -233,7 +232,7 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	start := core.Now()
 	defer func() {
-		r.Metric.WithLabelValues("find_matching_services").Observe(core.Now().Sub(start).Seconds())
+		r.Metric.WithLabelValues("find_matching_services", pod.Name).Observe(core.Now().Sub(start).Seconds())
 	}()
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}
@@ -242,12 +241,12 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 		log.Error(err, "unable to list Services", "namespace", pod.Namespace)
 		return nil, err
 	}
-	r.Metric.WithLabelValues("find_matching_services_list").Observe(core.Now().Sub(start).Seconds())
+	r.Metric.WithLabelValues("find_matching_services_list", pod.Name).Observe(core.Now().Sub(start).Seconds())
 
 	startFind := core.Now()
 	// only consider Services that match this Pod
 	matchingServices := util_k8s.FindServices(allServices, util_k8s.Not(util_k8s.Ignored()), util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
-	r.Metric.WithLabelValues("find_matching_services_list").Observe(core.Now().Sub(startFind).Seconds())
+	r.Metric.WithLabelValues("find_matching_services_list", pod.Name).Observe(core.Now().Sub(startFind).Seconds())
 
 	return matchingServices, nil
 }
@@ -255,7 +254,7 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
 	start := core.Now()
 	defer func() {
-		r.Metric.WithLabelValues("find_other_dp").Observe(core.Now().Sub(start).Seconds())
+		r.Metric.WithLabelValues("find_other_dp", pod.Name).Observe(core.Now().Sub(start).Seconds())
 	}()
 	// List all Dataplanes
 	allDataplanes := &mesh_k8s.DataplaneList{}
@@ -290,9 +289,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+
 	start := core.Now()
 	defer func() {
-		r.Metric.WithLabelValues("create_or_update_dp").Observe(core.Now().Sub(start).Seconds())
+		r.Metric.WithLabelValues("create_or_update_dp", pod.Name).Observe(core.Now().Sub(start).Seconds())
 	}()
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
@@ -305,15 +305,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
-		r.Metric.WithLabelValues("pod_to_dp").Observe(core.Now().Sub(startPod).Seconds())
+		r.Metric.WithLabelValues("pod_to_dp", pod.Name).Observe(core.Now().Sub(startPod).Seconds())
 		startControlerRef := core.Now()
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
 		}
-		r.Metric.WithLabelValues("pod_to_dp").Observe(core.Now().Sub(startControlerRef).Seconds())
+		r.Metric.WithLabelValues("pod_to_dp", pod.Name).Observe(core.Now().Sub(startControlerRef).Seconds())
 		return nil
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+	log.Info("Updating dataplane", "p", pod.Name, "s", services, "d", others)
 	if err != nil {
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())

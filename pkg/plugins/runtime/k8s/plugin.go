@@ -183,7 +183,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		Metric: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name: "pod_controller",
 			Help: "Summary of pod reconclie operations",
-		}, []string{"operation"}),
+		}, []string{"operation", "pod"}),
 	}
 	if err := rt.Metrics().Register(reconciler.Metric); err != nil {
 		return err
