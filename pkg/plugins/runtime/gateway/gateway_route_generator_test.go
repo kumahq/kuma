@@ -1852,7 +1852,7 @@ conf:
 	}
 
 	tlsEntries := []TableEntry{
-		Entry("generates clusters for TLS passthrough",
+		Entry("generates clusters for TLS",
 			"tcp-route.yaml", `
 type: Mesh
 name: default
@@ -1877,6 +1877,15 @@ conf:
     hostname: "api.kuma.io"
     tls:
         mode: PASSTHROUGH
+    tags:
+      port: tls/8443
+  - port: 9443
+    protocol: TLS
+    hostname: "api.kuma.io"
+    tls:
+        mode: TERMINATE
+        certificates:
+        - secret: echo-example-com-server-cert
     tags:
       port: tls/8443
 `, `
@@ -2011,6 +2020,9 @@ conf:
 	})
 
 	Context("with a TLS gateway", func() {
+		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
+		})
 		DescribeTable("generating xDS resources",
 			func(goldenFileName string, fixtureResources ...string) {
 				// given

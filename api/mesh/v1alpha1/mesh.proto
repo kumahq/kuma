@@ -75,6 +75,11 @@ message Mesh {
   // Constraints that applies to the mesh and its entities
   Constraints constraints = 7;
 
+  // List of policies to skip creating by default when the mesh is created.
+  // e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
+  // policies.
+  repeated string skipCreatingInitialPolicies = 8;
+
   message DataplaneProxyConstraints {
 
     // Rules defines a set of rules for data plane proxies to be member of the

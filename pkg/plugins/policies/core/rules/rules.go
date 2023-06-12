@@ -2,11 +2,13 @@ package rules
 
 import (
 	"encoding"
-	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
@@ -86,7 +88,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 			return false
 		}
 		for _, otherTag := range oTags {
-			if !singleDimSubset(tag, otherTag) {
+			if !isSubset(tag, otherTag) {
 				return false
 			}
 		}
@@ -94,23 +96,30 @@ func (ss Subset) IsSubset(other Subset) bool {
 	return true
 }
 
-func singleDimSubset(t1, t2 Tag) bool {
-	if t1.Key != t2.Key {
+func isSubset(t1, t2 Tag) bool {
+	switch {
+	// t2={y: b} can't be a subset of t1={x: a} because point {y: b, x: c} belongs to t2, but doesn't belong to t1
+	case t1.Key != t2.Key:
 		return false
-	}
-	if t1.Not == t2.Not {
+
+	// t2={y: !a} is a subset of t1={y: !b} if and only if a == b
+	case t1.Not == t2.Not:
 		return t1.Value == t2.Value
-	}
-	if t1.Not {
+
+	// t2={y: a} is a subset of t1={y: !b} if and only if a != b
+	case t1.Not:
 		return t1.Value != t2.Value
-	}
-	if t2.Not {
+
+	// t2={y: !a} can't be a subset of t1={y: b} because point {y: c} belongs to t2, but doesn't belong to t1
+	case t2.Not:
 		return false
+
+	default:
+		panic("impossible")
 	}
-	panic("impossible")
 }
 
-// Intersect returns true if potentially we can get an element that belongs both to 'other' and current set.
+// Intersect returns true if there exists an element that belongs both to 'other' and current set.
 // Empty set intersects with all sets.
 func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
@@ -388,6 +397,10 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	// 3. Construct rules for all connected components of the graph independently
 	components := topo.ConnectedComponents(g)
 
+	sort.SliceStable(components, func(i, j int) bool {
+		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
+	})
+
 	for _, nodes := range components {
 		tagSet := map[Tag]bool{}
 		for _, node := range nodes {
@@ -415,7 +428,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
-			// 3. For each combination determine a configuration
+			// 5. For each combination determine a configuration
 			confs := []interface{}{}
 			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 			for i := 0; i < len(list); i++ {
@@ -434,10 +447,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				return nil, err
 			}
 			if merged != nil {
-				var origins []core_model.ResourceMeta
-				for _, origin := range distinctOrigins {
-					origins = append(origins, origin)
-				}
+				origins := maps.Values(distinctOrigins)
 				sort.Slice(origins, func(i, j int) bool {
 					return origins[i].GetName() < origins[j].GetName()
 				})
@@ -451,16 +461,18 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	}
 
 	sort.SliceStable(rules, func(i, j int) bool {
-		ss1, ss2 := rules[i].Subset, rules[j].Subset
-		if ss1.NumPositive() != ss2.NumPositive() {
-			return ss1.NumPositive() > ss2.NumPositive()
-		}
-		h1, _ := json.Marshal(ss1)
-		h2, _ := json.Marshal(ss2)
-		return string(h1) > string(h2)
+		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
 
 	return rules, nil
+}
+
+func toStringList(nodes []graph.Node) []string {
+	rv := make([]string, 0, len(nodes))
+	for _, id := range nodes {
+		rv = append(rv, fmt.Sprintf("%d", id.ID()))
+	}
+	return rv
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {
