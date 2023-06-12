@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"sort"
 	"strings"
 
@@ -368,10 +369,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				return nil, err
 			}
 			if merged != nil {
-				var origins []core_model.ResourceMeta
-				for _, origin := range distinctOrigins {
-					origins = append(origins, origin)
-				}
+				origins := maps.Values(distinctOrigins)
 				sort.Slice(origins, func(i, j int) bool {
 					return origins[i].GetName() < origins[j].GetName()
 				})
