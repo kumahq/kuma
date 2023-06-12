@@ -147,7 +147,7 @@ func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *e
 	if retry == nil {
 		return nil
 	}
-	var policy *envoy_route.RetryPolicy
+
 	switch protocol {
 	case "http":
 		return genHttpRetryPolicy(retry.Spec.Conf.GetHttp())
