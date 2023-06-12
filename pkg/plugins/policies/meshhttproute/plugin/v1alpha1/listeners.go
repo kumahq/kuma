@@ -127,8 +127,8 @@ func prepareRoutes(
 		}
 	}
 
-	catchAllPathMatch := &api.PathMatch{Value: "/", Type: api.PathPrefix}
-	catchAllMatch := []api.Match{{Path: catchAllPathMatch}}
+	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
+	catchAllMatch := []api.Match{{Path: pointer.To(catchAllPathMatch)}}
 
 	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
 		return reflect.DeepEqual(rule.Matches, catchAllMatch)
@@ -151,7 +151,7 @@ func prepareRoutes(
 				// path_separated_prefix, path_match_policy set, so when policy
 				// doesn't specify explicit type of matching, we are assuming
 				// "catch all" path (any path starting with "/").
-				match.Path = catchAllPathMatch
+				match.Path = pointer.To(catchAllPathMatch)
 			}
 
 			matches = append(matches, match)
