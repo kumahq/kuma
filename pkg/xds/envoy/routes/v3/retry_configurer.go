@@ -150,13 +150,12 @@ func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *e
 	var policy *envoy_route.RetryPolicy
 	switch protocol {
 	case "http":
-		policy = genHttpRetryPolicy(retry.Spec.Conf.GetHttp())
+		return genHttpRetryPolicy(retry.Spec.Conf.GetHttp())
 	case "grpc":
-		policy = genGrpcRetryPolicy(retry.Spec.Conf.GetGrpc())
+		return genGrpcRetryPolicy(retry.Spec.Conf.GetGrpc())
 	default:
 		return nil
 	}
-	return policy
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {

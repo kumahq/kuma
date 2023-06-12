@@ -237,6 +237,7 @@ func Retry(
 	if retry == nil {
 		return FilterChainBuilderOptFunc(nil)
 	}
+
 	return AddFilterChainConfigurer(
 		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
 			for _, virtualHost := range hcm.GetRouteConfig().VirtualHosts {
