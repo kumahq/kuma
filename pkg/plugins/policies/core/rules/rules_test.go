@@ -151,7 +151,7 @@ var _ = Describe("Rules", func() {
 			func(given testCase) {
 				Expect(given.s1.IsSubset(given.s2)).To(Equal(given.isSubset))
 			},
-			Entry("", testCase{
+			Entry("entry 1", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Value: "backend"},
 				},
@@ -161,7 +161,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: false,
 			}),
-			Entry("", testCase{
+			Entry("entry 2", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Value: "backend"},
 				},
@@ -171,7 +171,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 3", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
@@ -181,7 +181,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 4", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
@@ -193,7 +193,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 5", testCase{
 				s1: []core_rules.Tag{},
 				s2: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
@@ -202,7 +202,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 6", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Value: "backend"},
 					{Key: "version", Value: "v1"},
@@ -210,7 +210,7 @@ var _ = Describe("Rules", func() {
 				s2:       []core_rules.Tag{},
 				isSubset: false,
 			}),
-			Entry("", testCase{
+			Entry("entry 7", testCase{
 				s1: []core_rules.Tag{
 					{Key: "key1", Not: true, Value: "val1"},
 				},
@@ -219,7 +219,7 @@ var _ = Describe("Rules", func() {
 				},
 				isSubset: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 8", testCase{
 				s1: []core_rules.Tag{
 					{Key: "key1", Not: true, Value: "val1"},
 				},
@@ -242,7 +242,7 @@ var _ = Describe("Rules", func() {
 			func(given testCase) {
 				Expect(given.s1.Intersect(given.s2)).To(Equal(given.intersect))
 			},
-			Entry("", testCase{
+			Entry("entry 1", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Value: "backend"},
 				},
@@ -252,7 +252,7 @@ var _ = Describe("Rules", func() {
 				},
 				intersect: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 2", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Value: "backend"},
 				},
@@ -262,7 +262,7 @@ var _ = Describe("Rules", func() {
 				},
 				intersect: false,
 			}),
-			Entry("", testCase{
+			Entry("entry 3", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
@@ -272,7 +272,7 @@ var _ = Describe("Rules", func() {
 				},
 				intersect: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 4", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
@@ -284,7 +284,7 @@ var _ = Describe("Rules", func() {
 				},
 				intersect: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 5", testCase{
 				s1: []core_rules.Tag{},
 				s2: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
@@ -293,7 +293,7 @@ var _ = Describe("Rules", func() {
 				},
 				intersect: true,
 			}),
-			Entry("", testCase{
+			Entry("entry 6", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
