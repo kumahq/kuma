@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -289,7 +290,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
-
 	start := core.Now()
 	defer func() {
 		r.Metric.WithLabelValues("create_or_update_dp", pod.Name).Observe(core.Now().Sub(start).Seconds())
