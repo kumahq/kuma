@@ -108,7 +108,7 @@ func isSubset(t1, t2 Tag) bool {
 	}
 }
 
-// Intersect returns true if potentially we can get an element that belongs both to 'other' and current set.
+// Intersect returns true if there exists an element that belongs both to 'other' and current set.
 // Empty set intersects with all sets.
 func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
