@@ -459,6 +459,8 @@ multizone:
       refreshInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
+      # If true, TLS connection to the server won't be verified.
+      tlsSkipVerify: false # ENV: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE

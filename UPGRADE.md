@@ -31,6 +31,12 @@ Equivalent example valid now:
 docker run kumahq/kumactl:2.3.0 install transparent-proxy --help
 ```
 
+#### TLS verification between Zone CP and Global CP
+
+If the CA used to sign the Global CP sync server is not provided to a Zone CP (HELM `controlPlane.tls.kdsZoneClient`, ENV: `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`), and the certificate is signed by a CA that is not included in the system's CA bundle on the Zone CP machine, you must do one of the following:
+* Provide the CA to the Zone CP, see https://kuma.io/docs/2.2.x/production/secure-deployment/certificates/#control-plane-to-control-plane-multizone .
+* Configure Zone CP. Set `KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY` or HELM value of `controlPlane.kdsZoneClient.skipVerify` to `true`. 
+
 #### Removal of Common Name from generated certificates
 
 This only affects users who rely on generated certificates having a common name set.

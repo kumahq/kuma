@@ -74,6 +74,8 @@ func (c *KdsServerConfig) Validate() error {
 type KdsClientConfig struct {
 	// Interval for refreshing state of the world
 	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
+	// If true, TLS connection to the server won't be verified.
+	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_multizone_zone_kds_tls_skip_verify"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
 	RootCAFile string `json:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.

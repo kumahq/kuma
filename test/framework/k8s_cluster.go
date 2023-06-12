@@ -460,6 +460,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		}
 		values["controlPlane.zone"] = zoneName
 		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
+		values["controlPlane.kdsZoneClient.tlsSkipVerify"] = "true"
 	}
 
 	for _, value := range c.opts.noHelmOpts {
@@ -548,6 +549,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		if c.opts.globalAddress == "" {
 			return errors.Errorf("GlobalAddress expected for zone")
 		}
+		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
 	var err error
