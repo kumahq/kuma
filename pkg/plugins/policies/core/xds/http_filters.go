@@ -7,16 +7,10 @@ import (
 )
 
 func InsertHTTPFiltersBeforeRouter(manager *envoy_hcm.HttpConnectionManager, newFilters ...*envoy_hcm.HttpFilter) error {
-	if len(newFilters) == 0 {
-		return nil
-	}
 	for i, filter := range manager.HttpFilters {
 		if filter.Name == "envoy.filters.http.router" {
 			// insert new filters before router
-			manager.HttpFilters = append(manager.HttpFilters[:i+len(newFilters)], manager.HttpFilters[i:]...)
-			for x, newFilter := range newFilters {
-				manager.HttpFilters[i+x] = newFilter
-			}
+			manager.HttpFilters = append(append(manager.HttpFilters[:i:i], newFilters...), manager.HttpFilters[i:]...)
 			return nil
 		}
 	}
