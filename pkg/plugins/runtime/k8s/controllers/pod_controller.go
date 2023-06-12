@@ -55,6 +55,10 @@ type PodReconciler struct {
 }
 
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	start := core.Now()
+	defer func() {
+		r.Metric.WithLabelValues("reconcile_all").Observe(core.Now().Sub(start).Seconds())
+	}()
 	log := r.Log.WithValues("pod", req.NamespacedName)
 	log.V(1).Info("reconcile")
 
