@@ -98,7 +98,6 @@ spec:
                           - MeshSubset
                           - MeshService
                           - MeshServiceSubset
-                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -132,7 +131,6 @@ spec:
                     - MeshSubset
                     - MeshService
                     - MeshServiceSubset
-                    - MeshGatewayRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -212,7 +210,6 @@ spec:
                           - MeshSubset
                           - MeshService
                           - MeshServiceSubset
-                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
