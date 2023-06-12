@@ -77,7 +77,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 			return false
 		}
 		for _, otherTag := range oTags {
-			if !singleDimSubset(tag, otherTag) {
+			if !isSubset(tag, otherTag) {
 				return false
 			}
 		}
@@ -85,20 +85,27 @@ func (ss Subset) IsSubset(other Subset) bool {
 	return true
 }
 
-func singleDimSubset(t1, t2 Tag) bool {
-	if t1.Key != t2.Key {
+func isSubset(t1, t2 Tag) bool {
+	switch {
+	// t2={y: b} can't be a subset of t1={x: a} because point {y: b, x: c} belongs to t2, but doesn't belong to t1
+	case t1.Key != t2.Key:
 		return false
-	}
-	if t1.Not == t2.Not {
+
+	// t2={y: !a} is a subset of t1={y: !b} if and only if a == b
+	case t1.Not == t2.Not:
 		return t1.Value == t2.Value
-	}
-	if t1.Not {
+
+	// t2={y: a} is a subset of t1={y: !b} if and only if a != b
+	case t1.Not:
 		return t1.Value != t2.Value
-	}
-	if t2.Not {
+
+	// t2={y: !a} can't be a subset of t1={y: b} because point {y: c} belongs to t2, but doesn't belong to t1
+	case t2.Not:
 		return false
+
+	default:
+		panic("impossible")
 	}
-	panic("impossible")
 }
 
 // Intersect returns true if potentially we can get an element that belongs both to 'other' and current set.
