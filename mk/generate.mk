@@ -1,6 +1,6 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
-POLICY_GEN := ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator
+RESOURCE_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/resource-gen
+POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
 GO_MODULE ?= github.com/kumahq/kuma
@@ -29,10 +29,10 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 generate: generate/protos $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
 $(POLICY_GEN):
-	cd $(KUMA_DIR) && go build -o $(POLICY_GEN) ./tools/policy-gen/generator/main.go
+	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
 $(RESOURCE_GEN):
-	cd $(KUMA_DIR) && go build -o $(RESOURCE_GEN) ./tools/resource-gen/main.go
+	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
