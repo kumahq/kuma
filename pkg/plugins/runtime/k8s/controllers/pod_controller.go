@@ -294,12 +294,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
+		startPod := core.Now()
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
+		r.Metric.WithLabelValues("pod_to_dp").Observe(core.Now().Sub(startPod).Seconds())
+		startControlerRef := core.Now()
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
 		}
+		r.Metric.WithLabelValues("pod_to_dp").Observe(core.Now().Sub(startControlerRef).Seconds())
 		return nil
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
