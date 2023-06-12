@@ -15,13 +15,13 @@ virtualHosts:
       idleTimeout: 5s
       weightedClusters:
         clusters:
-        - name: other-service-7ab0707c3913adf1
+        - name: backend-26cb64fa4e85e7b7
           requestHeadersToAdd:
           - header:
               key: x-kuma-tags
               value: '&kuma.io/service=sample-gateway&'
           weight: 1
-        - name: backend-26cb64fa4e85e7b7
+        - name: other-service-7ab0707c3913adf1
           requestHeadersToAdd:
           - header:
               key: x-kuma-tags
