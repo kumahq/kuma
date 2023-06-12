@@ -460,7 +460,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		}
 		values["controlPlane.zone"] = zoneName
 		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
-		values["controlPlane.kdsZoneClient.tlsSkipVerify"] = "true"
+		values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
 	}
 
 	for _, value := range c.opts.noHelmOpts {
