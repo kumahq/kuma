@@ -18,7 +18,7 @@ generate/protos:
 
 .PHONY: clean/tools
 clean/tools:
-	rm -rf ./build/tools-*
+	rm -rf $(KUMA_DIR)/build/tools-*
 
 .PHONY: clean/proto
 clean/protos: ## Dev: Remove auto-generated Protobuf files
