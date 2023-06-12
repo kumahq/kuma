@@ -242,9 +242,12 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 		log.Error(err, "unable to list Services", "namespace", pod.Namespace)
 		return nil, err
 	}
+	r.Metric.WithLabelValues("find_matching_services_list").Observe(core.Now().Sub(start).Seconds())
 
+	startFind := core.Now()
 	// only consider Services that match this Pod
 	matchingServices := util_k8s.FindServices(allServices, util_k8s.Not(util_k8s.Ignored()), util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
+	r.Metric.WithLabelValues("find_matching_services_list").Observe(core.Now().Sub(startFind).Seconds())
 
 	return matchingServices, nil
 }
