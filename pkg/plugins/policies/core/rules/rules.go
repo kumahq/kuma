@@ -3,11 +3,11 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
