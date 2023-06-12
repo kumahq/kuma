@@ -1,6 +1,6 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-RESOURCE_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/resource-gen
-POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
+RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
+POLICY_GEN := ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
 GO_MODULE ?= github.com/kumahq/kuma
@@ -18,7 +18,7 @@ generate/protos:
 
 .PHONY: clean/tools
 clean/tools:
-	rm -rf $(KUMA_DIR)/build/tools-*
+	rm -rf ./build/tools-*
 
 .PHONY: clean/proto
 clean/protos: ## Dev: Remove auto-generated Protobuf files
