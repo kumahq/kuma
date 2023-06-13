@@ -32,7 +32,7 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      connectionTimeout: 10s
+      connectTimeout: 10s
       idleTimeout: 1h
       http:
         requestTimeout: 0s
@@ -44,7 +44,7 @@ to:
       kind: MeshService
       name: web-backend
     default:
-      connectionTimeout: 10s
+      connectTimeout: 10s
       idleTimeout: 1h
       http:
         requestTimeout: 1s
@@ -60,7 +60,7 @@ to:
       kind: MeshService
       name: web-backend
     default:
-      connectionTimeout: 10s
+      connectTimeout: 10s
       idleTimeout: 1h
       http:
         requestTimeout: 1s
@@ -208,34 +208,6 @@ to:
 violations:
   - field: spec.to[0].default.http
     message: at least one timeout in this section should be configured`,
-			}),
-			Entry("top-level targetRef is referencing MeshHTTPRoute", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshHTTPRoute
-  name: route-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      connectionTimeout: 10s
-      idleTimeout: 1h
-      http:
-        requestTimeout: 1s
-        streamIdleTimeout: 1h
-        maxStreamDuration: 1h
-        maxConnectionDuration: 1h`,
-				expected: `
-violations:
-  - field: spec.to[0].default.connectionTimeout
-    message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
-  - field: spec.to[0].default.idleTimeout
-    message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
-  - field: spec.to[0].default.http.maxStreamDuration
-    message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
-  - field: spec.to[0].default.http.maxConnectionDuration
-    message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute`,
 			}),
 		)
 	})

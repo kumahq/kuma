@@ -15,7 +15,6 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -33,9 +32,8 @@ const (
 )
 
 type ListenerConfigurer struct {
-	Rules    rules.Rules
+	Conf     api.Conf
 	Protocol core_mesh.Protocol
-	Subset   rules.Subset
 }
 
 func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -53,9 +51,7 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf := c.getConf(c.Subset); conf != nil {
-			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, defaultIdleTimeout)
-		}
+		proxy.IdleTimeout = toProtoDurationOrDefault(c.Conf.IdleTimeout, defaultIdleTimeout)
 		return nil
 	}
 	for _, filterChain := range listener.FilterChains {
@@ -72,34 +68,6 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 	}
 
 	return nil
-}
-
-func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
-	if routeConfiguration != nil {
-		for _, vh := range routeConfiguration.VirtualHosts {
-			for _, route := range vh.Routes {
-				conf := c.getConf(c.Subset.WithTag(rules.RuleMatchesHashTag, route.Name, false))
-				if conf == nil {
-					conf = c.getConf(c.Subset)
-				}
-				if conf == nil {
-					continue
-				}
-				ConfigureRouteAction(
-					route.GetRoute(),
-					pointer.Deref(conf.Http).RequestTimeout,
-					pointer.Deref(conf.Http).StreamIdleTimeout,
-				)
-			}
-		}
-	}
-}
-
-func (c *ListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
-	if c.Rules == nil {
-		return &api.Conf{}
-	}
-	return rules.ComputeConf[api.Conf](c.Rules, subset)
 }
 
 type ClusterConfigurer struct {
@@ -153,6 +121,20 @@ func ConfigureRouteAction(
 		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, defaultStreamIdleTimeout)
 	} else if routeAction.IdleTimeout == nil {
 		routeAction.IdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
+	}
+}
+
+func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+	if routeConfiguration != nil {
+		for _, vh := range routeConfiguration.VirtualHosts {
+			for _, route := range vh.Routes {
+				ConfigureRouteAction(
+					route.GetRoute(),
+					pointer.Deref(c.Conf.Http).RequestTimeout,
+					pointer.Deref(c.Conf.Http).StreamIdleTimeout,
+				)
+			}
+		}
 	}
 }
 
