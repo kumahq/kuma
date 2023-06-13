@@ -1,0 +1,1 @@
+body:not(.is-wizard-page) .app-content-container[data-v-68e3a682]{padding-top:var(--AppHeaderHeight, initial);display:grid;grid-template-columns:var(--AppSidebarWidth) 1fr}body:not(.is-wizard-page) .app-main-content[data-v-68e3a682]{padding:var(--AppGap)}
