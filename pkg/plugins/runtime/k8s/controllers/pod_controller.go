@@ -13,6 +13,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -368,8 +369,9 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	return nil
 }
 
-func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentReconciles int) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
