@@ -354,9 +354,11 @@ runtime:
         # Path where compiled eBPF programs are placed
         programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
-    # MaxConcurrentReconciles defines maximum concurrent reconciliations of kubernetes resources
-    # Default value 10. If set to 0 kube-client default value of 1 will be used.
-    maxConcurrentReconciles: 10 # ENV: KUMA_RUNTIME_KUBERNETES_MAX_CONCURRENT_RECONCILES
+    # Kubernetes's resources reconciliation concurrency configuration
+    controllersConcurrency:
+      # PodController defines maximum concurrent reconciliations of Pod resources
+      # Default value 10. If set to 0 kube controller-runtime default value of 1 will be used.
+      podController: 10 # ENV: KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER
     # Kubernetes client configuration
     clientConfig:
       # Qps defines maximum requests kubernetes client is allowed to make per second.

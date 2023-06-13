@@ -97,7 +97,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			CniApp:       "",
 			CniNamespace: "kube-system",
 		},
-		MaxConcurrentReconciles: 10,
+		ControllersConcurrency: ControllersConcurrency{
+			PodController: 10,
+		},
 		ClientConfig: ClientConfig{
 			Qps:      100,
 			BurstQps: 100,
@@ -125,11 +127,16 @@ type KubernetesRuntimeConfig struct {
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 	// NodeTaintController that prevents applications from scheduling until CNI is ready.
 	NodeTaintController NodeTaintController `json:"nodeTaintController"`
-	// MaxConcurrentReconciles defines maximum concurrent reconciliations of kubernetes resources
-	// Default value 10. If set to 0 kube-client default value of 1 will be used.
-	MaxConcurrentReconciles int `json:"maxConcurrentReconciles" envconfig:"kuma_runtime_kubernetes_max_concurrent_reconciles"`
+	// Kubernetes's resources reconciliation concurrency configuration
+	ControllersConcurrency ControllersConcurrency `json:"controllersConcurrency"`
 	// Kubernetes client configuration
 	ClientConfig ClientConfig `json:"clientConfig"`
+}
+
+type ControllersConcurrency struct {
+	// PodController defines maximum concurrent reconciliations of Pod resources
+	// Default value 10. If set to 0 kube controller-runtime default value of 1 will be used.
+	PodController int `json:"podController" envconfig:"kuma_runtime_kubernetes_controllers_concurrency_pod_controller"`
 }
 
 type ClientConfig struct {
