@@ -1,0 +1,27 @@
+{
+ "type": "/std-errors",
+ "status": "400",
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "name",
+   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+  },
+  {
+   "field": "mesh",
+   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "name",
+   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+  },
+  {
+   "field": "mesh",
+   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+  }
+ ]
+}

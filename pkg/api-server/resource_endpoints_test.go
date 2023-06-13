@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 
 	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 )
 
@@ -123,17 +125,7 @@ var _ = Describe("Resource Endpoints Zone", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "name",
-						"message": "the length of the name must be shorter"
-					}
-				]
-			  }`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_name-too-long.golden.json")))
 		})
 	})
 })
@@ -208,12 +200,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not retrieve a resource",
-				"details": "Not found"
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_not-found.golden.json")))
 		})
 
 		It("should list resources", func() {
@@ -404,18 +391,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not retrieve resources",
-				"details": "Invalid offset",
-				"causes": [
-					{
-						"field": "offset",
-						"message": "Invalid format"
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_page-offset-invalid.golden.json")))
 		})
 
 		It("should return 400 with error on invalid size type", func() {
@@ -431,18 +407,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not retrieve resources",
-				"details": "Invalid page size",
-				"causes": [
-					{
-						"field": "size",
-						"message": "Invalid format"
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_page-size-invalid.golden.json")))
 		})
 
 		It("should return 400 with error when page size exceeded the limit", func() {
@@ -458,18 +423,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not retrieve resources",
-				"details": "Invalid page size",
-				"causes": [
-					{
-						"field": "size",
-						"message": "Invalid page size of 2000. Maximum page size is 1000"
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_page-size-too-large.golden.json")))
 		})
 	})
 
@@ -576,18 +530,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "type",
-						"message": "type from the URL has to be the same as in body"
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_incoherent-types.golden.json")))
 		})
 
 		It("should return 400 on the name that is different from request", func() {
@@ -628,18 +571,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "name",
-						"message": "name from the URL has to be the same as in body"
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_incoherent-names.golden.json")))
 		})
 
 		It("should return 400 on the mesh that is different from request", func() {
@@ -680,17 +612,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "mesh",
-						"message": "mesh from the URL has to be the same as in body"
-					}
-				]
-			}`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_incoherent-mesh.golden.json")))
 		})
 
 		It("should return 400 on validation error", func() {
@@ -725,22 +647,11 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// when
-			respBytes, err := io.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(respBytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "conf",
-						"message": "requires either \"destination\" or \"split\""
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_invalid-conf.golden.json")))
 		})
 
 		It("should return 400 on invalid name and mesh", func() {
@@ -783,26 +694,11 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// when
-			respBytes, err := io.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(respBytes).To(MatchJSON(`
-			{
-				"title": "Could not process a resource",
-				"details": "Resource is not valid",
-				"causes": [
-					{
-						"field": "name",
-						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
-					},
-					{
-						"field": "mesh",
-						"message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
-					}
-				]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_name-mesh.golden.json")))
 		})
 
 		It("should return 400 when mesh does not exist", func() {
@@ -837,22 +733,11 @@ var _ = Describe("Resource Endpoints", func() {
 			response := client.put(res)
 
 			// when
-			respBytes, err := io.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(respBytes).To(MatchJSON(`
-			{
-				"title": "Could not create a resource",
-				"details": "Mesh is not found",
-				"causes": [
-					{
-						"field": "mesh",
-						"message": "mesh of name default is not found"
-					}
-          		]
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_mesh-not-found.golden.json")))
 		})
 	})
 
@@ -884,12 +769,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(MatchJSON(`
-			{
-				"title": "Could not delete a resource",
-				"details": "Not found"
-			}
-			`))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource-delete_not-found.golden.json")))
 		})
 	})
 

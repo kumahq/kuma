@@ -46,7 +46,7 @@ func (tc TokenClient) Generate(tokenReq any) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		var kumaErr error_types.Error
 		if err := json.Unmarshal(body, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
+			if kumaErr.Title != "" {
 				return "", &kumaErr
 			}
 		}
