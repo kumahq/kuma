@@ -1,13 +1,44 @@
-package routes
+package virtualhosts
 
 import (
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
+
+// VirtualHostConfigurer is responsible for configuring a single aspect of the entire Envoy VirtualHost,
+// such as Route, CORS, etc.
+type VirtualHostConfigurer interface {
+	// Configure configures a single aspect on a given Envoy VirtualHost.
+	Configure(virtualHost *envoy_route.VirtualHost) error
+}
+
+// VirtualHostConfigureFunc adapts a configuration function to the
+// VirtualHostConfigurer interface.
+type VirtualHostConfigureFunc func(vh *envoy_route.VirtualHost) error
+
+func (f VirtualHostConfigureFunc) Configure(vh *envoy_route.VirtualHost) error {
+	if f != nil {
+		return f(vh)
+	}
+
+	return nil
+}
+
+// VirtualHostMustConfigureFunc adapts a configuration function that
+// never fails to the VirtualHostConfigurer interface.
+type VirtualHostMustConfigureFunc func(vh *envoy_route.VirtualHost)
+
+func (f VirtualHostMustConfigureFunc) Configure(vh *envoy_route.VirtualHost) error {
+	if f != nil {
+		f(vh)
+	}
+
+	return nil
+}
 
 // VirtualHostBuilderOpt is a configuration option for VirtualHostBuilder.
 //
@@ -27,7 +58,7 @@ func NewVirtualHostBuilder(apiVersion core_xds.APIVersion) *VirtualHostBuilder {
 // by applying a series of VirtualHostConfigurers.
 type VirtualHostBuilder struct {
 	apiVersion  core_xds.APIVersion
-	configurers []v3.VirtualHostConfigurer
+	configurers []VirtualHostConfigurer
 }
 
 // Configure configures VirtualHostBuilder by adding individual VirtualHostConfigurers.
@@ -56,7 +87,7 @@ func (b *VirtualHostBuilder) Build() (envoy.NamedResource, error) {
 }
 
 // AddConfigurer appends a given VirtualHostConfigurer to the end of the chain.
-func (b *VirtualHostBuilder) AddConfigurer(configurer v3.VirtualHostConfigurer) {
+func (b *VirtualHostBuilder) AddConfigurer(configurer VirtualHostConfigurer) {
 	b.configurers = append(b.configurers, configurer)
 }
 
@@ -71,7 +102,7 @@ func (f VirtualHostBuilderOptFunc) ApplyTo(builder *VirtualHostBuilder) {
 
 // AddVirtualHostConfigurer production an option that adds the given
 // configurer to the virtual host builder.
-func AddVirtualHostConfigurer(c v3.VirtualHostConfigurer) VirtualHostBuilderOpt {
+func AddVirtualHostConfigurer(c VirtualHostConfigurer) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(builder *VirtualHostBuilder) {
 		builder.AddConfigurer(c)
 	})

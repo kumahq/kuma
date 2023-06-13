@@ -1,12 +1,16 @@
-package routes_test
+package virtualhosts_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
@@ -66,6 +70,41 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
             - domains:
               - '*'
               name: backend
+`,
+			}),
+			Entry("virtual host with retry", testCase{
+				opts: []Opt{
+					CommonVirtualHost("backend"),
+					DomainNames(),
+					Retry(
+						&core_mesh.RetryResource{
+							Spec: &mesh_proto.Retry{
+								Conf: &mesh_proto.Retry_Conf{
+									Http: &mesh_proto.Retry_Conf_Http{
+										NumRetries:       util_proto.UInt32(7),
+										RetriableMethods: []mesh_proto.HttpMethod{mesh_proto.HttpMethod_GET, mesh_proto.HttpMethod_POST},
+									},
+								},
+							},
+						},
+						mesh.ProtocolHTTP,
+					),
+				},
+				expected: `
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              retryPolicy:
+                numRetries: 7
+                retriableRequestHeaders:
+                    - name: :method
+                      stringMatch:
+                        exact: GET
+                    - name: :method
+                      stringMatch:
+                        exact: POST
+                retryOn: gateway-error,connect-failure,refused-stream
 `,
 			}),
 		)
