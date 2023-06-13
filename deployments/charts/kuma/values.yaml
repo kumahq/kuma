@@ -235,6 +235,8 @@ controlPlane:
       create: false
       # -- CA bundle that was used to sign the certificate of KDS Global Server.
       cert: ""
+      # -- If true, TLS cert of the server is not verified.
+      skipVerify: false
 
   image:
     # -- Kuma CP ImagePullPolicy

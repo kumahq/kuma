@@ -76,7 +76,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig, err := tlsConfig(c.config.RootCAFile)
+		tlsConfig, err := tlsConfig(c.config.RootCAFile, c.config.TlsSkipVerify)
 		if err != nil {
 			return errors.Wrap(err, "could not ")
 		}
@@ -289,22 +289,23 @@ func (c *client) NeedLeaderElection() bool {
 	return true
 }
 
-func tlsConfig(rootCaFile string) (*tls.Config, error) {
-	if rootCaFile == "" {
-		// #nosec G402 -- we allow this when not specifying a CA
-		return &tls.Config{
-			InsecureSkipVerify: true,
-			MinVersion:         tls.VersionTLS12,
-		}, nil
+func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
+	// #nosec G402 -- we let the user decide if they want to ignore verification
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: skipVerify,
+		MinVersion:         tls.VersionTLS12,
 	}
-	roots := x509.NewCertPool()
-	caCert, err := os.ReadFile(rootCaFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+	if rootCaFile != "" {
+		roots := x509.NewCertPool()
+		caCert, err := os.ReadFile(rootCaFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+		}
+		ok := roots.AppendCertsFromPEM(caCert)
+		if !ok {
+			return nil, errors.New("failed to parse root certificate")
+		}
+		tlsConfig.RootCAs = roots
 	}
-	ok := roots.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, errors.New("failed to parse root certificate")
-	}
-	return &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}, nil
+	return tlsConfig, nil
 }
