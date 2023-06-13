@@ -12,6 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -71,16 +72,7 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 				},
 			})
 		}
-		// envoy.filters.http.router has to be the last filter
-		filters := []*envoy_hcm.HttpFilter{}
-		for _, filter := range hcm.HttpFilters {
-			if filter.Name == "envoy.filters.http.router" {
-				filters = append(filters, fiFilters...)
-			}
-			filters = append(filters, filter)
-		}
-		hcm.HttpFilters = filters
-		return nil
+		return policies_xds.InsertHTTPFiltersBeforeRouter(hcm, fiFilters...)
 	}
 	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpRoutes); err != nil {
 		return err

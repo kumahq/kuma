@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -134,22 +135,12 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 				return nil
 			}
 		}
-		// envoy.filters.http.router has to be the last filter
-		filters := []*envoy_hcm.HttpFilter{}
-		for _, filter := range hcm.HttpFilters {
-			if filter.Name == "envoy.filters.http.router" {
-				filters = append(filters,
-					&envoy_hcm.HttpFilter{
-						Name: "envoy.filters.http.local_ratelimit",
-						ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-							TypedConfig: pbstListener,
-						},
-					})
-			}
-			filters = append(filters, filter)
-		}
-		hcm.HttpFilters = filters
-		return nil
+		return policies_xds.InsertHTTPFiltersBeforeRouter(hcm, &envoy_hcm.HttpFilter{
+			Name: "envoy.filters.http.local_ratelimit",
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: pbstListener,
+			},
+		})
 	}
 	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpRoutes); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 		return err

@@ -65,6 +65,7 @@ resources:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
+                  prefix: /
                   queryParameters:
                   - name: v1
                     stringMatch:

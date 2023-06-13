@@ -10,6 +10,7 @@ import (
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 type OutboundRoute struct {
@@ -28,10 +29,10 @@ type HttpOutboundRouteConfigurer struct {
 var _ envoy_listeners_v3.FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	virtualHostBuilder := envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
-		Configure(envoy_routes.CommonVirtualHost(c.Service))
+	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
+		Configure(envoy_virtual_hosts.CommonVirtualHost(c.Service))
 	for _, route := range c.Routes {
-		route := envoy_routes.AddVirtualHostConfigurer(
+		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
 				Matches:                 route.Matches,
 				Filters:                 route.Filters,
