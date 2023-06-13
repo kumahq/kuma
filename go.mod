@@ -53,7 +53,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
-	go.opentelemetry.io/proto/otlp v0.19.0
+	go.opentelemetry.io/proto/otlp v0.20.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
@@ -85,8 +85,8 @@ require (
 
 require (
 	gonum.org/v1/gonum v0.13.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
+	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
 )
 
 require (
