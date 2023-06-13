@@ -49,7 +49,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
-	github.com/spiffe/go-spiffe/v2 v2.1.5
+	github.com/spiffe/go-spiffe/v2 v2.1.6
 	github.com/testcontainers/testcontainers-go v0.20.1
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
