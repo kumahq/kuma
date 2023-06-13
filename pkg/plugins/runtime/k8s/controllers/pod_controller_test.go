@@ -285,7 +285,7 @@ var _ = Describe("PodReconciler", func() {
 			SystemNamespace:   "kuma-system",
 			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
 			ResourceConverter: k8s.NewSimpleConverter(),
-			Metric:            prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "test"}, []string{"label1"}),
+			Metric:            prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "test"}, []string{"label1", "label2"}),
 		}
 	})
 
