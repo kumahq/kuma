@@ -447,6 +447,7 @@ func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) 
 			return nil
 		}
 
+		var dataplanesToReconcile []mesh_k8s.Dataplane
 		var req []kube_reconile.Request
 		for i := range dataplanes.Items {
 			dataplane := dataplanes.Items[i]
@@ -462,10 +463,12 @@ func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) 
 			if ownerRef == nil || ownerRef.Kind != "Pod" {
 				continue
 			}
+			dataplanesToReconcile = append(dataplanesToReconcile, dataplane)
 			req = append(req, kube_reconile.Request{
 				NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
 			})
 		}
+		l.Info("DP to reconcile", "d", dataplanesToReconcile)
 		return req
 	}
 }

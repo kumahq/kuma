@@ -15,6 +15,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
