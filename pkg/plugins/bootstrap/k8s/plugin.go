@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"strconv"
 	"time"
 
@@ -69,6 +70,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
+			Controller:         config.Controller{MaxConcurrentReconciles: 10},
 		},
 	)
 	if err != nil {
