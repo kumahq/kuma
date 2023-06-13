@@ -59,6 +59,7 @@ injector:
   virtualProbesEnabled: true
   virtualProbesPort: 9000
 marshalingCacheExpirationTime: 5m0s
+maxConcurrentReconciles: 10
 nodeTaintController:
   cniApp: ""
   cniNamespace: kube-system
