@@ -70,7 +70,7 @@ resources:
                   - name: v1
                     stringMatch:
                       exact: "true"
-                name: eIgW92wXHwW4jQW9ZASIi/jftgxb/u98hIBaTzIRSIw=
+                name: 6B044knLw3l3+wG86HzzF5jnxXsiiMfGbgxvh+ZmU9Y=
                 route:
                   cluster: backend
                   timeout: 0s
