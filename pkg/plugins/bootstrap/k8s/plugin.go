@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/config"
 	"strconv"
 	"time"
 
