@@ -12,7 +12,7 @@ DISTRIBUTIONS=(
   linux:debian:linux:amd64
   linux:ubuntu:linux:amd64
   linux:rhel:linux:amd64
-  linux:centos:linux:amd64
+  linux:centos:centos:amd64
   darwin:darwin:darwin:amd64
   linux:::amd64
   linux:debian:linux:arm64

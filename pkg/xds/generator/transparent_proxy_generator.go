@@ -20,8 +20,8 @@ const (
 	InboundNameIPv6   = "inbound:passthrough:ipv6"
 	allIPv4           = "0.0.0.0"
 	allIPv6           = "::"
-	InPassThroughIPv4 = "127.0.0.6"
-	InPassThroughIPv6 = "::6"
+	inPassThroughIPv4 = "127.0.0.6"
+	inPassThroughIPv6 = "::6"
 )
 
 type TransparentProxyGenerator struct {
@@ -35,7 +35,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	resourcesIPv4, err := tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+	resourcesIPv4, err := tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
 	if redirectPortInboundV6 != 0 {
-		resourcesIPv6, err := tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+		resourcesIPv6, err := tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
 		if err != nil {
 			return nil, err
 		}
