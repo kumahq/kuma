@@ -13,6 +13,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -48,17 +50,29 @@ type Context struct {
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 }
 
-func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone string) *Context {
+func DefaultContext(
+	ctx context.Context,
+	manager manager.ResourceManager,
+	cfg kuma_cp.Config,
+) *Context {
 	configs := map[string]bool{
 		config_manager.ClusterIdConfigKey: true,
 	}
 
+	globalResourceMappers := CompositeResourceMapper(
+		MapZoneTokenSigningKeyGlobalToPublicKey,
+		RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
+			cfg.Store.Type,
+			cfg.Store.Kubernetes.SystemNamespace,
+		),
+	)
+
 	return &Context{
 		ZoneClientCtx:        ctx,
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
-		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
+		ZoneProvidedFilter:   ZoneProvidedFilter(cfg.Multizone.Zone.Name),
 		Configs:              configs,
-		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey,
+		GlobalResourceMapper: globalResourceMappers,
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
@@ -71,6 +85,10 @@ func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.Reso
 	return func(r model.Resource) (model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
+			if mapper == nil {
+				continue
+			}
+
 			r, err = mapper(r)
 			if err != nil {
 				return r, err
@@ -142,6 +160,31 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 	}
 
 	return r, nil
+}
+
+// RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper is a mapper
+// responsible for removing control plane system namespace suffixes from names
+// of plugin originated resources if resources are stored in kubernetes. Plugin
+// originated resources could be namespace scoped, but in this case, they
+// will be synced from the zone to global, so this mapper can be used as
+// a GlobalResourceMapper as the ones synced from global to zones will always be
+// placed in system namespace of the global control plane.
+func RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
+	storeType config_store.StoreType,
+	k8sSystemNamespace string,
+) reconcile.ResourceMapper {
+	// This mapper is intended for kubernetes only
+	if storeType != config_store.KubernetesStore {
+		return nil
+	}
+
+	return func(r model.Resource) (model.Resource, error) {
+		if r.Descriptor().IsPluginOriginated {
+			util.TrimSuffixFromName(r, k8sSystemNamespace)
+		}
+
+		return r, nil
+	}
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
