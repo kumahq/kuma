@@ -158,7 +158,7 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 			return err
 		}
 		err := upsert(ctx)
-		if store.IsResourceConflict(err) {
+		if store.IsResourceConflict(err) || store.IsResourceAlreadyExists(err) {
 			return retry.RetryableError(err)
 		}
 		return err
