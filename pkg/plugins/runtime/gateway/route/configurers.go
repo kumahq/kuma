@@ -2,13 +2,14 @@ package route
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -16,9 +17,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 // RouteMatchExactPath updates the route to match the exact path. This
@@ -461,10 +462,13 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 
 		var weights []*envoy_config_route.WeightedCluster_ClusterWeight
 
-		for n, d := range byName {
+		names := maps.Keys(byName)
+		slices.Sort(names)
+		for _, name := range names {
+			destination := byName[name]
 			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption
 
-			isMeshCluster := mesh.ZoneEgressEnabled() || !HasExternalServiceEndpoint(mesh, endpoints, d)
+			isMeshCluster := mesh.ZoneEgressEnabled() || !HasExternalServiceEndpoint(mesh, endpoints, destination)
 
 			if isMeshCluster {
 				requestHeadersToAdd = []*envoy_config_core.HeaderValueOption{{
@@ -474,8 +478,8 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 
 			weights = append(weights, &envoy_config_route.WeightedCluster_ClusterWeight{
 				RequestHeadersToAdd: requestHeadersToAdd,
-				Name:                n,
-				Weight:              util_proto.UInt32(d.Weight),
+				Name:                name,
+				Weight:              util_proto.UInt32(destination.Weight),
 			})
 		}
 
@@ -514,9 +518,9 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			p.RetryOn = envoy_listeners.HttpRetryOnDefault
+			p.RetryOn = envoy_routes.HttpRetryOnDefault
 		case core_mesh.ProtocolGRPC:
-			p.RetryOn = envoy_listeners.GrpcRetryOnDefault
+			p.RetryOn = envoy_routes.GrpcRetryOnDefault
 		}
 
 		route.RetryPolicy = p
@@ -524,121 +528,17 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 	})
 }
 
-// RouteActionRetryTimeout sets the per-try retry timeout.
-func RouteActionRetryTimeout(perTryTimeout time.Duration) RouteConfigurer {
-	if perTryTimeout == 0 {
+func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) RouteConfigurer {
+	// The retry policy only supports HTTP and GRPC.
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	default:
 		return RouteConfigureFunc(nil)
 	}
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.PerTryTimeout = util_proto.Duration(perTryTimeout)
-		}
-
-		return nil
-	})
-}
-
-// RouteActionRetryCount sets the number of retries to attempt.
-func RouteActionRetryCount(numRetries uint32) RouteConfigurer {
-	if numRetries == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.NumRetries = util_proto.UInt32(numRetries)
-		}
-
-		return nil
-	})
-}
-
-// RouteActionRetryBackoff sets the backoff policy for retries.
-func RouteActionRetryBackoff(interval time.Duration, max time.Duration) RouteConfigurer {
-	// the base interval is required, but Envoy will default the max.
-	if interval == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.RetryBackOff = &envoy_config_route.RetryPolicy_RetryBackOff{
-				BaseInterval: util_proto.Duration(interval),
-			}
-
-			if max > 0 {
-				p.RetryBackOff.MaxInterval = util_proto.Duration(max)
-			}
-		}
-
-		return nil
-	})
-}
-
-// RouteActionRetryMethods sets the HTTP methods that should trigger retries.
-func RouteActionRetryMethods(httpMethod ...string) RouteConfigurer {
-	if len(httpMethod) == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		p := r.GetRoute().GetRetryPolicy()
-		if p == nil {
-			return nil
-		}
-
-		for _, m := range httpMethod {
-			matcher := envoy_type_matcher.StringMatcher{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: m,
-				},
-			}
-			p.RetriableRequestHeaders = append(p.RetriableRequestHeaders,
-				&envoy_config_route.HeaderMatcher{
-					Name: ":method",
-					HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_StringMatch{
-						StringMatch: &matcher,
-					},
-				})
-		}
-
-		return nil
-	})
-}
-
-// RouteActionRetryOnStatus sets the HTTP status codes for triggering retries.
-func RouteActionRetryOnStatus(httpStatus ...uint32) RouteConfigurer {
-	if len(httpStatus) == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.RetryOn = envoy_listeners.HttpRetryOnRetriableStatusCodes
-			p.RetriableStatusCodes = make([]uint32, len(httpStatus))
-			copy(p.RetriableStatusCodes, httpStatus)
-		}
-
-		return nil
-	})
-}
-
-// RouteActionRetryOnConditions sets the Envoy condition names for triggering retries.
-func RouteActionRetryOnConditions(conditionNames ...string) RouteConfigurer {
-	if len(conditionNames) == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			var conditions []string
-			for _, c := range conditionNames {
-				conditions = append(conditions, strings.ReplaceAll(c, "_", "-"))
-			}
-			p.RetryOn = strings.Join(conditions, ",")
-		}
-
+		route := r.GetRoute()
+		route.RetryPolicy = envoy_routes.RetryConfig(retry, protocol)
 		return nil
 	})
 }
@@ -690,9 +590,9 @@ func RouteActionDirectResponse(status uint32, respStr string) RouteConfigurer {
 // it to the virtual host. Since Envoy evaluates route matches in order,
 // route builders should be configured on virtual hosts in the intended
 // match order.
-func VirtualHostRoute(route *RouteBuilder) envoy_routes.VirtualHostBuilderOpt {
-	return envoy_routes.AddVirtualHostConfigurer(
-		v3.VirtualHostConfigureFunc(func(vh *envoy_config_route.VirtualHost) error {
+func VirtualHostRoute(route *RouteBuilder) envoy_virtual_hosts.VirtualHostBuilderOpt {
+	return envoy_virtual_hosts.AddVirtualHostConfigurer(
+		envoy_virtual_hosts.VirtualHostConfigureFunc(func(vh *envoy_config_route.VirtualHost) error {
 			resource, err := route.Build()
 			if err != nil {
 				return err
@@ -708,33 +608,4 @@ func VirtualHostRoute(route *RouteBuilder) envoy_routes.VirtualHostBuilderOpt {
 			return nil
 		}),
 	)
-}
-
-// RouteActionHttpRetryOn configure retry on for http
-func RouteActionHttpRetryOn(retryOn []mesh_proto.HttpRetryOn) RouteConfigurer {
-	if len(retryOn) == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.RetryOn = envoy_listeners.HttpRetryOn(retryOn)
-		}
-
-		return nil
-	})
-}
-
-// RouteActionGrpcRetryOn configure retry on for grpc
-func RouteActionGrpcRetryOn(retryOn []mesh_proto.Retry_Conf_Grpc_RetryOn) RouteConfigurer {
-	if len(retryOn) == 0 {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		if p := r.GetRoute().GetRetryPolicy(); p != nil {
-			p.RetryOn = envoy_listeners.GrpcRetryOn(retryOn)
-		}
-		return nil
-	})
 }

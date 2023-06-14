@@ -84,6 +84,16 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 	}
 }
 
+// TrimSuffixFromName is responsible for removing provided suffix with preceding
+// dot from the name of provided model.Resource.
+func TrimSuffixFromName(r model.Resource, suffix string) {
+	dotSuffix := fmt.Sprintf(".%s", suffix)
+	newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
+	newMeta := CloneResourceMetaWithNewName(r.GetMeta(), newName)
+
+	r.SetMeta(newMeta)
+}
+
 func AddSuffixToResourceKeyNames(rk []model.ResourceKey, suffix string) []model.ResourceKey {
 	for idx, r := range rk {
 		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)

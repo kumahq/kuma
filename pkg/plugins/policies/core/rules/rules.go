@@ -4,14 +4,29 @@ import (
 	"encoding"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
+	"gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/simple"
+	"gonum.org/v1/gonum/graph/topo"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
+
+const RuleMatchesHashTag = "__rule-matches-hash__"
+
+type ResolvedResource struct {
+	core_model.Resource
+
+	ResolvedTargetRefs map[common_api.TargetRefHash]core_model.Resource
+}
 
 type InboundListener struct {
 	Address string
@@ -73,15 +88,69 @@ func (ss Subset) IsSubset(other Subset) bool {
 			return false
 		}
 		for _, otherTag := range oTags {
-			if otherTag.Value == tag.Value && otherTag.Not != tag.Not {
-				return false
-			}
-			if otherTag.Value != tag.Value && !otherTag.Not && !tag.Not {
+			if !isSubset(tag, otherTag) {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+func isSubset(t1, t2 Tag) bool {
+	switch {
+	// t2={y: b} can't be a subset of t1={x: a} because point {y: b, x: c} belongs to t2, but doesn't belong to t1
+	case t1.Key != t2.Key:
+		return false
+
+	// t2={y: !a} is a subset of t1={y: !b} if and only if a == b
+	case t1.Not == t2.Not:
+		return t1.Value == t2.Value
+
+	// t2={y: a} is a subset of t1={y: !b} if and only if a != b
+	case t1.Not:
+		return t1.Value != t2.Value
+
+	// t2={y: !a} can't be a subset of t1={y: b} because point {y: c} belongs to t2, but doesn't belong to t1
+	case t2.Not:
+		return false
+
+	default:
+		panic("impossible")
+	}
+}
+
+// Intersect returns true if there exists an element that belongs both to 'other' and current set.
+// Empty set intersects with all sets.
+func (ss Subset) Intersect(other Subset) bool {
+	if len(ss) == 0 || len(other) == 0 {
+		return true
+	}
+	otherByKeysOnlyPositive := map[string][]Tag{}
+	for _, t := range other {
+		if t.Not {
+			continue
+		}
+		otherByKeysOnlyPositive[t.Key] = append(otherByKeysOnlyPositive[t.Key], t)
+	}
+	for _, tag := range ss {
+		if tag.Not {
+			continue
+		}
+		oTags, ok := otherByKeysOnlyPositive[tag.Key]
+		if !ok {
+			return true
+		}
+		for _, otherTag := range oTags {
+			if otherTag != tag {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (ss Subset) WithTag(key, value string, not bool) Subset {
+	return append(ss, Tag{Key: key, Value: value, Not: not})
 }
 
 func MeshSubset() Subset {
@@ -175,12 +244,11 @@ func BuildFromRules(
 func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		policyWithTo, ok := mp.GetSpec().(core_model.PolicyWithToList)
-		if !ok {
-			return ToRules{}, nil
+		tl, err := buildToList(mp)
+		if err != nil {
+			return ToRules{}, err
 		}
-		BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())
-		toList = append(toList, BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())...)
+		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
 	}
 
 	rules, err := BuildRules(toList)
@@ -189,6 +257,71 @@ func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	}
 
 	return ToRules{Rules: rules}, nil
+}
+
+func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
+	policyWithTo, ok := p.GetSpec().(core_model.PolicyWithToList)
+	if !ok {
+		return nil, nil
+	}
+
+	if policyWithTo.GetTargetRef().Kind != common_api.MeshHTTPRoute {
+		return policyWithTo.GetToList(), nil
+	}
+
+	resolvedMap := p.(*ResolvedResource).ResolvedTargetRefs
+	var mhr *v1alpha1.MeshHTTPRouteResource
+
+	switch policyWithTo.GetTargetRef().Kind {
+	case common_api.MeshHTTPRoute:
+		resolved, ok := resolvedMap[policyWithTo.GetTargetRef().Hash()]
+		if !ok {
+			return nil, errors.New("can't resolve MeshHTTPRoute policy")
+		}
+		mhr, ok = resolved.(*v1alpha1.MeshHTTPRouteResource)
+		if !ok {
+			return nil, errors.New("resolved MeshHTTPRoute policy has wrong type")
+		}
+	default:
+		return policyWithTo.GetToList(), nil
+	}
+
+	rv := []core_model.PolicyItem{}
+	for _, mhrRules := range mhr.Spec.To {
+		for _, mhrRule := range mhrRules.Rules {
+			matchesHash, err := sha256.HashAny(mhrRule.Matches)
+			if err != nil {
+				return nil, err
+			}
+			for _, to := range policyWithTo.GetToList() {
+				rv = append(rv, &artificialPolicyItem{
+					targetRef: common_api.TargetRef{
+						Kind: common_api.MeshServiceSubset,
+						Name: mhrRules.TargetRef.Name,
+						Tags: map[string]string{
+							RuleMatchesHashTag: matchesHash,
+						},
+					},
+					conf: to.GetDefault(),
+				})
+			}
+		}
+	}
+
+	return rv, nil
+}
+
+type artificialPolicyItem struct {
+	conf      interface{}
+	targetRef common_api.TargetRef
+}
+
+func (a *artificialPolicyItem) GetTargetRef() common_api.TargetRef {
+	return a.targetRef
+}
+
+func (a *artificialPolicyItem) GetDefault() interface{} {
+	return a.conf
 }
 
 func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {
@@ -233,68 +366,95 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	rules := Rules{}
 
-	// 1. Each targetRef should be represented as a list of tags
-	tagSet := map[Tag]bool{}
+	// 1. Convert list of rules into the list of subsets
+	var subsets []Subset
 	for _, item := range list {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
 		}
-		for _, t := range ss {
-			tagSet[t] = true
-		}
-	}
-	tags := []Tag{}
-	for tag := range tagSet {
-		tags = append(tags, tag)
+		subsets = append(subsets, ss)
 	}
 
-	sort.Slice(tags, func(i, j int) bool {
-		if tags[i].Key != tags[j].Key {
-			return tags[i].Key < tags[j].Key
-		}
-		return tags[i].Value < tags[j].Value
-	})
+	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
+	g := simple.NewUndirectedGraph()
 
-	// 2. Iterate over all possible combinations with negations
-	iter := NewSubsetIter(tags)
-	for {
-		ss := iter.Next()
-		if ss == nil {
-			break
+	for nodeId := range subsets {
+		g.AddNode(simple.Node(nodeId))
+	}
+
+	for i := range subsets {
+		for j := range subsets {
+			if i == j {
+				continue
+			}
+			if subsets[i].Intersect(subsets[j]) {
+				g.SetEdge(simple.Edge{F: simple.Node(i), T: simple.Node(j)})
+			}
 		}
-		// 3. For each combination determine a configuration
-		confs := []interface{}{}
-		// confs := []PolicyConf{}
-		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
-		for i := 0; i < len(list); i++ {
-			item := list[i]
-			itemSubset, err := asSubset(item.GetTargetRef())
+	}
+
+	// 3. Construct rules for all connected components of the graph independently
+	components := topo.ConnectedComponents(g)
+
+	sortComponents(components)
+
+	for _, nodes := range components {
+		tagSet := map[Tag]bool{}
+		for _, node := range nodes {
+			for _, t := range subsets[node.ID()] {
+				tagSet[t] = true
+			}
+		}
+
+		tags := []Tag{}
+		for tag := range tagSet {
+			tags = append(tags, tag)
+		}
+
+		sort.Slice(tags, func(i, j int) bool {
+			if tags[i].Key != tags[j].Key {
+				return tags[i].Key < tags[j].Key
+			}
+			return tags[i].Value < tags[j].Value
+		})
+
+		// 4. Iterate over all possible combinations with negations
+		iter := NewSubsetIter(tags)
+		for {
+			ss := iter.Next()
+			if ss == nil {
+				break
+			}
+			// 5. For each combination determine a configuration
+			confs := []interface{}{}
+			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+			for i := 0; i < len(list); i++ {
+				item := list[i]
+				itemSubset, err := asSubset(item.GetTargetRef())
+				if err != nil {
+					return nil, err
+				}
+				if itemSubset.IsSubset(ss) {
+					confs = append(confs, item.GetDefault())
+					distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+				}
+			}
+			merged, err := MergeConfs(confs)
 			if err != nil {
 				return nil, err
 			}
-			if itemSubset.IsSubset(ss) {
-				confs = append(confs, item.GetDefault())
-				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+			if merged != nil {
+				origins := maps.Values(distinctOrigins)
+				sort.Slice(origins, func(i, j int) bool {
+					return origins[i].GetName() < origins[j].GetName()
+				})
+				rules = append(rules, &Rule{
+					Subset: ss,
+					Conf:   merged,
+					Origin: origins,
+				})
 			}
-		}
-		merged, err := MergeConfs(confs)
-		if err != nil {
-			return nil, err
-		}
-		if merged != nil {
-			var origins []core_model.ResourceMeta
-			for _, origin := range distinctOrigins {
-				origins = append(origins, origin)
-			}
-			sort.Slice(origins, func(i, j int) bool {
-				return origins[i].GetName() < origins[j].GetName()
-			})
-			rules = append(rules, &Rule{
-				Subset: ss,
-				Conf:   merged,
-				Origin: origins,
-			})
 		}
 	}
 
@@ -303,6 +463,25 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	})
 
 	return rules, nil
+}
+
+func sortComponents(components [][]graph.Node) {
+	for _, c := range components {
+		sort.SliceStable(c, func(i, j int) bool {
+			return c[i].ID() < c[j].ID()
+		})
+	}
+	sort.SliceStable(components, func(i, j int) bool {
+		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
+	})
+}
+
+func toStringList(nodes []graph.Node) []string {
+	rv := make([]string, 0, len(nodes))
+	for _, id := range nodes {
+		rv = append(rv, fmt.Sprintf("%d", id.ID()))
+	}
+	return rv
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {

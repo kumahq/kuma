@@ -16,6 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
@@ -23,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -365,10 +369,61 @@ var _ = Describe("MeshTimeout", func() {
 			expectedClusters:  []string{"original_inbound_cluster.golden.yaml", "original_outbound_cluster.golden.yaml"},
 			expectedListeners: []string{"original_inbound_listener.golden.yaml", "original_outbound_listener.golden.yaml"},
 		}),
+		Entry("timeouts per http route", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListenerWithSeveralRoutes(),
+				},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
+							},
+						},
+						Conf: api.Conf{
+							Http: &api.Http{
+								RequestTimeout:    test.ParseDuration("99s"),
+								StreamIdleTimeout: test.ParseDuration("999s"),
+							},
+						},
+					},
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "Lv6cpFf/JzQZSvl97nnZZFjFcZQbqoejHncFutEisJQ=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
+							},
+						},
+						Conf: api.Conf{
+							Http: &api.Http{
+								RequestTimeout:    test.ParseDuration("88s"),
+								StreamIdleTimeout: test.ParseDuration("888s"),
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"outbound_listener_with_different_timeouts_per_route.yaml"},
+		}),
 	)
 
 	type gatewayTestCase struct {
 		toRules core_rules.ToRules
+		routes  []*core_mesh.MeshGatewayRouteResource
 	}
 	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
@@ -376,7 +431,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 		}
 		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
 		context := test_xds.CreateSampleMeshContextWith(resources)
@@ -394,6 +449,11 @@ var _ = Describe("MeshTimeout", func() {
 			Routing: core_xds.Routing{
 				OutboundTargets: core_xds.EndpointMap{
 					"backend": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "http",
+						},
+					}},
+					"other-service": []core_xds.Endpoint{{
 						Tags: map[string]string{
 							"kuma.io/protocol": "http",
 						},
@@ -451,6 +511,26 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 		},
+	}), Entry("no-route-level-timeouts", gatewayTestCase{
+		routes: []*core_mesh.MeshGatewayRouteResource{
+			builders.GatewayRoute().
+				WithName("sample-gateway-route").
+				WithGateway("sample-gateway").
+				WithExactMatchHttpRoute("/", "backend", "other-service").
+				Build(),
+		},
+		toRules: core_rules.ToRules{
+			Rules: []*core_rules.Rule{
+				{
+					Subset: core_rules.MeshService("backend"),
+					Conf: api.Conf{
+						Http: &api.Http{
+							RequestTimeout: test.ParseDuration("24s"),
+						},
+					},
+				},
+			},
+		},
 	}))
 })
 
@@ -464,20 +544,72 @@ func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
 		10001,
 		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		HttpOutboundRoute(
-			"backend",
-			envoy_common.Routes{{
-				Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				)},
+		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
+			Service: "backend",
+			Routes: []meshhttproute_xds.OutboundRoute{{
+				Split: []envoy_common.Split{
+					plugins_xds.NewSplitBuilder().WithClusterName("backend").WithWeight(100).Build(),
+				},
+				Matches: []meshhttproute_api.Match{
+					{
+						Path: &meshhttproute_api.PathMatch{
+							Type:  meshhttproute_api.PathPrefix,
+							Value: "/",
+						},
+					},
+				},
 			}},
-			map[string]map[string]bool{
+			DpTags: map[string]map[string]bool{
 				"kuma.io/service": {
 					"web": true,
 				},
 			},
-		),
+		}),
+		"outbound",
+	)
+}
+
+func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
+	return createListener(
+		10001,
+		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
+		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
+			Service: "other-service",
+			Routes: []meshhttproute_xds.OutboundRoute{
+				{
+					Split: []envoy_common.Split{
+						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
+					},
+					Matches: []meshhttproute_api.Match{
+						{
+							Path: &meshhttproute_api.PathMatch{
+								Type:  meshhttproute_api.Exact,
+								Value: "/another-backend",
+							},
+							Method: pointer.To[meshhttproute_api.Method]("GET"),
+						},
+					},
+				},
+				{
+					Split: []envoy_common.Split{
+						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
+					},
+					Matches: []meshhttproute_api.Match{
+						{
+							Path: &meshhttproute_api.PathMatch{
+								Type:  meshhttproute_api.PathPrefix,
+								Value: "/",
+							},
+						},
+					},
+				},
+			},
+			DpTags: map[string]map[string]bool{
+				"kuma.io/service": {
+					"web": true,
+				},
+			},
+		}),
 		"outbound",
 	)
 }

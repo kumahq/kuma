@@ -310,6 +310,10 @@ env:
 - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   value: "true"
 {{- end }}
+{{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
+  value: "true"
+{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}

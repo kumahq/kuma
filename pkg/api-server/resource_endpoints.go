@@ -18,7 +18,6 @@ import (
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -81,8 +80,8 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 		case "universal", "":
 			res = rest.From.Resource(resource)
 		default:
-			rest_errors.WriteError(response, http.StatusBadRequest, types.Error{Title: fmt.Sprintf("invalid format %s", request.QueryParameter("format"))})
-			return
+			err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
+			rest_errors.HandleError(response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
@@ -131,7 +130,9 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
+			rest_errors.HandleError(response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
+		}).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
@@ -224,16 +225,11 @@ func (r *resourceEndpoints) updateResource(
 	}
 }
 
-func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
-	if err != nil {
-		core.Log.Error(err, "Could not write the response")
-	}
-}
-
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
+			rest_errors.HandleError(response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
+		}).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
@@ -267,13 +263,6 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
-	}
-}
-
-func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
-	if err != nil {
-		core.Log.Error(err, "Could not write the response")
 	}
 }
 

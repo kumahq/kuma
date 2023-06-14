@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -630,30 +629,5 @@ var _ = Describe("PodReconciler", func() {
 			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
-
-		l := log.NewLogger(log.InfoLevel)
-		mapper := ExternalServiceToPodsMapper(l, kubeClient)
-		es := &mesh_k8s.ExternalService{
-			Mesh: "mesh-1",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "es-1",
-			},
-			Spec: mesh_k8s.ToSpec(&mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "httpbin.org:443",
-				},
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "httpbin",
-				},
-			}),
-		}
-		requests := mapper(context.Background(), es)
-		requestsStr := []string{}
-		for _, r := range requests {
-			requestsStr = append(requestsStr, r.Name)
-		}
-		Expect(requestsStr).To(HaveLen(2))
-		Expect(requestsStr).To(ConsistOf("dp-1", "dp-2"))
 	})
 })

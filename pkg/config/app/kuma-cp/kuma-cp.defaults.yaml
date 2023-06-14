@@ -351,6 +351,11 @@ runtime:
         # Path where compiled eBPF programs are placed
         programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
+    # Kubernetes's resources reconciliation concurrency configuration
+    controllersConcurrency:
+      # PodController defines maximum concurrent reconciliations of Pod resources
+      # Default value 10. If set to 0 kube controller-runtime default value of 1 will be used.
+      podController: 10 # ENV: KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER
     # Kubernetes client configuration
     clientConfig:
       # Qps defines maximum requests kubernetes client is allowed to make per second.
@@ -464,6 +469,8 @@ multizone:
       refreshInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
+      # If true, TLS connection to the server won't be verified.
+      tlsSkipVerify: false # ENV: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE

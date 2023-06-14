@@ -51,7 +51,16 @@ func (gr *GatewayRouteBuilder) WithGateway(gatewayName string) *GatewayRouteBuil
 	return gr
 }
 
-func (gr *GatewayRouteBuilder) WithExactMatchHttpRoute(path string, backend string) *GatewayRouteBuilder {
+func (gr *GatewayRouteBuilder) WithExactMatchHttpRoute(path string, backendServices ...string) *GatewayRouteBuilder {
+	var backends []*mesh_proto.MeshGatewayRoute_Backend
+	for _, backendService := range backendServices {
+		backends = append(backends, &mesh_proto.MeshGatewayRoute_Backend{
+			Weight: 1,
+			Destination: map[string]string{
+				"kuma.io/service": backendService,
+			},
+		})
+	}
 	gr.res.Spec.Conf = &mesh_proto.MeshGatewayRoute_Conf{
 		Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
 			Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
@@ -63,14 +72,7 @@ func (gr *GatewayRouteBuilder) WithExactMatchHttpRoute(path string, backend stri
 								Value: path,
 							}},
 						},
-						Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-							{
-								Weight: 1,
-								Destination: map[string]string{
-									"kuma.io/service": backend,
-								},
-							},
-						},
+						Backends: backends,
 					},
 				},
 			},

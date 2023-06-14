@@ -3,19 +3,21 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
 type OutboundRoute struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[string]string
+	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 type HttpOutboundRouteConfigurer struct {
@@ -27,10 +29,10 @@ type HttpOutboundRouteConfigurer struct {
 var _ envoy_listeners_v3.FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	virtualHostBuilder := envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
-		Configure(envoy_routes.CommonVirtualHost(c.Service))
+	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
+		Configure(envoy_virtual_hosts.CommonVirtualHost(c.Service))
 	for _, route := range c.Routes {
-		route := envoy_routes.AddVirtualHostConfigurer(
+		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
 				Matches:                 route.Matches,
 				Filters:                 route.Filters,

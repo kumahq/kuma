@@ -84,14 +84,10 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
-		if conf == nil {
-			continue
-		}
-
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     *conf,
+			Rules:    fromRules.Rules[listenerKey],
+			Subset:   core_rules.MeshSubset(),
 			Protocol: protocol,
 		}
 
@@ -101,6 +97,11 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
+			continue
+		}
+
+		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		if conf == nil {
 			continue
 		}
 
@@ -129,16 +130,10 @@ func applyToOutbounds(
 
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 
-		protocol := xds.InferProtocol(routing, serviceName)
-
-		conf := getConf(rules.Rules, core_rules.MeshService(serviceName))
-		if conf == nil {
-			continue
-		}
-
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     *conf,
-			Protocol: protocol,
+			Rules:    rules.Rules,
+			Protocol: xds.InferProtocol(routing, serviceName),
+			Subset:   core_rules.MeshService(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -181,11 +176,20 @@ func applyToGateway(
 		return err
 	}
 	for _, listenerInfo := range gatewayListerInfos {
+		conf := getConf(toRules.Rules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
-		if !ok {
-			continue
+
+		if conf != nil && ok {
+			for _, vh := range route.VirtualHosts {
+				for _, r := range vh.Routes {
+					plugin_xds.ConfigureRouteAction(
+						r.GetRoute(),
+						pointer.Deref(conf.Http).RequestTimeout,
+						pointer.Deref(conf.Http).StreamIdleTimeout,
+					)
+				}
+			}
 		}
-		routeActionsPerCluster := routeActionPerCluster(route)
 
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
@@ -195,11 +199,6 @@ func applyToGateway(
 					continue
 				}
 				cluster, ok := gatewayClusters[clusterName]
-				if !ok {
-					continue
-				}
-
-				routeActions, ok := routeActionsPerCluster[clusterName]
 				if !ok {
 					continue
 				}
@@ -218,14 +217,6 @@ func applyToGateway(
 					cluster,
 				); err != nil {
 					return err
-				}
-
-				for _, routeAction := range routeActions {
-					plugin_xds.ConfigureRouteAction(
-						routeAction,
-						pointer.Deref(conf.Http).RequestTimeout,
-						pointer.Deref(conf.Http).StreamIdleTimeout,
-					)
 				}
 			}
 		}
@@ -247,25 +238,6 @@ func getConf(
 			return nil
 		}
 	}
-}
-
-func routeActionPerCluster(route *envoy_route.RouteConfiguration) map[string][]*envoy_route.RouteAction {
-	actions := map[string][]*envoy_route.RouteAction{}
-	for _, vh := range route.VirtualHosts {
-		for _, r := range vh.Routes {
-			routeAction := r.GetRoute()
-			if routeAction == nil {
-				continue
-			}
-			cluster := routeAction.GetWeightedClusters().GetClusters()[0].Name
-			if actions[cluster] == nil {
-				actions[cluster] = []*envoy_route.RouteAction{routeAction}
-			} else {
-				actions[cluster] = append(actions[cluster], routeAction)
-			}
-		}
-	}
-	return actions
 }
 
 func createInboundClusterName(servicePort uint32, listenerPort uint32) string {

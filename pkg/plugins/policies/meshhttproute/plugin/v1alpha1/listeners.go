@@ -33,7 +33,7 @@ func generateListeners(
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
-	clusterCache := map[string]string{}
+	clusterCache := map[common_api.TargetRefHash]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
@@ -127,12 +127,8 @@ func prepareRoutes(
 		}
 	}
 
-	catchAllMatch := []api.Match{{
-		Path: &api.PathMatch{
-			Value: "/",
-			Type:  api.PathPrefix,
-		},
-	}}
+	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
+	catchAllMatch := []api.Match{{Path: pointer.To(catchAllPathMatch)}}
 
 	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
 		return reflect.DeepEqual(rule.Matches, catchAllMatch)
@@ -146,8 +142,23 @@ func prepareRoutes(
 
 	var routes []Route
 	for _, rule := range rules {
+		var matches []api.Match
+
+		for _, match := range rule.Matches {
+			if match.Path == nil {
+				// According to Envoy docs, match must have precisely one of
+				// prefix, path, safe_regex, connect_matcher,
+				// path_separated_prefix, path_match_policy set, so when policy
+				// doesn't specify explicit type of matching, we are assuming
+				// "catch all" path (any path starting with "/").
+				match.Path = pointer.To(catchAllPathMatch)
+			}
+
+			matches = append(matches, match)
+		}
+
 		route := Route{
-			Matches: rule.Matches,
+			Matches: matches,
 		}
 
 		if rule.Default.BackendRefs != nil {

@@ -186,7 +186,7 @@ func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []
 	if resp.StatusCode/100 >= 4 {
 		kumaErr := types.Error{}
 		if err := json.Unmarshal(b, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
+			if kumaErr.Title != "" {
 				return resp.StatusCode, b, &kumaErr
 			}
 		}
