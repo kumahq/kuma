@@ -180,7 +180,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
 	}
-	return reconciler.SetupWithManager(mgr)
+	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {

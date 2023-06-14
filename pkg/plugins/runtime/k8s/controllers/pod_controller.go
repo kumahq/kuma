@@ -13,6 +13,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -368,12 +369,12 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	return nil
 }
 
-func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentReconciles int) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
-		Watches(&kube_core.ConfigMap{}, kube_handler.EnqueueRequestsFromMapFunc(ConfigMapToPodsMapper(r.Log, r.SystemNamespace, mgr.GetClient()))).
 		Complete(r)
 }
 
@@ -390,47 +391,6 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 		for _, pod := range pods.Items {
 			req = append(req, kube_reconile.Request{
 				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
-			})
-		}
-		return req
-	}
-}
-
-func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) kube_handler.MapFunc {
-	l = l.WithName("configmap-to-pods-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
-		if obj.GetNamespace() != ns {
-			return nil
-		}
-		mesh, ok := vips.MeshFromConfigKey(obj.GetName())
-		if !ok {
-			return nil
-		}
-
-		// List Dataplanes in the same Mesh as the original
-		dataplanes := &mesh_k8s.DataplaneList{}
-		if err := client.List(ctx, dataplanes); err != nil {
-			l.WithValues("dataplane", obj.GetName()).Error(err, "failed to fetch Dataplanes")
-			return nil
-		}
-
-		var req []kube_reconile.Request
-		for i := range dataplanes.Items {
-			dataplane := dataplanes.Items[i]
-			// skip Dataplanes from other Meshes
-			if dataplane.Mesh != mesh {
-				continue
-			}
-			// skip itself
-			if dataplane.Namespace == obj.GetNamespace() && dataplane.Name == obj.GetName() {
-				continue
-			}
-			ownerRef := kube_meta.GetControllerOf(&dataplane)
-			if ownerRef == nil || ownerRef.Kind != "Pod" {
-				continue
-			}
-			req = append(req, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
 			})
 		}
 		return req

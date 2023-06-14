@@ -6,6 +6,8 @@ clientConfig:
   burstQps: 100
   qps: 100
 controlPlaneServiceName: kuma-control-plane
+controllersConcurrency:
+  podController: 10
 injector:
   builtinDNS:
     enabled: true
