@@ -510,16 +510,26 @@ var _ = Describe("Context", func() {
 				name:         "foo.custom-namespace",
 				expectedName: "foo.custom-namespace",
 			}),
-			Entry("shouldn't be removed when store type is not kubernetes ",
+			Entry("shouldn't be removed when store type is not kubernetes",
 				testCase{
 					isResourcePluginOriginated: true,
 					config: config{
-						storeType:          config_store.MemoryStore,
+						storeType:          config_store.PostgresStore,
 						k8sSystemNamespace: "custom-namespace",
 					},
 					name:         "foo.custom-namespace",
 					expectedName: "foo.custom-namespace",
 				}),
+			Entry("shouldn't be removed when suffix is not k8s system "+
+				"namespace", testCase{
+				isResourcePluginOriginated: true,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "kuma-system",
+				},
+				name:         "foo.custom-namespace",
+				expectedName: "foo.custom-namespace",
+			}),
 		)
 	})
 })
