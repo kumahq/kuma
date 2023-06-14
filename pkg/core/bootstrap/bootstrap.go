@@ -128,7 +128,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	}))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	resourceManager := builder.ResourceManager()
+	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
+	builder.WithKDSContext(kdsContext)
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
@@ -138,7 +140,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		)
 		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
 			builder.ReadOnlyResourceManager(),
-			catalog.NewConfigCatalog(builder.ResourceManager()),
+			catalog.NewConfigCatalog(resourceManager),
 			builder.GetInstanceId(),
 			intercp.PooledEnvoyAdminClientFn(builder.InterCPClientPool()),
 			kdsEnvoyAdminClient,
@@ -146,7 +148,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		builder.WithEnvoyAdminClient(forwardingClient)
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
-			builder.ResourceManager(),
+			resourceManager,
 			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))

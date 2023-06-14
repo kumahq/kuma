@@ -9,6 +9,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -38,8 +40,12 @@ var _ = Describe("Context", func() {
 		}
 
 		BeforeEach(func() {
+			cfg := kuma_cp.DefaultConfig()
+			cfg.Store.Type = config_store.KubernetesStore
+			cfg.Multizone.Zone.Name = "zone"
+
 			rm = manager.NewResourceManager(memory.NewStore())
-			defaultContext := context.DefaultContext(stdcontext.Background(), rm, "zone")
+			defaultContext := context.DefaultContext(stdcontext.Background(), rm, cfg)
 			mapper = defaultContext.ZoneResourceMapper
 		})
 
@@ -432,5 +438,98 @@ var _ = Describe("Context", func() {
 				entries,
 			)
 		})
+	})
+	Describe("GlobalResourceMapper", func() {
+		type config struct {
+			storeType          config_store.StoreType
+			k8sSystemNamespace string
+		}
+
+		type testCase struct {
+			config                     config
+			name                       string
+			expectedName               string
+			isResourcePluginOriginated bool
+		}
+
+		genConfig := func(caseCfg config) kuma_cp.Config {
+			cfg := kuma_cp.DefaultConfig()
+
+			if caseCfg.storeType != "" {
+				cfg.Store.Type = caseCfg.storeType
+			}
+
+			if caseCfg.k8sSystemNamespace != "" {
+				cfg.Store.Kubernetes.SystemNamespace = caseCfg.k8sSystemNamespace
+			}
+
+			return cfg
+		}
+
+		resource := func(given testCase) model.Resource {
+			descriptor := model.ResourceTypeDescriptor{
+				IsPluginOriginated: given.isResourcePluginOriginated,
+			}
+
+			meta := &test_model.ResourceMeta{Name: given.name}
+
+			return &test_model.Resource{TypeDescriptor: descriptor, Meta: meta}
+		}
+
+		DescribeTable("system namespace suffix from in resource names",
+			func(given testCase) {
+				// given
+				ctx := stdcontext.Background()
+				rm := manager.NewResourceManager(memory.NewStore())
+				cfg := genConfig(given.config)
+				kdsCtx := context.DefaultContext(ctx, rm, cfg)
+
+				// when
+				out, _ := kdsCtx.GlobalResourceMapper(resource(given))
+
+				// then
+				Expect(out.GetMeta().GetName()).To(Equal(given.expectedName))
+			},
+			Entry("should be removed when store type is kubernetes "+
+				"and resource is plugin originated", testCase{
+				isResourcePluginOriginated: true,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "custom-namespace",
+				},
+				name:         "foo.custom-namespace",
+				expectedName: "foo",
+			}),
+			Entry("shouldn't be removed when store type is kubernetes "+
+				"and resource isn't plugin originated", testCase{
+				isResourcePluginOriginated: false,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "custom-namespace",
+				},
+				name:         "foo.custom-namespace",
+				expectedName: "foo.custom-namespace",
+			}),
+			Entry("shouldn't be removed when store type is not kubernetes",
+				testCase{
+					isResourcePluginOriginated: true,
+					config: config{
+						storeType:          config_store.PostgresStore,
+						k8sSystemNamespace: "custom-namespace",
+					},
+					name:         "foo.custom-namespace",
+					expectedName: "foo.custom-namespace",
+				}),
+			Entry("shouldn't be removed when suffix is not k8s system "+
+				"namespace", testCase{
+				isResourcePluginOriginated: true,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "kuma-system",
+				},
+				name:         "foo.custom-namespace",
+				expectedName: "foo.custom-namespace",
+			}),
+		)
 	})
 })
