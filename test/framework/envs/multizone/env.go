@@ -176,6 +176,7 @@ func RestoreState(bytes []byte) {
 		Global.Verbose(),
 		state.Global.KumaCp,
 		nil,
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	Global.SetCp(cp)
@@ -221,6 +222,7 @@ func RestoreState(bytes []byte) {
 		UniZone1.Verbose(),
 		state.UniZone1.KumaCp,
 		nil, // headers were not configured in setup
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone1.SetCp(cp)
@@ -236,6 +238,7 @@ func RestoreState(bytes []byte) {
 		UniZone2.Verbose(),
 		state.UniZone2.KumaCp,
 		nil, // headers were not configured in setup
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone2.SetCp(cp)
