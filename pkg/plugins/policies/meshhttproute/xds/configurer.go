@@ -7,10 +7,12 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -18,11 +20,16 @@ type RoutesConfigurer struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[string]string
+	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Matches)
+
+	h, err := sha256.HashAny(c.Matches)
+	if err != nil {
+		return err
+	}
 
 	for _, match := range matches {
 		rb := &route.RouteBuilder{}
@@ -34,6 +41,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 				Route: c.routeAction(c.Split),
 			}
 			envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
+			envoyRoute.Name = h
 		}))
 
 		// We pass the information about whether this match was created from

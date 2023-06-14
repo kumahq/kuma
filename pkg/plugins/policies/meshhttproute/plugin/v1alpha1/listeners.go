@@ -33,7 +33,7 @@ func generateListeners(
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
-	clusterCache := map[string]string{}
+	clusterCache := map[common_api.TargetRefHash]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]

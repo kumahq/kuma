@@ -55,6 +55,7 @@ properties:
                     - MeshSubset
                     - MeshService
                     - MeshServiceSubset
+                    - MeshHTTPRoute
                   type: string
                 mesh:
                   description: Mesh is reserved for future use to identify cross mesh resources.
@@ -82,6 +83,7 @@ properties:
               - MeshSubset
               - MeshService
               - MeshServiceSubset
+              - MeshHTTPRoute
             type: string
           mesh:
             description: Mesh is reserved for future use to identify cross mesh resources.
@@ -135,6 +137,7 @@ properties:
                     - MeshSubset
                     - MeshService
                     - MeshServiceSubset
+                    - MeshHTTPRoute
                   type: string
                 mesh:
                   description: Mesh is reserved for future use to identify cross mesh resources.
