@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -17,13 +18,13 @@ import (
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -89,16 +90,9 @@ var _ = Describe("Auth Tokens WS", func() {
 		_, err := userTokenClient.Generate("", nil, 1*time.Hour)
 
 		// then
-		Expect(err).To(Equal(&error_types.Error{
-			Title:   "Invalid request",
-			Details: "Resource is not valid",
-			Causes: []error_types.Cause{
-				{
-					Field:   "name",
-					Message: "cannot be empty",
-				},
-			},
-		}))
+		bytes, err := json.MarshalIndent(err, "", "  ")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "ws-no-name.golden.json")))
 	})
 
 	It("should throw an error with 0 for validFor", func() {
@@ -106,16 +100,9 @@ var _ = Describe("Auth Tokens WS", func() {
 		_, err := userTokenClient.Generate("foo@example.com", nil, 0)
 
 		// then
-		Expect(err).To(Equal(&error_types.Error{
-			Title:   "Invalid request",
-			Details: "Resource is not valid",
-			Causes: []error_types.Cause{
-				{
-					Field:   "validFor",
-					Message: "cannot be empty or nil",
-				},
-			},
-		}))
+		bytes, err := json.MarshalIndent(err, "", "  ")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "ws-0-validFor.golden.json")))
 	})
 
 	It("should throw an error if validFor is not present", func() {
@@ -130,21 +117,9 @@ var _ = Describe("Auth Tokens WS", func() {
 		defer resp.Body.Close()
 
 		// then
-		respBytes, err := io.ReadAll(resp.Body)
+		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		respErr := &error_types.Error{}
-		Expect(json.Unmarshal(respBytes, respErr)).To(Succeed())
-
-		Expect(respErr).To(Equal(&error_types.Error{
-			Title:   "Invalid request",
-			Details: "Resource is not valid",
-			Causes: []error_types.Cause{
-				{
-					Field:   "validFor",
-					Message: "cannot be empty",
-				},
-			},
-		}))
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "ws-missing-validFor.golden.json")))
 	})
 
 	It("should throw an error when issuer is disabled", func() {
@@ -160,10 +135,9 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		Eventually(func(g Gomega) {
 			_, err := userTokenClient.Generate("john.doe@example.com", []string{"team-a"}, 1*time.Hour)
-			g.Expect(err).To(Equal(&error_types.Error{
-				Title:   "Could not issue a token",
-				Details: "issuing tokens using the control plane is disabled.",
-			}))
+			bytes, err := json.MarshalIndent(err, "", "  ")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "ws-token-issuer-disabled.golden.json")))
 		}, "10s", "100ms").Should(Succeed())
 	})
 })

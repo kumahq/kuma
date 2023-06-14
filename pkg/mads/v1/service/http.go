@@ -34,6 +34,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	if err := jsonpb.Unmarshal(req.Request.Body, discoveryReq); err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Could not parse request body",
+			Detail:  err.Error(),
 			Details: err.Error(),
 		})
 		return
@@ -45,6 +46,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	if err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Could not parse fetch-timeout",
+			Detail:  err.Error(),
 			Details: err.Error(),
 		})
 		return
