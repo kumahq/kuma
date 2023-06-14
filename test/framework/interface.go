@@ -49,8 +49,8 @@ type kumaDeploymentOptions struct {
 	transparentProxyV1          bool
 	apiHeaders                  []string
 	zoneName                    string
-	verifyKuma					bool
-	setupKumactl				bool
+	verifyKuma                  bool
+	setupKumactl                bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -377,7 +377,7 @@ func WithoutVerifyingKuma() KumaDeploymentOption {
 	})
 }
 
-func WithoutConfigureKumactl() KumaDeploymentOption {
+func WithoutConfiguringKumactl() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.setupKumactl = false
 	})
