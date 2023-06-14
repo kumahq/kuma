@@ -192,6 +192,9 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if !c.cluster.opts.setupKumactl {
+		return "", nil
+	}
 	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
 		return "", nil
 	}

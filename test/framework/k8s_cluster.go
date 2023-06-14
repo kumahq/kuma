@@ -666,7 +666,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma{
+		return c.VerifyKuma()
+	}
+	return nil
 }
 
 func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {

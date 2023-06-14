@@ -23,6 +23,7 @@ type UniversalControlPlane struct {
 	kumactl      *KumactlOptions
 	verbose      bool
 	cpNetworking UniversalNetworking
+	setupKumactl bool
 }
 
 func NewUniversalControlPlane(
@@ -32,6 +33,7 @@ func NewUniversalControlPlane(
 	verbose bool,
 	networking UniversalNetworking,
 	apiHeaders []string,
+	setupKumactl bool,
 ) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
 	kumactl := NewKumactlOptions(t, name, verbose)
@@ -42,6 +44,7 @@ func NewUniversalControlPlane(
 		kumactl:      kumactl,
 		verbose:      verbose,
 		cpNetworking: networking,
+		setupKumactl: setupKumactl,
 	}
 	token, err := ucp.retrieveAdminToken()
 	if err != nil {
@@ -149,6 +152,9 @@ func (c *UniversalControlPlane) generateToken(
 }
 
 func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
+	if !c.setupKumactl {
+		return "", nil
+	}
 	return retry.DoWithRetryE(
 		c.t, "fetching user admin token",
 		DefaultRetries,
