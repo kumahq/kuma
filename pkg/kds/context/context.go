@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -58,7 +58,7 @@ func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone s
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
-		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey,
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
@@ -111,40 +111,37 @@ func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error)
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(
-	_ context.Context,
-	_ manager.ResourceManager,
-) reconcile.ResourceMapper {
-	return func(r model.Resource) (model.Resource, error) {
-		resType := r.Descriptor().Name
-		currentMeta := r.GetMeta()
-		resName := currentMeta.GetName()
+	r model.Resource,
+) (model.Resource, error) {
+	resType := r.Descriptor().Name
+	currentMeta := r.GetMeta()
+	resName := currentMeta.GetName()
 
-		if resType == system.GlobalSecretType && strings.HasPrefix(resName, zone_tokens.SigningKeyPrefix) {
-			signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
-			publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
-			if err != nil {
-				return nil, err
-			}
-
-			publicSigningKeyResource := system.NewGlobalSecretResource()
-			newResName := strings.ReplaceAll(
-				resName,
-				zone_tokens.SigningKeyPrefix,
-				zone_tokens.SigningPublicKeyPrefix,
-			)
-			publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(currentMeta, newResName))
-
-			if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-				Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
-			}); err != nil {
-				return nil, err
-			}
-
-			return publicSigningKeyResource, nil
+	if resType == system.GlobalSecretType && strings.HasPrefix(resName, zone_tokens.SigningKeyPrefix) {
+		signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
+		publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
+		if err != nil {
+			return nil, err
 		}
 
-		return r, nil
+		publicSigningKeyResource := system.NewGlobalSecretResource()
+		newResName := strings.ReplaceAll(
+			resName,
+			zone_tokens.SigningKeyPrefix,
+			zone_tokens.SigningPublicKeyPrefix,
+		)
+		publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(currentMeta, newResName))
+
+		if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
+			Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
+		}); err != nil {
+			return nil, err
+		}
+
+		return publicSigningKeyResource, nil
 	}
+
+	return r, nil
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
