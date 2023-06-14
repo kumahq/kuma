@@ -397,9 +397,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	// 3. Construct rules for all connected components of the graph independently
 	components := topo.ConnectedComponents(g)
 
-	sort.SliceStable(components, func(i, j int) bool {
-		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
-	})
+	sortComponents(components)
 
 	for _, nodes := range components {
 		tagSet := map[Tag]bool{}
@@ -465,6 +463,17 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	})
 
 	return rules, nil
+}
+
+func sortComponents(components [][]graph.Node) {
+	for _, c := range components {
+		sort.SliceStable(c, func(i, j int) bool {
+			return c[i].ID() < c[j].ID()
+		})
+	}
+	sort.SliceStable(components, func(i, j int) bool {
+		return strings.Join(toStringList(components[i]), ":") > strings.Join(toStringList(components[j]), ":")
+	})
 }
 
 func toStringList(nodes []graph.Node) []string {

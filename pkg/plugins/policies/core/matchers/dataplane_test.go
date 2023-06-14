@@ -118,6 +118,39 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "fromrules")),
 	)
 
+	DescribeTable("should return ToRules",
+		func(given testCase) {
+			// given DPP resource
+			dpp := readDPP(given.dppFile)
+
+			// given policies
+			resources, resTypes := readPolicies(given.policiesFile)
+
+			// we're expecting all policies in the file to have the same type or to be mixed with MeshHTTPRoutes
+			Expect(resTypes).To(Or(HaveLen(1), HaveLen(2)))
+
+			var resType core_model.ResourceType
+			switch {
+			case len(resTypes) == 1:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[1] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[0] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[1]
+			}
+
+			// when
+			policies, err := matchers.MatchedPolicies(resType, dpp, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(policies.ToRules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+		},
+		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "torules")),
+	)
+
 	DescribeTable("should match MeshGateways",
 		func(given testCase) {
 			dpp := readDPP(given.dppFile)

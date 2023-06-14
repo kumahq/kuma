@@ -14,7 +14,7 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       routeConfig:
-        name: outbound:backend
+        name: outbound:other-service
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
@@ -23,15 +23,24 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: other-service
           routes:
+          - match:
+              headers:
+              - name: :method
+                stringMatch:
+                  exact: GET
+              path: /another-backend
+            name: U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=
+            route:
+              cluster: other-service
+              timeout: 0s
           - match:
               prefix: /
             name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
-              cluster: backend
-              idleTimeout: 1s
-              timeout: 5s
+              cluster: other-service
+              timeout: 0s
       statPrefix: outbound_127_0_0_1_10001
 name: outbound:127.0.0.1:10001
 trafficDirection: OUTBOUND
