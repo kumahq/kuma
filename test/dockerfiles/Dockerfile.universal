@@ -32,11 +32,12 @@ RUN ssh-keygen -A \
   && chmod a+rwx /root \
   && useradd -u 5678 -U kuma-dp
 
+ARG ENVOY_DISTRO=linux
 ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD /build/artifacts-linux-$ARCH/envoy/envoy /usr/bin/envoy
+ADD /build/artifacts-linux-$ARCH/envoy/envoy-${ENVOY_DISTRO} /usr/bin/envoy
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin

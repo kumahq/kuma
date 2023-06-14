@@ -104,7 +104,7 @@ function create_tarball() {
   get_ebpf_programs "$arch" "$system" "$kuma_dir"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
-  cp -p "$artifact_dir/envoy/envoy" "$kuma_dir/bin"
+  cp -p "$artifact_dir/envoy/envoy-$envoy_distro" "$kuma_dir/bin/envoy"
   cp -p "$artifact_dir/kuma-cp/kuma-cp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-dp/kuma-dp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kumactl/kumactl" "$kuma_dir/bin"
