@@ -79,7 +79,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/controller-tools v0.12.0
 	// When updating this also update version in: test/framework/k8s.go
-	sigs.k8s.io/gateway-api v0.0.0-20230601213346-3430eed06058
+	sigs.k8s.io/gateway-api v0.7.1-0.20230613222957-c9540a9cf448
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -179,7 +179,7 @@ require (
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.3 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/urfave/cli v1.22.12 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
