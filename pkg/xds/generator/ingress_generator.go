@@ -13,7 +13,7 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -68,7 +68,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Prox
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(
 	ingress *core_mesh.ZoneIngressResource,
-	destinationsPerService map[string][]tags.Tags,
+	destinationsPerService map[string][]envoy_tags.Tags,
 	apiVersion core_xds.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort())
@@ -114,9 +114,9 @@ func (i IngressGenerator) generateLDS(
 	return inboundListenerBuilder.Build()
 }
 
-func tagsFromTargetRef(targetRef common_api.TargetRef) (tags.Tags, bool) {
+func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
 	var service string
-	var tags tags.Tags
+	var tags envoy_tags.Tags
 
 	switch targetRef.Kind {
 	case common_api.MeshService:
@@ -147,7 +147,7 @@ func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
 
 func (i IngressGenerator) generateCDS(
 	services []string,
-	destinationsPerService map[string][]tags.Tags,
+	destinationsPerService map[string][]envoy_tags.Tags,
 	apiVersion core_xds.APIVersion,
 	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
@@ -155,8 +155,8 @@ func (i IngressGenerator) generateCDS(
 	for _, service := range services {
 		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
 
-		tagSlice := tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
-		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(tags.Without(mesh_proto.ServiceTag), tags.With("mesh"))
+		tagSlice := envoy_tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_tags.Without(mesh_proto.ServiceTag), envoy_tags.With("mesh"))
 
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(clusterName)).
