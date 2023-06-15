@@ -20,18 +20,8 @@ func buildDestinations(
 	destinations := map[string][]envoy_tags.Tags{}
 	policies := ingressProxy.PolicyResources
 
-	for _, tr := range policies[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items {
-		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
-		}
-		for _, http := range tr.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
-			}
-		}
-	}
+	addTrafficRouteDestinations(policies[core_mesh.TrafficRouteType],
+		destinations)
 
 	addMeshHTTPRoutesDestinations(policies[meshhttproute_api.MeshHTTPRouteType],
 		destinations)
@@ -68,6 +58,24 @@ func buildDestinations(
 	}
 
 	return destinations
+}
+
+func addTrafficRouteDestinations(
+	policyResources core_model.ResourceList,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, tr := range policyResources.(*core_mesh.TrafficRouteResourceList).Items {
+		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
+			service := split.Destination[mesh_proto.ServiceTag]
+			destinations[service] = append(destinations[service], split.Destination)
+		}
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
+		}
+	}
 }
 
 func addMeshHTTPRoutesDestinations(
