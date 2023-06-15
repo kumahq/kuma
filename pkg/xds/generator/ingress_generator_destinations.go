@@ -56,6 +56,7 @@ func addGatewayRouteDestinations(
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
 			backends = append(backends, rule.Backends...)
 		}
+
 		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
 			backends = append(backends, rule.Backends...)
 		}
@@ -63,7 +64,8 @@ func addGatewayRouteDestinations(
 
 	for _, backend := range backends {
 		service := backend.Destination[mesh_proto.ServiceTag]
-		destinations[service] = append(destinations[service], backend.Destination)
+		destinations[service] = append(destinations[service],
+			backend.Destination)
 	}
 }
 
