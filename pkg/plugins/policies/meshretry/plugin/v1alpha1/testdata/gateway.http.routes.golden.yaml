@@ -85,6 +85,13 @@ virtualHosts:
     route:
       clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
       idleTimeout: 5s
+      retryPolicy:
+        numRetries: 5
+        perTryTimeout: 16s
+        retryBackOff:
+          baseInterval: 0.025s
+          maxInterval: 0.250s
+        retryOn: gateway-error,connect-failure,refused-stream
       weightedClusters:
         clusters:
         - name: backend-26cb64fa4e85e7b7
