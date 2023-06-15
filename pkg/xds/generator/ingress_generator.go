@@ -26,7 +26,7 @@ const (
 
 type IngressGenerator struct{}
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	destinationsPerService := buildDestinations(proxy.ZoneIngressProxy)
