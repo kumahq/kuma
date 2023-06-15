@@ -23,7 +23,7 @@ func buildDestinations(
 	addTrafficRouteDestinations(policies[core_mesh.TrafficRouteType],
 		destinations)
 
-	addMeshHTTPRoutesDestinations(policies[meshhttproute_api.MeshHTTPRouteType],
+	addMeshHTTPRouteDestinations(policies[meshhttproute_api.MeshHTTPRouteType],
 		destinations)
 
 	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
@@ -105,7 +105,7 @@ func addTrafficRouteDestinations(
 	}
 }
 
-func addMeshHTTPRoutesDestinations(
+func addMeshHTTPRouteDestinations(
 	policyResources core_model.ResourceList,
 	destinations map[string][]envoy_tags.Tags,
 ) {
