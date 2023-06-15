@@ -61,3 +61,10 @@ func (b *SplitBuilder) WithExternalService(hasExternalService bool) *SplitBuilde
 	}))
 	return b
 }
+
+func (b *SplitBuilder) WithLBMetadata(lbMetadata tags.Tags) *SplitBuilder {
+	b.opts = append(b.opts, newSplitOptFunc(func(s *Split) {
+		s.lbMetadata = lbMetadata
+	}))
+	return b
+}
