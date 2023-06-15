@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -103,14 +104,17 @@ func (i IngressGenerator) generateLDS(
 				continue
 			}
 			sniUsed[sni] = true
+
+			split := plugins_xds.NewSplitBuilder().
+				WithClusterName(clusterName).
+				WithLBMetadata(meshDestination.WithoutTags(mesh_proto.ServiceTag)).
+				Build()
+
 			inboundListenerBuilder = inboundListenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchServerNames(sni),
-					envoy_listeners.TcpProxyDeprecatedWithMetadata(clusterName, envoy_common.NewCluster(
-						envoy_common.WithName(clusterName),
-						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
-					)),
+					envoy_listeners.TCPProxy(clusterName, split),
 				),
 			))
 		}
