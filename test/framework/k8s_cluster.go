@@ -668,7 +668,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
-	if c.opts.verifyKuma{
+	if c.opts.verifyKuma {
 		return c.VerifyKuma()
 	}
 	return nil
