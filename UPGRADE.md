@@ -14,6 +14,15 @@ does not have any particular instructions.
 
 * Changed path match `type` from `Prefix` to `PathPrefix`
 
+#### `MeshAccessLog`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+* Added a new field `Type` for `Format` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+
+#### `MeshTrace`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+
 #### `kumactl` container image
 
 * Changed image's entrypoint to `/usr/bin/kumactl`
