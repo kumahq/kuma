@@ -60,12 +60,15 @@ func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy)
 	return resources, nil
 }
 
-// generateLDS generates one Ingress Listener
-// Ingress Listener assumes that mTLS is on. Using TLSInspector we sniff SNI value.
-// SNI value has service name and tag values specified with the following format: "backend{cluster=2,version=1}"
-// We take all possible destinations from TrafficRoutes + GatewayRoutes and generate FilterChainsMatcher for each unique destination.
-// This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
-// Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
+// generateLDS generates one Ingress Listener. Generated listener assumes that
+// mTLS is on. Using TLSInspector we sniff SNI value. SNI value has service name
+// and tag values specified with the following format:
+// "backend{cluster=2,version=1}". We take all possible destinations from
+// TrafficRoutes + MeshHTTPRoutes + GatewayRoutes and generate
+// FilterChainsMatcher for each unique destination. This approach has
+// a limitation: additional tags on outbound in Universal mode won't work across
+// different zones. Traffic is NOT decrypted here, therefore we don't need
+// certificates and mTLS settings.
 func (i IngressGenerator) generateLDS(
 	ingress *core_mesh.ZoneIngressResource,
 	destinationsPerService map[string][]envoy_tags.Tags,
