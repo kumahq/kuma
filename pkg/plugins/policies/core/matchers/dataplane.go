@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
-
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -32,10 +31,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 	matchedPoliciesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
 
-	resolvedPolicies, err := resolveTargetRefs(policies.GetItems(), resources)
-	if err != nil {
-		return core_xds.TypedMatchingPolicies{}, err
-	}
+	resolvedPolicies := resolveTargetRefs(policies.GetItems(), resources)
 
 	for _, policy := range resolvedPolicies {
 		selectedInbounds := inboundsSelectedByPolicy(policy, dpp, gateway)
@@ -121,7 +117,7 @@ func inboundsSelectedByPolicy(
 	}
 }
 
-func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources) ([]core_model.Resource, error) {
+func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources) []core_model.Resource {
 	rv := []core_model.Resource{}
 
 	for _, r := range rl {
@@ -129,9 +125,13 @@ func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources
 
 		switch policy.GetTargetRef().Kind {
 		case common_api.MeshHTTPRoute:
-			mhr, err := resolveMeshHTTPRouteRef(r.GetMeta(), policy.GetTargetRef().Name, resources)
-			if err != nil {
-				return nil, err
+			mhr := resolveMeshHTTPRouteRef(r.GetMeta(), policy.GetTargetRef().Name, resources)
+			if mhr == nil {
+				core.Log.Info("unable to resolve TargetRef", "mesh", r.GetMeta().GetMesh(),
+					"policyType", r.Descriptor().Name, "policyName", r.GetMeta().GetName(),
+					"targetRefKind", policy.GetTargetRef().Kind, "targetRefName", policy.GetTargetRef().Name,
+				)
+				continue
 			}
 			rv = append(rv, &core_rules.ResolvedResource{
 				Resource: r,
@@ -144,17 +144,17 @@ func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources
 		}
 	}
 
-	return rv, nil
+	return rv
 }
 
-func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, resources xds_context.Resources) (*meshhttproute_api.MeshHTTPRouteResource, error) {
+func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, resources xds_context.Resources) *meshhttproute_api.MeshHTTPRouteResource {
 	mhrs := resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType)
 	for _, item := range mhrs.GetItems() {
 		if isReferenced(refMeta, refName, item.GetMeta()) {
-			return item.(*meshhttproute_api.MeshHTTPRouteResource), nil
+			return item.(*meshhttproute_api.MeshHTTPRouteResource)
 		}
 	}
-	return nil, errors.Errorf("MeshHTTPRoute %v not found", refName)
+	return nil
 }
 
 func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta core_model.ResourceMeta) bool {
