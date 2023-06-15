@@ -164,24 +164,27 @@ func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
 	policyResources core_model.ResourceList,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	if len(policyResources.GetItems()) > 0 {
-		// We need to add a destination to route any service to any instance of
-		// that service
-		matchAllTags := envoy_tags.Tags{
-			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
-		}
-		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
-		foundAllServicesDestination := slices.ContainsFunc(
-			matchAllDestinations,
-			func(tagsElem envoy_tags.Tags) bool {
-				return reflect.DeepEqual(tagsElem, matchAllTags)
-			},
-		)
-
-		if !foundAllServicesDestination {
-			matchAllDestinations = append(matchAllDestinations, matchAllTags)
-		}
-
-		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+	// If there are no MeshHTTPRoutes, we are not modifying destinations
+	if len(policyResources.GetItems()) == 0 {
+		return
 	}
+
+	// We need to add a destination to route any service to any instance of
+	// that service
+	matchAllTags := envoy_tags.Tags{
+		mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
+	}
+	matchAllDestinations := destinations[mesh_proto.MatchAllTag]
+	foundAllServicesDestination := slices.ContainsFunc(
+		matchAllDestinations,
+		func(tagsElem envoy_tags.Tags) bool {
+			return reflect.DeepEqual(tagsElem, matchAllTags)
+		},
+	)
+
+	if !foundAllServicesDestination {
+		matchAllDestinations = append(matchAllDestinations, matchAllTags)
+	}
+
+	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
 }
