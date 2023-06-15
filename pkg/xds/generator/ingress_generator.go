@@ -205,9 +205,7 @@ func addMeshHTTPRoutesDestinations(
 	if len(policyResources.GetItems()) > 0 {
 		// We need to add a destination to route any service to any instance of
 		// that service
-		matchAllTags := tags.Tags{
-			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
-		}
+		matchAllTags := tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag}
 		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
 		foundAllServicesDestination := slices.ContainsFunc(
 			matchAllDestinations,
