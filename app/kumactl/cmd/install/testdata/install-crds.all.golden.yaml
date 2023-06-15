@@ -226,10 +226,12 @@ spec:
     - description: Service tag of the third inbound
       jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
       name: kuma.io/service
+      priority: 1
       type: string
     - description: Service tag of the fourth inbound
       jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
       name: kuma.io/service
+      priority: 1
       type: string
     name: v1alpha1
     schema:
