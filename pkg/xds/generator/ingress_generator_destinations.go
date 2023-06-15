@@ -64,7 +64,9 @@ func addTrafficRouteDestinations(
 	policyResources core_model.ResourceList,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	for _, tr := range policyResources.(*core_mesh.TrafficRouteResourceList).Items {
+	policies := policyResources.(*core_mesh.TrafficRouteResourceList).Items
+
+	for _, tr := range policies {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
