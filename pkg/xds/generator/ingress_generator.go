@@ -212,9 +212,11 @@ func addMeshHTTPRoutesDestinations(
 		foundAllServicesDestination := slices.ContainsFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
 			return reflect.DeepEqual(tagsElem, matchAllTags)
 		})
+
 		if !foundAllServicesDestination {
 			matchAllDestinations = append(matchAllDestinations, matchAllTags)
 		}
+
 		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
 	}
 
@@ -236,11 +238,13 @@ func addMeshHTTPRoutesDestinations(
 					service := toTags[mesh_proto.ServiceTag]
 					destinations[service] = append(destinations[service], toTags)
 				}
+
 				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
 					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
 					if !ok {
 						continue
 					}
+
 					service := backendTags[mesh_proto.ServiceTag]
 					destinations[service] = append(destinations[service], backendTags)
 				}
