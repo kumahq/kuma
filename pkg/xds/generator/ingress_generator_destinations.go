@@ -40,13 +40,19 @@ func addMeshGatewayDestinations(
 	for _, gateway := range meshGateways {
 		for _, selector := range gateway.Selectors() {
 			service := selector.GetMatch()[mesh_proto.ServiceTag]
+
 			for _, listener := range gateway.Spec.GetConf().GetListeners() {
 				if !listener.CrossMesh {
 					continue
 				}
+
 				destinations[service] = append(
 					destinations[service],
-					envoy_tags.Tags(mesh_proto.Merge(selector.GetMatch(), gateway.Spec.GetTags(), listener.GetTags())),
+					envoy_tags.Tags(mesh_proto.Merge(
+						selector.GetMatch(),
+						gateway.Spec.GetTags(),
+						listener.GetTags(),
+					)),
 				)
 			}
 		}
