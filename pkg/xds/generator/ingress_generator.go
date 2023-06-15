@@ -133,7 +133,7 @@ func tagsFromTargetRef(targetRef common_api.TargetRef) (tags.Tags, bool) {
 		return nil, false
 	}
 
-	return tags.WithTags(mesh_proto.ServiceTag, service), true
+	return mesh_proto.Merge(tags).WithTags(mesh_proto.ServiceTag, service), true
 }
 
 func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
