@@ -71,7 +71,7 @@ func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy)
 // certificates and mTLS settings.
 func (i IngressGenerator) generateLDS(
 	ingress *core_mesh.ZoneIngressResource,
-	destinationsPerService map[string][]envoy_tags.Tags,
+	destinations map[string][]envoy_tags.Tags,
 	apiVersion core_xds.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	networking := ingress.Spec.GetNetworking()
@@ -90,11 +90,11 @@ func (i IngressGenerator) generateLDS(
 
 	for _, inbound := range ingress.Spec.GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
-		destinations := destinationsPerService[service]
-		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
+		serviceDestinations := destinations[service]
+		serviceDestinations = append(serviceDestinations, destinations[mesh_proto.MatchAllTag]...)
 		clusterName := envoy_names.GetMeshClusterName(inbound.Mesh, service)
 
-		for _, destination := range destinations {
+		for _, destination := range serviceDestinations {
 			meshDestination := destination.
 				WithTags(mesh_proto.ServiceTag, service).
 				WithTags("mesh", inbound.GetMesh())
@@ -152,7 +152,7 @@ func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
 
 func (i IngressGenerator) generateCDS(
 	services []string,
-	destinationsPerService map[string][]envoy_tags.Tags,
+	destinations map[string][]envoy_tags.Tags,
 	apiVersion core_xds.APIVersion,
 	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
@@ -160,7 +160,7 @@ func (i IngressGenerator) generateCDS(
 	for _, service := range services {
 		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
 
-		tagSlice := envoy_tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagSlice := envoy_tags.TagsSlice(append(destinations[service], destinations[mesh_proto.MatchAllTag]...))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_tags.Without(mesh_proto.ServiceTag), envoy_tags.With("mesh"))
 
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
