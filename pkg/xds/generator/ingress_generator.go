@@ -226,7 +226,7 @@ func (_ IngressGenerator) destinations(
 				}
 				destinations[service] = append(
 					destinations[service],
-					tags.Tags(mesh_proto.Merge(selector.GetMatch(), gateway.Spec.GetTags(), listener.GetTags())),
+					mesh_proto.Merge(selector.GetMatch(), gateway.Spec.GetTags(), listener.GetTags()),
 				)
 			}
 		}
