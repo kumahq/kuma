@@ -151,12 +151,12 @@ func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.
 
 	tagSets := tagSets{}
 	for _, endpointTags := range endpoints {
-		tagSets.addInstanceOfTags(meshName, envoy.Tags(mesh_proto.Merge(
+		tagSets.addInstanceOfTags(meshName, mesh_proto.Merge(
 			map[string]string{
 				mesh_proto.MeshTag: meshName,
 			},
 			endpointTags,
-		)))
+		))
 	}
 
 	return tagSets.toAvailableServices()

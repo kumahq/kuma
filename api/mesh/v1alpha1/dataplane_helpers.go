@@ -314,8 +314,8 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
-func Merge(other ...SingleValueTagSet) SingleValueTagSet {
-	merged := SingleValueTagSet{}
+func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	merged := TagSet{}
 
 	for _, t := range other {
 		for k, v := range t {
