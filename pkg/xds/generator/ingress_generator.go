@@ -239,7 +239,9 @@ func addMeshHTTPRoutesDestinations(
 					destinations[service] = append(destinations[service], toTags)
 				}
 
-				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
+				backendRefs := pointer.Deref(rule.Default.BackendRefs)
+
+				for _, backendRef := range backendRefs {
 					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
 					if !ok {
 						continue
