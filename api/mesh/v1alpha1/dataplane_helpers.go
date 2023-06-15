@@ -314,8 +314,8 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
-func Merge(other ...SingleValueTagSet) SingleValueTagSet {
-	merged := SingleValueTagSet{}
+func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	merged := TagSet{}
 
 	for _, t := range other {
 		for k, v := range t {
@@ -324,6 +324,11 @@ func Merge(other ...SingleValueTagSet) SingleValueTagSet {
 	}
 
 	return merged
+}
+
+// MergeAs is just syntactic sugar which converts merged result to assumed type
+func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
+	return R(Merge(other...))
 }
 
 func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
