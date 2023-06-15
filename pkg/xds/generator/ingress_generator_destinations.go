@@ -69,12 +69,15 @@ func addTrafficRouteDestinations(
 	for _, policy := range policies {
 		for _, split := range policy.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
+			destinations[service] = append(destinations[service],
+				split.Destination)
 		}
+
 		for _, http := range policy.Spec.Conf.Http {
 			for _, split := range http.GetSplitWithDestination() {
 				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
+				destinations[service] = append(destinations[service],
+					split.Destination)
 			}
 		}
 	}
