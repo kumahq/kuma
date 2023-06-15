@@ -21,18 +21,23 @@ import (
 const (
 	IngressProxy = "ingress-proxy"
 
-	// OriginIngress is a marker to indicate by which ProxyGenerator resources were generated.
+	// OriginIngress is a marker to indicate by which ProxyGenerator resources
+	// were generated.
 	OriginIngress = "ingress"
 )
 
 type IngressGenerator struct{}
 
-func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (i IngressGenerator) Generate(
+	_ xds_context.Context,
+	proxy *core_xds.Proxy,
+) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	destinations := buildDestinations(proxy.ZoneIngressProxy)
 
-	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource, destinations, proxy.APIVersion)
+	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource,
+		destinations, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +50,8 @@ func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy)
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		services := i.services(mr)
 
-		cdsResources, err := i.generateCDS(services, destinations, proxy.APIVersion, mr)
+		cdsResources, err := i.generateCDS(services, destinations,
+			proxy.APIVersion, mr)
 		if err != nil {
 			return nil, err
 		}
@@ -79,12 +85,15 @@ func (i IngressGenerator) generateLDS(
 	address, port := networking.GetAddress(), networking.GetPort()
 	inboundListenerName := envoy_names.GetInboundListenerName(address, port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, address, port, core_xds.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, address,
+			port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if len(ingress.Spec.AvailableServices) == 0 {
 		inboundListenerBuilder = inboundListenerBuilder.
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion)))
+			Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(apiVersion),
+			))
 	}
 
 	sniUsed := map[string]bool{}
@@ -92,7 +101,8 @@ func (i IngressGenerator) generateLDS(
 	for _, inbound := range ingress.Spec.GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
 		serviceDestinations := destinations[service]
-		serviceDestinations = append(serviceDestinations, destinations[mesh_proto.MatchAllTag]...)
+		serviceDestinations = append(serviceDestinations,
+			destinations[mesh_proto.MatchAllTag]...)
 		clusterName := envoy_names.GetMeshClusterName(inbound.Mesh, service)
 
 		for _, destination := range serviceDestinations {
@@ -110,13 +120,15 @@ func (i IngressGenerator) generateLDS(
 				WithLBMetadata(meshDestination.WithoutTags(mesh_proto.ServiceTag)).
 				Build()
 
-			inboundListenerBuilder = inboundListenerBuilder.Configure(envoy_listeners.FilterChain(
+			filterChain := envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchServerNames(sni),
 					envoy_listeners.TCPProxy(clusterName, split),
 				),
-			))
+			)
+
+			inboundListenerBuilder = inboundListenerBuilder.Configure(filterChain)
 		}
 	}
 
@@ -147,10 +159,13 @@ func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
 
 func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
 	var services []string
+
 	for service := range mr.EndpointMap {
 		services = append(services, service)
 	}
+
 	sort.Strings(services)
+
 	return services
 }
 
@@ -162,10 +177,16 @@ func (i IngressGenerator) generateCDS(
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 	for _, service := range services {
-		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
+		meshName := mr.Mesh.GetMeta().GetName()
+		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 
-		tagSlice := envoy_tags.TagsSlice(append(destinations[service], destinations[mesh_proto.MatchAllTag]...))
-		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_tags.Without(mesh_proto.ServiceTag), envoy_tags.With("mesh"))
+		tags := append(destinations[service],
+			destinations[mesh_proto.MatchAllTag]...)
+		tagSlice := envoy_tags.TagsSlice(tags)
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
+			envoy_tags.Without(mesh_proto.ServiceTag),
+			envoy_tags.With("mesh"),
+		)
 
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(clusterName)).
@@ -181,6 +202,7 @@ func (i IngressGenerator) generateCDS(
 			Resource: edsCluster,
 		})
 	}
+
 	return resources, nil
 }
 
@@ -190,11 +212,14 @@ func (_ IngressGenerator) generateEDS(
 	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
+
 	for _, service := range services {
 		endpoints := mr.EndpointMap[service]
+		meshName := mr.Mesh.GetMeta().GetName()
+		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 
-		clusterName := envoy_names.GetMeshClusterName(mr.Mesh.GetMeta().GetName(), service)
-		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName,
+			endpoints, apiVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -204,5 +229,6 @@ func (_ IngressGenerator) generateEDS(
 			Resource: cla,
 		})
 	}
+
 	return resources, nil
 }
