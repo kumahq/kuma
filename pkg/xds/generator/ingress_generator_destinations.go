@@ -152,7 +152,7 @@ func addMeshHTTPRouteDestinations(
 // addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when
 // at least one MeshHTTPRoute policy exists there will be a "match all"
 // destination pointing to all services (kuma.io/service:* -> kuma.io/service:*)
-// This logic is necessary because of conflicting behaviours of TrafficRoute and
+// This logic is necessary because of conflicting behaviors of TrafficRoute and
 // MeshHTTPRoute policies. TrafficRoute expects that by default traffic doesn't
 // flow, and there is necessary TrafficRoute with appropriate configuration
 // to make communication between services possible. MeshHTTPRoute on the other
