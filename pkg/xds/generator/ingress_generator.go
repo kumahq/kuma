@@ -30,9 +30,9 @@ type IngressGenerator struct{}
 func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	destinationsPerService := buildDestinations(proxy.ZoneIngressProxy)
+	destinations := buildDestinations(proxy.ZoneIngressProxy)
 
-	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource, destinationsPerService, proxy.APIVersion)
+	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource, destinations, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (i IngressGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy)
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		services := i.services(mr)
 
-		cdsResources, err := i.generateCDS(services, destinationsPerService, proxy.APIVersion, mr)
+		cdsResources, err := i.generateCDS(services, destinations, proxy.APIVersion, mr)
 		if err != nil {
 			return nil, err
 		}
