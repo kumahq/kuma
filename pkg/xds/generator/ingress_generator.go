@@ -218,10 +218,13 @@ func addMeshHTTPRoutesDestinations(
 		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
 	}
 
+	policies := policyResources.(*meshhttproute_api.MeshHTTPRouteResourceList).
+		Items
+
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
-	for _, route := range policyResources.(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
+	for _, route := range policies {
 		for _, to := range route.Spec.To {
 			toTags, ok := tagsFromTargetRef(to.TargetRef)
 			if !ok {
