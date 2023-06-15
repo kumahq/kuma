@@ -35,7 +35,7 @@ type IngressGenerator struct{}
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)
+	destinationsPerService := i.buildDestinations(proxy.ZoneIngressProxy)
 
 	listener, err := i.generateLDS(proxy.ZoneIngressProxy.ZoneIngressResource, destinationsPerService, proxy.APIVersion)
 	if err != nil {
@@ -142,7 +142,7 @@ func tagsFromTargetRef(targetRef common_api.TargetRef) (tags.Tags, bool) {
 	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }
 
-func (_ IngressGenerator) destinations(
+func (_ IngressGenerator) buildDestinations(
 	ingressProxy *core_xds.ZoneIngressProxy,
 ) map[string][]tags.Tags {
 	destinations := map[string][]tags.Tags{}
