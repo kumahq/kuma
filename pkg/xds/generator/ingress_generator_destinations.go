@@ -26,21 +26,7 @@ func buildDestinations(
 	addMeshHTTPRoutesDestinations(policies[meshhttproute_api.MeshHTTPRouteType],
 		destinations)
 
-	var backends []*mesh_proto.MeshGatewayRoute_Backend
-
-	for _, route := range ingressProxy.GatewayRoutes.Items {
-		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-	}
-
-	for _, backend := range backends {
-		service := backend.Destination[mesh_proto.ServiceTag]
-		destinations[service] = append(destinations[service], backend.Destination)
-	}
+	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
 
 	for _, gateway := range ingressProxy.MeshGateways.Items {
 		for _, selector := range gateway.Selectors() {
@@ -58,6 +44,27 @@ func buildDestinations(
 	}
 
 	return destinations
+}
+
+func addGatewayRouteDestinations(
+	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	var backends []*mesh_proto.MeshGatewayRoute_Backend
+
+	for _, route := range gatewayRoutes {
+		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+	}
+
+	for _, backend := range backends {
+		service := backend.Destination[mesh_proto.ServiceTag]
+		destinations[service] = append(destinations[service], backend.Destination)
+	}
 }
 
 func addTrafficRouteDestinations(
