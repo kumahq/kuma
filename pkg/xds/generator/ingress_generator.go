@@ -145,7 +145,9 @@ func (_ IngressGenerator) destinations(
 	ingressProxy *core_xds.ZoneIngressProxy,
 ) map[string][]tags.Tags {
 	destinations := map[string][]tags.Tags{}
-	for _, tr := range ingressProxy.PolicyResources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items {
+	policies := ingressProxy.PolicyResources
+
+	for _, tr := range policies[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
@@ -158,7 +160,7 @@ func (_ IngressGenerator) destinations(
 		}
 	}
 
-	if len(ingressProxy.PolicyResources[meshhttproute_api.MeshHTTPRouteType].GetItems()) > 0 {
+	if len(policies[meshhttproute_api.MeshHTTPRouteType].GetItems()) > 0 {
 		// We need to add a destination to route any service to any instance of
 		// that service
 		matchAllTags := tags.Tags{
@@ -177,7 +179,7 @@ func (_ IngressGenerator) destinations(
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
-	for _, route := range ingressProxy.PolicyResources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
+	for _, route := range policies[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
 		for _, to := range route.Spec.To {
 			toTags, ok := tagsFromTargetRef(to.TargetRef)
 			if !ok {
