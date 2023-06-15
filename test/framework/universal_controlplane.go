@@ -155,6 +155,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 	if !c.setupKumactl {
 		return "", nil
 	}
+
 	return retry.DoWithRetryE(
 		c.t, "fetching user admin token",
 		DefaultRetries,

@@ -205,6 +205,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	if c.opts.verifyKuma {
 		return c.VerifyKuma()
 	}
+
 	return nil
 }
 
