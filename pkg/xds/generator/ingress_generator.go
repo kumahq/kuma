@@ -202,24 +202,8 @@ func addMeshHTTPRoutesDestinations(
 	policyResources core_model.ResourceList,
 	destinations map[string][]tags.Tags,
 ) {
-	if len(policyResources.GetItems()) > 0 {
-		// We need to add a destination to route any service to any instance of
-		// that service
-		matchAllTags := tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag}
-		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
-		foundAllServicesDestination := slices.ContainsFunc(
-			matchAllDestinations,
-			func(tagsElem tags.Tags) bool {
-				return reflect.DeepEqual(tagsElem, matchAllTags)
-			},
-		)
-
-		if !foundAllServicesDestination {
-			matchAllDestinations = append(matchAllDestinations, matchAllTags)
-		}
-
-		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
-	}
+	addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(policyResources,
+		destinations)
 
 	policies := policyResources.(*meshhttproute_api.MeshHTTPRouteResourceList).
 		Items
@@ -255,6 +239,41 @@ func addMeshHTTPRoutesDestinations(
 				}
 			}
 		}
+	}
+}
+
+// addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when
+// at least one MeshHTTPRoute policy exists there will be a "match all"
+// destination pointing to all services (kuma.io/service:* -> kuma.io/service:*)
+// This logic is necessary because of conflicting behaviours of TrafficRoute and
+// MeshHTTPRoute policies. TrafficRoute expects that by default traffic doesn't
+// flow, and there is necessary TrafficRoute with appropriate configuration
+// to make communication between services possible. MeshHTTPRoute on the other
+// hand expects the traffic to flow by default. As a result, when there is
+// at least one MeshHTTPRoute policy present, traffic between services will flow
+// by default, when there is none, it will flow, when appropriate TrafficRoute
+// policy will exist.
+func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
+	policyResources core_model.ResourceList,
+	destinations map[string][]tags.Tags,
+) {
+	if len(policyResources.GetItems()) > 0 {
+		// We need to add a destination to route any service to any instance of
+		// that service
+		matchAllTags := tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag}
+		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
+		foundAllServicesDestination := slices.ContainsFunc(
+			matchAllDestinations,
+			func(tagsElem tags.Tags) bool {
+				return reflect.DeepEqual(tagsElem, matchAllTags)
+			},
+		)
+
+		if !foundAllServicesDestination {
+			matchAllDestinations = append(matchAllDestinations, matchAllTags)
+		}
+
+		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
 	}
 }
 
