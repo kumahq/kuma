@@ -48,11 +48,11 @@ func addMeshGatewayDestinations(
 
 				destinations[service] = append(
 					destinations[service],
-					envoy_tags.Tags(mesh_proto.Merge(
+					mesh_proto.Merge(
 						selector.GetMatch(),
 						gateway.Spec.GetTags(),
 						listener.GetTags(),
-					)),
+					),
 				)
 			}
 		}
