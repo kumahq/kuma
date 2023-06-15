@@ -9,6 +9,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -160,48 +161,8 @@ func (_ IngressGenerator) destinations(
 		}
 	}
 
-	if len(policies[meshhttproute_api.MeshHTTPRouteType].GetItems()) > 0 {
-		// We need to add a destination to route any service to any instance of
-		// that service
-		matchAllTags := tags.Tags{
-			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
-		}
-		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
-		foundAllServicesDestination := slices.ContainsFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
-			return reflect.DeepEqual(tagsElem, matchAllTags)
-		})
-		if !foundAllServicesDestination {
-			matchAllDestinations = append(matchAllDestinations, matchAllTags)
-		}
-		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
-	}
-
-	// Note that we're not merging these resources, but that's OK because the
-	// set of destinations after merging is a subset of the set we get here by
-	// iterating through them.
-	for _, route := range policies[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
-		for _, to := range route.Spec.To {
-			toTags, ok := tagsFromTargetRef(to.TargetRef)
-			if !ok {
-				continue
-			}
-
-			for _, rule := range to.Rules {
-				if rule.Default.BackendRefs == nil {
-					service := toTags[mesh_proto.ServiceTag]
-					destinations[service] = append(destinations[service], toTags)
-				}
-				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
-					if !ok {
-						continue
-					}
-					service := backendTags[mesh_proto.ServiceTag]
-					destinations[service] = append(destinations[service], backendTags)
-				}
-			}
-		}
-	}
+	addMeshHTTPRoutesDestinations(policies[meshhttproute_api.MeshHTTPRouteType],
+		destinations)
 
 	var backends []*mesh_proto.MeshGatewayRoute_Backend
 
@@ -235,6 +196,54 @@ func (_ IngressGenerator) destinations(
 	}
 
 	return destinations
+}
+
+func addMeshHTTPRoutesDestinations(
+	policyResources core_model.ResourceList,
+	destinations map[string][]tags.Tags,
+) {
+	if len(policyResources.GetItems()) > 0 {
+		// We need to add a destination to route any service to any instance of
+		// that service
+		matchAllTags := tags.Tags{
+			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
+		}
+		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
+		foundAllServicesDestination := slices.ContainsFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
+			return reflect.DeepEqual(tagsElem, matchAllTags)
+		})
+		if !foundAllServicesDestination {
+			matchAllDestinations = append(matchAllDestinations, matchAllTags)
+		}
+		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+	}
+
+	// Note that we're not merging these resources, but that's OK because the
+	// set of destinations after merging is a subset of the set we get here by
+	// iterating through them.
+	for _, route := range policyResources.(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
+		for _, to := range route.Spec.To {
+			toTags, ok := tagsFromTargetRef(to.TargetRef)
+			if !ok {
+				continue
+			}
+
+			for _, rule := range to.Rules {
+				if rule.Default.BackendRefs == nil {
+					service := toTags[mesh_proto.ServiceTag]
+					destinations[service] = append(destinations[service], toTags)
+				}
+				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
+					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
+					if !ok {
+						continue
+					}
+					service := backendTags[mesh_proto.ServiceTag]
+					destinations[service] = append(destinations[service], backendTags)
+				}
+			}
+		}
+	}
 }
 
 func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
