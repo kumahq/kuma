@@ -28,7 +28,16 @@ func buildDestinations(
 
 	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
 
-	for _, gateway := range ingressProxy.MeshGateways.Items {
+	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
+
+	return destinations
+}
+
+func addMeshGatewayDestinations(
+	meshGateways []*core_mesh.MeshGatewayResource,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, gateway := range meshGateways {
 		for _, selector := range gateway.Selectors() {
 			service := selector.GetMatch()[mesh_proto.ServiceTag]
 			for _, listener := range gateway.Spec.GetConf().GetListeners() {
@@ -42,8 +51,6 @@ func buildDestinations(
 			}
 		}
 	}
-
-	return destinations
 }
 
 func addGatewayRouteDestinations(
