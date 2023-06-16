@@ -26,6 +26,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 	listeners := Listeners{
 		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		Egress:       map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Gateway:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		DirectAccess: map[generator.Endpoint]*envoy_listener.Listener{},
 	}
@@ -46,7 +47,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Port:    address.GetPortValue(),
 			}] = listener
 		case egress_generator.OriginEgress:
-			listeners.Inbound[core_rules.InboundListener{
+			listeners.Egress[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
@@ -71,6 +72,5 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			continue
 		}
 	}
-
 	return listeners
 }

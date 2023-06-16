@@ -122,7 +122,6 @@ func (g Generator) Generate(
 
 		resources.AddSet(rs)
 	}
-
 	return resources, nil
 }
 
