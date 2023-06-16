@@ -133,7 +133,7 @@ var _ = Describe("RBAC", func() {
 	})
 
 	Context("for ZoneEgress", func() {
-		FIt("should enrich matching listener with RBAC filter", func() {
+		It("should enrich matching listener with RBAC filter", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 
