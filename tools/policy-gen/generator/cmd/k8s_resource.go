@@ -78,6 +78,8 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"
+// +kubebuilder:printcolumn:name="TargetRef Name",type="string",JSONPath=".spec.targetRef.name"
 type {{.Name}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
