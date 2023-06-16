@@ -62,7 +62,7 @@ func MeshTrafficPermission() {
 			Install(TestServerUniversal("test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "echo"}),
 			)).
-			Install(TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_es-http"))).
+			Install(TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test"))).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
