@@ -108,6 +108,43 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		return err
 	}
 
+	// Warn if an init container in the pod is using the same UID as the sidecar. This traffic will be exempt from
+	// redirection and may be unintended behavior.
+	for _, c := range pod.Spec.InitContainers {
+		if c.SecurityContext != nil && c.SecurityContext.RunAsUser != nil {
+			if *c.SecurityContext.RunAsUser == i.cfg.SidecarContainer.UID {
+				logger.Info(
+					"WARNING: init container using ignored sidecar UID",
+					"container",
+					c.Name,
+					"uid",
+					i.cfg.SidecarContainer.UID,
+				)
+			}
+		}
+	}
+
+	var duplicateUidContainers []string
+	// Error if a container in the pod is using the same UID as the sidecar. This scenario is not supported.
+	for _, c := range pod.Spec.Containers {
+		if c.SecurityContext != nil && c.SecurityContext.RunAsUser != nil {
+			if *c.SecurityContext.RunAsUser == i.cfg.SidecarContainer.UID {
+				duplicateUidContainers = append(duplicateUidContainers, c.Name)
+			}
+		}
+	}
+
+	if len(duplicateUidContainers) > 0 {
+		err := fmt.Errorf(
+			"containers using same UID as sidecar is unsupported: %q",
+			duplicateUidContainers,
+		)
+
+		logger.Error(err, "injection failed")
+
+		return err
+	}
+
 	sidecarTmp := kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
 		VolumeSource: kube_core.VolumeSource{
