@@ -1,4 +1,4 @@
-FROM debian:11 as envoy
+FROM debian:12 as envoy
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/envoy/envoy /envoy
