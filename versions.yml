@@ -60,6 +60,10 @@
   endOfLifeDate: "2024-04-14"
   branch: release-2.2
 - edition: kuma
+  version: 2.3.0
+  release: 2.3.x
+  branch: release-2.3
+- edition: kuma
   version: preview
   release: dev
   branch: master
