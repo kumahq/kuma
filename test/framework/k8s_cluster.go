@@ -845,7 +845,11 @@ func (c *K8sCluster) RestartControlPlane() error {
 		return err
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma {
+		return c.VerifyKuma()
+	}
+
+	return nil
 }
 
 func (c *K8sCluster) GetKuma() ControlPlane {
