@@ -20,8 +20,11 @@ func buildDestinations(
 	destinations := map[string][]envoy_tags.Tags{}
 	policies := ingressProxy.PolicyResources
 
+	meshHTTPRoutes := policies[meshhttproute_api.MeshHTTPRouteType].
+		(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+
 	addTrafficRouteDestinations(policies[core_mesh.TrafficRouteType], destinations)
-	addMeshHTTPRouteDestinations(policies[meshhttproute_api.MeshHTTPRouteType], destinations)
+	addMeshHTTPRouteDestinations(meshHTTPRoutes, destinations)
 	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
 	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
 
@@ -98,13 +101,10 @@ func addTrafficRouteDestinations(
 }
 
 func addMeshHTTPRouteDestinations(
-	policyResources core_model.ResourceList,
+	policies []*meshhttproute_api.MeshHTTPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(policyResources, destinations)
-
-	policies := policyResources.(*meshhttproute_api.MeshHTTPRouteResourceList).
-		Items
+	addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(policies, destinations)
 
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
@@ -150,11 +150,11 @@ func addMeshHTTPRouteDestinations(
 // by default, when there is none, it will flow, when appropriate TrafficRoute
 // policy will exist.
 func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
-	policyResources core_model.ResourceList,
+	policies []*meshhttproute_api.MeshHTTPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
 	// If there are no MeshHTTPRoutes, we are not modifying destinations
-	if len(policyResources.GetItems()) == 0 {
+	if len(policies) == 0 {
 		return
 	}
 
