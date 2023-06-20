@@ -30,6 +30,7 @@ type Configurer struct {
 	Service          string
 	TrafficDirection envoy_core.TrafficDirection
 	Destination      string
+	IsGateway        bool
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -178,6 +179,7 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 		CollectorEndpointVersion: apiVersion(zipkin),
 		SharedSpanContext:        ssc,
 		CollectorHostname:        url.Host,
+		SplitSpansForRequest:     c.IsGateway,
 	}
 	zipkinConfigAny, err := proto.MarshalAnyDeterministic(&zipkinConfig)
 	if err != nil {
