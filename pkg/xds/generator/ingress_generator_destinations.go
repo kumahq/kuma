@@ -7,7 +7,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -20,10 +19,10 @@ func buildDestinations(
 	destinations := map[string][]envoy_tags.Tags{}
 	policies := ingressProxy.PolicyResources
 
-	meshHTTPRoutes := policies[meshhttproute_api.MeshHTTPRouteType].
-		(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+	trafficRoutes := policies[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items
+	meshHTTPRoutes := policies[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items
 
-	addTrafficRouteDestinations(policies[core_mesh.TrafficRouteType], destinations)
+	addTrafficRouteDestinations(trafficRoutes, destinations)
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destinations)
 	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
 	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
@@ -35,25 +34,37 @@ func addMeshGatewayDestinations(
 	meshGateways []*core_mesh.MeshGatewayResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	for _, gateway := range meshGateways {
-		for _, selector := range gateway.Selectors() {
-			service := selector.GetMatch()[mesh_proto.ServiceTag]
-
-			for _, listener := range gateway.Spec.GetConf().GetListeners() {
-				if !listener.CrossMesh {
-					continue
-				}
-
-				destinations[service] = append(
-					destinations[service],
-					mesh_proto.Merge(
-						selector.GetMatch(),
-						gateway.Spec.GetTags(),
-						listener.GetTags(),
-					),
-				)
-			}
+	for _, meshGateway := range meshGateways {
+		for _, selector := range meshGateway.Selectors() {
+			addMeshGatewayListenersDestinations(
+				meshGateway.Spec,
+				selector.GetMatch(),
+				destinations,
+			)
 		}
+	}
+}
+
+func addMeshGatewayListenersDestinations(
+	meshGateway *mesh_proto.MeshGateway,
+	matchTags map[string]string,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	service := matchTags[mesh_proto.ServiceTag]
+
+	for _, listener := range meshGateway.GetConf().GetListeners() {
+		if !listener.CrossMesh {
+			continue
+		}
+
+		destinations[service] = append(
+			destinations[service],
+			mesh_proto.Merge(
+				meshGateway.GetTags(),
+				matchTags,
+				listener.GetTags(),
+			),
+		)
 	}
 }
 
@@ -74,27 +85,22 @@ func addGatewayRouteDestinations(
 	}
 
 	for _, backend := range backends {
-		service := backend.Destination[mesh_proto.ServiceTag]
-		destinations[service] = append(destinations[service], backend.Destination)
+		addDestination(backend.Destination, destinations)
 	}
 }
 
 func addTrafficRouteDestinations(
-	policyResources core_model.ResourceList,
+	policies []*core_mesh.TrafficRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	policies := policyResources.(*core_mesh.TrafficRouteResourceList).Items
-
 	for _, policy := range policies {
 		for _, split := range policy.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
+			addDestination(split.Destination, destinations)
 		}
 
 		for _, http := range policy.Spec.Conf.Http {
 			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
+				addDestination(split.Destination, destinations)
 			}
 		}
 	}
@@ -111,31 +117,35 @@ func addMeshHTTPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range policy.Spec.To {
-			toTags, ok := tagsFromTargetRef(to.TargetRef)
-			if !ok {
-				continue
-			}
-
-			for _, rule := range to.Rules {
-				if rule.Default.BackendRefs == nil {
-					service := toTags[mesh_proto.ServiceTag]
-					destinations[service] = append(destinations[service], toTags)
-				}
-
-				backendRefs := pointer.Deref(rule.Default.BackendRefs)
-
-				for _, backendRef := range backendRefs {
-					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
-					if !ok {
-						continue
-					}
-
-					service := backendTags[mesh_proto.ServiceTag]
-					destinations[service] = append(destinations[service], backendTags)
-				}
+			if toTags, ok := tagsFromTargetRef(to.TargetRef); ok {
+				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
 	}
+}
+
+func addMeshHTTPRouteToDestinations(
+	rules []meshhttproute_api.Rule,
+	toTags envoy_tags.Tags,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, rule := range rules {
+		if rule.Default.BackendRefs == nil {
+			addDestination(toTags, destinations)
+			continue
+		}
+
+		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
+			if tags, ok := tagsFromTargetRef(backendRef.TargetRef); ok {
+				addDestination(tags, destinations)
+			}
+		}
+	}
+}
+
+func addDestination(tags map[string]string, destinations map[string][]envoy_tags.Tags) {
+	service := tags[mesh_proto.ServiceTag]
+	destinations[service] = append(destinations[service], tags)
 }
 
 // addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist makes sure that when
