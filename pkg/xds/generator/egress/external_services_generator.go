@@ -1,6 +1,8 @@
 package egress
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -172,6 +174,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+				envoy_listeners.Name(fmt.Sprintf("%s_%s", serviceName, meshName)),
 				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
