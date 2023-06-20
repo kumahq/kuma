@@ -315,6 +315,12 @@ func (t SingleValueTagSet) Keys() []string {
 }
 
 func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	// Small optimization, to not iterate over the whole map if only one
+	// argument is provided
+	if len(other) == 1 {
+		return other[0]
+	}
+
 	merged := TagSet{}
 
 	for _, t := range other {
