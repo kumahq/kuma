@@ -73,7 +73,7 @@ func (cb *watchdogCallbacks) OnStreamOpen(ctx context.Context, streamID int64, t
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (cb *watchdogCallbacks) OnStreamClosed(streamID int64, node *envoy_core.Node) {
+func (cb *watchdogCallbacks) OnStreamClosed(streamID int64) {
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
 

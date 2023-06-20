@@ -82,34 +82,5 @@ networking:
 				},
 			},
 		}),
-		Entry("should generate HealthCheckSpecifier", testCase{
-			goldenFile: "hds.2.yaml",
-			dataplane: `
-networking:
-  address: 10.20.0.1
-  inbound:
-    - port: 9000
-      serviceAddress: 192.168.0.1
-      servicePort: 80
-      serviceProbe: 
-        tcp: {}
-      tags:
-        kuma.io/service: backend
-  transparentProxying:
-    redirectPortInbound: 15006
-    redirectPortOutbound: 15001
-`,
-			hdsConfig: &dp_server.HdsConfig{
-				Interval: 8 * time.Second,
-				Enabled:  true,
-				CheckDefaults: &dp_server.HdsCheck{
-					Interval:           1 * time.Second,
-					NoTrafficInterval:  2 * time.Second,
-					Timeout:            3 * time.Second,
-					HealthyThreshold:   4,
-					UnhealthyThreshold: 5,
-				},
-			},
-		}),
 	)
 })

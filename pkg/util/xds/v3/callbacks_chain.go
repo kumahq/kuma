@@ -3,7 +3,6 @@ package v3
 import (
 	"context"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
@@ -24,10 +23,10 @@ func (chain CallbacksChain) OnStreamOpen(ctx context.Context, streamID int64, ty
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (chain CallbacksChain) OnStreamClosed(streamID int64, node *envoy_core.Node) {
+func (chain CallbacksChain) OnStreamClosed(streamID int64) {
 	for i := len(chain) - 1; i >= 0; i-- {
 		cb := chain[i]
-		cb.OnStreamClosed(streamID, node)
+		cb.OnStreamClosed(streamID)
 	}
 }
 
@@ -81,10 +80,10 @@ func (chain CallbacksChain) OnDeltaStreamOpen(ctx context.Context, streamID int6
 	return nil
 }
 
-func (chain CallbacksChain) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
+func (chain CallbacksChain) OnDeltaStreamClosed(streamID int64) {
 	for i := len(chain) - 1; i >= 0; i-- {
 		cb := chain[i]
-		cb.OnDeltaStreamClosed(streamID, node)
+		cb.OnDeltaStreamClosed(streamID)
 	}
 }
 

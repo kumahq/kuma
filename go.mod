@@ -13,7 +13,7 @@ require (
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.1.1
 	github.com/emicklei/go-restful/v3 v3.10.1
-	github.com/envoyproxy/go-control-plane v0.11.0
+	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/ghodss/yaml v1.0.0

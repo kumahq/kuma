@@ -3,7 +3,6 @@ package v3
 import (
 	"context"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
@@ -22,7 +21,7 @@ func (c *NoopCallbacks) OnStreamOpen(context.Context, int64, string) error {
 	return nil
 }
 
-func (c *NoopCallbacks) OnStreamClosed(int64, *envoy_core.Node) {
+func (c *NoopCallbacks) OnStreamClosed(int64) {
 }
 
 func (c *NoopCallbacks) OnStreamRequest(int64, *envoy_sd.DiscoveryRequest) error {
@@ -36,7 +35,7 @@ func (c *NoopCallbacks) OnDeltaStreamOpen(ctx context.Context, i int64, s string
 	return nil
 }
 
-func (c *NoopCallbacks) OnDeltaStreamClosed(int64, *envoy_core.Node) {
+func (c *NoopCallbacks) OnDeltaStreamClosed(i int64) {
 }
 
 func (c *NoopCallbacks) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDiscoveryRequest) error {

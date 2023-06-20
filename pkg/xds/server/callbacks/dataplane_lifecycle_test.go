@@ -62,38 +62,37 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	It("should create a DP on the first DiscoveryRequest when it is carried with metadata and delete on stream close", func() {
 		// given
-		node := &envoy_core.Node{
-			Id: "default.backend-01",
-			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"dataplane.resource": {
-						Kind: &structpb.Value_StringValue{
-							StringValue: `
-                            {
-                              "type": "Dataplane",
-                              "mesh": "default",
-                              "name": "backend-01",
-                              "networking": {
-                                "address": "127.0.0.1",
-                                "inbound": [
-                                  {
-                                    "port": 22022,
-                                    "servicePort": 8443,
-                                    "tags": {
-                                      "kuma.io/service": "backend"
-                                    }
-                                  },
-                                ]
-                              }
-                            }
-                            `,
+		req := envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: `
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `,
+							},
 						},
 					},
 				},
 			},
-		}
-		req := envoy_sd.DiscoveryRequest{
-			Node: node,
 		}
 		const streamId = 123
 		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
@@ -107,7 +106,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnStreamClosed(streamId)
 
 		// then dataplane should be deleted
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -206,11 +205,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		err := resManager.Create(context.Background(), dp, core_store.CreateByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		node := &envoy_core.Node{
-			Id: "default.backend-01",
-		}
 		req := envoy_sd.DiscoveryRequest{
-			Node: node,
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+			},
 		}
 		const streamId = 123
 
@@ -221,7 +219,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnStreamClosed(streamId)
 
 		// then DP is not deleted because it was not carried in metadata
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -230,38 +228,37 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	It("should not delete DP when Kuma CP is shutting down", func() {
 		// given
-		node := &envoy_core.Node{
-			Id: "default.backend-01",
-			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"dataplane.resource": {
-						Kind: &structpb.Value_StringValue{
-							StringValue: `
-                            {
-                              "type": "Dataplane",
-                              "mesh": "default",
-                              "name": "backend-01",
-                              "networking": {
-                                "address": "127.0.0.1",
-                                "inbound": [
-                                  {
-                                    "port": 22022,
-                                    "servicePort": 8443,
-                                    "tags": {
-                                      "kuma.io/service": "backend"
-                                    }
-                                  },
-                                ]
-                              }
-                            }
-                            `,
+		req := envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: `
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `,
+							},
 						},
 					},
 				},
 			},
-		}
-		req := envoy_sd.DiscoveryRequest{
-			Node: node,
 		}
 
 		const streamId = 123
@@ -272,7 +269,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		cancel()
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnStreamClosed(streamId)
 
 		// then DP is not deleted because Kuma CP was shutting down
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -294,37 +291,37 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				nodeID := fmt.Sprintf("default.backend-%d", num)
 
 				// given
-				node := &envoy_core.Node{
-					Id: nodeID,
-					Metadata: &structpb.Struct{
-						Fields: map[string]*structpb.Value{
-							"dataplane.resource": {
-								Kind: &structpb.Value_StringValue{
-									StringValue: fmt.Sprintf(`
-                            {
-                              "type": "Dataplane",
-                              "mesh": "default",
-                              "name": "%s",
-                              "networking": {
-                                "address": "127.0.0.%d",
-                                "inbound": [
-                                  {
-                                    "port": 22022,
-                                    "servicePort": 8443,
-                                    "tags": {
-                                      "kuma.io/service": "backend"
-                                    }
-                                  },
-                                ]
-                              }
-                            }
-                            `, nodeID, num),
+				req := envoy_sd.DiscoveryRequest{
+					Node: &envoy_core.Node{
+						Id: nodeID,
+						Metadata: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"dataplane.resource": {
+									Kind: &structpb.Value_StringValue{
+										StringValue: fmt.Sprintf(`
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "%s",
+                                  "networking": {
+                                    "address": "127.0.0.%d",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `, nodeID, num),
+									},
 								},
 							},
 						},
-					}}
-				req := envoy_sd.DiscoveryRequest{
-					Node: node,
+					},
 				}
 				Expect(callbacks.OnStreamOpen(context.Background(), streamID, "")).To(Succeed())
 
@@ -337,7 +334,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				callbacks.OnStreamClosed(streamID, node)
+				callbacks.OnStreamClosed(streamID)
 
 				// then dataplane should be deleted
 				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -354,38 +351,37 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	It("should not unregister proxy when it is connected to other instances", func() {
 		// given a DP registered by callbacks
-		node := &envoy_core.Node{
-			Id: "default.backend-01",
-			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"dataplane.resource": {
-						Kind: &structpb.Value_StringValue{
-							StringValue: `
-                            {
-                              "type": "Dataplane",
-                              "mesh": "default",
-                              "name": "backend-01",
-                              "networking": {
-                                "address": "127.0.0.1",
-                                "inbound": [
-                                  {
-                                    "port": 22022,
-                                    "servicePort": 8443,
-                                    "tags": {
-                                      "kuma.io/service": "backend"
-                                    }
-                                  },
-                                ]
-                              }
-                            }
-                            `,
+		req := envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: `
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `,
+							},
 						},
 					},
 				},
 			},
-		}
-		req := envoy_sd.DiscoveryRequest{
-			Node: node,
 		}
 
 		key := core_model.ResourceKey{
@@ -411,7 +407,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(resManager.Create(context.Background(), insight, core_store.CreateBy(key))).To(Succeed())
 
 		// when
-		callbacks.OnStreamClosed(streamId, node)
+		callbacks.OnStreamClosed(streamId)
 
 		// then DP is not deleted because Kuma DP is connected to another instance
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetBy(key))

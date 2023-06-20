@@ -13,6 +13,8 @@ LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 CGO_ENABLED := 0
 GOFLAGS :=
 
+ENVOY_DISTRO ?= $(GOOS)
+
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
@@ -107,9 +109,11 @@ endif
 .PHONY: build/envoy
 build/envoy:
 	mkdir -p $(BUILD_ARTIFACTS_DIR)/envoy && \
-	[ -f $(BUILD_ARTIFACTS_DIR)/envoy/envoy ] || \
-	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(GOOS)-$(GOARCH)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(GOOS)_$(GOARCH)).tar.gz | tar -C $(BUILD_ARTIFACTS_DIR)/envoy -xz
-
+	if [ ! -f $(BUILD_ARTIFACTS_DIR)/envoy/envoy-$(ENVOY_DISTRO) ]; then \
+		curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(ENVOY_DISTRO)-$(GOARCH)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(GOOS)_$(GOARCH)).tar.gz | tar -C $(BUILD_ARTIFACTS_DIR)/envoy -xz; \
+		mv $(BUILD_ARTIFACTS_DIR)/envoy/envoy $(BUILD_ARTIFACTS_DIR)/envoy/envoy-$(ENVOY_DISTRO); \
+	fi
+	
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
 	$(Build_Go_Application) ./test/server

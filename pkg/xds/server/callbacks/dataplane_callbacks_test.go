@@ -42,21 +42,19 @@ var _ = Describe("Dataplane Callbacks", func() {
 	countingCallbacks := &countingDpCallbacks{}
 	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(countingCallbacks))
 
-	node := &envoy_core.Node{
-		Id: "default.example",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"dataplane.token": {
-					Kind: &structpb.Value_StringValue{
-						StringValue: "token",
+	req := envoy_sd.DiscoveryRequest{
+		Node: &envoy_core.Node{
+			Id: "default.example",
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dataplane.token": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "token",
+						},
 					},
 				},
 			},
 		},
-	}
-
-	req := envoy_sd.DiscoveryRequest{
-		Node: node,
 	}
 
 	It("should call DataplaneCallbacks correctly", func() {
@@ -95,13 +93,13 @@ var _ = Describe("Dataplane Callbacks", func() {
 		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(1))
 
 		// when first stream is closed
-		callbacks.OnStreamClosed(1, node)
+		callbacks.OnStreamClosed(1)
 
 		// then OnProxyDisconnected should not yet be called
 		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(0))
 
 		// when last stream is closed
-		callbacks.OnStreamClosed(2, node)
+		callbacks.OnStreamClosed(2)
 
 		// then OnProxyDisconnected should be called
 		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(1))
