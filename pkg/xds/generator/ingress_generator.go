@@ -146,7 +146,7 @@ func (i IngressGenerator) generateLDS(
 
 func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
 	var service string
-	var tags envoy_tags.Tags
+	tags := envoy_tags.Tags{}
 
 	switch targetRef.Kind {
 	case common_api.MeshService:
@@ -163,7 +163,7 @@ func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
 		return nil, false
 	}
 
-	return mesh_proto.Merge(tags).WithTags(mesh_proto.ServiceTag, service), true
+	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }
 
 func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
