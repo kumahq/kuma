@@ -224,7 +224,7 @@ spec:
 		trafficAllowed("test-server.mesh")
 	})
 
-	It("should allow the traffic to the external service thorugh the egress", func() {
+	It("should allow the traffic to the external service through the egress", func() {
 		// given no mesh traffic permissions
 		trafficBlocked("external-service.mesh")
 
