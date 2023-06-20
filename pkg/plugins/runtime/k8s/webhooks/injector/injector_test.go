@@ -639,6 +639,22 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.ebpf.config.yaml",
 		}),
+		Entry("31. with duplicate container/sidecar uid", testCase{
+			num: "31",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",
@@ -748,56 +764,27 @@ spec:
 		}),
 	)
 
-	Describe("should fail", func() {
-		It("when pod is annotated with the name of non-existing patch", func() {
+	DescribeTable("should fail w/error",
+		func(given testCase) {
 			// setup
-			ctx := context.Background()
-			configFile := "testdata/inject.config.yaml"
-			inputFile := "testdata/inject.shouldfail.1.input.yaml"
+			inputFile := filepath.Join("testdata", fmt.Sprintf("inject.shouldfail.%s.input.yaml", given.num))
 
 			var cfg conf.Injector
-			Expect(config.Load(configFile, &cfg)).To(Succeed())
-
+			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-
-			injector, err := inject.New(
-				cfg,
-				"http://kuma-control-plane.kuma-system:5681",
-				k8sClient,
-				k8s.NewSimpleConverter(),
-				9901,
-				systemNamespace,
-			)
-			Expect(err).To(Succeed())
-
-			mesh := []byte(`
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`)
-
-			namespace := []byte(`
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
-			decoder := serializer.
-				NewCodecFactory(k8sClientScheme).
-				UniversalDeserializer()
-
-			obj, _, errMesh := decoder.Decode(mesh, nil, nil)
-			Expect(errMesh).To(Succeed())
-
-			Expect(k8sClient.Create(ctx, obj.(kube_client.Object))).To(Succeed())
-
-			ns, _, errNs := decoder.Decode(namespace, nil, nil)
-			Expect(errNs).To(Succeed())
-
-			Expect(k8sClient.Update(ctx, ns.(kube_client.Object))).To(Succeed())
+			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+			obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
+			Expect(errMesh).ToNot(HaveOccurred())
+			errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
+			Expect(errCreate).ToNot(HaveOccurred())
+			ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
+			Expect(errNs).ToNot(HaveOccurred())
+			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
+			Expect(errUpd).ToNot(HaveOccurred())
 
 			// given
 			pod := &kube_core.Pod{}
@@ -806,17 +793,54 @@ spec:
 			// when
 			input, err := os.ReadFile(inputFile)
 			// then
-			Expect(err).To(Succeed())
+			Expect(err).ToNot(HaveOccurred())
 			// when
 			err = yaml.Unmarshal(input, pod)
 			// then
-			Expect(err).To(Succeed())
+			Expect(err).ToNot(HaveOccurred())
 
 			By("injecting Kuma")
 			// when
-			err = injector.InjectKuma(ctx, pod)
+			err = injector.InjectKuma(context.Background(), pod)
 			// then
-			Expect(err).ToNot(Succeed())
-		})
-	})
+			Expect(err).To(HaveOccurred())
+			for _, container := range pod.Spec.Containers {
+				Expect(container.Name).To(Not(BeEquivalentTo(k8s_util.KumaSidecarContainerName)))
+			}
+		},
+		Entry("1. Pod annotated with name of non-existing patch", testCase{
+			num: "1",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("2. Pod with existing container using same UID as sidecar", testCase{
+			num: "2",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+	)
 }, Ordered)
