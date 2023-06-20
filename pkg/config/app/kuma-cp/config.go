@@ -127,7 +127,7 @@ type Config struct {
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `json:"apiServer,omitempty"`
 	// Environment-specific configuration
-	Runtime *runtime.RuntimeConfig
+	Runtime *runtime.RuntimeConfig `json:"runtime,omitempty"`
 	// Default Kuma entities configuration
 	Defaults *Defaults `json:"defaults,omitempty"`
 	// Metrics configuration
