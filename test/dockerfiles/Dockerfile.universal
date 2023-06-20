@@ -1,5 +1,6 @@
 ARG BASE_IMAGE_ARCH
 FROM --platform=linux/${BASE_IMAGE_ARCH} ubuntu:22.04
+ARG ENVOY_DISTRO=linux
 
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
@@ -36,7 +37,7 @@ ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD /build/artifacts-linux-$ARCH/envoy/envoy /usr/bin/envoy
+ADD /build/artifacts-linux-$ARCH/envoy/envoy-${ENVOY_DISTRO} /usr/bin/envoy
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin
