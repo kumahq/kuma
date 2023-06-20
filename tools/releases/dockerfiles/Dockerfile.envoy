@@ -1,9 +1,8 @@
 FROM debian:11 as envoy
-ARG ENVOY_VERSION
 ARG ARCH
-ARG ENVOY_DISTRO=alpine
+ARG ENVOY_DISTRO=linux
 
-COPY /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-$ENVOY_DISTRO /envoy
+COPY /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_DISTRO /envoy
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y libcap2-bin=1:2.44-1 && \

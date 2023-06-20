@@ -10,7 +10,6 @@ KUMA_DOCKER_REPO_ORG="${KUMA_DOCKER_REPO_ORG:-${KUMA_DOCKER_REPO}/kumahq}"
 KUMA_SUPPORTING_COMPONENTS="${KUMA_SUPPORTING_COMPONENTS:-image/static image/base image/base-root image/envoy}"
 KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-cni}"
 BUILD_INFO=$("${SCRIPT_DIR}/../releases/version.sh")
-ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
@@ -22,7 +21,6 @@ function build() {
       msg "Building $component..."
       build_args=(
         --build-arg ARCH="${arch}"
-        --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
         --platform="linux/${arch}"
       )
       additional_args=()

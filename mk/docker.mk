@@ -44,8 +44,8 @@ image/base-root: ## Dev: Rebuild `kuma-base-root` Docker image
 	docker build -t $(KUMA_BASE_ROOT_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.base-root .
 
 .PHONY: image/envoy
-image/envoy: build/artifacts-linux-${GOARCH}/envoy/envoy ## Dev: Rebuild `envoy` Docker image
-	docker build -t $(KUMA_ENVOY_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
+image/envoy: build/envoy/linux-${GOARCH} ## Dev: Rebuild `envoy` Docker image
+	docker build -t $(KUMA_ENVOY_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
 
 .PHONY: images/supporting
 images/supporting: image/static image/base image/base-root image/envoy
@@ -55,7 +55,7 @@ image/kuma-cp: image/static build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: image/kuma-dp
-image/kuma-dp: image/base image/envoy build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: image/base image/envoy build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/envoy/linux-${GOARCH} ## Dev: Rebuild `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.kuma-dp .
 
 .PHONY: image/kumactl
@@ -71,7 +71,7 @@ image/kuma-cni: image/base-root build/kuma-cni/linux-${GOARCH} build/install-cni
 	docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-universal
-image/kuma-universal: build/kuma-cp/linux-${GOARCH} build/kuma-dp/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy build/coredns/linux-${GOARCH} build/kumactl/linux-${GOARCH} build/test-server/linux-${GOARCH}
+image/kuma-universal: build/kuma-cp/linux-${GOARCH} build/kuma-dp/linux-${GOARCH} build/envoy/linux-${GOARCH} build/coredns/linux-${GOARCH} build/kumactl/linux-${GOARCH} build/test-server/linux-${GOARCH}
 	docker build -t $(KUMA_UNIVERSAL_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f test/dockerfiles/Dockerfile.universal .
 
 .PHONY: images
