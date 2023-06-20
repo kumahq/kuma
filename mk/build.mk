@@ -15,6 +15,8 @@ GOARCH := $(shell go env GOARCH)
 CGO_ENABLED := 0
 GOFLAGS :=
 
+ENVOY_DISTRO ?= $(GOOS)
+
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
@@ -106,6 +108,14 @@ else
 	echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
 endif
 
+.PHONY: build/envoy
+build/envoy:
+	mkdir -p $(BUILD_ARTIFACTS_DIR)/envoy && \
+	if [ ! -f $(BUILD_ARTIFACTS_DIR)/envoy/envoy-$(ENVOY_DISTRO) ]; then \
+		curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(ENVOY_DISTRO)-$(GOARCH)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(GOOS)_$(GOARCH)).tar.gz | tar -C $(BUILD_ARTIFACTS_DIR)/envoy -xz; \
+		mv $(BUILD_ARTIFACTS_DIR)/envoy/envoy $(BUILD_ARTIFACTS_DIR)/envoy/envoy-$(ENVOY_DISTRO); \
+	fi
+
 .PHONY: build/kuma-prometheus-sd
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
@@ -177,6 +187,14 @@ build/test-server/linux-amd64:
 .PHONY: build/test-server/linux-arm64
 build/test-server/linux-arm64:
 	GOOS=linux GOARCH=arm64 $(MAKE) build/test-server
+
+.PHONY: build/envoy/linux-amd64
+build/envoy/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/envoy
+
+.PHONY: build/envoy/linux-arm64
+build/envoy/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/envoy
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean

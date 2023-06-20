@@ -33,7 +33,7 @@ image/kuma-cp: build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-cp` Docker im
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/envoy/linux-${GOARCH} ## Dev: Rebuild `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 .PHONY: image/kumactl
