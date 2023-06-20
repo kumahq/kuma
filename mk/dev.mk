@@ -1,6 +1,8 @@
 KUMA_DIR ?= .
-ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
-CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+TOOLS_DIR ?= $(KUMA_DIR)/tools
+BUILD_INFO := $(shell $(TOOLS_DIR)/releases/version.sh)
+ENVOY_VERSION = $(word 5, $(BUILD_INFO))
+CI_TOOLS_VERSION = $(word 6, $(BUILD_INFO))
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -25,7 +27,6 @@ KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
-TOOLS_DIR ?= $(KUMA_DIR)/tools
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
 HELM=$(CI_TOOLS_BIN_DIR)/helm
 K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
