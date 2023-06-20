@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/api"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
@@ -46,6 +47,7 @@ var _ = SynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreS
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var (
+	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
