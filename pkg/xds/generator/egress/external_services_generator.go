@@ -8,6 +8,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -172,6 +173,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+				envoy_listeners.Name(names.GetEgressFilterChainName(serviceName, meshName)),
 				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
