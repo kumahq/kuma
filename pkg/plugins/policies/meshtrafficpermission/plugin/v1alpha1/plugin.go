@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
@@ -16,6 +14,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -49,6 +48,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
 		return nil
 	}
@@ -108,19 +108,22 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			l := listeners.Egress[core_rules.InboundListener{
-				Address: proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking.Address,
-				Port:    proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking.Port,
-			}]
+			if listeners.Egress == nil {
+				log.V(1).Info("skip applying MeshTrafficPermission, Egress has no listener",
+					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+					"mesh", resource.Mesh.GetMeta().GetName(),
+				)
+				return nil
+			}
 
 			for _, rule := range mtp.FromRules.Rules {
 				configurer := &v3.RBACConfigurer{
-					StatsName: l.Name,
+					StatsName: listeners.Egress.Name,
 					Rules:     rule,
 					Mesh:      resource.Mesh.GetMeta().GetName(),
 				}
-				for _, filterChain := range l.FilterChains {
-					if filterChain.Name == fmt.Sprintf("%s_%s", esName, meshName) {
+				for _, filterChain := range listeners.Egress.FilterChains {
+					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
 						if err := configurer.Configure(filterChain); err != nil {
 							return err
 						}
