@@ -1,16 +1,20 @@
 package vips
 
 import (
+	"golang.org/x/exp/maps"
 	"reflect"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
+// TagFirstVirtualOutboundView was designed to compress VirtualOutbound configuration
+// it uses shortened field names and changes aggregation of outbounds.
+// Now we don't duplicate tags, especially kuma.io/service tag.
+// This model produces configuration which is around 50% characters smaller than default one
 type TagFirstVirtualOutboundView struct {
 	PerService map[string]*TagFirstOutbound `json:"v,omitempty"`
 }
@@ -143,17 +147,19 @@ func copyTagsWithoutSvc(tags map[string]string) map[string]string {
 	if tags == nil {
 		return nil
 	}
-	stringMap := util.CopyStringMap(tags)
+	stringMap := map[string]string{}
+	maps.Copy(stringMap, tags)
 	delete(stringMap, mesh_proto.ServiceTag)
 	return stringMap
 }
 
 func copyTagsWithSvc(tags map[string]string, svc string) map[string]string {
-	stringMap := util.CopyStringMap(tags)
-	if stringMap == nil {
-		stringMap = map[string]string{}
-	}
+	stringMap := map[string]string{}
 	stringMap[mesh_proto.ServiceTag] = svc
+	if tags == nil {
+		return stringMap
+	}
+	maps.Copy(stringMap, tags)
 	return stringMap
 }
 
