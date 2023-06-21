@@ -4,15 +4,15 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	"golang.org/x/exp/maps"
 
-	"github.com/asaskevich/govalidator"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-// TagFirstVirtualOutboundView was designed to compress VirtualOutbound configuration
-// it uses shortened field names and changes aggregation of outbounds.
+// TagFirstVirtualOutboundView was designed to compress VirtualOutbound configuration.
+// It uses shortened field names and changes aggregation of outbounds.
 // Now we don't duplicate tags, especially kuma.io/service tag.
 // This model produces configuration which is around 50% characters smaller than default one
 type TagFirstVirtualOutboundView struct {
