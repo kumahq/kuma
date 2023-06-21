@@ -1,12 +1,12 @@
 package vips
 
 import (
-	"golang.org/x/exp/maps"
 	"reflect"
 	"strings"
 
-	"github.com/asaskevich/govalidator"
+	"golang.org/x/exp/maps"
 
+	"github.com/asaskevich/govalidator"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
