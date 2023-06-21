@@ -4,6 +4,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -508,6 +509,9 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "otel-collector",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte("%KUMA_MESH%"),
+									},
 								},
 							}},
 						},
@@ -521,6 +525,15 @@ var _ = Describe("MeshAccessLog", func() {
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
 									Endpoint: "other-otel-collector:5317",
+									Body: &apiextensionsv1.JSON{
+										Raw: []byte(`{
+										  "kvlistValue": {
+											"values": [
+											  {"key": "mesh", "value": {"stringValue": "%KUMA_MESH%"}}
+											]
+										  }
+									    }`),
+									},
 								},
 							}},
 						},
@@ -583,6 +596,12 @@ var _ = Describe("MeshAccessLog", func() {
                             - name: envoy.access_loggers.open_telemetry
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                body:
+                                    kvlistValue:
+                                        values:
+                                            - key: mesh
+                                              value:
+                                                  stringValue: default
                                 attributes: {}
                                 commonConfig:
                                     grpcService:
@@ -607,6 +626,8 @@ var _ = Describe("MeshAccessLog", func() {
                             - name: envoy.access_loggers.open_telemetry
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                body:
+                                    stringValue: default
                                 attributes: {}
                                 commonConfig:
                                     grpcService:
@@ -631,6 +652,8 @@ var _ = Describe("MeshAccessLog", func() {
                             - name: envoy.access_loggers.open_telemetry
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                body:
+                                    stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes'
                                 attributes: {}
                                 commonConfig:
                                     grpcService:
