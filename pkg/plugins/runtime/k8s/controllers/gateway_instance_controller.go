@@ -123,14 +123,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			}
 
 			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
-			svcLabels := map[string]string{}
 
 			if obj != nil {
 				for k, v := range obj.GetAnnotations() {
 					svcAnnotations[k] = v
-				}
-				for k, v := range obj.GetLabels() {
-					svcLabels[k] = v
 				}
 			}
 
@@ -138,13 +134,6 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				svcAnnotations[k] = v
 			}
 
-<<<<<<< HEAD
-=======
-			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Labels {
-				svcLabels[k] = v
-			}
-
->>>>>>> 07cf4ca21 (fix(MeshGatewayInstance): don't overwrite annotations/labels in managed Service (#7069))
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace:   gatewayInstance.Namespace,
