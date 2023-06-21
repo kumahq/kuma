@@ -15,7 +15,7 @@ import (
 )
 
 func HeadlessServices() {
-	meshName := "reachable-svc"
+	meshName := "headless-svc"
 	namespace := "headless-svc"
 
 	BeforeAll(func() {
