@@ -685,6 +685,8 @@ experimental:
   # It is recommended to use tag first model for deployments with more than 2k services
   # This is not backward compatible model.
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
+  # If true, KDS will sync using incremental xDS updates
+  kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
 
 proxy:
   gateway:
