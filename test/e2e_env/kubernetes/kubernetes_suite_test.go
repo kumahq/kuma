@@ -47,7 +47,6 @@ var _ = SynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreS
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var (
-	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
@@ -82,4 +81,5 @@ var (
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
+	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 )
