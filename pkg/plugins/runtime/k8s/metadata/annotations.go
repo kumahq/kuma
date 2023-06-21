@@ -106,6 +106,10 @@ const (
 	KumaMetricsPrometheusAggregateEnabled = "prometheus.metrics.kuma.io/aggregate-%s-enabled"
 	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
 	KumaMetricsPrometheusAggregatePattern = "^prometheus\\.metrics\\.kuma\\.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
+
+	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
+	// list of init containers
+	KumaInitFirst = "kuma.io/init-first"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
