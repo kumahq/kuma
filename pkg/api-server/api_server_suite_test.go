@@ -221,7 +221,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
 			cfg.DNSServer.Domain,
 			80,
 		),

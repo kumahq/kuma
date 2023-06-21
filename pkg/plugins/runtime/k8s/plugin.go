@@ -177,7 +177,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
 		ResourceConverter: converter,
-		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
@@ -207,6 +207,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		rt.ResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		rt.Config().Experimental,
 		zone,
 	)
 	if err != nil {

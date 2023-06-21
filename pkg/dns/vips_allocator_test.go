@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -88,7 +89,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig, "")
+		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -98,7 +99,7 @@ var _ = Describe("VIP Allocator", func() {
 		err := allocator.CreateOrUpdateVIPConfigs(ctx)
 		Expect(err).ToNot(HaveOccurred())
 
-		persistence := vips.NewPersistence(rm, cm)
+		persistence := vips.NewPersistence(rm, cm, false)
 
 		// then
 		vipList, err := persistence.GetByMesh(ctx, "mesh-1")
@@ -114,7 +115,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
 		// setup
 		ctx := context.Background()
-		persistence := vips.NewPersistence(rm, cm)
+		persistence := vips.NewPersistence(rm, cm, false)
 		vobv, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
 			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
@@ -150,7 +151,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, "")
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -166,7 +167,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, "")
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
@@ -195,9 +196,9 @@ var _ = Describe("VIP Allocator", func() {
 		// then the addresses should not overlap
 		Expect(err).ToNot(HaveOccurred())
 
-		mesh1View, err := vips.NewPersistence(rm, cm).GetByMesh(ctx, "mesh-1")
+		mesh1View, err := vips.NewPersistence(rm, cm, false).GetByMesh(ctx, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
-		mesh2View, err := vips.NewPersistence(rm, cm).GetByMesh(ctx, "mesh-2")
+		mesh2View, err := vips.NewPersistence(rm, cm, false).GetByMesh(ctx, "mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
 		mesh1Address := mesh1View.Get(mesh1View.HostnameEntries()[0]).Address
@@ -242,7 +243,7 @@ var _ = DescribeTable("outboundView",
 			ServiceVipEnabled: !tc.whenSkipServiceVips,
 		}
 		// When
-		allocator, err := dns.NewVIPsAllocator(rm, nil, cfg, tc.whenZone)
+		allocator, err := dns.NewVIPsAllocator(rm, nil, cfg, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, tc.whenZone)
 		Expect(err).NotTo(HaveOccurred())
 		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, tc.whenMesh)
 
@@ -733,7 +734,7 @@ var _ = DescribeTable("outboundView",
 		rm := resourceManagerWithResources(ctx, tc.givenResources)
 
 		// When
-		allocator, err := dns.NewVIPsAllocator(rm, nil, dns_server.Config{}, "zone-a")
+		allocator, err := dns.NewVIPsAllocator(rm, nil, dns_server.Config{}, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "zone-a")
 		Expect(err).NotTo(HaveOccurred())
 		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, "mesh")
 

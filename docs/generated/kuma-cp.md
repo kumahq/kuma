@@ -681,6 +681,10 @@ experimental:
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
   kubeOutboundsAsVIPs: true # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
+  # Tag first virtual outbound model is compressed version of default Virtual Outbound model
+  # It is recommended to use tag first model for deployments with more than 2k services
+  # This is not backward compatible model.
+  useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
 
 proxy:
   gateway:

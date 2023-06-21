@@ -108,7 +108,7 @@ var _ = Describe("Meshed Persistence", func() {
 						Spec: &system_proto.Config{Config: `{"0:backend_3":{"address":"240.0.2.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_3"}}]},"0:frontend_3":{"address":"240.0.2.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_3"}}]},"1:host.com":{"address":"240.0.1.4","outbounds":[{"TagSet":{"kuma.io/service":"external-host"}}]}}`},
 					},
 				},
-			})
+			}, false)
 		})
 
 		It("should return vips for mesh", func() {
@@ -132,7 +132,7 @@ var _ = Describe("Meshed Persistence", func() {
 			countingCm = &countingConfigManager{
 				configs: map[string]*system.ConfigResource{},
 			}
-			meshedPersistence = vips.NewPersistence(rm, countingCm)
+			meshedPersistence = vips.NewPersistence(rm, countingCm, false)
 		})
 
 		It("should create a new config", func() {
@@ -214,7 +214,7 @@ var _ = Describe("Meshed Persistence", func() {
 					},
 				},
 			}
-			meshedPersistence = vips.NewPersistence(rm, countingCm)
+			meshedPersistence = vips.NewPersistence(rm, countingCm, false)
 		})
 
 		It("should return meshed vips", func() {

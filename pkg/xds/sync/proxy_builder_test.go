@@ -87,7 +87,7 @@ var _ = Describe("Proxy Builder", func() {
 		server.MeshResourceTypes(server.HashMeshExcludedResources),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 	)
