@@ -50,6 +50,12 @@ func HandleError(response *restful.Response, err error, title string) {
 			Title:  "Method not Allowed",
 			Detail: err.Error(),
 		})
+	case errors.Is(err, &Conflict{}):
+		writeError(response, types.Error{
+			Status: "409",
+			Title:  "Conflict",
+			Detail: err.Error(),
+		})
 
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError
