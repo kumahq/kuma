@@ -213,18 +213,16 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
 		if err != nil {
 			return err
 		}
-		var initContainers []kube_core.Container
-		if exist && enabled {
-			log.V(1).Info(`injecting kuma init container first because kuma.io/init-first is set`)
-			initContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+		if enabled {
+			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
+			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
 		} else {
-			initContainers = append(pod.Spec.InitContainers, patchedIc)
+			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 		}
-		pod.Spec.InitContainers = initContainers
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
