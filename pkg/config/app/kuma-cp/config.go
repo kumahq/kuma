@@ -207,7 +207,7 @@ var DefaultConfig = func() Config {
 			GatewayAPI:                      false,
 			KubeOutboundsAsVIPs:             true,
 			KDSDeltaEnabled:                 false,
-			UseTagFirstVirtualOutboundModel: true,
+			UseTagFirstVirtualOutboundModel: false,
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
