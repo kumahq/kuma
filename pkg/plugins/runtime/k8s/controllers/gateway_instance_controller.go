@@ -123,6 +123,13 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			}
 
 			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
+
+			if obj != nil {
+				for k, v := range obj.GetAnnotations() {
+					svcAnnotations[k] = v
+				}
+			}
+
 			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Annotations {
 				svcAnnotations[k] = v
 			}
