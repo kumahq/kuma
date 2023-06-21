@@ -331,6 +331,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
+			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -648,6 +649,7 @@ experimental:
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
   kdsDeltaEnabled: true
+  useTagFirstVirtualOutboundModel: false
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -881,6 +883,7 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},
 			yamlFileConfig: "",

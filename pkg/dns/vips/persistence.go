@@ -19,6 +19,7 @@ import (
 type Persistence struct {
 	configManager   config_manager.ConfigManager
 	resourceManager manager.ReadOnlyResourceManager
+	useTagFirstView bool
 }
 
 const template = "kuma-%s-dns-vips"
@@ -38,10 +39,11 @@ func MeshFromConfigKey(name string) (string, bool) {
 	return mesh, true
 }
 
-func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager) *Persistence {
+func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, useTagFirstVirtualOutboundModel bool) *Persistence {
 	return &Persistence{
 		resourceManager: resourceManager,
 		configManager:   configManager,
+		useTagFirstView: useTagFirstVirtualOutboundModel,
 	}
 }
 
@@ -60,11 +62,25 @@ func (m *Persistence) GetByMesh(ctx context.Context, mesh string) (*VirtualOutbo
 		return NewEmptyVirtualOutboundView(), nil
 	}
 
-	res := map[HostnameEntry]VirtualOutbound{}
-	if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
-		return nil, err
+	var virtualOutboundView *VirtualOutboundMeshView
+	if m.useTagFirstView {
+		res := NewEmptyTagFirstOutboundView()
+		if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
+			return nil, err
+		}
+		virtualOutboundView = res.ToVirtualOutboundView()
+	} else {
+		res := map[HostnameEntry]VirtualOutbound{}
+		if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
+			return nil, err
+		}
+		virtualOutboundView, err = NewVirtualOutboundView(res)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return NewVirtualOutboundView(res)
+
+	return virtualOutboundView, nil
 }
 
 func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboundMeshView) error {
@@ -78,10 +94,21 @@ func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboun
 		create = true
 	}
 
-	jsonBytes, err := json.Marshal(vips.byHostname)
-	if err != nil {
-		return errors.Wrap(err, "unable to marshall VIP list")
+	var jsonBytes []byte
+	var err error
+	if m.useTagFirstView {
+		view := NewTagFirstOutboundView(vips)
+		jsonBytes, err = json.Marshal(view)
+		if err != nil {
+			return errors.Wrap(err, "unable to marshall VIP list")
+		}
+	} else {
+		jsonBytes, err = json.Marshal(vips.byHostname)
+		if err != nil {
+			return errors.Wrap(err, "unable to marshall VIP list")
+		}
 	}
+
 	resource.Spec.Config = string(jsonBytes)
 
 	if create {

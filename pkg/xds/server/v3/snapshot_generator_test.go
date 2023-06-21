@@ -113,7 +113,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rm, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 		)
