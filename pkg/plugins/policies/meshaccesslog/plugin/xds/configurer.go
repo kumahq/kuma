@@ -257,15 +257,13 @@ func (c *Configurer) interpolateKumaVariablesInAnyValue(val *otlp.AnyValue) erro
 		v.StringValue = interpolated.String()
 	case *otlp.AnyValue_ArrayValue:
 		for _, kv := range v.ArrayValue.Values {
-			err := c.interpolateKumaVariablesInAnyValue(kv)
-			if err != nil {
+			if err := c.interpolateKumaVariablesInAnyValue(kv); err != nil {
 				return err
 			}
 		}
 	case *otlp.AnyValue_KvlistValue:
 		for _, kv := range v.KvlistValue.Values {
-			err := c.interpolateKumaVariablesInAnyValue(kv.Value)
-			if err != nil {
+			if err := c.interpolateKumaVariablesInAnyValue(kv.Value); err != nil {
 				return err
 			}
 			key, err := c.interpolateKumaVariables(kv.Key)
