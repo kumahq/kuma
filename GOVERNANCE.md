@@ -1,3 +1,4 @@
+<!-- Synced from kumahq/.github update lifecycle action (and remove this comment) to stop syncing -->
 # Kuma Governance
 
 This document defines governance policies for the Kuma project.
