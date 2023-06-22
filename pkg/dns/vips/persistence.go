@@ -63,13 +63,15 @@ func (m *Persistence) GetByMesh(ctx context.Context, mesh string) (*VirtualOutbo
 	}
 
 	var virtualOutboundView *VirtualOutboundMeshView
-	if m.useTagFirstView {
-		res := NewEmptyTagFirstOutboundView()
-		if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
-			return nil, err
-		}
+	// try reading new format
+	res := NewEmptyTagFirstOutboundView()
+	if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
+		return nil, err
+	}
+	if len(res.PerService) != 0 {
 		virtualOutboundView = res.ToVirtualOutboundView()
 	} else {
+		// fall back to default
 		res := map[HostnameEntry]VirtualOutbound{}
 		if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
 			return nil, err
