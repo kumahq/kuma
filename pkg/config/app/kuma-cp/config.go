@@ -352,7 +352,9 @@ type ExperimentalConfig struct {
 	KDSDeltaEnabled bool `json:"kdsDeltaEnabled" envconfig:"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"`
 	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
 	// It is recommended to use tag first model for deployments with more than 2k services
-	// This is not backward compatible model.
+	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
+	// you need to first disable this flag and redeploy cp, after config is rewritten to default
+	// format you can downgrade your cp
 	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
 }
 
