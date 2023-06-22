@@ -25,7 +25,7 @@ spec:
       {{- end }}
     - port: 5682
       name: https-api-server
-      appProtocol: http
+      appProtocol: https
       {{- if and (eq .Values.controlPlane.service.type "NodePort") .Values.controlPlane.service.apiServer.https.nodePort }}
       nodePort: {{ .Values.controlPlane.service.apiServer.https.nodePort }}
       {{- end }}
@@ -33,15 +33,15 @@ spec:
     - port: 443
       name: https-admission-server
       targetPort: {{ .Values.controlPlane.admissionServerPort | default "5443" }}
-      appProtocol: http
+      appProtocol: https
     {{- end }}
     {{- if ne .Values.controlPlane.mode "global" }}
     - port: 5676
       name: mads-server
-      appProtocol: http
+      appProtocol: https
     - port: 5678
       name: dp-server
-      appProtocol: http
+      appProtocol: https
     {{- end }}
   selector:
     app: {{ include "kuma.name" . }}-control-plane
