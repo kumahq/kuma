@@ -206,7 +206,6 @@ metrics:
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server-dp-metrics", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency",
-				client.WithHeader("Accept", "text/plain; version=0.0.4; charset=utf-8"),
 				client.WithVerbose(),
 			)
 
@@ -237,14 +236,13 @@ metrics:
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server-dp-metrics-localhost", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency",
-				client.WithHeader("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1"),
 				client.WithVerbose(),
 			)
 
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
-			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtOpenMetrics_1_0_0)))
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
 
 			// path doesn't have defined address
 			g.Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))
