@@ -78,6 +78,18 @@ to:
     default:
       http:
         requestTimeout: 1s`),
+			Entry("top-level TargetRefKind is MeshHTTPRoute", `
+targetRef:
+  kind: MeshHTTPRoute
+  name: route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+        requestTimeout: 1s
+        streamIdleTimeout: 2s
+`),
 		)
 
 		type testCase struct {
@@ -225,9 +237,18 @@ to:
         requestTimeout: 1s
         streamIdleTimeout: 1h
         maxStreamDuration: 1h
-        maxConnectionDuration: 1h`,
+        maxConnectionDuration: 1h
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 11s`,
 				expected: `
 violations:
+  - field: spec.from
+    message: must not be defined
+  - field: spec.to[0].targetRef.kind
+    message: value is not supported
   - field: spec.to[0].default.connectionTimeout
     message: can't be specified when top-level TargetRef is referencing MeshHTTPRoute
   - field: spec.to[0].default.idleTimeout

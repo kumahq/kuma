@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    kuma.io/init-first: "true"
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      resources: {}
+  initContainers:
+    - name: busybox
+      image: busybox
+      resources: { }

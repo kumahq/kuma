@@ -44,6 +44,7 @@ func addDNS(rt core_runtime.Runtime) error {
 		rt.ReadOnlyResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		rt.Config().Experimental,
 		zone,
 	)
 	if err != nil {

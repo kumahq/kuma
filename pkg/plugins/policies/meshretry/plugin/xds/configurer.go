@@ -78,7 +78,12 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	}
 
 	for _, virtualHost := range route.VirtualHosts {
-		virtualHost.RetryPolicy = policy
+		for _, route := range virtualHost.Routes {
+			switch a := route.GetAction().(type) {
+			case *envoy_route.Route_Route:
+				a.Route.RetryPolicy = policy
+			}
+		}
 	}
 
 	return nil

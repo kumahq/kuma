@@ -55,7 +55,9 @@ func (m *MeshBuilder) WithEnabledMTLSBackend(name string) *MeshBuilder {
 }
 
 func (m *MeshBuilder) WithBuiltinMTLSBackend(name string) *MeshBuilder {
-	m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	if m.res.Spec.Mtls == nil {
+		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	}
 	return m.AddBuiltinMTLSBackend(name)
 }
 

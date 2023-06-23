@@ -67,6 +67,11 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 
 		// Ensure there is always an HTTP router terminating the filter chain.
 		_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			for _, filter := range hcm.HttpFilters {
+				if filter.Name == "envoy.filters.http.router" {
+					return nil
+				}
+			}
 			router := &envoy_hcm.HttpFilter{
 				Name: "envoy.filters.http.router",
 				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{

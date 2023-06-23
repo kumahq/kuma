@@ -73,7 +73,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			zone,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
 		)

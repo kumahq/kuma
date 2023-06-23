@@ -188,6 +188,7 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT

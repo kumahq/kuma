@@ -282,7 +282,7 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:            k8sClientScheme,
 			Log:               core.Log.WithName("test"),
 			SystemNamespace:   "kuma-system",
-			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
+			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore()), false),
 			ResourceConverter: k8s.NewSimpleConverter(),
 		}
 	})

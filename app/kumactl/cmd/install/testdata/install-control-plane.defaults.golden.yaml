@@ -4222,10 +4222,12 @@ spec:
     - description: Service tag of the third inbound
       jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
       name: kuma.io/service
+      priority: 1
       type: string
     - description: Service tag of the fourth inbound
       jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
       name: kuma.io/service
+      priority: 1
       type: string
     name: v1alpha1
     schema:
@@ -6223,17 +6225,17 @@ spec:
       appProtocol: http
     - port: 5682
       name: https-api-server
-      appProtocol: http
+      appProtocol: https
     - port: 443
       name: https-admission-server
       targetPort: 5443
-      appProtocol: http
+      appProtocol: https
     - port: 5676
       name: mads-server
-      appProtocol: http
+      appProtocol: https
     - port: 5678
       name: dp-server
-      appProtocol: http
+      appProtocol: https
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
