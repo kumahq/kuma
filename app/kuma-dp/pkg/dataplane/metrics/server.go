@@ -342,7 +342,7 @@ func responseFormat(h http.Header) expfmt.Format {
 			return expfmt.FmtText
 		}
 
-	case openmetricsType:
+	case expfmt.OpenMetricsType:
 		if version == openmetricsVersion_0_0_1 {
 			return expfmt.FmtOpenMetrics_0_0_1
 		}
