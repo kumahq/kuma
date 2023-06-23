@@ -309,7 +309,6 @@ const (
 	hdrContentType           = "Content-Type"
 	textType                 = "text/plain"
 	textVersion              = "0.0.4"
-	openmetricsType          = "application/openmetrics-text"
 	openmetricsVersion_1_0_0 = "1.0.0"
 	openmetricsVersion_0_0_1 = "0.0.1"
 	protoType                = `application/vnd.google.protobuf`
@@ -337,12 +336,13 @@ func responseFormat(h http.Header) expfmt.Format {
 			return expfmt.FmtProtoDelim
 		}
 
+	// if mediatype is `text/plain`, return Prometheus text format
+	// without checking the version, as there are few exporters
+	// which don't set the version param in the content-type header. ex: Envoy
 	case textType:
-		if version == textVersion {
-			return expfmt.FmtText
-		}
+		return expfmt.FmtText
 
-	case openmetricsType:
+	case expfmt.OpenMetricsType:
 		if version == openmetricsVersion_0_0_1 {
 			return expfmt.FmtOpenMetrics_0_0_1
 		}

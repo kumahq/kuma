@@ -105,8 +105,8 @@ var _ = Describe("Response Format", func() {
 			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text",
 			expectedFormat: expfmt.FmtUnknown,
 		}),
-		Entry("return FmtText for a 'text plain with v0.0.4 content type' response", testCase{
-			contentType:    "text/plain; version=0.0.4",
+		Entry("return FmtText for a 'text plain content type' response", testCase{
+			contentType:    "text/plain; charset=UTF-8",
 			expectedFormat: expfmt.FmtText,
 		}),
 		Entry("return FmtOpenMetrics_1_0_0 for a 'openmetrics v1.0.0 content type' response", testCase{
