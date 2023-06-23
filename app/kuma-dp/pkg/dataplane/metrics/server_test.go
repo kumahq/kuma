@@ -65,24 +65,24 @@ var _ = Describe("Select Content Type", func() {
 		Expect(actualContentType).To(Equal(expfmt.FmtOpenMetrics_0_0_1))
 	})
 
-	It("should honor max supported accept type when app returns invalid content-type", func() {
+	It("should negotiate content-type based on Accept header", func() {
 		contentTypes := make(chan expfmt.Format, 1)
 		contentTypes <- expfmt.Format("invalid_content_type")
 		close(contentTypes)
 		reqHeader.Add("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.FmtOpenMetrics_1_0_0))
+		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
 	})
 
-	It("should use highest priority content-type available", func() {
+	It("should negotiate content-type based on Accept header", func() {
 		contentTypes := make(chan expfmt.Format, 1)
 		contentTypes <- expfmt.Format("invalid_content_type")
 		close(contentTypes)
 		reqHeader.Add("Accept", "*/*")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.FmtText))
+		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
 	})
 })
 
@@ -105,8 +105,8 @@ var _ = Describe("Response Format", func() {
 			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text",
 			expectedFormat: expfmt.FmtUnknown,
 		}),
-		Entry("return FmtText for a 'text plain with v0.0.4 content type' response", testCase{
-			contentType:    "text/plain; version=0.0.4",
+		Entry("return FmtText for a 'text plain content type' response", testCase{
+			contentType:    "text/plain; charset=UTF-8",
 			expectedFormat: expfmt.FmtText,
 		}),
 		Entry("return FmtOpenMetrics_1_0_0 for a 'openmetrics v1.0.0 content type' response", testCase{
