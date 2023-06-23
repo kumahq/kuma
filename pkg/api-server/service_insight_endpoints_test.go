@@ -57,7 +57,6 @@ var _ = Describe("Service Insight Endpoints", func() {
 				"backend": {
 					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
 					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
-						Total:   100,
 						Online:  70,
 						Offline: 30,
 					},
@@ -65,7 +64,6 @@ var _ = Describe("Service Insight Endpoints", func() {
 				"frontend": {
 					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
 					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
-						Total:   20,
 						Online:  19,
 						Offline: 1,
 					},
@@ -77,7 +75,6 @@ var _ = Describe("Service Insight Endpoints", func() {
 				"db": {
 					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
 					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
-						Total:   10,
 						Online:  9,
 						Offline: 1,
 					},
@@ -85,7 +82,6 @@ var _ = Describe("Service Insight Endpoints", func() {
 				"redis": {
 					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
 					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
-						Total:   22,
 						Online:  19,
 						Offline: 3,
 					},
@@ -111,7 +107,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  	"total": 100,
 	  	"online": 70,
 	  	"offline": 30
-      }
+      },
+      "addressPort": "backend.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -124,7 +121,8 @@ var _ = Describe("Service Insight Endpoints", func() {
         "total": 20,
         "online": 19,
         "offline": 1
-      }
+      },
+      "addressPort": "frontend.mesh:80"
 	}
   ],
   "next": null
@@ -154,7 +152,8 @@ var _ = Describe("Service Insight Endpoints", func() {
     "total": 100,
     "online": 70,
     "offline": 30
-  }
+  },
+  "addressPort": "backend.mesh:80"
 }`
 
 			// when
@@ -223,7 +222,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 100,
 	    "online": 70,
 	    "offline": 30
-      }
+      },
+      "addressPort": "backend.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -236,7 +236,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 20,
 	    "online": 19,
 	    "offline": 1
-      }
+      },
+      "addressPort": "frontend.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -249,7 +250,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 10,
 	    "online": 9,
 	    "offline": 1
-      }
+      },
+      "addressPort": "db.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -262,7 +264,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 22,
 	    "online": 19,
 	    "offline": 3
-      }
+      },
+      "addressPort": "redis.mesh:80"
 	}
   ],
   "next": null
@@ -286,7 +289,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 100,
 	    "online": 70,
 	    "offline": 30
-      }
+      },
+      "addressPort": "backend.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -299,7 +303,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 20,
 	    "online": 19,
 	    "offline": 1
-      }
+      },
+      "addressPort": "frontend.mesh:80"
 	}
   ],
   "next": "http://{{address}}/service-insights?offset=2&size=2"
@@ -323,7 +328,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 10,
 	    "online": 9,
 	    "offline": 1
-      }
+      },
+      "addressPort": "db.mesh:80"
 	},
 	{
 	  "type": "ServiceInsight",
@@ -336,7 +342,8 @@ var _ = Describe("Service Insight Endpoints", func() {
 	    "total": 22,
 	    "online": 19,
 	    "offline": 3
-      }
+      },
+      "addressPort": "redis.mesh:80"
 	}
   ],
   "next": null

@@ -45,14 +45,13 @@ func MeshInsightKey(mesh string) model.ResourceKey {
 }
 
 type Config struct {
-	Registry             registry.TypeRegistry
-	ResourceManager      manager.ResourceManager
-	EventReaderFactory   events.ListenerFactory
-	MinResyncTimeout     time.Duration
-	MaxResyncTimeout     time.Duration
-	Tick                 func(d time.Duration) <-chan time.Time
-	RateLimiterFactory   func() *rate.Limiter
-	AddressPortGenerator func(string) string
+	Registry           registry.TypeRegistry
+	ResourceManager    manager.ResourceManager
+	EventReaderFactory events.ListenerFactory
+	MinResyncTimeout   time.Duration
+	MaxResyncTimeout   time.Duration
+	Tick               func(d time.Duration) <-chan time.Time
+	RateLimiterFactory func() *rate.Limiter
 }
 
 type resyncer struct {
@@ -68,9 +67,8 @@ type resyncer struct {
 	// info provides an information about the last sync for both ServiceInsight and MeshInsight
 	// Previously this data was stored in the Resource itself, but since resyncer runs only on leader
 	// we can just save this in memory and save requests to the DB.
-	infos                map[string]syncInfo
-	infosMux             sync.RWMutex
-	addressPortGenerator func(string) string
+	infos    map[string]syncInfo
+	infosMux sync.RWMutex
 
 	registry registry.TypeRegistry
 	tenantFn multitenant.Tenants
@@ -91,16 +89,15 @@ type syncInfo struct {
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
 func NewResyncer(config *Config, tenantFn multitenant.Tenants) component.Component {
 	r := &resyncer{
-		minResyncTimeout:     config.MinResyncTimeout,
-		maxResyncTimeout:     config.MaxResyncTimeout,
-		eventFactory:         config.EventReaderFactory,
-		rm:                   config.ResourceManager,
-		rateLimiterFactory:   config.RateLimiterFactory,
-		rateLimiters:         map[string]*rate.Limiter{},
-		infos:                map[string]syncInfo{},
-		registry:             config.Registry,
-		addressPortGenerator: config.AddressPortGenerator,
-		tenantFn:             tenantFn,
+		minResyncTimeout:   config.MinResyncTimeout,
+		maxResyncTimeout:   config.MaxResyncTimeout,
+		eventFactory:       config.EventReaderFactory,
+		rm:                 config.ResourceManager,
+		rateLimiterFactory: config.RateLimiterFactory,
+		rateLimiters:       map[string]*rate.Limiter{},
+		infos:              map[string]syncInfo{},
+		registry:           config.Registry,
+		tenantFn:           tenantFn,
 	}
 
 	r.tick = config.Tick
@@ -237,8 +234,6 @@ func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight
 
 	dataplanes := insight.Services[svcName].Dataplanes
 
-	dataplanes.Total++
-
 	switch status {
 	case core_mesh.Online:
 		dataplanes.Online++
@@ -283,7 +278,8 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 		}
 
 		for _, inbound := range networking.GetInbound() {
-			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, r.addressPortGenerator(inbound.GetService()))
+			// address port is empty to save space in the resource. It will be filled by the server on API response
+			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, "")
 		}
 	}
 
@@ -296,7 +292,8 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 	}
 
 	for _, svc := range insight.Services {
-		online, total := svc.Dataplanes.Online, svc.Dataplanes.Total
+		online := svc.Dataplanes.Online
+		total := svc.Dataplanes.Online + svc.Dataplanes.Offline
 
 		switch {
 		case svc.ServiceType == mesh_proto.ServiceInsight_Service_external:

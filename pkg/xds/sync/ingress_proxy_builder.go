@@ -24,8 +24,9 @@ type IngressProxyBuilder struct {
 	LookupIP           lookup.LookupIPFunc
 	meshCache          *xds_cache.Cache
 
-	apiVersion core_xds.APIVersion
-	zone       string
+	apiVersion        core_xds.APIVersion
+	zone              string
+	ingressTagFilters []string
 }
 
 func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey) (*core_xds.Proxy, error) {
@@ -160,7 +161,7 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, allMeshGateways.Items, availableExternalServices.Items)
+	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, allMeshGateways.Items, availableExternalServices.Items, p.ingressTagFilters)
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 
@@ -67,8 +68,9 @@ func UpdateAvailableServices(
 	otherDataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	tagFilters []string,
 ) error {
-	availableServices := GetIngressAvailableServices(otherDataplanes)
+	availableServices := GetIngressAvailableServices(otherDataplanes, tagFilters)
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
 
@@ -162,11 +164,24 @@ func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.
 	return tagSets.toAvailableServices()
 }
 
-func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
+func GetIngressAvailableServices(others []*core_mesh.DataplaneResource, tagFilters []string) []*mesh_proto.ZoneIngress_AvailableService {
 	tagSets := tagSets{}
 	for _, dp := range others {
 		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
-			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
+			tags := map[string]string{}
+			for key, value := range dpInbound.Tags {
+				matchAnyFilter := len(tagFilters) == 0
+				for _, tagFilter := range tagFilters {
+					if strings.HasPrefix(key, tagFilter) {
+						matchAnyFilter = true
+						break
+					}
+				}
+				if matchAnyFilter {
+					tags[key] = value
+				}
+			}
+			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), tags)
 		}
 	}
 	return tagSets.toAvailableServices()

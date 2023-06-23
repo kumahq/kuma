@@ -208,6 +208,7 @@ var DefaultConfig = func() Config {
 			KubeOutboundsAsVIPs:             true,
 			KDSDeltaEnabled:                 false,
 			UseTagFirstVirtualOutboundModel: false,
+			IngressTagFilters:               []string{},
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
@@ -356,6 +357,11 @@ type ExperimentalConfig struct {
 	// you need to first disable this flag and redeploy cp, after config is rewritten to default
 	// format you can downgrade your cp
 	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
+	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+	// This can trim the size of the ZoneIngress object significantly.
+	// The drawback is that you cannot use filtered out tags for traffic routing.
+	// If empty, no filter is applied.
+	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 }
 
 func (e ExperimentalConfig) Validate() error {
