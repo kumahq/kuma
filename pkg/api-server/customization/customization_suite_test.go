@@ -62,7 +62,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 		),

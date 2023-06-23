@@ -38,11 +38,11 @@ message Dataplane {
   option (kuma.mesh.resource).additional_printer_columns =
       "description=\"Service tag of the third "
       "inbound\",JSONPath=`.spec.networking.inbound[2].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string";
+      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
   option (kuma.mesh.resource).additional_printer_columns =
       "description=\"Service tag of the fourth "
       "inbound\",JSONPath=`.spec.networking.inbound[3].tags[\'kuma\\.io/"
-      "service\']`,name=\"kuma.io/service\",type=string";
+      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
 
   // Networking describes inbound and outbound interfaces of a data plane proxy.
   message Networking {

@@ -118,8 +118,8 @@ func init() {
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
 // +kubebuilder:printcolumn:description="Service tag of the first inbound",JSONPath=`.spec.networking.inbound[0].tags['kuma\.io/service']`,name="kuma.io/service",type=string
 // +kubebuilder:printcolumn:description="Service tag of the second inbound",JSONPath=`.spec.networking.inbound[1].tags['kuma\.io/service']`,name="kuma.io/service",type=string
-// +kubebuilder:printcolumn:description="Service tag of the third inbound",JSONPath=`.spec.networking.inbound[2].tags['kuma\.io/service']`,name="kuma.io/service",type=string
-// +kubebuilder:printcolumn:description="Service tag of the fourth inbound",JSONPath=`.spec.networking.inbound[3].tags['kuma\.io/service']`,name="kuma.io/service",type=string
+// +kubebuilder:printcolumn:description="Service tag of the third inbound",JSONPath=`.spec.networking.inbound[2].tags['kuma\.io/service']`,name="kuma.io/service",type=string,priority=1
+// +kubebuilder:printcolumn:description="Service tag of the fourth inbound",JSONPath=`.spec.networking.inbound[3].tags['kuma\.io/service']`,name="kuma.io/service",type=string,priority=1
 type Dataplane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
