@@ -76,6 +76,7 @@ resources:
                   cluster: mesh-1:externalservice-1
                   timeout: 0s
           statPrefix: externalservice-1
+      name: externalservice-1_mesh-1
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

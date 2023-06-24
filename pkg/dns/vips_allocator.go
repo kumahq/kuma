@@ -10,6 +10,7 @@ import (
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -35,10 +36,10 @@ type VIPsAllocator struct {
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, zone string) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, experimentalConfig config.ExperimentalConfig, zone string) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
 		rm:                rm,
-		persistence:       vips.NewPersistence(rm, configManager),
+		persistence:       vips.NewPersistence(rm, configManager, experimentalConfig.UseTagFirstVirtualOutboundModel),
 		serviceVipEnabled: config.ServiceVipEnabled,
 		cidr:              config.CIDR,
 		dnsSuffix:         config.Domain,
@@ -164,8 +165,7 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, me
 				},
 				selector.GetMatch(),
 			)
-			origin := fmt.Sprintf("mesh-gateway:%s:%s:%s", mesh, gateway.GetMeta().GetName(), hostname)
-
+			origin := vips.OriginGateway(mesh, gateway.GetMeta().GetName(), hostname)
 			entry := vips.OutboundEntry{
 				Port:   listener.Port,
 				TagSet: tags,

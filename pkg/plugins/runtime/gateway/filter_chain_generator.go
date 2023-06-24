@@ -240,6 +240,8 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		),
 	)
 
+	builder.AddConfigurer(&envoy_listeners_v3.HTTPRouterStartChildSpanRouter{})
+
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 
 	return builder

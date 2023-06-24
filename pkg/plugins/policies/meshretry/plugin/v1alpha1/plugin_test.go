@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -268,6 +270,48 @@ var _ = Describe("MeshRetry", func() {
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 				Items: given.gateways,
+			}
+			resources.MeshLocalResources[core_mesh.RetryType] = &core_mesh.RetryResourceList{
+				Items: []*core_mesh.RetryResource{{
+					Meta: &test_model.ResourceMeta{Name: "retry1"},
+					Spec: &mesh_proto.Retry{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									mesh_proto.ServiceTag: "*",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									mesh_proto.ServiceTag: "*",
+								},
+							},
+						},
+						Conf: &mesh_proto.Retry_Conf{
+							Http: &mesh_proto.Retry_Conf_Http{
+								NumRetries:    util_proto.UInt32(5),
+								PerTryTimeout: util_proto.Duration(16 * time.Second),
+								BackOff: &mesh_proto.Retry_Conf_BackOff{
+									BaseInterval: util_proto.Duration(25 * time.Millisecond),
+									MaxInterval:  util_proto.Duration(250 * time.Millisecond),
+								},
+							},
+							Tcp: &mesh_proto.Retry_Conf_Tcp{
+								MaxConnectAttempts: 5,
+							},
+							Grpc: &mesh_proto.Retry_Conf_Grpc{
+								NumRetries:    util_proto.UInt32(5),
+								PerTryTimeout: util_proto.Duration(16 * time.Second),
+								BackOff: &mesh_proto.Retry_Conf_BackOff{
+									BaseInterval: util_proto.Duration(25 * time.Millisecond),
+									MaxInterval:  util_proto.Duration(250 * time.Millisecond),
+								},
+							},
+						},
+					},
+				}},
 			}
 			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
 				Items: given.gatewayRoutes,
