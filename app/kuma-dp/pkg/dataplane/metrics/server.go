@@ -11,7 +11,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -228,14 +230,42 @@ func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
 		}
 	}
 
-	// if the content type is not OpenMetrics, we don't need to do any processing
+	str := processNewlineChars(buf.String(), true, true)
+	str = fmt.Sprintf("%s\n", str)
+
+	// if the content type is not OpenMetrics, we don't need to add EOF marker
 	if !(contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1) {
-		return buf.Bytes()
+		return []byte(str)
 	}
 
 	// make metrics OpenMetrics compliant
-	expfmt.FinalizeOpenMetrics(buf)
-	return bytes.ReplaceAll(buf.Bytes(), []byte("\n\n"), []byte("\n"))
+	fmt.Printf("%q", fmt.Sprintf("%s# EOF\n", str))
+	return []byte(fmt.Sprintf("%s# EOF\n", str))
+}
+
+// processNewlineChars processes the newline characters in the text.
+// If dedup is true, it replaces multiple newline characters with a single newline character.
+// If trim is true, it trims the leading and trailing newline characters.
+func processNewlineChars(text string, dedup, trim bool) string {
+	if dedup {
+		// Create a regular expression to match multiple newline characters.
+		reg, err := regexp.Compile(`(\r\n?|\n){2,}`)
+		if err != nil {
+			return text
+		}
+
+		// Replace all the matches with a single newline character.
+		text = reg.ReplaceAllString(text, "\n")
+	}
+
+	if trim {
+		// Trim the leading and trailing newline characters.
+		text = strings.TrimFunc(text, func(r rune) bool {
+			return r == '\n'
+		})
+	}
+
+	return text
 }
 
 // selectContentType selects the highest priority content type supported by the applications.
