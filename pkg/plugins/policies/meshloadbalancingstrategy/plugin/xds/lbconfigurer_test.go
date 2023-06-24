@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -26,8 +25,7 @@ var _ = Describe("LBConfigurer", func() {
 			configurer := &xds.LoadBalancerConfigurer{
 				LoadBalancer: given.conf,
 			}
-			cluster := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(policies_xds.WithName("test")).
+			cluster := clusters.NewClusterBuilder(envoy.APIV3, "test").
 				MustBuild()
 
 			// when

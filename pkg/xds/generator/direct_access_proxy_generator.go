@@ -73,8 +73,8 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		})
 	}
 
-	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.PassThroughCluster("direct_access")).
+	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, "direct_access").
+		Configure(envoy_clusters.PassThroughCluster()).
 		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, ctx.Mesh.Resource)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()

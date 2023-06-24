@@ -66,8 +66,8 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	var err error
 
 	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.PassThroughCluster(outboundName)).
+		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion, outboundName).
+			Configure(envoy_clusters.PassThroughCluster()).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
@@ -93,8 +93,8 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
 
-	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.PassThroughCluster(inboundName)).
+	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, inboundName).
+		Configure(envoy_clusters.PassThroughCluster()).
 		Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIP, 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()

@@ -72,8 +72,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-backend",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("backend")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -103,9 +103,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-payment",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
-							"payment",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",
@@ -267,8 +266,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-1:eds-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("mesh-1:eds-cluster")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -298,9 +297,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-2:static-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
-							"mesh-2:static-cluster",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",

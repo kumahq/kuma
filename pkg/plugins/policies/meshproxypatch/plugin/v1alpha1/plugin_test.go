@@ -58,8 +58,7 @@ var _ = Describe("MeshProxyPatch", func() {
 				{
 					Name:   "echo-http",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(policies_xds.WithName("echo-http")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "echo-http").
 						MustBuild(),
 				},
 			},
