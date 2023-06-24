@@ -1,8 +1,11 @@
 package metrics
 
 import (
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -120,6 +123,90 @@ var _ = Describe("Response Format", func() {
 		Entry("return FmtUnknown for a 'invalid content type' response", testCase{
 			contentType:    "application/invalid",
 			expectedFormat: expfmt.FmtUnknown,
+		}),
+	)
+})
+
+var _ = Describe("Process Metrics", func() {
+	type testCase struct {
+		input       []string // input files containing metrics
+		contentType expfmt.Format
+		expected    string // expected output file
+	}
+	DescribeTable("should",
+		func(given testCase) {
+			inputMetrics := make(chan []byte, len(given.input))
+			for _, input := range given.input {
+				fo, err := os.Open(path.Join("testdata", input))
+				Expect(err).ToNot(HaveOccurred())
+				byteData, err := io.ReadAll(fo)
+				Expect(err).ToNot(HaveOccurred())
+				inputMetrics <- byteData
+			}
+			close(inputMetrics)
+
+			fo, err := os.Open(path.Join("testdata", given.expected))
+			Expect(err).ToNot(HaveOccurred())
+			expected, err := io.ReadAll(fo)
+			Expect(err).ToNot(HaveOccurred())
+
+			actual := processMetrics(inputMetrics, given.contentType)
+			Expect(string(actual)).To(Equal(string(expected)))
+		},
+		Entry("return OpenMetrics compliant metrics", testCase{
+			input:       []string{"openmetrics_0_1_1.in", "counter.out"},
+			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			expected:    "openmetrics_0_0_1-counter.out",
+		}),
+		Entry("handle multiple # EOF", testCase{
+			input:       []string{"openmetrics_0_1_1.in", "openmetrics_0_1_1.in", "counter.out"},
+			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			expected:    "multi-openmetrics-counter.out",
+		}),
+		Entry("return Prometheus text compliant metrics", testCase{
+			input:       []string{"prom-text.in", "counter.out"},
+			contentType: expfmt.FmtText,
+			expected:    "prom-text-counter.out",
+		}),
+	)
+})
+
+var _ = Describe("ProcessNewlineChars", func() {
+	type testCase struct {
+		input       string
+		deduplicate bool
+		trim        bool
+		expected    string
+	}
+
+	DescribeTable("should",
+		func(given testCase) {
+			actual := processNewlineChars(given.input, given.deduplicate, given.trim)
+			Expect(actual).To(Equal(given.expected))
+		},
+		Entry("should not deduplicate or trim newline characters", testCase{
+			input:       "This is a test.\n\nThis is another test.\n",
+			deduplicate: false,
+			trim:        false,
+			expected:    "This is a test.\n\nThis is another test.\n",
+		}),
+		Entry("should deduplicate newline characters", testCase{
+			input:       "This is a test.\n\n\nThis is another test.\n",
+			deduplicate: true,
+			trim:        false,
+			expected:    "This is a test.\nThis is another test.\n",
+		}),
+		Entry("should trim leading and trailing newline characters", testCase{
+			input:       "\nThis is a test.\n\nThis is another test\n\n",
+			deduplicate: false,
+			trim:        true,
+			expected:    "This is a test.\n\nThis is another test",
+		}),
+		Entry("should deduplicate and trim newline characters", testCase{
+			input:       "\nThis is a test.\n\n\nThis is another test\n",
+			deduplicate: true,
+			trim:        true,
+			expected:    "This is a test.\nThis is another test",
 		}),
 	)
 })
