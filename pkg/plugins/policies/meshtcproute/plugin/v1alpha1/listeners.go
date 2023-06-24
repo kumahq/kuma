@@ -12,7 +12,6 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -69,17 +68,11 @@ func buildOutboundListener(
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
 	tags := outbound.GetTagsIncludingLegacy()
-	builder := envoy_listeners.NewListenerBuilder(proxy.APIVersion)
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
-	outboundListenerName := envoy_names.GetOutboundListenerName(
-		oface.DataplaneIP,
-		oface.DataplanePort,
-	)
-
-	outboundListener := envoy_listeners.OutboundListener(
-		outboundListenerName,
+	builder := envoy_listeners.NewOutboundListenerBuilder(
+		proxy.APIVersion,
 		oface.DataplaneIP,
 		oface.DataplanePort,
 		core_xds.SocketAddressProtocolTCP,
@@ -94,7 +87,6 @@ func buildOutboundListener(
 	)
 
 	return builder.Configure(
-		outboundListener,
 		tproxy,
 		tagsMetadata,
 	).Configure(opts...).Build()

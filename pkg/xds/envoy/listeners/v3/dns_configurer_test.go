@@ -23,8 +23,8 @@ var _ = Describe("DNSConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(names.GetDNSListenerName(), "192.168.0.1", 1234, xds.SocketAddressProtocolUDP)).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP).
+				WithName(names.GetDNSListenerName()).
 				Configure(DNS(given.vips, given.emptyDnsPort, &mesh_proto.EnvoyVersion{Version: given.envoyVersion})).
 				Build()
 			// then

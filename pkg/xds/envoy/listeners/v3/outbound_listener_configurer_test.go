@@ -22,8 +22,8 @@ var _ = Describe("OutboundListenerConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				WithName(given.listenerName).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -86,8 +86,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 							Configure(
@@ -108,8 +107,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),

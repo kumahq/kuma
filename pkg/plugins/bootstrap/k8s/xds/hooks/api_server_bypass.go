@@ -38,8 +38,8 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 		return nil
 	}
 
-	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(apiServerBypassHookResourcesName, h.Address, h.Port, core_xds.SocketAddressProtocolTCP)).
+	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, h.Address, h.Port, core_xds.SocketAddressProtocolTCP).
+		WithName(apiServerBypassHookResourcesName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxyDeprecated(apiServerBypassHookResourcesName, envoy_common.NewCluster(envoy_common.WithService(apiServerBypassHookResourcesName)))))).
 		Configure(envoy_listeners.NoBindToPort()).

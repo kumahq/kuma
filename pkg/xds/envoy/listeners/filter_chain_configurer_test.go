@@ -12,7 +12,6 @@ import (
 
 var _ = Describe("ListenerFilterChainConfigurer", func() {
 	type testCase struct {
-		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
@@ -23,8 +22,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// when
-				listener, err := NewListenerBuilder(envoy.APIV3).
-					Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+				listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 					Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3))).
 					Build()
 				// then
@@ -38,7 +36,6 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("basic TCP listener with an empty filter chain", testCase{
-				listenerName:     "inbound:192.168.0.1:8080",
 				listenerProtocol: xds.SocketAddressProtocolTCP,
 				listenerAddress:  "192.168.0.1",
 				listenerPort:     8080,

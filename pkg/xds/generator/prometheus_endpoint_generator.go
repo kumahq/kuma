@@ -89,8 +89,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	var listener envoy_common.NamedResource
 	if secureMetrics(prometheusEndpoint, ctx.Mesh.Resource) {
-		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
+		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+			WithName(prometheusListenerName).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
@@ -120,8 +120,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 			)).
 			Build()
 	} else {
-		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
+		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+			WithName(prometheusListenerName).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
 					{

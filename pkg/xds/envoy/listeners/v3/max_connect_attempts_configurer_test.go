@@ -41,8 +41,8 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				WithName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(MaxConnectAttempts(retry)))).

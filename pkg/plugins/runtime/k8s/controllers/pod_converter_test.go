@@ -462,7 +462,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 			},
 			Entry("Pod with a Service but mismatching ports", testCase{
 				pod: pod,
-				services: []string{`
+				services: []string{
+					`
                 spec:
                   clusterIP: 192.168.0.1
                   ports:
@@ -478,7 +479,8 @@ var _ = Describe("PodToDataplane(..)", func() {
                   - # defaults to TCP protocol
                     port: 6060
                     targetPort: diagnostics
-`},
+`,
+				},
 				expectedErr: `A service that selects pod example was found, but it doesn't match any container ports.`,
 			}),
 		)

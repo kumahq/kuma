@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("HttpAccessLogConfigurer", func() {
 	type testCase struct {
-		listenerName       string
 		listenerAddress    string
 		listenerPort       uint32
 		listenerProtocol   core_xds.SocketAddressProtocol
@@ -63,8 +62,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
@@ -79,7 +77,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager without access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -105,7 +102,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with file access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -145,7 +141,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
             trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic http_connection_manager with tcp access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -190,7 +185,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
             trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic http_connection_manager with legacy tcp access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
