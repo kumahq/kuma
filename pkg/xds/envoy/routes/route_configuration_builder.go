@@ -17,9 +17,10 @@ type RouteConfigurationBuilderOpt interface {
 	ApplyTo(builder *RouteConfigurationBuilder)
 }
 
-func NewRouteConfigurationBuilder(apiVersion core_xds.APIVersion) *RouteConfigurationBuilder {
+func NewRouteConfigurationBuilder(apiVersion core_xds.APIVersion, name string) *RouteConfigurationBuilder {
 	return &RouteConfigurationBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
 }
 
@@ -28,6 +29,7 @@ func NewRouteConfigurationBuilder(apiVersion core_xds.APIVersion) *RouteConfigur
 type RouteConfigurationBuilder struct {
 	apiVersion  core_xds.APIVersion
 	configurers []v3.RouteConfigurationConfigurer
+	name        string
 }
 
 // Configure configures RouteConfigurationBuilder by adding individual RouteConfigurationConfigurers.
@@ -35,7 +37,6 @@ func (b *RouteConfigurationBuilder) Configure(opts ...RouteConfigurationBuilderO
 	for _, opt := range opts {
 		opt.ApplyTo(b)
 	}
-
 	return b
 }
 
@@ -43,11 +44,16 @@ func (b *RouteConfigurationBuilder) Configure(opts ...RouteConfigurationBuilderO
 func (b *RouteConfigurationBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		routeConfiguration := envoy_route_v3.RouteConfiguration{}
+		routeConfiguration := envoy_route_v3.RouteConfiguration{
+			Name: b.name,
+		}
 		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&routeConfiguration); err != nil {
 				return nil, err
 			}
+		}
+		if len(routeConfiguration.GetName()) == 0 {
+			return nil, errors.New("route configuration name is undefined")
 		}
 		return &routeConfiguration, nil
 	default:

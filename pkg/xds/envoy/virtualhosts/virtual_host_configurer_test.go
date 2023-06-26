@@ -24,7 +24,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// when
-				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV3).
+				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV3, "route_configuration").
 					Configure(VirtualHost(NewVirtualHostBuilder(envoy.APIV3).
 						Configure(given.opts...))).
 					Build()
@@ -41,6 +41,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 			Entry("basic virtual host", testCase{
 				opts: []Opt{CommonVirtualHost("backend")},
 				expected: `
+            name: route_configuration
             virtualHosts:
             - domains:
               - '*'
@@ -53,6 +54,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 					DomainNames("foo.example.com", "bar.example.com"),
 				},
 				expected: `
+            name: route_configuration
             virtualHosts:
             - domains:
               - foo.example.com
@@ -66,6 +68,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 					DomainNames(),
 				},
 				expected: `
+            name: route_configuration
             virtualHosts:
             - domains:
               - '*'
@@ -91,6 +94,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 					),
 				},
 				expected: `
+            name: route_configuration
             virtualHosts:
             - domains:
               - '*'
