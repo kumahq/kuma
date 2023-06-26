@@ -167,7 +167,6 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 	var endpoint *xds.Endpoint
 	var provider string
 
-	builder := clusters.NewClusterBuilder(proxy.APIVersion)
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
@@ -178,10 +177,14 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 	case backend.OpenTelemetry != nil:
 		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
 		provider = plugin_xds.OpenTelemetryProviderName
+	}
+	builder := clusters.NewClusterBuilder(proxy.APIVersion, plugin_xds.GetTracingClusterName(provider))
+
+	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
 
-	res, err := builder.Configure(clusters.ProvidedEndpointCluster(plugin_xds.GetTracingClusterName(provider), proxy.Dataplane.IsIPv6(), *endpoint)).
+	res, err := builder.Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), *endpoint)).
 		Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
 		Configure(clusters.DefaultTimeout()).Build()
 	if err != nil {

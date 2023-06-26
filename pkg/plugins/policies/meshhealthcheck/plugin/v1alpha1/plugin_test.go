@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -48,15 +47,13 @@ var _ = Describe("MeshHealthCheck", func() {
 		{
 			Name:   "cluster-echo-http",
 			Origin: generator.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-				Configure(policies_xds.WithName(httpServiceTag)).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, httpServiceTag).
 				MustBuild(),
 		},
 		{
 			Name:   "cluster-echo-http-_0_",
 			Origin: generator.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-				Configure(policies_xds.WithName(splitHttpServiceTag)).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, splitHttpServiceTag).
 				MustBuild(),
 		},
 	}
@@ -64,8 +61,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		{
 			Name:   "cluster-echo-tcp",
 			Origin: generator.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-				Configure(policies_xds.WithName(tcpServiceTag)).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, tcpServiceTag).
 				MustBuild(),
 		},
 	}
@@ -73,8 +69,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		{
 			Name:   "cluster-echo-grpc",
 			Origin: generator.OriginOutbound,
-			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-				Configure(policies_xds.WithName(grpcServiceTag)).
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, grpcServiceTag).
 				MustBuild(),
 		},
 	}

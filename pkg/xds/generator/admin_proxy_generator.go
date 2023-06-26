@@ -45,8 +45,8 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 	// as a gateway to another host.
 	adminAddress := "127.0.0.1"
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
-	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.ProvidedEndpointCluster(envoyAdminClusterName, false, core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
+	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
+		Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

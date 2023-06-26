@@ -207,20 +207,19 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 		for _, c := range service.Clusters() {
 			cluster := c.(*envoy_common.ClusterImpl)
-
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
+			clusterName := cluster.Name()
+			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
-			clusterName := cluster.Name()
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster(clusterName)).
+						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
 							ctx.Mesh.Resource,
@@ -233,7 +232,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, isIPv6, endpoints...)).
+						Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, endpoints...)).
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
@@ -246,7 +245,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(clusterName)).
+					Configure(envoy_clusters.EdsCluster()).
 					Configure(envoy_clusters.LB(cluster.LB())).
 					Configure(envoy_clusters.Http2())
 
