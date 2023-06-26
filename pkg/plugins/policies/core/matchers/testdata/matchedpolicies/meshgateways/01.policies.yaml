@@ -1,7 +1,7 @@
 ---
-type: MeshTrafficPermission
+type: MeshAccessLog
 mesh: mesh-1
-name: mtp-1
+name: mesh
 spec:
  targetRef:
   kind: Mesh
@@ -9,11 +9,14 @@ spec:
   - targetRef:
      kind: Mesh
     default:
-     action: Deny
+      backends:
+        - type: File
+          file:
+            path: /mesh
 ---
-type: MeshTrafficPermission
+type: MeshAccessLog
 mesh: mesh-1
-name: mtp-2
+name: servicesubset
 spec:
  targetRef:
   kind: MeshServiceSubset
@@ -24,7 +27,10 @@ spec:
   - targetRef:
      kind: Mesh
     default:
-     action: Allow
+      backends:
+        - type: File
+          file:
+            path: /servicesubset
 ---
 type: MeshGateway
 mesh: mesh-1

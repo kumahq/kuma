@@ -16,8 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	mal_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -107,7 +108,7 @@ var _ = Describe("MatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
+			policies, err := matchers.MatchedPolicies(mtp_api.MeshTrafficPermissionType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -157,7 +158,7 @@ var _ = Describe("MatchedPolicies", func() {
 
 			resources, _ := readPolicies(given.policiesFile)
 
-			policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
+			policies, err := matchers.MatchedPolicies(mal_api.MeshAccessLogType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			bytes, err := yaml.Marshal(policies.FromRules)
