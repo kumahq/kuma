@@ -37,6 +37,10 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
+<<<<<<< HEAD
+=======
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+>>>>>>> e6d916ba9 (fix(kuma-cp): do not require certs on https api port (#7102))
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -383,7 +387,26 @@ func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
 		}
 		tlsConfig.ClientCAs = clientCertPool
 	}
+<<<<<<< HEAD
 	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+=======
+	if cfg.HTTPS.TlsCaFile != "" {
+		file, err := os.ReadFile(cfg.HTTPS.TlsCaFile)
+		if err != nil {
+			return err
+		}
+		if !clientCertPool.AppendCertsFromPEM(file) {
+			return errors.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
+		}
+	}
+
+	tlsConfig.ClientCAs = clientCertPool
+	if cfg.HTTPS.RequireClientCert {
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	} else if cfg.Authn.Type == certs.PluginName {
+		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
+	}
+>>>>>>> e6d916ba9 (fix(kuma-cp): do not require certs on https api port (#7102))
 	return nil
 }
 
