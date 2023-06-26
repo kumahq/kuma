@@ -32,6 +32,40 @@ spec:
           file:
             path: /servicesubset
 ---
+type: MeshAccessLog
+mesh: mesh-1
+name: gateway
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: gateway-1
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /gateway
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: gatewaylistener
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: gateway-1
+  tags:
+    listener: one
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /gateway-listener
+---
 type: MeshGateway
 mesh: mesh-1
 name: gateway-1

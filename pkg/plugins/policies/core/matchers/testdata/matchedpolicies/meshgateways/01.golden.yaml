@@ -3,9 +3,19 @@ Rules:
   - Conf:
       backends:
       - file:
-          path: /mesh
+          path: /gateway-listener
         type: File
     Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gateway
+      type: MeshAccessLog
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gatewaylistener
+      type: MeshAccessLog
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
@@ -19,6 +29,11 @@ Rules:
           path: /servicesubset
         type: File
     Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gateway
+      type: MeshAccessLog
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
