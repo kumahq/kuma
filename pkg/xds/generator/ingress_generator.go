@@ -196,8 +196,8 @@ func (i IngressGenerator) generateCDS(
 			envoy_tags.With("mesh"),
 		)
 
-		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
-			Configure(envoy_clusters.EdsCluster(clusterName)).
+		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
+			Configure(envoy_clusters.EdsCluster()).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
