@@ -66,6 +66,24 @@ spec:
           file:
             path: /gateway-listener
 ---
+type: MeshAccessLog
+mesh: mesh-1
+name: nonmatchinggatewaylistener
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: other-gateway
+  tags:
+    listener: three
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /shouldnt-be-applied
+---
 type: MeshGateway
 mesh: mesh-1
 name: gateway-1
@@ -82,3 +100,7 @@ conf:
     protocol: HTTP
     tags:
      listener: two
+  - port: 8082
+    protocol: HTTP
+    tags:
+     listener: three
