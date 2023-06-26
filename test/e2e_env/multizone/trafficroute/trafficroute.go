@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
+	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -95,13 +95,11 @@ conf:
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
-			And(
-				HaveLen(3),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
-			),
+			MatchAllKeys(Keys{
+				"echo-v1": Not(BeNil()),
+				"echo-v2": Not(BeNil()),
+				"echo-v4": Not(BeNil()),
+			}),
 		)
 	})
 
@@ -128,10 +126,9 @@ conf:
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
-			And(
-				HaveLen(1),
-				HaveKeyWithValue(Equal(`another-test-server`), Not(BeNil())),
-			),
+			MatchAllKeys(Keys{
+				"another-test-server": Not(BeNil()),
+			}),
 		)
 	})
 
@@ -168,22 +165,14 @@ conf:
 		Eventually(func(g Gomega) {
 			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res).To(And(
-				HaveLen(2),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2*v1Weight, 20)),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 2*v2Weight, 20)),
-			))
+			g.Expect(res).To(MatchAllKeys(Keys{
+				"echo-v1": BeNumerically("~", 2*v1Weight, 20),
+				"echo-v2": BeNumerically("~", 2*v2Weight, 20),
+			}))
 		}, "1m", "5s").Should(Succeed())
 	})
 
 	Context("HTTP routing", func() {
-		HaveOnlyResponseFrom := func(response string) types.GomegaMatcher {
-			return And(
-				HaveLen(1),
-				HaveKeyWithValue(MatchRegexp(`.*`+response+`.*`), Not(BeNil())),
-			)
-		}
-
 		It("should route matching by path", func() {
 			const trafficRoute = `
 type: TrafficRoute
@@ -226,16 +215,16 @@ conf:
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v1": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version2")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v2": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version3")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v3": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v4": Not(BeNil())}))
 		})
 
 		It("should same splits with a different weights", func() {
@@ -281,21 +270,19 @@ conf:
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": BeNumerically("~", 5, 1),
+					"echo-v2": BeNumerically("~", 5, 1),
+				}),
 			)
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": BeNumerically("~", 2, 1),
+					"echo-v2": BeNumerically("~", 8, 1),
+				}),
 			)
 		})
 	}, Ordered)
@@ -326,18 +313,17 @@ conf:
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(4),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+				MatchAllKeys(Keys{
+					"echo-v1": Not(BeNil()),
+					"echo-v2": Not(BeNil()),
+					"echo-v3": Not(BeNil()),
+					"echo-v4": Not(BeNil()),
 					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 10, 1)),
-				),
+				}),
 			)
 		})
 
@@ -358,10 +344,9 @@ routing:
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(1),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": Not(BeNil()),
+				}),
 			)
 		})
 	}, Ordered)
