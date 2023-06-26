@@ -686,6 +686,11 @@ experimental:
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
   # If true, KDS will sync using incremental xDS updates
   kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+  # This can trim the size of the ZoneIngress object significantly.
+  # The drawback is that you cannot use filtered out tags for traffic routing.
+  # If empty, no filter is applied.
+  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
 
 proxy:
   gateway:

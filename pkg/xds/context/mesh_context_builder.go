@@ -408,7 +408,7 @@ func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, s
 	}
 
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
+		tlsReady[svc] = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
 	}
 	return tlsReady
 }

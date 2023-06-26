@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -67,8 +69,9 @@ func UpdateAvailableServices(
 	otherDataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	tagFilters []string,
 ) error {
-	availableServices := GetIngressAvailableServices(otherDataplanes)
+	availableServices := GetIngressAvailableServices(otherDataplanes, tagFilters)
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
 
@@ -162,11 +165,20 @@ func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.
 	return tagSets.toAvailableServices()
 }
 
-func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
+func GetIngressAvailableServices(others []*core_mesh.DataplaneResource, tagFilters []string) []*mesh_proto.ZoneIngress_AvailableService {
 	tagSets := tagSets{}
 	for _, dp := range others {
 		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
-			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
+			tags := map[string]string{}
+			for key, value := range dpInbound.Tags {
+				hasPrefix := func(tagFilter string) bool {
+					return strings.HasPrefix(key, tagFilter)
+				}
+				if len(tagFilters) == 0 || slices.ContainsFunc(tagFilters, hasPrefix) {
+					tags[key] = value
+				}
+			}
+			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), tags)
 		}
 	}
 	return tagSets.toAvailableServices()
