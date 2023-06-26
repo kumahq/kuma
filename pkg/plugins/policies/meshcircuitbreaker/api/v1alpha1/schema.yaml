@@ -137,6 +137,7 @@ properties:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -165,6 +166,7 @@ properties:
             enum:
               - Mesh
               - MeshSubset
+              - MeshGateway
               - MeshService
               - MeshServiceSubset
               - MeshHTTPRoute
@@ -303,6 +305,7 @@ properties:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
