@@ -1,6 +1,10 @@
 package v1alpha1_test
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,14 +21,16 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -957,18 +963,11 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		resources         []core_xds.Resource
-		toRules           core_rules.ToRules
-		expectedListeners []string
+		routes  []*core_mesh.MeshGatewayRouteResource
+		toRules core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateway Dataplanes",
 		func(given gatewayTestCase) {
-			resourceSet := core_xds.NewResourceSet()
-			for _, res := range given.resources {
-				r := res
-				resourceSet.Add(&r)
-			}
-
 			gateways := core_mesh.MeshGatewayResourceList{
 				Items: []*core_mesh.MeshGatewayResource{{
 					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
@@ -993,18 +992,13 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
-
-			context := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-					Resources: resources,
-				},
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: given.routes,
 			}
+
+			context := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := xds.Proxy{
+				APIVersion: "v3",
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Mesh: "default",
@@ -1031,36 +1025,29 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			}
+
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
 
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			nameSplit := strings.Split(GinkgoT().Name(), " ")
+			name := nameSplit[len(nameSplit)-1]
 
-			for i, r := range resourceSet.ListOf(envoy_resource.ListenerType) {
-				actual, err := util_proto.ToYAML(r.Resource)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(actual).To(MatchYAML(given.expectedListeners[i]))
-			}
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", name))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 		},
-		Entry("basic gateway", gatewayTestCase{
-			resources: []core_xds.Resource{{
-				Name:   "gateway",
-				Origin: metadata.OriginGateway,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(
-						InboundListener(
-							envoy_names.GetGatewayListenerName("gateway", "HTTP", 8080), "127.0.0.1", 8080, xds.SocketAddressProtocolTCP,
-						),
-						EnableReusePort(true),
-						TLSInspector(),
-						FilterChain(
-							NewFilterChainBuilder(envoy_common.APIV3).Configure(
-								HttpConnectionManager("gateway", false),
-								ServerHeader("Kuma Gateway"),
-							),
-						),
-					).MustBuild(),
-			}},
+		Entry("basic-gateway", gatewayTestCase{
+			routes: []*core_mesh.MeshGatewayRouteResource{
+				builders.GatewayRoute().
+					WithName("sample-gateway-route").
+					WithGateway("gateway").
+					WithExactMatchHttpRoute("/", "backend", "other-service").
+					Build(),
+			},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -1075,40 +1062,12 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 8080
-            enableReusePort: true
-            filterChains:
-            - filters:
-              - name: envoy.filters.network.http_connection_manager
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  httpFilters:
-                  - name: envoy.filters.http.router
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                  serverName: Kuma Gateway
-                  statPrefix: gateway
-                  accessLog:
-                  - name: envoy.access_loggers.file
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      logFormat:
-                          textFormatSource:
-                              inlineString: |
-                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "*" "127.0.0.1" "%UPSTREAM_HOST%"
-                      path: /tmp/log
-            listenerFilters:
-            - name: envoy.filters.listener.tls_inspector
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-            name: gateway:HTTP:8080
-            trafficDirection: INBOUND`,
-			},
 		}),
 	)
 })
+
+func getResourceYaml(list core_xds.ResourceList) []byte {
+	actualResource, err := util_proto.ToYAML(list[0].Resource)
+	Expect(err).ToNot(HaveOccurred())
+	return actualResource
+}
