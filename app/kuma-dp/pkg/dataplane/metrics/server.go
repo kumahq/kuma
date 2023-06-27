@@ -248,10 +248,7 @@ func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
 func processNewlineChars(text string, dedup, trim bool) string {
 	if dedup {
 		// Create a regular expression to match multiple newline characters.
-		reg, err := regexp.Compile(`(\r\n?|\n){2,}`)
-		if err != nil {
-			return text
-		}
+		reg := regexp.MustCompile(`(\r\n?|\n){2,}`)
 
 		// Replace all the matches with a single newline character.
 		text = reg.ReplaceAllString(text, "\n")
