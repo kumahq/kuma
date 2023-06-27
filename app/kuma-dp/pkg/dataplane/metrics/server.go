@@ -212,10 +212,10 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
+func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 	buf := new(bytes.Buffer)
 
-	for metrics := range metrices {
+	for metrics := range contents {
 		// remove the EOF marker from the metrics, because we are
 		// merging multiple metrics into one response.
 		metrics = bytes.ReplaceAll(metrics, []byte("# EOF"), []byte(""))
@@ -228,7 +228,7 @@ func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
 		}
 	}
 
-	processedMetrics := processNewlineChars(buf.Bytes(), true, true)
+	processedMetrics := processNewlineChars(buf.Bytes())
 	processedMetrics = append(processedMetrics, '\n')
 	buf.Reset()
 	_, err := buf.Write(processedMetrics)
@@ -245,20 +245,13 @@ func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
 	return buf.Bytes()
 }
 
-// processNewlineChars processes the newline characters in the byteData.
-// If dedup is true, it replaces multiple consecutive newline characters with a single newline character.
-// If trim is true, it trims the leading and trailing newline characters.
-func processNewlineChars(byteData []byte, dedup, trim bool) []byte {
-	if dedup {
-		byteData = dedupFn(byteData, '\n', '\n')
-	}
-	if trim {
-		byteData = bytes.TrimSpace(byteData)
-	}
-	return byteData
+// processNewlineChars takes byte data and returns a new byte slice
+// after trimming and deduplicating the newline characters.
+func processNewlineChars(byteData []byte) []byte {
+	return bytes.TrimSpace(dedup(byteData, '\n', '\n'))
 }
 
-func dedupFn(input []byte, old, new byte) []byte {
+func dedup(input []byte, old, new byte) []byte {
 	var deduped []byte
 
 	var last byte

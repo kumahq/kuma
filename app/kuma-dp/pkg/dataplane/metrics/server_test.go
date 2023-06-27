@@ -173,56 +173,22 @@ var _ = Describe("Process Metrics", func() {
 
 var _ = Describe("ProcessNewlineChars", func() {
 	type testCase struct {
-		input       string
-		deduplicate bool
-		trim        bool
-		expected    string
+		input    string
+		expected string
 	}
 
 	DescribeTable("should",
 		func(given testCase) {
-			actual := string(processNewlineChars([]byte(given.input), given.deduplicate, given.trim))
+			actual := string(processNewlineChars([]byte(given.input)))
 			Expect(actual).To(Equal(given.expected))
 		},
-		Entry("should not deduplicate or trim newline characters", testCase{
-			input:       "This is a test.\n\nThis is another test.\n",
-			deduplicate: false,
-			trim:        false,
-			expected:    "This is a test.\n\nThis is another test.\n",
+		Entry("should dedup newline characters and trim spaces", testCase{
+			input:    "\n This is a test.\n\n\n\nThis is another test\n\n  ",
+			expected: "This is a test.\nThis is another test",
 		}),
-		Entry("should deduplicate newline characters", testCase{
-			input:       "This is a test.\n\n\nThis is another test.\n",
-			deduplicate: true,
-			trim:        false,
-			expected:    "This is a test.\nThis is another test.\n",
-		}),
-		Entry("should trim leading and trailing newline characters", testCase{
-			input:       "\nThis is a test.\n\nThis is another test\n\n",
-			deduplicate: false,
-			trim:        true,
-			expected:    "This is a test.\n\nThis is another test",
-		}),
-		Entry("should deduplicate and trim newline characters", testCase{
-			input:       "\nThis is a test.\n\n\nThis is another test\n",
-			deduplicate: true,
-			trim:        true,
-			expected:    "This is a test.\nThis is another test",
-		}),
-	)
-})
-
-var _ = Describe("Dedup", func() {
-	type testCase struct {
-		input    string
-		expected string
-	}
-	DescribeTable("should", func(given testCase) {
-		actual := string(dedupFn([]byte(given.input), '\n', '\n'))
-		Expect(actual).To(Equal(given.expected))
-	},
-		Entry("should deduplicate newline characters", testCase{
-			input:    "This is a test.\n\n\n\nThis is another test.\n",
-			expected: "This is a test.\nThis is another test.\n",
+		Entry("should dedup newline characters and trim spaces", testCase{
+			input:    "\nThis is a test.\n \nThis is another test\n",
+			expected: "This is a test.\n \nThis is another test",
 		}),
 	)
 })
