@@ -11,9 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -230,38 +228,53 @@ func processMetrics(metrices <-chan []byte, contentType expfmt.Format) []byte {
 		}
 	}
 
-	str := processNewlineChars(buf.String(), true, true)
-	str = fmt.Sprintf("%s\n", str)
-
-	// if the content type is not OpenMetrics, we don't need to add EOF marker
-	if !(contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1) {
-		return []byte(str)
+	processedMetrics := processNewlineChars(buf.Bytes(), true, true)
+	processedMetrics = append(processedMetrics, '\n')
+	buf.Reset()
+	_, err := buf.Write(processedMetrics)
+	if err != nil {
+		panic(err)
 	}
 
-	// make metrics OpenMetrics compliant
-	return []byte(fmt.Sprintf("%s# EOF\n", str))
+	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
+		// make metrics OpenMetrics compliant
+		buf.Write([]byte("# EOF\n"))
+		return buf.Bytes()
+	}
+
+	return buf.Bytes()
 }
 
-// processNewlineChars processes the newline characters in the text.
-// If dedup is true, it replaces multiple newline characters with a single newline character.
+// processNewlineChars processes the newline characters in the byteData.
+// If dedup is true, it replaces multiple consecutive newline characters with a single newline character.
 // If trim is true, it trims the leading and trailing newline characters.
-func processNewlineChars(text string, dedup, trim bool) string {
+func processNewlineChars(byteData []byte, dedup, trim bool) []byte {
 	if dedup {
-		// Create a regular expression to match multiple newline characters.
-		reg := regexp.MustCompile(`(\r\n?|\n){2,}`)
-
-		// Replace all the matches with a single newline character.
-		text = reg.ReplaceAllString(text, "\n")
+		byteData = dedupFn(byteData, '\n', '\n')
 	}
-
 	if trim {
-		// Trim the leading and trailing newline characters.
-		text = strings.TrimFunc(text, func(r rune) bool {
-			return r == '\n'
-		})
+		byteData = bytes.TrimSpace(byteData)
 	}
+	return byteData
+}
 
-	return text
+func dedupFn(input []byte, old, new byte) []byte {
+	var deduped []byte
+
+	var last byte
+	if len(input) > 0 {
+		last = input[0]
+	}
+	for i := 1; i < len(input); i++ {
+		if last == old && input[i] == last {
+			last = new
+			continue
+		}
+		deduped = append(deduped, last)
+		last = input[i]
+	}
+	deduped = append(deduped, last)
+	return deduped
 }
 
 // selectContentType selects the highest priority content type supported by the applications.

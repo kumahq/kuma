@@ -181,7 +181,7 @@ var _ = Describe("ProcessNewlineChars", func() {
 
 	DescribeTable("should",
 		func(given testCase) {
-			actual := processNewlineChars(given.input, given.deduplicate, given.trim)
+			actual := string(processNewlineChars([]byte(given.input), given.deduplicate, given.trim))
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("should not deduplicate or trim newline characters", testCase{
@@ -207,6 +207,22 @@ var _ = Describe("ProcessNewlineChars", func() {
 			deduplicate: true,
 			trim:        true,
 			expected:    "This is a test.\nThis is another test",
+		}),
+	)
+})
+
+var _ = Describe("Dedup", func() {
+	type testCase struct {
+		input    string
+		expected string
+	}
+	DescribeTable("should", func(given testCase) {
+		actual := string(dedupFn([]byte(given.input), '\n', '\n'))
+		Expect(actual).To(Equal(given.expected))
+	},
+		Entry("should deduplicate newline characters", testCase{
+			input:    "This is a test.\n\n\n\nThis is another test.\n",
+			expected: "This is a test.\nThis is another test.\n",
 		}),
 	)
 })
