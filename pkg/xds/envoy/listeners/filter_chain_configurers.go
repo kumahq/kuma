@@ -246,13 +246,6 @@ func Retry(
 		}))
 }
 
-func Name(name string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		&v3.FilterChainNameConfigurer{
-			Name: name,
-		})
-}
-
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,

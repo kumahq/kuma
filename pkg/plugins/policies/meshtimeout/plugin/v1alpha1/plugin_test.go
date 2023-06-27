@@ -148,7 +148,7 @@ var _ = Describe("MeshTimeout", func() {
 					Name:   "outbound",
 					Origin: generator.OriginOutbound,
 					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 							Configure(TcpProxyDeprecated(
 								"127.0.0.1:10002",
 								envoy_common.NewCluster(
@@ -623,7 +623,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 
 func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {
 	return builder.
-		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 			Configure(HttpConnectionManager(builder.GetName(), false)).
 			Configure(route),
 		)).MustBuild()

@@ -16,7 +16,7 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
 			WithOverwriteName("inbound").
 			Configure(
-				FilterChain(NewFilterChainBuilder(envoy_common.APIV3).Configure(
+				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").Configure(
 					HttpConnectionManager("inbound", false),
 					HttpDynamicRoute("routes/inbound"),
 				)),
@@ -58,7 +58,7 @@ var _ = Describe("HttpScopedRouteConfigurer", func() {
 		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
 			WithOverwriteName("inbound").
 			Configure(
-				FilterChain(NewFilterChainBuilder(envoy_common.APIV3).Configure(
+				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").Configure(
 					HttpConnectionManager("inbound", false),
 					AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
 				)),

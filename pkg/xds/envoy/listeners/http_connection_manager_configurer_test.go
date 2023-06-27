@@ -25,7 +25,7 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 				}, given.opts...)
 
 				// when
-				chain, err := NewFilterChainBuilder(envoy.APIV3).
+				chain, err := NewFilterChainBuilder(envoy.APIV3, "").
 					Configure(opts...).
 					Build()
 				// then

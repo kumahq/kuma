@@ -62,7 +62,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				WithOverwriteName(given.listenerName).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
 				Build()

@@ -3,7 +3,6 @@ package listeners
 import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -20,9 +19,10 @@ type FilterChainBuilderOpt interface {
 	ApplyTo(builder *FilterChainBuilder)
 }
 
-func NewFilterChainBuilder(apiVersion core_xds.APIVersion) *FilterChainBuilder {
+func NewFilterChainBuilder(apiVersion core_xds.APIVersion, name string) *FilterChainBuilder {
 	return &FilterChainBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
 }
 
@@ -31,6 +31,7 @@ func NewFilterChainBuilder(apiVersion core_xds.APIVersion) *FilterChainBuilder {
 type FilterChainBuilder struct {
 	apiVersion  core_xds.APIVersion
 	configurers []v3.FilterChainConfigurer
+	name        string
 }
 
 // Configure configures FilterChainBuilder by adding individual FilterChainConfigurers.
@@ -54,10 +55,12 @@ func (b *FilterChainBuilder) ConfigureIf(condition bool, opts ...FilterChainBuil
 }
 
 // Build generates an Envoy filter chain by applying a series of FilterChainConfigurers.
-func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
+func (b *FilterChainBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		filterChain := envoy_listener_v3.FilterChain{}
+		filterChain := envoy_listener_v3.FilterChain{
+			Name: b.name,
+		}
 
 		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&filterChain); err != nil {

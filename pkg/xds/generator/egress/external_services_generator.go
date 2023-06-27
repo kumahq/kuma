@@ -171,8 +171,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 			)
 
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.Name(names.GetEgressFilterChainName(serviceName, meshName)),
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(serviceName, meshName)).Configure(
 				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
