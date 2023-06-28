@@ -566,6 +566,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -600,6 +601,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -749,6 +751,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -1090,6 +1093,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -1124,6 +1128,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -1408,6 +1413,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -1619,6 +1625,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -1653,6 +1660,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -2356,6 +2364,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -2581,6 +2590,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -2666,6 +2676,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -2709,6 +2720,7 @@ spec:
                                       enum:
                                       - Mesh
                                       - MeshSubset
+                                      - MeshGateway
                                       - MeshService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
@@ -2802,6 +2814,7 @@ spec:
                                               enum:
                                               - Mesh
                                               - MeshSubset
+                                              - MeshGateway
                                               - MeshService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
@@ -3094,6 +3107,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -3220,6 +3234,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -3556,6 +3571,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -4071,6 +4087,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -4272,6 +4289,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -4306,6 +4324,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -4386,6 +4405,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -4705,6 +4725,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -4790,6 +4811,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -4833,6 +4855,7 @@ spec:
                                       enum:
                                       - Mesh
                                       - MeshSubset
+                                      - MeshGateway
                                       - MeshService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
@@ -4877,6 +4900,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -5014,6 +5038,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -5048,6 +5073,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -5128,6 +5154,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -5361,6 +5388,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -5459,6 +5487,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -5493,6 +5522,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
