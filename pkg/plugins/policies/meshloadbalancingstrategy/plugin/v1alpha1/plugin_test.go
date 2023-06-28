@@ -129,8 +129,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-backend",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
 							Configure(
@@ -154,8 +153,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-payments",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27778", "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP)).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
 							Configure(

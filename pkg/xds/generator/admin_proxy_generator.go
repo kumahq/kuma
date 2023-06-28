@@ -75,8 +75,8 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
-		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP)).
+		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
+			WithOverwriteName(envoy_names.GetAdminListenerName()).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
 			Build()

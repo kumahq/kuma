@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("ServerMtlsConfigurer", func() {
 	type testCase struct {
-		listenerName     string
 		listenerProtocol core_xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
@@ -29,8 +28,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		func(given testCase) {
 			// when
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(ServerSideMTLS(given.mesh, tracker)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
@@ -45,7 +43,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with mTLS", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
@@ -109,7 +106,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with mTLS and Dataplane credentials", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",

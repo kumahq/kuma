@@ -27,8 +27,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
 		)
 
 		// when
-		listener, err := NewListenerBuilder(envoy_common.APIV3).
-			Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP)).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 				Configure(ServerSideStaticMTLS(certs)).
 				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).
