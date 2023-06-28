@@ -48,7 +48,7 @@ ginkgo/lint:
 format/common: clean/generated clean/docs generate docs tidy ginkgo/unfocus fmt/ci
 
 .PHONY: format
-format: fmt format/common
+format: format/common fmt
 
 .PHONY: kube-lint
 kube-lint:
