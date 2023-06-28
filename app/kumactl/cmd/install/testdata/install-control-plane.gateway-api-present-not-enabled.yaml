@@ -202,7 +202,14 @@ spec:
     singular: meshfaultinjection
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -372,6 +379,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -809,7 +817,14 @@ spec:
     singular: meshhealthcheck
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -1093,6 +1108,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1111,7 +1127,14 @@ spec:
     singular: meshhttproute
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -1594,6 +1617,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1656,7 +1680,14 @@ spec:
     singular: meshloadbalancingstrategy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -2052,6 +2083,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -2070,7 +2102,14 @@ spec:
     singular: meshproxypatch
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -2555,6 +2594,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -2573,7 +2613,14 @@ spec:
     singular: meshratelimit
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -2781,6 +2828,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -2843,7 +2891,14 @@ spec:
     singular: meshretry
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3221,6 +3276,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3239,7 +3295,14 @@ spec:
     singular: meshtcproute
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3386,6 +3449,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3404,7 +3468,14 @@ spec:
     singular: meshtimeout
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3628,6 +3699,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3646,7 +3718,14 @@ spec:
     singular: meshtrace
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3848,6 +3927,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -3866,7 +3946,14 @@ spec:
     singular: meshtrafficpermission
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3972,6 +4059,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -4891,7 +4979,14 @@ spec:
     singular: meshaccesslog
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -5253,6 +5348,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -5271,7 +5367,14 @@ spec:
     singular: meshcircuitbreaker
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -5904,6 +6007,7 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
