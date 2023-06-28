@@ -60,7 +60,7 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 		port,
 		core_xds.SocketAddressProtocolTCP,
 	).
-	WithOverwriteName(name).
+		WithOverwriteName(name).
 		Configure(
 			// Limit default buffering for edge connections.
 			envoy_listeners.ConnectionBufferLimit(DefaultConnectionBuffer),

@@ -53,6 +53,7 @@ func makeListenerBuilder(
 		port,
 		core_xds.SocketAddressProtocolTCP,
 	).Configure(envoy_listeners.TLSInspector())
+}
 
 func (g Generator) Generate(
 	ctx xds_context.Context,
