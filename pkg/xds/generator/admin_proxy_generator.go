@@ -76,7 +76,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		))
 
 		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
-			WithName(envoy_names.GetAdminListenerName()).
+			WithOverwriteName(envoy_names.GetAdminListenerName()).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).
 			Build()

@@ -76,7 +76,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	}
 
 	outboundListener, err = envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP).
-		WithName(outboundName).
+		WithOverwriteName(outboundName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxyDeprecated(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
 			Configure(envoy_listeners.NetworkAccessLog(
@@ -103,7 +103,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	}
 
 	inboundListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, redirectPortInbound, model.SocketAddressProtocolTCP).
-		WithName(inboundName).
+		WithOverwriteName(inboundName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxyDeprecated(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))))).
 		Configure(envoy_listeners.OriginalDstForwarder()).

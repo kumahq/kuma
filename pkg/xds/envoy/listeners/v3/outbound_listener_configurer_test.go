@@ -23,7 +23,7 @@ var _ = Describe("OutboundListenerConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				WithName(given.listenerName).
+				WithOverwriteName(given.listenerName).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

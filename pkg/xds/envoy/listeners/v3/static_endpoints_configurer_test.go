@@ -25,7 +25,7 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				WithName(given.listenerName).
+				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(StaticEndpoints(given.listenerName,
 						[]*envoy_common.StaticEndpointPath{

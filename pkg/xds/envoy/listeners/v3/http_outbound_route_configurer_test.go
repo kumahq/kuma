@@ -28,7 +28,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				WithName(given.listenerName).
+				WithOverwriteName(given.listenerName).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(given.service, given.routes, given.dpTags)))).

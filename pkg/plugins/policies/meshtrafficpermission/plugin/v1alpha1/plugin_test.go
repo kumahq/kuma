@@ -33,7 +33,7 @@ var _ = Describe("RBAC", func() {
 
 			// listener that matches
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
-				WithName("test_listener").
+				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
 					Configure(listeners.HttpConnectionManager("test_listener", false)))).
 				Build()
@@ -46,7 +46,7 @@ var _ = Describe("RBAC", func() {
 
 			// listener that is originated from inbound proxy generator but won't match
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
-				WithName("test_listener2").
+				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
 					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
 				Build()
@@ -59,7 +59,7 @@ var _ = Describe("RBAC", func() {
 
 			// listener that matches but is not originated from inbound proxy generator
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
-				WithName("test_listener3").
+				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
 					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
 				Build()
@@ -139,7 +139,7 @@ var _ = Describe("RBAC", func() {
 
 			// listener that matches
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
-				WithName("test_listener").
+				WithOverwriteName("test_listener").
 				Configure(
 					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).Configure(
 						listeners.Name("external-service-1_mesh-1"),

@@ -24,7 +24,7 @@ var _ = Describe("DNSConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP).
-				WithName(names.GetDNSListenerName()).
+				WithOverwriteName(names.GetDNSListenerName()).
 				Configure(DNS(given.vips, given.emptyDnsPort, &mesh_proto.EnvoyVersion{Version: given.envoyVersion})).
 				Build()
 			// then

@@ -24,7 +24,7 @@ var _ = Describe("TagsMetadataConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				WithName(given.listenerName).
+				WithOverwriteName(given.listenerName).
 				Configure(TagsMetadata(given.tags)).
 				Build()
 

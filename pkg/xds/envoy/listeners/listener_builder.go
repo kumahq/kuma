@@ -27,17 +27,33 @@ func NewListenerBuilder(apiVersion core_xds.APIVersion, name string) *ListenerBu
 
 // NewInboundListenerBuilder creates an Inbound ListenBuilder
 // with a default name: inbound:address:port
-func NewInboundListenerBuilder(apiVersion core_xds.APIVersion, address string, port uint32, protocol core_xds.SocketAddressProtocol) *ListenerBuilder {
-	return NewListenerBuilder(apiVersion, envoy_names.GetInboundListenerName(address, port)).Configure(InboundListener(address, port, protocol))
+func NewInboundListenerBuilder(
+	apiVersion core_xds.APIVersion,
+	address string,
+	port uint32,
+	protocol core_xds.SocketAddressProtocol,
+) *ListenerBuilder {
+	listenerName := envoy_names.GetInboundListenerName(address, port)
+	
+	return NewListenerBuilder(apiVersion, listenerName).
+		Configure(InboundListener(address, port, protocol))
 }
 
 // NewOutboundListenerBuilder creates an Outbound ListenBuilder
 // with a default name: outbound:address:port
-func NewOutboundListenerBuilder(apiVersion core_xds.APIVersion, address string, port uint32, protocol core_xds.SocketAddressProtocol) *ListenerBuilder {
-	return NewListenerBuilder(apiVersion, envoy_names.GetOutboundListenerName(address, port)).Configure(OutboundListener(address, port, protocol))
+func NewOutboundListenerBuilder(
+	apiVersion core_xds.APIVersion,
+	address string,
+	port uint32,
+	protocol core_xds.SocketAddressProtocol,
+) *ListenerBuilder {
+	listenerName := envoy_names.GetOutboundListenerName(address, port)
+	
+	return NewListenerBuilder(apiVersion, listenerName).
+		Configure(OutboundListener(address, port, protocol))
 }
 
-func (b *ListenerBuilder) WithName(name string) *ListenerBuilder {
+func (b *ListenerBuilder) WithOverwriteName(name string) *ListenerBuilder {
 	b.name = name
 	return b
 }
@@ -71,8 +87,8 @@ func (b *ListenerBuilder) Build() (envoy.NamedResource, error) {
 				return nil, err
 			}
 		}
-		if len(listener.GetName()) == 0 {
-			return nil, errors.New("listener name is undefined")
+		if listener.GetName() == "" {
+			return nil, errors.New("listener name is required, but it was not provided")
 		}
 		return &listener, nil
 	default:

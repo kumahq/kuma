@@ -84,7 +84,8 @@ func (i IngressGenerator) generateLDS(
 ) (envoy_common.NamedResource, error) {
 	networking := ingress.Spec.GetNetworking()
 	address, port := networking.GetAddress(), networking.GetPort()
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(apiVersion,
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(
+		apiVersion,
 		address,
 		port,
 		core_xds.SocketAddressProtocolTCP,

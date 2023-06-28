@@ -47,11 +47,12 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewInboundListenerBuilder(apiVersion,
-		address, port,
+	return envoy_listeners.NewInboundListenerBuilder(
+		apiVersion,
+		address,
+		port,
 		core_xds.SocketAddressProtocolTCP,
 	).Configure(envoy_listeners.TLSInspector())
-}
 
 func (g Generator) Generate(
 	ctx xds_context.Context,

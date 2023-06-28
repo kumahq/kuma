@@ -54,8 +54,13 @@ func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilde
 	}
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
-	return envoy_listeners.NewInboundListenerBuilder(info.Proxy.APIVersion, address, port, core_xds.SocketAddressProtocolTCP).
-		WithName(name).
+	return envoy_listeners.NewInboundListenerBuilder(
+		info.Proxy.APIVersion,
+		address,
+		port,
+		core_xds.SocketAddressProtocolTCP,
+	).
+	WithOverwriteName(name).
 		Configure(
 			// Limit default buffering for edge connections.
 			envoy_listeners.ConnectionBufferLimit(DefaultConnectionBuffer),
