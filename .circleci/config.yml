@@ -368,7 +368,7 @@ jobs:
       - run:
           command: make dev/tools
       - run:
-          command: make clean/build
+          command: make clean
       - run:
           command: make check
       - run:
