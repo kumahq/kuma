@@ -45,7 +45,7 @@ ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format/common
-format/common: generate docs tidy ginkgo/unfocus fmt/ci
+format/common: clean/generated clean/docs generate docs tidy ginkgo/unfocus fmt/ci
 
 .PHONY: format
 format: fmt format/common
