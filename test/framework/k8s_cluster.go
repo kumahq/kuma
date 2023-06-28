@@ -84,6 +84,10 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	return c
 }
 
+func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) {
+	c.kubeconfig = kubeConfigPath
+}
+
 func (c *K8sCluster) createPortForward(
 	t testing.TestingT,
 	kubectlOptions *k8s.KubectlOptions,
