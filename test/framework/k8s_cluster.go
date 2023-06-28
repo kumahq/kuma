@@ -84,8 +84,9 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	return c
 }
 
-func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) {
+func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 	c.kubeconfig = kubeConfigPath
+	return c
 }
 
 func (c *K8sCluster) createPortForward(
