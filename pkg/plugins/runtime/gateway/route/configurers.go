@@ -17,85 +17,33 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
-// RouteMatchExactPath updates the route to match the exact path. This
-// replaces any previous path match specification.
-func RouteMatchExactPath(path string) RouteConfigurer {
-	if path == "" {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
-		r.Match.PathSpecifier = &envoy_config_route.RouteMatch_Path{
-			Path: path,
-		}
-	})
-}
-
-// RouteMatchPrefixPath updates the route to match the given path
-// prefix. This is a byte-wise prefix, so it just checks that the request
-// path begins with the given string. This replaces any previous path match
-// specification.
-func RouteMatchPrefixPath(prefix string) RouteConfigurer {
-	if prefix == "" {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
-		r.Match.PathSpecifier = &envoy_config_route.RouteMatch_Prefix{
-			Prefix: prefix,
-		}
-	})
-}
-
 // RouteMatchRegexPath updates the route to match the path using the
 // given regex. This replaces any previous path match specification.
-func RouteMatchRegexPath(regex string) RouteConfigurer {
+func RouteMatchRegexPath(regex string) envoy_routes_v3.RouteConfigurer {
 	if regex == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.Match.PathSpecifier = &envoy_config_route.RouteMatch_SafeRegex{
 			SafeRegex: &envoy_type_matcher.RegexMatcher{Regex: regex},
 		}
 	})
 }
 
-// RouteMatchExactHeader appends an exact match for the value of the named HTTP request header.
-func RouteMatchExactHeader(name string, value string) RouteConfigurer {
-	if name == "" || value == "" {
-		return RouteConfigureFunc(nil)
-	}
-
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
-		matcher := envoy_type_matcher.StringMatcher{
-			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-				Exact: value,
-			},
-		}
-		r.Match.Headers = append(r.Match.Headers,
-			&envoy_config_route.HeaderMatcher{
-				Name: name,
-				HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_StringMatch{
-					StringMatch: &matcher,
-				},
-			},
-		)
-	})
-}
-
 // RouteMatchRegexHeader appends a regex match for the value of the named HTTP request header.
-func RouteMatchRegexHeader(name string, regex string) RouteConfigurer {
+func RouteMatchRegexHeader(name string, regex string) envoy_routes_v3.RouteConfigurer {
 	if name == "" || regex == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.Match.Headers = append(r.Match.Headers,
 			&envoy_config_route.HeaderMatcher{
 				Name: name,
@@ -114,12 +62,12 @@ func RouteMatchRegexHeader(name string, regex string) RouteConfigurer {
 }
 
 // RouteMatchPresentHeader appends a present match for the names HTTP request header (presentMatch makes absent)
-func RouteMatchPresentHeader(name string, presentMatch bool) RouteConfigurer {
+func RouteMatchPresentHeader(name string, presentMatch bool) envoy_routes_v3.RouteConfigurer {
 	if name == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.Match.Headers = append(r.Match.Headers,
 			&envoy_config_route.HeaderMatcher{
 				Name: name,
@@ -132,12 +80,12 @@ func RouteMatchPresentHeader(name string, presentMatch bool) RouteConfigurer {
 }
 
 // RouteMatchExactQuery appends an exact match for the value of the named query parameter.
-func RouteMatchExactQuery(name string, value string) RouteConfigurer {
+func RouteMatchExactQuery(name string, value string) envoy_routes_v3.RouteConfigurer {
 	if name == "" || value == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		matcher := envoy_type_matcher.StringMatcher{
 			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 				Exact: value,
@@ -156,12 +104,12 @@ func RouteMatchExactQuery(name string, value string) RouteConfigurer {
 }
 
 // RouteMatchRegexQuery appends a regex match for the value of the named query parameter.
-func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
+func RouteMatchRegexQuery(name string, regex string) envoy_routes_v3.RouteConfigurer {
 	if name == "" || regex == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		matcher := envoy_type_matcher.StringMatcher{
 			MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 				SafeRegex: &envoy_type_matcher.RegexMatcher{Regex: regex},
@@ -200,23 +148,23 @@ func RouteReplaceHeader(name string, value string) *envoy_config_core.HeaderValu
 }
 
 // RouteAddRequestHeader alters the given request header value.
-func RouteAddRequestHeader(option *envoy_config_core.HeaderValueOption) RouteConfigurer {
+func RouteAddRequestHeader(option *envoy_config_core.HeaderValueOption) envoy_routes_v3.RouteConfigurer {
 	if option == nil {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.RequestHeadersToAdd = append(r.RequestHeadersToAdd, option)
 	})
 }
 
 // RouteAddResponseHeader alters the given response header value.
-func RouteAddResponseHeader(option *envoy_config_core.HeaderValueOption) RouteConfigurer {
+func RouteAddResponseHeader(option *envoy_config_core.HeaderValueOption) envoy_routes_v3.RouteConfigurer {
 	if option == nil {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.ResponseHeadersToAdd = append(r.ResponseHeadersToAdd, option)
 	})
 }
@@ -224,12 +172,12 @@ func RouteAddResponseHeader(option *envoy_config_core.HeaderValueOption) RouteCo
 // RouteReplaceHostHeader replaces the Host header on the forwarded
 // request. It is an error to rewrite the header if the route is not
 // forwarding. The route action must be configured beforehand.
-func RouteReplaceHostHeader(host string) RouteConfigurer {
+func RouteReplaceHostHeader(host string) envoy_routes_v3.RouteConfigurer {
 	if host == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetAction() == nil {
 			return errors.New("cannot configure the Host header before the route action")
 		}
@@ -244,12 +192,12 @@ func RouteReplaceHostHeader(host string) RouteConfigurer {
 	})
 }
 
-func RouteSetRewriteHostToBackendHostname(value bool) RouteConfigurer {
+func RouteSetRewriteHostToBackendHostname(value bool) envoy_routes_v3.RouteConfigurer {
 	if !value {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetAction() == nil {
 			return errors.New("cannot set the 'auto_host_rewrite' before the route action")
 		}
@@ -265,23 +213,23 @@ func RouteSetRewriteHostToBackendHostname(value bool) RouteConfigurer {
 }
 
 // RouteDeleteRequestHeader deletes the given header from the HTTP request.
-func RouteDeleteRequestHeader(name string) RouteConfigurer {
+func RouteDeleteRequestHeader(name string) envoy_routes_v3.RouteConfigurer {
 	if name == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.RequestHeadersToRemove = append(r.RequestHeadersToRemove, name)
 	})
 }
 
 // RouteDeleteResponseHeader deletes the given header from the HTTP response.
-func RouteDeleteResponseHeader(name string) RouteConfigurer {
+func RouteDeleteResponseHeader(name string) envoy_routes_v3.RouteConfigurer {
 	if name == "" {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+	return envoy_routes_v3.RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.ResponseHeadersToRemove = append(r.ResponseHeadersToRemove, name)
 	})
 }
@@ -289,12 +237,12 @@ func RouteDeleteResponseHeader(name string) RouteConfigurer {
 // RouteMirror enables traffic mirroring on the route. It is an error to enable
 // mirroring if the route is not forwarding. The route action must be configured
 // beforehand.
-func RouteMirror(percent float64, destination Destination) RouteConfigurer {
+func RouteMirror(percent float64, destination Destination) envoy_routes_v3.RouteConfigurer {
 	if percent <= 0.0 {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetAction() == nil {
 			return errors.New("cannot configure mirroring before the route action")
 		}
@@ -323,8 +271,8 @@ func RouteMirror(percent float64, destination Destination) RouteConfigurer {
 // RoutePerFilterConfig sets an optional per-filter configuration message
 // for this route. filterName is the name of the filter that should receive
 // the configuration that is specified in filterConfig
-func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfigurer {
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) envoy_routes_v3.RouteConfigurer {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetTypedPerFilterConfig() == nil {
 			r.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
@@ -343,12 +291,12 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 
 // RouteActionRedirect configures the route to automatically response
 // with an HTTP redirection. This replaces any previous action specification.
-func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
+func RouteActionRedirect(redirect *Redirection, port uint32) envoy_routes_v3.RouteConfigurer {
 	if redirect == nil {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		envoyRedirect := &envoy_config_route.RedirectAction{
 			StripQuery: redirect.StripQuery,
 		}
@@ -407,12 +355,12 @@ func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 	})
 }
 
-func RouteRewrite(rewrite *Rewrite) RouteConfigurer {
+func RouteRewrite(rewrite *Rewrite) envoy_routes_v3.RouteConfigurer {
 	if rewrite == nil {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetAction() == nil {
 			return errors.New("cannot configure rewrite before the route action")
 		}
@@ -443,12 +391,12 @@ func RouteRewrite(rewrite *Rewrite) RouteConfigurer {
 // RouteActionForward configures the route to forward traffic to the
 // given destinations, with the appropriate weights. This replaces any
 // previous action specification.
-func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, proxyTags mesh_proto.MultiValueTagSet, destinations []Destination) RouteConfigurer {
+func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, proxyTags mesh_proto.MultiValueTagSet, destinations []Destination) envoy_routes_v3.RouteConfigurer {
 	if len(destinations) == 0 {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		byName := map[string]Destination{}
 
 		for _, d := range destinations {
@@ -500,15 +448,15 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 }
 
 // RouteActionRetryDefault initializes the retry policy with defaults appropriate for the protocol.
-func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
+func RouteActionRetryDefault(protocol core_mesh.Protocol) envoy_routes_v3.RouteConfigurer {
 	// The retry policy only supports HTTP and GRPC.
 	switch protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 	default:
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		route := r.GetRoute()
 		if route == nil {
 			return nil
@@ -518,9 +466,9 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			p.RetryOn = envoy_routes.HttpRetryOnDefault
+			p.RetryOn = envoy_routes_v3.HttpRetryOnDefault
 		case core_mesh.ProtocolGRPC:
-			p.RetryOn = envoy_routes.GrpcRetryOnDefault
+			p.RetryOn = envoy_routes_v3.GrpcRetryOnDefault
 		}
 
 		route.RetryPolicy = p
@@ -528,28 +476,28 @@ func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
 	})
 }
 
-func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) RouteConfigurer {
+func RouteActionRetry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) envoy_routes_v3.RouteConfigurer {
 	// The retry policy only supports HTTP and GRPC.
 	switch protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 	default:
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		route := r.GetRoute()
-		route.RetryPolicy = envoy_routes.RetryConfig(retry, protocol)
+		route.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
 		return nil
 	})
 }
 
 // RouteActionRequestTimeout sets the total timeout for an upstream request.
-func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
+func RouteActionRequestTimeout(timeout time.Duration) envoy_routes_v3.RouteConfigurer {
 	if timeout == 0 {
-		return RouteConfigureFunc(nil)
+		return envoy_routes_v3.RouteConfigureFunc(nil)
 	}
 
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if p := r.GetRoute(); p != nil {
 			p.Timeout = util_proto.Duration(timeout)
 		}
@@ -558,8 +506,8 @@ func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
 	})
 }
 
-func RouteActionIdleTimeout(timeout time.Duration) RouteConfigurer {
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+func RouteActionIdleTimeout(timeout time.Duration) envoy_routes_v3.RouteConfigurer {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if p := r.GetRoute(); p != nil {
 			p.IdleTimeout = util_proto.Duration(timeout)
 		}
@@ -569,8 +517,8 @@ func RouteActionIdleTimeout(timeout time.Duration) RouteConfigurer {
 }
 
 // RouteActionDirectResponse sets the direct response for a route
-func RouteActionDirectResponse(status uint32, respStr string) RouteConfigurer {
-	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+func RouteActionDirectResponse(status uint32, respStr string) envoy_routes_v3.RouteConfigurer {
+	return envoy_routes_v3.RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		r.Action = &envoy_config_route.Route_DirectResponse{
 			DirectResponse: &envoy_config_route.DirectResponseAction{
 				Status: status,
@@ -590,7 +538,7 @@ func RouteActionDirectResponse(status uint32, respStr string) RouteConfigurer {
 // it to the virtual host. Since Envoy evaluates route matches in order,
 // route builders should be configured on virtual hosts in the intended
 // match order.
-func VirtualHostRoute(route *RouteBuilder) envoy_virtual_hosts.VirtualHostBuilderOpt {
+func VirtualHostRoute(route *envoy_routes.RouteBuilder) envoy_virtual_hosts.VirtualHostBuilderOpt {
 	return envoy_virtual_hosts.AddVirtualHostConfigurer(
 		envoy_virtual_hosts.VirtualHostConfigureFunc(func(vh *envoy_config_route.VirtualHost) error {
 			resource, err := route.Build()

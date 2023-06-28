@@ -22,7 +22,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -322,7 +322,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 			return nil, err
 		}
 
-		routeConfig.Configure(envoy_routes.VirtualHost(vh))
+		routeConfig.Configure(envoy_virtual_hosts.VirtualHost(vh))
 	}
 
 	res, err := BuildResourceSet(routeConfig)

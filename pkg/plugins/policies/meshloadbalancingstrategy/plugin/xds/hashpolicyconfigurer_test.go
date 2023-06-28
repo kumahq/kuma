@@ -7,10 +7,12 @@ import (
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
 var _ = Describe("HashPolicyConfigurer", func() {
@@ -25,7 +27,7 @@ var _ = Describe("HashPolicyConfigurer", func() {
 			configurer := &xds.HashPolicyConfigurer{
 				HashPolicies: given.hashPolicies,
 			}
-			rb, err := (&route.RouteBuilder{}).Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+			rb, err := envoy_routes.NewRouteBuilder(envoy_common.APIV3, "").Configure(envoy_routes_v3.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				envoyRoute.Action = &envoy_route.Route_Route{
 					Route: &envoy_route.RouteAction{},
 				}

@@ -7,10 +7,10 @@ import (
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_virtualhosts_v3 "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts/v3"
 )
 
-var _ = Describe("RoutesConfigurer", func() {
+var _ = Describe("VirtualHostRoutesConfigurer", func() {
 	type testCase struct {
 		routes   envoy_common.Routes
 		expected string
@@ -20,7 +20,7 @@ var _ = Describe("RoutesConfigurer", func() {
 		func(given testCase) {
 			// when
 			virtualHost := &envoy_config_route_v3.VirtualHost{}
-			err := envoy_routes.RoutesConfigurer{Routes: given.routes}.
+			err := envoy_virtualhosts_v3.VirtualHostRoutesConfigurer{Routes: given.routes}.
 				Configure(virtualHost)
 			Expect(err).ToNot(HaveOccurred())
 

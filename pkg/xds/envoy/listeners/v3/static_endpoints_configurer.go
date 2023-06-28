@@ -4,11 +4,12 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
 type StaticEndpointsConfigurer struct {
@@ -21,37 +22,29 @@ var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
 func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routes := []*envoy_route.Route{}
 	for _, p := range c.Paths {
-		route := &envoy_route.Route{
-			Match: &envoy_route.RouteMatch{
-				PathSpecifier: &envoy_route.RouteMatch_Prefix{
-					Prefix: p.Path,
-				},
-			},
-			Action: &envoy_route.Route_Route{
-				Route: &envoy_route.RouteAction{
-					ClusterSpecifier: &envoy_route.RouteAction_Cluster{
-						Cluster: p.ClusterName,
-					},
-					PrefixRewrite: p.RewritePath,
-				},
-			},
-		}
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, "").
+			Configure(envoy_routes_v3.RouteMatchPrefixPath(p.Path),
+				envoy_routes_v3.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+					envoyRoute.Action = &envoy_route.Route_Route{
+						Route: &envoy_route.RouteAction{
+							ClusterSpecifier: &envoy_route.RouteAction_Cluster{
+								Cluster: p.ClusterName,
+							},
+							PrefixRewrite: p.RewritePath,
+						},
+					}
+				}))
 
 		if p.HeaderExactMatch != "" {
-			matcher := envoy_type_matcher.StringMatcher{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: p.HeaderExactMatch,
-				},
-			}
-			route.Match.Headers = []*envoy_route.HeaderMatcher{{
-				Name: p.Header,
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
-					StringMatch: &matcher,
-				},
-			}}
+			rb.Configure(envoy_routes_v3.RouteMatchExactHeader(p.Header, p.HeaderExactMatch))
 		}
 
-		routes = append(routes, route)
+		r, err := rb.Build()
+		if err != nil {
+			return err
+		}
+
+		routes = append(routes, r.(*envoy_route.Route))
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{

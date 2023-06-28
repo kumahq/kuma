@@ -10,10 +10,11 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
 type RoutesConfigurer struct {
@@ -32,17 +33,15 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	}
 
 	for _, match := range matches {
-		rb := &route.RouteBuilder{}
-
-		rb.Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
-			// todo: create configurers for Match and Action
-			envoyRoute.Match = match.routeMatch
-			envoyRoute.Action = &envoy_route.Route_Route{
-				Route: c.routeAction(c.Split),
-			}
-			envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
-			envoyRoute.Name = h
-		}))
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, h).
+			Configure(envoy_routes_v3.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+				// todo: create configurers for Match and Action
+				envoyRoute.Match = match.routeMatch
+				envoyRoute.Action = &envoy_route.Route_Route{
+					Route: c.routeAction(c.Split),
+				}
+				envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
+			}))
 
 		// We pass the information about whether this match was created from
 		// a prefix match along to the filters because it's no longer

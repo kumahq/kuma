@@ -23,7 +23,7 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, routeName).
 			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.ResetTagsHeader()).
-			Configure(envoy_routes.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
+			Configure(envoy_virtual_hosts.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
 				Configure(envoy_virtual_hosts.CommonVirtualHost(c.Service)).
 				Configure(envoy_virtual_hosts.Routes(c.Routes)))),
 	}

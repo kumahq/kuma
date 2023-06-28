@@ -45,7 +45,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, envoy_names.GetOutboundRouteName(c.Service)).
 			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.TagsHeader(c.DpTags)).
-			Configure(envoy_routes.VirtualHost(virtualHostBuilder)),
+			Configure(envoy_virtual_hosts.VirtualHost(virtualHostBuilder)),
 	}
 
 	return static.Configure(filterChain)
