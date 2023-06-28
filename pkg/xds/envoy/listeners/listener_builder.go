@@ -34,7 +34,7 @@ func NewInboundListenerBuilder(
 	protocol core_xds.SocketAddressProtocol,
 ) *ListenerBuilder {
 	listenerName := envoy_names.GetInboundListenerName(address, port)
-	
+
 	return NewListenerBuilder(apiVersion, listenerName).
 		Configure(InboundListener(address, port, protocol))
 }
@@ -48,7 +48,7 @@ func NewOutboundListenerBuilder(
 	protocol core_xds.SocketAddressProtocol,
 ) *ListenerBuilder {
 	listenerName := envoy_names.GetOutboundListenerName(address, port)
-	
+
 	return NewListenerBuilder(apiVersion, listenerName).
 		Configure(OutboundListener(address, port, protocol))
 }
