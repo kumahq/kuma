@@ -16,7 +16,6 @@ import (
 
 var _ = Describe("RetryConfigurer", func() {
 	type testCase struct {
-		listenerName     string
 		listenerAddress  string
 		listenerPort     uint32
 		listenerProtocol core_xds.SocketAddressProtocol
@@ -32,8 +31,7 @@ var _ = Describe("RetryConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(
@@ -54,7 +52,6 @@ var _ = Describe("RetryConfigurer", func() {
 		},
 		Entry("basic http_connection_manager with an outbound route"+
 			" and simple http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:17777",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
@@ -130,7 +127,6 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and more complex http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
@@ -211,7 +207,6 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and simple grpc retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:17777",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
@@ -279,7 +274,6 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and more complex http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
@@ -360,7 +354,6 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and more complex http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",

@@ -10,7 +10,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
@@ -48,15 +47,12 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(
-			envoy_listeners.InboundListener(
-				envoy_names.GetInboundListenerName(address, port),
-				address, port,
-				core_xds.SocketAddressProtocolTCP,
-			),
-			envoy_listeners.TLSInspector(),
-		)
+	return envoy_listeners.NewInboundListenerBuilder(
+		apiVersion,
+		address,
+		port,
+		core_xds.SocketAddressProtocolTCP,
+	).Configure(envoy_listeners.TLSInspector())
 }
 
 func (g Generator) Generate(

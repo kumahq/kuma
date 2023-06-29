@@ -20,7 +20,7 @@ type Deployment interface {
 type deployOptions struct {
 	namespace      string
 	deploymentName string
-	components     []string
+	components     []Component
 }
 type deployOptionsFunc func(*deployOptions)
 
@@ -45,14 +45,16 @@ const (
 
 func WithComponents(components ...Component) deployOptionsFunc {
 	return func(o *deployOptions) {
-		for _, c := range components {
-			o.components = append(o.components, string(c))
-		}
+		o.components = components
 	}
 }
 
 func Install(name string, optFns ...deployOptionsFunc) framework.InstallFunc {
-	opts := &deployOptions{deploymentName: name, namespace: framework.Config.DefaultObservabilityNamespace}
+	opts := &deployOptions{
+		deploymentName: name,
+		namespace:      framework.Config.DefaultObservabilityNamespace,
+		components:     []Component{JaegerComponent, PrometheusComponent, GrafanaComponent, LokiComponent},
+	}
 	for _, optFn := range optFns {
 		optFn(opts)
 	}

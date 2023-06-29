@@ -44,7 +44,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 	}
 
 	type testCase struct {
-		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
@@ -57,8 +56,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName, true)).
 					Configure(HttpInboundRoutes(given.service, given.routes)))).
@@ -73,7 +71,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
@@ -118,7 +115,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
@@ -205,7 +201,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter with sources", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
