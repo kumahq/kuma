@@ -37,11 +37,12 @@ type LogsPaths struct {
 
 // GetLogsPath returns a struct with 3 paths – rootPath, describePath and specPath.
 // All e2e tests in Kuma have the following structure:
-// - <env>_suite:
-//   - Describe("<feature1>", ...)
-//   - It("should do smth1...")
-//   - It("should do smth2...")
-//   - Describe("<feature2>", ...)
+//
+//	<env>_suite:
+//		Describe("<feature1>", ...)
+//			It("should do smth1...")
+//			It("should do smth2...")
+//		Describe("<feature2>", ...)
 //
 // Some components (like kuma-cp) are shared across env, other apps (like test-server) could be deployed per Describe or per It.
 // We'd like to reflect hierarchical structure when collecting logs from running containers, that's why for writing logs we're using specPath.
