@@ -119,7 +119,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
-	builder.WithAPIManager(customization.NewAPIList())
+	if builder.APIManager() == nil {
+		builder.WithAPIManager(customization.NewAPIList())
+	}
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
 	if err != nil {
 		return nil, err
