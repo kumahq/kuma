@@ -1,10 +1,11 @@
 package universal_logs
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
 	"os"
 	"path"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core"
 
 	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/v2"
@@ -12,9 +13,7 @@ import (
 	k8s_strings "k8s.io/utils/strings"
 )
 
-var (
-	timePrefix = time.Now().Local().Format("060102_150405")
-)
+var timePrefix = time.Now().Local().Format("060102_150405")
 
 func CurrentLogsPath(basePath string) string {
 	if lp := GetLogsPath(ginkgo.CurrentSpecReport(), basePath); lp.Spec != "" {
