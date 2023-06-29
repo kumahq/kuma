@@ -5,12 +5,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-
 	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	k8s_strings "k8s.io/utils/strings"
+
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 var timePrefix = time.Now().Local().Format("060102_150405")
