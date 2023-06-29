@@ -1,12 +1,13 @@
 DOCS_PROTOS ?= api/mesh/v1alpha1/*.proto
 DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
+DOCS_OUTPUT_DIR ?= $(BUILD_DIR)/docs
 
 .PHONY: clean/docs
 clean/docs:
 	rm -rf docs/generated
 
 .PHONY: docs
-docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs ## Dev: Generate local documentation
+docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs docs/output ## Dev: Generate local documentation
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
@@ -32,3 +33,19 @@ docs/generated/kuma-cp.md: ## Generate Mesh API reference
 	@echo '```yaml' >> $@
 	@cat $(DOCS_CP_CONFIG) >> $@
 	@echo '```' >> $@
+
+.PHONY: docs/output
+docs/output:
+	rm -rf $(DOCS_OUTPUT_DIR)
+	mkdir -p $(DOCS_OUTPUT_DIR)
+
+	cp $(DOCS_CP_CONFIG) $(DOCS_OUTPUT_DIR)/kuma-cp.yaml
+	cp $(HELM_VALUES_FILE) $(DOCS_OUTPUT_DIR)/helm-values.yaml
+	mkdir $(DOCS_OUTPUT_DIR)/crds
+	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $(DOCS_OUTPUT_DIR)/crds/; done
+
+	mkdir -p $(DOCS_OUTPUT_DIR)/proto
+	$(PROTOC) \
+		--jsonschema_out=$(DOCS_OUTPUT_DIR)/proto \
+		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
+		$(DOCS_PROTOS)
