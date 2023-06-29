@@ -247,11 +247,7 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 
 // processNewlineChars takes byte data and returns a new byte slice
 // after trimming and deduplicating the newline characters.
-func processNewlineChars(byteData []byte) []byte {
-	return bytes.TrimSpace(dedup(byteData, '\n', '\n'))
-}
-
-func dedup(input []byte, old, new byte) []byte {
+func processNewlineChars(input []byte) []byte {
 	var deduped []byte
 
 	var last byte
@@ -259,15 +255,15 @@ func dedup(input []byte, old, new byte) []byte {
 		last = input[0]
 	}
 	for i := 1; i < len(input); i++ {
-		if last == old && input[i] == last {
-			last = new
+		if last == '\n' && input[i] == last {
 			continue
 		}
 		deduped = append(deduped, last)
 		last = input[i]
 	}
 	deduped = append(deduped, last)
-	return deduped
+
+	return bytes.TrimSpace(deduped)
 }
 
 // selectContentType selects the highest priority content type supported by the applications.
@@ -301,9 +297,6 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 
 	// If no valid content type is returned by the target applications,
 	// negotitate content type based on Accept header of the scraper.
-	//
-	// Note: NegotiateIncludingOpenMetrics is not yet fully supported.
-	// So invoke expfmt.Negotiate() instead
 	if ct == expfmt.FmtUnknown {
 		ct = expfmt.Negotiate(reqHeader)
 	}
@@ -408,7 +401,6 @@ func responseFormat(h http.Header) expfmt.Format {
 	case textType:
 		return expfmt.FmtText
 
-	// TODO: if version does not match or set, should we return FmtUnknown?
 	case expfmt.OpenMetricsType:
 		if version == openmetricsVersion_0_0_1 {
 			return expfmt.FmtOpenMetrics_0_0_1
