@@ -39,10 +39,12 @@ docs/output: clean/docs/output | $(DOCS_OUTPUT_DIR)
 	cp $(DOCS_CP_CONFIG) $(DOCS_OUTPUT_DIR)/kuma-cp.yaml
 	cp $(HELM_VALUES_FILE) $(DOCS_OUTPUT_DIR)/helm-values.yaml
 
+	mkdir $(DOCS_OUTPUT_DIR)/crds
 	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $(DOCS_OUTPUT_DIR)/crds/; done
 
+	mkdir $(DOCS_OUTPUT_DIR)/protos
 	$(PROTOC) \
-		--jsonschema_out=$(DOCS_OUTPUT_DIR)/proto \
+		--jsonschema_out=$(DOCS_OUTPUT_DIR)/protos \
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
 
@@ -51,4 +53,4 @@ clean/docs/output:
 	rm -rf $(DOCS_OUTPUT_DIR)
 
 $(DOCS_OUTPUT_DIR):
-	mkdir -p $@/{crds,proto}
+	mkdir -p $@
