@@ -11,12 +11,8 @@ PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -m github.com/envoyproxy
 PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -m github.com/kumahq/protoc-gen-kumadoc | cut -d ' ' -f2)
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
-<<<<<<< HEAD
     google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(go list -m google.golang.org/grpc/cmd/protoc-gen-go-grpc | cut -d ' ' -f2) \
-=======
-    google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 \
     github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema@v0.0.0-20230606235304-e35f2ad05c0c \
->>>>>>> ccc17f180 (ci(docs): add `make docs/output` to copy all raw docs (#7146))
     ${PGV} \
     ${PGKUMADOC} \
     github.com/onsi/ginkgo/v2/ginkgo@$(go list -m github.com/onsi/ginkgo/v2 | cut -d ' ' -f2) \
