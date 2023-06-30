@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/tracing"
-	"github.com/kumahq/kuma/pkg/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -17,6 +12,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/kumahq/kuma/pkg/config/tracing"
+	"github.com/kumahq/kuma/pkg/core"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 func init() {
@@ -30,8 +31,7 @@ type plugin struct{}
 var _ core_plugins.RuntimePlugin = &plugin{}
 
 type tracer struct {
-	config   tracing.OpenTelemetry
-	provider *trace.TracerProvider
+	config tracing.OpenTelemetry
 }
 
 var _ component.Component = &tracer{}
@@ -44,7 +44,10 @@ func (t *tracer) Start(stop <-chan struct{}) error {
 
 	go func() {
 		<-stop
-		shutdown(context.Background())
+		log.Info("stopping")
+		if err := shutdown(context.Background()); err != nil {
+			log.Error(err, "shutting down")
+		}
 	}()
 
 	return nil
