@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -120,6 +121,8 @@ func NewApiServer(
 		Container:      container,
 	}
 	container.Filter(cors.Filter)
+
+	container.Filter(otelrestful.OTelFilter("api-server"))
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.

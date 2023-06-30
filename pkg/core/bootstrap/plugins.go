@@ -16,6 +16,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/k8s"
+	_ "github.com/kumahq/kuma/pkg/plugins/runtime/opentelemetry"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/universal"
 	_ "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
 	_ "github.com/kumahq/kuma/pkg/plugins/secrets/universal"

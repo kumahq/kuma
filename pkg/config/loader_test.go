@@ -888,6 +888,7 @@ proxy:
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
+				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 			},
 			yamlFileConfig: "",
 		}),

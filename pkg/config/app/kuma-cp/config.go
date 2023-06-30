@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/pkg/config/tracing"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
@@ -150,6 +151,8 @@ type Config struct {
 	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
+	// Tracing
+	Tracing tracing.Config `json:"tracing"`
 }
 
 func (c *Config) Sanitize() {
@@ -286,6 +289,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.InterCp.Validate(); err != nil {
 		return errors.Wrap(err, "InterCp validation failed")
+	}
+	if err := c.Tracing.Validate(); err != nil {
+		return errors.Wrap(err, "Tracing validation failed")
 	}
 	return nil
 }
