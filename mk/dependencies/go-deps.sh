@@ -9,6 +9,7 @@ PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -m github.com/kumahq/pr
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(go list -m google.golang.org/grpc/cmd/protoc-gen-go-grpc | cut -d ' ' -f2) \
+    github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema@v0.0.0-20230606235304-e35f2ad05c0c \
     ${PGV} \
     ${PGKUMADOC} \
     github.com/onsi/ginkgo/v2/ginkgo@$(go list -m github.com/onsi/ginkgo/v2 | cut -d ' ' -f2) \
