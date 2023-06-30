@@ -1,0 +1,21 @@
+name: "Update docs"
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: 0 8 * * *
+env:
+  DOCS_REPO: kumahq/kuma-website
+  OUTPUT_PATH: app/docs
+  VERSION_FILE: app/_data/versions.yml
+  EDITION: kuma
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          branch: master
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.20.5"
