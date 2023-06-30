@@ -152,7 +152,7 @@ type Config struct {
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
-	Tracing *tracing.Config `json:"tracing"`
+	Tracing tracing.Config `json:"tracing"`
 }
 
 func (c *Config) Sanitize() {
@@ -289,6 +289,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.InterCp.Validate(); err != nil {
 		return errors.Wrap(err, "InterCp validation failed")
+	}
+	if err := c.Tracing.Validate(); err != nil {
+		return errors.Wrap(err, "Tracing validation failed")
 	}
 	return nil
 }

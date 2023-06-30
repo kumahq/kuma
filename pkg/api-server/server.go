@@ -122,9 +122,7 @@ func NewApiServer(
 	}
 	container.Filter(cors.Filter)
 
-	if cfg.Tracing != nil {
-		container.Filter(otelrestful.OTelFilter("api-server"))
-	}
+	container.Filter(otelrestful.OTelFilter("api-server"))
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.

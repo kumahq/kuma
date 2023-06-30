@@ -55,13 +55,13 @@ func (t *tracer) NeedLeaderElection() bool {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	tracing := rt.Config().Tracing
-	if tracing == nil {
+	otel := rt.Config().Tracing.OpenTelemetry
+	if otel.Endpoint == "" {
 		return nil
 	}
 
 	t := tracer{
-		config: tracing.OpenTelemetry,
+		config: otel,
 	}
 	if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t)); err != nil {
 		return err

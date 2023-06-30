@@ -697,3 +697,7 @@ proxy:
     # Sets the envoy runtime value to limit maximum number of incoming
     # connections to a builtin gateway data plane proxy
     globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
+
+tracing:
+  openTelemetry:
+    endpoint: "" # e.g. otel-collector:4317
