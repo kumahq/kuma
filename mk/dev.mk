@@ -58,6 +58,7 @@ PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
 PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
 PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
 PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
+PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
 GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
 GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
