@@ -42,13 +42,11 @@ func (t *tracer) Start(stop <-chan struct{}) error {
 		return err
 	}
 
-	go func() {
-		<-stop
-		log.Info("stopping")
-		if err := shutdown(context.Background()); err != nil {
-			log.Error(err, "shutting down")
-		}
-	}()
+	<-stop
+	log.Info("stopping")
+	if err := shutdown(context.Background()); err != nil {
+		log.Error(err, "shutting down")
+	}
 
 	return nil
 }
