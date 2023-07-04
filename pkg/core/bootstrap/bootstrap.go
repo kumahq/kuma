@@ -74,13 +74,13 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
-	if err := initializeMetrics(builder); err != nil {
-		return nil, err
-	}
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if err := plugin.BeforeBootstrap(builder, cfg); err != nil {
 			return nil, errors.Wrapf(err, "failed to run beforeBootstrap plugin:'%s'", plugin.Name())
 		}
+	}
+	if err := initializeMetrics(builder); err != nil {
+		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
 		return nil, err
@@ -213,6 +213,10 @@ func logWarnings(config kuma_cp.Config) {
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
+	if builder.Metrics() != nil {
+		// do not configure if it was already configured in BeforeBootstrap
+		return nil
+	}
 	zoneName := ""
 	switch builder.Config().Mode {
 	case config_core.Zone:
