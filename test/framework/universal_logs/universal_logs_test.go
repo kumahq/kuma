@@ -16,7 +16,7 @@ func matchTempWithTimePrefix(suffix string) types.GomegaMatcher {
 
 var _ = Describe("before-all and it", Ordered, func() {
 	BeforeAll(func() {
-		Expect(universal_logs.CreateLogsPath("/tmp")).To(
+		Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 			matchTempWithTimePrefix("/before-all-and-it"))
 	})
 
@@ -25,7 +25,7 @@ var _ = Describe("before-all and it", Ordered, func() {
 
 var _ = Describe("before-all and context", Ordered, func() {
 	BeforeAll(func() {
-		Expect(universal_logs.CreateLogsPath("/tmp")).To(
+		Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 			matchTempWithTimePrefix("/before-all-and-context"))
 	})
 
@@ -37,7 +37,7 @@ var _ = Describe("before-all and context", Ordered, func() {
 var _ = Describe("before-all inside the context", Ordered, func() {
 	Context("ctx 1", func() {
 		BeforeAll(func() {
-			Expect(universal_logs.CreateLogsPath("/tmp")).To(
+			Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 				matchTempWithTimePrefix("/before-all-inside-the-context/ctx-1"))
 		})
 
@@ -49,7 +49,7 @@ var _ = Describe("before-all inside the context", Ordered, func() {
 
 var _ = Describe("before-all and describe-table", Ordered, func() {
 	BeforeAll(func() {
-		Expect(universal_logs.CreateLogsPath("/tmp")).To(
+		Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 			matchTempWithTimePrefix("/before-all-and-describe-table"),
 		)
 	})
@@ -67,13 +67,13 @@ var _ = Describe("before-all and describe-table", Ordered, func() {
 	)
 
 	AfterEach(func() {
-		Expect(universal_logs.CreateLogsPath("/tmp")).To(
+		Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 			matchTempWithTimePrefix("/before-all-and-describe-table/table-[0-9]{1}/entry-[0-9]{1}"),
 		)
 	})
 
 	AfterAll(func() {
-		Expect(universal_logs.CreateLogsPath("/tmp")).To(
+		Expect(universal_logs.CurrentLogsPath("/tmp")).To(
 			matchTempWithTimePrefix("/before-all-and-describe-table"),
 		)
 	})
