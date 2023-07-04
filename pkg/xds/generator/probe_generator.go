@@ -7,6 +7,7 @@ import (
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -59,7 +60,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 
 	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, "").
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.HttpConnectionManager(listenerName, false)).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, routeConfigurationName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).

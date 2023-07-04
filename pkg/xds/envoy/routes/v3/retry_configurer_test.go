@@ -32,7 +32,7 @@ var _ = Describe("RetryConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(
 						given.service,

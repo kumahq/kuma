@@ -26,7 +26,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				WithOverwriteName(given.listenerName).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Configure(OriginalDstForwarder()).
 				Build()

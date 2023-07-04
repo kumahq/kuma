@@ -51,7 +51,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		name := DirectAccessEndpointName(endpoint)
 		listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(name).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, "").
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.TcpProxyDeprecated(name, envoy_common.NewCluster(envoy_common.WithService("direct_access")))).
 				Configure(envoy_listeners.NetworkAccessLog(
 					meshName,

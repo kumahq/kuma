@@ -23,7 +23,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, "").
+				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, true)))).
 				Build()
 			// then

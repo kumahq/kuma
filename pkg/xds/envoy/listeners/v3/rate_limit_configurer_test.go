@@ -19,7 +19,7 @@ var _ = Describe("RateLimitConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			filterChain, err := NewFilterChainBuilder(envoy.APIV3, "").
+			filterChain, err := NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 				Configure(HttpConnectionManager("stats", false)).
 				Configure(RateLimit(given.input)).
 				Build()

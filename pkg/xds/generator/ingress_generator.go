@@ -94,7 +94,7 @@ func (i IngressGenerator) generateLDS(
 	if len(ingress.Spec.AvailableServices) == 0 {
 		inboundListenerBuilder = inboundListenerBuilder.
 			Configure(envoy_listeners.FilterChain(
-				envoy_listeners.NewFilterChainBuilder(apiVersion, ""),
+				envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource),
 			))
 	}
 
@@ -124,7 +124,7 @@ func (i IngressGenerator) generateLDS(
 			)
 
 			filterChain := envoy_listeners.FilterChain(
-				envoy_listeners.NewFilterChainBuilder(apiVersion, "").Configure(
+				envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchServerNames(sni),
 					envoy_listeners.TcpProxyDeprecatedWithMetadata(
