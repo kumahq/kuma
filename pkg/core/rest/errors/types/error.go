@@ -7,7 +7,7 @@ type Error struct {
 	// Type a unique identifier for this error.
 	Type string `json:"type"`
 	// Status The HTTP status code of the error.
-	Status string `json:"status"`
+	Status int `json:"status"`
 	// Title A short, human-readable summary of the problem.
 	// It should not change between occurrences of a problem, except for localization.
 	// Should be provided as "Sentence case" for direct use in the UI

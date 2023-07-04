@@ -1,6 +1,6 @@
 {
  "type": "/std-errors",
- "status": "400",
+ "status": 400,
  "title": "Could not retrieve resources",
  "detail": "Invalid offset",
  "invalid_parameters": [
