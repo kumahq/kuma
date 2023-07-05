@@ -1,13 +1,12 @@
 DOCS_PROTOS ?= api/mesh/v1alpha1/*.proto
 DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
-DOCS_OUTPUT_DIR ?= $(BUILD_DIR)/docs
 
 .PHONY: clean/docs
 clean/docs:
 	rm -rf docs/generated
 
 .PHONY: docs
-docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs docs/output ## Dev: Generate local documentation
+docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs docs/generated/raw ## Dev: Generate local documentation
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
@@ -34,14 +33,7 @@ docs/generated/kuma-cp.md: ## Generate Mesh API reference
 	@cat $(DOCS_CP_CONFIG) >> $@
 	@echo '```' >> $@
 
-.PHONY: docs/output
-docs/output: clean/docs/output | $(DOCS_OUTPUT_DIR)
-	cp $(DOCS_CP_CONFIG) $(DOCS_OUTPUT_DIR)/kuma-cp.yaml
-
-.PHONY: clean/docs/output
-clean/docs/output:
-	rm -rf $(DOCS_OUTPUT_DIR)
-
-$(DOCS_OUTPUT_DIR):
+.PHONY: docs/generated/raw
+docs/generated/raw:
 	mkdir -p $@
-
+	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
