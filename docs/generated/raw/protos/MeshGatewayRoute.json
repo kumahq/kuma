@@ -1,0 +1,442 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/MeshGatewayRoute",
+    "definitions": {
+        "MeshGatewayRoute": {
+            "properties": {
+                "selectors": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "Selectors is used to match this resource to MeshGateway listener."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.Conf",
+                    "additionalProperties": true,
+                    "description": "Conf specifies the route configuration."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Gateway Route"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.Backend": {
+            "properties": {
+                "weight": {
+                    "type": "integer",
+                    "description": "Weight is the proportion of requests this backend will receive when a forwarding rules specifies multiple backends. Traffic weight is computed as \"weight/sum(all weights)\". A weight of 0 means that the destination will be ignored."
+                },
+                "destination": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Destination is a selector to match the individual endpoints to which the gateway will forward."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Backend",
+            "description": "Backend selects a target for HTTP request forwarding."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.Conf": {
+            "properties": {
+                "tcp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.TcpRoute",
+                    "additionalProperties": true
+                },
+                "http": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute",
+                    "additionalProperties": true,
+                    "title": "TlsRoute tls = 3;",
+                    "description": "TlsRoute tls = 3;"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute": {
+            "properties": {
+                "hostnames": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "Hostnames lists the server names for which this route is valid. The hostnames are matched against the TLS Server Name Indication extension if this is a TLS session. They are also matched against the HTTP host (authority) header in the client's HTTP request."
+                },
+                "rules": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Rule"
+                    },
+                    "type": "array",
+                    "description": "Rules specifies how the gateway should match and process HTTP requests."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http Route",
+            "description": "HTTP routes are valid for listeners that accept HTTP/1.1 and HTTP/2 over both TCP and TLS."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter": {
+            "properties": {
+                "request_header": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter",
+                    "additionalProperties": true
+                },
+                "mirror": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Mirror",
+                    "additionalProperties": true
+                },
+                "redirect": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Redirect",
+                    "additionalProperties": true
+                },
+                "rewrite": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Rewrite",
+                    "additionalProperties": true
+                },
+                "response_header": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filter"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter": {
+            "properties": {
+                "set": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter.Header"
+                    },
+                    "type": "array"
+                },
+                "add": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter.Header"
+                    },
+                    "type": "array"
+                },
+                "remove": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header Filter"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.HeaderFilter.Header": {
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Mirror": {
+            "properties": {
+                "backend": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.Backend",
+                    "additionalProperties": true,
+                    "description": "Backend denotes the service to which requests will be mirrored. The \"weight\" field must not be given."
+                },
+                "percentage": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage specifies the percentage of requests to mirror to the backend (in the range 0.0 - 100.0, inclusive)."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mirror",
+            "description": "The mirror filter sends a percentage of HTTP requests to the given backend. The gateway ignores any responses to these requests."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Redirect": {
+            "properties": {
+                "scheme": {
+                    "type": "string",
+                    "description": "The scheme for the redirect URL. Usually \"http\" or \"https\"."
+                },
+                "hostname": {
+                    "type": "string",
+                    "description": "The hostname to redirect to."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "The port to redirect to."
+                },
+                "status_code": {
+                    "type": "integer",
+                    "description": "The HTTP response status code. This must be in the range 300 - 308."
+                },
+                "path": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Rewrite",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Redirect",
+            "description": "The redirect filter responds to the HTTP request immediately, without forwarding it to any backend. The response is a HTTP redirect message."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Rewrite": {
+            "properties": {
+                "replace_full": {
+                    "type": "string"
+                },
+                "replace_prefix_match": {
+                    "type": "string",
+                    "description": "Note that rewriting \"/prefix\" to \"/\" will do the right thing: - the path \"/prefix\" is rewritten to \"/\" - the path \"/prefix/rest\" is rewritten to \"/rest\""
+                },
+                "host_to_backend_hostname": {
+                    "type": "boolean",
+                    "description": "Option to indicate that during forwarding, the host header should be swapped with the hostname of the upstream host chosen by the Envoy's cluster manager. BE AWARE: - it's mutually exclusive with request_header filter which explicitly   replaces \"host\" header"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rewrite"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match": {
+            "properties": {
+                "path": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Path",
+                    "additionalProperties": true
+                },
+                "method": {
+                    "enum": [
+                        "NONE",
+                        0,
+                        "CONNECT",
+                        1,
+                        "DELETE",
+                        2,
+                        "GET",
+                        3,
+                        "HEAD",
+                        4,
+                        "OPTIONS",
+                        5,
+                        "PATCH",
+                        6,
+                        "POST",
+                        7,
+                        "PUT",
+                        8,
+                        "TRACE",
+                        9
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Http Method"
+                },
+                "headers": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Header"
+                    },
+                    "type": "array"
+                },
+                "query_parameters": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Query"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Match",
+            "description": "Match specifies the criteria for when a HTTP request matches a rule. The match is only considered successful if all of the specified conditions succeed (AND semantics). At least one match condition must be given."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Header": {
+            "properties": {
+                "match": {
+                    "enum": [
+                        "EXACT",
+                        0,
+                        "REGEX",
+                        1,
+                        "ABSENT",
+                        2,
+                        "PRESENT",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Match Type"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the HTTP header containing the value to match."
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Value that the HTTP header value should be matched against."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header",
+            "description": "Header matches a value in a HTTP request header. Not that if the header is defined to have multiple values, a REGEX match must be used to match a specific value."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Path": {
+            "properties": {
+                "match": {
+                    "enum": [
+                        "EXACT",
+                        0,
+                        "PREFIX",
+                        1,
+                        "REGEX",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Match Type"
+                },
+                "value": {
+                    "minLength": 1,
+                    "type": "string",
+                    "description": "Value is the path to match against. For EXACT and PREFIX match types, it must be a HTTP URI path. For the REGEX match type, it must be a RE2 regular expression. Note that a PREFIX match succeeds only if the prefix is the the entire path or is followed by a /. I.e. a prefix of the path in terms of path elements."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Path",
+            "description": "Path matches may be \"EXACT\", \"PREFIX\", or \"REGEX\" matches. If the match type is not specified, \"EXACT\" is the default."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match.Query": {
+            "properties": {
+                "match": {
+                    "enum": [
+                        "EXACT",
+                        0,
+                        "REGEX",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Match Type"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the query parameter containing the value to match."
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Value that the query parameter value should be matched against."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Query",
+            "description": "Query matches against HTTP request query parameters."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Rule": {
+            "properties": {
+                "matches": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Match"
+                    },
+                    "type": "array",
+                    "description": "Matches are checked in order. If any match is successful, the rule is selected (OR semantics)."
+                },
+                "filters": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter"
+                    },
+                    "type": "array",
+                    "description": "Filters are request processing steps that are applied to matched requests. If the redirect filter is specified, it must be the only filter given."
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.Backend"
+                    },
+                    "type": "array",
+                    "description": "Backends is the set of services to which the gateway will forward requests. If a redirect filter is specified, no backends are allowed. Otherwise, at least one backend must be given."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rule"
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.TcpRoute": {
+            "properties": {
+                "rules": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.TcpRoute.Rule"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp Route",
+            "description": "TCP routes are valid for listeners that accept connections over TCP."
+        },
+        "kuma.mesh.v1alpha1.MeshGatewayRoute.TcpRoute.Rule": {
+            "properties": {
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.Backend"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rule",
+            "description": "repeated Match matches = 1;"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

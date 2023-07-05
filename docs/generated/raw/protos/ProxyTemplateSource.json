@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ProxyTemplateSource",
+    "definitions": {
+        "ProxyTemplateSource": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of a configuration source. +optional"
+                },
+                "profile": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ProxyTemplateProfileSource",
+                    "additionalProperties": true,
+                    "description": "Profile, e.g. `default-proxy`. +optional"
+                },
+                "raw": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ProxyTemplateRawSource",
+                    "additionalProperties": true,
+                    "description": "Raw xDS resources. +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Source"
+        },
+        "kuma.mesh.v1alpha1.ProxyTemplateProfileSource": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Profile name."
+                },
+                "params": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Profile params if any. +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Profile Source"
+        },
+        "kuma.mesh.v1alpha1.ProxyTemplateRawResource": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The resource's name, to distinguish it from others of the same type of resource."
+                },
+                "version": {
+                    "type": "string",
+                    "description": "The resource level version. It allows xDS to track the state of individual resources."
+                },
+                "resource": {
+                    "type": "string",
+                    "description": "xDS resource."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Raw Resource"
+        },
+        "kuma.mesh.v1alpha1.ProxyTemplateRawSource": {
+            "properties": {
+                "resources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.ProxyTemplateRawResource"
+                    },
+                    "type": "array",
+                    "description": "List of raw xDS resources. +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Raw Source"
+        }
+    }
+}
