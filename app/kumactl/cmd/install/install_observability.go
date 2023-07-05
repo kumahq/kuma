@@ -39,10 +39,15 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			combinedResources := make([]data.File, len(metrics)+len(logging)+len(tracing))
+			otel, err := getOpenTelemetry(&args)
+			if err != nil {
+				return err
+			}
+			var combinedResources []data.File
 			combinedResources = append(combinedResources, metrics...)
 			combinedResources = append(combinedResources, logging...)
 			combinedResources = append(combinedResources, tracing...)
+			combinedResources = append(combinedResources, otel...)
 
 			singleFile := data.JoinYAML(combinedResources)
 
@@ -175,6 +180,26 @@ func getTracing(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	}
 	return sortedResources, nil
 }
+
+func getOpenTelemetry(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
+	templateFiles, err := data.ReadFiles(kumactl_data.InstallOpenTelemetryFS())
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to read template files")
+	}
+
+	filter := getExcludePrefixesFilter(args)
+	renderedFiles, err := renderFilesWithFilter(templateFiles, args, simpleTemplateRenderer, filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to render template files")
+	}
+
+	sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to sort resources by kind")
+	}
+	return sortedResources, nil
+}
+
 
 func getExcludePrefixesFilter(args *context.ObservabilityTemplateArgs) ExcludePrefixesFilter {
 	prefixes := []string{}
