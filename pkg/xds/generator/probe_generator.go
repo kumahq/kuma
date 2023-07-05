@@ -29,8 +29,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		return nil, nil
 	}
 
-	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(proxy.APIVersion).
-		Configure(envoy_virtual_hosts.CommonVirtualHost("probe"))
+	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(proxy.APIVersion, "probe")
 
 	portSet := map[uint32]bool{}
 	for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {

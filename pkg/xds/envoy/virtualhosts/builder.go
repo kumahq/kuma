@@ -1,8 +1,7 @@
 package virtualhosts
 
 import (
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -13,14 +12,14 @@ import (
 // such as Route, CORS, etc.
 type VirtualHostConfigurer interface {
 	// Configure configures a single aspect on a given Envoy VirtualHost.
-	Configure(virtualHost *envoy_route.VirtualHost) error
+	Configure(virtualHost *envoy_config_route_v3.VirtualHost) error
 }
 
 // VirtualHostConfigureFunc adapts a configuration function to the
 // VirtualHostConfigurer interface.
-type VirtualHostConfigureFunc func(vh *envoy_route.VirtualHost) error
+type VirtualHostConfigureFunc func(vh *envoy_config_route_v3.VirtualHost) error
 
-func (f VirtualHostConfigureFunc) Configure(vh *envoy_route.VirtualHost) error {
+func (f VirtualHostConfigureFunc) Configure(vh *envoy_config_route_v3.VirtualHost) error {
 	if f != nil {
 		return f(vh)
 	}
@@ -30,9 +29,9 @@ func (f VirtualHostConfigureFunc) Configure(vh *envoy_route.VirtualHost) error {
 
 // VirtualHostMustConfigureFunc adapts a configuration function that
 // never fails to the VirtualHostConfigurer interface.
-type VirtualHostMustConfigureFunc func(vh *envoy_route.VirtualHost)
+type VirtualHostMustConfigureFunc func(vh *envoy_config_route_v3.VirtualHost)
 
-func (f VirtualHostMustConfigureFunc) Configure(vh *envoy_route.VirtualHost) error {
+func (f VirtualHostMustConfigureFunc) Configure(vh *envoy_config_route_v3.VirtualHost) error {
 	if f != nil {
 		f(vh)
 	}
@@ -48,9 +47,10 @@ type VirtualHostBuilderOpt interface {
 	ApplyTo(builder *VirtualHostBuilder)
 }
 
-func NewVirtualHostBuilder(apiVersion core_xds.APIVersion) *VirtualHostBuilder {
+func NewVirtualHostBuilder(apiVersion core_xds.APIVersion, name string) *VirtualHostBuilder {
 	return &VirtualHostBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
 }
 
@@ -59,6 +59,7 @@ func NewVirtualHostBuilder(apiVersion core_xds.APIVersion) *VirtualHostBuilder {
 type VirtualHostBuilder struct {
 	apiVersion  core_xds.APIVersion
 	configurers []VirtualHostConfigurer
+	name        string
 }
 
 // Configure configures VirtualHostBuilder by adding individual VirtualHostConfigurers.
@@ -74,11 +75,17 @@ func (b *VirtualHostBuilder) Configure(opts ...VirtualHostBuilderOpt) *VirtualHo
 func (b *VirtualHostBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		virtualHost := envoy_route_v3.VirtualHost{}
+		virtualHost := envoy_config_route_v3.VirtualHost{
+			Name:    b.name,
+			Domains: []string{"*"},
+		}
 		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&virtualHost); err != nil {
 				return nil, err
 			}
+		}
+		if virtualHost.GetName() == "" {
+			return nil, errors.New("virtual host name is required, but it was not provided")
 		}
 		return &virtualHost, nil
 	default:
