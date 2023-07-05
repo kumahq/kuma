@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Routing",
+    "definitions": {
+        "Routing": {
+            "properties": {
+                "localityAwareLoadBalancing": {
+                    "type": "boolean",
+                    "description": "Enable the Locality Aware Load Balancing"
+                },
+                "zoneEgress": {
+                    "type": "boolean",
+                    "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Routing",
+            "description": "Routing defines configuration for the routing in the mesh"
+        }
+    }
+}
