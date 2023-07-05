@@ -1,0 +1,138 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Timeout",
+    "definitions": {
+        "Timeout": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that are sources of traffic."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that are destinations of traffic."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Timeout.Conf",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Timeout"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        },
+        "kuma.mesh.v1alpha1.Timeout.Conf": {
+            "properties": {
+                "connect_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "ConnectTimeout defines time to establish connection",
+                    "format": "regex"
+                },
+                "tcp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Timeout.Conf.Tcp",
+                    "additionalProperties": true
+                },
+                "http": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Timeout.Conf.Http",
+                    "additionalProperties": true
+                },
+                "grpc": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Timeout.Conf.Grpc",
+                    "additionalProperties": true,
+                    "description": "Deprecated: set parameters through Http section"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.Timeout.Conf.Grpc": {
+            "properties": {
+                "stream_idle_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "StreamIdleTimeout is the amount of time that the connection manager will allow a stream to exist with no upstream or downstream activity Deprecated: use Http.StreamIdleTimeout instead",
+                    "format": "regex"
+                },
+                "max_stream_duration": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "MaxStreamDuration is the maximum time that a stream’s lifetime will span Deprecated: use Http.MaxStreamDuration instead",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Grpc",
+            "description": "Grpc defines timeouts that are applied when the protocol is GRPC"
+        },
+        "kuma.mesh.v1alpha1.Timeout.Conf.Http": {
+            "properties": {
+                "request_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "RequestTimeout is a span between the point at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has been completely processed",
+                    "format": "regex"
+                },
+                "idle_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "IdleTimeout is the time at which a downstream or upstream connection will be terminated if there are no active streams",
+                    "format": "regex"
+                },
+                "stream_idle_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "StreamIdleTimeout is the amount of time that the connection manager will allow a stream to exist with no upstream or downstream activity",
+                    "format": "regex"
+                },
+                "max_stream_duration": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "MaxStreamDuration is the maximum time that a stream’s lifetime will span",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http",
+            "description": "Http defines timeouts that are applied when the protocol is HTTP"
+        },
+        "kuma.mesh.v1alpha1.Timeout.Conf.Tcp": {
+            "properties": {
+                "idle_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "IdleTimeout is defined as the period in which there are no bytes sent or received on either the upstream or downstream connection",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp",
+            "description": "Tcp defines timeouts that are applied when the protocol is TCP"
+        }
+    }
+}

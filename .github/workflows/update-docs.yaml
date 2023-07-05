@@ -37,16 +37,12 @@ jobs:
             name=$(echo "${b}" | sed 's/release-\(.*\)/\1.x/g' | sed 's/master/dev/g')
             echo "${b} ${name}"
             git checkout --force "${b}"
-            make dev/tools
-            make docs/output DOCS_OUTPUT_DIR="../docs-build/${name}"
+            cp -R docs/generated/raw/ ../docs-build/${name}
             if [[ "${b}" == "master" ]]; then
               cp CHANGELOG.md ../docs-build/
               cp versions.yml ../docs-build/
             fi
           done
-      - name: "show files"
-        run: |
-          ls -R docs-build
       - uses: actions/checkout@v3
         with:
           repository: ${{ env.DOCS_REPO }}
