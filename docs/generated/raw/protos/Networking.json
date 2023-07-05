@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Networking",
+    "definitions": {
+        "Networking": {
+            "properties": {
+                "outbound": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Networking.Outbound",
+                    "additionalProperties": true,
+                    "description": "Outbound settings"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking",
+            "description": "Networking defines the networking configuration of the mesh"
+        },
+        "kuma.mesh.v1alpha1.Networking.Outbound": {
+            "properties": {
+                "passthrough": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "Control the passthrough cluster"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outbound",
+            "description": "Outbound describes the common mesh outbound settings"
+        }
+    }
+}
