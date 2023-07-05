@@ -3,7 +3,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -16,14 +17,7 @@ spec:
     singular: meshaccesslog
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -60,7 +54,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
                                         items:
@@ -75,13 +69,6 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
-                                      type:
-                                        enum:
-                                        - Plain
-                                        - Json
-                                        type: string
-                                    required:
-                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -89,34 +76,6 @@ spec:
                                     type: string
                                 required:
                                 - path
-                                type: object
-                              openTelemetry:
-                                description: Defines an OpenTelemetry logging backend.
-                                properties:
-                                  attributes:
-                                    description: Attributes can contain placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                    items:
-                                      properties:
-                                        key:
-                                          type: string
-                                        value:
-                                          type: string
-                                      type: object
-                                    type: array
-                                  body:
-                                    description: Body is a raw string or an OTLP any
-                                      value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                                      It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                    x-kubernetes-preserve-unknown-fields: true
-                                  endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
-                                    example: otel-collector:4317
-                                    minLength: 1
-                                    type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -126,7 +85,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
                                         items:
@@ -141,25 +100,10 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
-                                      type:
-                                        enum:
-                                        - Plain
-                                        - Json
-                                        type: string
-                                    required:
-                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
-                              type:
-                                enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                                type: string
-                            required:
-                            - type
                             type: object
                           type: array
                       type: object
@@ -172,10 +116,9 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
-                          - MeshHTTPRoute
+                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -207,10 +150,9 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
-                    - MeshHTTPRoute
+                    - MeshGatewayRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -245,7 +187,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
                                         items:
@@ -260,13 +202,6 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
-                                      type:
-                                        enum:
-                                        - Plain
-                                        - Json
-                                        type: string
-                                    required:
-                                    - type
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -274,34 +209,6 @@ spec:
                                     type: string
                                 required:
                                 - path
-                                type: object
-                              openTelemetry:
-                                description: Defines an OpenTelemetry logging backend.
-                                properties:
-                                  attributes:
-                                    description: Attributes can contain placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                    items:
-                                      properties:
-                                        key:
-                                          type: string
-                                        value:
-                                          type: string
-                                      type: object
-                                    type: array
-                                  body:
-                                    description: Body is a raw string or an OTLP any
-                                      value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                                      It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                    x-kubernetes-preserve-unknown-fields: true
-                                  endpoint:
-                                    description: Endpoint of OpenTelemetry collector.
-                                      An empty port defaults to 4317.
-                                    example: otel-collector:4317
-                                    minLength: 1
-                                    type: string
-                                required:
-                                - endpoint
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -311,7 +218,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
                                         items:
@@ -326,25 +233,10 @@ spec:
                                         type: boolean
                                       plain:
                                         type: string
-                                      type:
-                                        enum:
-                                        - Plain
-                                        - Json
-                                        type: string
-                                    required:
-                                    - type
                                     type: object
                                 required:
                                 - address
                                 type: object
-                              type:
-                                enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                                type: string
-                            required:
-                            - type
                             type: object
                           type: array
                       type: object
@@ -357,10 +249,9 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
-                          - MeshHTTPRoute
+                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -388,4 +279,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}

@@ -179,10 +179,6 @@
                 "status_code": {
                     "type": "integer",
                     "description": "The HTTP response status code. This must be in the range 300 - 308."
-                },
-                "path": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGatewayRoute.HttpRoute.Filter.Rewrite",
-                    "additionalProperties": true
                 }
             },
             "additionalProperties": true,
@@ -198,10 +194,6 @@
                 "replace_prefix_match": {
                     "type": "string",
                     "description": "Note that rewriting \"/prefix\" to \"/\" will do the right thing: - the path \"/prefix\" is rewritten to \"/\" - the path \"/prefix/rest\" is rewritten to \"/rest\""
-                },
-                "host_to_backend_hostname": {
-                    "type": "boolean",
-                    "description": "Option to indicate that during forwarding, the host header should be swapped with the hostname of the upstream host chosen by the Envoy's cluster manager. BE AWARE: - it's mutually exclusive with request_header filter which explicitly   replaces \"host\" header"
                 }
             },
             "additionalProperties": true,

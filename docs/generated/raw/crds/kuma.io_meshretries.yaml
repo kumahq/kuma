@@ -3,7 +3,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -16,14 +17,7 @@ spec:
     singular: meshretry
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -52,10 +46,9 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
-                    - MeshHTTPRoute
+                    - MeshGatewayRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -180,43 +173,6 @@ spec:
                                     is 10 times the "BaseInterval".
                                   type: string
                               type: object
-                            hostSelection:
-                              description: HostSelection is a list of predicates that
-                                dictate how hosts should be selected when requests
-                                are retried.
-                              items:
-                                properties:
-                                  predicate:
-                                    description: Type is requested predicate mode.
-                                      Available values are OmitPreviousHosts, OmitHostsWithTags,
-                                      and OmitPreviousPriorities.
-                                    type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: Tags is a map of metadata to match
-                                      against for selecting the omitted hosts. Required
-                                      if Type is OmitHostsWithTags
-                                    type: object
-                                  updateFrequency:
-                                    description: UpdateFrequency is how often the
-                                      priority load should be updated based on previously
-                                      attempted priorities. Used for OmitPreviousPriorities.
-                                      Default is 2 if not set.
-                                    format: int32
-                                    type: integer
-                                required:
-                                - predicate
-                                type: object
-                              type: array
-                            hostSelectionMaxAttempts:
-                              description: HostSelectionMaxAttempts is the maximum
-                                number of times host selection will be reattempted
-                                before giving up, at which point the host that was
-                                last selected will be routed to. If unspecified, this
-                                will default to retrying once.
-                              format: int64
-                              type: integer
                             numRetries:
                               description: NumRetries is the number of attempts that
                                 will be made on failed (and retriable) requests
@@ -271,8 +227,8 @@ spec:
                                 which must be present in the request for retries to
                                 be attempted.
                               items:
-                                description: HeaderMatch describes how to select an
-                                  HTTP route by matching HTTP request headers.
+                                description: HTTPHeaderMatch describes how to select
+                                  a HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -300,6 +256,7 @@ spec:
                                     type: string
                                 required:
                                 - name
+                                - value
                                 type: object
                               type: array
                             retriableResponseHeaders:
@@ -308,8 +265,8 @@ spec:
                                 A retry will be triggered if any of the header matches
                                 match the upstream response headers.
                               items:
-                                description: HeaderMatch describes how to select an
-                                  HTTP route by matching HTTP request headers.
+                                description: HTTPHeaderMatch describes how to select
+                                  a HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -337,6 +294,7 @@ spec:
                                     type: string
                                 required:
                                 - name
+                                - value
                                 type: object
                               type: array
                             retryOn:
@@ -372,10 +330,9 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
-                          - MeshHTTPRoute
+                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -403,4 +360,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}

@@ -3,7 +3,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -16,14 +17,7 @@ spec:
     singular: meshhttproute
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -52,10 +46,9 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
-                    - MeshHTTPRoute
+                    - MeshGatewayRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -88,18 +81,15 @@ spec:
                             properties:
                               backendRefs:
                                 items:
-                                  description: BackendRef defines where to forward
-                                    traffic.
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
                                       - Mesh
                                       - MeshSubset
-                                      - MeshGateway
                                       - MeshService
                                       - MeshServiceSubset
-                                      - MeshHTTPRoute
+                                      - MeshGatewayRoute
                                       type: string
                                     mesh:
                                       description: Mesh is reserved for future use
@@ -118,7 +108,6 @@ spec:
                                         `MeshSubset` and `MeshServiceSubset`
                                       type: object
                                     weight:
-                                      default: 1
                                       minimum: 0
                                       type: integer
                                   type: object
@@ -177,53 +166,6 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                       type: object
-                                    requestMirror:
-                                      properties:
-                                        backendRef:
-                                          description: TargetRef defines structure
-                                            that allows attaching policy to various
-                                            objects
-                                          properties:
-                                            kind:
-                                              description: Kind of the referenced
-                                                resource
-                                              enum:
-                                              - Mesh
-                                              - MeshSubset
-                                              - MeshGateway
-                                              - MeshService
-                                              - MeshServiceSubset
-                                              - MeshHTTPRoute
-                                              type: string
-                                            mesh:
-                                              description: Mesh is reserved for future
-                                                use to identify cross mesh resources.
-                                              type: string
-                                            name:
-                                              description: 'Name of the referenced
-                                                resource. Can only be used with kinds:
-                                                `MeshService`, `MeshServiceSubset`
-                                                and `MeshGatewayRoute`'
-                                              type: string
-                                            tags:
-                                              additionalProperties:
-                                                type: string
-                                              description: Tags used to select a subset
-                                                of proxies by tags. Can only be used
-                                                with kinds `MeshSubset` and `MeshServiceSubset`
-                                              type: object
-                                          type: object
-                                        percentage:
-                                          anyOf:
-                                          - type: integer
-                                          - type: string
-                                          description: Percentage of requests to mirror.
-                                            If not specified, all requests to the
-                                            target cluster will be mirrored.
-                                          x-kubernetes-int-or-string: true
-                                      required:
-                                      - backendRef
-                                      type: object
                                     requestRedirect:
                                       properties:
                                         hostname:
@@ -241,25 +183,6 @@ spec:
                                           minLength: 1
                                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                           type: string
-                                        path:
-                                          description: Path defines parameters used
-                                            to modify the path of the incoming request.
-                                            The modified path is then used to construct
-                                            the location header. When empty, the request
-                                            path is used as-is.
-                                          properties:
-                                            replaceFullPath:
-                                              type: string
-                                            replacePrefixMatch:
-                                              type: string
-                                            type:
-                                              enum:
-                                              - ReplaceFullPath
-                                              - ReplacePrefixMatch
-                                              type: string
-                                          required:
-                                          - type
-                                          type: object
                                         port:
                                           description: Port is the port to be used
                                             in the value of the `Location` header
@@ -343,20 +266,25 @@ spec:
                                       - ResponseHeaderModifier
                                       - RequestRedirect
                                       - URLRewrite
-                                      - RequestMirror
                                       type: string
                                     urlRewrite:
                                       properties:
                                         hostname:
-                                          description: Hostname is the value to be
-                                            used to replace the host header value
-                                            during forwarding.
+                                          description: "PreciseHostname is the fully
+                                            qualified domain name of a network host.
+                                            This matches the RFC 1123 definition of
+                                            a hostname with 1 notable exception that
+                                            numeric IP addresses are not allowed.
+                                            \n Note that as per RFC1035 and RFC1123,
+                                            a *label* must consist of lower case alphanumeric
+                                            characters or '-', and must start and
+                                            end with an alphanumeric character. No
+                                            other punctuation is allowed."
                                           maxLength: 253
                                           minLength: 1
                                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                           type: string
                                         path:
-                                          description: Path defines a path rewrite.
                                           properties:
                                             replaceFullPath:
                                               type: string
@@ -377,43 +305,8 @@ spec:
                                 type: array
                             type: object
                           matches:
-                            description: Matches describes how to match HTTP requests
-                              this rule should be applied to.
                             items:
                               properties:
-                                headers:
-                                  items:
-                                    description: HeaderMatch describes how to select
-                                      an HTTP route by matching HTTP request headers.
-                                    properties:
-                                      name:
-                                        description: Name is the name of the HTTP
-                                          Header to be matched. Name MUST be lower
-                                          case as they will be handled with case insensitivity
-                                          (See https://tools.ietf.org/html/rfc7230#section-3.2).
-                                        maxLength: 256
-                                        minLength: 1
-                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                        type: string
-                                      type:
-                                        default: Exact
-                                        description: Type specifies how to match against
-                                          the value of the header.
-                                        enum:
-                                        - Exact
-                                        - Present
-                                        - RegularExpression
-                                        - Absent
-                                        - Prefix
-                                        type: string
-                                      value:
-                                        description: Value is the value of HTTP Header
-                                          to be matched.
-                                        type: string
-                                    required:
-                                    - name
-                                    type: object
-                                  type: array
                                 method:
                                   enum:
                                   - CONNECT
@@ -431,7 +324,7 @@ spec:
                                     type:
                                       enum:
                                       - Exact
-                                      - PathPrefix
+                                      - Prefix
                                       - RegularExpression
                                       type: string
                                     value:
@@ -467,7 +360,6 @@ spec:
                                     type: object
                                   type: array
                               type: object
-                            minItems: 1
                             type: array
                         required:
                         - default
@@ -483,10 +375,9 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
-                          - MeshHTTPRoute
+                          - MeshGatewayRoute
                           type: string
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -510,4 +401,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}

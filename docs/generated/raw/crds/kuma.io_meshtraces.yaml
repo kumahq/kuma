@@ -3,7 +3,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -16,14 +17,7 @@ spec:
     singular: meshtrace
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -52,8 +46,7 @@ spec:
                       explained in MADR 009-tracing-policy this has to be a one element
                       array for now.
                     items:
-                      description: Only one of zipkin, datadog or openTelemetry can
-                        be used.
+                      description: Only one of zipkin or datadog can be used.
                       properties:
                         datadog:
                           description: Datadog backend configuration.
@@ -74,23 +67,6 @@ spec:
                           required:
                           - url
                           type: object
-                        openTelemetry:
-                          description: OpenTelemetry backend configuration.
-                          properties:
-                            endpoint:
-                              description: Address of OpenTelemetry collector.
-                              example: otel-collector:4317
-                              minLength: 1
-                              type: string
-                          required:
-                          - endpoint
-                          type: object
-                        type:
-                          enum:
-                          - Zipkin
-                          - Datadog
-                          - OpenTelemetry
-                          type: string
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
@@ -115,8 +91,6 @@ spec:
                           required:
                           - url
                           type: object
-                      required:
-                      - type
                       type: object
                     type: array
                   sampling:
@@ -200,10 +174,9 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
-                    - MeshHTTPRoute
+                    - MeshGatewayRoute
                     type: string
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -226,4 +199,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}

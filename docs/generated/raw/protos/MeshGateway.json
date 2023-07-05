@@ -27,7 +27,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Mesh Gateway",
-            "description": "MeshGateway is a virtual proxy. Each MeshGateway is bound to a set of builtin gateway dataplanes. Each builtin dataplane instance can host exactly one Gateway proxy configuration. Gateway aligns with the Kubernetes Gateway API. See that spec for detailed documentation."
+            "description": "MeshGateway is a virtual proxy. Each MeshGateway is bound to a set of builtin gateway dataplanes. Each builtin dataplane instance can host exactly one Gateway proxy configuration. Gateway aligns with the Kubernetes Gateway API v1alpha2. See that spec for detailed documentation."
         },
         "kuma.mesh.v1alpha1.MeshGateway.Conf": {
             "properties": {
@@ -60,6 +60,8 @@
                         0,
                         "TCP",
                         1,
+                        "UDP",
+                        2,
                         "TLS",
                         3,
                         "HTTP",

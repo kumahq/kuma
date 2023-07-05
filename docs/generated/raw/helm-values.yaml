@@ -18,17 +18,11 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
-  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
-  environment: "kubernetes"
-
   # -- Labels to add to resources in addition to default labels
   extraLabels: {}
 
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
-
-  # -- Kuma CP log output path: Defaults to /dev/stdout
-  logOutputPath: ""
 
   # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
@@ -55,9 +49,9 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -111,14 +105,6 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   service:
-    apiServer:
-      http:
-        # -- Port on which Http api server Service is exposed on Node for service of type NodePort
-        nodePort: 30681
-      https:
-        # -- Port on which Https api server Service is exposed on Node for service of type NodePort
-        nodePort: 30682
-
     # -- Whether to create a service resource.
     enabled: true
 
@@ -158,12 +144,8 @@ controlPlane:
     loadBalancerIP:
     # -- Additional annotations to put on the Global Zone Sync Service
     annotations: { }
-    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
-    nodePort: 30685
     # -- Port on which Global Zone Sync Service is exposed
     port: 5685
-    # -- Protocol of the Global Zone Sync service port
-    protocol: grpc
 
   defaults:
     # -- Whether to skip creating the default Mesh
@@ -173,12 +155,14 @@ controlPlane:
   automountServiceAccountToken: true
 
   # -- Optionally override the resource spec
+  # @default -- the resources will be chosen based on the mode
   resources:
     requests:
-       cpu: 500m
-       memory: 256Mi
+  #    cpu: 100m
+  #    memory: 256Mi
     limits:
-       memory: 256Mi
+  #    cpu: 250m
+  #    memory: 512Mi
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
@@ -235,8 +219,6 @@ controlPlane:
       create: false
       # -- CA bundle that was used to sign the certificate of KDS Global Server.
       cert: ""
-      # -- If true, TLS cert of the server is not verified.
-      skipVerify: false
 
   image:
     # -- Kuma CP ImagePullPolicy
@@ -246,15 +228,11 @@ controlPlane:
     # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
     tag:
 
-  # -- (object with { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
+  # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
   # and `Key` is the key of the Secret value to use
   secrets:
-  #  someSecret:
-  #    Secret: some-secret
-  #    Key: secret_key
-  #    Env: SOME_SECRET
 
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
@@ -268,15 +246,11 @@ controlPlane:
 #        extra-config-key: |
 #          extra-config-value
 
-  # -- (object with { name: string, mountPath: string, readOnly: string }) Additional secrets to mount into the control plane,
-  # where `Env` is the name of the env variable,
-  # `Secret` is the name of the Secret,
-  # and `Key` is the key of the Secret value to use
-  extraSecrets:
-  #  extraConfig:
-  #    name: extra-config
-  #    mountPath: /etc/extra-config
-  #    readOnly: true
+  # -- Additional secrets to mount into the control plane
+  extraSecrets: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
 
   webhooks:
     validator:
@@ -288,17 +262,41 @@ controlPlane:
 
   # -- Specifies if the deployment should be started in hostNetwork mode.
   hostNetwork: false
-  # -- Define a new server port for the admission controller. Recommended to set in combination with
-  # hostNetwork to prevent multiple port bindings on the same port (like Calico in AWS EKS).
-  admissionServerPort: 5443
 
   # -- Security context at the pod level for control plane.
-  podSecurityContext:
-    runAsNonRoot: true
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
+#    runAsNonRoot: true
+#    # -- The UID to run the entrypoint of the container process.
+#    runAsUser: 1000
+#    # -- The GID to run the entrypoint of the container process.
+#    runAsGroup: 3000
+#    # -- A special supplemental group that applies to all containers in a pod
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for control plane.
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
+  containerSecurityContext: {} #for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    # -- Controls whether a process can gain more privileges than its parent process.
+#    allowPrivilegeEscalation: false
+#    # -- The capabilities to add/drop when running containers
+#    capabilities:
+#      drop:
+#        - all
+#    # -- Whether this container has a read-only root filesystem.
+#    readOnlyRootFilesystem: true
+#    # -- Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host.
+#    privileged: false
+#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
+#    runAsNonRoot: true
+#    # -- The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.
+#    runAsUser: 1000
+#    # -- The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.
+#    runAsGroup: 3000
+#    #to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container
@@ -320,22 +318,28 @@ cni:
   tolerations: []
   # -- Additional pod annotations
   podAnnotations: { }
-  # -- Set the CNI namespace
-  namespace: kube-system
 
   image:
+    # -- CNI image registry
+    registry: "docker.io/kumahq"
     # -- CNI image repository
-    repository: "kuma-cni"
-    # -- CNI image tag - defaults to .Chart.AppVersion
-    tag:
+    repository: "install-cni"
+    # -- CNI image tag
+    tag: "0.0.10"
     # -- CNI image pull policy
     imagePullPolicy: IfNotPresent
 
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
-  # -- use new CNI (experimental)
+  # -- use new CNI image (experimental)
   experimental:
+    image:
+      # -- CNI experimental image repository
+      repository: "kuma-cni"
+      # -- CNI experimental image tag - defaults to .Chart.AppVersion
+      tag:
+
     imageEbpf:
       # -- CNI experimental eBPF image registry
       registry: "docker.io/kumahq"
@@ -344,22 +348,29 @@ cni:
       # -- CNI experimental eBPF image tag
       tag: "0.8.5"
 
-  resources:
-    requests:
-      cpu: 100m
-      memory: 100Mi
-    limits:
-      memory: 100Mi
-
   # -- Security context at the pod level for cni
   podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for cni
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-    runAsNonRoot: false
-    runAsUser: 0
-    runAsGroup: 0
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 dataPlane:
   image:
@@ -404,7 +415,7 @@ ingress:
 
   # -- Number of seconds to wait before force killing the pod. Make sure to
   # update this if you add a preStop hook.
-  terminationGracePeriodSeconds: 40
+  terminationGracePeriodSeconds: 30
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:
@@ -416,9 +427,9 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -485,14 +496,28 @@ ingress:
   topologySpreadConstraints:
 
   # -- Security context at the pod level for ingress
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 5678
-    runAsGroup: 5678
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for ingress
-  containerSecurityContext:
-   readOnlyRootFilesystem: true
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
@@ -514,9 +539,9 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -524,13 +549,6 @@ egress:
           target:
             type: Utilization
             averageUtilization: 80
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
 
   service:
     # -- Whether to create the service object
@@ -589,14 +607,28 @@ egress:
   topologySpreadConstraints:
 
   # -- Security context at the pod level for egress
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 5678
-    runAsGroup: 5678
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for egress
-  containerSecurityContext:
-   readOnlyRootFilesystem: true
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 kumactl:
   image:
@@ -622,27 +654,36 @@ hooks:
   # -- Tolerations for the HELM hooks
   tolerations: []
   # -- Security context at the pod level for crd/webhook/ns
-  podSecurityContext:
-    runAsNonRoot: true
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for crd/webhook/ns
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-
-  # -- ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs
-  # Changing below values will potentially break ebpf cleanup completely,
-  # so be cautious when doing so.
-  ebpfCleanup:
-    # -- Security context at the pod level for crd/webhook/cleanup-ebpf
-    podSecurityContext:
-      runAsNonRoot: false
-    # -- Security context at the container level for crd/webhook/cleanup-ebpf
-    containerSecurityContext:
-      readOnlyRootFilesystem: false
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 experimental:
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false
+  # -- If true, it installs experimental new version of the CNI
+  cni: false
+  # -- If true, use the new transparent proxy engine
+  transparentProxy: false
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
@@ -657,44 +698,6 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
-  # -- If true, it uses new API for resource synchronization
-  deltaKds: false
-
-legacy:
-  # -- If true, use the legacy transparent proxy engine
-  transparentProxy: false
-  cni:
-    # -- If true, it installs legacy version of the CNI
-    enabled: false
-    image:
-      # -- CNI v1 image registry
-      registry: "docker.io/kumahq"
-      # -- CNI v1 image repository
-      repository: "install-cni"
-      # -- CNI v1 image tag
-      tag: "0.0.10"
-
-# Postgres' settings for universal control plane on k8s
-postgres:
-  # -- Postgres port, password should be provided as a secret reference in "controlPlane.secrets"
-  # with the Env value "KUMA_STORE_POSTGRES_PASSWORD".
-  # Example:
-  # controlPlane:
-  #   secrets:
-  #     - Secret: postgres-postgresql
-  #       Key: postgresql-password
-  #       Env: KUMA_STORE_POSTGRES_PASSWORD
-  port: "5432"
-  # TLS settings
-  tls:
-    # -- Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
-    mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-    # -- Whether to disable SNI the postgres `sslsni` option.
-    disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
-    # -- Secret name that contains the ca.crt
-    caSecretName:
-    # -- Secret name that contains the client tls.crt, tls.key
-    secretName:
 
 # @ignored for helm-docs
 plugins:
@@ -704,11 +707,9 @@ plugins:
     meshfaultinjections: {}
     meshhealthchecks: {}
     meshhttproutes: {}
-    meshloadbalancingstrategies: {}
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}
-    meshtcproutes: {}
     meshtimeouts: {}
     meshtraces: {}
     meshtrafficpermissions: {}
