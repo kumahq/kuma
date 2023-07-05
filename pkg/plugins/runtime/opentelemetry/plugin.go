@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	datadog "github.com/tonglil/opentelemetry-go-datadog-propagator"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -105,7 +106,7 @@ func initOtel(ctx context.Context, otelConfig tracing.OpenTelemetry) (func(conte
 	)
 	otel.SetTracerProvider(tracerProvider)
 
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, datadog.Propagator{}))
 
 	return tracerProvider.Shutdown, nil
 }
