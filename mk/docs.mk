@@ -33,23 +33,7 @@ docs/generated/kuma-cp.md: ## Generate Mesh API reference
 	@cat $(DOCS_CP_CONFIG) >> $@
 	@echo '```' >> $@
 
-<<<<<<< HEAD
-.PHONY: docs/output
-docs/output: clean/docs/output | $(DOCS_OUTPUT_DIR)
-	cp $(DOCS_CP_CONFIG) $(DOCS_OUTPUT_DIR)/kuma-cp.yaml
-=======
 .PHONY: docs/generated/raw
 docs/generated/raw:
 	mkdir -p $@
 	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
-	cp $(HELM_VALUES_FILE) $@/helm-values.yaml
->>>>>>> fa652ae34 (ci(docs): persist generated docs in docs/generated/raw (#7170))
-
-	mkdir -p $@/crds
-	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $@/crds/; done
-
-	mkdir -p $@/protos
-	$(PROTOC) \
-		--jsonschema_out=$@/protos \
-		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
-		$(DOCS_PROTOS)
