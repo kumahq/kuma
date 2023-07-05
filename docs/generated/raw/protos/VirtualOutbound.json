@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/VirtualOutbound",
+    "definitions": {
+        "VirtualOutbound": {
+            "properties": {
+                "selectors": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that this policy applies to"
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.VirtualOutbound.Conf",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Virtual Outbound",
+            "description": "VirtualOutbound defines how to generate hostname ports combination."
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        },
+        "kuma.mesh.v1alpha1.VirtualOutbound.Conf": {
+            "properties": {
+                "host": {
+                    "type": "string",
+                    "description": "Host the gotemplate to generate the hostname from the Parameters map"
+                },
+                "port": {
+                    "type": "string",
+                    "description": "Port the gotemplate to generate the port from the Parameters map"
+                },
+                "parameters": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.VirtualOutbound.Conf.TemplateParameter"
+                    },
+                    "type": "array",
+                    "description": "Parameters a mapping between tag keys and template parameter key. This must always contain at least `kuma.io/service`"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.VirtualOutbound.Conf.TemplateParameter": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name the name of the template parameter (must be alphanumeric)."
+                },
+                "tag_key": {
+                    "type": "string",
+                    "description": "TagKey the name of the tag in the Kuma outbound (optional if absent it will use Name)."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Template Parameter",
+            "description": "A mapping between a template parameter and a dataplane outbound tag name."
+        }
+    }
+}

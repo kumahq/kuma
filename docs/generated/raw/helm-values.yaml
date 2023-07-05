@@ -1,0 +1,715 @@
+global:
+  image:
+    # -- Default registry for all Kuma Images
+    registry: "docker.io/kumahq"
+    # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
+    tag:
+  # -- Add `imagePullSecrets` to all the service accounts used for Kuma components
+  imagePullSecrets: []
+
+# -- Whether to patch the target namespace with the system label
+patchSystemNamespace: true
+
+installCrdsOnUpgrade:
+  # -- Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma)
+  enabled: true
+  # -- The `imagePullSecrets` to attach to the Service Account running CRD installation.
+  # This field will be deprecated in a future release, please use .global.imagePullSecrets
+  imagePullSecrets: []
+
+controlPlane:
+  # -- Labels to add to resources in addition to default labels
+  extraLabels: {}
+
+  # -- Kuma CP log level: one of off,info,debug
+  logLevel: "info"
+
+  # -- Kuma CP modes: one of standalone,zone,global
+  mode: "standalone"
+
+  # -- (string) Kuma CP zone, if running multizone
+  zone:
+
+  # -- Only used in `zone` mode
+  kdsGlobalAddress: ""
+
+  # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
+  replicas: 1
+
+  # -- Control Plane Pod Annotations
+  podAnnotations: {}
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
+  # -- Node selector for the Kuma Control Plane pods
+  nodeSelector:
+    kubernetes.io/os: linux
+
+  # -- Tolerations for the Kuma Control Plane pods
+  tolerations: []
+
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
+  # -- Affinity placement rule for the Kuma Control Plane pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}-control-plane'
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Control Plane pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
+
+  # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
+  injectorFailurePolicy: Fail
+
+  service:
+    # -- Whether to create a service resource.
+    enabled: true
+
+    # -- (string) Optionally override of the Kuma Control Plane Service's name
+    name:
+
+    # -- Service type of the Kuma Control Plane
+    type: ClusterIP
+
+    # -- Additional annotations to put on the Kuma Control Plane
+    annotations: { }
+
+  # Kuma API and GUI ingress settings. Useful if you want to expose the
+  # API and GUI of Kuma outside the k8s cluster.
+  ingress:
+    # -- Install K8s Ingress resource that exposes GUI and API
+    enabled: false
+    # -- IngressClass defines which controller will implement the resource
+    ingressClassName:
+    # -- Ingress hostname
+    hostname:
+    # -- Map of ingress annotations.
+    annotations: {}
+    # -- Ingress path.
+    path: /
+    # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
+    pathType: ImplementationSpecific
+
+  globalZoneSyncService:
+    # -- Whether to create a k8s service for the global zone sync
+    # service. It will only be created when enabled and deploying the global
+    # control plane.
+    enabled: true
+    # -- Service type of the Global-zone sync
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Global Zone Sync Service
+    annotations: { }
+    # -- Port on which Global Zone Sync Service is exposed
+    port: 5685
+
+  defaults:
+    # -- Whether to skip creating the default Mesh
+    skipMeshCreation: false
+
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
+
+  # -- Optionally override the resource spec
+  # @default -- the resources will be chosen based on the mode
+  resources:
+    requests:
+  #    cpu: 100m
+  #    memory: 256Mi
+    limits:
+  #    cpu: 250m
+  #    memory: 512Mi
+
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
+
+  # TLS for various servers
+  tls:
+    general:
+      # -- Secret that contains tls.crt, tls.key [and ca.crt when no
+      # controlPlane.tls.general.caSecretName specified] for protecting
+      # Kuma in-cluster communication
+      secretName: ""
+      # -- Secret that contains ca.crt that was used to sign cert for protecting
+      # Kuma in-cluster communication (ca.crt present in this secret
+      # have precedence over the one provided in the controlPlane.tls.general.secretName)
+      caSecretName: ""
+      # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
+      caBundle: ""
+    apiServer:
+      # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
+      secretName: ""
+      # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
+      clientCertsSecretName: ""
+    # - if not creating the global control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
+    kdsGlobalServer:
+      # -- Name of the K8s TLS Secret resource. If you set this and don't set
+      # create=true, you have to create the secret manually.
+      secretName: ""
+      # -- Whether to create the TLS secret in helm.
+      create: false
+      # -- The TLS certificate to offer.
+      cert: ""
+      # -- The TLS key to use.
+      key: ""
+    # - if not creating the zonal control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
+    kdsZoneClient:
+      # -- Name of the K8s Secret resource that contains ca.crt which was
+      # used to sign the certificate of KDS Global Server. If you set this
+      # and don't set create=true, you have to create the secret manually.
+      secretName: ""
+      # -- Whether to create the TLS secret in helm.
+      create: false
+      # -- CA bundle that was used to sign the certificate of KDS Global Server.
+      cert: ""
+
+  image:
+    # -- Kuma CP ImagePullPolicy
+    pullPolicy: IfNotPresent
+    # -- Kuma CP image repository
+    repository: "kuma-cp"
+    # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
+    tag:
+
+  # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
+  # where `Env` is the name of the env variable,
+  # `Secret` is the name of the Secret,
+  # and `Key` is the key of the Secret value to use
+  secrets:
+
+  # -- Additional environment variables that will be passed to the control plane
+  envVars: { }
+
+  # -- Additional config maps to mount into the control plane, with optional inline values
+  extraConfigMaps: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+#      values:
+#        extra-config-key: |
+#          extra-config-value
+
+  # -- Additional secrets to mount into the control plane
+  extraSecrets: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+
+  webhooks:
+    validator:
+      # -- Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+    ownerReference:
+      # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+
+  # -- Specifies if the deployment should be started in hostNetwork mode.
+  hostNetwork: false
+
+  # -- Security context at the pod level for control plane.
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
+#    runAsNonRoot: true
+#    # -- The UID to run the entrypoint of the container process.
+#    runAsUser: 1000
+#    # -- The GID to run the entrypoint of the container process.
+#    runAsGroup: 3000
+#    # -- A special supplemental group that applies to all containers in a pod
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for control plane.
+  containerSecurityContext: {} #for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    # -- Controls whether a process can gain more privileges than its parent process.
+#    allowPrivilegeEscalation: false
+#    # -- The capabilities to add/drop when running containers
+#    capabilities:
+#      drop:
+#        - all
+#    # -- Whether this container has a read-only root filesystem.
+#    readOnlyRootFilesystem: true
+#    # -- Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host.
+#    privileged: false
+#    # -- Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does.
+#    runAsNonRoot: true
+#    # -- The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.
+#    runAsUser: 1000
+#    # -- The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.
+#    runAsGroup: 3000
+#    #to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
+cni:
+  # -- Install Kuma with CNI instead of proxy init container
+  enabled: false
+  # -- Install CNI in chained mode
+  chained: false
+  # -- Set the CNI install directory
+  netDir: /etc/cni/multus/net.d
+  # -- Set the CNI bin directory
+  binDir: /var/lib/cni/bin
+  # -- Set the CNI configuration name
+  confName: kuma-cni.conf
+  # -- CNI log level: one of off,info,debug
+  logLevel: info
+  # -- Node Selector for the CNI pods
+  nodeSelector:
+    kubernetes.io/os: linux
+  # -- Tolerations for the CNI pods
+  tolerations: []
+  # -- Additional pod annotations
+  podAnnotations: { }
+
+  image:
+    # -- CNI image registry
+    registry: "docker.io/kumahq"
+    # -- CNI image repository
+    repository: "install-cni"
+    # -- CNI image tag
+    tag: "0.0.10"
+    # -- CNI image pull policy
+    imagePullPolicy: IfNotPresent
+
+  # -- it's only useful in tests to trigger a possible race condition
+  delayStartupSeconds: 0
+
+  # -- use new CNI image (experimental)
+  experimental:
+    image:
+      # -- CNI experimental image repository
+      repository: "kuma-cni"
+      # -- CNI experimental image tag - defaults to .Chart.AppVersion
+      tag:
+
+    imageEbpf:
+      # -- CNI experimental eBPF image registry
+      registry: "docker.io/kumahq"
+      # -- CNI experimental eBPF image repository
+      repository: "merbridge"
+      # -- CNI experimental eBPF image tag
+      tag: "0.8.5"
+
+  # -- Security context at the pod level for cni
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for cni
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
+dataPlane:
+  image:
+    # -- The Kuma DP image repository
+    repository: "kuma-dp"
+    # -- Kuma DP ImagePullPolicy
+    pullPolicy: IfNotPresent
+    # -- Kuma DP Image Tag. When not specified, the value is copied from global.tag
+    tag:
+
+  initImage:
+    # -- The Kuma DP init image repository
+    repository: "kuma-init"
+    # -- Kuma DP init image tag When not specified, the value is copied from global.tag
+    tag:
+
+ingress:
+  # -- If true, it deploys Ingress for cross cluster communication
+  enabled: false
+
+  # -- Labels to add to resources, in addition to default labels
+  extraLabels: {}
+
+  # -- Time for which old listener will still be active as draining
+  drainTime: 30s
+
+  # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
+  replicas: 1
+
+  # -- Define the resources to allocate to mesh ingress
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
+  service:
+    # -- Whether to create a Service resource.
+    enabled: true
+    # -- Service type of the Ingress
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Ingress service
+    annotations: { }
+    # -- Port on which Ingress is exposed
+    port: 10001
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
+  # -- Additional pod annotations (deprecated favor `podAnnotations`)
+  annotations: { }
+  # -- Additional pod annotations
+  podAnnotations: { }
+  # -- Node Selector for the Ingress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+  # -- Tolerations for the Ingress pods
+  tolerations: []
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
+  # -- Affinity placement rule for the Kuma Ingress pods
+  # This is rendered as a template, so you can reference other helm variables
+  # or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-ingress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
+
+  # -- Security context at the pod level for ingress
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for ingress
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
+egress:
+  # -- If true, it deploys Egress for cross cluster communication
+  enabled: false
+  # -- Labels to add to resources, in addition to the default labels.
+  extraLabels: {}
+  # -- Time for which old listener will still be active as draining
+  drainTime: 30s
+  # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
+  replicas: 1
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
+  service:
+    # -- Whether to create the service object
+    enabled: true
+    # -- Service type of the Egress
+    type: ClusterIP
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Egress service
+    annotations: { }
+    # -- Port on which Egress is exposed
+    port: 10002
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
+  # -- Additional pod annotations (deprecated favor `podAnnotations`)
+  annotations: { }
+  # -- Additional pod annotations
+  podAnnotations: { }
+  # -- Node Selector for the Egress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+  # -- Tolerations for the Egress pods
+  tolerations: []
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
+  # -- Affinity placement rule for the Kuma Egress pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-egress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Egress pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
+
+  # -- Security context at the pod level for egress
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for egress
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
+kumactl:
+  image:
+    # -- The kumactl image repository
+    repository: kumactl
+    # -- The kumactl image tag. When not specified, the value is copied from global.tag
+    tag:
+
+kubectl:
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
+  image:
+    # -- The kubectl image registry
+    registry: kumahq
+    # -- The kubectl image repository
+    repository: kubectl
+    # -- The kubectl image tag
+    tag: "v1.20.15"
+hooks:
+  # -- Node selector for the HELM hooks
+  nodeSelector:
+    kubernetes.io/os: linux
+  # -- Tolerations for the HELM hooks
+  tolerations: []
+  # -- Security context at the pod level for crd/webhook/ns
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for crd/webhook/ns
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
+experimental:
+  # -- If true, it installs experimental Gateway API support
+  gatewayAPI: false
+  # -- If true, it installs experimental new version of the CNI
+  cni: false
+  # -- If true, use the new transparent proxy engine
+  transparentProxy: false
+  # Configuration for the experimental ebpf mode for transparent proxy
+  ebpf:
+    # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
+    enabled: false
+    # -- Name of the environmental variable which will contain the IP address of a pod
+    instanceIPEnvVarName: INSTANCE_IP
+    # -- Path where BPF file system should be mounted
+    bpffsPath: /sys/fs/bpf
+    # -- Host's cgroup2 path
+    cgroupPath: /sys/fs/cgroup
+    # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
+    tcAttachIface: ""
+    # -- Path where compiled eBPF programs which will be installed can be found
+    programsSourcePath: /kuma/ebpf
+
+# @ignored for helm-docs
+plugins:
+  policies:
+    meshaccesslogs: {}
+    meshcircuitbreakers: {}
+    meshfaultinjections: {}
+    meshhealthchecks: {}
+    meshhttproutes: {}
+    meshproxypatches: {}
+    meshratelimits: {}
+    meshretries: {}
+    meshtimeouts: {}
+    meshtraces: {}
+    meshtrafficpermissions: {}

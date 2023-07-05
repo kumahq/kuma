@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/PrometheusEnvoyConfig",
+    "definitions": {
+        "PrometheusEnvoyConfig": {
+            "properties": {
+                "filterRegex": {
+                    "type": "string",
+                    "description": "FilterRegex value that is going to be passed to Envoy for filtering Envoy metrics."
+                },
+                "usedOnly": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then return metrics that Envoy has updated (counters incremented at least once, gauges changed at least once, and histograms added to at least once). If nil, then it is treated as false."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Envoy Config",
+            "description": "PrometheusEnvoyConfig defines filters that should be passed to Envoy for filtering."
+        }
+    }
+}
