@@ -27,6 +27,7 @@ func (t *k8SDeployment) Name() string {
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	helmOpts := &helm.Options{
+		Version: "12.6.0",
 		SetValues: map[string]string{
 			"global.postgresql.auth.postgresPassword": t.options.postgresPassword,
 			"global.postgresql.auth.username":         t.options.username,
