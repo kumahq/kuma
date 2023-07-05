@@ -119,7 +119,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
 	}
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.

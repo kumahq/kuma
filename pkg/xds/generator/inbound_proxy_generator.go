@@ -90,7 +90,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 			switch protocol {
 			// configuration for HTTP case
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:

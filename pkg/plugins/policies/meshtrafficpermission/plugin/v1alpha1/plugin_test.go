@@ -34,7 +34,7 @@ var _ = Describe("RBAC", func() {
 			// listener that matches
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("test_listener", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -47,7 +47,7 @@ var _ = Describe("RBAC", func() {
 			// listener that is originated from inbound proxy generator but won't match
 			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener2").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -60,7 +60,7 @@ var _ = Describe("RBAC", func() {
 			// listener that matches but is not originated from inbound proxy generator
 			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener3").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -141,26 +141,22 @@ var _ = Describe("RBAC", func() {
 			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener").
 				Configure(
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).Configure(
-						listeners.Name("external-service-1_mesh-1"),
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
 						listeners.MatchTransportProtocol("tls"),
 						listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
 						listeners.HttpConnectionManager("external-service-1", false),
 					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).Configure(
-						listeners.Name("external-service-2_mesh-1"),
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-1").Configure(
 						listeners.MatchTransportProtocol("tls"),
 						listeners.MatchServerNames("external-service-2{mesh=mesh-1}"),
 						listeners.TCPProxy("external-service-2"),
 					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).Configure(
-						listeners.Name("external-service-1_mesh-2"),
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-2").Configure(
 						listeners.MatchTransportProtocol("tls"),
 						listeners.MatchServerNames("external-service-1{mesh=mesh-2}"),
 						listeners.TCPProxy("external-service-1"),
 					)),
-					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).Configure(
-						listeners.Name("internal-service-1_mesh-1"),
+					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "internal-service-1_mesh-1").Configure(
 						listeners.MatchTransportProtocol("tls"),
 						listeners.MatchServerNames("internal-service-1{mesh=mesh-1}"),
 						listeners.TCPProxy("internal-service-1"),

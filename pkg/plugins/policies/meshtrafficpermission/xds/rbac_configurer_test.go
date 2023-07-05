@@ -29,7 +29,7 @@ var _ = Describe("RBACConfigurer", func() {
 				Mesh:      given.mesh,
 				StatsName: given.stats,
 			}
-			res, err := listeners.NewFilterChainBuilder(envoy.APIV3).Build()
+			res, err := listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).Build()
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

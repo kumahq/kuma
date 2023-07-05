@@ -24,7 +24,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then

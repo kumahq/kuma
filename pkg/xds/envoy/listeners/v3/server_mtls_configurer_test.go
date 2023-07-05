@@ -29,7 +29,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			// when
 			tracker := envoy_common.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(ServerSideMTLS(given.mesh, tracker)).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()

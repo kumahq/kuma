@@ -6,4 +6,6 @@ import (
 
 const (
 	APIV3 core_xds.APIVersion = "v3"
+	// AnonymousResource is an empty name for the resources
+	AnonymousResource = ""
 )

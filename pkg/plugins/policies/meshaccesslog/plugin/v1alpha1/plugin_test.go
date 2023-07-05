@@ -119,7 +119,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
 						Configure(
 							HttpOutboundRoute(
@@ -204,7 +204,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -259,7 +259,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -317,7 +317,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -378,7 +378,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -434,7 +434,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "other-service",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -447,7 +447,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "foo",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27778",
 							envoy_common.NewCluster(
@@ -460,7 +460,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "bar",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27779, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27779",
 							envoy_common.NewCluster(
@@ -672,7 +672,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -731,7 +731,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(
 							"127.0.0.1:27777",
 							envoy_common.NewCluster(
@@ -794,7 +794,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
 						Configure(
 							HttpOutboundRoute(
@@ -875,7 +875,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 						Configure(
 							HttpInboundRoutes(
