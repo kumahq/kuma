@@ -1,0 +1,202 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/MeshGateway",
+    "definitions": {
+        "MeshGateway": {
+            "properties": {
+                "selectors": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "Selectors is a list of selectors that are used to match builtin gateway dataplanes that will receive this MeshGateway configuration."
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags is the set of tags common to all of the gateway's listeners. This field must not include a `kuma.io/service` tag (the service is always defined on the dataplanes)."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGateway.Conf",
+                    "additionalProperties": true,
+                    "description": "The desired configuration of the MeshGateway."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Gateway",
+            "description": "MeshGateway is a virtual proxy. Each MeshGateway is bound to a set of builtin gateway dataplanes. Each builtin dataplane instance can host exactly one Gateway proxy configuration. Gateway aligns with the Kubernetes Gateway API. See that spec for detailed documentation."
+        },
+        "kuma.mesh.v1alpha1.MeshGateway.Conf": {
+            "properties": {
+                "listeners": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGateway.Listener"
+                    },
+                    "type": "array",
+                    "description": "Listeners define logical endpoints that are bound on this MeshGateway's address(es)."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Conf defines the desired state of MeshGateway. Aligns with MeshGatewaySpec."
+        },
+        "kuma.mesh.v1alpha1.MeshGateway.Listener": {
+            "properties": {
+                "hostname": {
+                    "type": "string",
+                    "description": "Hostname specifies the virtual hostname to match for protocol types that define this concept. When unspecified, \"\", or `*`, all hostnames are matched. This field can be omitted for protocols that don't require hostname based matching."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port is the network port. Multiple listeners may use the same port, subject to the Listener compatibility rules."
+                },
+                "protocol": {
+                    "enum": [
+                        "NONE",
+                        0,
+                        "TCP",
+                        1,
+                        "TLS",
+                        3,
+                        "HTTP",
+                        4,
+                        "HTTPS",
+                        5
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Protocol"
+                },
+                "tls": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGateway.TLS.Conf",
+                    "additionalProperties": true,
+                    "description": "TLS is the TLS configuration for the Listener. This field is required if the Protocol field is \"HTTPS\" or \"TLS\" and ignored otherwise."
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags specifies a unique combination of tags that routes can use to match themselves to this listener. When matching routes to listeners, the control plane constructs a set of matching tags for each listener by forming the union of the gateway tags and the listener tags. A route will be attached to the listener if all of the route's tags are preset in the matching tags"
+                },
+                "crossMesh": {
+                    "type": "boolean",
+                    "description": "CrossMesh enables traffic to flow to this listener only from other meshes."
+                },
+                "resources": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGateway.Listener.Resources",
+                    "additionalProperties": true,
+                    "description": "Resources is used to specify listener-specific resource settings."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Listener"
+        },
+        "kuma.mesh.v1alpha1.MeshGateway.Listener.Resources": {
+            "properties": {
+                "connection_limit": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resources"
+        },
+        "kuma.mesh.v1alpha1.MeshGateway.TLS.Conf": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "NONE",
+                        0,
+                        "TERMINATE",
+                        1,
+                        "PASSTHROUGH",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                },
+                "certificates": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.system.v1alpha1.DataSource"
+                    },
+                    "type": "array",
+                    "description": "Certificates is an array of datasources that contain TLS certificates and private keys.  Each datasource must contain a sequence of PEM-encoded objects. The server certificate and private key are required, but additional certificates are allowed and will be added to the certificate chain.  The server certificate must be the first certificate in the datasource. When multiple certificate datasources are configured, they must have different key types. In practice, this means that one datasource should contain an RSA key and certificate, and the other an ECDSA key and certificate."
+                },
+                "options": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshGateway.TLS.Options",
+                    "additionalProperties": true,
+                    "description": "Options should eventually configure how TLS is configured. This is where cipher suite and version configuration can be specified, client certificates enforced, and so on."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Aligns with MeshGatewayTLSConfig."
+        },
+        "kuma.mesh.v1alpha1.MeshGateway.TLS.Options": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Options",
+            "description": "TODO(jpeach)"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        },
+        "kuma.system.v1alpha1.DataSource": {
+            "properties": {
+                "secret": {
+                    "type": "string",
+                    "description": "Data source is a secret with given Secret key."
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Data source is a path to a file. Deprecated, use other sources of a data."
+                },
+                "inline": {
+                    "additionalProperties": true,
+                    "type": "string",
+                    "description": "Data source is inline bytes."
+                },
+                "inlineString": {
+                    "type": "string",
+                    "description": "Data source is inline string"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data Source",
+            "description": "DataSource defines the source of bytes to use."
+        }
+    }
+}
