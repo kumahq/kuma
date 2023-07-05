@@ -1,0 +1,212 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/HealthCheck",
+    "definitions": {
+        "HealthCheck": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that should be configured to do health checks."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that need to be health checked."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.HealthCheck.Conf",
+                    "additionalProperties": true,
+                    "description": "Configuration for various types of health checking."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Health Check",
+            "description": "HealthCheck defines configuration for health checking."
+        },
+        "kuma.mesh.v1alpha1.HealthCheck.Conf": {
+            "properties": {
+                "interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Interval between consecutive health checks.",
+                    "format": "regex"
+                },
+                "timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Maximum time to wait for a health check response.",
+                    "format": "regex"
+                },
+                "unhealthy_threshold": {
+                    "type": "integer",
+                    "description": "Number of consecutive unhealthy checks before considering a host unhealthy."
+                },
+                "healthy_threshold": {
+                    "type": "integer",
+                    "description": "Number of consecutive healthy checks before considering a host healthy."
+                },
+                "initial_jitter": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "If specified, Envoy will start health checking after for a random time in ms between 0 and initial_jitter. This only applies to the first health check.",
+                    "format": "regex"
+                },
+                "interval_jitter": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "If specified, during every interval Envoy will add interval_jitter to the wait time.",
+                    "format": "regex"
+                },
+                "interval_jitter_percent": {
+                    "type": "integer",
+                    "description": "If specified, during every interval Envoy will add interval_ms * interval_jitter_percent / 100 to the wait time. If interval_jitter_ms and interval_jitter_percent are both set, both of them will be used to increase the wait time."
+                },
+                "healthy_panic_threshold": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Allows to configure panic threshold for Envoy cluster. If not specified, the default is 50%. To disable panic mode, set to 0%."
+                },
+                "fail_traffic_on_panic": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If set to true, Envoy will not consider any hosts when the cluster is in 'panic mode'. Instead, the cluster will fail all requests as if all hosts are unhealthy. This can help avoid potentially overwhelming a failing service."
+                },
+                "event_log_path": {
+                    "type": "string",
+                    "description": "Specifies the path to the file where Envoy can log health check events. If empty, no event log will be written."
+                },
+                "always_log_health_check_failures": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If set to true, health check failure events will always be logged. If set to false, only the initial health check failure event will be logged. The default value is false."
+                },
+                "no_traffic_interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "The \"no traffic interval\" is a special health check interval that is used when a cluster has never had traffic routed to it. This lower interval allows cluster information to be kept up to date, without sending a potentially large amount of active health checking traffic for no reason. Once a cluster has been used for traffic routing, Envoy will shift back to using the standard health check interval that is defined. Note that this interval takes precedence over any other. The default value for \"no traffic interval\" is 60 seconds.",
+                    "format": "regex"
+                },
+                "tcp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.HealthCheck.Conf.Tcp",
+                    "additionalProperties": true
+                },
+                "http": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.HealthCheck.Conf.Http",
+                    "additionalProperties": true
+                },
+                "reuse_connection": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "Reuse health check connection between health checks. Default is true."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Conf defines configuration for various types of health checking."
+        },
+        "kuma.mesh.v1alpha1.HealthCheck.Conf.Http": {
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "The HTTP path which will be requested during the health check (ie. /health)  +required"
+                },
+                "request_headers_to_add": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.HealthCheck.Conf.Http.HeaderValueOption"
+                    },
+                    "type": "array",
+                    "description": "The list of HTTP headers which should be added to each health check request  +optional"
+                },
+                "expected_statuses": {
+                    "items": {
+                        "type": "integer",
+                        "title": "U Int 32 Value",
+                        "description": "Wrapper message for `uint32`. The JSON representation for `UInt32Value` is JSON number."
+                    },
+                    "type": "array",
+                    "description": "List of HTTP response statuses which are considered healthy  +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http",
+            "description": "Http defines optional Http configuration which will instruct the service the health check will be made for is an http service. It's mutually exclusive with the Tcp block so when provided you can't provide the Tcp configuration"
+        },
+        "kuma.mesh.v1alpha1.HealthCheck.Conf.Http.HeaderValue": {
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Header name  +required"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Header value  +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header Value"
+        },
+        "kuma.mesh.v1alpha1.HealthCheck.Conf.Http.HeaderValueOption": {
+            "properties": {
+                "header": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.HealthCheck.Conf.Http.HeaderValue",
+                    "additionalProperties": true,
+                    "description": "Key/Value representation of the HTTP header  +required"
+                },
+                "append": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "The bool value which if true (default) will mean the header values should be appended to already present ones  +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header Value Option"
+        },
+        "kuma.mesh.v1alpha1.HealthCheck.Conf.Tcp": {
+            "properties": {
+                "send": {
+                    "additionalProperties": true,
+                    "type": "string",
+                    "description": "Bytes which will be send during the health check to the target"
+                },
+                "receive": {
+                    "items": {
+                        "type": "string",
+                        "title": "Bytes Value",
+                        "description": "Wrapper message for `bytes`. The JSON representation for `BytesValue` is JSON string."
+                    },
+                    "type": "array",
+                    "description": "Bytes blocks expected as a response. When checking the response, “fuzzy” matching is performed such that each block must be found, and in the order specified, but not necessarily contiguous."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp",
+            "description": "Tcp defines optional configuration for specifying bytes to send and expected response during the health check"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}
