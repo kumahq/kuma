@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/XDSConfigResponse",
+    "definitions": {
+        "XDSConfigResponse": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID that was set by the Global CP."
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error that was captured by the Zone CP when executing XDS Config Dump."
+                },
+                "config": {
+                    "type": "string",
+                    "description": "The XDS Config that is a successful result of XDS Config dump execution.",
+                    "format": "binary",
+                    "binaryEncoding": "base64"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "XDS Config Response",
+            "description": "XDSConfigRequest is a response containing result of XDS Config Dump execution on Zone CP."
+        }
+    }
+}
