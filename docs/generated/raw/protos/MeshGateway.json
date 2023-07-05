@@ -60,8 +60,6 @@
                         0,
                         "TCP",
                         1,
-                        "TLS",
-                        3,
                         "HTTP",
                         4,
                         "HTTPS",
@@ -120,9 +118,7 @@
                         "NONE",
                         0,
                         "TERMINATE",
-                        1,
-                        "PASSTHROUGH",
-                        2
+                        1
                     ],
                     "oneOf": [
                         {

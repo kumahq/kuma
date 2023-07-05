@@ -27,9 +27,6 @@ controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
-  # -- Kuma CP log output path: Defaults to /dev/stdout
-  logOutputPath: ""
-
   # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 
@@ -55,9 +52,9 @@ controlPlane:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -111,14 +108,6 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   service:
-    apiServer:
-      http:
-        # -- Port on which Http api server Service is exposed on Node for service of type NodePort
-        nodePort: 30681
-      https:
-        # -- Port on which Https api server Service is exposed on Node for service of type NodePort
-        nodePort: 30682
-
     # -- Whether to create a service resource.
     enabled: true
 
@@ -158,12 +147,8 @@ controlPlane:
     loadBalancerIP:
     # -- Additional annotations to put on the Global Zone Sync Service
     annotations: { }
-    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
-    nodePort: 30685
     # -- Port on which Global Zone Sync Service is exposed
     port: 5685
-    # -- Protocol of the Global Zone Sync service port
-    protocol: grpc
 
   defaults:
     # -- Whether to skip creating the default Mesh
@@ -235,8 +220,6 @@ controlPlane:
       create: false
       # -- CA bundle that was used to sign the certificate of KDS Global Server.
       cert: ""
-      # -- If true, TLS cert of the server is not verified.
-      skipVerify: false
 
   image:
     # -- Kuma CP ImagePullPolicy
@@ -320,8 +303,6 @@ cni:
   tolerations: []
   # -- Additional pod annotations
   podAnnotations: { }
-  # -- Set the CNI namespace
-  namespace: kube-system
 
   image:
     # -- CNI image repository
@@ -353,13 +334,27 @@ cni:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
 
   # -- Security context at the container level for cni
-  containerSecurityContext:
-    readOnlyRootFilesystem: true
-    runAsNonRoot: false
-    runAsUser: 0
-    runAsGroup: 0
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 dataPlane:
   image:
@@ -416,9 +411,9 @@ ingress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -514,9 +509,9 @@ egress:
     # -- The max CP pods to scale to
     maxReplicas: 5
 
-    # -- For clusters that don't support autoscaling/v2, autoscaling/v1 is used
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
     targetCPUUtilizationPercentage: 80
-    # -- For clusters that do support autoscaling/v2, use metrics
+    # -- For clusters that do support autoscaling/v2beta, use metrics
     metrics:
       - type: Resource
         resource:
@@ -657,8 +652,6 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
-  # -- If true, it uses new API for resource synchronization
-  deltaKds: false
 
 legacy:
   # -- If true, use the legacy transparent proxy engine
@@ -708,7 +701,6 @@ plugins:
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}
-    meshtcproutes: {}
     meshtimeouts: {}
     meshtraces: {}
     meshtrafficpermissions: {}
