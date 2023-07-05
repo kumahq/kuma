@@ -2,34 +2,32 @@
 
 - `sources` (required, repeated)
 
-    List of selectors to match dataplanes that are sources of traffic.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match dataplanes that are sources of traffic.
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that are destinations of traffic.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match services that are destinations of traffic.
 
-- `conf` (required)    
+- `conf` (required)
+
+    Child properties:    
     
     - `connectTimeout` (optional)
     
         ConnectTimeout defines time to establish connection    
     
-    - `tcp` (optional)    
+    - `tcp` (optional)
+    
+        Child properties:    
         
         - `idleTimeout` (required)
         
             IdleTimeout is defined as the period in which there are no bytes sent
             or received on either the upstream or downstream connection    
     
-    - `http` (optional)    
+    - `http` (optional)
+    
+        Child properties:    
         
         - `requestTimeout` (optional)
         
@@ -54,7 +52,9 @@
     
     - `grpc` (optional)
     
-        Deprecated: set parameters through Http section    
+        Deprecated: set parameters through Http section
+    
+        Child properties:    
         
         - `streamIdleTimeout` (optional)
         

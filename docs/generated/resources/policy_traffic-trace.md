@@ -2,15 +2,13 @@
 
 - `selectors` (required, repeated)
 
-    List of selectors to match dataplanes.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match dataplanes.
 
 - `conf` (optional)
 
-    Configuration of the tracing.    
+    Configuration of the tracing.
+
+    Child properties:    
     
     - `backend` (optional)
     

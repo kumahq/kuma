@@ -7,7 +7,9 @@
 
 - `networking` (required)
 
-    Networking defines the address and port of the Egress to listen on.    
+    Networking defines the address and port of the Egress to listen on.
+
+    Child properties:    
     
     - `address` (required)
     
@@ -19,7 +21,9 @@
     
     - `admin` (optional)
     
-        Admin contains configuration related to Envoy Admin API    
+        Admin contains configuration related to Envoy Admin API
+    
+        Child properties:    
         
         - `port` (optional)
         

@@ -2,29 +2,25 @@
 
 - `sources` (required, repeated)
 
-    List of selectors to match dataplanes that rate limit will be applied for    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match dataplanes that rate limit will be applied for
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that need to be rate limited.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match services that need to be rate limited.
 
 - `conf` (required)
 
     Configuration for RateLimit
-    +required    
+    +required
+
+    Child properties:    
     
     - `http` (optional)
     
         The HTTP RateLimit configuration
-        +optional    
+        +optional
+    
+        Child properties:    
         
         - `requests` (required)
         
@@ -36,10 +32,12 @@
             The the interval for which `requests` will be accounted.
             +required    
         
-        - `onRateLimit` (optional)
+        - `onratelimit` (optional)
         
             Describes the actions to take on RatelLimiter event
-            +optional    
+            +optional
+        
+            Child properties:    
             
             - `status` (optional)
             
@@ -49,20 +47,5 @@
             - `headers` (optional, repeated)
             
                 The Headers to be added to the HTTP response on a RateLimit event
-                +optional    
-                
-                - `key` (optional)
-                
-                    Header name
-                    +optional    
-                
-                - `value` (optional)
-                
-                    Header value
-                    +optional    
-                
-                - `append` (optional)
-                
-                    Should the header be appended
-                    +optional
+                +optional
 

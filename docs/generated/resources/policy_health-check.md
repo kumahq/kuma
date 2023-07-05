@@ -3,23 +3,17 @@
 - `sources` (required, repeated)
 
     List of selectors to match dataplanes that should be configured to do
-    health checks.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    health checks.
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that need to be health checked.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match services that need to be health checked.
 
 - `conf` (required)
 
-    Configuration for various types of health checking.    
+    Configuration for various types of health checking.
+
+    Child properties:    
     
     - `interval` (required)
     
@@ -90,7 +84,9 @@
         this interval takes precedence over any other. The default value for "no
         traffic interval" is 60 seconds.    
     
-    - `tcp` (optional)    
+    - `tcp` (optional)
+    
+        Child properties:    
         
         - `send` (optional)
         
@@ -102,7 +98,9 @@
             “fuzzy” matching is performed such that each block must be found, and
             in the order specified, but not necessarily contiguous.    
     
-    - `http` (optional)    
+    - `http` (optional)
+    
+        Child properties:    
         
         - `path` (required)
         
@@ -115,27 +113,6 @@
             The list of HTTP headers which should be added to each health check
             request
             +optional    
-            
-            - `header` (required)
-            
-                Key/Value representation of the HTTP header
-                +required    
-                
-                - `key` (required)
-                
-                    Header name
-                    +required    
-                
-                - `value` (optional)
-                
-                    Header value
-                    +optional    
-            
-            - `append` (optional)
-            
-                The bool value which if true (default) will mean the header values
-                should be appended to already present ones
-                +optional    
         
         - `expectedStatuses` (optional, repeated)
         

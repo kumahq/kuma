@@ -3,25 +3,21 @@
 - `sources` (required, repeated)
 
     List of selectors to match dataplanes that retry policy should be
-    configured for    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    configured for
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that need to be health checked.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match services that need to be health checked.
 
 - `conf` (required)
 
-    +required    
+    +required
+
+    Child properties:    
     
-    - `http` (optional)    
+    - `http` (optional)
+    
+        Child properties:    
         
         - `numRetries` (optional)
         
@@ -33,7 +29,9 @@
         
         - `backOff` (optional)
         
-            +optional    
+            +optional
+        
+            Child properties:    
             
             - `baseInterval` (required)
             
@@ -47,9 +45,11 @@
         
             +optional    
         
-        - `retriableMethods` (optional, repeated, enum)
+        - `retriableMethods` (optional, repeated)
         
             +optional
+        
+            Supported values:
         
             - `NONE`
         
@@ -71,9 +71,11 @@
         
             - `TRACE`    
         
-        - `retryOn` (optional, repeated, enum)
+        - `retryOn` (optional, repeated)
         
             +optional
+        
+            Supported values:
         
             - `all_5xx`
         
@@ -95,17 +97,23 @@
         
             - `http3_post_connect_failure`    
     
-    - `tcp` (optional)    
+    - `tcp` (optional)
+    
+        Child properties:    
         
         - `maxConnectAttempts` (optional)
         
             +optional    
     
-    - `grpc` (optional)    
+    - `grpc` (optional)
+    
+        Child properties:    
         
-        - `retryOn` (optional, repeated, enum)
+        - `retryOn` (optional, repeated)
         
             +optional
+        
+            Supported values:
         
             - `cancelled`
         
@@ -127,7 +135,9 @@
         
         - `backOff` (optional)
         
-            +optional    
+            +optional
+        
+            Child properties:    
             
             - `baseInterval` (required)
             

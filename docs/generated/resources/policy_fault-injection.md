@@ -2,28 +2,24 @@
 
 - `sources` (required, repeated)
 
-    List of selectors to match dataplanes that are sources of traffic.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match dataplanes that are sources of traffic.
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that are destinations of traffic.    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match services that are destinations of traffic.
 
 - `conf` (required)
 
-    Configuration of FaultInjection    
+    Configuration of FaultInjection
+
+    Child properties:    
     
     - `delay` (optional)
     
         Delay if specified then response from the destination will be delivered
-        with a delay    
+        with a delay
+    
+        Child properties:    
         
         - `percentage` (required)
         
@@ -36,20 +32,24 @@
     
     - `abort` (optional)
     
-        Abort if specified makes source side to receive specified httpStatus code    
+        Abort if specified makes source side to receive specified httpStatus code
+    
+        Child properties:    
         
         - `percentage` (required)
         
             Percentage of requests on which abort will be injected, has to be in
             [0.0 - 100.0] range    
         
-        - `httpStatus` (required)
+        - `httpstatus` (required)
         
             HTTP status code which will be returned to source side    
     
     - `responseBandwidth` (optional)
     
-        ResponseBandwidth if specified limits the speed of sending response body    
+        ResponseBandwidth if specified limits the speed of sending response body
+    
+        Child properties:    
         
         - `percentage` (required)
         
