@@ -16,14 +16,7 @@ spec:
     singular: meshretry
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.targetRef.kind
-      name: TargetRef Kind
-      type: string
-    - jsonPath: .spec.targetRef.name
-      name: TargetRef Name
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -52,7 +45,6 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
-                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -372,7 +364,6 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
-                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -403,4 +394,3 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
