@@ -1,16 +1,12 @@
 ## ExternalService
 
-- `networking` (required)
-
-    Child properties:    
+- `networking` (required)    
     
     - `address` (required)
     
         Address of the external service    
     
-    - `tls` (optional)
-    
-        Child properties:    
+    - `tls` (optional)    
         
         - `enabled` (optional)
         
@@ -28,7 +24,7 @@
         
             Data source for the authentication    
         
-        - `allowrenegotiation` (optional)
+        - `allowRenegotiation` (optional)
         
             If true then TLS session will allow renegotiation.
             It's not recommended to set this to true because of security reasons.
