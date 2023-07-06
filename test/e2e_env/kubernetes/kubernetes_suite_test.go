@@ -64,6 +64,7 @@ var (
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
+	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
