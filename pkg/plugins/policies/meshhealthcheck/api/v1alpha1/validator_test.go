@@ -69,6 +69,19 @@ to:
         serviceName: "" # optional, service name parameter which will be sent to gRPC service
         authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
 `),
+			Entry("top level MeshGateway", `
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
 		)
 
 		type testCase struct {
