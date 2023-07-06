@@ -408,15 +408,11 @@ func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, s
 	}
 
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-<<<<<<< HEAD
-		tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
-=======
 		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
 			tlsReady[svc] = true
 		} else {
-			tlsReady[svc] = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
+			tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
 		}
->>>>>>> 6e228b7e5 (fix(kuma-cp): handle external services with permissive mtls (#7179))
 	}
 	return tlsReady
 }
