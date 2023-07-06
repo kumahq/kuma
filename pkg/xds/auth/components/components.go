@@ -8,39 +8,39 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
 	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
-type Context interface {
-	Config() kuma_cp.Config
-	Extensions() context.Context
-	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
-	Metrics() core_metrics.Metrics
+type Deps struct {
+	Config                  kuma_cp.Config
+	Extensions              context.Context
+	ReadOnlyResourceManager core_manager.ReadOnlyResourceManager
+	XdsMetrics              *xds_metrics.Metrics
 }
 
-func NewKubeAuthenticator(rt Context) (auth.Authenticator, error) {
-	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
+func NewKubeAuthenticator(deps Deps) (auth.Authenticator, error) {
+	mgr, ok := k8s_extensions.FromManagerContext(deps.Extensions)
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	return k8s_auth.New(mgr.GetClient(), rt.Metrics())
+	return k8s_auth.New(mgr.GetClient(), deps.XdsMetrics), nil
 }
 
-func NewUniversalAuthenticator(rt Context) (auth.Authenticator, error) {
-	config := rt.Config()
+func NewUniversalAuthenticator(deps Deps) (auth.Authenticator, error) {
+	config := deps.Config
 
-	dataplaneValidator, err := builtin.NewDataplaneTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type, config.DpServer.Authn.DpProxy.DpToken.Validator)
+	dataplaneValidator, err := builtin.NewDataplaneTokenValidator(deps.ReadOnlyResourceManager, config.Store.Type, config.DpServer.Authn.DpProxy.DpToken.Validator)
 	if err != nil {
 		return nil, err
 	}
-	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type)
-	zoneTokenValidator, err := builtin.NewZoneTokenValidator(rt.ReadOnlyResourceManager(), config.Mode, config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
+	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(deps.ReadOnlyResourceManager, config.Store.Type)
+	zoneTokenValidator, err := builtin.NewZoneTokenValidator(deps.ReadOnlyResourceManager, config.Mode, config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
 	if err != nil {
 		return nil, err
 	}
@@ -49,12 +49,12 @@ func NewUniversalAuthenticator(rt Context) (auth.Authenticator, error) {
 	return universal_auth.NewAuthenticator(dataplaneValidator, adaptedValidator, config.Multizone.Zone.Name), nil
 }
 
-func DefaultAuthenticator(rt Context, typ string) (auth.Authenticator, error) {
+func DefaultAuthenticator(deps Deps, typ string) (auth.Authenticator, error) {
 	switch typ {
 	case dp_server.DpServerAuthServiceAccountToken:
-		return NewKubeAuthenticator(rt)
+		return NewKubeAuthenticator(deps)
 	case dp_server.DpServerAuthDpToken, dp_server.DpServerAuthZoneToken:
-		return NewUniversalAuthenticator(rt)
+		return NewUniversalAuthenticator(deps)
 	case dp_server.DpServerAuthNone:
 		return universal_auth.NewNoopAuthenticator(), nil
 	default:

@@ -14,28 +14,23 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/metrics"
 	util_cache "github.com/kumahq/kuma/pkg/util/cache"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/auth"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
-func New(client kube_client.Client, metrics metrics.Metrics) (auth.Authenticator, error) {
-	metric := util_cache.NewMetric("kube_auth_cache", "Number of cache operations for Kubernetes authentication on XDS connection")
-	if err := metrics.Register(metric); err != nil {
-		return nil, err
-	}
-
+func New(client kube_client.Client, metrics *xds_metrics.Metrics) auth.Authenticator {
 	authCache := cache.New(
 		cache.WithExpireAfterAccess(1*time.Hour),
 		cache.WithMaximumSize(100000),
-		cache.WithStatsCounter(&util_cache.PrometheusStatsCounter{Metric: metric}),
+		cache.WithStatsCounter(&util_cache.PrometheusStatsCounter{Metric: metrics.KubeAuthCache}),
 	)
 
 	return &kubeAuthenticator{
 		client:        client,
 		authenticated: authCache,
-	}, nil
+	}
 }
 
 type kubeAuthenticator struct {
