@@ -8,6 +8,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -20,6 +21,7 @@ type Context interface {
 	Config() kuma_cp.Config
 	Extensions() context.Context
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
+	Metrics() core_metrics.Metrics
 }
 
 func NewKubeAuthenticator(rt Context) (auth.Authenticator, error) {
@@ -27,7 +29,7 @@ func NewKubeAuthenticator(rt Context) (auth.Authenticator, error) {
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	return k8s_auth.New(mgr.GetClient()), nil
+	return k8s_auth.New(mgr.GetClient(), rt.Metrics())
 }
 
 func NewUniversalAuthenticator(rt Context) (auth.Authenticator, error) {

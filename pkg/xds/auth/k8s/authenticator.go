@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/patrickmn/go-cache"
+	"github.com/goburrow/cache"
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
@@ -14,29 +14,40 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/metrics"
+	util_cache "github.com/kumahq/kuma/pkg/util/cache"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func New(client kube_client.Client) auth.Authenticator {
+func New(client kube_client.Client, metrics metrics.Metrics) (auth.Authenticator, error) {
+	metric := util_cache.NewMetric("kube_auth_cache", "Number of cache operations for Kubernetes authentication on XDS connection")
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
+
+	authCache := cache.New(
+		cache.WithExpireAfterAccess(1*time.Hour),
+		cache.WithMaximumSize(100000),
+		cache.WithStatsCounter(&util_cache.PrometheusStatsCounter{Metric: metric}),
+	)
+
 	return &kubeAuthenticator{
 		client:        client,
-		authenticated: cache.New(1*time.Hour, 1*time.Minute),
-	}
+		authenticated: authCache,
+	}, nil
 }
 
 type kubeAuthenticator struct {
 	client kube_client.Client
 
-	authenticated *cache.Cache
+	authenticated cache.Cache
 }
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	_, authenticated := k.authenticated.Get(credential)
-	if authenticated {
-		k.authenticated.Set(credential, struct{}{}, 1*time.Hour) // prolong the cache
+	if _, authenticated := k.authenticated.GetIfPresent(credential); authenticated {
 		return nil
 	}
 
@@ -52,7 +63,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 		return err
 	}
 
-	k.authenticated.Set(credential, struct{}{}, 1*time.Hour)
+	k.authenticated.Put(credential, struct{}{})
 	return nil
 }
 

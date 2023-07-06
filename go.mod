@@ -19,6 +19,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.4
+	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/golang/protobuf v1.5.3
