@@ -170,25 +170,3 @@ var _ = Describe("Process Metrics", func() {
 		}),
 	)
 })
-
-var _ = Describe("ProcessNewlineChars", func() {
-	type testCase struct {
-		input    string
-		expected string
-	}
-
-	DescribeTable("should",
-		func(given testCase) {
-			actual := string(processNewlineChars([]byte(given.input)))
-			Expect(actual).To(Equal(given.expected))
-		},
-		Entry("should dedup newline characters and trim spaces", testCase{
-			input:    "\n This is a test.\n\n\n\nThis is another test\n\n  ",
-			expected: "This is a test.\nThis is another test",
-		}),
-		Entry("should dedup newline characters and trim spaces", testCase{
-			input:    "\nThis is a test.\n \nThis is another test\n",
-			expected: "This is a test.\n \nThis is another test",
-		}),
-	)
-})
