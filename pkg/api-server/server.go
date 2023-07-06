@@ -110,6 +110,10 @@ func NewApiServer(
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
+
+	// NOTE: This must come before any filters that make HTTP calls
+	container.Filter(otelrestful.OTelFilter("api-server"))
+
 	if cfg.ApiServer.Authn.LocalhostIsAdmin {
 		container.Filter(authn.LocalhostAuthenticator)
 	}
@@ -121,8 +125,6 @@ func NewApiServer(
 		Container:      container,
 	}
 	container.Filter(cors.Filter)
-
-	container.Filter(otelrestful.OTelFilter("api-server"))
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.
