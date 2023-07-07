@@ -57,7 +57,6 @@ type K8sCluster struct {
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
-	envoyTunnels        map[string]envoy_admin.Tunnel
 	portForwards        map[string]PortFwd
 }
 
@@ -73,7 +72,6 @@ func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sClu
 		deployments:         map[string]Deployment{},
 		defaultRetries:      Config.DefaultClusterStartupRetries,
 		defaultTimeout:      Config.DefaultClusterStartupTimeout,
-		envoyTunnels:        map[string]envoy_admin.Tunnel{},
 		portForwards:        map[string]PortFwd{},
 	}
 }
@@ -89,89 +87,53 @@ func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
 	return c
 }
 
-func (c *K8sCluster) createPortForward(
-	t testing.TestingT,
-	kubectlOptions *k8s.KubectlOptions,
-	resourceType k8s.KubeResourceType,
-	resourceName string,
-	port int,
-) error {
+func (c *K8sCluster) PortForwardService(name, namespace string, port int) error {
 	localPort, err := utils.GetFreePort()
 	if err != nil {
 		return errors.Wrapf(err, "getting free port for the new tunnel failed")
 	}
-	tunnel := k8s.NewTunnel(kubectlOptions, resourceType, resourceName, localPort, port)
 
-	if err := tunnel.ForwardPortE(t); err != nil {
+	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), k8s.ResourceTypeService, name, localPort, port)
+	if err := tnl.ForwardPortE(c.t); err != nil {
 		return errors.Wrapf(err, "port forwarding for %d:%d failed", localPort, port)
 	}
-	c.portForwards[resourceName] = PortFwd{
-		apiServerTunnel:   tunnel,
-		ApiServerEndpoint: tunnel.Endpoint(),
+
+	c.portForwards[name] = PortFwd{
+		apiServerTunnel:   tnl,
+		ApiServerEndpoint: tnl.Endpoint(),
 	}
 
 	return nil
 }
 
-func (c *K8sCluster) createEgressEnvoyTunnel() error {
-	err := c.createPortForward(
-		c.t,
-		c.GetKubectlOptions(Config.KumaNamespace),
-		k8s.ResourceTypeService,
-		Config.ZoneEgressApp,
-		9901,
-	)
-	if err != nil {
-		return err
-	}
-	err = c.createEnvoyAdminTunnel(c.portForwards[Config.ZoneEgressApp], Config.ZoneEgressApp)
-	if err != nil {
-		return err
-	}
+func (c *K8sCluster) AddPortForward(portForwards PortFwd, name string) error {
+	c.portForwards[name] = portForwards
 	return nil
 }
 
-func (c *K8sCluster) createIngressEnvoyTunnel() error {
-	err := c.createPortForward(
-		c.t,
-		c.GetKubectlOptions(Config.KumaNamespace),
-		k8s.ResourceTypeService,
-		Config.ZoneIngressApp,
-		9901,
-	)
-	if err != nil {
-		return err
-	}
-	err = c.createEnvoyAdminTunnel(c.portForwards[Config.ZoneIngressApp], Config.ZoneIngressApp)
-	if err != nil {
-		return err
-	}
-	return nil
+func (c *K8sCluster) GetPortForward(name string) PortFwd {
+	return c.portForwards[name]
 }
 
-func (c *K8sCluster) createEnvoyAdminTunnel(portForwards PortFwd, name string) error {
-	t, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, portForwards.ApiServerEndpoint)
-	if err != nil {
-		return err
-	}
-	c.envoyTunnels[name] = t
-	return nil
+func (c *K8sCluster) ClosePortForward(name string) {
+	c.portForwards[name].apiServerTunnel.Close()
+	delete(c.portForwards, name)
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	tnl, ok := c.portForwards[Config.ZoneEgressApp]
 	if !ok {
 		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
 	}
-	return t
+	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
+	tnl, ok := c.portForwards[Config.ZoneIngressApp]
 	if !ok {
 		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
-	return t
+	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
 
 func (c *K8sCluster) Verbose() bool {
@@ -605,7 +567,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
 		}
 
-		if err := c.createEgressEnvoyTunnel(); err != nil {
+		if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -615,7 +577,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
 		}
 
-		if err := c.createIngressEnvoyTunnel(); err != nil {
+		if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -740,7 +702,7 @@ func (c *K8sCluster) StartZoneIngress() error {
 	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.createIngressEnvoyTunnel(); err != nil {
+	if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil
@@ -751,7 +713,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards(Config.ZoneIngressApp)
+	c.ClosePortForward(Config.ZoneIngressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone ingress to be down",
 		c.defaultRetries,
@@ -779,7 +741,7 @@ func (c *K8sCluster) StartZoneEgress() error {
 	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.createEgressEnvoyTunnel(); err != nil {
+	if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil
@@ -790,7 +752,7 @@ func (c *K8sCluster) StopZoneEgress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards(Config.ZoneEgressApp)
+	c.ClosePortForward(Config.ZoneEgressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone egress to be down",
 		c.defaultRetries,
@@ -897,12 +859,6 @@ func (c *K8sCluster) VerifyKuma() error {
 	return nil
 }
 
-func (c *K8sCluster) closePortForwards(name string) {
-	c.portForwards[name].apiServerTunnel.Close()
-	delete(c.portForwards, name)
-	delete(c.envoyTunnels, name)
-}
-
 func (c *K8sCluster) deleteCRDs() error {
 	out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "name")
 	if err != nil {
@@ -986,27 +942,6 @@ func (c *K8sCluster) DeleteKuma() error {
 	}
 
 	return err
-}
-
-func (c *K8sCluster) AddPortForward(portForwards PortFwd, name string) error {
-	c.portForwards[name] = portForwards
-	err := c.createEnvoyAdminTunnel(portForwards, name)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *K8sCluster) GetZoneIngressPortForward() PortFwd {
-	return c.getPortForward(Config.ZoneIngressApp)
-}
-
-func (c *K8sCluster) GetZoneEgressPortForward() PortFwd {
-	return c.getPortForward(Config.ZoneEgressApp)
-}
-
-func (c *K8sCluster) getPortForward(name string) PortFwd {
-	return c.portForwards[name]
 }
 
 func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {

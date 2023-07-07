@@ -144,13 +144,13 @@ func SetupAndGetState() []byte {
 			KumaCp:      UniZone2.GetKuma().(*UniversalControlPlane).Networking(),
 		},
 		KubeZone1: K8sNetworkingState{
-			ZoneEgress:  KubeZone1.GetZoneEgressPortForward(),
-			ZoneIngress: KubeZone1.GetZoneIngressPortForward(),
+			ZoneEgress:  KubeZone1.GetPortForward(Config.ZoneEgressApp),
+			ZoneIngress: KubeZone1.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
-			ZoneEgress:  KubeZone2.GetZoneEgressPortForward(),
-			ZoneIngress: KubeZone2.GetZoneIngressPortForward(),
+			ZoneEgress:  KubeZone2.GetPortForward(Config.ZoneEgressApp),
+			ZoneIngress: KubeZone2.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 	}
