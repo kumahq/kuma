@@ -128,7 +128,7 @@ func applyToOutbounds(
 			continue
 		}
 
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetServiceName()
 
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,

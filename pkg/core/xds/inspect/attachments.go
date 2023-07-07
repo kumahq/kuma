@@ -87,7 +87,7 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 
 	serviceByOutbound := map[mesh_proto.OutboundInterface]string{}
 	for _, oface := range networking.GetOutbound() {
-		serviceByOutbound[networking.ToOutboundInterface(oface)] = oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceByOutbound[networking.ToOutboundInterface(oface)] = oface.GetServiceName()
 	}
 
 	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {

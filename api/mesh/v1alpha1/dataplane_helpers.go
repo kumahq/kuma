@@ -240,6 +240,17 @@ func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]stri
 	return d.Tags
 }
 
+// GetServiceName returns a service name represented by this outbound interface.
+//
+// The purpose of this method is to encapsulate implementation detail
+// that service is modeled as a tag rather than a separate field.
+func (d *Dataplane_Networking_Outbound) GetServiceName() string {
+	if d == nil || d.GetTagsIncludingLegacy() == nil {
+		return ""
+	}
+	return d.GetTagsIncludingLegacy()[ServiceTag]
+}
+
 const MatchAllTag = "*"
 
 type TagSelector map[string]string
