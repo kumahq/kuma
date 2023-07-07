@@ -21,7 +21,6 @@ var (
 	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
 	SetLogger             = kube_log.SetLogger
 	Now                   = time.Now
-	TempDir               = os.TempDir
 
 	SetupSignalHandler = func() (context.Context, context.Context) {
 		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())

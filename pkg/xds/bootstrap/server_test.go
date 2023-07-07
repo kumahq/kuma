@@ -95,7 +95,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, "/tmp")
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -128,9 +128,6 @@ var _ = Describe("Bootstrap Server", func() {
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
-		}
-		core.TempDir = func() string {
-			return "/tmp"
 		}
 	})
 

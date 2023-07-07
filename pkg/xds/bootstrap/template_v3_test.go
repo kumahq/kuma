@@ -4,12 +4,14 @@ import (
 	"errors"
 	"net"
 
+
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -98,6 +100,7 @@ var _ = Describe("genConfig", func() {
 	It("should has google grpc and no initial metadata when use path enabled and path provided", func() {
 		// given
 		params := configParameters{
+			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,
 			DataplaneToken:     "token",
@@ -151,6 +154,7 @@ var _ = Describe("genConfig", func() {
 	It("should has initial metadata when usePath disabled", func() {
 		// given
 		params := configParameters{
+			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,
 			DataplaneToken:     "token",
@@ -186,6 +190,7 @@ var _ = Describe("genConfig", func() {
 	It("should use envoy grpc and has initial metadata when usePath enabled but no path", func() {
 		// given
 		params := configParameters{
+			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,
 			DataplaneToken:     "token",

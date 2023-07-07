@@ -65,6 +65,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Routing:        *routing,
 		Policies:       *matchedPolicies,
 		SecretsTracker: secretsTracker,
+		Metadata:       &core_xds.DataplaneMetadata{},
 	}
 	return proxy, nil
 }

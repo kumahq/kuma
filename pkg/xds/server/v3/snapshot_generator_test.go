@@ -131,6 +131,10 @@ var _ = Describe("GenerateSnapshot", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
+		proxy.Metadata = &model.DataplaneMetadata{
+			AccessLogSocketPath: "/tmp/kuma-al-dp.socket",
+			MetricsSocketPath:   "/tmp/kuma-mh-dp.socket",
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		metrics, err := metrics.NewMetrics("")

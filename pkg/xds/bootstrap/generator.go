@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 )
 
 type BootstrapGenerator interface {
@@ -39,6 +38,7 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
+	tmpDir string,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -57,6 +57,7 @@ func NewDefaultBootstrapGenerator(
 		hostsAndIps:             hostsAndIps,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
+		TmpDir:                  tmpDir,
 	}, nil
 }
 
@@ -70,6 +71,7 @@ type bootstrapGenerator struct {
 	hostsAndIps             SANSet
 	hdsEnabled              bool
 	defaultAdminPort        uint32
+	TmpDir                  string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -80,32 +82,48 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
+	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the request
+	accessLogSocketPath := request.AccessLogSocketPath
+	if accessLogSocketPath == "" {
+		accessLogSocketPath = core_xds.AccessLogSocketName(os.TempDir(), request.Name, request.Mesh)
+	}
+	metricsSocketPath := request.MetricsSocketPath
+	if metricsSocketPath == "" {
+		metricsSocketPath = core_xds.MetricsHijackerSocketName(os.TempDir(), request.Name, request.Mesh)
+	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
-		Id:                    proxyId.String(),
-		AdminAddress:          b.config.Params.AdminAddress,
-		AdminAccessLogPath:    b.adminAccessLogPath(request.OperatingSystem),
-		XdsHost:               b.xdsHost(request),
-		XdsPort:               b.config.Params.XdsPort,
-		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout.Duration,
-		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
-		DataplaneToken:        request.DataplaneToken,
-		DataplaneTokenPath:    request.DataplaneTokenPath,
-		DataplaneResource:     request.DataplaneResource,
-		KumaDpVersion:         request.Version.KumaDp.Version,
-		KumaDpGitTag:          request.Version.KumaDp.GitTag,
-		KumaDpGitCommit:       request.Version.KumaDp.GitCommit,
-		KumaDpBuildDate:       request.Version.KumaDp.BuildDate,
-		EnvoyVersion:          request.Version.Envoy.Version,
-		EnvoyBuild:            request.Version.Envoy.Build,
-		EnvoyKumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
-		DynamicMetadata:       request.DynamicMetadata,
-		DNSPort:               request.DNSPort,
-		EmptyDNSPort:          request.EmptyDNSPort,
-		ProxyType:             request.ProxyType,
-		Features:              request.Features,
-		Resources:             request.Resources,
+		Id:                 proxyId.String(),
+		AdminAddress:       b.config.Params.AdminAddress,
+		AdminAccessLogPath: b.adminAccessLogPath(request.OperatingSystem),
+		XdsHost:            b.xdsHost(request),
+		XdsPort:            b.config.Params.XdsPort,
+		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout.Duration,
+		DataplaneToken:     request.DataplaneToken,
+		DataplaneTokenPath: request.DataplaneTokenPath,
+		DataplaneResource:  request.DataplaneResource,
+		Version: &mesh_proto.Version{
+			KumaDp: &mesh_proto.KumaDpVersion{
+				Version:   request.Version.KumaDp.Version,
+				GitTag:    request.Version.KumaDp.GitTag,
+				GitCommit: request.Version.KumaDp.GitCommit,
+				BuildDate: request.Version.KumaDp.BuildDate,
+			},
+			Envoy: &mesh_proto.EnvoyVersion{
+				Version:          request.Version.Envoy.Version,
+				Build:            request.Version.Envoy.Build,
+				KumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
+			},
+		},
+		DynamicMetadata:     request.DynamicMetadata,
+		DNSPort:             request.DNSPort,
+		EmptyDNSPort:        request.EmptyDNSPort,
+		ProxyType:           request.ProxyType,
+		Features:            request.Features,
+		Resources:           request.Resources,
+		AccessLogSocketPath: accessLogSocketPath,
+		MetricsSocketPath:   metricsSocketPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

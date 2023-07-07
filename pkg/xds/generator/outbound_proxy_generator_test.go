@@ -549,7 +549,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{
-					Features: model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					Features:            model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					AccessLogSocketPath: "/foo/log",
 				},
 			}
 
