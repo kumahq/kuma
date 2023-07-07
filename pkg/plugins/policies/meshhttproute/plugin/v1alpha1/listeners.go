@@ -35,7 +35,7 @@ func generateListeners(
 	clusterCache := map[common_api.TargetRefHash]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetServiceName()
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).

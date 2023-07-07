@@ -120,7 +120,7 @@ func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[me
 			continue
 		}
 
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetServiceName()
 
 		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
 			return err

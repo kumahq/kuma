@@ -120,7 +120,7 @@ func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.D
 			attachments = append(attachments, RuleAttachment{
 				Name:       name,
 				Type:       DestinationRuleAttachmentType,
-				Service:    outboundTags[mesh_proto.ServiceTag],
+				Service:    outbound.GetServiceName(),
 				Tags:       outboundTags,
 				PolicyType: typ,
 				Rule:       *computedRule,

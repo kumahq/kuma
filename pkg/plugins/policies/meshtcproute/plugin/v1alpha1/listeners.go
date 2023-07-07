@@ -33,8 +33,7 @@ func generateListeners(
 		ToRules.Rules
 
 	for _, outbound := range networking.GetOutbound() {
-		tags := outbound.GetTagsIncludingLegacy()
-		serviceName := tags[mesh_proto.ServiceTag]
+		serviceName := outbound.GetServiceName()
 		protocol := plugins_xds.InferProtocol(routing, serviceName)
 
 		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName,

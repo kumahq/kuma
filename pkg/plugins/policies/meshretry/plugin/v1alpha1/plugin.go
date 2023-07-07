@@ -59,7 +59,7 @@ func applyToOutbounds(
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetServiceName()
 
 		configurer := plugin_xds.Configurer{
 			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)),
