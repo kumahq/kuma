@@ -19,9 +19,6 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Help:       "Summary of XDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
 	}, []string{"proxy_type", "result"})
-	if err := metrics.Register(xdsGenerations); err != nil {
-		return nil, err
-	}
 	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "xds_generation_errors",
 		Help: "Counter of errors during XDS generation",
