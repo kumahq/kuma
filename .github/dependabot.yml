@@ -7,6 +7,10 @@ updates:
     open-pull-requests-limit: 15
     labels:
       - "dependencies"
+    groups:
+      k8s-libs:
+          patterns:
+            - "k8s.io/*"
 
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
