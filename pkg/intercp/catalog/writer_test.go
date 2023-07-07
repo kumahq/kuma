@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -36,7 +37,10 @@ var _ = Describe("Writer", func() {
 		c = catalog.NewConfigCatalog(resManager)
 		heartbeats := catalog.NewHeartbeats()
 		closeCh = make(chan struct{})
-		writer := catalog.NewWriter(c, heartbeats, leader, 100*time.Millisecond)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		writer, err := catalog.NewWriter(c, heartbeats, leader, 100*time.Millisecond, metrics)
+		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			defer GinkgoRecover()
 			Expect(writer.Start(closeCh)).To(Succeed())

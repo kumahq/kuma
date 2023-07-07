@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -17,11 +20,27 @@ type catalogWriter struct {
 	heartbeats *Heartbeats
 	instance   Instance
 	interval   time.Duration
+	metric     prometheus.Summary
 }
 
 var _ component.Component = &catalogWriter{}
 
-func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, interval time.Duration) component.Component {
+func NewWriter(
+	catalog Catalog,
+	heartbeats *Heartbeats,
+	instance Instance,
+	interval time.Duration,
+	metrics core_metrics.Metrics,
+) (component.Component, error) {
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_catalog_writer",
+		Help:       "Summary of Inter CP Catalog Writer component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
+
 	leaderInstance := instance
 	leaderInstance.Leader = true
 	return &catalogWriter{
@@ -29,7 +48,8 @@ func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, inter
 		heartbeats: heartbeats,
 		instance:   leaderInstance,
 		interval:   interval,
-	}
+		metric:     metric,
+	}, nil
 }
 
 func (r *catalogWriter) Start(stop <-chan struct{}) error {
@@ -44,6 +64,7 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
+			start := core.Now()
 			instances := r.heartbeats.ResetAndCollect()
 			instances = append(instances, r.instance)
 			updated, err := r.catalog.Replace(ctx, instances)
@@ -56,6 +77,7 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 			} else {
 				writerLog.V(1).Info("no need to update instances, because the catalog is the same", "instances", instances)
 			}
+			r.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			return nil
 		}
