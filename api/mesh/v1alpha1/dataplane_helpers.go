@@ -234,6 +234,9 @@ func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]stri
 			ServiceTag: d.Service,
 		}
 	}
+	if _, ok := d.Tags[ServiceTag]; !ok {
+		d.Tags[ServiceTag] = d.Service
+	}
 	return d.Tags
 }
 
