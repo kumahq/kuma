@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -23,16 +23,22 @@ type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
 	counts     *prometheus.GaugeVec
 	tenants    multitenant.Tenants
+	metric     prometheus.Summary
 }
 
 var _ component.Component = &storeCounter{}
 
-func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics.Metrics, tenants multitenant.Tenants) (*storeCounter, error) {
+func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics core_metrics.Metrics, tenants multitenant.Tenants) (*storeCounter, error) {
 	counts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "resources_count",
 	}, []string{"resource_type", "tenant"})
 
-	if err := metrics.Register(counts); err != nil {
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_store_counter",
+		Help:       "Summary of Store Counter component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.BulkRegister(counts, metric); err != nil {
 		return nil, err
 	}
 
@@ -40,6 +46,7 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics
 		resManager: resManager,
 		counts:     counts,
 		tenants:    tenants,
+		metric:     metric,
 	}, nil
 }
 
@@ -59,9 +66,12 @@ func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker
 	for {
 		select {
 		case <-ticker.C:
+			start := core.Now()
 			if err := s.countForAllTenants(ctx); err != nil {
 				log.Error(err, "unable to count resources")
+				continue
 			}
+			s.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			log.Info("stopping")
 			return nil

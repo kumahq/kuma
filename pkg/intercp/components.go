@@ -74,21 +74,26 @@ func Setup(rt runtime.Runtime) error {
 		)
 		mesh_proto.RegisterInterCPEnvoyAdminForwardServiceServer(interCpServer.GrpcServer(), envoyAdminServer)
 
-		return rt.Add(
-			interCpServer,
-			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
-				conn, err := pool.Client(serverURL)
-				if err != nil {
-					return nil, errors.Wrap(err, "could not create inter-cp client")
-				}
-				return system_proto.NewInterCpPingServiceClient(conn), nil
-			}),
-		)
+		heartbeatComponent, err := catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+			conn, err := pool.Client(serverURL)
+			if err != nil {
+				return nil, errors.Wrap(err, "could not create inter-cp client")
+			}
+			return system_proto.NewInterCpPingServiceClient(conn), nil
+		}, rt.Metrics())
+		if err != nil {
+			return err
+		}
+		return rt.Add(interCpServer, heartbeatComponent)
 	})
 
+	writer, err := catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration, rt.Metrics())
+	if err != nil {
+		return err
+	}
 	return rt.Add(
 		defaults,
-		catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
+		writer,
 		registerComponent,
 	)
 }
