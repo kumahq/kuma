@@ -127,7 +127,6 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(
 		grpcOptions,
-		grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
 		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
