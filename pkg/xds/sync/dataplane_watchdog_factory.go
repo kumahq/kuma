@@ -40,10 +40,14 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_watchdog.Wa
 		},
 		OnTick: func() error {
 			start := core.Now()
-			defer func() {
-				d.xdsMetrics.XdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
-			}()
-			return dataplaneWatchdog.Sync(ctx)
+			result, err := dataplaneWatchdog.Sync(ctx)
+			if err != nil {
+				return err
+			}
+			d.xdsMetrics.XdsGenerations.
+				WithLabelValues(string(result.ProxyType), string(result.Status)).
+				Observe(float64(core.Now().Sub(start).Milliseconds()))
+			return nil
 		},
 		OnError: func(err error) {
 			d.xdsMetrics.XdsGenerationsErrors.Inc()

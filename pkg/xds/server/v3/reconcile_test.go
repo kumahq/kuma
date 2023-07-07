@@ -156,9 +156,10 @@ var _ = Describe("Reconcile", func() {
 				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
-			err = r.Reconcile(xds_context.Context{}, proxy)
+			changed, err := r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
 			Expect(snapshot.Resources[envoy_types.Listener].Version).To(BeEmpty())
 			Expect(snapshot.Resources[envoy_types.Route].Version).To(BeEmpty())
 			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(BeEmpty())
@@ -185,9 +186,10 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
-			err = r.Reconcile(xds_context.Context{}, proxy)
+			changed, err = r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeFalse())
 
 			By("verifying that snapshot versions remain the same")
 			// when
@@ -204,7 +206,7 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
-			err = r.Reconcile(xds_context.Context{}, proxy)
+			_, err = r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

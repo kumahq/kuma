@@ -7,16 +7,16 @@ import (
 )
 
 type Metrics struct {
-	XdsGenerations       prometheus.Summary
+	XdsGenerations       *prometheus.SummaryVec
 	XdsGenerationsErrors prometheus.Counter
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
-	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
+	xdsGenerations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:       "xds_generation",
 		Help:       "Summary of XDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
-	})
+	}, []string{"proxy_type", "result"})
 	if err := metrics.Register(xdsGenerations); err != nil {
 		return nil, err
 	}
