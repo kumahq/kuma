@@ -118,7 +118,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	}
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		service := outbound.GetServiceName()
+		service := outbound.GetService()
 		if len(reachableServices) != 0 && !reachableServices[service] {
 			continue // ignore VIP outbound if reachableServices is defined and not specified
 		}

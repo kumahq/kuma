@@ -128,7 +128,7 @@ func applyToOutbounds(
 			continue
 		}
 
-		serviceName := outbound.GetServiceName()
+		serviceName := outbound.GetService()
 
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,

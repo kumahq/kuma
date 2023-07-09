@@ -104,7 +104,7 @@ func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.D
 	var attachments []RuleAttachment
 	byUniqueClusterName := map[string]*RuleAttachment{}
 	for _, outbound := range networking.Outbound {
-		outboundTags := outbound.GetTagsIncludingLegacy()
+		outboundTags := outbound.GetTags()
 		name, err := tags.Tags(outboundTags).DestinationClusterName(nil)
 		if err != nil {
 			// Error is impossible here (there's always a service on Outbound)
@@ -120,7 +120,7 @@ func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.D
 			attachments = append(attachments, RuleAttachment{
 				Name:       name,
 				Type:       DestinationRuleAttachmentType,
-				Service:    outbound.GetServiceName(),
+				Service:    outbound.GetService(),
 				Tags:       outboundTags,
 				PolicyType: typ,
 				Rule:       *computedRule,

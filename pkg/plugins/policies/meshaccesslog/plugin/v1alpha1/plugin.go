@@ -101,7 +101,7 @@ func applyToOutbounds(
 			continue
 		}
 
-		serviceName := outbound.GetServiceName()
+		serviceName := outbound.GetService()
 
 		if err := configureOutbound(rules, dataplane, core_rules.MeshService(serviceName), serviceName, listener, backends); err != nil {
 			return err
