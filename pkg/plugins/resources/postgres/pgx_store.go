@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -61,6 +62,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_conf
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
 	customizer.Customize(pgxConfig)
 
 	if err != nil {
