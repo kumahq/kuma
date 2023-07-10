@@ -82,7 +82,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
-	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the request
+	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the request https://github.com/kumahq/kuma/issues/7220
 	accessLogSocketPath := request.AccessLogSocketPath
 	if accessLogSocketPath == "" {
 		accessLogSocketPath = core_xds.AccessLogSocketName(os.TempDir(), request.Name, request.Mesh)

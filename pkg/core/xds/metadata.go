@@ -170,7 +170,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 			}
 		}
 	}
-	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the metadata
+	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the metadata https://github.com/kumahq/kuma/issues/7220 (remove the parameter tmpDir of the function too)
 	if xdsMetadata.Fields[FieldAccessLogSocketPath] != nil {
 		metadata.AccessLogSocketPath = xdsMetadata.Fields[FieldAccessLogSocketPath].GetStringValue()
 		metadata.MetricsSocketPath = xdsMetadata.Fields[FieldMetricsSocketPath].GetStringValue()

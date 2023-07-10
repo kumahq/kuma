@@ -97,7 +97,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		}),
 	)
 
-	It("should fallback to service side generated paths", func() { // this has to be separate test because Equal does not work on proto
+	It("should fallback to service side generated paths", func() { // remove with https://github.com/kumahq/kuma/issues/7220
 		// given
 		dpJSON, err := json.Marshal(rest.From.Resource(&core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{Mesh: "mesh", Name: "dp-1"},
