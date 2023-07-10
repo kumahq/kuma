@@ -3,7 +3,6 @@ package xds_test
 import (
 	"encoding/json"
 
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"

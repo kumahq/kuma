@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 

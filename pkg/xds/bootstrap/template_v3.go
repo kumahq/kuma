@@ -5,9 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/asaskevich/govalidator"
 	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
