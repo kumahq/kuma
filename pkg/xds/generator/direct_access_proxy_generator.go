@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -32,7 +33,7 @@ func DirectAccessEndpointName(endpoint Endpoint) string {
 	return fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 }
 
-func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (_ DirectAccessProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	resources := core_xds.NewResourceSet()
 	if tproxy.GetRedirectPortOutbound() == 0 || tproxy.GetRedirectPortInbound() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
@@ -40,9 +41,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	}
 
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	meshName := ctx.Mesh.Resource.GetMeta().GetName()
+	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
-	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Resources.Dataplanes(), ctx.Mesh.Resource)
+	endpoints, err := directAccessEndpoints(proxy.Dataplane, xdsCtx.Mesh.Resources.Dataplanes(), xdsCtx.Mesh.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 					envoy_common.TrafficDirectionOutbound,
 					sourceService,
 					name,
-					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+					xdsCtx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
 					proxy,
 				)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
@@ -75,7 +76,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 
 	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, "direct_access").
 		Configure(envoy_clusters.PassThroughCluster()).
-		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, ctx.Mesh.Resource)).
+		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {

@@ -52,9 +52,9 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 }
 
-func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) (bool, error) {
+func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (bool, error) {
 	node := &envoy_core.Node{Id: proxy.Id.String()}
-	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
+	snapshot, err := r.generator.GenerateSnapshot(ctx, xdsCtx, proxy)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
@@ -154,7 +154,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error)
+	GenerateSnapshot(context.Context, xds_context.Context, *model.Proxy) (*envoy_cache.Snapshot, error)
 }
 
 type TemplateSnapshotGenerator struct {
@@ -162,12 +162,12 @@ type TemplateSnapshotGenerator struct {
 	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
-func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
+func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
 
-	rs, err := gen.Generate(ctx, proxy)
+	rs, err := gen.Generate(ctx, xdsCtx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
@@ -179,12 +179,12 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
 			continue
 		}
-		if err := policy.Apply(rs, ctx, proxy); err != nil {
+		if err := policy.Apply(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
 		}
 	}
 	for _, hook := range s.ResourceSetHooks {
-		if err := hook.Modify(rs, ctx, proxy); err != nil {
+		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
 		}
 	}

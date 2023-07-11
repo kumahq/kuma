@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -23,7 +25,7 @@ const OriginInbound = "inbound"
 
 type InboundProxyGenerator struct{}
 
-func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless
@@ -98,7 +100,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
+					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
@@ -106,7 +108,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
+					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolKafka:
 				filterChainBuilder.
@@ -120,11 +122,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			}
 			if serverSideMTLS {
 				filterChainBuilder.
-					Configure(envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource, proxy.SecretsTracker))
+					Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker))
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol)).
-				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(),
+				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(),
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
 
@@ -132,7 +134,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 
-		switch ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
+		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
 			listenerBuilder.
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(true)))

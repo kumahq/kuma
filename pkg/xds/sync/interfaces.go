@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"context"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -17,7 +19,7 @@ type ConnectionInfoTracker interface {
 
 // SnapshotReconciler reconciles Envoy XDS configuration (Snapshot) by executing all generators (pkg/xds/generator)
 type SnapshotReconciler interface {
-	Reconcile(ctx xds_context.Context, proxy *core_xds.Proxy) (bool, error)
+	Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) (bool, error)
 	Clear(proxyId *core_xds.ProxyId) error
 }
 

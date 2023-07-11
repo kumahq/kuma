@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	net_url "net/url"
 	"strconv"
 
@@ -22,8 +23,8 @@ type TracingProxyGenerator struct{}
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
-func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	tracingBackend := ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
+func (t TracingProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	tracingBackend := xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
 	if tracingBackend == nil {
 		return nil, nil
 	}
