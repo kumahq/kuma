@@ -53,8 +53,10 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Port:    27070,
-								Service: "backend",
+								Port: 27070,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "backend",
+								},
 							}},
 						},
 					},

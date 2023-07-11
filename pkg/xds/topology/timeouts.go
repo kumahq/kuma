@@ -36,7 +36,7 @@ func BuildTimeoutMap(dataplane *core_mesh.DataplaneResource, timeouts []*core_me
 
 	timeoutMap := core_xds.TimeoutMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		serviceName := oface.GetServiceName()
+		serviceName := oface.GetService()
 		if policy, exists := policyMap[serviceName]; exists {
 			outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 			timeoutMap[outbound] = policy.(*core_mesh.TimeoutResource)

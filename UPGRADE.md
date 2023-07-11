@@ -6,6 +6,14 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.4.x`
+
+### **Breaking changes**
+
+#### Removal of service field in Dataplane outbound
+
+After a period of depreciation, the service field in now removed. The service name is only defined by the value of  `kuma.io/service` in the outbound tags field.
+
 ## Upgrade to `2.3.x`
 
 ### **Breaking changes**

@@ -33,7 +33,7 @@ func generateListeners(
 		ToRules.Rules
 
 	for _, outbound := range networking.GetOutbound() {
-		serviceName := outbound.GetServiceName()
+		serviceName := outbound.GetService()
 		protocol := plugins_xds.InferProtocol(routing, serviceName)
 
 		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName,
@@ -66,7 +66,7 @@ func buildOutboundListener(
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
-	tags := outbound.GetTagsIncludingLegacy()
+	tags := outbound.GetTags()
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"

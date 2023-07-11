@@ -226,29 +226,15 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 	return d.Tags[ProtocolTag]
 }
 
-// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
-// Remove it and migrate to GetTags() once "kuma.io/service" field is removed.
-func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
-	if d.Tags == nil {
-		return map[string]string{
-			ServiceTag: d.Service,
-		}
-	}
-	if _, ok := d.Tags[ServiceTag]; !ok {
-		d.Tags[ServiceTag] = d.Service
-	}
-	return d.Tags
-}
-
-// GetServiceName returns a service name represented by this outbound interface.
+// GetService returns a service name represented by this outbound interface.
 //
 // The purpose of this method is to encapsulate implementation detail
 // that service is modeled as a tag rather than a separate field.
-func (d *Dataplane_Networking_Outbound) GetServiceName() string {
-	if d == nil || d.GetTagsIncludingLegacy() == nil {
+func (d *Dataplane_Networking_Outbound) GetService() string {
+	if d == nil || d.GetTags() == nil {
 		return ""
 	}
-	return d.GetTagsIncludingLegacy()[ServiceTag]
+	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"

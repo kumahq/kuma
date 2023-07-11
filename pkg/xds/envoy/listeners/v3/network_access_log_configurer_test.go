@@ -51,8 +51,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Port:    15432,
-								Service: "db",
+								Port: 15432,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "db",
+								},
 							}},
 						},
 					},

@@ -661,9 +661,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
-                    service: db
+                    tags:
+                      kuma.io/service: db
                   - port: 59200
-                    service: elastic
+                    tags:
+                      kuma.io/service: elastic
                 metrics:
                   type: prometheus
                   conf:
@@ -679,9 +681,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
-                    service: db
+                    tags:
+                      kuma.io/service: db
                   - port: 59200
-                    service: elastic
+                    tags:
+                      kuma.io/service: elastic
                 metrics:
                   type: prometheus
                   conf:
@@ -698,7 +702,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                   outbound:
                   - port: 54321
                     address: 192.168.0.1
-                    service: db
+                    tags:
+                      kuma.io/service: db
                 metrics:
                   type: prometheus
                   conf:

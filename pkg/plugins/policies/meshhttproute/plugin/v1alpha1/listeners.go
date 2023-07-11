@@ -35,12 +35,12 @@ func generateListeners(
 	clusterCache := map[common_api.TargetRefHash]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		serviceName := outbound.GetServiceName()
+		serviceName := outbound.GetService()
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag)))
+			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag)))
 
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{

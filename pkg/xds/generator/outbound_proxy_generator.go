@@ -111,7 +111,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	serviceName := outbound.GetServiceName()
+	serviceName := outbound.GetService()
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]
 	var timeoutPolicyConf *mesh_proto.Timeout_Conf
@@ -186,7 +186,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag))).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
