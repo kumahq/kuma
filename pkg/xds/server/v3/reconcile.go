@@ -52,11 +52,11 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 }
 
-func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {
+func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) (bool, error) {
 	node := &envoy_core.Node{Id: proxy.Id.String()}
 	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a snapshot")
+		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
 
 	// To avoid assigning a new version every time, compare with
@@ -76,33 +76,33 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	// to Envoy. This ensures that we have as much in-band error
 	// information as possible, which is especially useful for tests
 	// that don't actually program an Envoy instance.
-	if len(changed) > 0 {
-		for _, resources := range snapshot.Resources {
-			for name, resource := range resources.Items {
-				if err := validateResource(resource.Resource); err != nil {
-					return errors.Wrapf(err, "invalid resource %q", name)
-				}
-			}
-		}
-
-		if err := snapshot.Consistent(); err != nil {
-			log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
-			return errors.Wrap(err, "inconsistent snapshot")
-		}
-		log.Info("config has changed", "versions", changed)
-	} else {
+	if len(changed) == 0 {
 		log.V(1).Info("config is the same")
+		return false, nil
 	}
 
+	for _, resources := range snapshot.Resources {
+		for name, resource := range resources.Items {
+			if err := validateResource(resource.Resource); err != nil {
+				return false, errors.Wrapf(err, "invalid resource %q", name)
+			}
+		}
+	}
+
+	if err := snapshot.Consistent(); err != nil {
+		log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
+		return false, errors.Wrap(err, "inconsistent snapshot")
+	}
+	log.Info("config has changed", "versions", changed)
+
 	if err := r.cacher.Cache(node, snapshot); err != nil {
-		return errors.Wrap(err, "failed to store snapshot")
+		return false, errors.Wrap(err, "failed to store snapshot")
 	}
 
 	for _, version := range changed {
 		r.statsCallbacks.ConfigReadyForDelivery(version)
 	}
-
-	return nil
+	return true, nil
 }
 
 func validateResource(r envoy_types.Resource) error {

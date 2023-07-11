@@ -8,17 +8,17 @@ import (
 )
 
 type Metrics struct {
-	XdsGenerations       prometheus.Summary
+	XdsGenerations       *prometheus.SummaryVec
 	XdsGenerationsErrors prometheus.Counter
 	KubeAuthCache        *prometheus.CounterVec
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
-	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
+	xdsGenerations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:       "xds_generation",
 		Help:       "Summary of XDS Snapshot generation",
 		Objectives: core_metrics.DefaultObjectives,
-	})
+	}, []string{"proxy_type", "result"})
 	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "xds_generation_errors",
 		Help: "Counter of errors during XDS generation",

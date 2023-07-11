@@ -41,7 +41,7 @@ var _ = Describe("Gateway Listener", func() {
 
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
-		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
+		if _, err := reconciler.Reconcile(*ctx, proxy); err != nil {
 			return nil, err
 		}
 
