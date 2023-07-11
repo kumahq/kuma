@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -267,7 +268,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			context := test_xds.CreateSampleMeshContextWith(resources)
+			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := xds.Proxy{
 				APIVersion: "v3",
 				Dataplane:  samples.GatewayDataplane(),
@@ -281,12 +282,12 @@ var _ = Describe("MeshHealthCheck", func() {
 				},
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

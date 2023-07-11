@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,7 +42,7 @@ var _ = Describe("ProbeGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(xds_context.Context{}, proxy)
+			rs, err := gen.Generate(context.Background(), xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

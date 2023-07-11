@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -34,7 +35,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				gen := &generator.ProxyTemplateGenerator{
 					ProxyTemplate: given.template,
 				}
-				ctx := xds_context.Context{
+				xdsCtx := xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
 						Secrets: &xds.TestSecrets{},
 					},
@@ -49,7 +50,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				}
 
 				// when
-				rs, err := gen.Generate(ctx, given.proxy)
+				rs, err := gen.Generate(context.Background(), xdsCtx, given.proxy)
 
 				// then
 				Expect(err).To(HaveOccurred())
@@ -120,7 +121,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				}
 
 				// given
-				ctx := xds_context.Context{
+				xdsCtx := xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
 						Secrets: &xds.TestSecrets{},
 					},
@@ -162,7 +163,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				}
 
 				// when
-				rs, err := gen.Generate(ctx, proxy)
+				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
 				Expect(err).ToNot(HaveOccurred())
 				err = modifications.Apply(rs, proxyTemplate.GetConf().GetModifications())
 				Expect(err).ToNot(HaveOccurred())

@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -986,7 +987,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: given.routes,
 			}
 
-			context := test_xds.CreateSampleMeshContextWith(resources)
+			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := xds.Proxy{
 				APIVersion: "v3",
 				Dataplane: &core_mesh.DataplaneResource{
@@ -1017,11 +1018,11 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
