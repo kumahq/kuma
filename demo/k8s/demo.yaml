@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kuma-demo
+  labels:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: kuma-demo
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: "redis"
+          ports:
+            - name: tcp
+              containerPort: 6379
+          lifecycle:
+            preStop: # delay shutdown to support graceful mesh leave
+              exec:
+                command: ["/bin/sleep", "30"]
+            postStart:
+              exec:
+                command: ["/usr/local/bin/redis-cli", "set", "zone", "local"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: kuma-demo
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: kuma-demo
+spec:
+  selector:
+    matchLabels:
+      app: demo-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+        - name: demo-app
+          image: "kumahq/kuma-demo"
+          env:
+            - name: REDIS_HOST
+              value: "redis.kuma-demo.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: APP_VERSION
+              value: "1.0"
+            - name: APP_COLOR
+              value: "#efefef"
+          ports:
+            - name: http
+              containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: kuma-demo
+spec:
+  selector:
+    app: demo-app
+  ports:
+  - protocol: TCP
+    appProtocol: http
+    port: 5000

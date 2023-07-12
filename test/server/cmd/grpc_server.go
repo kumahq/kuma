@@ -55,6 +55,7 @@ func (g *grpcServer) SayHellos(server api.Greeter_SayHellosServer) error {
 func newGRPCServerCmd() *cobra.Command {
 	args := struct {
 		port uint32
+		ip   string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -65,7 +66,7 @@ func newGRPCServerCmd() *cobra.Command {
 test-server grpc server --port 8080
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ln, err := net.Listen("tcp", fmt.Sprintf(":%d", args.port))
+			ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", args.ip, args.port))
 			if err != nil {
 				return err
 			}
@@ -86,5 +87,6 @@ test-server grpc server --port 8080
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 8080, "port server is listening on")
+	cmd.PersistentFlags().StringVar(&args.ip, "ip", "127.0.0.1", "ip server is listening on")
 	return cmd
 }

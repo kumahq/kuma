@@ -1,0 +1,11 @@
+type: Dataplane
+mesh: default
+name: redis
+networking:
+  address: 127.0.0.1 # Or any public address (needs to be reachable by every other dp in the zone)
+  inbound:
+    - port: 16379  # dp listen port
+      servicePort: 6379  # redis server port
+      tags:
+        kuma.io/service: redis
+        kuma.io/protocol: tcp

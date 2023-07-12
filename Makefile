@@ -30,3 +30,4 @@ include mk/ebpf.mk
 include mk/distribution.mk
 include mk/run.mk
 include mk/test-container-structure.mk
+include mk/demo.mk

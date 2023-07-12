@@ -1,0 +1,18 @@
+type: Dataplane
+mesh: default
+name: app
+networking:
+  address: 127.0.0.1
+  outbound:
+    - port: 6379
+      tags:
+        kuma.io/service: redis
+  inbound:
+    - port: 15000
+      servicePort: 5000
+      serviceAddress: 127.0.0.1
+      tags:
+        kuma.io/service: app
+        kuma.io/protocol: http
+  admin:
+    port: 9902
