@@ -3,7 +3,7 @@
 set -e
 
 OUTPUT_DIR=$1/bin
-VERSION="3.5.3"
+VERSION="3.5.9"
 ETCD=${OUTPUT_DIR}/etcd
 # There's no etcd for arm64 mac so let's just use the amd64
 [[ ${OS} == "darwin" ]] && ARCH="amd64"

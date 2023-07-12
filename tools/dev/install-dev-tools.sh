@@ -14,13 +14,18 @@ mkdir -p "$CI_TOOLS_BIN_DIR" "$CI_TOOLS_DIR"/protos
 # TOOLS_DEPS_DIRS has space separated directories
 IFS=" " read -ra TOOLS_DEPS_DIRS <<< "${TOOLS_DEPS_DIRS[@]}"
 
+PIDS=()
 # Also compute a hash to use for caching
 FILES=$(find "${TOOLS_DEPS_DIRS[@]}" -name '*.sh' | sort)
 for i in ${FILES}; do
   OS="$GOOS" ARCH="$GOARCH" "$i" "${CI_TOOLS_DIR}" &
+  PIDS+=($!)
 done
 
-wait
+for PID in "${PIDS[@]}"; do
+    wait "${PID}"
+done
+
 # use dev.mk to calculate the hash
 FILES+=" "${TOOLS_MAKEFILE}
 for i in ${FILES}; do cat "${i}"; done | git hash-object --stdin > "$TOOLS_DEPS_LOCK_FILE"
