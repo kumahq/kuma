@@ -19,7 +19,7 @@ func externalService(mesh string, ip string) InstallFunc {
 	return YamlUniversal(fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"
-name: external-service
+name: es-1
 tags:
   kuma.io/service: external-service
   kuma.io/protocol: http
