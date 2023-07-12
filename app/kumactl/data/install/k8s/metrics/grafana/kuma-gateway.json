@@ -686,7 +686,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
+          "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits{resource=\"cpu\",unit=\"core\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ dataplane }}",
@@ -882,7 +882,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits_memory_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
+          "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits{resource=\"memory\",unit=\"byte\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ dataplane }}",
