@@ -67,7 +67,7 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				log.V(1).Info("on tick")
 				return reconciler.Reconcile(ctx, node)
 			},

@@ -41,8 +41,8 @@ func NewSnapshotGenerator(
 	}
 }
 
-func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
-	ctx := user.Ctx(context.TODO(), user.ControlPlane)
+func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
+	ctx = user.Ctx(ctx, user.ControlPlane)
 	proxyId, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
 		return nil, err
