@@ -47,7 +47,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
 			// when
-			snapshot, err := generator.GenerateSnapshot(&envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})
+			snapshot, err := generator.GenerateSnapshot(context.Background(), &envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

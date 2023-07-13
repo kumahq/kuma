@@ -33,12 +33,12 @@ func NewDataplaneWatchdogFactory(
 func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_watchdog.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)
 		},
-		OnTick: func() error {
+		OnTick: func(ctx context.Context) error {
+			ctx = user.Ctx(ctx, user.ControlPlane)
 			start := core.Now()
 			result, err := dataplaneWatchdog.Sync(ctx)
 			if err != nil {
@@ -54,7 +54,6 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_watchdog.Wa
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			cancelFn()
 			if err := dataplaneWatchdog.Cleanup(); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
