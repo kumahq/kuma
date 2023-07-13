@@ -1,6 +1,7 @@
 package watchdog_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,7 +39,7 @@ var _ = Describe("SimpleWatchdog", func() {
 					C: timeTicks,
 				}
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				onTickCalls <- struct{}{}
 				return nil
 			},
@@ -83,7 +84,7 @@ var _ = Describe("SimpleWatchdog", func() {
 					C: timeTicks,
 				}
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				return expectedErr
 			},
 			OnError: func(err error) {
@@ -122,7 +123,7 @@ var _ = Describe("SimpleWatchdog", func() {
 					C: timeTicks,
 				}
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				panic("xyz")
 			},
 			OnError: func(err error) {
