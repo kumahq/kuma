@@ -213,7 +213,7 @@ var _ = Describe("RBAC", func() {
 								{
 									Meta: &test_model.ResourceMeta{
 										Mesh: "mesh-1",
-										Name: "external-service-1",
+										Name: "es-1",
 									},
 									Spec: &mesh_proto.ExternalService{
 										Tags: map[string]string{
@@ -250,7 +250,7 @@ var _ = Describe("RBAC", func() {
 								{
 									Meta: &test_model.ResourceMeta{
 										Mesh: "mesh-2",
-										Name: "external-service-1",
+										Name: "es-1",
 									},
 									Spec: &mesh_proto.ExternalService{
 										Tags: map[string]string{
