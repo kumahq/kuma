@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"sort"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -28,6 +29,7 @@ const (
 type IngressGenerator struct{}
 
 func (i IngressGenerator) Generate(
+	_ context.Context,
 	_ xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {

@@ -1,6 +1,8 @@
 package secrets
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -39,7 +41,8 @@ func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret
 // GenerateForZoneEgress generates whatever secrets were referenced in the
 // zone egress config generation.
 func (g Generator) GenerateForZoneEgress(
-	ctx xds_context.Context,
+	ctx context.Context,
+	xdsCtx xds_context.Context,
 	proxyId core_xds.ProxyId,
 	zoneEgressResource *core_mesh.ZoneEgressResource,
 	secretsTracker core_xds.SecretsTracker,
@@ -57,7 +60,7 @@ func (g Generator) GenerateForZoneEgress(
 
 	usedIdentity := secretsTracker.UsedIdentity()
 
-	identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(zoneEgressResource, mesh)
+	identity, ca, err := xdsCtx.ControlPlane.Secrets.GetForZoneEgress(ctx, zoneEgressResource, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate ZoneEgress secrets")
 	}
@@ -78,7 +81,8 @@ func (g Generator) GenerateForZoneEgress(
 // Generate uses the SecretsTracker on Proxy and
 // generates whatever secrets were used in the config generation.
 func (g Generator) Generate(
-	ctx xds_context.Context,
+	ctx context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -86,7 +90,7 @@ func (g Generator) Generate(
 	log := core.Log.WithName("secrets-generator").WithValues("proxyID", proxy.Id.String())
 
 	if proxy.Dataplane != nil {
-		log = log.WithValues("mesh", ctx.Mesh.Resource.GetMeta().GetName())
+		log = log.WithValues("mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
 	}
 
 	usedIdentity := proxy.SecretsTracker.UsedIdentity()
@@ -94,8 +98,8 @@ func (g Generator) Generate(
 	usedAllInOne := proxy.SecretsTracker.UsedAllInOne()
 
 	if usedAllInOne {
-		otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
-		identity, allInOneCa, err := ctx.ControlPlane.Secrets.GetAllInOne(ctx.Mesh.Resource, proxy.Dataplane, otherMeshes)
+		otherMeshes := xdsCtx.Mesh.Resources.OtherMeshes().Items
+		identity, allInOneCa, err := xdsCtx.ControlPlane.Secrets.GetAllInOne(ctx, xdsCtx.Mesh.Resource, proxy.Dataplane, otherMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate all in one CA")
 		}
@@ -107,12 +111,12 @@ func (g Generator) Generate(
 
 	if usedIdentity || len(usedCas) > 0 {
 		var otherMeshes []*core_mesh.MeshResource
-		for _, otherMesh := range ctx.Mesh.Resources.OtherMeshes().Items {
+		for _, otherMesh := range xdsCtx.Mesh.Resources.OtherMeshes().Items {
 			if _, ok := usedCas[otherMesh.GetMeta().GetName()]; ok {
 				otherMeshes = append(otherMeshes, otherMesh)
 			}
 		}
-		identity, generatedMeshCAs, err := ctx.ControlPlane.Secrets.GetForDataPlane(proxy.Dataplane, ctx.Mesh.Resource, otherMeshes)
+		identity, generatedMeshCAs, err := xdsCtx.ControlPlane.Secrets.GetForDataPlane(ctx, proxy.Dataplane, xdsCtx.Mesh.Resource, otherMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}

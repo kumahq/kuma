@@ -145,7 +145,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	proxy.Metadata = metadata
-	changed, err := d.DataplaneReconciler.Reconcile(*envoyCtx, proxy)
+	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -176,7 +176,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
-	changed, err := d.IngressReconciler.Reconcile(*envoyCtx, proxy)
+	changed, err := d.IngressReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -209,7 +209,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
-	changed, err := d.EgressReconciler.Reconcile(*envoyCtx, proxy)
+	changed, err := d.EgressReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
 		return SyncResult{}, err
 	}

@@ -42,7 +42,7 @@ type staticSnapshotReconciler struct {
 	proxy *core_xds.Proxy
 }
 
-func (s *staticSnapshotReconciler) Reconcile(ctx xds_context.Context, proxy *core_xds.Proxy) (bool, error) {
+func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Context, proxy *core_xds.Proxy) (bool, error) {
 	s.proxy = proxy
 	return true, nil
 }
