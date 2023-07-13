@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -317,7 +318,7 @@ var _ = Describe("MeshRetry", func() {
 				Items: given.gatewayRoutes,
 			}
 
-			context := test_xds.CreateSampleMeshContextWith(resources)
+			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := xds.Proxy{
 				APIVersion: "v3",
 				Dataplane:  samples.GatewayDataplane(),
@@ -331,12 +332,12 @@ var _ = Describe("MeshRetry", func() {
 				},
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 			// then
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).

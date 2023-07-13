@@ -971,7 +971,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
 
-			context := xds_context.Context{
+			xdsCtx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -1010,7 +1010,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, xdsCtx, &proxy)).To(Succeed())
 
 			for i, r := range resourceSet.ListOf(envoy_resource.ListenerType) {
 				actual, err := util_proto.ToYAML(r.Resource)

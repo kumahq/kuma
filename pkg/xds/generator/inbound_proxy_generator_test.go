@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -31,7 +32,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 		func(given testCase) {
 			// setup
 			gen := &generator.InboundProxyGenerator{}
-			ctx := xds_context.Context{
+			xdsCtx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
 				},
@@ -68,7 +69,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), []string{ctx.Mesh.Resource.Meta.GetName()}),
+				SecretsTracker: envoy_common.NewSecretsTracker(xdsCtx.Mesh.Resource.Meta.GetName(), []string{xdsCtx.Mesh.Resource.Meta.GetName()}),
 				APIVersion:     envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
 					TrafficPermissions: model.TrafficPermissionMap{
@@ -206,7 +207,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, proxy)
+			rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
