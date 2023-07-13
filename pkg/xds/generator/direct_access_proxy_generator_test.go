@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -69,11 +70,11 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, mesh)
 
-			ctx := context.Context{
+			ctx := xds_context.Context{
 				ControlPlane: nil,
-				Mesh: context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: mesh,
-					Resources: context.Resources{
+					Resources: xds_context.Resources{
 						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 							core_mesh.DataplaneType: &core_mesh.DataplaneResourceList{
 								Items: dataplanes,
@@ -89,7 +90,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			}
 
 			// when
-			resources, err := generator.Generate(ctx, proxy)
+			resources, err := generator.Generate(context.Background(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

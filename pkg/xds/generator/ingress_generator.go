@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -25,7 +26,15 @@ const (
 type IngressGenerator struct {
 }
 
+<<<<<<< HEAD
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+=======
+func (i IngressGenerator) Generate(
+	_ context.Context,
+	_ xds_context.Context,
+	proxy *core_xds.Proxy,
+) (*core_xds.ResourceSet, error) {
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	resources := core_xds.NewResourceSet()
 
 	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -18,18 +19,18 @@ type ProxyTemplateGenerator struct {
 	ProxyTemplate *mesh_proto.ProxyTemplate
 }
 
-func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
-		if rs, err := generator.Generate(ctx, proxy); err != nil {
+		if rs, err := generator.Generate(ctx, xdsCtx, proxy); err != nil {
 			return nil, fmt.Errorf("imports[%d]{name=%q}: %s", i, name, err)
 		} else {
 			resources.AddSet(rs)
 		}
 	}
 	generator := &ProxyTemplateRawSource{Resources: g.ProxyTemplate.GetConf().GetResources()}
-	if rs, err := generator.Generate(ctx, proxy); err != nil {
+	if rs, err := generator.Generate(xdsCtx, proxy); err != nil {
 		return nil, fmt.Errorf("resources: %s", err)
 	} else {
 		resources.AddSet(rs)
@@ -65,12 +66,12 @@ type ProxyTemplateProfileSource struct {
 	ProfileName string
 }
 
-func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (s *ProxyTemplateProfileSource) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	g, ok := predefinedProfiles[s.ProfileName]
 	if !ok {
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.ProfileName)
 	}
-	return g.Generate(ctx, proxy)
+	return g.Generate(ctx, xdsCtx, proxy)
 }
 
 func NewDefaultProxyProfile() core.ResourceGenerator {
@@ -118,6 +119,23 @@ func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(IngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 	RegisterProfile(egress.EgressProxy, NewEgressProxyProfile())
+<<<<<<< HEAD
+=======
+	// we register this so that kumactl does not fail validation of profiles registered by plugins (only "gateway-proxy" for now)
+	// a proper solution for this is to rewrite as a custom ResourceManager
+	// TODO: https://github.com/kumahq/kuma/issues/5144
+	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewFailingProfile())
+}
+
+type FailingResourceGenerator struct{}
+
+func (c FailingResourceGenerator) Generate(context.Context, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
+	panic("generator for this resource should not be called")
+}
+
+func NewFailingProfile() core.ResourceGenerator {
+	return FailingResourceGenerator{}
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 }
 
 func RegisterProfile(profileName string, generator core.ResourceGenerator) {

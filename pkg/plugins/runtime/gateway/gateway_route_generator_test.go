@@ -41,18 +41,25 @@ var _ = Describe("Gateway Route", func() {
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.
-		ctx, proxy := MakeGeneratorContext(rt,
-			core_model.ResourceKey{Mesh: "default", Name: "default"})
+		xdsCtx, proxy := MakeGeneratorContext(
+			rt,
+			core_model.ResourceKey{Mesh: "default", Name: "default"},
+		)
 
 		// Tokens for zone egress needs to be generated
 		// Without test configuration each run will generates
 		// new tokens for authentication.
-		ctx.ControlPlane.Secrets = &xds.TestSecrets{}
+		xdsCtx.ControlPlane.Secrets = &xds.TestSecrets{}
 
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
+<<<<<<< HEAD
 		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
 			return cache.Snapshot{}, err
+=======
+		if _, err := reconciler.Reconcile(context.Background(), *xdsCtx, proxy); err != nil {
+			return nil, err
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 		}
 
 		return serverCtx.Cache().GetSnapshot(proxy.Id.String())

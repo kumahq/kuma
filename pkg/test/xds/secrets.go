@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"context"
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -57,7 +58,12 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string
 	return identitySecret, cas, allInOne, nil
 }
 
+<<<<<<< HEAD
 func (*TestSecrets) GetForZoneEgress(
+=======
+func (ts *TestSecrets) GetForZoneEgress(
+	_ context.Context,
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
@@ -66,7 +72,12 @@ func (*TestSecrets) GetForZoneEgress(
 	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
+<<<<<<< HEAD
 func (*TestSecrets) GetForDataPlane(
+=======
+func (ts *TestSecrets) GetForDataPlane(
+	_ context.Context,
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	_ *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
@@ -75,7 +86,12 @@ func (*TestSecrets) GetForDataPlane(
 	return identity, cas, err
 }
 
+<<<<<<< HEAD
 func (*TestSecrets) GetAllInOne(
+=======
+func (ts *TestSecrets) GetAllInOne(
+	_ context.Context,
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	mesh *core_mesh.MeshResource,
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,

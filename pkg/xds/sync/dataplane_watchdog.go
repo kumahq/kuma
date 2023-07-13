@@ -125,8 +125,15 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
 	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
 		d.envoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
+<<<<<<< HEAD
 	if err := d.dataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err
+=======
+	proxy.Metadata = metadata
+	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	}
 	d.lastHash = meshCtx.Hash
 	return nil
@@ -147,7 +154,23 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
+<<<<<<< HEAD
 	return d.ingressReconciler.Reconcile(*envoyCtx, proxy)
+=======
+	proxy.Metadata = metadata
+	changed, err := d.IngressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+		Status:    GeneratedStatus,
+	}
+	if changed {
+		result.Status = ChangedStatus
+	}
+	return result, nil
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 }
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
@@ -167,8 +190,24 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context) error {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
+<<<<<<< HEAD
 
 	return d.egressReconciler.Reconcile(*envoyCtx, proxy)
+=======
+	proxy.Metadata = metadata
+	changed, err := d.EgressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+		Status:    GeneratedStatus,
+	}
+	if changed {
+		result.Status = ChangedStatus
+	}
+	return result, nil
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 }
 
 func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string) (core_xds.ServerSideMTLSCerts, error) {

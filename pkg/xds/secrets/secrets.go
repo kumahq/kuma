@@ -30,9 +30,9 @@ type MeshCa struct {
 }
 
 type Secrets interface {
-	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error)
-	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
-	GetAllInOne(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetForDataPlane(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error)
+	GetForZoneEgress(ctx context.Context, zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetAllInOne(ctx context.Context, mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	Info(dpKey model.ResourceKey) *Info
 	Cleanup(dpKey model.ResourceKey)
 }
@@ -124,24 +124,27 @@ func (s *secrets) certs(dpKey model.ResourceKey) *certs {
 }
 
 func (s *secrets) GetForDataPlane(
+	ctx context.Context,
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	identity, cas, _, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	identity, cas, _, err := s.get(ctx, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, cas, err
 }
 
 func (s *secrets) GetAllInOne(
+	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	dataplane *core_mesh.DataplaneResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, _, allInOne, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	identity, _, allInOne, err := s.get(ctx, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, allInOne.CaSecret, err
 }
 
 func (s *secrets) GetForZoneEgress(
+	ctx context.Context,
 	zoneEgress *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
@@ -151,11 +154,12 @@ func (s *secrets) GetForZoneEgress(
 		},
 	})
 
-	identity, cas, _, err := s.get(zoneEgress, tags, mesh, nil)
+	identity, cas, _, err := s.get(ctx, zoneEgress, tags, mesh, nil)
 	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
 func (s *secrets) get(
+	ctx context.Context,
 	resource model.Resource,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
@@ -182,7 +186,7 @@ func (s *secrets) get(
 			string(resource.Descriptor().Name), resourceKey, "reason", debugReason,
 		)
 
-		certs, err := s.generateCerts(tags, mesh, otherMeshes, certs, updateKinds)
+		certs, err := s.generateCerts(ctx, tags, mesh, otherMeshes, certs, updateKinds)
 		if err != nil {
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
@@ -260,12 +264,17 @@ func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagS
 }
 
 func (s *secrets) generateCerts(
+	ctx context.Context,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 	oldCerts *certs,
 	updateKinds UpdateKinds,
 ) (*certs, error) {
+<<<<<<< HEAD
+=======
+	ctx = user.Ctx(ctx, user.ControlPlane)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	var identity *core_xds.IdentitySecret
 	var ownCa MeshCa
 	var otherCas []MeshCa
