@@ -10,6 +10,37 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+<<<<<<< HEAD
+=======
+func externalService(mesh string, ip string) InstallFunc {
+	return YamlUniversal(fmt.Sprintf(`
+type: ExternalService
+mesh: "%s"
+name: es-1
+tags:
+  kuma.io/service: external-service
+  kuma.io/protocol: http
+networking:
+  address: "%s"
+`, mesh, net.JoinHostPort(ip, "80")))
+}
+
+func mtlsAndEgressMeshUniversal(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+`, name)
+	return YamlUniversal(mesh)
+}
+
+>>>>>>> e6ced1005 (fix(MeshTrafficPermission): use serviceName instead of resource name for egress MTP (#7225))
 func MeshTrafficPermission() {
 	const meshName = "mtp-test"
 	const namespace = "mtp-test"

@@ -4,6 +4,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -82,3 +83,55 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	return nil
 }
+<<<<<<< HEAD
+=======
+
+func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	listeners := policies_xds.GatherListeners(rs)
+	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
+		if !resource.Mesh.MTLSEnabled() {
+			log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+				"mesh", resource.Mesh.GetMeta().GetName())
+			continue
+		}
+		for _, es := range resource.ExternalServices {
+			meshName := resource.Mesh.GetMeta().GetName()
+			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
+			if !ok {
+				continue
+			}
+			policies, ok := resource.Dynamic[esName]
+			if !ok {
+				continue
+			}
+			mtp, ok := policies[api.MeshTrafficPermissionType]
+			if !ok {
+				continue
+			}
+			if listeners.Egress == nil {
+				log.V(1).Info("skip applying MeshTrafficPermission, Egress has no listener",
+					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+					"mesh", resource.Mesh.GetMeta().GetName(),
+				)
+				return nil
+			}
+
+			for _, rule := range mtp.FromRules.Rules {
+				configurer := &v3.RBACConfigurer{
+					StatsName: listeners.Egress.Name,
+					Rules:     rule,
+					Mesh:      resource.Mesh.GetMeta().GetName(),
+				}
+				for _, filterChain := range listeners.Egress.FilterChains {
+					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
+						if err := configurer.Configure(filterChain); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+>>>>>>> e6ced1005 (fix(MeshTrafficPermission): use serviceName instead of resource name for egress MTP (#7225))
