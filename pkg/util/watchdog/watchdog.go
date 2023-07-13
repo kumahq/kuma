@@ -30,8 +30,12 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 		}()
 		select {
 		case <-ticker.C:
-			if err := w.onTick(ctx); err != nil {
-				w.OnError(err)
+			select {
+			case <-stop:
+			default:
+				if err := w.onTick(ctx); err != nil {
+					w.OnError(err)
+				}
 			}
 		case <-stop:
 			if w.OnStop != nil {
