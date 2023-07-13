@@ -1,6 +1,7 @@
 package watchdog
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,7 +13,7 @@ type Watchdog interface {
 
 type SimpleWatchdog struct {
 	NewTicker func() *time.Ticker
-	OnTick    func() error
+	OnTick    func(context.Context) error
 	OnError   func(error)
 	OnStop    func()
 }
@@ -22,10 +23,19 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	defer ticker.Stop()
 
 	for {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-stop
+			cancel()
+		}()
 		select {
 		case <-ticker.C:
-			if err := w.onTick(); err != nil {
-				w.OnError(err)
+			select {
+			case <-stop:
+			default:
+				if err := w.onTick(ctx); err != nil {
+					w.OnError(err)
+				}
 			}
 		case <-stop:
 			if w.OnStop != nil {
@@ -36,7 +46,7 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	}
 }
 
-func (w *SimpleWatchdog) onTick() error {
+func (w *SimpleWatchdog) onTick(ctx context.Context) error {
 	defer func() {
 		if cause := recover(); cause != nil {
 			if w.OnError != nil {
@@ -51,5 +61,5 @@ func (w *SimpleWatchdog) onTick() error {
 			}
 		}
 	}()
-	return w.OnTick()
+	return w.OnTick(ctx)
 }
