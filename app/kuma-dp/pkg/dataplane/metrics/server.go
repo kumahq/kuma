@@ -220,21 +220,14 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 		// merging multiple metrics into one response.
 		metrics = bytes.ReplaceAll(metrics, []byte("# EOF"), []byte(""))
 
-		if _, err := buf.Write(metrics); err != nil {
-			logger.Error(err, "error while writing the response to temporary buffer")
-		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
-			logger.Error(err, "error while writing the response")
-		}
+		buf.Write(metrics)
+		buf.Write([]byte("\n"))
 	}
 
 	processedMetrics := processNewlineChars(buf.Bytes())
 	processedMetrics = append(processedMetrics, '\n')
 	buf.Reset()
-	_, err := buf.Write(processedMetrics)
-	if err != nil {
-		panic(err)
-	}
+	buf.Write(processedMetrics)
 
 	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
 		// make metrics OpenMetrics compliant
@@ -365,13 +358,8 @@ func (s *Hijacker) NeedLeaderElection() bool {
 }
 
 const (
-	hdrContentType           = "Content-Type"
-	textType                 = "text/plain"
-	textVersion              = "0.0.4"
-	openmetricsVersion_1_0_0 = "1.0.0"
-	openmetricsVersion_0_0_1 = "0.0.1"
-	protoType                = `application/vnd.google.protobuf`
-	protoProtocol            = `io.prometheus.client.MetricFamily`
+	hdrContentType = "Content-Type"
+	textType       = "text/plain"
 )
 
 // responseFormat extracts the correct format from a HTTP response header.
@@ -387,11 +375,11 @@ func responseFormat(h http.Header) expfmt.Format {
 	version := params["version"]
 
 	switch mediatype {
-	case protoType:
+	case expfmt.ProtoType:
 		p := params["proto"]
 		e := params["encoding"]
 		// only delimited encoding is supported by prometheus scraper
-		if p == protoProtocol && e == "delimited" {
+		if p == expfmt.ProtoProtocol && e == "delimited" {
 			return expfmt.FmtProtoDelim
 		}
 
@@ -402,10 +390,10 @@ func responseFormat(h http.Header) expfmt.Format {
 		return expfmt.FmtText
 
 	case expfmt.OpenMetricsType:
-		if version == openmetricsVersion_0_0_1 {
+		if version == expfmt.OpenMetricsVersion_0_0_1 {
 			return expfmt.FmtOpenMetrics_0_0_1
 		}
-		if version == openmetricsVersion_1_0_0 {
+		if version == expfmt.OpenMetricsVersion_1_0_0 {
 			return expfmt.FmtOpenMetrics_1_0_0
 		}
 	}
