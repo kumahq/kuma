@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	net_url "net/url"
 	"strconv"
 
@@ -23,8 +24,13 @@ type TracingProxyGenerator struct {
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
+<<<<<<< HEAD
 func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (resources *core_xds.ResourceSet, err error) {
 	tracingBackend := ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
+=======
+func (t TracingProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	tracingBackend := xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	if tracingBackend == nil {
 		return nil, nil
 	}

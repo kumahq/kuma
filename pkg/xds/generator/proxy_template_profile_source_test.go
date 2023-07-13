@@ -167,7 +167,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, proxy)
+			rs, err := gen.Generate(context.Background(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

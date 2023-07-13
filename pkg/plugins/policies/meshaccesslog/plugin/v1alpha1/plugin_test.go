@@ -1,6 +1,14 @@
 package v1alpha1_test
 
 import (
+<<<<<<< HEAD
+=======
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -423,6 +431,7 @@ var _ = Describe("MeshAccessLog", func() {
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &gateways
 
+<<<<<<< HEAD
 			context := xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
@@ -433,6 +442,9 @@ var _ = Describe("MeshAccessLog", func() {
 					Resources: resources,
 				},
 			}
+=======
+			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 			proxy := xds.Proxy{
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -460,7 +472,17 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			}
+<<<<<<< HEAD
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+=======
+
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 
 			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 

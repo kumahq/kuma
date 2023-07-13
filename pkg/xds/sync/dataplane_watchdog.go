@@ -127,8 +127,14 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	proxy.Metadata = metadata
+<<<<<<< HEAD
 	if err := d.DataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err
+=======
+	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	}
 	d.lastHash = meshCtx.Hash
 	return nil
@@ -150,7 +156,22 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
+<<<<<<< HEAD
 	return d.IngressReconciler.Reconcile(*envoyCtx, proxy)
+=======
+	changed, err := d.IngressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+		Status:    GeneratedStatus,
+	}
+	if changed {
+		result.Status = ChangedStatus
+	}
+	return result, nil
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 }
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
@@ -171,7 +192,22 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
+<<<<<<< HEAD
 	return d.EgressReconciler.Reconcile(*envoyCtx, proxy)
+=======
+	changed, err := d.EgressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+		Status:    GeneratedStatus,
+	}
+	if changed {
+		result.Status = ChangedStatus
+	}
+	return result, nil
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 }
 
 func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string) (core_xds.ServerSideMTLSCerts, error) {

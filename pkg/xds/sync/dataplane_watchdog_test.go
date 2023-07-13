@@ -42,7 +42,11 @@ type staticSnapshotReconciler struct {
 	proxy *core_xds.Proxy
 }
 
+<<<<<<< HEAD
 func (s *staticSnapshotReconciler) Reconcile(ctx xds_context.Context, proxy *core_xds.Proxy) error {
+=======
+func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Context, proxy *core_xds.Proxy) (bool, error) {
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	s.proxy = proxy
 	return nil
 }

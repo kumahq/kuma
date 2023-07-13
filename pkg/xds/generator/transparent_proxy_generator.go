@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -27,7 +29,7 @@ const (
 type TransparentProxyGenerator struct {
 }
 
-func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (tpg TransparentProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
 	if redirectPortOutbound == 0 {
@@ -35,7 +37,11 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
+<<<<<<< HEAD
 	resourcesIPv4, err := tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+=======
+	resourcesIPv4, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +49,11 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
 	if redirectPortInboundV6 != 0 {
+<<<<<<< HEAD
 		resourcesIPv6, err := tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+=======
+		resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 		if err != nil {
 			return nil, err
 		}

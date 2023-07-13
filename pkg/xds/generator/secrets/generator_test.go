@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,7 +34,11 @@ var _ = Describe("SecretsGenerator", func() {
 	DescribeTable("should not generate Envoy xDS resources unless mTLS is present",
 		func(given testCase) {
 			// when
+<<<<<<< HEAD
 			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
+=======
+			rs, err := (&secrets.Generator{}).Generate(context.Background(), given.ctx, given.proxy)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -105,7 +110,14 @@ var _ = Describe("SecretsGenerator", func() {
 			if given.allInOneCa {
 				given.proxy.SecretsTracker.RequestAllInOneCa()
 			}
+<<<<<<< HEAD
 			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
+=======
+			rs, err := (&secrets.Generator{}).Generate(context.Background(), given.ctx, given.proxy)
+
+			testSecrets := given.ctx.ControlPlane.Secrets.(*xds.TestSecrets)
+			Expect(testSecrets.GeneratedMeshCAs).To(Equal(given.usedCas))
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

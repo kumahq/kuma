@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -132,7 +134,7 @@ var _ = Describe("Reconcile", func() {
 
 			// setup
 			r := &reconciler{
-				snapshotGeneratorFunc(func(ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+				snapshotGeneratorFunc(func(_ context.Context, ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
 					snap := <-snapshots
 					return &snap, nil
 				}),
@@ -156,7 +158,11 @@ var _ = Describe("Reconcile", func() {
 				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
+<<<<<<< HEAD
 			err = r.Reconcile(xds_context.Context{}, proxy)
+=======
+			changed, err := r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot.Resources[envoy_types.Listener].Version).To(BeEmpty())
@@ -185,7 +191,11 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
+<<<<<<< HEAD
 			err = r.Reconcile(xds_context.Context{}, proxy)
+=======
+			changed, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -204,7 +214,11 @@ var _ = Describe("Reconcile", func() {
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
+<<<<<<< HEAD
 			err = r.Reconcile(xds_context.Context{}, proxy)
+=======
+			_, err = r.Reconcile(context.Background(), xds_context.Context{}, proxy)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -250,8 +264,8 @@ var _ = Describe("Reconcile", func() {
 	})
 })
 
-type snapshotGeneratorFunc func(ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error)
+type snapshotGeneratorFunc func(context.Context, xds_context.Context, *xds_model.Proxy) (*envoy_cache.Snapshot, error)
 
-func (f snapshotGeneratorFunc) GenerateSnapshot(ctx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
-	return f(ctx, proxy)
+func (f snapshotGeneratorFunc) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *xds_model.Proxy) (*envoy_cache.Snapshot, error) {
+	return f(ctx, xdsCtx, proxy)
 }

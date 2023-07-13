@@ -53,9 +53,13 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 }
 
+<<<<<<< HEAD
 func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {
+=======
+func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (bool, error) {
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 	node := &envoy_core.Node{Id: proxy.Id.String()}
-	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
+	snapshot, err := r.generator.GenerateSnapshot(ctx, xdsCtx, proxy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to generate a snapshot")
 	}
@@ -155,7 +159,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error)
+	GenerateSnapshot(context.Context, xds_context.Context, *model.Proxy) (*envoy_cache.Snapshot, error)
 }
 
 type TemplateSnapshotGenerator struct {
@@ -163,23 +167,35 @@ type TemplateSnapshotGenerator struct {
 	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
-func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
+func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
 
-	rs, err := gen.Generate(ctx, proxy)
+	rs, err := gen.Generate(ctx, xdsCtx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
+<<<<<<< HEAD
 	for name, p := range plugins.Plugins().PolicyPlugins() {
 		if err := p.Apply(rs, ctx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+=======
+	allPolicies := plugins.Plugins().PolicyPlugins()
+	for _, policyName := range policies.Policies {
+		policy, exists := allPolicies[policyName]
+		if !exists {
+			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
+			continue
+		}
+		if err := policy.Apply(rs, xdsCtx, proxy); err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
+>>>>>>> df9c5f925 (fix(kuma-cp): pass context via snapshot reconciler to generateCerts (#7231))
 		}
 	}
 	for _, hook := range s.ResourceSetHooks {
-		if err := hook.Modify(rs, ctx, proxy); err != nil {
+		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
 		}
 	}
