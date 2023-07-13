@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -20,7 +21,7 @@ const (
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes
 	if probes == nil {
 		return nil, nil

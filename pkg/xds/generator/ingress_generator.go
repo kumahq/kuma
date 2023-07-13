@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"reflect"
 	"sort"
 
@@ -31,7 +32,11 @@ const (
 
 type IngressGenerator struct{}
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (i IngressGenerator) Generate(
+	_ context.Context,
+	_ xds_context.Context,
+	proxy *core_xds.Proxy,
+) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)
