@@ -1,6 +1,7 @@
 package watchdog_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,7 +39,7 @@ var _ = Describe("SimpleWatchdog", func() {
 					C: timeTicks,
 				}
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				onTickCalls <- struct{}{}
 				return nil
 			},
@@ -83,7 +84,7 @@ var _ = Describe("SimpleWatchdog", func() {
 					C: timeTicks,
 				}
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				return expectedErr
 			},
 			OnError: func(err error) {
@@ -113,4 +114,36 @@ var _ = Describe("SimpleWatchdog", func() {
 		// then
 		<-doneCh
 	}))
+<<<<<<< HEAD
+=======
+
+	It("should not crash the whole application when watchdog crashes", test.Within(5*time.Second, func() {
+		// given
+		watchdog := SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return &time.Ticker{
+					C: timeTicks,
+				}
+			},
+			OnTick: func(context.Context) error {
+				panic("xyz")
+			},
+			OnError: func(err error) {
+				onErrorCalls <- err
+			},
+		}
+
+		// when
+		go func() {
+			watchdog.Start(stopCh)
+			close(doneCh)
+		}()
+		timeTicks <- time.Time{}
+
+		// then watchdog returned an error
+		Expect(<-onErrorCalls).To(HaveOccurred())
+		close(stopCh)
+		<-doneCh
+	}))
+>>>>>>> 8be55a569 (fix(kuma-cp): cancel OnTick when watchdog stopped (#7221))
 })
