@@ -97,7 +97,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				start := core.Now()
 				defer func() {
 					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
