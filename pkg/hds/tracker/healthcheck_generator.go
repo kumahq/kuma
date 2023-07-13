@@ -38,7 +38,12 @@ func NewSnapshotGenerator(
 	}
 }
 
+<<<<<<< HEAD
 func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
+=======
+func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
+	ctx = user.Ctx(ctx, user.ControlPlane)
+>>>>>>> 8be55a569 (fix(kuma-cp): cancel OnTick when watchdog stopped (#7221))
 	proxyId, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
 		return nil, err

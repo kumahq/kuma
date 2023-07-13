@@ -32,12 +32,16 @@ func NewDataplaneWatchdogFactory(
 func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_watchdog.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
+<<<<<<< HEAD
 	ctx, cancelFn := context.WithCancel(context.Background())
+=======
+>>>>>>> 8be55a569 (fix(kuma-cp): cancel OnTick when watchdog stopped (#7221))
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)
 		},
-		OnTick: func() error {
+		OnTick: func(ctx context.Context) error {
+			ctx = user.Ctx(ctx, user.ControlPlane)
 			start := core.Now()
 			defer func() {
 				d.xdsMetrics.XdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -49,7 +53,6 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_watchdog.Wa
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			cancelFn()
 			if err := dataplaneWatchdog.Cleanup(); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
