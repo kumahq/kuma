@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"context"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -31,7 +33,7 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 type AdminProxyGenerator struct {
 }
 
-func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	if proxy.Metadata.GetAdminPort() == 0 {
 		// It's not possible to export Admin endpoints if Envoy Admin API has not been enabled on that dataplane.
 		return nil, nil
