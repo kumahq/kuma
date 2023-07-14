@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 	"time"
 
@@ -568,7 +569,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
-			rs, err := gen.Generate(given.ctx, proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -817,7 +818,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// when
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
-		rs, err := gen.Generate(plainCtx, proxy)
+		rs, err := gen.Generate(context.Background(), plainCtx, proxy)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -28,7 +29,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		func(given testCase) {
 			// given
 			gen := &generator.TransparentProxyGenerator{}
-			ctx := xds_context.Context{
+			xdsCtx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -52,7 +53,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), xdsCtx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

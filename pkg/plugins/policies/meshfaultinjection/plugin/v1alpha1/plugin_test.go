@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -204,7 +205,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		context := test_xds.CreateSampleMeshContextWith(resources)
+		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 		proxy := core_xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),
@@ -218,14 +219,14 @@ var _ = Describe("MeshFaultInjection", func() {
 			},
 		}
 		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 		// then
-		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})
 })

@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -68,7 +69,7 @@ var _ = Describe("DNSGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, proxy)
+			rs, err := gen.Generate(context.Background(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -39,7 +40,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -206,7 +207,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -604,7 +605,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		DescribeTable("should not generate Envoy xDS resources if Prometheus endpoint would otherwise overshadow a port that is already in use by the application or other Envoy listeners",
 			func(given testCase) {
 				// given
-				ctx := xds_context.Context{
+				xdsCtx := xds_context.Context{
 					Mesh: xds_context.MeshContext{
 						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
@@ -648,7 +649,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				gen := &generator.PrometheusEndpointGenerator{}
 
 				// when
-				rs, err := gen.Generate(ctx, proxy)
+				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

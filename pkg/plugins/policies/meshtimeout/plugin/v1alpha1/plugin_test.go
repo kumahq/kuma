@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -270,7 +271,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		context := test_xds.CreateSampleMeshContextWith(resources)
+		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 		proxy := xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),
@@ -284,12 +285,12 @@ var _ = Describe("MeshTimeout", func() {
 			},
 		}
 		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 		// then
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_listener.golden.yaml")))
