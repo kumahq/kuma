@@ -33,19 +33,21 @@ import (
 // newRootCmd represents the base command when called without any subcommands.
 func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {
-		logLevel string
-		noConfig bool
+		logLevel  string
+		logFormat string
+		noConfig  bool
 	}{}
 	cmd := &cobra.Command{
 		Use:   "kumactl",
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			format, err := kuma_log.ParseLogFormat(args.logFormat)
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
 			}
-			l := core.NewLogger(level)
+			l := core.NewLogger(level, format)
 			core.SetLogger(l)
 			// Required for any k8s stuff that may log.
 			klog.SetLogger(l)
@@ -80,6 +82,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
+	cmd.PersistentFlags().StringVar(&args.logFormat, "log-format", args.logFormat, "specify logformat, json | logfmt (default)")
 	cmd.PersistentFlags().BoolVar(&args.noConfig, "no-config", false, "if set no config file and config directory will be created")
 	cmd.PersistentFlags().DurationVar(&root.Args.ApiTimeout, "api-timeout", time.Minute, "the timeout for api calls. It includes connection time, any redirects, and reading the response body. A timeout of zero means no timeout")
 

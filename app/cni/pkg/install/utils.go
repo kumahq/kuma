@@ -28,17 +28,18 @@ func parseBytesToHashMap(bytes []byte) (map[string]interface{}, error) {
 	return parsed, nil
 }
 
-func CreateNewLogger(name string, logLevel kuma_log.LogLevel) logr.Logger {
+func CreateNewLogger(name string, logLevel kuma_log.LogLevel, logFormat kuma_log.LogFormat) logr.Logger {
 	// kubelet expects a specific JSON on stdout, so we're using stderr in CNI
-	return core.NewLoggerTo(os.Stderr, logLevel).WithName(name)
+	return core.NewLoggerTo(os.Stderr, logLevel, logFormat).WithName(name)
 }
 
-func SetLogLevel(logger *logr.Logger, level string, name string) error {
+func SetLogUtils(logger *logr.Logger, level string, name string, lformat string) error {
+	logFormat, err := kuma_log.ParseLogFormat(lformat)
 	logLevel, err := kuma_log.ParseLogLevel(level)
 	if err != nil {
 		return err
 	}
 
-	*logger = CreateNewLogger(name, logLevel)
+	*logger = CreateNewLogger(name, logLevel, logFormat)
 	return nil
 }

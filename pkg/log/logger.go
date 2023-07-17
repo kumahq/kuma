@@ -14,12 +14,19 @@ import (
 )
 
 type LogLevel int
+type LogFormat int
 
 const (
 	OffLevel LogLevel = iota
 	InfoLevel
 	DebugLevel
 )
+
+const ( 
+	Json LogFormat = iota
+	Logfmt
+)
+
 
 func (l LogLevel) String() string {
 	switch l {
@@ -31,6 +38,17 @@ func (l LogLevel) String() string {
 		return "debug"
 	default:
 		return "unknown"
+	}
+}
+
+func ParseLogFormat(text string) (LogFormat, error) {
+	switch text {
+	case "json":
+		return Json, nil
+	case "logfmt":
+		return Logfmt, nil
+	default: 
+		return Logfmt, errors.Errorf("unkown log format %q", text)
 	}
 }
 
@@ -47,24 +65,24 @@ func ParseLogLevel(text string) (LogLevel, error) {
 	}
 }
 
-func NewLogger(level LogLevel) logr.Logger {
-	return NewLoggerTo(os.Stderr, level)
+func NewLogger(level LogLevel, lf LogFormat) logr.Logger {
+	return NewLoggerTo(os.Stderr, level, lf)
 }
 
-func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
+func NewLoggerWithRotation(level LogLevel, lf LogFormat, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
 	return NewLoggerTo(&lumberjack.Logger{
 		Filename:   outputPath,
 		MaxSize:    maxSize,
 		MaxBackups: maxBackups,
 		MaxAge:     maxAge,
-	}, level)
+	}, level, lf)
 }
 
-func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
-	return zapr.NewLogger(newZapLoggerTo(destWriter, level))
+func NewLoggerTo(destWriter io.Writer, level LogLevel, lf LogFormat) logr.Logger {
+	return zapr.NewLogger(newZapLoggerTo(destWriter, level, lf))
 }
 
-func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *zap.Logger {
+func newZapLoggerTo(destWriter io.Writer, level LogLevel,lf LogFormat, opts ...zap.Option) *zap.Logger {
 	var lvl zap.AtomicLevel
 	switch level {
 	case OffLevel:
@@ -79,8 +97,19 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
+	
+	var enc zapcore.Encoder
 	encCfg := zap.NewDevelopmentEncoderConfig()
-	enc := zapcore.NewConsoleEncoder(encCfg)
+
+	switch lf {
+	case Json:
+		enc = zapcore.NewJSONEncoder(encCfg)
+	case Logfmt:
+		enc = zapcore.NewConsoleEncoder(encCfg)
+	default:
+		enc = zapcore.NewConsoleEncoder(encCfg)
+	}
+	
 	sink := zapcore.AddSync(destWriter)
 	opts = append(opts, zap.AddCallerSkip(1), zap.ErrorOutput(sink))
 	return zap.New(zapcore.NewCore(&kube_log_zap.KubeAwareEncoder{Encoder: enc, Verbose: level == DebugLevel}, sink, lvl)).

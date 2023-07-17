@@ -27,7 +27,8 @@ const (
 	defaultLogName     = "install-cni"
 )
 
-var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
+
+var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel, kuma_log.Logfmt)
 
 func removeBinFiles() error {
 	return os.Remove("/host/opt/cni/bin/kuma-cni")
@@ -206,7 +207,7 @@ func Run() {
 		os.Exit(1)
 	}
 
-	err = SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
+	err = SetLogUtils(&log, installerConfig.CniLogLevel, defaultLogName, installerConfig.CniLogFormat)
 	if err != nil {
 		log.Error(err, "error occurred during setting the log level")
 		os.Exit(2)

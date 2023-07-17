@@ -15,23 +15,27 @@ var testServerLog = core.Log.WithName("test-server")
 func NewRootCmd() *cobra.Command {
 	args := struct {
 		logLevel string
+		logFormat string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "test-server",
 		Short: "Test Server for Kuma e2e testing",
 		Long:  `Test Server for Kuma e2e testing.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			lformat, err := kuma_log.ParseLogFormat(args.logFormat)
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
 			}
-			core.SetLogger(core.NewLogger(level))
+			core.SetLogger(core.NewLogger(level, lformat))
 
 			cmd.SilenceUsage = true
 			return nil
 		},
 	}
+	
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
+	cmd.PersistentFlags().StringVar(&args.logFormat, "log-format", args.logFormat, "specify logformat, json | logfmt (default)")
 
 	cmd.AddCommand(newHealthCheckCmd())
 	cmd.AddCommand(newEchoHTTPCmd())

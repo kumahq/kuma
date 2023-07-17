@@ -27,7 +27,7 @@ func newRootCmd() *cobra.Command {
 		Short: "Kuma xDS client",
 		Long:  `Kuma xDS client.`,
 		PersistentPreRun: func(_ *cobra.Command, _ []string) {
-			core.SetLogger(core.NewLogger(kuma_log.DebugLevel))
+			core.SetLogger(core.NewLogger(kuma_log.DebugLevel, kuma_log.Logfmt))
 		},
 	}
 	// sub-commands

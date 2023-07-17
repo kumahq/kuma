@@ -31,10 +31,11 @@ const (
 	podRetrievalInterval   = 1 * time.Second
 	defaultLogLocation     = "/tmp/kuma-cni.log"
 	defaultLogLevel        = kuma_log.DebugLevel
+	defaultLogFormat       = kuma_log.Logfmt
 	defaultLogName         = "kuma-cni"
 )
 
-var log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
+var log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogFormat, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
 
 // Kubernetes a K8s specific struct to hold config
 type Kubernetes struct {
@@ -51,6 +52,7 @@ type PluginConf struct {
 
 	// plugin-specific fields
 	LogLevel   string     `json:"log_level"`
+	LogFormat  string     `json:"log_format"`
 	Kubernetes Kubernetes `json:"kubernetes"`
 }
 
@@ -91,7 +93,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
-func hijackMainProcessStderr(logLevel string) (*os.File, error) {
+func hijackMainProcessStderr(logLevel string, logFormat string) (*os.File, error) {
 	file, err := getCniProcessStderr()
 	if err != nil {
 		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
@@ -99,7 +101,7 @@ func hijackMainProcessStderr(logLevel string) (*os.File, error) {
 	}
 	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
 	os.Stderr = file
-	if err := install.SetLogLevel(&log, logLevel, defaultLogName); err != nil {
+	if err := install.SetLogUtils(&log, logLevel, defaultLogName, logFormat); err != nil {
 		return file, errors.Wrap(err, "wrong set the right log level")
 	}
 
@@ -127,7 +129,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return errors.Wrap(err, "error parsing kuma-cni cmdAdd config")
 	}
 
-	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel)
+	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel, conf.LogFormat)
 	if mainProcessStderr != nil {
 		defer mainProcessStderr.Close()
 	}
