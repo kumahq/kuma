@@ -64,24 +64,24 @@ func ParseLogLevel(text string) (LogLevel, error) {
 	}
 }
 
-func NewLogger(level LogLevel, lf LogFormat) logr.Logger {
-	return NewLoggerTo(os.Stderr, level, lf)
+func NewLogger(level LogLevel, format LogFormat) logr.Logger {
+	return NewLoggerTo(os.Stderr, level, format)
 }
 
-func NewLoggerWithRotation(level LogLevel, lf LogFormat, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
+func NewLoggerWithRotation(level LogLevel, format LogFormat, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
 	return NewLoggerTo(&lumberjack.Logger{
 		Filename:   outputPath,
 		MaxSize:    maxSize,
 		MaxBackups: maxBackups,
 		MaxAge:     maxAge,
-	}, level, lf)
+	}, level, format)
 }
 
-func NewLoggerTo(destWriter io.Writer, level LogLevel, lf LogFormat) logr.Logger {
-	return zapr.NewLogger(newZapLoggerTo(destWriter, level, lf))
+func NewLoggerTo(destWriter io.Writer, level LogLevel, format LogFormat) logr.Logger {
+	return zapr.NewLogger(newZapLoggerTo(destWriter, level, format))
 }
 
-func newZapLoggerTo(destWriter io.Writer, level LogLevel,lf LogFormat, opts ...zap.Option) *zap.Logger {
+func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts ...zap.Option) *zap.Logger {
 	var lvl zap.AtomicLevel
 	switch level {
 	case OffLevel:
@@ -100,7 +100,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel,lf LogFormat, opts ...z
 	var enc zapcore.Encoder
 	encCfg := zap.NewDevelopmentEncoderConfig()
 
-	switch lf {
+	switch format {
 	case Json:
 		enc = zapcore.NewJSONEncoder(encCfg)
 	case Logfmt:

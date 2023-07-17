@@ -42,11 +42,16 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			format, err := kuma_log.ParseLogFormat(args.logFormat)
-			level, err := kuma_log.ParseLogLevel(args.logLevel)
-			if err != nil {
-				return err
+			format, errFormat := kuma_log.ParseLogFormat(args.logFormat)
+			level, errLevel := kuma_log.ParseLogLevel(args.logLevel)
+			if errLevel != nil {
+				return errLevel
 			}
+			
+			if errFormat != nil {
+				return errFormat
+			}
+			
 			l := core.NewLogger(level, format)
 			core.SetLogger(l)
 			// Required for any k8s stuff that may log.
