@@ -200,10 +200,10 @@ func GatewayListenerInfoFromProxy(
 	return listenerInfos, nil
 }
 
-func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	listenerInfos, err := GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, g.Zone)
+	listenerInfos, err := GatewayListenerInfoFromProxy(ctx, xdsCtx.Mesh, proxy, g.Zone)
 	if err != nil {
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}
@@ -216,13 +216,13 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.New("no support for protocol")
 		}
 
-		cdsResources, err := g.generateCDS(ctx, info, info.HostInfos)
+		cdsResources, err := g.generateCDS(ctx, xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := g.generateLDS(ctx, info, info.HostInfos)
+		ldsResources, limit, err := g.generateLDS(xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +232,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			limits = append(limits, *limit)
 		}
 
-		rdsResources, err := g.generateRDS(ctx, info, info.HostInfos)
+		rdsResources, err := g.generateRDS(xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -295,11 +295,16 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 	return resources, limit, nil
 }
 
-func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateCDS(
+	ctx context.Context,
+	xdsCtx xds_context.Context,
+	info GatewayListenerInfo,
+	hostInfos []GatewayHostInfo,
+) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	for _, hostInfo := range hostInfos {
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(context.TODO(), ctx, info, hostInfo)
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, xdsCtx, info, hostInfo)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
