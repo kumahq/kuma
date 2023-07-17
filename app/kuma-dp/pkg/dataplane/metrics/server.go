@@ -224,15 +224,13 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 		buf.Write([]byte("\n"))
 	}
 
-	processedMetrics := processNewlineChars(buf.Bytes())
-	processedMetrics = append(processedMetrics, '\n')
+	processedMetrics := append(processNewlineChars(buf.Bytes()), '\n')
 	buf.Reset()
 	buf.Write(processedMetrics)
 
 	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
 		// make metrics OpenMetrics compliant
 		buf.Write([]byte("# EOF\n"))
-		return buf.Bytes()
 	}
 
 	return buf.Bytes()
@@ -243,10 +241,11 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 func processNewlineChars(input []byte) []byte {
 	var deduped []byte
 
-	var last byte
-	if len(input) > 0 {
-		last = input[0]
+	if len(input) == 0 {
+		return nil
 	}
+	last := input[0]
+
 	for i := 1; i < len(input); i++ {
 		if last == '\n' && input[i] == last {
 			continue
@@ -389,8 +388,10 @@ func responseFormat(h http.Header) expfmt.Format {
 	case textType:
 		return expfmt.FmtText
 
+	// if mediatype is OpenMetricsType, return FmtUnknown for any version
+	// other than "0.0.1", "1.0.0" and "".
 	case expfmt.OpenMetricsType:
-		if version == expfmt.OpenMetricsVersion_0_0_1 {
+		if version == expfmt.OpenMetricsVersion_0_0_1 || version == "" {
 			return expfmt.FmtOpenMetrics_0_0_1
 		}
 		if version == expfmt.OpenMetricsVersion_1_0_0 {

@@ -124,6 +124,14 @@ var _ = Describe("Response Format", func() {
 			contentType:    "application/invalid",
 			expectedFormat: expfmt.FmtUnknown,
 		}),
+		Entry("return FmtOpenMetrics_0_0_1 for a 'openmetrics content type with no version param' response", testCase{
+			contentType:    "application/openmetrics-text",
+			expectedFormat: expfmt.FmtOpenMetrics_0_0_1,
+		}),
+		Entry("return FmtUnknown for a 'openmetrics content type with unsupported version param' response", testCase{
+			contentType:    "application/openmetrics-text; version=2.0.0",
+			expectedFormat: expfmt.FmtUnknown,
+		}),
 	)
 })
 
