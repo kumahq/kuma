@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -36,8 +37,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
 
-			ctx := context.Context{
-				Mesh: context.MeshContext{
+			ctx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -62,7 +63,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			}
 
 			// when
-			resources, err := generator.Generate(ctx, proxy)
+			resources, err := generator.Generate(context.Background(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

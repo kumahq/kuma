@@ -40,7 +40,7 @@ func (s *splitCounter) getAndIncrement() int {
 	return counter
 }
 
-func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
 
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
@@ -49,7 +49,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(ctx.Mesh.ServiceTLSReadiness)
+	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceTLSReadiness)
 
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
@@ -60,7 +60,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, ctx.Mesh.Resource.ZoneEgressEnabled())
+		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
 		protocol := InferProtocol(proxy, clusters)
@@ -74,7 +74,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		servicesAcc.Add(clusters...)
 
 		// Generate listener
-		listener, err := g.generateLDS(ctx, proxy, routes, outbound, protocol)
+		listener, err := g.generateLDS(xdsCtx, proxy, routes, outbound, protocol)
 		if err != nil {
 			return nil, err
 		}
@@ -88,13 +88,13 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	services := servicesAcc.Services()
 
 	// Generate clusters. It cannot be generated on the fly with outbound loop because we need to know all subsets of the cluster for every service.
-	cdsResources, err := g.generateCDS(ctx, services, proxy)
+	cdsResources, err := g.generateCDS(xdsCtx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, services, proxy)
+	edsResources, err := g.generateEDS(ctx, xdsCtx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,8 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 }
 
 func (OutboundProxyGenerator) generateEDS(
-	ctx xds_context.Context,
+	ctx context.Context,
+	xdsCtx xds_context.Context,
 	services envoy_common.Services,
 	proxy *model.Proxy,
 ) (*model.ResourceSet, error) {
@@ -296,17 +297,17 @@ func (OutboundProxyGenerator) generateEDS(
 		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
+		if !services[serviceName].HasExternalService() || xdsCtx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, c := range services[serviceName].Clusters() {
 				cluster := c.(*envoy_common.ClusterImpl)
 				var endpoints model.EndpointMap
 				if cluster.Mesh() != "" {
-					endpoints = ctx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
+					endpoints = xdsCtx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
 				} else {
-					endpoints = ctx.Mesh.EndpointMap
+					endpoints = xdsCtx.Mesh.EndpointMap
 				}
 
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(user.Ctx(context.TODO(), user.ControlPlane), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, endpoints)
+				loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(user.Ctx(ctx, user.ControlPlane), xdsCtx.Mesh.Resource.Meta.GetName(), xdsCtx.Mesh.Hash, cluster, apiVersion, endpoints)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}

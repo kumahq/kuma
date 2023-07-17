@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 	"time"
 
@@ -154,7 +155,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, proxy)
+			rs, err := gen.Generate(context.Background(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
