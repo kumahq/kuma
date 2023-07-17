@@ -292,7 +292,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--dataplane-init-registry"] = Config.KumaImageRegistry
 	}
 
-	if Config.KumaImageTag != "" {
+	if Config.KumaImageTag != "" && Config.KumaImageTag != "unknown" {
 		argsMap["--control-plane-version"] = Config.KumaImageTag
 		argsMap["--dataplane-version"] = Config.KumaImageTag
 		argsMap["--dataplane-init-version"] = Config.KumaImageTag

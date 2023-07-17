@@ -228,7 +228,7 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	defer func() {
 		c.kumactl.Env = oldEnv // restore kumactl environment
 	}()
-	return c.kumactl.KumactlInstallCP(c.mode, args...)
+	return c.kumactl.KumactlInstallCP(args...)
 }
 
 func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {
