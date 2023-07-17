@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -15,6 +16,8 @@ import (
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
+
+var log = core.Log.WithName("defaults").WithName("mesh")
 
 // ensureMux protects concurrent EnsureDefaultMeshResources invocation.
 // On Kubernetes, EnsureDefaultMeshResources is called both from MeshManager when creating default Mesh and from the MeshController
@@ -27,10 +30,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
-	logger := kuma_log.FromContext(ctx).
-		WithName("defaults").
-		WithName("mesh").
-		WithValues("mesh", meshName)
+	logger := kuma_log.DecorateWithCtx(log, ctx).WithValues("mesh", meshName)
 
 	logger.Info("ensuring default resources for Mesh exist")
 

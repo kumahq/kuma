@@ -15,7 +15,7 @@ var defaultMeshKey = core_model.ResourceKey{
 }
 
 func CreateMeshIfNotExist(ctx context.Context, resManager core_manager.ResourceManager) error {
-	logger := kuma_log.FromContext(ctx).WithName("defaults")
+	logger := kuma_log.DecorateWithCtx(log, ctx)
 	mesh := core_mesh.NewMeshResource()
 	err := resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {

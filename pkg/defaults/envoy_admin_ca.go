@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -23,8 +22,7 @@ type EnvoyAdminCaDefaultComponent struct {
 var _ component.Component = &EnvoyAdminCaDefaultComponent{}
 
 func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx := kuma_log.NewContext(user.Ctx(context.Background(), user.ControlPlane), core.Log)
-	ctx, cancelFn := context.WithCancel(ctx)
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	go func() {
 		<-stop
 		cancelFn()
@@ -43,7 +41,7 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 }
 
 func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
-	logger := kuma_log.FromContext(ctx).WithName("defaults")
+	logger := kuma_log.DecorateWithCtx(log, ctx)
 	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")

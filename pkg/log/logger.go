@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -91,16 +92,37 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-func NewContext(ctx context.Context, logger logr.Logger) context.Context {
-	return logr.NewContext(ctx, logger)
+type ctxMarker struct{}
+
+type ctxLogger struct {
+	fields []interface{}
 }
 
-func FromContext(ctx context.Context) logr.Logger {
-	logger, err := logr.FromContext(ctx)
-	if err != nil {
-		Log.V(1).Error(err, "could not extract logger from the context - using global logger")
-		return Log
+func WithFields(ctx context.Context, keysAndValues ...interface{}) context.Context {
+	l, ok := ctx.Value(ctxMarker{}).(*ctxLogger)
+	if !ok || l == nil {
+		return context.WithValue(ctx, ctxMarker{}, &ctxLogger{fields: keysAndValues})
 	}
 
-	return logger
+	l.fields = append(l.fields, keysAndValues...)
+
+	return ctx
+}
+
+func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+	span := trace.SpanFromContext(ctx)
+
+	if span.IsRecording() {
+		logger = logger.WithValues(
+			"trace_id", span.SpanContext().TraceID(),
+			"span_id", span.SpanContext().SpanID(),
+		)
+	}
+
+	l, ok := ctx.Value(ctxMarker{}).(*ctxLogger)
+	if !ok || l == nil {
+		return logger
+	}
+
+	return logger.WithValues(l.fields...)
 }

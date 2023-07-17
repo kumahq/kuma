@@ -13,7 +13,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -26,7 +25,6 @@ type MeshDefaultsReconciler struct {
 }
 
 func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx = kuma_log.NewContext(ctx, r.Log)
 	mesh := core_mesh.NewMeshResource()
 	if err := r.ResourceManager.Get(ctx, mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
 		if kube_apierrs.IsNotFound(err) {

@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
@@ -76,9 +75,9 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	if !c.isInitialised {
 		return nil
 	}
-	ctx := kuma_log.NewContext(go_context.Background(), log)
+	ctx := go_context.Background()
 	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
-	component := core_tokens.NewDefaultSigningKeyComponent(ctx, signingKeyManager)
+	component := core_tokens.NewDefaultSigningKeyComponent(ctx, signingKeyManager, log)
 	if err := context.ComponentManager().Add(component); err != nil {
 		return err
 	}
