@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -10,8 +11,11 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	kube_log "sigs.k8s.io/controller-runtime/pkg/log"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
+
+var Log = kube_log.Log
 
 type LogLevel int
 
@@ -87,3 +91,16 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
+func NewContext(ctx context.Context, logger logr.Logger) context.Context {
+	return logr.NewContext(ctx, logger)
+}
+
+func FromContext(ctx context.Context) logr.Logger {
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		Log.V(1).Error(err, "could not extract logger from the context - using global logger")
+		return Log
+	}
+
+	return logger
+}

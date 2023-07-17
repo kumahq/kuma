@@ -7,7 +7,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	kuma_log_context "github.com/kumahq/kuma/pkg/log/context"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var defaultMeshKey = core_model.ResourceKey{
@@ -15,7 +15,7 @@ var defaultMeshKey = core_model.ResourceKey{
 }
 
 func CreateMeshIfNotExist(ctx context.Context, resManager core_manager.ResourceManager) error {
-	logger := kuma_log_context.FromContext(ctx).WithName("defaults")
+	logger := kuma_log.FromContext(ctx).WithName("defaults")
 	mesh := core_mesh.NewMeshResource()
 	err := resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {

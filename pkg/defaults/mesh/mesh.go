@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
-	kuma_log_context "github.com/kumahq/kuma/pkg/log/context"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -27,7 +27,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
-	logger := kuma_log_context.FromContext(ctx).
+	logger := kuma_log.FromContext(ctx).
 		WithName("defaults").
 		WithName("mesh").
 		WithValues("mesh", meshName)
