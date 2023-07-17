@@ -27,7 +27,6 @@ const (
 	Logfmt
 )
 
-
 func (l LogLevel) String() string {
 	switch l {
 	case OffLevel:
