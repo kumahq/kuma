@@ -15,7 +15,7 @@ import (
 
 var (
 	// TODO remove dependency on kubernetes see: https://github.com/kumahq/kuma/issues/2798
-	Log                   = kuma_log.Log
+	Log                   = kube_log.Log
 	NewLogger             = kuma_log.NewLogger
 	NewLoggerTo           = kuma_log.NewLoggerTo
 	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
