@@ -7,11 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 type EnvoyAdminCaDefaultComponent struct {
@@ -21,7 +23,8 @@ type EnvoyAdminCaDefaultComponent struct {
 var _ component.Component = &EnvoyAdminCaDefaultComponent{}
 
 func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx := kuma_log.NewContext(user.Ctx(context.Background(), user.ControlPlane), core.Log)
+	ctx, cancelFn := context.WithCancel(ctx)
 	go func() {
 		<-stop
 		cancelFn()
@@ -40,15 +43,19 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 }
 
 func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
-	_, err := tls.LoadCA(ctx, resManager)
+	logger, err := kuma_log.FromContextWithNameAndOptionalValues(ctx, "defaults")
+	if err != nil {
+		return err
+	}
+	_, err = tls.LoadCA(ctx, resManager)
 	if err == nil {
-		log.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
+		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
 		return nil
 	}
 	if !store.IsResourceNotFound(err) {
 		return errors.Wrap(err, "error while loading admin client certificate")
 	}
-	log.V(1).Info("trying to create Envoy Admin CA")
+	logger.V(1).Info("trying to create Envoy Admin CA")
 	pair, err := tls.GenerateCA()
 	if err != nil {
 		return errors.Wrap(err, "could not generate admin client certificate")
@@ -56,6 +63,6 @@ func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceMan
 	if err := tls.CreateCA(ctx, *pair, resManager); err != nil {
 		return errors.Wrap(err, "could not create admin client certificate")
 	}
-	log.Info("Envoy Admin CA created")
+	logger.Info("Envoy Admin CA created")
 	return nil
 }

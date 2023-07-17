@@ -7,6 +7,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var defaultMeshKey = core_model.ResourceKey{
@@ -14,20 +15,24 @@ var defaultMeshKey = core_model.ResourceKey{
 }
 
 func CreateMeshIfNotExist(ctx context.Context, resManager core_manager.ResourceManager) error {
+	logger, err := kuma_log.FromContextWithNameAndOptionalValues(ctx, "defaults")
+	if err != nil {
+		return err
+	}
 	mesh := core_mesh.NewMeshResource()
-	err := resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
+	err = resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {
-		log.V(1).Info("default Mesh already exists. Skip creating default Mesh.")
+		logger.V(1).Info("default Mesh already exists. Skip creating default Mesh.")
 		return nil
 	}
 	if !core_store.IsResourceNotFound(err) {
 		return err
 	}
-	log.Info("trying to create default Mesh")
+	logger.Info("trying to create default Mesh")
 	if err := resManager.Create(ctx, mesh, core_store.CreateBy(defaultMeshKey)); err != nil {
-		log.V(1).Info("could not create default mesh", "err", err)
+		logger.V(1).Info("could not create default mesh", "err", err)
 		return err
 	}
-	log.Info("default Mesh created")
+	logger.Info("default Mesh created")
 	return nil
 }

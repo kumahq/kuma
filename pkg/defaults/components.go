@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
@@ -33,19 +34,21 @@ func Setup(runtime runtime.Runtime) error {
 		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 
 		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-			runtime.AppContext(),
-			zoneIngressSigningKeyManager,
-			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+
+		ctx := runtime.AppContext()
+		ctx = kuma_log.NewContext(ctx, kuma_log.FromContextWithNameAndOptionalValuesOrDefault(
+			ctx,
+			log,
+			"defaults",
+			"secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix,
+		))
+
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneIngressSigningKeyManager)); err != nil {
 			return err
 		}
 
 		zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
-		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-			runtime.AppContext(),
-			zoneSigningKeyManager,
-			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
-		)); err != nil {
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(ctx, zoneSigningKeyManager)); err != nil {
 			return err
 		}
 		if err := runtime.Add(defaultsComponent); err != nil {
@@ -88,7 +91,8 @@ func (d *defaultsComponent) NeedLeaderElection() bool {
 
 func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 	// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx := kuma_log.NewContext(user.Ctx(context.Background(), user.ControlPlane), core.Log)
+	ctx, cancelFn := context.WithCancel(ctx)
 	defer cancelFn()
 	wg := &sync.WaitGroup{}
 	errChan := make(chan error)

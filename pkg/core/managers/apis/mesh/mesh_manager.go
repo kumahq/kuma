@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -14,6 +15,7 @@ import (
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 func NewMeshManager(
@@ -60,6 +62,7 @@ func (m *meshManager) List(ctx context.Context, list core_model.ResourceList, fs
 }
 
 func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
+	ctx = kuma_log.NewContext(ctx, kuma_log.FromContextOrDefault(ctx, core.Log))
 	opts := core_store.NewCreateOptions(fs...)
 	mesh, err := m.mesh(resource)
 	if err != nil {
