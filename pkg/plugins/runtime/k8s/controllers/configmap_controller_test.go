@@ -22,7 +22,7 @@ import (
 
 var _ = Describe("DataplaneToMeshMapper", func() {
 	It("should map ingress to list of meshes", func() {
-		l := log.NewLogger(log.InfoLevel)
+		l := log.NewLogger(log.InfoLevel, log.Logfmt)
 		mapper := controllers.DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
 		requests := mapper(context.Background(), &mesh_k8s.Dataplane{
 			Mesh: "mesh-1",
@@ -91,7 +91,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 	}
 	DescribeTable("should map services to list of config maps",
 		func(givenService kube_core.Service, givenNamespace kube_core.Namespace, givenPods []kube_core.Pod, expectedMeshes []string) {
-			l := log.NewLogger(log.InfoLevel)
+			l := log.NewLogger(log.InfoLevel, log.Logfmt)
 			givenNamespace.Name = nsName
 			Expect(k8sClient.Create(ctx, &givenNamespace)).To(Succeed())
 			givenService.Namespace = givenNamespace.Name
