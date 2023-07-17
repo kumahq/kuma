@@ -1,0 +1,10 @@
+import{K as _}from"./kongponents.es-e59adee0.js";import{d as l,o as a,e as r,t,g as n,k as s,F as m,j as d,h as y,w as g,a as P,i as f,b as D}from"./index-a5906eae.js";import{F as O,o as b,z as h,A as C}from"./RouteView.vue_vue_type_script_setup_true_lang-c0a5e54a.js";const N=l({__name:"WarningDefault",props:{payload:{type:[String,Object],required:!0}},setup(e){return(o,u)=>(a(),r("span",null,t(e.payload),1))}}),E=l({__name:"WarningEnvoyIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),r("span",null,[n(`
+    Envoy (`),s("strong",null,t(e.payload.envoy),1),n(") is unsupported by the current version of Kuma DP ("),s("strong",null,t(e.payload.kumaDp),1),n(") [Requirements: "),s("strong",null,t(e.payload.requirements),1),n(`].
+  `)]))}}),A=l({__name:"WarningUnsupportedKumaDPVersion",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),r("span",null,[n(`
+    Unsupported version of Kuma DP (`),s("strong",null,t(e.payload.kumaDp),1),n(`)
+  `)]))}}),I=l({__name:"WarningZoneAndGlobalCPSVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),r("span",null,[n(`
+    There is mismatch between versions of Zone CP (`),s("strong",null,t(e.payload.zoneCpVersion),1),n(`)
+    and the Global CP (`),s("strong",null,t(e.payload.globalCpVersion),1),n(`)
+  `)]))}}),V=l({__name:"WarningZoneAndKumaDPVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),r("span",null,[n(`
+    There is a mismatch between versions of Kuma DP (`),s("strong",null,t(e.payload.kumaDp),1),n(`) and the Zone CP.
+  `)]))}}),K=l({__name:"WarningsWidget",props:{warnings:{type:Array,required:!0}},setup(e){const o=e;function u(c=""){switch(c){case C:return E;case h:return A;case b:return V;case O:return I;default:return N}}return(c,k)=>(a(),r("ul",null,[(a(!0),r(m,null,d(o.warnings,(p,i)=>(a(),r("li",{key:`${p.kind}/${i}`,class:"mb-1"},[y(D(_),{appearance:"warning"},{alertMessage:g(()=>[(a(),P(f(u(p.kind)),{payload:p.payload},null,8,["payload"]))]),_:2},1024)]))),128))]))}});export{K as _};
