@@ -116,7 +116,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				proxyConfig = *given.proxyConfig
 			}
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, "/tmp")
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -434,7 +434,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 			proxyCfg := xds_config.DefaultProxyConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, "/tmp")
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -572,7 +572,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, "/tmp")
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -667,7 +667,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, "/tmp")
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

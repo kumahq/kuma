@@ -38,7 +38,6 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	tmpDir string,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -57,7 +56,6 @@ func NewDefaultBootstrapGenerator(
 		hostsAndIps:             hostsAndIps,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
-		TmpDir:                  tmpDir,
 	}, nil
 }
 
@@ -71,7 +69,6 @@ type bootstrapGenerator struct {
 	hostsAndIps             SANSet
 	hdsEnabled              bool
 	defaultAdminPort        uint32
-	TmpDir                  string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {

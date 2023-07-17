@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"os"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -22,7 +20,6 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		os.TempDir(),
 	)
 	if err != nil {
 		return err
