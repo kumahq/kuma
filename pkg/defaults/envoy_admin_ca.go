@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	kuma_log_context "github.com/kumahq/kuma/pkg/log/context"
 )
 
 type EnvoyAdminCaDefaultComponent struct {
@@ -23,7 +23,7 @@ type EnvoyAdminCaDefaultComponent struct {
 var _ component.Component = &EnvoyAdminCaDefaultComponent{}
 
 func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx := kuma_log.NewContext(user.Ctx(context.Background(), user.ControlPlane), core.Log)
+	ctx := kuma_log_context.NewContext(user.Ctx(context.Background(), user.ControlPlane), core.Log)
 	ctx, cancelFn := context.WithCancel(ctx)
 	go func() {
 		<-stop
@@ -43,11 +43,8 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 }
 
 func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
-	logger, err := kuma_log.FromContextWithNameAndOptionalValues(ctx, "defaults")
-	if err != nil {
-		return err
-	}
-	_, err = tls.LoadCA(ctx, resManager)
+	logger := kuma_log_context.FromContext(ctx).WithName("defaults")
+	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
 		return nil

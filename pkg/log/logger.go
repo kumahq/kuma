@@ -1,7 +1,6 @@
 package log
 
 import (
-	"context"
 	"io"
 	"os"
 
@@ -88,54 +87,3 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-func NewContext(ctx context.Context, logger logr.Logger) context.Context {
-	return logr.NewContext(ctx, logger)
-}
-
-func FromContext(ctx context.Context) (logr.Logger, error) {
-	logger, err := logr.FromContext(ctx)
-	if err != nil {
-		return logr.Logger{}, errors.Wrap(err, "could not extract logger from the context")
-	}
-
-	return logger, nil
-}
-
-func FromContextOrDefault(
-	ctx context.Context,
-	defaultLogger logr.Logger,
-) logr.Logger {
-	logger, err := logr.FromContext(ctx)
-	if err != nil {
-		return defaultLogger
-	}
-
-	return logger
-}
-
-func FromContextWithNameAndOptionalValues(
-	ctx context.Context,
-	name string,
-	values ...interface{},
-) (logr.Logger, error) {
-	logger, err := FromContext(ctx)
-	if err != nil {
-		return logr.Logger{}, err
-	}
-
-	return logger.WithName(name).WithValues(values...), nil
-}
-
-func FromContextWithNameAndOptionalValuesOrDefault(
-	ctx context.Context,
-	defaultLogger logr.Logger,
-	name string,
-	values ...interface{},
-) logr.Logger {
-	logger, err := logr.FromContext(ctx)
-	if err != nil {
-		logger = defaultLogger
-	}
-
-	return logger.WithName(name).WithValues(values...)
-}
