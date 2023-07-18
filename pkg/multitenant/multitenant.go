@@ -10,7 +10,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
-const tracingAttributeName = "tenantID"
+const observabilityAttributeName = "tenantID"
 
 // GlobalTenantID is a unique ID used for storing resources that are not tenant-aware
 var GlobalTenantID = ""
@@ -39,12 +39,12 @@ func (s singleTenant) GetIDs(context.Context) ([]string, error) {
 
 func WithTenant(ctx context.Context, tenantId string) context.Context {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
-		span.SetAttributes(attribute.String(tracingAttributeName, tenantId))
+		span.SetAttributes(attribute.String(observabilityAttributeName, tenantId))
 	}
 
 	return kuma_log.CtxWithFields(
 		context.WithValue(ctx, tenantCtx{}, tenantId),
-		tracingAttributeName, tenantId,
+		observabilityAttributeName, tenantId,
 	)
 }
 
