@@ -41,7 +41,7 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 }
 
 func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
-	logger := kuma_log.DecorateWithCtx(log, ctx)
+	logger := kuma_log.AddFieldsFromCtx(log, ctx)
 	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")

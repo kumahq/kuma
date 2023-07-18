@@ -30,7 +30,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
-	logger := kuma_log.DecorateWithCtx(log, ctx).WithValues("mesh", meshName)
+	logger := kuma_log.AddFieldsFromCtx(log, ctx).WithValues("mesh", meshName)
 
 	logger.Info("ensuring default resources for Mesh exist")
 

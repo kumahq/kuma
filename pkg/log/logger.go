@@ -93,11 +93,10 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 
 const tenantLoggerKey = "tenantID"
 
-// DecorateWithCtx will check if provided context contain tracing span and
+// AddFieldsFromCtx will check if provided context contain tracing span and
 // if the span is currently recording. If so, it will add trace_id and span_id
-// to logged values. It will also add to logger values from fields added to
-// context earlier by CtxWithFields functions.
-func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+// to logged values. It will also add the tenant id to the logged values.
+func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
 		logger = logger.WithValues(
 			"trace_id", span.SpanContext().TraceID(),

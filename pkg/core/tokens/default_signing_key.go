@@ -54,7 +54,7 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 }
 
 func CreateDefaultSigningKeyIfNotExist(ctx context.Context, log logr.Logger, signingKeyManager SigningKeyManager) error {
-	logger := kuma_log.DecorateWithCtx(log, ctx)
+	logger := kuma_log.AddFieldsFromCtx(log, ctx)
 	_, _, err := signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
 		logger.V(1).Info("signing key already exists. Skip creating.")
