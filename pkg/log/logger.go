@@ -89,37 +89,38 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-type ctxMarker struct{}
+type loggerCtx struct{}
 
-type ctxLogger struct {
-	fields []interface{}
-}
-
+// WithFields will add to provided context fields (key/value pairs) which then
+// will be logged by logger decorated with DecorateWithCtx function.
+// After adding logging fields it returns back enriched context.
 func WithFields(ctx context.Context, keysAndValues ...interface{}) context.Context {
-	l, ok := ctx.Value(ctxMarker{}).(*ctxLogger)
-	if !ok || l == nil {
-		return context.WithValue(ctx, ctxMarker{}, &ctxLogger{fields: keysAndValues})
+	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
+	if !ok || fields == nil {
+		return context.WithValue(ctx, loggerCtx{}, &keysAndValues)
 	}
 
-	l.fields = append(l.fields, keysAndValues...)
+	*fields = append(*fields, keysAndValues...)
 
 	return ctx
 }
 
+// DecorateWithCtx will check if provided context contain tracing span and
+// if the span is currently recording. If so, it will add trace_id and span_id
+// to logged values. It will also add to logger values from fields added to
+// context earlier by WithFields functions.
 func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
-	span := trace.SpanFromContext(ctx)
-
-	if span.IsRecording() {
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
 		logger = logger.WithValues(
 			"trace_id", span.SpanContext().TraceID(),
 			"span_id", span.SpanContext().SpanID(),
 		)
 	}
 
-	l, ok := ctx.Value(ctxMarker{}).(*ctxLogger)
-	if !ok || l == nil {
+	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
+	if !ok || fields == nil {
 		return logger
 	}
 
-	return logger.WithValues(l.fields...)
+	return logger.WithValues(*fields...)
 }
