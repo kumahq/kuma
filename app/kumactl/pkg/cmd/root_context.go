@@ -39,6 +39,7 @@ type RootArgs struct {
 	ConfigType ConfigType
 	Mesh       string
 	ApiTimeout time.Duration
+	Context    string
 }
 
 type RootRuntime struct {
@@ -148,7 +149,12 @@ func (rc *RootContext) CurrentContext() (*config_proto.Context, error) {
 	if rc.Config().CurrentContext == "" {
 		return nil, errors.Errorf("active Control Plane is not set. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
-	_, currentContext := rc.Config().GetContext(rc.Config().CurrentContext)
+	var currentContext *config_proto.Context
+	if rc.Args.Context != "" {
+		_, currentContext = rc.Config().GetContext(rc.Args.Context)
+	} else {
+		_, currentContext = rc.Config().GetContext(rc.Config().CurrentContext)
+	}
 	if currentContext == nil {
 		return nil, errors.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
