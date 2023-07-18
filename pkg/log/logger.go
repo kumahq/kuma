@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type LogLevel int
@@ -89,21 +91,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-type loggerCtx struct{}
-
-// CtxWithFields will add to provided context fields (key/value pairs)
-// which then will be logged by logger decorated with DecorateWithCtx function.
-// After adding logging fields it returns back enriched context.
-func CtxWithFields(ctx context.Context, keysAndValues ...interface{}) context.Context {
-	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
-	if !ok || fields == nil {
-		return context.WithValue(ctx, loggerCtx{}, &keysAndValues)
-	}
-
-	*fields = append(*fields, keysAndValues...)
-
-	return ctx
-}
+const tenantLoggerKey = "tenantID"
 
 // DecorateWithCtx will check if provided context contain tracing span and
 // if the span is currently recording. If so, it will add trace_id and span_id
@@ -117,10 +105,9 @@ func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
 		)
 	}
 
-	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
-	if !ok || fields == nil {
-		return logger
+	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
+		logger = logger.WithValues(tenantLoggerKey, tenantId)
 	}
 
-	return logger.WithValues(*fields...)
+	return logger
 }

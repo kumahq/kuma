@@ -6,8 +6,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-
-	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 const observabilityAttributeName = "tenantID"
@@ -42,10 +40,7 @@ func WithTenant(ctx context.Context, tenantId string) context.Context {
 		span.SetAttributes(attribute.String(observabilityAttributeName, tenantId))
 	}
 
-	return kuma_log.CtxWithFields(
-		context.WithValue(ctx, tenantCtx{}, tenantId),
-		observabilityAttributeName, tenantId,
-	)
+	return context.WithValue(ctx, tenantCtx{}, tenantId)
 }
 
 func TenantFromCtx(ctx context.Context) (string, bool) {
