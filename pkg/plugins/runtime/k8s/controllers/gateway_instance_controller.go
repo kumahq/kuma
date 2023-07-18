@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -206,34 +205,6 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	return obj.(*kube_core.Service), nil
 }
 
-var r = regexp.MustCompile("^[0-9]+")
-
-func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) bool {
-	major, err := strconv.Atoi(v.Major)
-	if err != nil {
-		return false
-	}
-
-	minorNum := r.FindString(v.Minor)
-	if minorNum == "" {
-		return false
-	}
-
-	minor, err := strconv.Atoi(minorNum)
-	if err != nil {
-		return false
-	}
-
-	switch {
-	case major > 1:
-		return true
-	case major == 1:
-		return minor >= 22
-	default:
-		return false
-	}
-}
-
 // createOrUpdateDeployment can either return an error, a created Deployment or
 // neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
@@ -278,28 +249,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
 
-			unprivilegedPortStartSupported := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
-
-			var securityContext *kube_core.PodSecurityContext
-			if unprivilegedPortStartSupported {
-				securityContext = &kube_core.PodSecurityContext{
-					Sysctls: []kube_core.Sysctl{{
-						Name:  "net.ipv4.ip_unprivileged_port_start",
-						Value: "0",
-					}},
-				}
-			} else {
-				secContext := container.SecurityContext
-				if secContext.Capabilities == nil {
-					secContext.Capabilities = &kube_core.Capabilities{}
-				}
-				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
+			securityContext := &kube_core.PodSecurityContext{
+				Sysctls: []kube_core.Sysctl{{
+					Name:  "net.ipv4.ip_unprivileged_port_start",
+					Value: "0",
+				}},
 			}
 
 			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != nil {
-				if securityContext == nil {
-					securityContext = &kube_core.PodSecurityContext{}
-				}
 				securityContext.FSGroup = fsGroup
 			}
 
