@@ -1,12 +1,14 @@
 package log
 
 import (
+	"context"
 	"io"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -85,4 +87,40 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 	opts = append(opts, zap.AddCallerSkip(1), zap.ErrorOutput(sink))
 	return zap.New(zapcore.NewCore(&kube_log_zap.KubeAwareEncoder{Encoder: enc, Verbose: level == DebugLevel}, sink, lvl)).
 		WithOptions(opts...)
+}
+
+type loggerCtx struct{}
+
+// CtxWithFields will add to provided context fields (key/value pairs)
+// which then will be logged by logger decorated with DecorateWithCtx function.
+// After adding logging fields it returns back enriched context.
+func CtxWithFields(ctx context.Context, keysAndValues ...interface{}) context.Context {
+	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
+	if !ok || fields == nil {
+		return context.WithValue(ctx, loggerCtx{}, &keysAndValues)
+	}
+
+	*fields = append(*fields, keysAndValues...)
+
+	return ctx
+}
+
+// DecorateWithCtx will check if provided context contain tracing span and
+// if the span is currently recording. If so, it will add trace_id and span_id
+// to logged values. It will also add to logger values from fields added to
+// context earlier by CtxWithFields functions.
+func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		logger = logger.WithValues(
+			"trace_id", span.SpanContext().TraceID(),
+			"span_id", span.SpanContext().SpanID(),
+		)
+	}
+
+	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
+	if !ok || fields == nil {
+		return logger
+	}
+
+	return logger.WithValues(*fields...)
 }

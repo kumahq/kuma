@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 type EnvoyAdminCaDefaultComponent struct {
@@ -40,15 +41,16 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 }
 
 func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
+	logger := kuma_log.DecorateWithCtx(log, ctx)
 	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
-		log.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
+		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")
 		return nil
 	}
 	if !store.IsResourceNotFound(err) {
 		return errors.Wrap(err, "error while loading admin client certificate")
 	}
-	log.V(1).Info("trying to create Envoy Admin CA")
+	logger.V(1).Info("trying to create Envoy Admin CA")
 	pair, err := tls.GenerateCA()
 	if err != nil {
 		return errors.Wrap(err, "could not generate admin client certificate")
@@ -56,6 +58,6 @@ func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceMan
 	if err := tls.CreateCA(ctx, *pair, resManager); err != nil {
 		return errors.Wrap(err, "could not create admin client certificate")
 	}
-	log.Info("Envoy Admin CA created")
+	logger.Info("Envoy Admin CA created")
 	return nil
 }
