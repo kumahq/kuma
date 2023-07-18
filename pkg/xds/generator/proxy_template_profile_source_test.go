@@ -144,6 +144,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),

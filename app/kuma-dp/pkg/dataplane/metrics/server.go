@@ -16,10 +16,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var (
@@ -80,9 +78,9 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 	return http.Client{}
 }
 
-func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
+func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
 	return &Hijacker{
-		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		socketPath:           socketPath,
 		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape: applicationsToScrape,

@@ -1,13 +1,18 @@
 package xds_test
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -20,7 +25,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 	DescribeTable("should parse metadata",
 		func(given testCase) {
 			// when
-			metadata := xds.DataplaneMetadataFromXdsMetadata(given.node)
+			metadata := xds.DataplaneMetadataFromXdsMetadata(given.node, "/tmp")
 
 			// then
 			Expect(*metadata).To(Equal(given.expected))
@@ -47,12 +52,24 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "8001",
 						},
 					},
+					"accessLogSocketPath": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "/tmp/logs",
+						},
+					},
+					"metricsSocketPath": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "/tmp/metrics",
+						},
+					},
 				},
 			},
 			expected: xds.DataplaneMetadata{
-				AdminPort:    1234,
-				DNSPort:      8000,
-				EmptyDNSPort: 8001,
+				AdminPort:           1234,
+				DNSPort:             8000,
+				EmptyDNSPort:        8001,
+				AccessLogSocketPath: "/tmp/logs",
+				MetricsSocketPath:   "/tmp/metrics",
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
@@ -78,6 +95,38 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			},
 		}),
 	)
+
+	It("should fallback to service side generated paths", func() { // remove with https://github.com/kumahq/kuma/issues/7220
+		// given
+		dpJSON, err := json.Marshal(rest.From.Resource(&core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Mesh: "mesh", Name: "dp-1"},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "123.40.2.2",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{Address: "10.0.0.1", Port: 8080, Tags: map[string]string{"kuma.io/service": "foo"}},
+					},
+				},
+			},
+		}))
+		Expect(err).ToNot(HaveOccurred())
+		node := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"dataplane.resource": {
+					Kind: &structpb.Value_StringValue{
+						StringValue: string(dpJSON),
+					},
+				},
+			},
+		}
+
+		// when
+		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp")
+
+		// then
+		Expect(metadata.AccessLogSocketPath).To(Equal("/tmp/kuma-al-dp-1-mesh.sock"))
+		Expect(metadata.MetricsSocketPath).To(Equal("/tmp/kuma-mh-dp-1-mesh.sock"))
+	})
 
 	It("should parse version", func() { // this has to be separate test because Equal does not work on proto
 		// given
@@ -105,7 +154,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		}
 
 		// when
-		metadata := xds.DataplaneMetadataFromXdsMetadata(node)
+		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp")
 
 		// then
 		// We don't want to validate KumaDpVersion.KumaCpCompatible
