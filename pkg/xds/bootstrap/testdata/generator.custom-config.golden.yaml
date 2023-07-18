@@ -46,6 +46,7 @@ node:
   cluster: backend
   id: mesh.name.namespace
   metadata:
+    accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     dataplane.resource: |2-
@@ -76,11 +77,10 @@ node:
     dynamicMetadata:
       test: value
     features: []
+    metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
-      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
-        kumaDpCompatible: false
         version: 1.15.0
       kumaDp:
         buildDate: "2019-08-07T11:26:06Z"

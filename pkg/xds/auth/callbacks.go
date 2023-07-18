@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -117,7 +118,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Discover
 	}
 
 	if s.resource == nil {
-		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir())
 		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
 		if err != nil {
 			return stream{}, err

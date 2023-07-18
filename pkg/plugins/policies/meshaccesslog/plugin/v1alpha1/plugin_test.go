@@ -12,7 +12,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -36,12 +35,6 @@ import (
 )
 
 var _ = Describe("MeshAccessLog", func() {
-	BeforeEach(func() {
-		core.TempDir = func() string {
-			return "/tmp"
-		}
-	})
-
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
 		outbounds         []*mesh_proto.Dataplane_Networking_Outbound
@@ -69,6 +62,9 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 			proxy := xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Metadata: &xds.DataplaneMetadata{
+					AccessLogSocketPath: "/tmp/kuma-al-backend-default.sock",
+				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Mesh: "default",
@@ -990,6 +986,9 @@ var _ = Describe("MeshAccessLog", func() {
 			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := xds.Proxy{
 				APIVersion: "v3",
+				Metadata: &core_xds.DataplaneMetadata{
+					AccessLogSocketPath: "/tmp/foo",
+				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Mesh: "default",

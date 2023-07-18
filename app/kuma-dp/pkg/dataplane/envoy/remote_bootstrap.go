@@ -177,14 +177,16 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 				KumaDpCompatible: params.EnvoyVersion.KumaDpCompatible,
 			},
 		},
-		DynamicMetadata: params.DynamicMetadata,
-		DNSPort:         params.DNSPort,
-		EmptyDNSPort:    params.EmptyDNSPort,
-		OperatingSystem: b.operatingSystem,
-		Features:        b.features,
-		Resources:       resources,
+		DynamicMetadata:     params.DynamicMetadata,
+		DNSPort:             params.DNSPort,
+		EmptyDNSPort:        params.EmptyDNSPort,
+		OperatingSystem:     b.operatingSystem,
+		Features:            b.features,
+		Resources:           resources,
+		AccessLogSocketPath: params.AccessLogSocketPath,
+		MetricsSocketPath:   params.MetricsSocketPath,
 	}
-	jsonBytes, err := json.Marshal(request)
+	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal request to json")
 	}
