@@ -18,7 +18,7 @@ func (s *accessLogStreamer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogStreamer(address) *accessLogStreamer {
+func NewAccessLogStreamer(address string) *accessLogStreamer {
 	return &accessLogStreamer{
 		address: address,
 	}
