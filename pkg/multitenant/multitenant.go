@@ -42,7 +42,7 @@ func WithTenant(ctx context.Context, tenantId string) context.Context {
 		span.SetAttributes(attribute.String(tracingAttributeName, tenantId))
 	}
 
-	return kuma_log.WithFields(
+	return kuma_log.CtxWithFields(
 		context.WithValue(ctx, tenantCtx{}, tenantId),
 		tracingAttributeName, tenantId,
 	)
