@@ -634,7 +634,7 @@ var _ = DescribeTable("outboundView",
 		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("external.service.com")},
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
 			vips.NewHostEntry("external.service.com"): {
-				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "external-service:es-1", Port: 8080},
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
 			},
 		},
 	}),
