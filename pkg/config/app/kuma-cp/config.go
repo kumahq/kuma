@@ -43,9 +43,10 @@ func (d *Defaults) Validate() error {
 }
 
 type Metrics struct {
-	Dataplane *DataplaneMetrics `json:"dataplane"`
-	Zone      *ZoneMetrics      `json:"zone"`
-	Mesh      *MeshMetrics      `json:"mesh"`
+	Dataplane    *DataplaneMetrics    `json:"dataplane"`
+	Zone         *ZoneMetrics         `json:"zone"`
+	Mesh         *MeshMetrics         `json:"mesh"`
+	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -93,6 +94,12 @@ type MeshMetrics struct {
 	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
 	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
 	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+}
+
+type ControlPlaneMetrics struct {
+	// ReportResourcesCount if true will report metrics with the count of resources.
+	// Default: true
+	ReportResourcesCount bool `json:"reportResourcesCount" envconfig:"kuma_metrics_control_plane_report_resources_count"`
 }
 
 func (d *MeshMetrics) Sanitize() {
@@ -195,6 +202,9 @@ var DefaultConfig = func() Config {
 			Mesh: &MeshMetrics{
 				MinResyncTimeout: config_types.Duration{Duration: 1 * time.Second},
 				MaxResyncTimeout: config_types.Duration{Duration: 20 * time.Second},
+			},
+			ControlPlane: &ControlPlaneMetrics{
+				ReportResourcesCount: true,
 			},
 		},
 		Reports: &Reports{
