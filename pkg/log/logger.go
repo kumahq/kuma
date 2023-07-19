@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type LogLevel int
@@ -89,27 +91,12 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-type loggerCtx struct{}
+const tenantLoggerKey = "tenantID"
 
-// CtxWithFields will add to provided context fields (key/value pairs)
-// which then will be logged by logger decorated with DecorateWithCtx function.
-// After adding logging fields it returns back enriched context.
-func CtxWithFields(ctx context.Context, keysAndValues ...interface{}) context.Context {
-	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
-	if !ok || fields == nil {
-		return context.WithValue(ctx, loggerCtx{}, &keysAndValues)
-	}
-
-	*fields = append(*fields, keysAndValues...)
-
-	return ctx
-}
-
-// DecorateWithCtx will check if provided context contain tracing span and
+// AddFieldsFromCtx will check if provided context contain tracing span and
 // if the span is currently recording. If so, it will add trace_id and span_id
-// to logged values. It will also add to logger values from fields added to
-// context earlier by CtxWithFields functions.
-func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+// to logged values. It will also add the tenant id to the logged values.
+func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
 		logger = logger.WithValues(
 			"trace_id", span.SpanContext().TraceID(),
@@ -117,10 +104,9 @@ func DecorateWithCtx(logger logr.Logger, ctx context.Context) logr.Logger {
 		)
 	}
 
-	fields, ok := ctx.Value(loggerCtx{}).(*[]interface{})
-	if !ok || fields == nil {
-		return logger
+	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
+		logger = logger.WithValues(tenantLoggerKey, tenantId)
 	}
 
-	return logger.WithValues(*fields...)
+	return logger
 }
