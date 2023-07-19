@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 type defaultSigningKeyComponent struct {
@@ -53,20 +54,21 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 }
 
 func CreateDefaultSigningKeyIfNotExist(ctx context.Context, log logr.Logger, signingKeyManager SigningKeyManager) error {
+	logger := kuma_log.AddFieldsFromCtx(log, ctx)
 	_, _, err := signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
-		log.V(1).Info("signing key already exists. Skip creating.")
+		logger.V(1).Info("signing key already exists. Skip creating.")
 		return nil
 	}
 	if _, ok := err.(*SigningKeyNotFound); !ok {
 		return err
 	}
-	log.Info("trying to create signing key")
+	logger.Info("trying to create signing key")
 	if err := signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
-		log.V(1).Info("could not create signing key", "err", err)
+		logger.V(1).Info("could not create signing key", "err", err)
 		return err
 	}
-	log.Info("default signing key created")
+	logger.Info("default signing key created")
 	return nil
 }
 

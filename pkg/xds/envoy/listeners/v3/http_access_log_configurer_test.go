@@ -35,6 +35,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			if !given.legacyTcpAccessLog {
 				metaData.Features = core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true}
 			}
+			metaData.AccessLogSocketPath = "/tmp/kuma-al-dataplane0-demo.sock"
 			proxy := &core_xds.Proxy{
 				Id:       *core_xds.BuildProxyId("web", "example"),
 				Metadata: metaData,

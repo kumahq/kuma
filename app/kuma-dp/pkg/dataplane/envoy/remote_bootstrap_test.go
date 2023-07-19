@@ -19,20 +19,36 @@ import (
 	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
+func defaultBootstrapParams() BootstrapParams {
+	return BootstrapParams{
+		Dataplane: &unversioned.Resource{
+			Meta: rest_v1alpha1.ResourceMeta{
+				Type: "Dataplane",
+				Mesh: "demo",
+				Name: "sample",
+			},
+		},
+		EnvoyVersion: EnvoyVersion{
+			Build:   "hash/1.15.0/RELEASE",
+			Version: "1.15.0",
+		},
+		AccessLogSocketPath: "/tmp/access",
+		MetricsSocketPath:   "/tmp/metric",
+	}
+}
+
 var _ = Describe("Remote Bootstrap", func() {
 	type testCase struct {
-		config                   kuma_dp.Config
-		dataplane                rest.Resource
-		dynamicMetadata          map[string]string
-		expectedBootstrapRequest string
-		sidecarConfiguration     *types.KumaSidecarConfiguration
+		config                       kuma_dp.Config
+		params                       BootstrapParams
+		expectedBootstrapRequestFile string
 	}
 
 	BeforeEach(func() {
@@ -53,10 +69,10 @@ var _ = Describe("Remote Bootstrap", func() {
 			defer GinkgoRecover()
 			body, err := io.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
+			Expect(body).To(matchers.MatchGoldenJSON("testdata", given.expectedBootstrapRequestFile))
 			Expect(req.Header.Get("accept")).To(Equal("application/json"))
 
-			bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+			bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.response.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			response := &types.BootstrapResponse{
 				Bootstrap: bootstrap,
@@ -73,15 +89,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator("linux", []string{})
 
 		// when
-		params := BootstrapParams{
-			Dataplane: given.dataplane,
-			EnvoyVersion: EnvoyVersion{
-				Build:   "hash/1.15.0/RELEASE",
-				Version: "1.15.0",
-			},
-			DynamicMetadata: given.dynamicMetadata,
-		}
-		bootstrap, kumaSidecar, err := generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), given.config, params)
+		bootstrap, kumaSidecar, err := generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), given.config, given.params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -95,49 +103,14 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Name = "sample"
 				cfg.DataplaneRuntime.Token = "token"
 
+				params := defaultBootstrapParams()
+				params.DynamicMetadata = map[string]string{
+					"test": "value",
+				}
 				return testCase{
-					config:               cfg,
-					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &unversioned.Resource{
-						Meta: rest_v1alpha1.ResourceMeta{
-							Type: "Dataplane",
-							Mesh: "demo",
-							Name: "sample",
-						},
-					},
-					dynamicMetadata: map[string]string{
-						"test": "value",
-					},
-					expectedBootstrapRequest: `
-					{
-					  "mesh": "demo",
-					  "name": "sample",
-					  "proxyType": "dataplane",
-					  "dataplaneToken": "token",
-					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
-					  "version": {
-						"kumaDp": {
-						  "version": "0.0.1",
-						  "gitTag": "v0.0.1",
-						  "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
-						  "buildDate": "2019-08-07T11:26:06Z"
-						},
-						"envoy": {
-						  "version": "1.15.0",
-						  "build": "hash/1.15.0/RELEASE",
-						  "kumaDpCompatible": false
-						}
-					  },
-					  "caCert": "",
-					  "dynamicMetadata": {
-					    "test": "value"
-					  },
-					  "operatingSystem": "linux",
-					  "features": [],
-					  "resources": {
-					    "maxHeapSizeBytes": 0
-				      }
-					}`,
+					config:                       cfg,
+					params:                       params,
+					expectedBootstrapRequestFile: "bootstrap-request-0.golden.json",
 				}
 			}()),
 
@@ -149,44 +122,9 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.DataplaneRuntime.TokenPath = "testdata/token"
 
 				return testCase{
-					config:               cfg,
-					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &unversioned.Resource{
-						Meta: rest_v1alpha1.ResourceMeta{
-							Type: "Dataplane",
-							Mesh: "demo",
-							Name: "sample",
-						},
-					},
-					expectedBootstrapRequest: `
-                    {
-                      "mesh": "demo",
-                      "name": "sample",
-                      "proxyType": "dataplane",
-					  "dataplaneToken": "token1234",
-                      "dataplaneTokenPath": "testdata/token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
-                      "version": {
-                        "kumaDp": {
-                          "version": "0.0.1",
-                          "gitTag": "v0.0.1",
-                          "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
-                          "buildDate": "2019-08-07T11:26:06Z"
-                        },
-                        "envoy": {
-                          "version": "1.15.0",
-                          "build": "hash/1.15.0/RELEASE",
-                          "kumaDpCompatible": false
-                        }
-                      },
-                      "caCert": "",
-                      "dynamicMetadata": null,
-                      "operatingSystem": "linux",
-                      "features": [],
-					  "resources": {
-					    "maxHeapSizeBytes": 0
-				      }
-                    }`,
+					config:                       cfg,
+					params:                       defaultBootstrapParams(),
+					expectedBootstrapRequestFile: "bootstrap-request-1.golden.json",
 				}
 			}()),
 
@@ -198,43 +136,9 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
-					config:               cfg,
-					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &unversioned.Resource{
-						Meta: rest_v1alpha1.ResourceMeta{
-							Type: "Dataplane",
-							Mesh: "demo",
-							Name: "sample",
-						},
-					},
-					expectedBootstrapRequest: `
-                    {
-                      "mesh": "demo",
-                      "name": "sample",
-                      "proxyType": "dataplane",
-                      "dataplaneToken": "token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
-                      "version": {
-                        "kumaDp": {
-                          "version": "0.0.1",
-                          "gitTag": "v0.0.1",
-                          "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
-                          "buildDate": "2019-08-07T11:26:06Z"
-                        },
-                        "envoy": {
-                          "version": "1.15.0",
-                          "build": "hash/1.15.0/RELEASE",
-                          "kumaDpCompatible": false
-                        }
-                      },
-                      "caCert": "",
-                      "dynamicMetadata": null,
-                      "operatingSystem": "linux",
-                      "features": [],
-					  "resources": {
-					    "maxHeapSizeBytes": 0
-				      }
-                    }`,
+					config:                       cfg,
+					params:                       defaultBootstrapParams(),
+					expectedBootstrapRequestFile: "bootstrap-request-2.golden.json",
 				}
 			}()),
 		Entry("should support empty port range",
@@ -245,43 +149,9 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
-					config:               cfg,
-					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &unversioned.Resource{
-						Meta: rest_v1alpha1.ResourceMeta{
-							Type: "Dataplane",
-							Mesh: "demo",
-							Name: "sample",
-						},
-					},
-					expectedBootstrapRequest: `
-                    {
-                      "mesh": "demo",
-                      "name": "sample",
-                      "proxyType": "dataplane",
-                      "dataplaneToken": "token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
-                      "version": {
-                        "kumaDp": {
-                          "version": "0.0.1",
-                          "gitTag": "v0.0.1",
-                          "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
-                          "buildDate": "2019-08-07T11:26:06Z"
-                        },
-                        "envoy": {
-                          "version": "1.15.0",
-                          "build": "hash/1.15.0/RELEASE",
-                          "kumaDpCompatible": false
-                        }
-                      },
-                      "caCert": "",
-					  "dynamicMetadata": null,
-					  "operatingSystem": "linux",
-					  "features": [],
-					  "resources": {
-					    "maxHeapSizeBytes": 0
-				      }
-                    }`,
+					config:                       cfg,
+					params:                       defaultBootstrapParams(),
+					expectedBootstrapRequestFile: "bootstrap-request-3.golden.json",
 				}
 			}()),
 	)
@@ -295,7 +165,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			defer GinkgoRecover()
 			Expect(req.Header.Get("accept")).To(Equal("application/json"))
 
-			bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+			bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.response.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			response := &types.BootstrapResponse{
 				Bootstrap: bootstrap,
@@ -372,7 +242,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				writer.WriteHeader(404)
 				i++
 			} else {
-				bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+				bootstrap, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.response.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				response := &types.BootstrapResponse{
 					Bootstrap: bootstrap,

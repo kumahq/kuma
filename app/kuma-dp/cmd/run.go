@@ -109,6 +109,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					cfg.DataplaneRuntime.ConfigDir = tmpDir
 				}
 
+				if cfg.DataplaneRuntime.SocketDir == "" {
+					cfg.DataplaneRuntime.SocketDir = tmpDir
+				}
+
 				if cfg.DNS.ConfigDir == "" {
 					cfg.DNS.ConfigDir = tmpDir
 				}
@@ -141,10 +145,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			shouldQuit := make(chan struct{})
 			gracefulCtx, ctx := opts.SetupSignalHandler()
+			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			components := []component.Component{
 				component.NewResilientComponent(
 					runLog.WithName("access-log-streamer"),
-					accesslogs.NewAccessLogStreamer(cfg.Dataplane),
+					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
 				),
 			}
 
@@ -195,12 +200,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
 			runLog.Info("generating bootstrap configuration")
+			metricsSocketPath := core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:       opts.Dataplane,
-				DNSPort:         cfg.DNS.EnvoyDNSPort,
-				EmptyDNSPort:    cfg.DNS.CoreDNSEmptyPort,
-				EnvoyVersion:    *envoyVersion,
-				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
+				Dataplane:           opts.Dataplane,
+				DNSPort:             cfg.DNS.EnvoyDNSPort,
+				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
+				EnvoyVersion:        *envoyVersion,
+				AccessLogSocketPath: accessLogSocketPath,
+				MetricsSocketPath:   metricsSocketPath,
+				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -220,7 +228,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			components = append(components, dataplane)
 			metricsServer := metrics.New(
-				cfg.Dataplane,
+				metricsSocketPath,
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)

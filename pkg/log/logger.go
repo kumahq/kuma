@@ -1,16 +1,20 @@
 package log
 
 import (
+	"context"
 	"io"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type LogLevel int
@@ -113,4 +117,24 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts 
 	opts = append(opts, zap.AddCallerSkip(1), zap.ErrorOutput(sink))
 	return zap.New(zapcore.NewCore(&kube_log_zap.KubeAwareEncoder{Encoder: enc, Verbose: level == DebugLevel}, sink, lvl)).
 		WithOptions(opts...)
+}
+
+const tenantLoggerKey = "tenantID"
+
+// AddFieldsFromCtx will check if provided context contain tracing span and
+// if the span is currently recording. If so, it will add trace_id and span_id
+// to logged values. It will also add the tenant id to the logged values.
+func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		logger = logger.WithValues(
+			"trace_id", span.SpanContext().TraceID(),
+			"span_id", span.SpanContext().SpanID(),
+		)
+	}
+
+	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
+		logger = logger.WithValues(tenantLoggerKey, tenantId)
+	}
+
+	return logger
 }

@@ -29,9 +29,13 @@ jobs:
             git checkout --force "${b}"
             mkdir -p ../docs-build/${name}
             cp -R docs/generated/raw/* ../docs-build/${name}/
+            mkdir -p ../docs-build/raw
             if [[ "${b}" == "master" ]]; then
-              cp CHANGELOG.md ../docs-build/
-              cp versions.yml ../docs-build/
+              if [[ -f UPGRADE.md ]]; then
+                cp UPGRADE.md ../docs-build/raw/
+              fi
+              cp CHANGELOG.md ../docs-build/raw/
+              cp versions.yml ../docs-build/raw/
             fi
           done
       - uses: actions/checkout@v3
@@ -42,8 +46,8 @@ jobs:
         run: |
           cd docs
           cp -R ../docs-build/* ${{ env.OUTPUT_PATH }}/
-          yq -i 'del(.[] | select(.edition == "${{ env.EDITION }}")) | . += load("${{ env.OUTPUT_PATH}}/versions.yml")' ${{ env.VERSION_FILE }}
-          rm ${{ env.OUTPUT_PATH }}/versions.yml
+          yq -i 'del(.[] | select(.edition == "${{ env.EDITION }}")) | . += load("${{ env.OUTPUT_PATH}}/raw/versions.yml")' ${{ env.VERSION_FILE }}
+          rm ${{ env.OUTPUT_PATH }}/raw/versions.yml
       - name: Generate GitHub app token
         id: github-app-token
         uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0

@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -29,7 +30,9 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
-	log.Info("ensuring default resources for Mesh exist", "mesh", meshName)
+	logger := kuma_log.AddFieldsFromCtx(log, ctx).WithValues("mesh", meshName)
+
+	logger.Info("ensuring default resources for Mesh exist")
 
 	created, err := ensureDataplaneTokenSigningKey(ctx, resManager, meshName)
 	if err != nil {
@@ -37,13 +40,13 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	}
 	if created {
 		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
-		log.Info("default Dataplane Token Signing Key created", "mesh", meshName, "name", resKey.Name)
+		logger.Info("default Dataplane Token Signing Key created", "name", resKey.Name)
 	} else {
-		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
+		logger.Info("Dataplane Token Signing Key already exists")
 	}
 
 	if slices.Contains(skippedPolicies, "*") {
-		log.Info("skipping all default policy creation", "mesh", meshName)
+		logger.Info("skipping all default policy creation")
 		return nil
 	}
 
@@ -77,7 +80,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 			msg = fmt.Sprintf("skipping default %s creation", resource.Descriptor().Name)
 		}
 
-		log.Info(msg, "mesh", meshName, "name", key.Name)
+		logger.Info(msg, "name", key.Name)
 	}
 
 	return nil

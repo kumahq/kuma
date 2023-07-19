@@ -34,12 +34,13 @@ const (
 )
 
 type Configurer struct {
-	Mesh               string
-	TrafficDirection   envoy.TrafficDirection
-	SourceService      string
-	DestinationService string
-	Backend            api.Backend
-	Dataplane          *core_mesh.DataplaneResource
+	Mesh                string
+	TrafficDirection    envoy.TrafficDirection
+	SourceService       string
+	DestinationService  string
+	Backend             api.Backend
+	Dataplane           *core_mesh.DataplaneResource
+	AccessLogSocketPath string
 }
 
 type EndpointAccumulator struct {
@@ -150,7 +151,7 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	return fileAccessLog(sfs, envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh))
+	return fileAccessLog(sfs, c.AccessLogSocketPath)
 }
 
 func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
