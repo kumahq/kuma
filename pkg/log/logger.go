@@ -91,21 +91,45 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
+type spanLogValuesProcessorCtx struct{}
+
+// spanLogValuesProcessor should be a function which process received trace.Span.
+// Returned []]interface{} will be later added as logger values.
+type spanLogValuesProcessor func(trace.Span) []interface{}
+
+// CtxWithSpanLogValuesProcessor will enrich the provided context with
+// the provided spanLogValuesProcessor. It may be useful for any application
+// which depends on Kuma, but wants to for example transform trace/span ids
+// from otel to datadog format.
+func CtxWithSpanLogValuesProcessor(ctx context.Context, fn spanLogValuesProcessor) context.Context {
+	return context.WithValue(ctx, spanLogValuesProcessorCtx{}, fn)
+}
+
 const tenantLoggerKey = "tenantID"
 
 // AddFieldsFromCtx will check if provided context contain tracing span and
-// if the span is currently recording. If so, it will add trace_id and span_id
-// to logged values. It will also add the tenant id to the logged values.
+// if the span is currently recording. If so, it will call spanLogValuesProcessor
+// function if it's also present in the context. If not it will add trace_id
+// and span_id to logged values. It will also add the tenant id to the logged
+// values.
 func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
+		logger = logger.WithValues(tenantLoggerKey, tenantId)
+	}
+
+	return addSpanValuesToLogger(logger, ctx)
+}
+
+func addSpanValuesToLogger(logger logr.Logger, ctx context.Context) logr.Logger {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
-		logger = logger.WithValues(
+		if fn, ok := ctx.Value(spanLogValuesProcessorCtx{}).(spanLogValuesProcessor); ok {
+			return logger.WithValues(fn(span)...)
+		}
+
+		return logger.WithValues(
 			"trace_id", span.SpanContext().TraceID(),
 			"span_id", span.SpanContext().SpanID(),
 		)
-	}
-
-	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
-		logger = logger.WithValues(tenantLoggerKey, tenantId)
 	}
 
 	return logger
