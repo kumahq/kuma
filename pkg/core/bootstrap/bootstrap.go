@@ -105,7 +105,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 	})
 
-	if err := initializeResourceManager(cfg, builder); err != nil {
+	if err := initializeResourceManager(cfg, builder); err != nil { //nolint:contextcheck
 		return nil, err
 	}
 
@@ -381,6 +381,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
 			cfg.Store.UnsafeDelete,
+			builder.Extensions(),
 		),
 	)
 

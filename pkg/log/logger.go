@@ -15,6 +15,7 @@ import (
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/multitenant"
+	logger_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/logger"
 )
 
 type LogLevel int
@@ -91,20 +92,6 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-type spanLogValuesProcessorCtx struct{}
-
-// spanLogValuesProcessor should be a function which process received trace.Span.
-// Returned []]interface{} will be later added as logger values.
-type spanLogValuesProcessor func(trace.Span) []interface{}
-
-// CtxWithSpanLogValuesProcessor will enrich the provided context with
-// the provided spanLogValuesProcessor. It may be useful for any application
-// which depends on Kuma, but wants to for example transform trace/span ids
-// from otel to datadog format.
-func CtxWithSpanLogValuesProcessor(ctx context.Context, fn spanLogValuesProcessor) context.Context {
-	return context.WithValue(ctx, spanLogValuesProcessorCtx{}, fn)
-}
-
 const tenantLoggerKey = "tenantID"
 
 // AddFieldsFromCtx will check if provided context contain tracing span and
@@ -112,17 +99,25 @@ const tenantLoggerKey = "tenantID"
 // function if it's also present in the context. If not it will add trace_id
 // and span_id to logged values. It will also add the tenant id to the logged
 // values.
-func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+func AddFieldsFromCtx(
+	logger logr.Logger,
+	ctx context.Context,
+	extensions context.Context,
+) logr.Logger {
 	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
 		logger = logger.WithValues(tenantLoggerKey, tenantId)
 	}
 
-	return addSpanValuesToLogger(logger, ctx)
+	return addSpanValuesToLogger(logger, ctx, extensions)
 }
 
-func addSpanValuesToLogger(logger logr.Logger, ctx context.Context) logr.Logger {
+func addSpanValuesToLogger(
+	logger logr.Logger,
+	ctx context.Context,
+	extensions context.Context,
+) logr.Logger {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
-		if fn, ok := ctx.Value(spanLogValuesProcessorCtx{}).(spanLogValuesProcessor); ok {
+		if fn, ok := logger_extensions.FromSpanLogValuesProcessorContext(extensions); ok {
 			return logger.WithValues(fn(span)...)
 		}
 

@@ -26,11 +26,17 @@ var log = core.Log.WithName("defaults").WithName("mesh")
 // 2 invocation can check that TrafficPermission is absent, but it was just created, so it tries to created it which results in error
 var ensureMux = sync.Mutex{}
 
-func EnsureDefaultMeshResources(ctx context.Context, resManager manager.ResourceManager, meshName string, skippedPolicies []string) error {
+func EnsureDefaultMeshResources(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	meshName string,
+	skippedPolicies []string,
+	extensions context.Context,
+) error {
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
-	logger := kuma_log.AddFieldsFromCtx(log, ctx).WithValues("mesh", meshName)
+	logger := kuma_log.AddFieldsFromCtx(log, ctx, extensions).WithValues("mesh", meshName)
 
 	logger.Info("ensuring default resources for Mesh exist")
 
