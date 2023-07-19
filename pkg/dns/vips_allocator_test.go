@@ -606,8 +606,6 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
-<<<<<<< HEAD
-=======
 	Entry("should not fail when two external services with same address are defined without disableHostDNSEntry", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
@@ -640,7 +638,6 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
->>>>>>> 7f5680d92 (fix(kuma-cp): don't fail when 2 headless services pointing to the same service (#7282))
 )
 
 var _ = Describe("AllocateVIPs", func() {
