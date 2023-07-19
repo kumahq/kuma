@@ -606,6 +606,38 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
+	Entry("should not fail when two external services with same address are defined without disableHostDNSEntry", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
+					},
+				},
+			},
+			model.WithMesh("mesh", "es-2"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
+					},
+				},
+			},
+		},
+		whenSkipServiceVips: true,
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("external.service.com")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewHostEntry("external.service.com"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
+			},
+		},
+	}),
 )
 
 var _ = Describe("AllocateVIPs", func() {
