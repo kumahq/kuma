@@ -624,7 +624,7 @@ var _ = DescribeTable("outboundView",
 						Address: "external.service.com:8080",
 					},
 					Tags: map[string]string{
-						mesh_proto.ServiceTag: "my-external-service-2",
+						mesh_proto.ServiceTag: "my-external-service-1",
 					},
 				},
 			},
