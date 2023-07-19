@@ -30,13 +30,22 @@ func Setup(runtime runtime.Runtime) error {
 		return nil
 	}
 	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
-		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+		defaultsComponent := NewDefaultsComponent(
+			runtime.Config().Defaults,
+			runtime.Config().Mode,
+			runtime.Config().Environment,
+			runtime.ResourceManager(),
+			runtime.ResourceStore(),
+			runtime.Extensions(),
+		)
 
 		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
 		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
 			runtime.AppContext(),
 			zoneIngressSigningKeyManager,
-			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
+			runtime.Extensions(),
+		)); err != nil {
 			return err
 		}
 
@@ -45,6 +54,7 @@ func Setup(runtime runtime.Runtime) error {
 			runtime.AppContext(),
 			zoneSigningKeyManager,
 			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
+			runtime.Extensions(),
 		)); err != nil {
 			return err
 		}
@@ -54,20 +64,31 @@ func Setup(runtime runtime.Runtime) error {
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{ResManager: runtime.ResourceManager()}); err != nil {
+		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{
+			ResManager: runtime.ResourceManager(),
+			Extensions: runtime.Extensions(),
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func NewDefaultsComponent(config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
+func NewDefaultsComponent(
+	config *kuma_cp.Defaults,
+	cpMode config_core.CpMode,
+	environment config_core.EnvironmentType,
+	resManager core_manager.ResourceManager,
+	resStore store.ResourceStore,
+	extensions context.Context,
+) component.Component {
 	return &defaultsComponent{
 		cpMode:      cpMode,
 		environment: environment,
 		config:      config,
 		resManager:  resManager,
 		resStore:    resStore,
+		extensions:  extensions,
 	}
 }
 
@@ -79,6 +100,7 @@ type defaultsComponent struct {
 	config      *kuma_cp.Defaults
 	resManager  core_manager.ResourceManager
 	resStore    store.ResourceStore
+	extensions  context.Context
 }
 
 func (d *defaultsComponent) NeedLeaderElection() bool {
@@ -101,7 +123,7 @@ func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 			defer wg.Done()
 			// if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 			err := retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-				return retry.RetryableError(CreateMeshIfNotExist(ctx, d.resManager)) // retry all errors
+				return retry.RetryableError(CreateMeshIfNotExist(ctx, d.resManager, d.extensions)) // retry all errors
 			})
 			if err != nil {
 				// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.

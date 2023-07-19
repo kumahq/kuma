@@ -150,6 +150,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
 		ResourceManager: rt.ResourceManager(),
 		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:      rt.Extensions(),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")

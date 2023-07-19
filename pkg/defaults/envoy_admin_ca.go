@@ -17,6 +17,7 @@ import (
 
 type EnvoyAdminCaDefaultComponent struct {
 	ResManager manager.ResourceManager
+	Extensions context.Context
 }
 
 var _ component.Component = &EnvoyAdminCaDefaultComponent{}
@@ -28,7 +29,7 @@ func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
 		cancelFn()
 	}()
 	return retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-		if err := EnsureEnvoyAdminCaExist(ctx, e.ResManager); err != nil {
+		if err := EnsureEnvoyAdminCaExist(ctx, e.ResManager, e.Extensions); err != nil {
 			log.V(1).Info("could not ensure that Envoy Admin CA exists. Retrying.", "err", err)
 			return retry.RetryableError(err)
 		}
@@ -40,8 +41,12 @@ func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func EnsureEnvoyAdminCaExist(ctx context.Context, resManager manager.ResourceManager) error {
-	logger := kuma_log.AddFieldsFromCtx(log, ctx)
+func EnsureEnvoyAdminCaExist(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	extensions context.Context,
+) error {
+	logger := kuma_log.AddFieldsFromCtx(log, ctx, extensions)
 	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")

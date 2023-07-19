@@ -60,6 +60,7 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 		reconciler = &controllers.MeshDefaultsReconciler{
 			ResourceManager: customizableManager,
 			Log:             logr.Discard(),
+			Extensions:      context.Background(),
 		}
 	})
 
