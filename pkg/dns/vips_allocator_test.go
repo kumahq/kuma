@@ -720,46 +720,12 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
-<<<<<<< HEAD
-)
-
-type outboundViewErrorTestCase struct {
-	givenResources map[model.ResourceKey]model.Resource
-	buildError     string
-}
-
-var _ = DescribeTable("outboundView",
-	func(tc outboundViewErrorTestCase) {
-		ctx := context.Background()
-		rm := resourceManagerWithResources(ctx, tc.givenResources)
-
-		// When
-		allocator, err := dns.NewVIPsAllocator(rm, nil, dns_server.Config{}, "zone-a")
-		Expect(err).NotTo(HaveOccurred())
-		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, "mesh")
-
-		Expect(serviceSet).To(BeNil())
-		Expect(err.Error()).To(MatchRegexp(tc.buildError))
-	},
-	Entry("should fail when two external services with same address are defined without disableHostDNSEntry",
-		outboundViewErrorTestCase{
-			givenResources: map[model.ResourceKey]model.Resource{
-				model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
-					Spec: &mesh_proto.ExternalService{
-						Networking: &mesh_proto.ExternalService_Networking{
-							Address: "external.service.com:8080",
-						},
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "my-external-service-1",
-						},
-=======
 	Entry("should not fail when two external services with same address are defined without disableHostDNSEntry", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
 				Spec: &mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
 						Address: "external.service.com:8080",
->>>>>>> 7f5680d92 (fix(kuma-cp): don't fail when 2 headless services pointing to the same service (#7282))
 					},
 					Tags: map[string]string{
 						mesh_proto.ServiceTag: "my-external-service-1",
