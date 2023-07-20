@@ -43,7 +43,7 @@ func newRootCmd() *cobra.Command {
 				}
 
 				fmt.Printf("%s: logs will be stored in %q\n", "kuma-cp", output)
-				core.SetLogger(core.NewLoggerWithRotation(level, output, args.maxSize, args.maxBackups, args.maxAge))
+				core.SetLogger(core.NewLoggerWithRotationConsole(level, output, args.maxSize, args.maxBackups, args.maxAge))
 			} else {
 				core.SetLogger(core.NewLogger(level))
 			}

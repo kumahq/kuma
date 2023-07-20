@@ -268,6 +268,9 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	case store.PostgresStore:
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
+	case store.EtcdStore:
+		pluginName = core_plugins.Etcd
+		pluginConfig = cfg.Store.EtcdConfig
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
@@ -303,7 +306,7 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
 		pluginName = core_plugins.Kubernetes
-	case store.MemoryStore, store.PostgresStore:
+	case store.MemoryStore, store.PostgresStore, store.EtcdStore:
 		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
@@ -326,7 +329,7 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
 		pluginName = core_plugins.Kubernetes
-	case store.MemoryStore, store.PostgresStore:
+	case store.MemoryStore, store.PostgresStore, store.EtcdStore:
 		pluginName = core_plugins.Universal
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
@@ -434,7 +437,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
 		cipher = secret_cipher.None() // deliberately turn encryption off on Kubernetes
-	case store.MemoryStore, store.PostgresStore:
+	case store.MemoryStore, store.PostgresStore, store.EtcdStore:
 		cipher = secret_cipher.TODO() // get back to encryption in universal case
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)

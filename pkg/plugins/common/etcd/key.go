@@ -49,6 +49,31 @@ func WithEtcdKey(key string) (etcdKey, error) {
 	}, nil
 }
 
+func (k etcdKey) Prefix() string {
+	builder := strings.Builder{}
+	builder.WriteString("/")
+	if len(k.prefix) != 0 {
+		builder.WriteString(k.prefix)
+	} else {
+		goto r
+	}
+	if len(k.typ) != 0 {
+		builder.WriteString("/")
+		builder.WriteString(string(k.typ))
+	} else {
+		goto r
+	}
+	if len(k.mesh) != 0 {
+		builder.WriteString("/")
+		builder.WriteString(k.mesh)
+	} else {
+		goto r
+	}
+
+r:
+	return builder.String()
+}
+
 func (k etcdKey) String() string {
 	builder := strings.Builder{}
 

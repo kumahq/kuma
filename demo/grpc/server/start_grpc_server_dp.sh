@@ -15,6 +15,7 @@ ADMIN_PORT=`expr $SERVER_PORT + 1`
 
 #nohup $DIR/../../build/artifacts-darwin-amd64/test-server/test-server grpc server --ip 10.53.36.94 --port 2345
 
+ip=`ifconfig | grep "10.53.39.255" |awk -F ' ' '{print $2}'`
 
 kuma-dp run \
           --cp-address=https://localhost:5678/ \
@@ -29,11 +30,19 @@ kuma-dp run \
             inbound:
               - port: 8888
                 servicePort: 2345
-                serviceAddress: 10.53.36.94
+                serviceAddress: ${ip}
+#                health:
+#                  ready: true
+                serviceProbe:
+                  timeout: 2s # optional (default value is taken from KUMA_DP_SERVER_HDS_CHECK_TIMEOUT)
+                  interval: 1s # optional (default value is taken from KUMA_DP_SERVER_HDS_CHECK_INTERVAL)
+                  healthyThreshold: 1 # optional (default value is taken from KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD)
+                  unhealthyThreshold: 1 # optional (default value is taken from KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD)
+                  tcp: {}
                 tags:
                   kuma.io/service: grpc-server
                   kuma.io/protocol: http2
             admin:
-              port: $ADMIN_PORT
+              port: 8889
           "
 

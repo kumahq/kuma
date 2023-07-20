@@ -15,13 +15,14 @@ import (
 
 var (
 	// TODO remove dependency on kubernetes see: https://github.com/kumahq/kuma/issues/2798
-	Log                   = kube_log.Log
-	NewLogger             = kuma_log.NewLogger
-	NewLoggerTo           = kuma_log.NewLoggerTo
-	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
-	SetLogger             = kube_log.SetLogger
-	Now                   = time.Now
-	TempDir               = os.TempDir
+	Log                          = kube_log.Log
+	NewLogger                    = kuma_log.NewLogger
+	NewLoggerTo                  = kuma_log.NewLoggerTo
+	NewLoggerWithRotation        = kuma_log.NewLoggerWithRotation
+	NewLoggerWithRotationConsole = kuma_log.NewLoggerWithRotationConsole
+	SetLogger                    = kube_log.SetLogger
+	Now                          = time.Now
+	TempDir                      = os.TempDir
 
 	SetupSignalHandler = func() (context.Context, context.Context) {
 		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())

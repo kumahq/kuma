@@ -25,6 +25,7 @@ const (
 	Kubernetes PluginName = "k8s"
 	Universal  PluginName = "universal"
 	Memory     PluginName = "memory"
+	Etcd       PluginName = "etcd"
 	Postgres   PluginName = "postgres"
 
 	CaBuiltin  PluginName = "builtin"

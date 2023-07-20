@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/kumahq/kuma/pkg/config/plugins/resources/etcd"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ const (
 	PostgresStore   StoreType = "postgres"
 	PgxStore        StoreType = "pgx"
 	MemoryStore     StoreType = "memory"
+	EtcdStore       StoreType = "etcd"
 )
 
 // Resource Store configuration
@@ -30,6 +32,8 @@ type StoreConfig struct {
 	Postgres *postgres.PostgresStoreConfig `json:"postgres"`
 	// Kubernetes Store configuration
 	Kubernetes *k8s.KubernetesStoreConfig `json:"kubernetes"`
+	// Etcd Store configuration
+	EtcdConfig *etcd.EtcdConfig `json:"etcd"`
 	// Cache configuration
 	Cache CacheStoreConfig `json:"cache"`
 	// Upsert configuration
@@ -64,6 +68,11 @@ func (s *StoreConfig) Validate() error {
 	case KubernetesStore:
 		if err := s.Kubernetes.Validate(); err != nil {
 			return errors.Wrap(err, "Kubernetes validation failed")
+		}
+		return nil
+	case EtcdStore:
+		if err := s.EtcdConfig.Validate(); err != nil {
+			return errors.Wrap(err, "Etcd validation failed")
 		}
 		return nil
 	case MemoryStore:

@@ -69,6 +69,9 @@ func migrate(cfg kuma_cp.Config) error {
 	case store.PostgresStore:
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
+	case store.EtcdStore:
+		pluginName = core_plugins.Etcd
+		pluginConfig = cfg.Store.EtcdConfig
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}

@@ -220,3 +220,111 @@ func (l *ListOptions) IsCacheable() bool {
 func (l *ListOptions) HashCode() string {
 	return fmt.Sprintf("%s:%t:%s:%d:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset)
 }
+
+type resourceMetaWrap struct {
+	resourceMeta     core_model.ResourceMeta
+	meshName         *string
+	name             *string
+	version          *string
+	nameExtensions   core_model.ResourceNameExtensions
+	createTime       *time.Time
+	modificationTime *time.Time
+}
+
+func (r resourceMetaWrap) GetName() string {
+	if r.name == nil {
+		return r.resourceMeta.GetName()
+	} else {
+		return *r.name
+	}
+}
+
+func (r resourceMetaWrap) GetNameExtensions() core_model.ResourceNameExtensions {
+	if r.nameExtensions == nil {
+		return r.resourceMeta.GetNameExtensions()
+	} else {
+		return r.nameExtensions
+	}
+}
+
+func (r resourceMetaWrap) GetVersion() string {
+	if r.version == nil {
+		return r.resourceMeta.GetVersion()
+	} else {
+		return *r.version
+	}
+}
+
+func (r resourceMetaWrap) GetMesh() string {
+	if r.meshName == nil {
+		return r.resourceMeta.GetMesh()
+	} else {
+		return *r.meshName
+	}
+}
+
+func (r resourceMetaWrap) GetCreationTime() time.Time {
+	if r.createTime == nil {
+		return r.resourceMeta.GetCreationTime()
+	} else {
+		return *r.createTime
+	}
+}
+
+func (r resourceMetaWrap) GetModificationTime() time.Time {
+	if r.modificationTime == nil {
+		return r.resourceMeta.GetModificationTime()
+	} else {
+		return *r.modificationTime
+	}
+}
+
+type ResourceMetaWrapFunc func(wrap *resourceMetaWrap)
+
+func WithMeshName(meshName string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.meshName = &meshName
+	}
+}
+func WithResourceMeta(resourceMeta core_model.ResourceMeta) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.resourceMeta = resourceMeta
+	}
+}
+
+func WithName(name string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.name = &name
+	}
+}
+
+func WithVersion(version string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.version = &version
+	}
+}
+
+func WithResourceNameExtensions(resourceNameExtensions core_model.ResourceNameExtensions) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.nameExtensions = resourceNameExtensions
+	}
+}
+func WithCreationTime(creationTime time.Time) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.createTime = &creationTime
+	}
+}
+
+func WithModificationTime(modificationTime time.Time) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.modificationTime = &modificationTime
+	}
+}
+
+func ResouceMetaWrap(resourceMetaWrapFunc ...ResourceMetaWrapFunc) core_model.ResourceMeta {
+	wrap := &resourceMetaWrap{}
+	for _, fn := range resourceMetaWrapFunc {
+		fn(wrap)
+	}
+	return wrap
+}
