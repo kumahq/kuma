@@ -14,9 +14,7 @@ jobs:
         with:
           cache: false
           go-version: 1.20.5
-      - run: |
-          echo "GOLANGCI_LINT_VERSION=$(cat .golangci-lint-version)" >> "$GITHUB_ENV"
       - uses: golangci/golangci-lint-action@v3
         with:
           args: --verbose
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          version: v1.51.2
