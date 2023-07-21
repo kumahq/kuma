@@ -18,12 +18,13 @@ func TestMatchers(t *testing.T) {
 	test.RunSpecs(t, "Matchers Suite")
 }
 
-func readPolicies(file string) xds_context.Resources {
+func readPolicies(file string) (xds_context.Resources, []core_model.ResourceType) {
 	responseBytes, err := os.ReadFile(file)
 	Expect(err).ToNot(HaveOccurred())
 
 	rawResources := util_yaml.SplitYAML(string(responseBytes))
 	meshResources := map[core_model.ResourceType]core_model.ResourceList{}
+	typesMap := map[core_model.ResourceType]struct{}{}
 
 	for _, rawResource := range rawResources {
 		resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
@@ -36,11 +37,18 @@ func readPolicies(file string) xds_context.Resources {
 			meshResources[rType] = resource.Descriptor().NewList()
 		}
 		Expect(meshResources[rType].AddItem(resource)).To(Succeed())
+
+		typesMap[rType] = struct{}{}
+	}
+
+	resTypes := []core_model.ResourceType{}
+	for rType := range typesMap {
+		resTypes = append(resTypes, rType)
 	}
 
 	return xds_context.Resources{
 		MeshLocalResources: meshResources,
-	}
+	}, resTypes
 }
 
 func readDPP(file string) *core_mesh.DataplaneResource {

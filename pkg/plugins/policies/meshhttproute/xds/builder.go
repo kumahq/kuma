@@ -3,6 +3,7 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -16,7 +17,7 @@ type OutboundRoute struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[string]string
+	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 type HttpOutboundRouteConfigurer struct {
@@ -41,8 +42,8 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}
 	static := envoy_listeners_v3.HttpStaticRouteConfigurer{
-		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3).
-			Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(c.Service))).
+		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, envoy_names.GetOutboundRouteName(c.Service)).
+			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.TagsHeader(c.DpTags)).
 			Configure(envoy_routes.VirtualHost(virtualHostBuilder)),
 	}

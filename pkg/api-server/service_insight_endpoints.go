@@ -19,6 +19,7 @@ import (
 
 type serviceInsightEndpoints struct {
 	resourceEndpoints
+	addressPortGenerator func(string) string
 }
 
 func (s *serviceInsightEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -44,6 +45,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{},
 			}
 		}
+		s.fillStaticInfo(service, stat)
 		out := rest.From.Resource(serviceInsight)
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
@@ -88,6 +90,14 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	}
 }
 
+// fillStaticInfo fills static information, so we won't have to store this in the DB
+func (s *serviceInsightEndpoints) fillStaticInfo(name string, stat *v1alpha1.ServiceInsight_Service) {
+	stat.Dataplanes.Total = stat.Dataplanes.Online + stat.Dataplanes.Offline
+	if stat.ServiceType == v1alpha1.ServiceInsight_Service_internal {
+		stat.AddressPort = s.addressPortGenerator(name)
+	}
+}
+
 // ServiceInsight is a resource that tracks insights about a Services (kuma.io/service tag in Dataplane)
 // All of those statistics are put into a single ServiceInsight for a mesh for two reasons
 // 1) It simpler and more efficient to manage 1 object because 1 Service != 1 Dataplane
@@ -98,6 +108,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, stat := range insight.Spec.Services {
+			s.fillStaticInfo(serviceName, stat)
 			out := rest.From.Resource(insight)
 			res := out.(*rest_unversioned.Resource)
 			res.Meta.Name = serviceName

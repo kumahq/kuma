@@ -2,6 +2,7 @@ package api_server_test
 
 import (
 	"io"
+	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +15,7 @@ import (
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("Read only Resource Endpoints", func() {
@@ -82,13 +84,10 @@ var _ = Describe("Read only Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(405))
-			body, err := io.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(body)).To(Equal(
-				"On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
-					" As a best practice, you should always be using 'kubectl apply' instead." +
-					" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n"))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource-read-only_put.golden.json")))
 		})
 	})
 
@@ -99,13 +98,10 @@ var _ = Describe("Read only Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(405))
-			body, err := io.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(body)).To(Equal(
-				"On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
-					" As a best practice, you should always be using 'kubectl apply' instead." +
-					" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n"))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource-read-only_delete.golden.json")))
 		})
 	})
 })

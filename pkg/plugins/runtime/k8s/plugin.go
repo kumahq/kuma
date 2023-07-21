@@ -150,6 +150,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
 		ResourceManager: rt.ResourceManager(),
 		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:      rt.Extensions(),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -177,10 +178,10 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
 		ResourceConverter: converter,
-		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
 	}
-	return reconciler.SetupWithManager(mgr)
+	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
@@ -207,6 +208,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		rt.ResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		rt.Config().Experimental,
 		zone,
 	)
 	if err != nil {

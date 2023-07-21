@@ -18,7 +18,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -33,19 +32,17 @@ func generateListeners(
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
-	clusterCache := map[string]string{}
+	clusterCache := map[common_api.TargetRefHash]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-		outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 
-		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag)))
+			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag)))
 
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
 				StatsName:                serviceName,
 				ForwardClientCertDetails: false,

@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -23,6 +25,7 @@ type heartbeatComponent struct {
 
 	leader *Instance
 	client system_proto.InterCpPingServiceClient
+	metric prometheus.Summary
 }
 
 var _ component.Component = &heartbeatComponent{}
@@ -34,7 +37,17 @@ func NewHeartbeatComponent(
 	instance Instance,
 	interval time.Duration,
 	newClientFn NewClientFn,
-) component.Component {
+	metrics core_metrics.Metrics,
+) (component.Component, error) {
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_heartbeat",
+		Help:       "Summary of Inter CP Heartbeat component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
+
 	return &heartbeatComponent{
 		catalog: catalog,
 		request: &system_proto.PingRequest{
@@ -44,7 +57,8 @@ func NewHeartbeatComponent(
 		},
 		newClientFn: newClientFn,
 		interval:    interval,
-	}
+		metric:      metric,
+	}, nil
 }
 
 func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
@@ -56,10 +70,13 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
+			start := core.Now()
 			if err := h.heartbeat(ctx, true); err != nil {
 				h.leader = nil
 				heartbeatLog.Error(err, "could not heartbeat the leader")
+				continue
 			}
+			h.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
 			if err := h.heartbeat(ctx, false); err != nil {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -124,6 +125,10 @@ func (s *server) Start(stop <-chan struct{}) error {
 	for _, interceptor := range s.streamInterceptors {
 		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(interceptor))
 	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services

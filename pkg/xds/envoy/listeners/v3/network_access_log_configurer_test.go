@@ -34,7 +34,8 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("example", "backend"),
 				Metadata: &core_xds.DataplaneMetadata{
-					Features: core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					Features:            core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					AccessLogSocketPath: "/tmp/kuma-al-dataplane0-demo.sock",
 				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &model.ResourceMeta{
@@ -51,8 +52,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Port:    15432,
-								Service: "db",
+								Port: 15432,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "db",
+								},
 							}},
 						},
 					},
@@ -60,9 +63,9 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				WithOverwriteName(given.listenerName).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
 				Build()

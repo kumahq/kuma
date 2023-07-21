@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/api"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
@@ -66,6 +67,7 @@ var (
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
+	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
@@ -80,4 +82,5 @@ var (
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
+	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 )

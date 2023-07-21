@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -72,8 +73,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-backend",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("backend")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -103,9 +104,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-payment",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
-							"payment",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",
@@ -130,9 +130,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-backend",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
 							Configure(
 								HttpOutboundRoute(
@@ -155,9 +154,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-payments",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27778", "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
 							Configure(
 								HttpOutboundRoute(
@@ -267,8 +265,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-1:eds-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("mesh-1:eds-cluster")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -298,9 +296,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-2:static-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
-							"mesh-2:static-cluster",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",
@@ -382,7 +379,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			context := test_xds.CreateSampleMeshContextWith(resources)
+			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 			proxy := core_xds.Proxy{
 				APIVersion: "v3",
 				Dataplane:  samples.GatewayDataplane(),
@@ -396,12 +393,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

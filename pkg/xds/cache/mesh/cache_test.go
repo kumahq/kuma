@@ -105,7 +105,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType},
 			lookupIPFunc,
 			"zone-1",
-			vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s)),
+			vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s), false),
 			"mesh",
 			80,
 		)

@@ -2,6 +2,7 @@ package install
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"os/signal"
 	"path"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 	"go.uber.org/multierr"
 
 	kuma_log "github.com/kumahq/kuma/pkg/log"
@@ -124,8 +126,15 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 	}
 
 	cniConfPath := path.Join(mountedCniNetDir, resolvedName)
-	if !files.FileExists(cniConfPath) {
-		return errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath)
+	backoff := retry.WithMaxDuration(5*time.Minute, retry.NewConstant(time.Second))
+	err := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		if !files.FileExists(cniConfPath) {
+			return retry.RetryableError(errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath))
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	hostCniConfig, err := os.ReadFile(cniConfPath)

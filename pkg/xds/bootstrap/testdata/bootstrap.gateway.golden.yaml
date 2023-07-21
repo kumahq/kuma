@@ -45,13 +45,13 @@ node:
   cluster: gateway
   id: default.gateway-1.default
   metadata:
+    accessLogSocketPath: /tmp/kuma-al-gateway-1.default-default.sock
     dataplane.proxyType: dataplane
     features: []
+    metricsSocketPath: /tmp/kuma-mh-gateway-1.default-default.sock
     version:
-      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
-        kumaDpCompatible: false
         version: 1.15.0
       kumaDp:
         buildDate: "2019-08-07T11:26:06Z"

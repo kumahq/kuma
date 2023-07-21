@@ -212,6 +212,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
+			Expect(cfg.Runtime.Kubernetes.ControllersConcurrency.PodController).To(Equal(10))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
@@ -330,6 +331,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
+			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
+			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -501,6 +504,8 @@ runtime:
         cgroupPath: /faz/daz/zaz
         tcAttachIface: veth1
         programsSourcePath: /kuma/baz
+    controllersConcurrency: 
+      podController: 10
     clientConfig:
       qps: 100
       burstQps: 100
@@ -645,6 +650,8 @@ experimental:
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
   kdsDeltaEnabled: true
+  useTagFirstVirtualOutboundModel: false
+  ingressTagFilters: ["kuma.io/service"]
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -772,6 +779,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
+				"KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER":                           "10",
 				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS":                                                "100",
 				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS":                                          "100",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
@@ -877,7 +885,10 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
+				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
+				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 			},
 			yamlFileConfig: "",
 		}),

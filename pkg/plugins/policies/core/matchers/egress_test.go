@@ -56,7 +56,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			// given external service resource
 			es := readES(given.esFile)
 			// given policies
-			resources := readPolicies(given.policiesFile)
+			resources, _ := readPolicies(given.policiesFile)
 
 			// when
 			policies, err := matchers.EgressMatchedPolicies(policies_api.MeshTrafficPermissionType, es, resources)
@@ -73,7 +73,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			// given external service resource
 			es := readES(given.esFile)
 			// given policies
-			resources := readPolicies(given.policiesFile)
+			resources, _ := readPolicies(given.policiesFile)
 
 			// when
 			policies, err := matchers.EgressMatchedPolicies(v1alpha1.MeshLoadBalancingStrategyType, es, resources)

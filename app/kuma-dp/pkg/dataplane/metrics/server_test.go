@@ -1,8 +1,11 @@
 package metrics
 
 import (
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,24 +68,24 @@ var _ = Describe("Select Content Type", func() {
 		Expect(actualContentType).To(Equal(expfmt.FmtOpenMetrics_0_0_1))
 	})
 
-	It("should honor max supported accept type when app returns invalid content-type", func() {
+	It("should negotiate content-type based on Accept header", func() {
 		contentTypes := make(chan expfmt.Format, 1)
 		contentTypes <- expfmt.Format("invalid_content_type")
 		close(contentTypes)
 		reqHeader.Add("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.FmtOpenMetrics_1_0_0))
+		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
 	})
 
-	It("should use highest priority content-type available", func() {
+	It("should negotiate content-type based on Accept header", func() {
 		contentTypes := make(chan expfmt.Format, 1)
 		contentTypes <- expfmt.Format("invalid_content_type")
 		close(contentTypes)
 		reqHeader.Add("Accept", "*/*")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.FmtText))
+		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
 	})
 })
 
@@ -105,8 +108,8 @@ var _ = Describe("Response Format", func() {
 			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text",
 			expectedFormat: expfmt.FmtUnknown,
 		}),
-		Entry("return FmtText for a 'text plain with v0.0.4 content type' response", testCase{
-			contentType:    "text/plain; version=0.0.4",
+		Entry("return FmtText for a 'text plain content type' response", testCase{
+			contentType:    "text/plain; charset=UTF-8",
 			expectedFormat: expfmt.FmtText,
 		}),
 		Entry("return FmtOpenMetrics_1_0_0 for a 'openmetrics v1.0.0 content type' response", testCase{
@@ -120,6 +123,58 @@ var _ = Describe("Response Format", func() {
 		Entry("return FmtUnknown for a 'invalid content type' response", testCase{
 			contentType:    "application/invalid",
 			expectedFormat: expfmt.FmtUnknown,
+		}),
+		Entry("return FmtOpenMetrics_0_0_1 for a 'openmetrics content type with no version param' response", testCase{
+			contentType:    "application/openmetrics-text",
+			expectedFormat: expfmt.FmtOpenMetrics_0_0_1,
+		}),
+		Entry("return FmtUnknown for a 'openmetrics content type with unsupported version param' response", testCase{
+			contentType:    "application/openmetrics-text; version=2.0.0",
+			expectedFormat: expfmt.FmtUnknown,
+		}),
+	)
+})
+
+var _ = Describe("Process Metrics", func() {
+	type testCase struct {
+		input       []string // input files containing metrics
+		contentType expfmt.Format
+		expected    string // expected output file
+	}
+	DescribeTable("should",
+		func(given testCase) {
+			inputMetrics := make(chan []byte, len(given.input))
+			for _, input := range given.input {
+				fo, err := os.Open(path.Join("testdata", input))
+				Expect(err).ToNot(HaveOccurred())
+				byteData, err := io.ReadAll(fo)
+				Expect(err).ToNot(HaveOccurred())
+				inputMetrics <- byteData
+			}
+			close(inputMetrics)
+
+			fo, err := os.Open(path.Join("testdata", given.expected))
+			Expect(err).ToNot(HaveOccurred())
+			expected, err := io.ReadAll(fo)
+			Expect(err).ToNot(HaveOccurred())
+
+			actual := processMetrics(inputMetrics, given.contentType)
+			Expect(string(actual)).To(Equal(string(expected)))
+		},
+		Entry("return OpenMetrics compliant metrics", testCase{
+			input:       []string{"openmetrics_0_1_1.in", "counter.out"},
+			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			expected:    "openmetrics_0_0_1-counter.out",
+		}),
+		Entry("handle multiple # EOF", testCase{
+			input:       []string{"openmetrics_0_1_1.in", "openmetrics_0_1_1.in", "counter.out"},
+			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			expected:    "multi-openmetrics-counter.out",
+		}),
+		Entry("return Prometheus text compliant metrics", testCase{
+			input:       []string{"prom-text.in", "counter.out"},
+			contentType: expfmt.FmtText,
+			expected:    "prom-text-counter.out",
 		}),
 	)
 })

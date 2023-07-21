@@ -107,8 +107,12 @@ var _ = Describe("Meshed Persistence", func() {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-3-dns-vips"},
 						Spec: &system_proto.Config{Config: `{"0:backend_3":{"address":"240.0.2.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_3"}}]},"0:frontend_3":{"address":"240.0.2.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_3"}}]},"1:host.com":{"address":"240.0.1.4","outbounds":[{"TagSet":{"kuma.io/service":"external-host"}}]}}`},
 					},
+					"kuma-mesh-4-dns-vips": {
+						Meta: &model.ResourceMeta{Name: "kuma-mesh-4-dns-vips"},
+						Spec: &system_proto.Config{Config: `{"v":{"backend_2":{"oe":[{"ap":[{"a":"240.0.1.1","o":"svc"}]}]},"frontend_2":{"oe":[{"ap":[{"a":"240.0.1.3","o":"svc"}]}]},"postgres_2":{"oe":[{"ap":[{"a":"240.0.1.0","o":"svc"}]}]}}}`},
+					},
 				},
-			})
+			}, false)
 		})
 
 		It("should return vips for mesh", func() {
@@ -123,6 +127,18 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(Equal(expected))
 		})
+
+		It("should return vips for mesh in new format", func() {
+			actual, err := meshedPersistence.GetByMesh(context.Background(), "mesh-4")
+			Expect(err).ToNot(HaveOccurred())
+			expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}, Origin: "service"}}},
+				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: "service"}}},
+				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres_2"}, Origin: "service"}}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(Equal(expected))
+		})
 	})
 
 	Context("Set", func() {
@@ -132,7 +148,7 @@ var _ = Describe("Meshed Persistence", func() {
 			countingCm = &countingConfigManager{
 				configs: map[string]*system.ConfigResource{},
 			}
-			meshedPersistence = vips.NewPersistence(rm, countingCm)
+			meshedPersistence = vips.NewPersistence(rm, countingCm, false)
 		})
 
 		It("should create a new config", func() {
@@ -214,7 +230,7 @@ var _ = Describe("Meshed Persistence", func() {
 					},
 				},
 			}
-			meshedPersistence = vips.NewPersistence(rm, countingCm)
+			meshedPersistence = vips.NewPersistence(rm, countingCm, false)
 		})
 
 		It("should return meshed vips", func() {

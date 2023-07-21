@@ -16,6 +16,7 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
+            name: probe:route_configuration
             virtualHosts:
             - domains:
               - '*'

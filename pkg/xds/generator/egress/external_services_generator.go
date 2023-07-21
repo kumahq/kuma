@@ -1,6 +1,8 @@
 package egress
 
 import (
+	"context"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -8,6 +10,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -17,12 +20,13 @@ type ExternalServicesGenerator struct{}
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *ExternalServicesGenerator) Generate(
-	ctx xds_context.Context,
+	ctx context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
-	zone := ctx.ControlPlane.Zone
+	zone := xdsCtx.ControlPlane.Zone
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
@@ -77,9 +81,8 @@ func (*ExternalServicesGenerator) generateCDS(
 		// name as we would overwrite some clusters with the latest one
 		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
-		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion).
+		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(
-				clusterName,
 				isIPV6,
 				endpoints...,
 			)).
@@ -171,7 +174,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 			)
 
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(serviceName, meshName)).Configure(
 				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),

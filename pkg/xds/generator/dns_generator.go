@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"context"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -13,7 +15,7 @@ const OriginDNS = "dns"
 
 type DNSGenerator struct{}
 
-func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g DNSGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	dnsPort := proxy.Metadata.GetDNSPort()
 	emptyDnsPort := proxy.Metadata.GetEmptyDNSPort()
 	if dnsPort == 0 || emptyDnsPort == 0 {
@@ -31,7 +33,7 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 	}
 
 	vips := map[string][]string{}
-	for _, dnsOutbound := range ctx.Mesh.VIPDomains {
+	for _, dnsOutbound := range xdsCtx.Mesh.VIPDomains {
 		if !outboundIPs[dnsOutbound.Address] {
 			continue // if there is no outbound for given address, there is no point of providing DNS resolver
 		}
@@ -46,8 +48,8 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		}
 	}
 
-	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP)).
+	listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP).
+		WithOverwriteName(names.GetDNSListenerName()).
 		Configure(envoy_listeners.DNS(vips, emptyDnsPort, proxy.Metadata.Version.Envoy)).
 		Build()
 	if err != nil {

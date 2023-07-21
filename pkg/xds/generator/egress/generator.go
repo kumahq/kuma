@@ -1,6 +1,8 @@
 package egress
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -10,7 +12,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
@@ -28,7 +29,7 @@ var log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.
 type ZoneEgressGenerator interface {
-	Generate(ctx xds_context.Context, proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
+	Generate(context.Context, xds_context.Context, *core_xds.Proxy, *envoy_listeners.ListenerBuilder, *core_xds.MeshResources) (*core_xds.ResourceSet, error)
 }
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -48,19 +49,17 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(
-			envoy_listeners.InboundListener(
-				envoy_names.GetInboundListenerName(address, port),
-				address, port,
-				core_xds.SocketAddressProtocolTCP,
-			),
-			envoy_listeners.TLSInspector(),
-		)
+	return envoy_listeners.NewInboundListenerBuilder(
+		apiVersion,
+		address,
+		port,
+		core_xds.SocketAddressProtocolTCP,
+	).Configure(envoy_listeners.TLSInspector())
 }
 
 func (g Generator) Generate(
-	ctx xds_context.Context,
+	ctx context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -78,7 +77,7 @@ func (g Generator) Generate(
 		proxy.SecretsTracker = secretsTracker
 
 		for _, generator := range g.ZoneEgressGenerators {
-			rs, err := generator.Generate(ctx, proxy, listenerBuilder, meshResources)
+			rs, err := generator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,
@@ -108,7 +107,7 @@ func (g Generator) Generate(
 		}
 
 		rs, err := g.SecretGenerator.GenerateForZoneEgress(
-			ctx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
+			ctx, xdsCtx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
 		)
 		if err != nil {
 			err := errors.Wrapf(
@@ -122,7 +121,6 @@ func (g Generator) Generate(
 
 		resources.AddSet(rs)
 	}
-
 	return resources, nil
 }
 

@@ -34,12 +34,13 @@ const (
 )
 
 type Configurer struct {
-	Mesh               string
-	TrafficDirection   envoy.TrafficDirection
-	SourceService      string
-	DestinationService string
-	Backend            api.Backend
-	Dataplane          *core_mesh.DataplaneResource
+	Mesh                string
+	TrafficDirection    envoy.TrafficDirection
+	SourceService       string
+	DestinationService  string
+	Backend             api.Backend
+	Dataplane           *core_mesh.DataplaneResource
+	AccessLogSocketPath string
 }
 
 type EndpointAccumulator struct {
@@ -109,11 +110,7 @@ func (c *Configurer) envoyAccessLog(endpoints *EndpointAccumulator, defaultForma
 	case c.Backend.File != nil:
 		return c.fileBackend(c.Backend.File, defaultFormat)
 	case c.Backend.OpenTelemetry != nil:
-		backend := *c.Backend.OpenTelemetry
-
-		clusterName := endpoints.clusterForEndpoint(endpointForOtel(backend.Endpoint))
-
-		return otelAccessLog(backend, clusterName, "MeshAccessLog")
+		return c.otelAccessLog(c.Backend.OpenTelemetry, endpoints, defaultFormat)
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
 	}
@@ -154,7 +151,7 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	return fileAccessLog(sfs, envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh))
+	return fileAccessLog(sfs, c.AccessLogSocketPath)
 }
 
 func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
@@ -251,29 +248,94 @@ func fileAccessLog(logFormat *envoy_core.SubstitutionFormatString, path string) 
 	}, nil
 }
 
-func otelAccessLog(backend api.OtelBackend, clusterName endpointClusterName, logName string) (*envoy_accesslog.AccessLog, error) {
-	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{
-		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
-			LogName:             logName,
-			TransportApiVersion: envoy_core.ApiVersion_V3,
-			GrpcService: &envoy_core.GrpcService{
-				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
-						ClusterName: string(clusterName),
-					},
-				},
-			},
-		},
-		Attributes: &otlp.KeyValueList{},
+func (c *Configurer) interpolateKumaVariablesInAnyValue(val *otlp.AnyValue) error {
+	switch v := val.GetValue().(type) {
+	case *otlp.AnyValue_StringValue:
+		interpolated, err := c.interpolateKumaVariables(v.StringValue)
+		if err != nil {
+			return err
+		}
+		v.StringValue = interpolated.String()
+	case *otlp.AnyValue_ArrayValue:
+		for _, kv := range v.ArrayValue.Values {
+			if err := c.interpolateKumaVariablesInAnyValue(kv); err != nil {
+				return err
+			}
+		}
+	case *otlp.AnyValue_KvlistValue:
+		for _, kv := range v.KvlistValue.Values {
+			if err := c.interpolateKumaVariablesInAnyValue(kv.Value); err != nil {
+				return err
+			}
+			key, err := c.interpolateKumaVariables(kv.Key)
+			if err != nil {
+				return err
+			}
+			kv.Key = key.String()
+		}
+	case *otlp.AnyValue_BoolValue:
+	case *otlp.AnyValue_IntValue:
+	case *otlp.AnyValue_DoubleValue:
+	case *otlp.AnyValue_BytesValue:
 	}
 
+	return nil
+}
+
+func (c *Configurer) otelAccessLog(
+	backend *api.OtelBackend,
+	endpoints *EndpointAccumulator,
+	defaultBodyFormat string,
+) (*envoy_accesslog.AccessLog, error) {
+	defaultBody, err := c.interpolateKumaVariables(defaultBodyFormat)
+	if err != nil {
+		return nil, err
+	}
+	body := &otlp.AnyValue{
+		Value: &otlp.AnyValue_StringValue{StringValue: defaultBody.String()},
+	}
+	if backend.Body != nil {
+		if err := util_proto.FromJSON(backend.Body.Raw, body); err == nil {
+			if err := c.interpolateKumaVariablesInAnyValue(body); err != nil {
+				return nil, errors.Wrap(err, "couldn't interpolate OTLP any value")
+			}
+		} else {
+			interpolatedRaw, err := c.interpolateKumaVariables(string(backend.Body.Raw))
+			if err != nil {
+				return nil, errors.Wrap(err, "couldn't parse body as OTLP value or interpolate as string")
+			}
+			body = &otlp.AnyValue{
+				Value: &otlp.AnyValue_StringValue{StringValue: interpolatedRaw.String()},
+			}
+		}
+	}
+
+	attributes := otlp.KeyValueList{}
 	for _, kv := range backend.Attributes {
-		log.Attributes.Values = append(log.Attributes.Values, &otlp.KeyValue{
+		attributes.Values = append(attributes.Values, &otlp.KeyValue{
 			Key: kv.Key,
 			Value: &otlp.AnyValue{
 				Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
 			},
 		})
+	}
+
+	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{
+		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
+			LogName:             "MeshAccessLog",
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+						ClusterName: string(endpoints.clusterForEndpoint(
+							endpointForOtel(backend.Endpoint),
+						)),
+					},
+				},
+			},
+		},
+		Body:       body,
+		Attributes: &attributes,
 	}
 
 	marshaled, err := util_proto.MarshalAnyDeterministic(log)

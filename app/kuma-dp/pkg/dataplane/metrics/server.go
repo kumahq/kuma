@@ -18,10 +18,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var (
@@ -99,9 +97,9 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 	return http.Client{}
 }
 
-func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
+func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
 	return &Hijacker{
-		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		socketPath:           socketPath,
 		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape: applicationsToScrape,
@@ -200,29 +198,80 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
-		writer.Header().Set(hdrContentType, string(selectContentType(contentTypes, req.Header)))
-		for resp := range out {
-			if _, err := writer.Write(resp); err != nil {
-				logger.Error(err, "error while writing the response")
-			}
-			if _, err := writer.Write([]byte("\n")); err != nil {
-				logger.Error(err, "error while writing the response")
-			}
+		selectedCt := selectContentType(contentTypes, req.Header)
+		writer.Header().Set(hdrContentType, string(selectedCt))
+
+		// aggregate metrics of target applications and attempt to make them
+		// compatible with FmtOpenMetrics if it is the selected content type.
+		metrics := processMetrics(out, selectedCt)
+		if _, err := writer.Write(metrics); err != nil {
+			logger.Error(err, "error while writing the response")
 		}
 	}
 }
 
+func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
+	buf := new(bytes.Buffer)
+
+	for metrics := range contents {
+		// remove the EOF marker from the metrics, because we are
+		// merging multiple metrics into one response.
+		metrics = bytes.ReplaceAll(metrics, []byte("# EOF"), []byte(""))
+
+		buf.Write(metrics)
+		buf.Write([]byte("\n"))
+	}
+
+	processedMetrics := append(processNewlineChars(buf.Bytes()), '\n')
+	buf.Reset()
+	buf.Write(processedMetrics)
+
+	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
+		// make metrics OpenMetrics compliant
+		buf.Write([]byte("# EOF\n"))
+	}
+
+	return buf.Bytes()
+}
+
+// processNewlineChars takes byte data and returns a new byte slice
+// after trimming and deduplicating the newline characters.
+func processNewlineChars(input []byte) []byte {
+	var deduped []byte
+
+	if len(input) == 0 {
+		return nil
+	}
+	last := input[0]
+
+	for i := 1; i < len(input); i++ {
+		if last == '\n' && input[i] == last {
+			continue
+		}
+		deduped = append(deduped, last)
+		last = input[i]
+	}
+	deduped = append(deduped, last)
+
+	return bytes.TrimSpace(deduped)
+}
+
 // selectContentType selects the highest priority content type supported by the applications.
-// If no valid content type is returned by the applications, it returns the highest priority
-// content type supported by the scraper.
+// If no valid content type is returned by the applications, it negotiates content type based
+// on Accept header of the scraper.
 func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header) expfmt.Format {
 	// Tracks highest negotiated content type priority.
 	// Lower number means higher priority
 	//
-	// We should not simply use the highest priority content type even if `application/openmetrics-text`
-	// is the superset of `text/plain`, as it might not be
-	// supported by the applications or the user might be using older prom scraper.
-	// So it's better to choose the highest negotiated content type between the apps and the scraper.
+	// We can not simply use the highest priority content type i.e. `application/openmetrics-text`
+	// and try to mutate the metrics to make it compatible with this type,
+	// because:
+	// - if the application is not supporting this type,
+	//   custom metrics might not be compatible (more prone to failure).
+	// - the user might be using older prom scraper.
+	//
+	// So it's better to choose the highest negotiated content type between the
+	// target apps and the scraper.
 	var ctPriority int32 = math.MaxInt32
 	ct := expfmt.FmtUnknown
 	for contentType := range contentTypes {
@@ -236,10 +285,10 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 		}
 	}
 
-	// If no valid content type is returned by the applications,
-	// use the highest priority content type supported by the scraper.
+	// If no valid content type is returned by the target applications,
+	// negotitate content type based on Accept header of the scraper.
 	if ct == expfmt.FmtUnknown {
-		ct = expfmt.NegotiateIncludingOpenMetrics(reqHeader)
+		ct = expfmt.Negotiate(reqHeader)
 	}
 
 	return ct
@@ -306,14 +355,8 @@ func (s *Hijacker) NeedLeaderElection() bool {
 }
 
 const (
-	hdrContentType           = "Content-Type"
-	textType                 = "text/plain"
-	textVersion              = "0.0.4"
-	openmetricsType          = "application/openmetrics-text"
-	openmetricsVersion_1_0_0 = "1.0.0"
-	openmetricsVersion_0_0_1 = "0.0.1"
-	protoType                = `application/vnd.google.protobuf`
-	protoProtocol            = `io.prometheus.client.MetricFamily`
+	hdrContentType = "Content-Type"
+	textType       = "text/plain"
 )
 
 // responseFormat extracts the correct format from a HTTP response header.
@@ -329,24 +372,27 @@ func responseFormat(h http.Header) expfmt.Format {
 	version := params["version"]
 
 	switch mediatype {
-	case protoType:
+	case expfmt.ProtoType:
 		p := params["proto"]
 		e := params["encoding"]
 		// only delimited encoding is supported by prometheus scraper
-		if p == protoProtocol && e == "delimited" {
+		if p == expfmt.ProtoProtocol && e == "delimited" {
 			return expfmt.FmtProtoDelim
 		}
 
+	// if mediatype is `text/plain`, return Prometheus text format
+	// without checking the version, as there are few exporters
+	// which don't set the version param in the content-type header. ex: Envoy
 	case textType:
-		if version == textVersion {
-			return expfmt.FmtText
-		}
+		return expfmt.FmtText
 
-	case openmetricsType:
-		if version == openmetricsVersion_0_0_1 {
+	// if mediatype is OpenMetricsType, return FmtUnknown for any version
+	// other than "0.0.1", "1.0.0" and "".
+	case expfmt.OpenMetricsType:
+		if version == expfmt.OpenMetricsVersion_0_0_1 || version == "" {
 			return expfmt.FmtOpenMetrics_0_0_1
 		}
-		if version == openmetricsVersion_1_0_0 {
+		if version == expfmt.OpenMetricsVersion_1_0_0 {
 			return expfmt.FmtOpenMetrics_1_0_0
 		}
 	}

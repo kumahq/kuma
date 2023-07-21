@@ -13,13 +13,14 @@ import (
 
 var _ = Describe("HttpDynamicRouteConfigurer", func() {
 	It("should generate proper Envoy config", func() {
-		listener, err := NewListenerBuilder(envoy_common.APIV3).Configure(
-			InboundListener("inbound", "127.0.0.1", 99, xds.SocketAddressProtocolTCP),
-			FilterChain(NewFilterChainBuilder(envoy_common.APIV3).Configure(
-				HttpConnectionManager("inbound", false),
-				HttpDynamicRoute("routes/inbound"),
-			)),
-		).Build()
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+			WithOverwriteName("inbound").
+			Configure(
+				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
+					HttpConnectionManager("inbound", false),
+					HttpDynamicRoute("routes/inbound"),
+				)),
+			).Build()
 
 		Expect(err).ToNot(HaveOccurred())
 
@@ -54,13 +55,14 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
 
 var _ = Describe("HttpScopedRouteConfigurer", func() {
 	It("should fail", func() {
-		_, err := NewListenerBuilder(envoy_common.APIV3).Configure(
-			InboundListener("inbound", "127.0.0.1", 99, xds.SocketAddressProtocolTCP),
-			FilterChain(NewFilterChainBuilder(envoy_common.APIV3).Configure(
-				HttpConnectionManager("inbound", false),
-				AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
-			)),
-		).Build()
+		_, err := NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 99, xds.SocketAddressProtocolTCP).
+			WithOverwriteName("inbound").
+			Configure(
+				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
+					HttpConnectionManager("inbound", false),
+					AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
+				)),
+			).Build()
 
 		Expect(err).To(HaveOccurred())
 	})

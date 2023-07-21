@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +31,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 			gen := &generator.TracingProxyGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -56,7 +57,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 			gen := &generator.TracingProxyGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

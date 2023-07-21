@@ -92,7 +92,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 		})
 
-	rm := newResourceManager(builder)
+	rm := newResourceManager(builder) //nolint:contextcheck
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
 
@@ -116,7 +116,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	}))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
 	if err != nil {
 		return nil, err
@@ -162,6 +162,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
 		builder.Config().Store.UnsafeDelete,
+		builder.Extensions(),
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 
@@ -176,7 +177,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 	)

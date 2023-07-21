@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 405,
+ "title": "Method not Allowed",
+ "detail": "Method not allowed",
+ "details": "Method not allowed"
+}

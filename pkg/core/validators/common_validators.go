@@ -214,3 +214,11 @@ func ValidateBandwidth(path PathBuilder, value string) ValidationError {
 	}
 	return err
 }
+
+func ValidateNil[T any](path PathBuilder, t *T, msg string) ValidationError {
+	var err ValidationError
+	if t != nil {
+		err.AddViolationAt(path, msg)
+	}
+	return err
+}

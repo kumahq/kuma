@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -38,6 +40,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -107,6 +110,10 @@ func NewApiServer(
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
+
+	// NOTE: This must come before any filters that make HTTP calls
+	container.Filter(otelrestful.OTelFilter("api-server"))
+
 	if cfg.ApiServer.Authn.LocalhostIsAdmin {
 		container.Filter(authn.LocalhostAuthenticator)
 	}
@@ -264,7 +271,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 		switch defType {
 		case mesh.ServiceInsightType:
 			// ServiceInsight is a bit different
-			ep := serviceInsightEndpoints{endpoints}
+			ep := serviceInsightEndpoints{
+				resourceEndpoints: endpoints,
+				addressPortGenerator: func(svc string) string {
+					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
+				},
+			}
 			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
@@ -438,8 +450,8 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 	tlsConfig.ClientCAs = clientCertPool
 	if cfg.HTTPS.RequireClientCert {
 		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	} else {
-		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+	} else if cfg.Authn.Type == certs.PluginName {
+		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
 	}
 	return nil
 }
@@ -453,7 +465,7 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 		),

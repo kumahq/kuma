@@ -84,14 +84,10 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
-		if conf == nil {
-			continue
-		}
-
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     *conf,
+			Rules:    fromRules.Rules[listenerKey],
+			Subset:   core_rules.MeshSubset(),
 			Protocol: protocol,
 		}
 
@@ -101,6 +97,11 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
+			continue
+		}
+
+		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		if conf == nil {
 			continue
 		}
 
@@ -127,18 +128,12 @@ func applyToOutbounds(
 			continue
 		}
 
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-
-		protocol := xds.InferProtocol(routing, serviceName)
-
-		conf := getConf(rules.Rules, core_rules.MeshService(serviceName))
-		if conf == nil {
-			continue
-		}
+		serviceName := outbound.GetService()
 
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     *conf,
-			Protocol: protocol,
+			Rules:    rules.Rules,
+			Protocol: xds.InferProtocol(routing, serviceName),
+			Subset:   core_rules.MeshService(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {

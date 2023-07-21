@@ -113,7 +113,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rm, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 		)
@@ -131,6 +131,10 @@ var _ = Describe("GenerateSnapshot", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
+		proxy.Metadata = &model.DataplaneMetadata{
+			AccessLogSocketPath: "/tmp/kuma-al-dp.socket",
+			MetricsSocketPath:   "/tmp/kuma-mh-dp.socket",
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		metrics, err := metrics.NewMetrics("")
@@ -139,13 +143,17 @@ var _ = Describe("GenerateSnapshot", func() {
 		claCache, err := cla.NewCache(1*time.Second, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err := gen.GenerateSnapshot(xds_context.Context{
-			ControlPlane: &xds_context.ControlPlaneContext{
-				Secrets:  &xds.TestSecrets{},
-				CLACache: claCache,
+		s, err := gen.GenerateSnapshot(
+			context.Background(),
+			xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets:  &xds.TestSecrets{},
+					CLACache: claCache,
+				},
+				Mesh: mCtx,
 			},
-			Mesh: mCtx,
-		}, proxy)
+			proxy,
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		resp, err := util_cache_v3.ToDeltaDiscoveryResponse(*s)

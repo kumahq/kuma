@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 	"time"
 
@@ -549,7 +550,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{
-					Features: model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					Features:            model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					AccessLogSocketPath: "/foo/log",
 				},
 			}
 
@@ -569,7 +571,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
-			rs, err := gen.Generate(given.ctx, proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -610,17 +612,23 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: gateway
               outbound:
               - port: 18080
-                service: backend
+                tags:
+                  kuma.io/service: backend
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 40001
-                service: api-http
+                tags:
+                  kuma.io/service: api-http
               - port: 40002
-                service: api-tcp
+                tags:
+                  kuma.io/service: api-tcp
               - port: 40003
-                service: api-http2
+                tags:
+                  kuma.io/service: api-http2
               - port: 40004
-                service: api-grpc
+                tags:
+                  kuma.io/service: api-grpc
 `,
 			expected: "03.envoy.golden.yaml",
 		}),
@@ -635,13 +643,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: web
               outbound:
               - port: 18080
-                service: backend
+                tags:
+                  kuma.io/service: backend
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 40001
-                service: api-http
+                tags:
+                  kuma.io/service: api-http
               - port: 40002
-                service: api-tcp
+                tags:
+                  kuma.io/service: api-tcp
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
@@ -741,9 +753,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: web
               outbound:
               - port: 30001
-                service: api-http
                 tags:
                   kuma.io/mesh: mesh2
+                  kuma.io/service: api-http
 `,
 			expected: "09.envoy.golden.yaml",
 		}),
@@ -756,9 +768,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
         networking:
           outbound:
           - port: 18080
-            service: backend.kuma-system
+            tags:
+              kuma.io/service: backend.kuma-system
           - port: 54321
-            service: db.kuma-system`
+            tags:
+              kuma.io/service: db.kuma-system`
 
 		dataplane := &mesh_proto.Dataplane{}
 		Expect(util_proto.FromYAML([]byte(dp), dataplane)).To(Succeed())
@@ -819,7 +833,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// when
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
-		rs, err := gen.Generate(plainCtx, proxy)
+		rs, err := gen.Generate(context.Background(), plainCtx, proxy)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

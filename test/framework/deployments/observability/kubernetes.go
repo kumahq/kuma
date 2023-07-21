@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"golang.org/x/exp/slices"
 
 	"github.com/kumahq/kuma/test/framework"
 )
@@ -14,7 +13,7 @@ type k8SDeployment struct {
 	deploymentName  string
 	namespace       string
 	jaegerApiTunnel *k8s.Tunnel
-	components      []string
+	components      []Component
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -32,8 +31,12 @@ func (t *k8SDeployment) Name() string {
 }
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallObservability(t.namespace, t.components)
+	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.Name(), true)
+	var strComponents []string
+	for _, component := range t.components {
+		strComponents = append(strComponents, string(component))
+	}
+	yaml, err := kumactl.KumactlInstallObservability(t.namespace, strComponents)
 	if err != nil {
 		return err
 	}
@@ -44,36 +47,31 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.namespace),
-		metav1.ListOptions{
-			LabelSelector: "app=jaeger",
-		},
-		1,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-
-	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.namespace),
-		metav1.ListOptions{
-			LabelSelector: "app=jaeger",
-		},
-	)
-	if len(pods) != 1 {
-		return errors.Errorf("counting Jaeger pods. Got: %d. Expected: 1", len(pods))
+	expectedPods := map[Component]int{
+		JaegerComponent:     1,
+		GrafanaComponent:    1,
+		LokiComponent:       1,
+		PrometheusComponent: 2,
 	}
 
-	err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.namespace),
-		pods[0].Name,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-	if err != nil {
-		return err
+	for _, component := range t.components {
+		err := framework.NewClusterSetup().
+			Install(framework.WaitNumPods(t.namespace, expectedPods[component], string(component))).
+			Install(framework.WaitPodsAvailable(t.namespace, string(component))).
+			Setup(cluster)
+		if err != nil {
+			return err
+		}
 	}
 
-	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(t.namespace), k8s.ResourceTypePod, pods[0].Name, 0, 16686)
-	t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
+	if slices.Contains(t.components, JaegerComponent) {
+		podName, err := framework.PodNameOfApp(cluster, string(JaegerComponent), t.namespace)
+		if err != nil {
+			return err
+		}
+		t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(t.namespace), k8s.ResourceTypePod, podName, 0, 16686)
+		t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
+	}
 	return nil
 }
 

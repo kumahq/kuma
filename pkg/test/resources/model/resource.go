@@ -6,7 +6,37 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var _ core_model.ResourceMeta = &ResourceMeta{}
+var (
+	_ core_model.Resource     = &Resource{}
+	_ core_model.ResourceMeta = &ResourceMeta{}
+)
+
+type Resource struct {
+	Meta           core_model.ResourceMeta
+	Spec           core_model.ResourceSpec
+	TypeDescriptor core_model.ResourceTypeDescriptor
+}
+
+func (r *Resource) SetMeta(meta core_model.ResourceMeta) {
+	r.Meta = meta
+}
+
+func (r *Resource) SetSpec(spec core_model.ResourceSpec) error {
+	r.Spec = spec
+	return nil
+}
+
+func (r *Resource) GetMeta() core_model.ResourceMeta {
+	return r.Meta
+}
+
+func (r *Resource) GetSpec() core_model.ResourceSpec {
+	return r.Spec
+}
+
+func (r *Resource) Descriptor() core_model.ResourceTypeDescriptor {
+	return r.TypeDescriptor
+}
 
 type ResourceMeta struct {
 	Mesh             string

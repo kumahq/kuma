@@ -22,7 +22,6 @@ func (e *ProvidedEndpointClusterConfigurer) Configure(c *envoy_cluster.Cluster) 
 	if len(e.Endpoints) == 0 {
 		return errors.New("cluster must have at least 1 endpoint")
 	}
-	c.Name = e.Name
 	if len(e.Endpoints) > 1 {
 		c.LbPolicy = envoy_cluster.Cluster_ROUND_ROBIN
 	}

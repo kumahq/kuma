@@ -14,15 +14,19 @@ type TargetRefKind string
 var (
 	Mesh              TargetRefKind = "Mesh"
 	MeshSubset        TargetRefKind = "MeshSubset"
+	MeshGateway       TargetRefKind = "MeshGateway"
 	MeshService       TargetRefKind = "MeshService"
 	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute     TargetRefKind = "MeshHTTPRoute"
 )
 
 var order = map[TargetRefKind]int{
 	Mesh:              1,
 	MeshSubset:        2,
-	MeshService:       3,
-	MeshServiceSubset: 4,
+	MeshGateway:       3,
+	MeshService:       4,
+	MeshServiceSubset: 5,
+	MeshHTTPRoute:     6,
 }
 
 func (k TargetRefKind) Less(o TargetRefKind) bool {
@@ -32,7 +36,7 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
@@ -44,15 +48,17 @@ type TargetRef struct {
 	Mesh string `json:"mesh,omitempty"`
 }
 
+type TargetRefHash string
+
 // Hash returns a hash of the TargetRef
-func (in *TargetRef) Hash() string {
+func (in TargetRef) Hash() TargetRefHash {
 	keys := maps.Keys(in.Tags)
 	sort.Strings(keys)
 	orderedTags := make([]string, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
-	return fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh)
+	return TargetRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh))
 }
 
 // BackendRef defines where to forward traffic.

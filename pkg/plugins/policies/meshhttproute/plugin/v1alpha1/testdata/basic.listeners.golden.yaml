@@ -30,31 +30,37 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   path: /v2
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   prefix: /v2/
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   path: /v3
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
                   prefix: /v3/
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
                   cluster: backend-_0_
                   timeout: 0s
@@ -64,11 +70,13 @@ resources:
                   - name: v1
                     stringMatch:
                       exact: "true"
+                name: 6B044knLw3l3+wG86HzzF5jnxXsiiMfGbgxvh+ZmU9Y=
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   cluster: backend
                   timeout: 0s

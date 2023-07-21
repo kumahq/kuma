@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -11,7 +12,6 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -25,7 +25,7 @@ func generateListeners(
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[string]string{}
+	clusterCache := map[common_api.TargetRefHash]string{}
 	sc := &meshroute_xds.SplitCounter{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	routing := proxy.Routing
@@ -33,8 +33,7 @@ func generateListeners(
 		ToRules.Rules
 
 	for _, outbound := range networking.GetOutbound() {
-		tags := outbound.GetTagsIncludingLegacy()
-		serviceName := tags[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 		protocol := plugins_xds.InferProtocol(routing, serviceName)
 
 		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName,
@@ -67,18 +66,12 @@ func buildOutboundListener(
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
-	tags := outbound.GetTagsIncludingLegacy()
-	builder := envoy_listeners.NewListenerBuilder(proxy.APIVersion)
+	tags := outbound.GetTags()
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
-	outboundListenerName := envoy_names.GetOutboundListenerName(
-		oface.DataplaneIP,
-		oface.DataplanePort,
-	)
-
-	outboundListener := envoy_listeners.OutboundListener(
-		outboundListenerName,
+	builder := envoy_listeners.NewOutboundListenerBuilder(
+		proxy.APIVersion,
 		oface.DataplaneIP,
 		oface.DataplanePort,
 		core_xds.SocketAddressProtocolTCP,
@@ -93,7 +86,6 @@ func buildOutboundListener(
 	)
 
 	return builder.Configure(
-		outboundListener,
 		tproxy,
 		tagsMetadata,
 	).Configure(opts...).Build()

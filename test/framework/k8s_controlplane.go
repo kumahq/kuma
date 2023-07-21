@@ -182,6 +182,10 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 
 func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 	c.portFwd = portFwd
+	if !c.cluster.opts.setupKumactl {
+		return nil
+	}
+
 	var token string
 	t, err := c.retrieveAdminToken()
 	if err != nil {
@@ -224,7 +228,7 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	defer func() {
 		c.kumactl.Env = oldEnv // restore kumactl environment
 	}()
-	return c.kumactl.KumactlInstallCP(c.mode, args...)
+	return c.kumactl.KumactlInstallCP(args...)
 }
 
 func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {

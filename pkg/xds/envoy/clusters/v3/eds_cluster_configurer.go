@@ -5,14 +5,11 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 )
 
-type EdsClusterConfigurer struct {
-	Name string
-}
+type EdsClusterConfigurer struct{}
 
 var _ ClusterConfigurer = &EdsClusterConfigurer{}
 
 func (e *EdsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
-	c.Name = e.Name
 	c.ClusterDiscoveryType = &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS}
 	c.EdsClusterConfig = &envoy_cluster.Cluster_EdsClusterConfig{
 		EdsConfig: &envoy_core.ConfigSource{

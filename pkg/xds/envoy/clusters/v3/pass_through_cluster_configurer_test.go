@@ -22,8 +22,8 @@ var _ = Describe("PassThroughClusterConfigurer", func() {
         type: ORIGINAL_DST`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.PassThroughCluster(clusterName)).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.PassThroughCluster()).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 

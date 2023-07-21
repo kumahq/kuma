@@ -30,7 +30,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should create default resources", func() {
 		// when
-		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{})
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{}, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		// then default TrafficPermission for the mesh exist
@@ -52,11 +52,11 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should ignore subsequent calls to EnsureDefaultMeshResources", func() {
 		// given already ensured default resources
-		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{})
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{}, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		// when ensuring again
-		err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{})
+		err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{}, context.Background())
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -74,7 +74,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should skip creating all default policies", func() {
 		// when
-		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{"*"})
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{"*"}, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		// then default TrafficPermission doesn't exist
@@ -96,7 +96,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should skip creating selected default policies", func() {
 		// when
-		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{"TrafficPermission", "Retry"})
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh, []string{"TrafficPermission", "Retry"}, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		// then default TrafficPermission doesn't exist

@@ -52,7 +52,7 @@ func GetClusterName(
 
 func MakeTCPSplit(
 	proxy *core_xds.Proxy,
-	clusterCache map[string]string,
+	clusterCache map[common_api.TargetRefHash]string,
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
@@ -74,7 +74,7 @@ func MakeTCPSplit(
 
 func MakeHTTPSplit(
 	proxy *core_xds.Proxy,
-	clusterCache map[string]string,
+	clusterCache map[common_api.TargetRefHash]string,
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
@@ -95,7 +95,7 @@ func MakeHTTPSplit(
 func makeSplit(
 	proxy *core_xds.Proxy,
 	protocols map[core_mesh.Protocol]struct{},
-	clusterCache map[string]string,
+	clusterCache map[common_api.TargetRefHash]string,
 	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
@@ -115,8 +115,6 @@ func makeSplit(
 		}
 
 		if _, ok := protocols[plugins_xds.InferProtocol(proxy.Routing, service)]; !ok {
-			protocol := plugins_xds.InferProtocol(proxy.Routing, service)
-			fmt.Println("no protocol", service, protocol)
 			return nil
 		}
 

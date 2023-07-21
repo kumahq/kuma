@@ -6,7 +6,7 @@ clean/docs:
 	rm -rf docs/generated
 
 .PHONY: docs
-docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs ## Dev: Generate local documentation
+docs: docs/generated/cmd docs/generated/kuma-cp.md docs/generated/resources helm-docs docs/generated/raw ## Dev: Generate local documentation
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
@@ -32,3 +32,18 @@ docs/generated/kuma-cp.md: ## Generate Mesh API reference
 	@echo '```yaml' >> $@
 	@cat $(DOCS_CP_CONFIG) >> $@
 	@echo '```' >> $@
+
+.PHONY: docs/generated/raw
+docs/generated/raw:
+	mkdir -p $@
+	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
+	cp $(HELM_VALUES_FILE) $@/helm-values.yaml
+
+	mkdir -p $@/crds
+	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $@/crds/; done
+
+	mkdir -p $@/protos
+	$(PROTOC) \
+		--jsonschema_out=$@/protos \
+		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
+		$(DOCS_PROTOS)

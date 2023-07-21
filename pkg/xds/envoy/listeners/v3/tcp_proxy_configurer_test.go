@@ -12,7 +12,6 @@ import (
 
 var _ = Describe("TcpProxyConfigurer", func() {
 	type testCase struct {
-		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
@@ -24,9 +23,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config with metadata",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecatedWithMetadata(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -39,7 +37,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
@@ -70,7 +67,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with weighted destination clusters", testCase{
-			listenerName:    "inbound:127.0.0.1:5432",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
@@ -120,9 +116,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config without metadata",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -135,7 +130,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
@@ -164,7 +158,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with weighted destination clusters", testCase{
-			listenerName:    "inbound:127.0.0.1:5432",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",

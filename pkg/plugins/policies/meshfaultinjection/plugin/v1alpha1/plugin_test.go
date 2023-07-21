@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -86,9 +87,8 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 							Configure(
 								HttpInboundRoutes(
@@ -108,9 +108,8 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
 				},
@@ -206,7 +205,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		context := test_xds.CreateSampleMeshContextWith(resources)
+		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 		proxy := core_xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),
@@ -220,14 +219,14 @@ var _ = Describe("MeshFaultInjection", func() {
 			},
 		}
 		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 		// then
-		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})
 })

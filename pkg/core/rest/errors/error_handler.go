@@ -26,9 +26,10 @@ func HandleError(response *restful.Response, err error, title string) {
 	case errors.Is(err, &store.PreconditionError{}):
 		var err2 *store.PreconditionError
 		errors.As(err, &err2)
-		WriteError(response, 400, types.Error{
-			Title:   "Bad Request",
-			Details: err2.Reason,
+		writeError(response, types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err2.Reason,
 		})
 	case err == store.ErrorInvalidOffset:
 		handleInvalidOffset(title, response)
@@ -42,6 +43,19 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleInvalidPageSize(title, response)
 	case tokens.IsSigningKeyNotFound(err):
 		handleSigningKeyNotFound(err, response)
+	case errors.Is(err, &MethodNotAllowed{}):
+		writeError(response, types.Error{
+			Status: 405,
+			Title:  "Method not Allowed",
+			Detail: err.Error(),
+		})
+	case errors.Is(err, &Conflict{}):
+		writeError(response, types.Error{
+			Status: 409,
+			Title:  "Conflict",
+			Detail: err.Error(),
+		})
+
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError
 		errors.As(err, &accessErr)
@@ -61,141 +75,160 @@ func HandleError(response *restful.Response, err error, title string) {
 
 func handleIssuerDisabled(err error, title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
+		Status: 400,
+		Title:  title,
+		Detail: err.Error(),
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleInvalidPageSize(title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid page size",
-		Causes: []types.Cause{
+		Status: 400,
+		Title:  title,
+		Detail: "Invalid page size",
+		InvalidParameters: []types.InvalidParameter{
 			{
-				Field:   "size",
-				Message: "Invalid format",
+				Field:  "size",
+				Reason: "Invalid format",
 			},
 		},
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleNotFound(title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Not found",
+		Status: 404,
+		Title:  title,
+		Detail: "Not found",
 	}
-	WriteError(response, 404, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handlePreconditionFailed(title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Precondition Failed",
+		Status: 412,
+		Title:  title,
+		Detail: "Precondition Failed",
 	}
-	WriteError(response, 412, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleMeshNotFound(title string, err *manager.MeshNotFoundError, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Mesh is not found",
-		Causes: []types.Cause{
+		Status: 400,
+		Title:  title,
+		Detail: "Mesh is not found",
+		InvalidParameters: []types.InvalidParameter{
 			{
-				Field:   "mesh",
-				Message: fmt.Sprintf("mesh of name %s is not found", err.Mesh),
+				Field:  "mesh",
+				Reason: fmt.Sprintf("mesh of name %s is not found", err.Mesh),
 			},
 		},
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleValidationError(title string, err *validators.ValidationError, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Resource is not valid",
+		Status: 400,
+		Title:  title,
+		Detail: "Resource is not valid",
 	}
 	for _, violation := range err.Violations {
-		kumaErr.Causes = append(kumaErr.Causes, types.Cause{
-			Field:   violation.Field,
-			Message: violation.Message,
+		kumaErr.InvalidParameters = append(kumaErr.InvalidParameters, types.InvalidParameter{
+			Field:  violation.Field,
+			Reason: violation.Message,
 		})
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleInvalidOffset(title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid offset",
-		Causes: []types.Cause{
+		Status: 400,
+		Title:  title,
+		Detail: "Invalid offset",
+		InvalidParameters: []types.InvalidParameter{
 			{
-				Field:   "offset",
-				Message: "Invalid format",
+				Field:  "offset",
+				Reason: "Invalid format",
 			},
 		},
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid page size",
-		Causes: []types.Cause{
+		Status: 400,
+		Title:  title,
+		Detail: "Invalid page size",
+		InvalidParameters: []types.InvalidParameter{
 			{
-				Field:   "size",
-				Message: err.Error(),
+				Field:  "size",
+				Reason: err.Error(),
 			},
 		},
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleUnknownError(err error, title string, response *restful.Response) {
 	core.Log.Error(err, title)
 	kumaErr := types.Error{
-		Title:   title,
-		Details: "Internal Server Error",
+		Status: 500,
+		Title:  title,
+		Detail: "Internal Server Error",
 	}
-	WriteError(response, 500, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleSigningKeyNotFound(err error, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   "Signing Key not found",
-		Details: err.Error(),
+		Status: 404,
+		Title:  "Signing Key not found",
+		Detail: err.Error(),
 	}
-	WriteError(response, 404, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleAccessDenied(err *access.AccessDeniedError, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   "Access Denied",
-		Details: err.Reason,
+		Status: 403,
+		Title:  "Access Denied",
+		Detail: err.Reason,
 	}
-	WriteError(response, 403, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
+		Status: 401,
+		Title:  title,
+		Detail: err.Error(),
 	}
-	WriteError(response, 401, kumaErr)
+	writeError(response, kumaErr)
 }
 
 func handleTenantMissing(err error, title string, response *restful.Response) {
 	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
+		Status: 400,
+		Title:  title,
+		Detail: err.Error(),
 	}
-	WriteError(response, 400, kumaErr)
+	writeError(response, kumaErr)
 }
 
-func WriteError(response *restful.Response, httpStatus int, kumaErr types.Error) {
-	if err := response.WriteHeaderAndJson(httpStatus, kumaErr, "application/json"); err != nil {
+func writeError(response *restful.Response, kumaErr types.Error) {
+	// Fix to handle legacy errors
+	kumaErr.Type = "/std-errors"
+	kumaErr.Details = kumaErr.Detail
+	for _, ip := range kumaErr.InvalidParameters {
+		kumaErr.Causes = append(kumaErr.Causes, types.Cause{Field: ip.Field, Message: ip.Reason})
+	}
+	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
 		core.Log.Error(err, "Could not write the error response")
 	}
 }

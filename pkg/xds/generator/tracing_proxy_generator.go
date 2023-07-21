@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	net_url "net/url"
 	"strconv"
 
@@ -22,8 +23,8 @@ type TracingProxyGenerator struct{}
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
-func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	tracingBackend := ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
+func (t TracingProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	tracingBackend := xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
 	if tracingBackend == nil {
 		return nil, nil
 	}
@@ -53,8 +54,8 @@ func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 	}
 
 	clusterName := names.GetTracingClusterName(tracingBackend.Name)
-	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(clusters.ProvidedEndpointCluster(clusterName, proxy.Dataplane.IsIPv6(), *endpoint)).
+	res, err := clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
+		Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), *endpoint)).
 		Configure(clusters.ClientSideTLS([]core_xds.Endpoint{*endpoint})).
 		Configure(clusters.DefaultTimeout()).
 		Build()

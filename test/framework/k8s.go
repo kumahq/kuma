@@ -56,7 +56,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.7.0/experimental-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.7.1/experimental-install.yaml")
 }
 
 func UpdateKubeObject(

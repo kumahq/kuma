@@ -226,15 +226,15 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 	return d.Tags[ProtocolTag]
 }
 
-// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
-// Remove it and migrate to GetTags() once "kuma.io/service" field is removed.
-func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
-	if d.Tags == nil {
-		return map[string]string{
-			ServiceTag: d.Service,
-		}
+// GetService returns a service name represented by this outbound interface.
+//
+// The purpose of this method is to encapsulate implementation detail
+// that service is modeled as a tag rather than a separate field.
+func (d *Dataplane_Networking_Outbound) GetService() string {
+	if d == nil || d.GetTags() == nil {
+		return ""
 	}
-	return d.Tags
+	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"
@@ -314,8 +314,14 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
-func Merge(other ...SingleValueTagSet) SingleValueTagSet {
-	merged := SingleValueTagSet{}
+func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	// Small optimization, to not iterate over the whole map if only one
+	// argument is provided
+	if len(other) == 1 {
+		return other[0]
+	}
+
+	merged := TagSet{}
 
 	for _, t := range other {
 		for k, v := range t {
@@ -324,6 +330,11 @@ func Merge(other ...SingleValueTagSet) SingleValueTagSet {
 	}
 
 	return merged
+}
+
+// MergeAs is just syntactic sugar which converts merged result to assumed type
+func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
+	return R(Merge(other...))
 }
 
 func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {

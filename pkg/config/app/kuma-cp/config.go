@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/pkg/config/tracing"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
@@ -127,7 +128,7 @@ type Config struct {
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `json:"apiServer,omitempty"`
 	// Environment-specific configuration
-	Runtime *runtime.RuntimeConfig
+	Runtime *runtime.RuntimeConfig `json:"runtime,omitempty"`
 	// Default Kuma entities configuration
 	Defaults *Defaults `json:"defaults,omitempty"`
 	// Metrics configuration
@@ -150,6 +151,8 @@ type Config struct {
 	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
+	// Tracing
+	Tracing tracing.Config `json:"tracing"`
 }
 
 func (c *Config) Sanitize() {
@@ -204,9 +207,11 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			GatewayAPI:          false,
-			KubeOutboundsAsVIPs: true,
-			KDSDeltaEnabled:     false,
+			GatewayAPI:                      false,
+			KubeOutboundsAsVIPs:             true,
+			KDSDeltaEnabled:                 false,
+			UseTagFirstVirtualOutboundModel: false,
+			IngressTagFilters:               []string{},
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
@@ -285,6 +290,9 @@ func (c *Config) Validate() error {
 	if err := c.InterCp.Validate(); err != nil {
 		return errors.Wrap(err, "InterCp validation failed")
 	}
+	if err := c.Tracing.Validate(); err != nil {
+		return errors.Wrap(err, "Tracing validation failed")
+	}
 	return nil
 }
 
@@ -349,6 +357,17 @@ type ExperimentalConfig struct {
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 	// KDSDeltaEnabled defines if using KDS Sync with incremental xDS
 	KDSDeltaEnabled bool `json:"kdsDeltaEnabled" envconfig:"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"`
+	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
+	// It is recommended to use tag first model for deployments with more than 2k services
+	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
+	// you need to first disable this flag and redeploy cp, after config is rewritten to default
+	// format you can downgrade your cp
+	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
+	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+	// This can trim the size of the ZoneIngress object significantly.
+	// The drawback is that you cannot use filtered out tags for traffic routing.
+	// If empty, no filter is applied.
+	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 }
 
 func (e ExperimentalConfig) Validate() error {

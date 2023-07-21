@@ -65,10 +65,10 @@ func BuildRouteMap(dataplane *core_mesh.DataplaneResource, routes []*core_mesh.T
 
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := oface.GetService()
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if policy, exists := policyMap[serviceName]; exists {
-			routeMap[outbound] = resolveTrafficRouteWildcards(policy.(*core_mesh.TrafficRouteResource), oface.GetTagsIncludingLegacy())
+			routeMap[outbound] = resolveTrafficRouteWildcards(policy.(*core_mesh.TrafficRouteResource), oface.GetTags())
 		}
 	}
 	return routeMap
@@ -120,7 +120,7 @@ func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string
 func BuildDestinationMap(dataplane *core_mesh.DataplaneResource, routes core_xds.RouteMap) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
-		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := oface.GetService()
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {

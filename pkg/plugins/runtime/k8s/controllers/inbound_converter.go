@@ -189,8 +189,15 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 
 	if svcPort.AppProtocol != nil {
 		protocolValue = *svcPort.AppProtocol
-	} else {
-		protocolValue = svc.Annotations[protocolAnnotation]
+		// `appProtocol` can be any protocol and if we don't explicitly support
+		// it, let the default below take effect
+		if core_mesh.ParseProtocol(protocolValue) == core_mesh.ProtocolUnknown {
+			protocolValue = ""
+		}
+	}
+
+	if explicitKumaProtocol, ok := svc.Annotations[protocolAnnotation]; ok && protocolValue == "" {
+		protocolValue = explicitKumaProtocol
 	}
 
 	if protocolValue == "" {
@@ -198,9 +205,10 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
 		protocolValue = core_mesh.ProtocolTCP
 	}
-	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
+
+	// if `<port>.service.kuma.io/protocol` field is present but has an invalid value
 	// we still want Dataplane to have a `protocol: <lowercase value>` tag in order to make it clear
-	// to a user that at least `appProtocol` or `<port>.service.kuma.io/protocol` has an effect
+	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
 	return strings.ToLower(protocolValue)
 }
 

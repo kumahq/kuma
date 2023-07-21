@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      securityContext:
+        runAsUser: 10000
+  initContainers:
+    - name: init
+      image: busybox
+      command: ['sh', '-c', 'sleep 5']
+      securityContext:
+        runAsUser: 5678

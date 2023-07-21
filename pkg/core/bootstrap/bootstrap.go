@@ -74,13 +74,13 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
-	if err := initializeMetrics(builder); err != nil {
-		return nil, err
-	}
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if err := plugin.BeforeBootstrap(builder, cfg); err != nil {
 			return nil, errors.Wrapf(err, "failed to run beforeBootstrap plugin:'%s'", plugin.Name())
 		}
+	}
+	if err := initializeMetrics(builder); err != nil {
+		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 	})
 
-	if err := initializeResourceManager(cfg, builder); err != nil {
+	if err := initializeResourceManager(cfg, builder); err != nil { //nolint:contextcheck
 		return nil, err
 	}
 
@@ -128,7 +128,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	}))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	resourceManager := builder.ResourceManager()
+	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
+	builder.WithKDSContext(kdsContext)
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
@@ -138,7 +140,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		)
 		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
 			builder.ReadOnlyResourceManager(),
-			catalog.NewConfigCatalog(builder.ResourceManager()),
+			catalog.NewConfigCatalog(resourceManager),
 			builder.GetInstanceId(),
 			intercp.PooledEnvoyAdminClientFn(builder.InterCPClientPool()),
 			kdsEnvoyAdminClient,
@@ -146,7 +148,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		builder.WithEnvoyAdminClient(forwardingClient)
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
-			builder.ResourceManager(),
+			resourceManager,
 			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))
@@ -211,6 +213,10 @@ func logWarnings(config kuma_cp.Config) {
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
+	if builder.Metrics() != nil {
+		// do not configure if it was already configured in BeforeBootstrap
+		return nil
+	}
 	zoneName := ""
 	switch builder.Config().Mode {
 	case config_core.Zone:
@@ -375,6 +381,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
 			cfg.Store.UnsafeDelete,
+			builder.Extensions(),
 		),
 	)
 
@@ -480,7 +487,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 	)

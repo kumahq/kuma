@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
@@ -23,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -143,9 +148,8 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:   "outbound",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated(
 								"127.0.0.1:10002",
 								envoy_common.NewCluster(
@@ -365,6 +369,56 @@ var _ = Describe("MeshTimeout", func() {
 			expectedClusters:  []string{"original_inbound_cluster.golden.yaml", "original_outbound_cluster.golden.yaml"},
 			expectedListeners: []string{"original_inbound_listener.golden.yaml", "original_outbound_listener.golden.yaml"},
 		}),
+		Entry("timeouts per http route", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListenerWithSeveralRoutes(),
+				},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
+							},
+						},
+						Conf: api.Conf{
+							Http: &api.Http{
+								RequestTimeout:    test.ParseDuration("99s"),
+								StreamIdleTimeout: test.ParseDuration("999s"),
+							},
+						},
+					},
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "Lv6cpFf/JzQZSvl97nnZZFjFcZQbqoejHncFutEisJQ=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
+							},
+						},
+						Conf: api.Conf{
+							Http: &api.Http{
+								RequestTimeout:    test.ParseDuration("88s"),
+								StreamIdleTimeout: test.ParseDuration("888s"),
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"outbound_listener_with_different_timeouts_per_route.yaml"},
+		}),
 	)
 
 	type gatewayTestCase struct {
@@ -380,7 +434,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
-		context := test_xds.CreateSampleMeshContextWith(resources)
+		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
 		proxy := xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),
@@ -408,12 +462,12 @@ var _ = Describe("MeshTimeout", func() {
 			},
 		}
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
 
 		nameSplit := strings.Split(GinkgoT().Name(), " ")
 		name := nameSplit[len(nameSplit)-1]
@@ -488,30 +542,75 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
-		10001,
-		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		HttpOutboundRoute(
-			"backend",
-			envoy_common.Routes{{
-				Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				)},
+		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
+		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
+			Service: "backend",
+			Routes: []meshhttproute_xds.OutboundRoute{{
+				Split: []envoy_common.Split{
+					plugins_xds.NewSplitBuilder().WithClusterName("backend").WithWeight(100).Build(),
+				},
+				Matches: []meshhttproute_api.Match{
+					{
+						Path: &meshhttproute_api.PathMatch{
+							Type:  meshhttproute_api.PathPrefix,
+							Value: "/",
+						},
+					},
+				},
 			}},
-			map[string]map[string]bool{
+			DpTags: map[string]map[string]bool{
 				"kuma.io/service": {
 					"web": true,
 				},
 			},
-		),
-		"outbound",
-	)
+		}))
+}
+
+func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
+	return createListener(
+		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
+		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
+			Service: "other-service",
+			Routes: []meshhttproute_xds.OutboundRoute{
+				{
+					Split: []envoy_common.Split{
+						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
+					},
+					Matches: []meshhttproute_api.Match{
+						{
+							Path: &meshhttproute_api.PathMatch{
+								Type:  meshhttproute_api.Exact,
+								Value: "/another-backend",
+							},
+							Method: pointer.To[meshhttproute_api.Method]("GET"),
+						},
+					},
+				},
+				{
+					Split: []envoy_common.Split{
+						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
+					},
+					Matches: []meshhttproute_api.Match{
+						{
+							Path: &meshhttproute_api.PathMatch{
+								Type:  meshhttproute_api.PathPrefix,
+								Value: "/",
+							},
+						},
+					},
+				},
+			},
+			DpTags: map[string]map[string]bool{
+				"kuma.io/service": {
+					"web": true,
+				},
+			},
+		}))
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		80,
-		InboundListener("inbound:127.0.0.1:80", "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
+		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
 		HttpInboundRoutes(
 			"backend",
 			envoy_common.Routes{{
@@ -520,15 +619,13 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 					envoy_common.WithWeight(100),
 				)},
 			}},
-		),
-		"inbound")
+		))
 }
 
-func createListener(port uint32, listener ListenerBuilderOpt, route FilterChainBuilderOpt, direction string) envoy_common.NamedResource {
-	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(listener).
-		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(HttpConnectionManager(fmt.Sprintf("%s:127.0.0.1:%d", direction, port), false)).
+func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {
+	return builder.
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+			Configure(HttpConnectionManager(builder.GetName(), false)).
 			Configure(route),
 		)).MustBuild()
 }

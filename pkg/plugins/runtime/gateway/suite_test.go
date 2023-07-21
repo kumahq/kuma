@@ -126,7 +126,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		server.MeshResourceTypes(server.HashMeshExcludedResources),
 		rt.LookupIP(),
 		rt.Config().Multizone.Zone.Name,
-		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
+		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager(), false),
 		rt.Config().DNSServer.Domain,
 		rt.Config().DNSServer.ServiceVipPort,
 	)

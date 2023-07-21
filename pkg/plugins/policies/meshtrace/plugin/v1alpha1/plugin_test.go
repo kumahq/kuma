@@ -36,17 +36,15 @@ var _ = Describe("MeshTrace", func() {
 			{
 				Name:   "inbound",
 				Origin: generator.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
 					)).MustBuild(),
 			},
@@ -227,7 +225,8 @@ var _ = Describe("MeshTrace", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			},
-			expectedClusters: []string{`
+			expectedClusters: []string{
+				`
             altStatName: meshtrace_zipkin
             connectTimeout: 10s
             dnsLookupFamily: V4_ONLY
@@ -242,7 +241,8 @@ var _ = Describe("MeshTrace", func() {
                                     portValue: 9411
             name: meshtrace:zipkin
             type: STRICT_DNS
-`},
+`,
+			},
 		}),
 		Entry("inbound/outbound for opentelemetry", testCase{
 			resources: inboundAndOutbound(),
@@ -270,7 +270,8 @@ var _ = Describe("MeshTrace", func() {
 					},
 				},
 			},
-			expectedListeners: []string{`
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -356,8 +357,10 @@ var _ = Describe("MeshTrace", func() {
                           value: 50
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND
-`},
-			expectedClusters: []string{`
+`,
+			},
+			expectedClusters: []string{
+				`
             altStatName: meshtrace_opentelemetry
             connectTimeout: 10s
             dnsLookupFamily: V4_ONLY
@@ -377,7 +380,8 @@ var _ = Describe("MeshTrace", func() {
                     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
                     explicitHttpConfig:
                         http2ProtocolOptions: {}
-`},
+`,
+			},
 		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
@@ -453,7 +457,8 @@ var _ = Describe("MeshTrace", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			},
-			expectedClusters: []string{`
+			expectedClusters: []string{
+				`
             altStatName: meshtrace_datadog
             connectTimeout: 10s
             dnsLookupFamily: V4_ONLY
@@ -468,7 +473,8 @@ var _ = Describe("MeshTrace", func() {
                                     portValue: 8126
             name: meshtrace:datadog
             type: STRICT_DNS
-`},
+`,
+			},
 		}),
 		Entry("sampling is empty", testCase{
 			resources: inboundAndOutbound(),
@@ -547,7 +553,8 @@ var _ = Describe("MeshTrace", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			},
-			expectedClusters: []string{`
+			expectedClusters: []string{
+				`
             altStatName: meshtrace_zipkin
             connectTimeout: 10s
             dnsLookupFamily: V4_ONLY
@@ -562,7 +569,8 @@ var _ = Describe("MeshTrace", func() {
                                     portValue: 9411
             name: meshtrace:zipkin
             type: STRICT_DNS
-`},
+`,
+			},
 		}),
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),

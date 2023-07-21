@@ -244,7 +244,7 @@ metrics:
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
-			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtOpenMetrics_1_0_0)))
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
 
 			// path doesn't have defined address
 			g.Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))

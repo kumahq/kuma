@@ -74,7 +74,7 @@ func (p plugin) configureDPP(
 
 	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutbound() {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 
 		computed := toRules.Rules.Compute(core_rules.MeshService(serviceName))
 		if computed == nil {

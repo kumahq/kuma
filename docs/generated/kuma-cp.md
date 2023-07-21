@@ -354,6 +354,11 @@ runtime:
         # Path where compiled eBPF programs are placed
         programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
+    # Kubernetes's resources reconciliation concurrency configuration
+    controllersConcurrency:
+      # PodController defines maximum concurrent reconciliations of Pod resources
+      # Default value 10. If set to 0 kube controller-runtime default value of 1 will be used.
+      podController: 10 # ENV: KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER
     # Kubernetes client configuration
     clientConfig:
       # Qps defines maximum requests kubernetes client is allowed to make per second.
@@ -676,10 +681,27 @@ experimental:
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
   kubeOutboundsAsVIPs: true # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
+  # Tag first virtual outbound model is compressed version of default Virtual Outbound model
+  # It is recommended to use tag first model for deployments with more than 2k services
+  # You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
+  # you need to first disable this flag and redeploy cp, after config is rewritten to default
+  # format you can downgrade your cp
+  useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
+  # If true, KDS will sync using incremental xDS updates
+  kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+  # This can trim the size of the ZoneIngress object significantly.
+  # The drawback is that you cannot use filtered out tags for traffic routing.
+  # If empty, no filter is applied.
+  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
 
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
     # connections to a builtin gateway data plane proxy
     globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
+
+tracing:
+  openTelemetry:
+    endpoint: "" # e.g. otel-collector:4317
 ```

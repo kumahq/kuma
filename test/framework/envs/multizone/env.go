@@ -144,13 +144,13 @@ func SetupAndGetState() []byte {
 			KumaCp:      UniZone2.GetKuma().(*UniversalControlPlane).Networking(),
 		},
 		KubeZone1: K8sNetworkingState{
-			ZoneEgress:  KubeZone1.GetZoneEgressPortForward(),
-			ZoneIngress: KubeZone1.GetZoneIngressPortForward(),
+			ZoneEgress:  KubeZone1.GetPortForward(Config.ZoneEgressApp),
+			ZoneIngress: KubeZone1.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
-			ZoneEgress:  KubeZone2.GetZoneEgressPortForward(),
-			ZoneIngress: KubeZone2.GetZoneIngressPortForward(),
+			ZoneEgress:  KubeZone2.GetPortForward(Config.ZoneEgressApp),
+			ZoneIngress: KubeZone2.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
 		},
 	}
@@ -176,6 +176,7 @@ func RestoreState(bytes []byte) {
 		Global.Verbose(),
 		state.Global.KumaCp,
 		nil,
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	Global.SetCp(cp)
@@ -221,6 +222,7 @@ func RestoreState(bytes []byte) {
 		UniZone1.Verbose(),
 		state.UniZone1.KumaCp,
 		nil, // headers were not configured in setup
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone1.SetCp(cp)
@@ -236,6 +238,7 @@ func RestoreState(bytes []byte) {
 		UniZone2.Verbose(),
 		state.UniZone2.KumaCp,
 		nil, // headers were not configured in setup
+		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	UniZone2.SetCp(cp)

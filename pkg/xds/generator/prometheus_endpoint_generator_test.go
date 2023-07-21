@@ -1,13 +1,13 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -20,12 +20,6 @@ import (
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
-	BeforeEach(func() {
-		core.TempDir = func() string {
-			return "/tmp"
-		}
-	})
-
 	type testCase struct {
 		ctx      xds_context.Context
 		proxy    *core_xds.Proxy
@@ -38,7 +32,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -205,7 +199,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -272,6 +266,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -327,6 +322,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.1.6",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "default-without-hijacker.envoy-config.golden.yaml",
@@ -390,6 +386,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "custom.envoy-config.golden.yaml",
@@ -457,6 +454,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
@@ -523,6 +521,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
@@ -588,6 +587,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -602,7 +602,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		DescribeTable("should not generate Envoy xDS resources if Prometheus endpoint would otherwise overshadow a port that is already in use by the application or other Envoy listeners",
 			func(given testCase) {
 				// given
-				ctx := xds_context.Context{
+				xdsCtx := xds_context.Context{
 					Mesh: xds_context.MeshContext{
 						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
@@ -637,7 +637,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Spec: &mesh_proto.Dataplane{},
 					},
 					Metadata: &core_xds.DataplaneMetadata{
-						AdminPort: 9902,
+						AdminPort:         9902,
+						MetricsSocketPath: "/foo/bar",
 					},
 				}
 				Expect(util_proto.FromYAML([]byte(given.dataplane), proxy.Dataplane.Spec)).To(Succeed())
@@ -646,7 +647,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				gen := &generator.PrometheusEndpointGenerator{}
 
 				// when
-				rs, err := gen.Generate(ctx, proxy)
+				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
@@ -661,9 +662,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
-                    service: db
+                    tags:
+                      kuma.io/service: db
                   - port: 59200
-                    service: elastic
+                    tags:
+                      kuma.io/service: elastic
                 metrics:
                   type: prometheus
                   conf:
@@ -679,9 +682,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                     servicePort: 8080
                   outbound:
                   - port: 54321
-                    service: db
+                    tags:
+                      kuma.io/service: db
                   - port: 59200
-                    service: elastic
+                    tags:
+                      kuma.io/service: elastic
                 metrics:
                   type: prometheus
                   conf:
@@ -698,7 +703,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
                   outbound:
                   - port: 54321
                     address: 192.168.0.1
-                    service: db
+                    tags:
+                      kuma.io/service: db
                 metrics:
                   type: prometheus
                   conf:

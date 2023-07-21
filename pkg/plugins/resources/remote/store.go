@@ -130,10 +130,10 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return err
 	}
 	statusCode, b, err := s.doRequest(ctx, req)
+	if statusCode == 404 {
+		return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
+	}
 	if err != nil {
-		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
-		}
 		return err
 	}
 	if statusCode != 200 {
@@ -186,7 +186,7 @@ func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []
 	if resp.StatusCode/100 >= 4 {
 		kumaErr := types.Error{}
 		if err := json.Unmarshal(b, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
+			if kumaErr.Title != "" {
 				return resp.StatusCode, b, &kumaErr
 			}
 		}

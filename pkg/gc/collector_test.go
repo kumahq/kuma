@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/gc"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -62,9 +63,12 @@ var _ = Describe("Dataplane Collector", func() {
 			createDpAndDpInsight(fmt.Sprintf("dp-%d", i), "default", now.Add(time.Hour))
 		}
 
-		collector := gc.NewCollector(rm, func() *time.Ticker {
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		collector, err := gc.NewCollector(rm, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
-		}, 1*time.Hour)
+		}, 1*time.Hour, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		stop := make(chan struct{})
 		defer close(stop)

@@ -1,0 +1,325 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Dataplane",
+    "definitions": {
+        "Dataplane": {
+            "properties": {
+                "networking": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking",
+                    "additionalProperties": true,
+                    "description": "Networking describes inbound and outbound interfaces of the data plane proxy."
+                },
+                "metrics": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend",
+                    "additionalProperties": true,
+                    "description": "Configuration for metrics that should be collected and exposed by the data plane proxy. Settings defined here will override their respective defaults defined at a Mesh level."
+                },
+                "probes": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
+                    "additionalProperties": true,
+                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplane",
+            "description": "Dataplane defines a configuration of a side-car proxy."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "IP on which the data plane proxy is accessible to the control plane and other data plane proxies in the same network. This can also be a hostname, in which case the control plane will periodically resolve it."
+                },
+                "advertisedAddress": {
+                    "type": "string",
+                    "description": "In some situations, a data plane proxy resides in a private network (e.g. Docker) and is not reachable via `address` to other data plane proxies. `advertisedAddress` is configured with a routable address for such data plane proxy so that other proxies in the mesh can connect to it over `advertisedAddress` and not via address. Envoy still binds to the `address`, not `advertisedAddress`."
+                },
+                "gateway": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Gateway",
+                    "additionalProperties": true,
+                    "description": "Gateway describes a configuration of the gateway of the data plane proxy."
+                },
+                "inbound": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound"
+                    },
+                    "type": "array",
+                    "description": "Inbound describes a list of inbound interfaces of the data plane proxy. Inbound describes a service implemented by the data plane proxy. All incoming traffic to a data plane proxy is going through inbound listeners. For every defined Inbound there is a corresponding Envoy Listener."
+                },
+                "outbound": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Outbound"
+                    },
+                    "type": "array",
+                    "description": "Outbound describes a list of services consumed by the data plane proxy. For every defined Outbound, there is a corresponding Envoy Listener."
+                },
+                "transparent_proxying": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying",
+                    "additionalProperties": true,
+                    "description": "TransparentProxying describes the configuration for transparent proxying. It is used by default on Kubernetes."
+                },
+                "admin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyAdmin",
+                    "additionalProperties": true,
+                    "description": "Admin describes configuration related to Envoy Admin API. Due to security, all the Envoy Admin endpoints are exposed only on localhost. Additionally, Envoy will expose `/ready` endpoint on `networking.address` for health checking systems to be able to check the state of Envoy. The rest of the endpoints exposed on `networking.address` are always protected by mTLS and only meant to be consumed internally by the control plane."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking",
+            "description": "Networking describes inbound and outbound interfaces of a data plane proxy."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Gateway": {
+            "properties": {
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags associated with a gateway of this data plane to, e.g. `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is mandatory."
+                },
+                "type": {
+                    "enum": [
+                        "DELEGATED",
+                        0,
+                        "BUILTIN",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Gateway Type"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Gateway",
+            "description": "Gateway describes a service that ingress should not be proxied."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port of the inbound interface that will forward requests to the service. When transparent proxying is used, it is a port on which the service is listening to. When transparent proxying is not used, Envoy will bind to this port."
+                },
+                "servicePort": {
+                    "type": "integer",
+                    "description": "Port of the service that requests will be forwarded to. Defaults to the same value as `port`."
+                },
+                "serviceAddress": {
+                    "type": "string",
+                    "description": "Address of the service that requests will be forwarded to. Defaults to 'inbound.address', since Kuma DP should be deployed next to the service."
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Address on which inbound listener will be exposed. Defaults to `networking.address`."
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags associated with an application this data plane proxy is deployed next to, e.g. `kuma.io/service=web`, `version=1.0`. You can then reference these tags in policies like MeshTrafficPermission. `kuma.io/service` tag is mandatory."
+                },
+                "health": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health",
+                    "additionalProperties": true,
+                    "description": "Health describes the status of an inbound. If 'health' is nil we consider data plane proxy as healthy. Unhealthy data plane proxies are excluded from Endpoints Discovery Service (EDS). On Kubernetes, it is filled automatically by the control plane if Pod has readiness probe configured. On Universal, it can be set by the external health checking system, but the most common way is to use service probes. See https://kuma.io/docs/latest/documentation/health for more information."
+                },
+                "serviceProbe": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe",
+                    "additionalProperties": true,
+                    "description": "ServiceProbe defines parameters for probing the service next to sidecar. When service probe is defined, Envoy will periodically health check the application next to it and report the status to the control plane. On Kubernetes, Kuma deployments rely on Kubernetes probes so this is not used. See https://kuma.io/docs/latest/documentation/health for more information."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inbound",
+            "description": "Inbound describes a service implemented by the data plane proxy. All incoming traffic to a data plane proxy are going through inbound listeners. For every defined Inbound there is a corresponding Envoy Listener."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.Health": {
+            "properties": {
+                "ready": {
+                    "type": "boolean",
+                    "description": "Ready indicates if the data plane proxy is ready to serve the traffic."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Health",
+            "description": "Health describes the status of an inbound"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe": {
+            "properties": {
+                "interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Interval between consecutive health checks.",
+                    "format": "regex"
+                },
+                "timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Maximum time to wait for a health check response.",
+                    "format": "regex"
+                },
+                "unhealthy_threshold": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Number of consecutive unhealthy checks before considering a host unhealthy."
+                },
+                "healthy_threshold": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Number of consecutive healthy checks before considering a host healthy."
+                },
+                "tcp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp",
+                    "additionalProperties": true,
+                    "description": "Tcp checker tries to establish tcp connection with destination"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Service Probe",
+            "description": "ServiceProbe defines parameters for probing service's port"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.Tcp": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Outbound": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "IP on which the consumed service will be available to this data plane proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a Headless Service. Defaults to 127.0.0.1"
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which the consumed service will be available to this data plane proxy. When transparent proxying is not used, Envoy will bind to this port."
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags of consumed data plane proxies. `kuma.io/service` tag is required. These tags can then be referenced in `destinations` section of policies like TrafficRoute or in `to` section in policies like MeshAccessLog. It is recommended to only use `kuma.io/service`. If you need to consume specific data plane proxy of a service (for example: `version=v2`) the better practice is to use TrafficRoute."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outbound",
+            "description": "Outbound describes a service consumed by the data plane proxy. For every defined Outbound there is a corresponding Envoy Listener."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying": {
+            "properties": {
+                "redirect_port_inbound": {
+                    "type": "integer",
+                    "description": "Port on which all inbound traffic is being transparently redirected."
+                },
+                "redirect_port_outbound": {
+                    "type": "integer",
+                    "description": "Port on which all outbound traffic is being transparently redirected."
+                },
+                "direct_access_services": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of services that will be accessed directly via IP:PORT Use `*` to indicate direct access to every service in the Mesh. Using `*` to directly access every service is a resource-intensive operation, use it only if needed."
+                },
+                "redirect_port_inbound_v6": {
+                    "type": "integer",
+                    "description": "Port on which all IPv6 inbound traffic is being transparently redirected."
+                },
+                "reachable_services": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of reachable services (represented by the value of `kuma.io/service`) via transparent proxying. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Transparent Proxying",
+            "description": "TransparentProxying describes configuration for transparent proxying."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Probes": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which the probe endpoints will be exposed. This cannot overlap with any other ports."
+                },
+                "endpoints": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint"
+                    },
+                    "type": "array",
+                    "description": "List of endpoints to expose without mTLS."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Probes"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint": {
+            "properties": {
+                "inbound_port": {
+                    "type": "integer",
+                    "description": "Inbound port is a port of the application from which we expose the endpoint."
+                },
+                "inbound_path": {
+                    "type": "string",
+                    "description": "Inbound path is a path of the application from which we expose the endpoint. It is recommended to be as specific as possible."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Path is a path on which we expose inbound path on the probes port."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Endpoint"
+        },
+        "kuma.mesh.v1alpha1.EnvoyAdmin": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which Envoy Admin API server will be listening"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Admin"
+        },
+        "kuma.mesh.v1alpha1.MetricsBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'prometheus')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics Backend",
+            "description": "MetricsBackend defines metric backends"
+        }
+    }
+}

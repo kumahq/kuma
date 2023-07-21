@@ -1,12 +1,14 @@
 package generator
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -15,13 +17,14 @@ import (
 
 const (
 	// OriginProbes is a marker to indicate by which ProxyGenerator resources were generated.
-	OriginProbe  = "probe"
-	listenerName = "probe:listener"
+	OriginProbe            = "probe"
+	listenerName           = "probe:listener"
+	routeConfigurationName = "probe:route_configuration"
 )
 
 type ProbeProxyGenerator struct{}
 
-func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes
 	if probes == nil {
 		return nil, nil
@@ -56,11 +59,11 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		}
 	}
 
-	probeListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(listenerName, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP).
+		WithOverwriteName(listenerName).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.HttpConnectionManager(listenerName, false)).
-			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion).
+			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, routeConfigurationName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()

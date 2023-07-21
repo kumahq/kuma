@@ -17,9 +17,10 @@ type ClusterBuilderOpt interface {
 	ApplyTo(builder *ClusterBuilder)
 }
 
-func NewClusterBuilder(apiVersion core_xds.APIVersion) *ClusterBuilder {
+func NewClusterBuilder(apiVersion core_xds.APIVersion, name string) *ClusterBuilder {
 	return &ClusterBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
 }
 
@@ -29,6 +30,7 @@ type ClusterBuilder struct {
 	apiVersion core_xds.APIVersion
 	// A series of ClusterConfigurers to apply to Envoy cluster.
 	configurers []v3.ClusterConfigurer
+	name        string
 }
 
 // Configure configures ClusterBuilder by adding individual ClusterConfigurers.
@@ -43,11 +45,16 @@ func (b *ClusterBuilder) Configure(opts ...ClusterBuilderOpt) *ClusterBuilder {
 func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		cluster := envoy_api.Cluster{}
+		cluster := envoy_api.Cluster{
+			Name: b.name,
+		}
 		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&cluster); err != nil {
 				return nil, err
 			}
+		}
+		if len(cluster.GetName()) == 0 {
+			return nil, errors.New("cluster name is undefined")
 		}
 		return &cluster, nil
 	default:
