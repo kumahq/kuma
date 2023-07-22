@@ -1,0 +1,768 @@
+{
+   "annotations": {
+      "list": [
+         {
+            "datasource": {
+               "type": "datasource",
+               "uid": "grafana"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+               "limit": 100,
+               "matchAny": false,
+               "tags": [ ],
+               "type": "dashboard"
+            },
+            "type": "dashboard"
+         }
+      ]
+   },
+   "description": "Statistics of a single Dataplane in Kuma Service Mesh",
+   "editable": true,
+   "fiscalYearStartMonth": 0,
+   "graphTooltip": 0,
+   "links": [ ],
+   "liveNow": false,
+   "panels": [
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 1,
+         "panels": [ ],
+         "title": "Dataplane",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               }
+            }
+         },
+         "id": 2,
+         "targets": [
+            {
+               "expr": "sum(envoy_server_live{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} OR on() vector(0))",
+               "intervalFactor": 1,
+               "legendFormat": "",
+               "refId": "A"
+            }
+         ],
+         "title": "Status",
+         "type": "gauge"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               }
+            }
+         },
+         "id": 3,
+         "targets": [
+            {
+               "expr": "envoy_server_uptime{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "refId": "A"
+            }
+         ],
+         "title": "Uptime",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               }
+            }
+         },
+         "id": 4,
+         "targets": [
+            {
+               "expr": "envoy_server_memory_heap_size{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "refId": "A"
+            }
+         ],
+         "title": "Heap size",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               }
+            }
+         },
+         "id": 5,
+         "targets": [
+            {
+               "expr": "envoy_server_memory_allocated{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "refId": "A"
+            }
+         ],
+         "title": "Memory allocated",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
+         "id": 6,
+         "targets": [
+            {
+               "expr": "envoy_control_plane_connected_state{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "legendFormat": "Connected",
+               "refId": "A"
+            }
+         ],
+         "title": "Connection to the Control Plane",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "palette-classic"
+               }
+            }
+         },
+         "id": 7,
+         "targets": [
+            {
+               "editorMode": "code",
+               "exemplar": false,
+               "expr": "envoy_control_plane_identifier{dataplane=\"$dataplane\", kuma_io_zone=~\"$zone\", mesh=\"$mesh\"}",
+               "format": "time_series",
+               "instant": false,
+               "legendFormat": "{{text_value}}",
+               "range": true,
+               "refId": "A"
+            }
+         ],
+         "title": "Control Plane connected to",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 8,
+         "panels": [ ],
+         "title": "Incoming traffic",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 9,
+         "targets": [
+            {
+               "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Active Connections to this Dataplane",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 10,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Connection time (P99)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 11,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Connection length (P99)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 12,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Bytes received from requests",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 13,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Bytes sent in responses",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Data is only available if TrafficPermission policy is applied.",
+         "id": 14,
+         "targets": [
+            {
+               "expr": "irate(envoy_rbac_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "Allowed - {{listener}}",
+               "refId": "A"
+            },
+            {
+               "expr": "irate(envoy_rbac_shadow_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "Shadow allowed - {{listener}}",
+               "refId": "D"
+            },
+            {
+               "expr": "irate(envoy_rbac_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "Denied - {{listener}}",
+               "refId": "B"
+            },
+            {
+               "expr": "irate(envoy_rbac_shadow_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "Shadow denied - {{listener}}",
+               "refId": "C"
+            }
+         ],
+         "title": "Traffic permissions",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 15,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "hide": true,
+               "legendFormat": "connection destroyed by the client - {{envoy_cluster_name}}",
+               "refId": "A"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "connection timeout - {{envoy_cluster_name}}",
+               "refId": "B"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "hide": true,
+               "legendFormat": "connection destroyed by local Envoy - {{envoy_cluster_name}}",
+               "refId": "C"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
+               "refId": "D"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "pending overflow - {{envoy_cluster_name}}",
+               "refId": "E"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "request timeout - {{envoy_cluster_name}}",
+               "refId": "F"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "response reset by the client - {{envoy_cluster_name}}",
+               "refId": "G"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+               "legendFormat": "request reset by local Envoy - {{envoy_cluster_name}}",
+               "refId": "H"
+            }
+         ],
+         "title": "Connection/Requests errors",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 16,
+         "panels": [ ],
+         "title": "Outgoing traffic",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 17,
+         "targets": [
+            {
+               "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Active Connections to other Dataplanes",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 18,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Connection time (P99)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 19,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Connection length (P99)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 20,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Bytes received from other Dataplanes",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 21,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Bytes sent to other Dataplanes",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Data is only available if TrafficPermission policy is applied.",
+         "id": 22,
+         "targets": [
+            {
+               "expr": "envoy_cluster_ssl_handshake{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} > 0",
+               "format": "time_series",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Secured destinations by mTLS",
+         "type": "table"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 23,
+         "targets": [
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "hide": true,
+               "legendFormat": "destroyed by remote Envoy - {{envoy_cluster_name}}",
+               "refId": "A"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "connection timeout - {{envoy_cluster_name}}",
+               "refId": "B"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "hide": true,
+               "legendFormat": "destroyed by local Envoy - {{envoy_cluster_name}}",
+               "refId": "C"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
+               "refId": "D"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "pending overflow - {{envoy_cluster_name}}",
+               "refId": "E"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "request timeout - {{envoy_cluster_name}}",
+               "refId": "F"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "request reset by other Envoy - {{envoy_cluster_name}}",
+               "refId": "G"
+            },
+            {
+               "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+               "legendFormat": "response reset by local Envoy - {{envoy_cluster_name}}",
+               "refId": "H"
+            }
+         ],
+         "title": "Connection/Requests errors",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 24,
+         "panels": [ ],
+         "title": "HTTP",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 25,
+         "targets": [
+            {
+               "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+               "hide": false,
+               "legendFormat": "p99",
+               "refId": "B"
+            },
+            {
+               "expr": "sum(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+               "hide": false,
+               "legendFormat": "p95",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+               "hide": false,
+               "legendFormat": "p50",
+               "refId": "C"
+            }
+         ],
+         "title": "Latency",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 26,
+         "targets": [
+            {
+               "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m]))",
+               "hide": false,
+               "legendFormat": "Incoming",
+               "refId": "B"
+            },
+            {
+               "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
+               "hide": false,
+               "legendFormat": "Outgoing",
+               "refId": "A"
+            }
+         ],
+         "title": "Traffic",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 27,
+         "targets": [
+            {
+               "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+               "hide": false,
+               "legendFormat": "Incoming {{envoy_response_code_class}}xx",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
+               "hide": false,
+               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
+               "refId": "B"
+            }
+         ],
+         "title": "Status codes",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 28,
+         "panels": [ ],
+         "title": "Health Checks",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Data is only available if HealthCheck policy is applied.",
+         "id": 29,
+         "targets": [
+            {
+               "expr": "envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Active Health Checks - healthy service instances",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Data is only available if HealthCheck policy is applied.",
+         "id": 30,
+         "targets": [
+            {
+               "expr": "envoy_cluster_membership_total{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} - envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
+               "legendFormat": "{{envoy_cluster_name}}",
+               "refId": "B"
+            }
+         ],
+         "title": "Active Health Checks - failing service instances",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 31,
+         "panels": [ ],
+         "title": "Circuit Breakers",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Total times that the cluster’s connection circuit breaker overflowed",
+         "id": 32,
+         "targets": [
+            {
+               "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "legendFormat": "Connection overflow",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "hide": false,
+               "legendFormat": "Pending request overflow",
+               "refId": "B"
+            },
+            {
+               "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+               "hide": false,
+               "legendFormat": "Retry overflow",
+               "refId": "C"
+            }
+         ],
+         "title": "Thresholds Overflow",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+         "id": 33,
+         "targets": [
+            {
+               "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
+               "legendFormat": "Healthy destinations",
+               "refId": "A"
+            }
+         ],
+         "title": "Outlier detection",
+         "type": "timeseries"
+      }
+   ],
+   "refresh": "5s",
+   "schemaVersion": 36,
+   "style": "dark",
+   "tags": [ ],
+   "templating": {
+      "list": [
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": false,
+            "label": "Mesh",
+            "multi": false,
+            "name": "mesh",
+            "query": "label_values(envoy_server_live, mesh)",
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "label": "Zone",
+            "multi": true,
+            "name": "zone",
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": false,
+            "label": "Dataplane",
+            "multi": false,
+            "name": "dataplane",
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, dataplane)",
+            "type": "query"
+         }
+      ]
+   },
+   "time": {
+      "from": "now-6h",
+      "to": "now"
+   },
+   "timepicker": {
+      "refresh_intervals": [
+         "5s",
+         "10s",
+         "30s",
+         "1m",
+         "5m",
+         "15m",
+         "30m",
+         "1h",
+         "2h",
+         "1d"
+      ]
+   },
+   "timezone": "utc",
+   "title": "Kuma Dataplane",
+   "version": 1
+}

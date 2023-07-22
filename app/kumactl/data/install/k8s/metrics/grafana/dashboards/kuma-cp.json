@@ -1,0 +1,1016 @@
+{
+   "annotations": {
+      "list": [
+         {
+            "datasource": {
+               "type": "datasource",
+               "uid": "grafana"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+               "limit": 100,
+               "matchAny": false,
+               "tags": [ ],
+               "type": "dashboard"
+            },
+            "type": "dashboard"
+         }
+      ]
+   },
+   "editable": true,
+   "fiscalYearStartMonth": 0,
+   "graphTooltip": 0,
+   "links": [ ],
+   "liveNow": false,
+   "panels": [
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 1,
+         "panels": [ ],
+         "title": "Overview",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
+               "mappings": [
+                  {
+                     "options": {
+                        "from": 1,
+                        "result": {
+                           "color": "green",
+                           "index": 0,
+                           "text": "LIVE"
+                        },
+                        "to": 9999
+                     },
+                     "type": "range"
+                  },
+                  {
+                     "options": {
+                        "from": 0,
+                        "result": {
+                           "color": "red",
+                           "index": 1,
+                           "text": "UNAVAILABLE"
+                        },
+                        "to": 0.999
+                     },
+                     "type": "range"
+                  }
+               ],
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "red",
+                        "value": null
+                     },
+                     {
+                        "color": "green",
+                        "value": 1
+                     }
+                  ]
+               }
+            }
+         },
+         "id": 2,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "sum(cp_info{instance=~\"$instance\"} OR on() vector(0))",
+               "instant": false,
+               "intervalFactor": 1,
+               "legendFormat": "",
+               "refId": "A"
+            }
+         ],
+         "title": "Condition",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "fieldConfig": {
+            "defaults": {
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": null
+                     },
+                     {
+                        "color": "red",
+                        "value": 80
+                     }
+                  ]
+               }
+            }
+         },
+         "id": 3,
+         "targets": [
+            {
+               "expr": "cp_info{instance=~\"$instance\"}",
+               "instant": true,
+               "legendFormat": "",
+               "refId": "A"
+            }
+         ],
+         "title": "Control Plane information",
+         "transformations": [
+            {
+               "id": "labelsToFields",
+               "options": { }
+            },
+            {
+               "id": "merge",
+               "options": { }
+            },
+            {
+               "id": "organize",
+               "options": { }
+            },
+            {
+               "id": "merge",
+               "options": { }
+            }
+         ],
+         "type": "table"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Only one instance should be a leader at a given point of time in every zone",
+         "id": 4,
+         "targets": [
+            {
+               "expr": "sum by (zone, instance) (leader)",
+               "legendFormat": "{{zone}} - {{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Leader",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 5,
+         "panels": [ ],
+         "title": "Aggregated Discovery Service (XDS): CP-DP communication",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 6,
+         "targets": [
+            {
+               "expr": "xds_streams_active{instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "XDS active connections",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of ADS messages exchanged between Control Plane and Dataplane over XDS",
+         "id": 7,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Configuration sent",
+               "refId": "A"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
+               "hide": false,
+               "legendFormat": "Configuration accepted",
+               "refId": "B"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Configuration rejected",
+               "refId": "C"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "RPC Errors",
+               "refId": "D"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[1m]))",
+               "hide": true,
+               "legendFormat": "Rate",
+               "refId": "E"
+            }
+         ],
+         "title": "XDS message exchange",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of Envoy XDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL",
+         "id": 8,
+         "targets": [
+            {
+               "expr": "sum(rate(xds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Success",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Errors",
+               "refId": "B"
+            }
+         ],
+         "title": "XDS config generations",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to generate Envoy configuration for a single dataplane",
+         "id": 9,
+         "targets": [
+            {
+               "expr": "xds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of XDS config generation (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
+         "id": 10,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "xds_delivery{quantile=\"0.99\",instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of XDS config delivery (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Cache protects ClusterLoadAssignments resources by sharing them between many goroutines which reconcile Dataplanes.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+         "id": 11,
+         "targets": [
+            {
+               "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit Wait",
+               "refId": "C"
+            },
+            {
+               "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Miss",
+               "refId": "B"
+            }
+         ],
+         "title": "Endpoints cache performance",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Mesh Cache protects hashes calculated periodically for each Mesh in order to avoid the excessive generation of xDS resources.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+         "id": 12,
+         "targets": [
+            {
+               "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit Wait",
+               "refId": "C"
+            },
+            {
+               "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Miss",
+               "refId": "B"
+            }
+         ],
+         "title": "Mesh resources hash cache performance",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 13,
+         "panels": [ ],
+         "title": "Health Discovery Service (HDS): CP-DP communication",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 14,
+         "targets": [
+            {
+               "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "endpoint health responses",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "health check requests",
+               "refId": "B"
+            }
+         ],
+         "title": "HDS message exchange",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 15,
+         "targets": [
+            {
+               "expr": "hds_streams_active{instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "HDS active connections",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of Envoy HDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_DP_SERVER_HDS_REFRESH_INTERVAL",
+         "id": 16,
+         "targets": [
+            {
+               "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Success",
+               "refId": "A"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Errors",
+               "refId": "B"
+            }
+         ],
+         "title": "HDS config generations",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to generate Envoy configuration for a single dataplane",
+         "id": 17,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "hds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of HDS config generation (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 18,
+         "panels": [ ],
+         "title": "API Server - Management of the Control Plane",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 19,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(api_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+               "legendFormat": "{{handler}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of API Server Requests (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 20,
+         "targets": [
+            {
+               "expr": "sum by (code) (rate(api_server_http_request_duration_seconds_count{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "{{code}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Response Codes",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 21,
+         "panels": [ ],
+         "title": "Dataplane Server: CP-DP communication",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "XDS and SDS requests are not taken into account because they are long-running requests",
+         "id": 22,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+               "legendFormat": "{{handler}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of Dataplane Server Requests (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "XDS and SDS requests are not taken into account because they are long-running requests",
+         "id": 23,
+         "targets": [
+            {
+               "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "{{code}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Response Codes",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 24,
+         "panels": [ ],
+         "title": "Kuma Discovery Service (KDS) - Mutltizone communication",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "This metric presents if policies are properly propagated from Global to Zones. All instances of global and zones in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+         "id": 25,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "sum by (zone, instance) (resources_count{instance=~\"$instance\",resource_type!~\"Dataplane|DataplaneInsight|Zone|ZoneInsight|ZoneIngress|ZoneIngressInsight|ZoneEgress|ZoneEgressInsight\"})",
+               "legendFormat": "{{zone}} - {{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Policies count (sync check)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "This metric presents if Dataplanes are properly propagated from Zones to Global. Keep in mind that Dataplanes from all zones != Dataplanes from global. All zones receive additional one dataplane of Ingress from other Zones. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+         "id": 26,
+         "targets": [
+            {
+               "expr": "sum by (zone, instance) (resources_count{instance=~\"$instance\",resource_type=\"Dataplane\"})",
+               "legendFormat": "{{zone}} - {{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Dataplane count",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of zone CP connected to Global.",
+         "id": 27,
+         "targets": [
+            {
+               "expr": "kds_streams_active{instance=~\"$instance\",zone=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Global - KDS active connections",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Global sends to Zone policies and Ingress Dataplanes",
+         "id": 28,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "legendFormat": "Configuration sent",
+               "refId": "A"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "hide": true,
+               "legendFormat": "Configuration accepted",
+               "refId": "B"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "legendFormat": "Configuration rejected",
+               "refId": "C"
+            },
+            {
+               "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "legendFormat": "RPC Errors",
+               "refId": "D"
+            },
+            {
+               "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "hide": true,
+               "legendFormat": "Rate",
+               "refId": "E"
+            }
+         ],
+         "title": "Global - KDS message exchange",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL",
+         "id": 29,
+         "targets": [
+            {
+               "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "legendFormat": "Success",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+               "legendFormat": "Errors",
+               "refId": "B"
+            }
+         ],
+         "title": "Global - KDS config generations",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to generate KDS configuration for a single zone control plane",
+         "id": 30,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "kds_generation{quantile=\"0.99\",instance=~\"$instance\",zone=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Global - Latency of KDS config generation (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
+         "id": 31,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "kds_delivery{quantile=\"0.99\",instance=~\"$instance\",zone=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Global - Latency of KDS config delivery (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of global CP connected to Zone.",
+         "id": 32,
+         "targets": [
+            {
+               "expr": "kds_streams_active{instance=~\"$instance\",zone!=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Zone - KDS active connections",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Zone sends to Global its Dataplanes and DataplaneInsights",
+         "id": 33,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "legendFormat": "Configuration sent",
+               "refId": "A"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "hide": true,
+               "legendFormat": "Configuration accepted",
+               "refId": "B"
+            },
+            {
+               "exemplar": true,
+               "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "legendFormat": "Configuration rejected",
+               "refId": "C"
+            },
+            {
+               "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "legendFormat": "RPC Errors",
+               "refId": "D"
+            },
+            {
+               "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "hide": true,
+               "legendFormat": "Rate",
+               "refId": "E"
+            }
+         ],
+         "title": "Zone - KDS message exchange",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL",
+         "id": 34,
+         "targets": [
+            {
+               "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone!=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "legendFormat": "Success",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+               "legendFormat": "Errors",
+               "refId": "B"
+            }
+         ],
+         "title": "Zone - KDS config generations",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to generate KDS configuration for a global control plane",
+         "id": 35,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "kds_generation{quantile=\"0.99\",instance=~\"$instance\",zone!=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Zone - Latency of KDS config generation (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
+         "id": 36,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "kds_delivery{quantile=\"0.99\",instance=~\"$instance\",zone=\"Global\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Global - Latency of KDS config delivery (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 37,
+         "panels": [ ],
+         "title": "Store",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Latency of underlying storage (API Server on K8S, Postgres on Universal etc.)",
+         "id": 38,
+         "targets": [
+            {
+               "expr": "histogram_quantile(0.99, sum by (operation, le) (rate(store_bucket{instance=~\"$instance\"}[1m])))",
+               "legendFormat": "{{operation}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of Store operations (99th percentile)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Cache protects underlying storage by sharing responses between many goroutines accessing the storage.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+         "id": 39,
+         "targets": [
+            {
+               "expr": "sum(rate(store_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit",
+               "refId": "A"
+            },
+            {
+               "expr": "sum(rate(store_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Hit Wait",
+               "refId": "C"
+            },
+            {
+               "expr": "sum(rate(store_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+               "legendFormat": "Miss",
+               "refId": "B"
+            }
+         ],
+         "title": "Store cache performance",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "description": "Real requests executed on the underlying storage (Postgres/Kubernetes API Server)",
+         "id": 40,
+         "targets": [
+            {
+               "expr": "sum by (operation, resource_type) (rate(store_count{instance=~\"$instance\"}[1m]))",
+               "legendFormat": "{{operation}} - {{resource_type}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Store operations",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 41,
+         "panels": [ ],
+         "title": "Go Runtime",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 42,
+         "targets": [
+            {
+               "expr": "go_goroutines{instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Goroutines",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 43,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "go_threads{instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Threads",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 44,
+         "targets": [
+            {
+               "exemplar": true,
+               "expr": "go_memstats_alloc_bytes{instance=~\"$instance\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Memory allocated",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+         },
+         "id": 45,
+         "targets": [
+            {
+               "expr": "go_gc_duration_seconds{instance=~\"$instance\", quantile=\"0.75\"}",
+               "legendFormat": "{{instance}}",
+               "refId": "A"
+            }
+         ],
+         "title": "Latency of GC time (75th percentile)",
+         "type": "timeseries"
+      }
+   ],
+   "refresh": "5s",
+   "schemaVersion": 36,
+   "style": "dark",
+   "tags": [ ],
+   "templating": {
+      "list": [
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "label": "Zone",
+            "multi": false,
+            "name": "zone",
+            "query": "label_values(cp_info, zone)",
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${DS_PROMETHEUS}"
+            },
+            "includeAll": true,
+            "label": "Instance",
+            "multi": false,
+            "name": "instance",
+            "query": "label_values(cp_info{zone=~\"$zone\"}, instance)",
+            "type": "query"
+         }
+      ]
+   },
+   "time": {
+      "from": "now-6h",
+      "to": "now"
+   },
+   "timepicker": {
+      "refresh_intervals": [
+         "5s",
+         "10s",
+         "30s",
+         "1m",
+         "5m",
+         "15m",
+         "30m",
+         "1h",
+         "2h",
+         "1d"
+      ]
+   },
+   "timezone": "utc",
+   "title": "Kuma CP",
+   "version": 1
+}
