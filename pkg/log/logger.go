@@ -15,6 +15,7 @@ import (
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/multitenant"
+	logger_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/logger"
 )
 
 type LogLevel int
@@ -122,18 +123,36 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts 
 const tenantLoggerKey = "tenantID"
 
 // AddFieldsFromCtx will check if provided context contain tracing span and
-// if the span is currently recording. If so, it will add trace_id and span_id
-// to logged values. It will also add the tenant id to the logged values.
-func AddFieldsFromCtx(logger logr.Logger, ctx context.Context) logr.Logger {
+// if the span is currently recording. If so, it will call spanLogValuesProcessor
+// function if it's also present in the context. If not it will add trace_id
+// and span_id to logged values. It will also add the tenant id to the logged
+// values.
+func AddFieldsFromCtx(
+	logger logr.Logger,
+	ctx context.Context,
+	extensions context.Context,
+) logr.Logger {
+	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
+		logger = logger.WithValues(tenantLoggerKey, tenantId)
+	}
+
+	return addSpanValuesToLogger(logger, ctx, extensions)
+}
+
+func addSpanValuesToLogger(
+	logger logr.Logger,
+	ctx context.Context,
+	extensions context.Context,
+) logr.Logger {
 	if span := trace.SpanFromContext(ctx); span.IsRecording() {
-		logger = logger.WithValues(
+		if fn, ok := logger_extensions.FromSpanLogValuesProcessorContext(extensions); ok {
+			return logger.WithValues(fn(span)...)
+		}
+
+		return logger.WithValues(
 			"trace_id", span.SpanContext().TraceID(),
 			"span_id", span.SpanContext().SpanID(),
 		)
-	}
-
-	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
-		logger = logger.WithValues(tenantLoggerKey, tenantId)
 	}
 
 	return logger

@@ -92,7 +92,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 		})
 
-	rm := newResourceManager(builder)
+	rm := newResourceManager(builder) //nolint:contextcheck
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
 
@@ -162,6 +162,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
 		builder.Config().Store.UnsafeDelete,
+		builder.Extensions(),
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 
