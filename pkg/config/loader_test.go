@@ -279,6 +279,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Metrics.Mesh.MaxResyncTimeout.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
 			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
+			Expect(cfg.Metrics.ControlPlane.ReportResourcesCount).To(BeTrue())
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -577,6 +578,8 @@ metrics:
   dataplane:
     subscriptionLimit: 47
     idleTimeout: 1m
+  controlPlane:
+    reportResourcesCount: true
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -837,6 +840,7 @@ proxy:
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
+				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",

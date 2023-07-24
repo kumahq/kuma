@@ -396,6 +396,9 @@ metrics:
     minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
     # Max time that MeshInsight could spend without resync
     maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
+  controlPlane:
+    # If true metrics show number of resources in the system should be reported
+    reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
 
 # Reports configuration
 reports:
