@@ -22,7 +22,23 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
-	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v
+ifndef CI
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v
+else
+	@echo "skipping golangci-lint as it's done as a github action"
+endif
+
+.PHONY: golangci-lint-fmt
+golangci-lint-fmt:
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
+		--disable-all \
+		--enable gofumpt
+
+.PHONY: fmt/ci
+fmt/ci:
+	$(CI_TOOLS_BIN_DIR)/yq -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
+	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "actions/setup-go*") | .with.go-version) |= "$(GO_VERSION)"'
+	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
 
 .PHONY: helm-lint
 helm-lint:

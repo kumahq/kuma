@@ -85,8 +85,13 @@ function version_info() {
     describedTag="no-git"
     longHash="no-git"
     baseBranchName="no-git"
+    ciDir="no-git"
   else
     baseBranchName=$(base_branch_name)
+    ciDir=$baseBranchName
+    if [[ "$ciDeclared" == "true" ]]; then
+      ciDir="ci"
+    fi
     if [[ "$ciDeclared" == "true" ]] || git diff --quiet && git diff --cached --quiet; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
@@ -115,7 +120,7 @@ function version_info() {
       version="0.0.0-preview.v${shortHash}"
     fi
   fi
-  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${baseBranchName}"
+  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${ciDir}"
 }
 
 version_info
