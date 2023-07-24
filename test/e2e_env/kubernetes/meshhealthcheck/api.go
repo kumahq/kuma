@@ -36,7 +36,7 @@ func API() {
 		// given no MeshHealthChecks
 		mtps, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mtps).To(HaveLen(0))
+		Expect(mtps).To(BeEmpty())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -79,7 +79,7 @@ spec:
 		// given no MeshHealthChecks
 		mtps, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mtps).To(HaveLen(0))
+		Expect(mtps).To(BeEmpty())
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
