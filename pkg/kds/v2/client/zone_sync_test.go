@@ -169,7 +169,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			actual := mesh.MeshResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(actual.Items).To(HaveLen(0))
+			g.Expect(actual.Items).To(BeEmpty())
 		}, "5s", "100ms").Should(Succeed())
 	})
 

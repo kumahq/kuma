@@ -45,7 +45,7 @@ func MeshTimeout() {
 		// given no MeshTimeout
 		mts, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", mesh)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mts).To(HaveLen(0))
+		Expect(mts).To(BeEmpty())
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := client.CollectEchoResponse(

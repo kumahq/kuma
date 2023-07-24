@@ -197,7 +197,7 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log).To(HaveLen(0))
+		Expect(log).To(BeEmpty())
 	})
 
 	It("should skip unknown backends", func() {

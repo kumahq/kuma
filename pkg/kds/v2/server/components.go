@@ -114,7 +114,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) {
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
 	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
