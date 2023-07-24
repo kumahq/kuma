@@ -2,7 +2,7 @@
 set -e
 
 OUTPUT_BIN_DIR=$1/bin
-VERSION="1.51.2"
+VERSION="1.53.3"
 
 golangcilint="${OUTPUT_BIN_DIR}"/golangci-lint
 
