@@ -60,30 +60,6 @@ func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBa
 	}, level)
 }
 
-type Writer struct {
-	io.Writer
-	logWriter     io.Writer
-	consoleWriter io.Writer
-}
-
-func (w *Writer) Write(p []byte) (n int, err error) {
-	w.consoleWriter.Write(p)
-	return w.logWriter.Write(p)
-}
-
-func NewLoggerWithRotationConsole(level LogLevel, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
-	writer := &lumberjack.Logger{
-		Filename:   outputPath,
-		MaxSize:    maxSize,
-		MaxBackups: maxBackups,
-		MaxAge:     maxAge,
-	}
-	return NewLoggerTo(&Writer{
-		logWriter:     writer,
-		consoleWriter: os.Stdout,
-	}, level)
-}
-
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 	return zapr.NewLogger(newZapLoggerTo(destWriter, level))
 }
