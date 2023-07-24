@@ -295,7 +295,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(0)))
 				// and
-				Expect(list.Items).To(HaveLen(0))
+				Expect(list.Items).To(BeEmpty())
 			})
 
 			It("should return a list of resources", func() {
@@ -338,7 +338,7 @@ func ExecuteStoreTests(
 				// and
 				Expect(list.Pagination.Total).To(Equal(uint32(0)))
 				// and
-				Expect(list.Items).To(HaveLen(0))
+				Expect(list.Items).To(BeEmpty())
 			})
 
 			It("should return a list of resources with prefix from all meshes", func() {

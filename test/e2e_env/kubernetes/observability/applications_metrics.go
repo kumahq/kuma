@@ -145,8 +145,8 @@ func ApplicationsMetrics() {
 	})
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(mesh))
-		Expect(kubernetes.Cluster.DeleteMesh(meshNoAggregate))
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {

@@ -17,4 +17,4 @@ jobs:
       - uses: golangci/golangci-lint-action@v3
         with:
           args: --verbose
-          version: v1.51.2
+          version: v1.53.3

@@ -49,7 +49,7 @@ func MeshCircuitBreaker() {
 		// given no MeshCircuitBreaker
 		mcbs, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", mesh)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mcbs).To(HaveLen(0))
+		Expect(mcbs).To(BeEmpty())
 
 		Eventually(func() ([]client.FailureResponse, error) {
 			return client.CollectResponsesAndFailures(

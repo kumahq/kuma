@@ -70,7 +70,7 @@ func HeadlessServices() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(meshName))
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to connect to the headless service", func() {
