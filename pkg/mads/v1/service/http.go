@@ -10,6 +10,7 @@ import (
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/jsonpb"
 
+	"github.com/kumahq/kuma/pkg/core"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
@@ -70,14 +71,14 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 			s.log.V(1).Info("no update needed")
 			res.WriteHeader(http.StatusNotModified)
 		} else {
-			rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
+			rest_errors.HandleError(req.Request.Context(), res, err, "Could not fetch MonitoringAssignments")
 		}
 		return
 	}
 
 	marshaller := &jsonpb.Marshaler{OrigName: true}
 	if err := marshaller.Marshal(res, discoveryRes); err != nil {
-		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
+		rest_errors.HandleError(req.Request.Context(), res, err, "Could write DiscoveryResponse")
 		return
 	}
 }
@@ -86,7 +87,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 // Any errors during that process are handled by errors.HandleError
 func writeBadRequestError(res *restful.Response, err rest_error_types.Error) {
 	if writeErr := res.WriteHeaderAndJson(http.StatusBadRequest, err, restful.MIME_JSON); writeErr != nil {
-		rest_errors.HandleError(res, writeErr, "Could encode error")
+		core.Log.Error(writeErr, "Could not write the error response")
 		return
 	}
 }

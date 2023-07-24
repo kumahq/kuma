@@ -44,19 +44,19 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 		system.NewZoneResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	overview, err := r.fetchOverview(request.Request.Context(), name)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a zone overview")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a zone overview")
 		return
 	}
 
 	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a zone overview")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a zone overview")
 	}
 }
 
@@ -88,19 +88,19 @@ func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response 
 		system.NewZoneResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	page, err := pagination(request)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
 	overviews, err := r.fetchOverviews(request.Request.Context(), page)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
@@ -109,7 +109,7 @@ func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response 
 	restList := rest.From.ResourceList(&overviews)
 	restList.Next = nextLink(request, overviews.GetPagination().NextOffset)
 	if err := response.WriteAsJson(restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not list dataplane overviews")
 	}
 }
 

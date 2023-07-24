@@ -60,28 +60,28 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 		r.descriptor,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	resource := r.descriptor.NewObject()
 	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 	} else {
 		var res interface{}
 		switch request.QueryParameter("format") {
 		case "k8s", "kubernetes":
 			res, err = r.k8sMapper(resource, request.QueryParameter("namespace"))
 			if err != nil {
-				rest_errors.HandleError(response, err, "k8s mapping failed")
+				rest_errors.HandleError(request.Request.Context(), response, err, "k8s mapping failed")
 				return
 			}
 		case "universal", "":
 			res = rest.From.Resource(resource)
 		default:
 			err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
-			rest_errors.HandleError(response, err.OrNil(), "invalid format")
+			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
@@ -106,24 +106,24 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		r.descriptor,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	page, err := pagination(request)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 		return
 	}
 
 	list := r.descriptor.NewList()
 	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(page.size, page.offset)); err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
-			rest_errors.HandleError(response, err, "Could not list resources")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
 		}
 	}
 }
@@ -131,7 +131,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
 		ws.Route(ws.PUT(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
+			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
 		}).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
@@ -150,18 +150,18 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 
 	bodyBytes, err := io.ReadAll(request.Request.Body)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
 	resourceRest, err := rest.JSON.Unmarshal(bodyBytes)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
 	if err := r.validateResourceRequest(request, resourceRest.GetMeta()); err != nil {
-		rest_errors.HandleError(response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
@@ -170,7 +170,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		if store.IsResourceNotFound(err) {
 			r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
 		} else {
-			rest_errors.HandleError(response, err, "Could not find a resource")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
 		}
 	} else {
 		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
@@ -185,14 +185,14 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(ctx, response, err, "Access Denied")
 		return
 	}
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(response, err, "Could not create a resource")
+		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
 	}
@@ -212,14 +212,14 @@ func (r *resourceEndpoints) updateResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(ctx, response, err, "Access Denied")
 		return
 	}
 
 	_ = currentRes.SetSpec(newSpec)
 
 	if err := r.resManager.Update(ctx, currentRes); err != nil {
-		rest_errors.HandleError(response, err, "Could not update a resource")
+		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
 	}
@@ -228,7 +228,7 @@ func (r *resourceEndpoints) updateResource(
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
 		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
+			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
 		}).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
@@ -246,7 +246,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	resource := r.descriptor.NewObject()
 
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(response, err, "Could not delete a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
 		return
 	}
 
@@ -257,12 +257,12 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		resource.Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(response, err, "Could not delete a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
 	}
 }
 
