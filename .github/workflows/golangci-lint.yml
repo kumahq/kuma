@@ -19,5 +19,9 @@ jobs:
           go-version: 1.21.1
       - uses: golangci/golangci-lint-action@v3
         with:
+<<<<<<< HEAD
           args: --fix=false --verbose
+=======
+          args: --verbose
+>>>>>>> 409438fbc (chore(deps): bump golangci-lint from v1.51.2 to v1.53.3 (#7334))
           version: v1.53.3

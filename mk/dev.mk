@@ -21,7 +21,11 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 K8S_MIN_VERSION = v1.23.17-k3s1
 K8S_MAX_VERSION = v1.27.1-k3s1
+<<<<<<< HEAD
 export GO_VERSION=1.21.1
+=======
+export GO_VERSION=1.20.5
+>>>>>>> 409438fbc (chore(deps): bump golangci-lint from v1.51.2 to v1.53.3 (#7334))
 export GOLANGCI_LINT_VERSION=v1.53.3
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
