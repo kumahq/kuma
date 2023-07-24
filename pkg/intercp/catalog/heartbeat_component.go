@@ -19,24 +19,23 @@ var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("he
 
 type heartbeatComponent struct {
 	catalog     Catalog
-	newClientFn NewClientFn
+	getClientFn GetClientFn
 	request     *system_proto.PingRequest
 	interval    time.Duration
 
 	leader *Instance
-	client system_proto.InterCpPingServiceClient
 	metric prometheus.Summary
 }
 
 var _ component.Component = &heartbeatComponent{}
 
-type NewClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
+type GetClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
 
 func NewHeartbeatComponent(
 	catalog Catalog,
 	instance Instance,
 	interval time.Duration,
-	newClientFn NewClientFn,
+	newClientFn GetClientFn,
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
@@ -55,7 +54,7 @@ func NewHeartbeatComponent(
 			Address:     instance.Address,
 			InterCpPort: uint32(instance.InterCpPort),
 		},
-		newClientFn: newClientFn,
+		getClientFn: newClientFn,
 		interval:    interval,
 		metric:      metric,
 	}, nil
@@ -104,7 +103,11 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) error {
 		"ready", ready,
 	)
 	h.request.Ready = ready
-	resp, err := h.client.Ping(ctx, h.request)
+	client, err := h.getClientFn(h.leader.InterCpURL())
+	if err != nil {
+		return errors.Wrap(err, "could not get or create a client to a leader")
+	}
+	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
 		return errors.Wrap(err, "could not send a heartbeat to a leader")
 	}
@@ -128,7 +131,7 @@ func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
 		"previousLeaderAddress", h.leader.Address,
 		"newLeaderAddress", newLeader.Leader,
 	)
-	h.client, err = h.newClientFn(h.leader.InterCpURL())
+	_, err = h.getClientFn(h.leader.InterCpURL())
 	if err != nil {
 		return errors.Wrap(err, "could not create a client to a leader")
 	}
