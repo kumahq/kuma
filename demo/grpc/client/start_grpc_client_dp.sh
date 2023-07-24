@@ -12,6 +12,7 @@ kumactl generate dataplane-token --name=grpc-client --valid-for 8760h > $DIR/kum
 kuma-dp run \
           --cp-address=https://localhost:5678/ \
           --dns-enabled=false \
+          --envoy-log-level=debug \
           --dataplane-token-file=$DIR/kuma-token-grpc-client \
           --dataplane="
           type: Dataplane

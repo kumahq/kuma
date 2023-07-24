@@ -20,6 +20,7 @@ ip=`ifconfig | grep "10.53.39.255" |awk -F ' ' '{print $2}'`
 kuma-dp run \
           --cp-address=https://localhost:5678/ \
           --dns-enabled=false \
+          --envoy-log-level=debug \
           --dataplane-token-file=$DIR/kuma-token-grpc-server \
           --dataplane="
           type: Dataplane

@@ -91,7 +91,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
-	_, err = r.pool.Exec(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
+	_, err = r.pool.Exec(context.Background(), statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
 		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
@@ -157,7 +157,7 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
-	result, err := r.pool.Exec(ctx, statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
+	result, err := r.pool.Exec(context.Background(), statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -172,7 +172,7 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.pool.QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
+	row := r.pool.QueryRow(context.Background(), statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
@@ -223,7 +223,7 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	}
 	statement += " ORDER BY name, mesh"
 
-	rows, err := r.pool.Query(ctx, statement, statementArgs...)
+	rows, err := r.pool.Query(context.Background(), statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}

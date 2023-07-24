@@ -6,8 +6,8 @@ mode: standalone # ENV: KUMA_MODE
 # Resource Store configuration
 store:
   # Type of Store used in the Control Plane. Available values are: "kubernetes", "postgres" or "memory"
-#  type: postgres # ENV: KUMA_STORE_TYPE
-  type: etcd # ENV: KUMA_STORE_TYPE
+  type: postgres # ENV: KUMA_STORE_TYPE
+#  type: etcd # ENV: KUMA_STORE_TYPE
   etcd:
     endpoints:
       - http://127.0.0.1:2379
