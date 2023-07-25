@@ -22,25 +22,32 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	ticker := w.NewTicker()
 	defer ticker.Stop()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	for {
-		select {
-		case <-ticker.C:
+		ctx, cancel := context.WithCancel(context.Background())
+
+		cleanupCh := make(chan struct{})
+		go func() {
 			select {
 			case <-stop:
-			default:
-				if err := w.onTick(ctx); err != nil {
-					w.OnError(err)
-				}
+			case <-cleanupCh:
+			}
+			cancel()
+		}()
+
+		select {
+		case <-ticker.C:
+			if err := w.onTick(ctx); err != nil {
+				w.OnError(err)
 			}
 		case <-stop:
 			if w.OnStop != nil {
 				w.OnStop()
 			}
+			close(cleanupCh)
 			return
 		}
+
+		close(cleanupCh)
 	}
 }
 
