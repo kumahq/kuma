@@ -22,12 +22,10 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	ticker := w.NewTicker()
 	defer ticker.Stop()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	for {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			<-stop
-			cancel()
-		}()
 		select {
 		case <-ticker.C:
 			select {
