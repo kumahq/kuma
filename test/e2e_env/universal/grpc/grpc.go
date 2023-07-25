@@ -62,7 +62,7 @@ func GRPC() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should split the traffic between two services", func() {
+	It("MeshHTTPRoute DOES NOT split the traffic between two gRPC services", func() {
 		yaml := `
 type: MeshHTTPRoute
 name: http-route-1
