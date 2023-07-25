@@ -2,22 +2,13 @@ package virtualhosts
 
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
-
-func CommonVirtualHost(name string) VirtualHostBuilderOpt {
-	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
-			vh.Name = name
-			vh.Domains = []string{"*"}
-		}),
-	)
-}
 
 func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 	if len(domainNames) == 0 {
@@ -25,7 +16,7 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 	}
 
 	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
+		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
 			vh.Domains = domainNames
 		}),
 	)
@@ -33,14 +24,14 @@ func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
 
 func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
-		&v3.RoutesConfigurer{
+		&RoutesConfigurer{
 			Routes: routes,
 		})
 }
 
 // Redirect for paths that match to matchPath returns 301 status code with new port and path
 func Redirect(matchPath, newPath string, allowGetOnly bool, port uint32) VirtualHostBuilderOpt {
-	return AddVirtualHostConfigurer(&v3.RedirectConfigurer{
+	return AddVirtualHostConfigurer(&RedirectConfigurer{
 		MatchPath:    matchPath,
 		NewPath:      newPath,
 		Port:         port,
@@ -51,8 +42,8 @@ func Redirect(matchPath, newPath string, allowGetOnly bool, port uint32) Virtual
 // RequireTLS specifies that this virtual host must only accept TLS connections.
 func RequireTLS() VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
-			vh.RequireTls = envoy_route.VirtualHost_ALL
+		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
+			vh.RequireTls = envoy_config_route_v3.VirtualHost_ALL
 		}),
 	)
 }
@@ -60,7 +51,7 @@ func RequireTLS() VirtualHostBuilderOpt {
 // SetResponseHeader unconditionally sets the named response header to the given value.
 func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
+		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
 			hsts := &envoy_config_core_v3.HeaderValueOption{
 				Append: util_proto.Bool(false),
 				Header: &envoy_config_core_v3.HeaderValue{
@@ -76,15 +67,15 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 
 func Retry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
-		VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
-			vh.RetryPolicy = v3.RetryConfig(retry, protocol)
+		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
+			vh.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
 		}),
 	)
 }
 
 func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
-		&v3.RouteConfigurer{
+		&RouteConfigurer{
 			MatchPath:    matchPath,
 			NewPath:      newPath,
 			Cluster:      cluster,
