@@ -77,7 +77,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(actual.Spec.Subscriptions).To(HaveLen(0))
+		Expect(actual.Spec.Subscriptions).To(BeEmpty())
 		Expect(actual.Spec.Subscriptions).To(BeNil())
 	})
 })
