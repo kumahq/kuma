@@ -101,6 +101,7 @@ spec:
 			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
+<<<<<<< HEAD
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
@@ -110,5 +111,8 @@ spec:
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
+=======
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+>>>>>>> 02d815f79 (ci(e2e): fix meshretry test (#7339))
 	})
 }
