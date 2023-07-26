@@ -227,6 +227,8 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 	if err := d.rm.List(ctx, &externalServices, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
+	// TODO(lukidzi): after switching to use the resource store as in the code for tests
+	// we should switch to `ListOrdered` https://github.com/kumahq/kuma/issues/5417
 	sort.SliceStable(externalServices.Items, func(i, j int) bool {
 		return (externalServices.Items[i].GetMeta().GetName() < externalServices.Items[j].GetMeta().GetName())
 	})
