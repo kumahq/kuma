@@ -191,7 +191,7 @@ var _ = Describe("Catalog", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(instances).To(HaveLen(0))
+		Expect(instances).To(BeEmpty())
 	})
 
 	It("should handle IPV6 addresses when building inter cp URL", func() {

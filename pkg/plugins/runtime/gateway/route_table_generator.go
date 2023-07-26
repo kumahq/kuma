@@ -22,8 +22,7 @@ func GenerateVirtualHost(
 ) (
 	*envoy_virtual_hosts.VirtualHostBuilder, error,
 ) {
-	vh := envoy_virtual_hosts.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		envoy_virtual_hosts.CommonVirtualHost(host.Hostname),
+	vh := envoy_virtual_hosts.NewVirtualHostBuilder(info.Proxy.APIVersion, host.Hostname).Configure(
 		envoy_virtual_hosts.DomainNames(host.Hostname),
 	)
 

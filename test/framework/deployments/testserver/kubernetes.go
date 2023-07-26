@@ -238,6 +238,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			Volumes: volumes,
 		},
 	}
+	spec.Spec.InitContainers = append(spec.Spec.InitContainers, k.opts.initContainersToAdd...)
 	if len(k.opts.ReachableServices) > 0 {
 		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
 	}

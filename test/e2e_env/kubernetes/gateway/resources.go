@@ -142,7 +142,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("kubernetes"))
-		}, "20s", "1s")
+		}, "20s", "1s").Should(Succeed())
 
 		By("allowing more than 1 connection without a limit")
 

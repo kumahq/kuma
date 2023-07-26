@@ -34,7 +34,7 @@ func API() {
 		// given no MeshRateLimit
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -95,7 +95,7 @@ spec:
 		// given no MeshRateLimit
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
