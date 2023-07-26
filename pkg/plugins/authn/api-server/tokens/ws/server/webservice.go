@@ -41,7 +41,7 @@ func (d *userTokenWebService) createWs() *restful.WebService {
 
 func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
 	if err := d.access.ValidateGenerate(user.FromCtx(request.Request.Context())); err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -72,7 +72,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 	}
 
 	if verr.HasViolations() {
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Invalid request")
 		return
 	}
 
@@ -81,7 +81,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 		Groups: idReq.Groups,
 	}, validFor)
 	if err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
