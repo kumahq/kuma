@@ -20,6 +20,18 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	defer ticker.Stop()
 
 	for {
+<<<<<<< HEAD
+=======
+		ctx, cancel := context.WithCancel(context.Background())
+		// cancel is called at the end of the loop
+		go func() {
+			select {
+			case <-stop:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+>>>>>>> 1f97d444d (fix(kuma-cp): don't leak goroutine on every tick in SimpleWatchdog (#7348))
 		select {
 		case <-ticker.C:
 			if err := w.OnTick(); err != nil {
@@ -29,7 +41,9 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 			if w.OnStop != nil {
 				w.OnStop()
 			}
+			// cancel will be called by the above goroutine
 			return
 		}
+		cancel()
 	}
 }
