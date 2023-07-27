@@ -81,7 +81,6 @@ func TestConformance(t *testing.T) {
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,
 			suite.SupportHTTPRoute,
-			suite.SupportGatewayClassObservedGenerationBump,
 			suite.SupportHTTPRouteQueryParamMatching,
 			suite.SupportHTTPRouteMethodMatching,
 			suite.SupportHTTPResponseHeaderModification,
