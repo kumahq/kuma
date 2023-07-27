@@ -972,8 +972,8 @@ google.golang.org/grpc v1.34.0/go.mod h1:WotjhfgOW/POjDeRt8vscBtXq+2VjORFy659qA5
 google.golang.org/grpc v1.35.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
 google.golang.org/grpc v1.36.0/go.mod h1:qjiiYl8FncCW8feJPdyg3v6XW24KsRHe+dy9BAGRRjU=
 google.golang.org/grpc v1.45.0/go.mod h1:lN7owxKUQEqMfSyQikvvk5tf/6zMPsrK+ONuO11+0rQ=
-google.golang.org/grpc v1.56.2 h1:fVRFRnXvU+x6C4IlHZewvJOVHoOv1TUuQyoRsYnB4bI=
-google.golang.org/grpc v1.56.2/go.mod h1:I9bI3vqKfayGqPUAwGdOSu7kt6oIJLixfffKrpXqQ9s=
+google.golang.org/grpc v1.57.0 h1:kfzNeI/klCGD2YPMUlaGNT3pxvYfga7smW3Vth8Zsiw=
+google.golang.org/grpc v1.57.0/go.mod h1:Sd+9RMTACXwmub0zcNY2c4arhtrbBYD1AUHI/dt16Mo=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
 google.golang.org/protobuf v0.0.0-20200221191635-4d8936d0db64/go.mod h1:kwYJMbMJ01Woi6D6+Kah6886xMZcty6N08ah7+eCXa0=
 google.golang.org/protobuf v0.0.0-20200228230310-ab0ca4ff8a60/go.mod h1:cfTl7dwQJ+fmap5saPgwCLgHXTUD7jkjRqWcaiX5VyM=
@@ -1030,8 +1030,8 @@ istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb h1:uyL4LkLPJvK0SQJOWT2xkIatsJq+/
 istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb/go.mod h1:1297yENoCcROUAWFZEdwD4VFN8Qa/if1UtzwvVgah7I=
 k8s.io/api v0.27.4 h1:0pCo/AN9hONazBKlNUdhQymmnfLRbSZjd5H5H3f0bSs=
 k8s.io/api v0.27.4/go.mod h1:O3smaaX15NfxjzILfiln1D8Z3+gEYpjEpiNA/1EVK1Y=
-k8s.io/apiextensions-apiserver v0.27.3 h1:xAwC1iYabi+TDfpRhxh4Eapl14Hs2OftM2DN5MpgKX4=
-k8s.io/apiextensions-apiserver v0.27.3/go.mod h1:BH3wJ5NsB9XE1w+R6SSVpKmYNyIiyIz9xAmBl8Mb+84=
+k8s.io/apiextensions-apiserver v0.27.4 h1:ie1yZG4nY/wvFMIR2hXBeSVq+HfNzib60FjnBYtPGSs=
+k8s.io/apiextensions-apiserver v0.27.4/go.mod h1:KHZaDr5H9IbGEnSskEUp/DsdXe1hMQ7uzpQcYUFt2bM=
 k8s.io/apimachinery v0.27.4 h1:CdxflD4AF61yewuid0fLl6bM4a3q04jWel0IlP+aYjs=
 k8s.io/apimachinery v0.27.4/go.mod h1:XNfZ6xklnMCOGGFNqXG7bUrQCoR04dh/E7FprV6pb+E=
 k8s.io/client-go v0.27.4 h1:vj2YTtSJ6J4KxaC88P4pMPEQECWMY8gqPqsTgUKzvjk=
@@ -1053,8 +1053,8 @@ sigs.k8s.io/controller-runtime v0.15.0 h1:ML+5Adt3qZnMSYxZ7gAverBLNPSMQEibtzAgp0
 sigs.k8s.io/controller-runtime v0.15.0/go.mod h1:7ngYvp1MLT+9GeZ+6lH3LOlcHkp/+tzA/fmHa4iq9kk=
 sigs.k8s.io/controller-tools v0.12.1 h1:GyQqxzH5wksa4n3YDIJdJJOopztR5VDM+7qsyg5yE4U=
 sigs.k8s.io/controller-tools v0.12.1/go.mod h1:rXlpTfFHZMpZA8aGq9ejArgZiieHd+fkk/fTatY8A2M=
-sigs.k8s.io/gateway-api v0.7.1-0.20230613222957-c9540a9cf448 h1:ir9lD9qmbQ/oc84fw2u276xqQqAz6222zBrfoY4a0mw=
-sigs.k8s.io/gateway-api v0.7.1-0.20230613222957-c9540a9cf448/go.mod h1:ZGCdTDdW6pxVk9eAnHqXt8wPnbSLzlEFN/XXj8AA3ho=
+sigs.k8s.io/gateway-api v0.7.1-0.20230727082008-1764e458047d h1:X7hnnkKtL6VyE5VcC/QH+uY6wVbYybZbPtmVSvDlSDE=
+sigs.k8s.io/gateway-api v0.7.1-0.20230727082008-1764e458047d/go.mod h1:eilE0qyBTXs7VhQuGtUa3ji4IMM7TNtVCWR3+IdPosI=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/structured-merge-diff/v4 v4.2.3 h1:PRbqxJClWWYMNV1dhaG4NsibJbArud9kFxnAMREiWFE=
