@@ -8,9 +8,11 @@ build_info_fields = \
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
+
 EXTRA_GOENV ?=
 GOENV=CGO_ENABLED=0 $(EXTRA_GOENV)
-GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
+# add -tags=experimental for Gateway API conformance profiles
+GOFLAGS := -trimpath -tags=experimental $(EXTRA_GOFLAGS)
 
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build

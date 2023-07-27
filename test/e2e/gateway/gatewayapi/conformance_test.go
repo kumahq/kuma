@@ -11,15 +11,26 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
+	"sigs.k8s.io/yaml"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/version"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 var clusterName = Kuma1
+
+var implementation = conformanceapis.Implementation{
+	Organization: "kumahq",
+	Project:      "kuma",
+	URL:          "https://github.com/kumahq/kuma",
+	Version:      version.Build.Version,
+	Contact:      []string{"@kumahq/kuma-maintainers"},
+}
 
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
@@ -68,7 +79,7 @@ func TestConformance(t *testing.T) {
 	clientset, err := clientgo_kube.NewForConfig(clientConfig)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	conformanceSuite := suite.New(suite.Options{
+	suiteOpts := suite.Options{
 		Client:               client,
 		RESTClient:           clientset.CoreV1().RESTClient().(*rest.RESTClient),
 		RestConfig:           clientConfig,
@@ -80,18 +91,27 @@ func TestConformance(t *testing.T) {
 		},
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,
-			suite.SupportHTTPRoute,
-			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportHTTPRouteMethodMatching,
 			suite.SupportHTTPResponseHeaderModification,
-			suite.SupportHTTPRoutePortRedirect,
-			suite.SupportHTTPRouteSchemeRedirect,
-			suite.SupportHTTPRoutePathRedirect,
+			suite.SupportHTTPRoute,
 			suite.SupportHTTPRouteHostRewrite,
+			suite.SupportHTTPRouteMethodMatching,
+			suite.SupportHTTPRoutePathRedirect,
 			suite.SupportHTTPRoutePathRewrite,
+			suite.SupportHTTPRoutePortRedirect,
+			suite.SupportHTTPRouteQueryParamMatching,
+			suite.SupportHTTPRouteSchemeRedirect,
 			suite.SupportMesh,
 		),
-	})
+	}
+
+	conformanceSuite, err := suite.NewExperimentalConformanceTestSuite(
+		suite.ExperimentalConformanceOptions{
+			Options:             suiteOpts,
+			Implementation:      implementation,
+			ConformanceProfiles: sets.New(suite.HTTPConformanceProfileName, suite.MeshConformanceProfileName),
+		},
+	)
+	g.Expect(err).ToNot(HaveOccurred())
 
 	conformanceSuite.Setup(t)
 
@@ -103,5 +123,13 @@ func TestConformance(t *testing.T) {
 		passingTests = append(passingTests, test)
 	}
 
-	conformanceSuite.Run(t, passingTests)
+	g.Expect(conformanceSuite.Run(t, passingTests)).To(Succeed())
+
+	rep, err := conformanceSuite.Report()
+	g.Expect(err).ToNot(HaveOccurred())
+	repYaml, err := yaml.Marshal(rep)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	t.Log("Gateway API CONFORMANCE REPORT:")
+	t.Logf("\n%s", string(repYaml))
 }
