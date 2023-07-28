@@ -16,6 +16,12 @@
 * fix(kumactl): treat 404 as resource not found error (backport of #7297) [#7303](https://github.com/kumahq/kuma/pull/7303) @kumahq
 
 
+## 1.8.8
+> Released on 2023/07/27
+
+* chore(deps): upgrade envoy to 1.24.10 [#7365](https://github.com/kumahq/kuma/pull/7365) @lukidzi
+* fix(kuma-cp): order resources for building VIPs (backport of #7333) [#7360](https://github.com/kumahq/kuma/pull/7360) @kumahq
+
 ## 2.2.3
 > Released on 2023/07/21
 
