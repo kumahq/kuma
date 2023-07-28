@@ -1,0 +1,29 @@
+name: "Push patch tag"
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-branch:
+        description: <major>.<minor> to release a patch version for
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: "release-${{ inputs.release-branch }}"
+      - name: "Push next tag"
+        run: |
+          lastGitTag=$(git describe --tags --abbrev=0)
+          IFS=. read -r major minor patch <<< "${lastGitTag}"
+          version="${major}.${minor}.$((++patch))"
+
+          git tag "${version}"
+          git push origin "${version}"
