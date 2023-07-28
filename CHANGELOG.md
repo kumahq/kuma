@@ -16,6 +16,14 @@
 * fix(kumactl): treat 404 as resource not found error (backport of #7297) [#7303](https://github.com/kumahq/kuma/pull/7303) @kumahq
 
 
+## 2.1.5
+> Released on 2023/07/27
+
+* chore(deps): upgrade envoy to 1.24.10 [#7363](https://github.com/kumahq/kuma/pull/7363) @lukidzi
+* fix(kuma-cp): don't leak goroutine on every tick in SimpleWatchdog (backport of #7348) [#7352](https://github.com/kumahq/kuma/pull/7352) @kumahq
+* fix(kuma-cp): order resources for building VIPs (backport of #7333) [#7361](https://github.com/kumahq/kuma/pull/7361) @kumahq
+
+
 ## 2.0.7
 > Released on 2023/07/27
 
