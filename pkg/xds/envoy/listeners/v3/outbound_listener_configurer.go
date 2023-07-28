@@ -8,14 +8,12 @@ import (
 )
 
 type OutboundListenerConfigurer struct {
-	ListenerName string
-	Address      string
-	Port         uint32
-	Protocol     core_xds.SocketAddressProtocol
+	Address  string
+	Port     uint32
+	Protocol core_xds.SocketAddressProtocol
 }
 
 func (c *OutboundListenerConfigurer) Configure(l *envoy_api.Listener) error {
-	l.Name = c.ListenerName
 	l.TrafficDirection = envoy_core.TrafficDirection_OUTBOUND
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{

@@ -19,8 +19,10 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/config/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -106,23 +108,18 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
 			Cluster: parameters.Service,
-			Metadata: util_proto.MustStruct(map[string]interface{}{
-				"version": map[string]interface{}{
-					"kumaDp": map[string]interface{}{
-						"version":   parameters.KumaDpVersion,
-						"gitTag":    parameters.KumaDpGitTag,
-						"gitCommit": parameters.KumaDpGitCommit,
-						"buildDate": parameters.KumaDpBuildDate,
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					core_xds.FieldVersion: {
+						Kind: &structpb.Value_StructValue{
+							StructValue: util_proto.MustToStruct(parameters.Version),
+						},
 					},
-					"envoy": map[string]interface{}{
-						"version":          parameters.EnvoyVersion,
-						"build":            parameters.EnvoyBuild,
-						"kumaDpCompatible": parameters.EnvoyKumaDpCompatible,
-					},
-					"dependencies": map[string]interface{}{},
+					core_xds.FieldFeatures:            util_proto.MustNewValueForStruct(features),
+					core_xds.FieldAccessLogSocketPath: util_proto.MustNewValueForStruct(parameters.AccessLogSocketPath),
+					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
 				},
-				"features": features,
-			}),
+			},
 		},
 		LayeredRuntime: &envoy_bootstrap_v3.LayeredRuntime{
 			Layers: runtimeLayers,
@@ -291,10 +288,10 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	if parameters.DataplaneResource != "" {
-		res.Node.Metadata.Fields["dataplane.resource"] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneDataplaneResource] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
 	}
 	if parameters.AdminPort != 0 {
-		res.Node.Metadata.Fields["dataplane.admin.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
 		res.Admin = &envoy_bootstrap_v3.Admin{
 			Address: &envoy_core_v3.Address{
 				Address: &envoy_core_v3.Address_SocketAddress{
@@ -327,20 +324,20 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		}
 	}
 	if parameters.DNSPort != 0 {
-		res.Node.Metadata.Fields["dataplane.dns.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
 	if parameters.EmptyDNSPort != 0 {
-		res.Node.Metadata.Fields["dataplane.dns.empty.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSEmptyPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
 	}
 	if parameters.ProxyType != "" {
-		res.Node.Metadata.Fields["dataplane.proxyType"] = util_proto.MustNewValueForStruct(parameters.ProxyType)
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
 	}
 	if len(parameters.DynamicMetadata) > 0 {
 		md := make(map[string]interface{}, len(parameters.DynamicMetadata))
 		for k, v := range parameters.DynamicMetadata {
 			md[k] = v
 		}
-		res.Node.Metadata.Fields["dynamicMetadata"] = util_proto.MustNewValueForStruct(md)
+		res.Node.Metadata.Fields[core_xds.FieldDynamicMetadata] = util_proto.MustNewValueForStruct(md)
 	}
 	return res, nil
 }
@@ -451,7 +448,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Address: &envoy_core_v3.Address{
-										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogPipe}},
+										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogSocketPath}},
 									},
 								},
 							},

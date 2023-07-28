@@ -7,6 +7,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 // ListenerBuilderOpt is a configuration option for ListenerBuilder.
@@ -17,10 +18,44 @@ type ListenerBuilderOpt interface {
 	ApplyTo(builder *ListenerBuilder)
 }
 
-func NewListenerBuilder(apiVersion core_xds.APIVersion) *ListenerBuilder {
+func NewListenerBuilder(apiVersion core_xds.APIVersion, name string) *ListenerBuilder {
 	return &ListenerBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
+}
+
+// NewInboundListenerBuilder creates an Inbound ListenBuilder
+// with a default name: inbound:address:port
+func NewInboundListenerBuilder(
+	apiVersion core_xds.APIVersion,
+	address string,
+	port uint32,
+	protocol core_xds.SocketAddressProtocol,
+) *ListenerBuilder {
+	listenerName := envoy_names.GetInboundListenerName(address, port)
+
+	return NewListenerBuilder(apiVersion, listenerName).
+		Configure(InboundListener(address, port, protocol))
+}
+
+// NewOutboundListenerBuilder creates an Outbound ListenBuilder
+// with a default name: outbound:address:port
+func NewOutboundListenerBuilder(
+	apiVersion core_xds.APIVersion,
+	address string,
+	port uint32,
+	protocol core_xds.SocketAddressProtocol,
+) *ListenerBuilder {
+	listenerName := envoy_names.GetOutboundListenerName(address, port)
+
+	return NewListenerBuilder(apiVersion, listenerName).
+		Configure(OutboundListener(address, port, protocol))
+}
+
+func (b *ListenerBuilder) WithOverwriteName(name string) *ListenerBuilder {
+	b.name = name
+	return b
 }
 
 // ListenerBuilder is responsible for generating an Envoy listener
@@ -28,6 +63,7 @@ func NewListenerBuilder(apiVersion core_xds.APIVersion) *ListenerBuilder {
 type ListenerBuilder struct {
 	apiVersion  core_xds.APIVersion
 	configurers []v3.ListenerConfigurer
+	name        string
 }
 
 // Configure configures ListenerBuilder by adding individual ListenerConfigurers.
@@ -43,11 +79,16 @@ func (b *ListenerBuilder) Configure(opts ...ListenerBuilderOpt) *ListenerBuilder
 func (b *ListenerBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		listener := envoy_listener_v3.Listener{}
+		listener := envoy_listener_v3.Listener{
+			Name: b.name,
+		}
 		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&listener); err != nil {
 				return nil, err
 			}
+		}
+		if listener.GetName() == "" {
+			return nil, errors.New("listener name is required, but it was not provided")
 		}
 		return &listener, nil
 	default:
@@ -62,6 +103,10 @@ func (b *ListenerBuilder) MustBuild() envoy.NamedResource {
 	}
 
 	return listener
+}
+
+func (b *ListenerBuilder) GetName() string {
+	return b.name
 }
 
 // AddConfigurer appends a given ListenerConfigurer to the end of the chain.

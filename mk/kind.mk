@@ -32,7 +32,7 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) -n $(EXAMPLE_NAMESPACE) exec $$($(KUBECTL) -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KUBERNETES_VERSION ?= v1.20.7@sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
+CI_KUBERNETES_VERSION ?= v1.22.9@sha256:8135260b959dfe320206eb36b3aeda9cffcb262f4b44cda6b33f7bb73f453105
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system

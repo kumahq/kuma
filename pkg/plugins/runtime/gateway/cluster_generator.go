@@ -133,8 +133,8 @@ func (c *ClusterGenerator) generateMeshCluster(
 		Tags: dest.Destination,
 	}}, dest.RouteProtocol)
 
-	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
+	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
 		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
@@ -172,8 +172,8 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 	return buildClusterResource(
 		dest,
-		newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-			clusters.ProvidedEndpointCluster(dest.Destination[mesh_proto.ServiceTag], info.Proxy.Dataplane.IsIPv6(), endpoints...),
+		newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 		),
@@ -183,6 +183,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 func newClusterBuilder(
 	version core_xds.APIVersion,
+	name string,
 	protocol core_mesh.Protocol,
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
@@ -191,7 +192,7 @@ func newClusterBuilder(
 		timeout = timeoutResource.Spec.GetConf()
 	}
 
-	builder := clusters.NewClusterBuilder(version).Configure(
+	builder := clusters.NewClusterBuilder(version, name).Configure(
 		clusters.Timeout(timeout, protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),

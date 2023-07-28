@@ -15,7 +15,6 @@ import (
 
 var _ = Describe("HttpAccessLogConfigurer", func() {
 	type testCase struct {
-		listenerName       string
 		listenerAddress    string
 		listenerPort       uint32
 		listenerProtocol   core_xds.SocketAddressProtocol
@@ -36,6 +35,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			if !given.legacyTcpAccessLog {
 				metaData.Features = core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true}
 			}
+			metaData.AccessLogSocketPath = "/tmp/kuma-al-dataplane0-demo.sock"
 			proxy := &core_xds.Proxy{
 				Id:       *core_xds.BuildProxyId("web", "example"),
 				Metadata: metaData,
@@ -54,8 +54,10 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Port:    27070,
-								Service: "backend",
+								Port: 27070,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "backend",
+								},
 							}},
 						},
 					},
@@ -63,9 +65,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
+			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
@@ -79,7 +80,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager without access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -105,7 +105,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with file access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -145,7 +144,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
             trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic http_connection_manager with tcp access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",
@@ -190,7 +188,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
             trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic http_connection_manager with legacy tcp access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
 			statsName:       "backend",

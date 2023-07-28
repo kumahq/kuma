@@ -10,13 +10,15 @@ type BootstrapRequest struct {
 	Host               string  `json:"-"`
 	Version            Version `json:"version"`
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
-	CaCert          string            `json:"caCert"`
-	DynamicMetadata map[string]string `json:"dynamicMetadata"`
-	DNSPort         uint32            `json:"dnsPort,omitempty"`
-	EmptyDNSPort    uint32            `json:"emptyDnsPort,omitempty"`
-	OperatingSystem string            `json:"operatingSystem"`
-	Features        []string          `json:"features"`
-	Resources       ProxyResources    `json:"resources"`
+	CaCert              string            `json:"caCert"`
+	DynamicMetadata     map[string]string `json:"dynamicMetadata"`
+	DNSPort             uint32            `json:"dnsPort,omitempty"`
+	EmptyDNSPort        uint32            `json:"emptyDnsPort,omitempty"`
+	OperatingSystem     string            `json:"operatingSystem"`
+	Features            []string          `json:"features"`
+	Resources           ProxyResources    `json:"resources"`
+	AccessLogSocketPath string            `json:"accessLogSocketPath"`
+	MetricsSocketPath   string            `json:"metricsSocketPath"`
 }
 
 type Version struct {

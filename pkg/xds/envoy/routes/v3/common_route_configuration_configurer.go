@@ -6,12 +6,9 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type CommonRouteConfigurationConfigurer struct {
-	Name string
-}
+type CommonRouteConfigurationConfigurer struct{}
 
 func (c CommonRouteConfigurationConfigurer) Configure(routeConfiguration *envoy_route.RouteConfiguration) error {
-	routeConfiguration.Name = c.Name
 	routeConfiguration.ValidateClusters = util_proto.Bool(false)
 	return nil
 }

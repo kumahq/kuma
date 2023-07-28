@@ -2,7 +2,6 @@ package insights_test
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -54,9 +53,6 @@ var _ = Describe("Insight Persistence", func() {
 				return rate.NewLimiter(rate.Inf, 1)
 			},
 			Registry: registry.Global(),
-			AddressPortGenerator: func(s string) string {
-				return fmt.Sprintf("%s.mesh:80", s)
-			},
 		}, multitenant.SingleTenant)
 		go func() {
 			err := resyncer.Start(stopCh)
@@ -476,7 +472,6 @@ var _ = Describe("Insight Persistence", func() {
 			service := serviceInsight.Spec.Services["backend-1"]
 			// then
 			g.Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
-			g.Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
 			g.Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
 			g.Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
 		}).Should(Succeed())
@@ -547,7 +542,6 @@ var _ = Describe("Insight Persistence", func() {
 			internal := serviceInsight.Spec.Services["internal"]
 			g.Expect(internal).ToNot(BeNil())
 			g.Expect(internal.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_internal))
-			g.Expect(internal.AddressPort).To(Equal("internal.mesh:80"))
 
 			gw1 := serviceInsight.Spec.Services["gw1"]
 			g.Expect(gw1).ToNot(BeNil())
@@ -1010,7 +1004,6 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
-			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Total).To(Equal(uint32(3)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))

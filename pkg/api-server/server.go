@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -108,6 +110,10 @@ func NewApiServer(
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
+
+	// NOTE: This must come before any filters that make HTTP calls
+	container.Filter(otelrestful.OTelFilter("api-server"))
+
 	if cfg.ApiServer.Authn.LocalhostIsAdmin {
 		container.Filter(authn.LocalhostAuthenticator)
 	}
@@ -265,7 +271,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 		switch defType {
 		case mesh.ServiceInsightType:
 			// ServiceInsight is a bit different
-			ep := serviceInsightEndpoints{endpoints}
+			ep := serviceInsightEndpoints{
+				resourceEndpoints: endpoints,
+				addressPortGenerator: func(svc string) string {
+					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
+				},
+			}
 			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)

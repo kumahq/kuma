@@ -61,10 +61,10 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 
 	statsPath := "/" + buildEnvoyMetricsFilter(prometheusEndpoint)
 	metricsHijackerClusterName := envoy_names.GetMetricsHijackerClusterName()
-	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.ProvidedEndpointCluster(metricsHijackerClusterName, proxy.Dataplane.IsIPv6(),
+	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, metricsHijackerClusterName).
+		Configure(envoy_clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(),
 			core_xds.Endpoint{
-				UnixDomainPath: envoy_common.MetricsHijackerSocketName(proxy.Dataplane.Meta.GetName(), proxy.Dataplane.Meta.GetMesh()),
+				UnixDomainPath: proxy.Metadata.MetricsSocketPath,
 			},
 		)).
 		Configure(envoy_clusters.DefaultTimeout()).
@@ -90,11 +90,11 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	var listener envoy_common.NamedResource
 	if secureMetrics(prometheusEndpoint, xdsCtx.Mesh.Resource) {
-		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
+		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+			WithOverwriteName(prometheusListenerName).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 			Configure(envoy_listeners.FilterChain(
-				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
+				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address),
 					envoy_listeners.StaticEndpoints(prometheusListenerName,
 						[]*envoy_common.StaticEndpointPath{
@@ -106,7 +106,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 						})),
 			)).
 			Configure(envoy_listeners.FilterChain(
-				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
+				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker),
 					envoy_listeners.NetworkRBAC(prometheusListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
 					envoy_listeners.StaticEndpoints(prometheusListenerName,
@@ -121,9 +121,9 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 			)).
 			Build()
 	} else {
-		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+			WithOverwriteName(prometheusListenerName).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
 					{
 						ClusterName: metricsHijackerClusterName,

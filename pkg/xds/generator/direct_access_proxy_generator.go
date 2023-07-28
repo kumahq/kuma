@@ -50,9 +50,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx context.Context, xdsCtx xds_con
 
 	for _, endpoint := range endpoints {
 		name := DirectAccessEndpointName(endpoint)
-		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+		listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP).
+			WithOverwriteName(name).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.TcpProxyDeprecated(name, envoy_common.NewCluster(envoy_common.WithService("direct_access")))).
 				Configure(envoy_listeners.NetworkAccessLog(
 					meshName,
@@ -74,8 +74,8 @@ func (_ DirectAccessProxyGenerator) Generate(ctx context.Context, xdsCtx xds_con
 		})
 	}
 
-	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.PassThroughCluster("direct_access")).
+	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, "direct_access").
+		Configure(envoy_clusters.PassThroughCluster()).
 		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()

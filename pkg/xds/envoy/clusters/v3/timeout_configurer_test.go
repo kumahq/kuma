@@ -52,8 +52,8 @@ var _ = Describe("TimeoutConfigurer", func() {
 	DescribeTable("should set timeouts for outbound HTTP cluster",
 		func(given testCase) {
 			// given
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster("backend")).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolHTTP)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -119,8 +119,8 @@ typedExtensionProtocolOptions:
 	DescribeTable("should set timeouts for outbound GRPC cluster",
 		func(given testCase) {
 			// given
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster("backend")).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolGRPC)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -186,8 +186,8 @@ typedExtensionProtocolOptions:
 
 	It("should set timeouts for inbound HTTP cluster", func() {
 		// given
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster("localhost:8080", false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "localhost:8080").
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
 			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)).
 			Build()
 		Expect(err).ToNot(HaveOccurred())

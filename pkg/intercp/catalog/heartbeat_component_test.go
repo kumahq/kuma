@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -39,7 +40,9 @@ var _ = Describe("Heartbeats", func() {
 		}
 		pc := pingClient // copy pointer to get rid of data race
 
-		heartbeatComponent = catalog.NewHeartbeatComponent(
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		heartbeatComponent, err = catalog.NewHeartbeatComponent(
 			c,
 			currentInstance,
 			10*time.Millisecond,
@@ -47,7 +50,9 @@ var _ = Describe("Heartbeats", func() {
 				pc.SetServerURL(serverURL)
 				return pc, nil
 			},
+			metrics,
 		)
+		Expect(err).ToNot(HaveOccurred())
 
 		stopCh = make(chan struct{})
 		go func() {

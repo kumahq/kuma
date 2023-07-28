@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/api/generic"
 	"github.com/kumahq/kuma/pkg/core"
@@ -13,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -51,13 +53,29 @@ type subscriptionFinalizer struct {
 	types     []core_model.ResourceType
 	insights  tenantInsights
 	tenants   multitenant.Tenants
+	metric    prometheus.Summary
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+func NewSubscriptionFinalizer(
+	rm manager.ResourceManager,
+	tenants multitenant.Tenants,
+	newTicker func() *time.Ticker,
+	metrics core_metrics.Metrics,
+	types ...core_model.ResourceType,
+) (component.Component, error) {
 	for _, typ := range types {
 		if !isInsightType(typ) {
 			return nil, errors.Errorf("%q type is not an Insight", typ)
 		}
+	}
+
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_sub_finalizer",
+		Help:       "Summary of Subscription finalizer component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
 	}
 
 	return &subscriptionFinalizer{
@@ -66,6 +84,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Te
 		newTicker: newTicker,
 		insights:  tenantInsights{},
 		tenants:   tenants,
+		metric:    metric,
 	}, nil
 }
 
@@ -77,6 +96,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case now := <-ticker.C:
+			start := core.Now()
 			tenantIds, err := f.tenants.GetIDs(context.TODO())
 			if err != nil {
 				finalizerLog.Error(err, "could not get contexts")
@@ -96,6 +116,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 					}
 				}
 			}
+			f.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			finalizerLog.Info("stopped")
 			return nil

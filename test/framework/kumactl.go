@@ -128,7 +128,7 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 	return tmpfile.Name(), err
 }
 
-func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
+func (k *KumactlOptions) KumactlInstallCP(args ...string) (string, error) {
 	cmd := []string{
 		"install", "control-plane",
 	}

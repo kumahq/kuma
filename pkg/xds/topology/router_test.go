@@ -232,8 +232,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 							},
 						},
@@ -365,8 +367,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 							},
 						},
@@ -436,8 +440,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 							},
 						},
@@ -507,8 +513,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 							},
 						},
@@ -588,12 +596,16 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 								{
-									Port:    1235,
-									Service: "elastic",
+									Port: 1235,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "elastic",
+									},
 								},
 							},
 						},
@@ -686,12 +698,16 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{
-									Port:    1234,
-									Service: "redis",
+									Port: 1234,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
 								},
 								{
-									Port:    1235,
-									Service: "elastic",
+									Port: 1235,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "elastic",
+									},
 								},
 							},
 						},
@@ -822,8 +838,18 @@ var _ = Describe("TrafficRoute", func() {
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis", Port: 10001},
-								{Service: "elastic", Port: 10002},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
+									Port: 10001,
+								},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "elastic",
+									},
+									Port: 10002,
+								},
 							},
 						},
 					},
@@ -843,8 +869,18 @@ var _ = Describe("TrafficRoute", func() {
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis", Port: 10001},
-								{Service: "elastic", Port: 10002},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
+									Port: 10001,
+								},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "elastic",
+									},
+									Port: 10002,
+								},
 							},
 						},
 					},

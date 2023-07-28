@@ -12,7 +12,6 @@ import (
 
 var _ = Describe("InboundListenerConfigurer", func() {
 	type testCase struct {
-		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
 		listenerAddress  string
 		listenerPort     uint32
@@ -22,8 +21,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -35,7 +33,6 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic TCP listener", testCase{
-			listenerName:     "inbound:192.168.0.1:8080",
 			listenerProtocol: xds.SocketAddressProtocolTCP,
 			listenerAddress:  "192.168.0.1",
 			listenerPort:     8080,
@@ -50,7 +47,6 @@ var _ = Describe("InboundListenerConfigurer", func() {
 `,
 		}),
 		Entry("basic UDP listener", testCase{
-			listenerName:     "inbound:192.168.0.1:8080",
 			listenerProtocol: xds.SocketAddressProtocolUDP,
 			listenerAddress:  "192.168.0.1",
 			listenerPort:     8080,

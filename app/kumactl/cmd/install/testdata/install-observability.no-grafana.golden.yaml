@@ -656,7 +656,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "quay.io/coreos/kube-state-metrics:v1.9.8"
+          image: "bitnami/kube-state-metrics:2.9.2"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics

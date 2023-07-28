@@ -182,7 +182,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		ApiServerPort: app.ports["5681"],
 		SshPort:       app.ports["22"],
 	}
-	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf, c.opts.apiHeaders)
+	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf, c.opts.apiHeaders, c.opts.setupKumactl)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,11 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		}
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma {
+		return c.VerifyKuma()
+	}
+
+	return nil
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {

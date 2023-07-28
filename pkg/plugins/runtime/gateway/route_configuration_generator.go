@@ -13,9 +13,9 @@ func GenerateRouteConfig(info GatewayListenerInfo) *envoy_routes.RouteConfigurat
 		return nil
 	}
 
-	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion).
+	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion, info.Listener.ResourceName).
 		Configure(
-			envoy_routes.CommonRouteConfiguration(info.Listener.ResourceName),
+			envoy_routes.CommonRouteConfiguration(),
 			envoy_routes.IgnorePortInHostMatching(),
 			// TODO(jpeach) propagate merged listener tags.
 			// Ideally we would propagate the tags header

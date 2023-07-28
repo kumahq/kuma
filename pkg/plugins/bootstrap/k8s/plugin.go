@@ -15,12 +15,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+	kube_metrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
@@ -67,7 +69,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			LeaderElectionNamespace: systemNamespace,
 			Logger:                  core.Log.WithName("kube-manager"),
 
-			// Disable metrics bind address as we serve metrics some other way.
+			// Disable metrics bind address as we use kube metrics registry directly.
 			MetricsBindAddress: "0",
 		},
 	)
@@ -90,6 +92,15 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
 	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
+	zoneName := "Standalone"
+	if b.Config().Mode == config_core.Zone {
+		zoneName = b.Config().Multizone.Zone.Name
+	}
+	metrics, err := core_metrics.NewMetricsOfRegistererGatherer(zoneName, kube_metrics.Registry)
+	if err != nil {
+		return err
+	}
+	b.WithMetrics(metrics)
 	return nil
 }
 

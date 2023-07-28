@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"os"
 	"strings"
 	"sync"
 
@@ -129,7 +130,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 
 	if state.dataplaneId == (core_model.ResourceKey{}) {
 		var dpType core_model.ResourceType
-		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir())
 
 		// If the dataplane was started with a resource YAML, then it
 		// will be serialized in the node metadata and we would know
@@ -198,7 +199,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 			subscription.Status.Total.ResponsesRejected++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesRejected++
 		} else {
-			log.Info("config accepted")
+			log.V(1).Info("config accepted")
 			subscription.Status.Total.ResponsesAcknowledged++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesAcknowledged++
 		}
@@ -243,7 +244,7 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 		)
 	}
 
-	log.Info("config sent")
+	log.V(1).Info("config sent")
 }
 
 // To keep logs short, we want to log "Listeners" instead of full qualified Envoy type url name

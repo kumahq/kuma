@@ -23,6 +23,7 @@ func NewMeshManager(
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
 	unsafeDelete bool,
+	extensions context.Context,
 ) core_manager.ResourceManager {
 	return &meshManager{
 		store:         store,
@@ -31,6 +32,7 @@ func NewMeshManager(
 		registry:      registry,
 		meshValidator: validator,
 		unsafeDelete:  unsafeDelete,
+		extensions:    extensions,
 	}
 }
 
@@ -41,6 +43,7 @@ type meshManager struct {
 	registry      core_registry.TypeRegistry
 	meshValidator MeshValidator
 	unsafeDelete  bool
+	extensions    context.Context
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -82,7 +85,13 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name, mesh.Spec.GetSkipCreatingInitialPolicies()); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(
+		ctx,
+		m.otherManagers,
+		opts.Name,
+		mesh.Spec.GetSkipCreatingInitialPolicies(),
+		m.extensions,
+	); err != nil {
 		return err
 	}
 	return nil

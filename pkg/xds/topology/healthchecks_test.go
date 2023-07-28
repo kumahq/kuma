@@ -195,8 +195,16 @@ var _ = Describe("HealthCheck", func() {
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{Service: "redis"},
-								{Service: "elastic"},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "redis",
+									},
+								},
+								{
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "elastic",
+									},
+								},
 							},
 						},
 					},

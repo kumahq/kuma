@@ -6,9 +6,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Metrics interface {
+type RegistererGatherer interface {
 	prometheus.Registerer
 	prometheus.Gatherer
+}
+
+type Metrics interface {
+	RegistererGatherer
 
 	RegisterGRPC(*grpc.Server)
 	GRPCServerInterceptors() []grpc.ServerOption
@@ -44,26 +48,29 @@ func (m *metrics) GRPCClientInterceptors() []grpc.DialOption {
 var _ Metrics = &metrics{}
 
 func NewMetrics(zone string) (Metrics, error) {
-	registry := prometheus.NewRegistry()
-	registerer := prometheus.WrapRegistererWith(map[string]string{
+	return NewMetricsOfRegistererGatherer(zone, prometheus.NewRegistry())
+}
+
+func NewMetricsOfRegistererGatherer(zone string, registererGatherer RegistererGatherer) (Metrics, error) {
+	wrappedRegisterer := prometheus.WrapRegistererWith(map[string]string{
 		"zone": zone,
-	}, registry)
+	}, registererGatherer)
 
 	grpcServerMetrics := grpc_prometheus.NewServerMetrics()
-	if err := registry.Register(grpcServerMetrics); err != nil {
+	if err := wrappedRegisterer.Register(grpcServerMetrics); err != nil {
 		return nil, err
 	}
 	grpcServerMetrics.EnableHandlingTimeHistogram()
 
 	grpcClientMetrics := grpc_prometheus.NewClientMetrics()
-	if err := registry.Register(grpcClientMetrics); err != nil {
+	if err := wrappedRegisterer.Register(grpcClientMetrics); err != nil {
 		return nil, err
 	}
 	grpcClientMetrics.EnableClientHandlingTimeHistogram()
 
 	m := &metrics{
-		Registerer:        registerer,
-		Gatherer:          registry,
+		Registerer:        wrappedRegisterer,
+		Gatherer:          registererGatherer,
 		grpcServerMetrics: grpcServerMetrics,
 		grpcClientMetrics: grpcClientMetrics,
 	}

@@ -24,8 +24,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster(given.clusterName)).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.HealthCheck(core_mesh.ProtocolHTTP, given.healthCheck)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()

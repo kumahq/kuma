@@ -129,9 +129,6 @@ var _ = Describe("Bootstrap Server", func() {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
 		}
-		core.TempDir = func() string {
-			return "/tmp"
-		}
 	})
 
 	defaultDataplane := func() *mesh.DataplaneResource {

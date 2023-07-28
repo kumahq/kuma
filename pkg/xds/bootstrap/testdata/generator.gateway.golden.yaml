@@ -65,15 +65,15 @@ node:
   cluster: gateway
   id: mesh.name.namespace
   metadata:
+    accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
     features: []
+    metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
-      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
-        kumaDpCompatible: false
         version: 1.15.0
       kumaDp:
         buildDate: "2019-08-07T11:26:06Z"

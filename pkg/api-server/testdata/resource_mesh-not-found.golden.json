@@ -1,6 +1,6 @@
 {
  "type": "/std-errors",
- "status": "400",
+ "status": 400,
  "title": "Could not create a resource",
  "detail": "Mesh is not found",
  "invalid_parameters": [

@@ -29,8 +29,7 @@ type HttpOutboundRouteConfigurer struct {
 var _ envoy_listeners_v3.FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
-		Configure(envoy_virtual_hosts.CommonVirtualHost(c.Service))
+	virtualHostBuilder := envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3, c.Service)
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
@@ -42,8 +41,8 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}
 	static := envoy_listeners_v3.HttpStaticRouteConfigurer{
-		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3).
-			Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(c.Service))).
+		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, envoy_names.GetOutboundRouteName(c.Service)).
+			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.TagsHeader(c.DpTags)).
 			Configure(envoy_routes.VirtualHost(virtualHostBuilder)),
 	}

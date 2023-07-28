@@ -28,9 +28,16 @@ func setupCollector(rt runtime.Runtime) error {
 		// Therefore, on K8S offline dataplanes are cleaned up quickly enough to not run this.
 		return nil
 	}
-	return rt.Add(
-		NewCollector(rt.ResourceManager(), func() *time.Ticker { return time.NewTicker(1 * time.Minute) }, rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration),
+	collector, err := NewCollector(
+		rt.ResourceManager(),
+		func() *time.Ticker { return time.NewTicker(1 * time.Minute) },
+		rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration,
+		rt.Metrics(),
 	)
+	if err != nil {
+		return err
+	}
+	return rt.Add(collector)
 }
 
 func setupFinalizer(rt runtime.Runtime) error {
@@ -65,7 +72,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
-	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, resourceTypes...)
+	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, rt.Metrics(), resourceTypes...)
 	if err != nil {
 		return err
 	}

@@ -160,11 +160,6 @@ message Dataplane {
       // port.
       uint32 port = 4 [ (doc.required) = true ];
 
-      // DEPRECATED: use `networking.outbound[].tags['kuma.io/service']`
-      // Service name identified by the value of `kuma.io/service`.
-      string service = 2
-          [ (validate.rules).string.hostname = true, deprecated = true ];
-
       // Tags of consumed data plane proxies.
       // `kuma.io/service` tag is required.
       // These tags can then be referenced in `destinations` section of policies

@@ -148,9 +148,8 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:   "outbound",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated(
 								"127.0.0.1:10002",
 								envoy_common.NewCluster(
@@ -543,8 +542,7 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
-		10001,
-		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
+		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
 		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
 			Service: "backend",
 			Routes: []meshhttproute_xds.OutboundRoute{{
@@ -565,15 +563,12 @@ func httpOutboundListener() envoy_common.NamedResource {
 					"web": true,
 				},
 			},
-		}),
-		"outbound",
-	)
+		}))
 }
 
 func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
 	return createListener(
-		10001,
-		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
+		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
 		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
 			Service: "other-service",
 			Routes: []meshhttproute_xds.OutboundRoute{
@@ -610,15 +605,12 @@ func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
 					"web": true,
 				},
 			},
-		}),
-		"outbound",
-	)
+		}))
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		80,
-		InboundListener("inbound:127.0.0.1:80", "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
+		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
 		HttpInboundRoutes(
 			"backend",
 			envoy_common.Routes{{
@@ -627,15 +619,13 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 					envoy_common.WithWeight(100),
 				)},
 			}},
-		),
-		"inbound")
+		))
 }
 
-func createListener(port uint32, listener ListenerBuilderOpt, route FilterChainBuilderOpt, direction string) envoy_common.NamedResource {
-	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(listener).
-		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(HttpConnectionManager(fmt.Sprintf("%s:127.0.0.1:%d", direction, port), false)).
+func createListener(builder *ListenerBuilder, route FilterChainBuilderOpt) envoy_common.NamedResource {
+	return builder.
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+			Configure(HttpConnectionManager(builder.GetName(), false)).
 			Configure(route),
 		)).MustBuild()
 }

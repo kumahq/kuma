@@ -6,6 +6,14 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.4.x`
+
+### **Breaking changes**
+
+#### Removal of service field in Dataplane outbound
+
+After a period of depreciation, the service field in now removed. The service name is only defined by the value of  `kuma.io/service` in the outbound tags field.
+
 ## Upgrade to `2.3.x`
 
 ### **Breaking changes**
@@ -13,6 +21,15 @@ does not have any particular instructions.
 #### `MeshHTTPRoute`
 
 * Changed path match `type` from `Prefix` to `PathPrefix`
+
+#### `MeshAccessLog`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+* Added a new field `Type` for `Format` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+
+#### `MeshTrace`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
 
 #### `kumactl` container image
 

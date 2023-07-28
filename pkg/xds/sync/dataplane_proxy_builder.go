@@ -65,6 +65,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Routing:        *routing,
 		Policies:       *matchedPolicies,
 		SecretsTracker: secretsTracker,
+		Metadata:       &core_xds.DataplaneMetadata{},
 	}
 	return proxy, nil
 }
@@ -118,7 +119,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	}
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		service := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		service := outbound.GetService()
 		if len(reachableServices) != 0 && !reachableServices[service] {
 			continue // ignore VIP outbound if reachableServices is defined and not specified
 		}

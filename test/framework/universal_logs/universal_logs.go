@@ -3,51 +3,56 @@ package universal_logs
 import (
 	"os"
 	"path"
-	"sync"
 	"time"
 
 	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	k8s_strings "k8s.io/utils/strings"
+
+	"github.com/kumahq/kuma/pkg/core"
 )
 
-var (
-	timePrefix = time.Now().Local().Format("060102_150405")
-	pathSet    = map[string]struct{}{}
-	mutex      sync.RWMutex
-)
+var timePrefix = time.Now().Local().Format("060102_150405")
 
-// CreateLogsPath constructs a path for logs based on the Ginkgo node hierarchy.
-// If the CreateLogsPath function is called before the suite starts (like SyncBeforeSuite),
-// then the result is "/{basePath}/{timePrefix}".
-// If the function is called inside the suite, then the result is
-// a concatenation of the basePath, timePrefix, and the Ginkgo node hierarchy.
-//
-// For example, if the spec has the following hierarchy:
-//
-//	Describe("spec 1", func() {
-//	    Context("ctx 1", func() {
-//	        BeforeAll(func() {
-//	            lp := CreateLogsPath("/tmp") // lp == "/tmp/060102_150405/spec-1/ctx-1"
-//	        })
-//	        Context("ctx 2", func() {
-//	            It("it 1", func() {
-//	                lp := CreateLogsPath("/tmp") // lp == "/tmp/060102_150405/spec-1/ctx-1/ctx-2/it-1"
-//	            })
-//	        })
-//	    })
-//	})
-//
-// Additionally the function adds logs path to the Ginkgo report. Cleanup function is using this information
-// to remove logs for successfully passed tests.
-func CreateLogsPath(basePath string) string {
-	sr := ginkgo.CurrentSpecReport()
+func CurrentLogsPath(basePath string) string {
+	if lp := GetLogsPath(ginkgo.CurrentSpecReport(), basePath); lp.Spec != "" {
+		return lp.Spec
+	} else if lp.Describe != "" {
+		return lp.Describe
+	} else {
+		return lp.Root
+	}
+}
 
-	if len(sr.SpecEvents) == 0 {
-		p := withTimePrefix(basePath)
-		ginkgo.AddReportEntry(p)
-		return p
+type LogsPaths struct {
+	// Root contains path of the root of logging directory i.e. /tmp/060102_150405/
+	Root string
+	// Describe contains path of the 'Describe' logging directory i.e. /tmp/060102_150405/meshtrafficpermission
+	Describe string
+	// Spec contains path of the spec like 'BeforeAll', 'It' etc., it can be quite long and complicated
+	// i.e //tmp/060102_150405/meshtrafficpermission/http/with-mtls/should-work/. You shouldn't rely on 'spec' when performing cleanup.
+	Spec string
+}
+
+// GetLogsPath returns a struct with 3 paths – rootPath, describePath and specPath.
+// All e2e tests in Kuma have the following structure:
+//
+//	<env>_suite:
+//		Describe("<feature1>", ...)
+//			It("should do smth1...")
+//			It("should do smth2...")
+//		Describe("<feature2>", ...)
+//
+// Some components (like kuma-cp) are shared across env, other apps (like test-server) could be deployed per Describe or per It.
+// We'd like to reflect hierarchical structure when collecting logs from running containers, that's why for writing logs we're using specPath.
+func GetLogsPath(sr ginkgo.SpecReport, basePath string) LogsPaths {
+	result := LogsPaths{
+		Root: withTimePrefix(basePath),
+	}
+
+	if len(sr.SpecEvents) == 0 || len(sr.ContainerHierarchyTexts) == 0 {
+		return result
 	}
 
 	lastEvent := sr.SpecEvents[len(sr.SpecEvents)-1]
@@ -75,30 +80,23 @@ func CreateLogsPath(basePath string) string {
 
 	// add only a root level ginkgo.Describe() directory for a cleanup,
 	// i.e "/tmp/060102_150405/mesh-traffic-permissions"
-	rootSpec := path.Join(path.Join(append([]string{basePath, timePrefix}, sanitizedPath[:1]...)...))
-	spec := path.Join(append([]string{basePath, timePrefix}, sanitizedPath...)...)
+	result.Describe = path.Join(append([]string{result.Root}, sanitizedPath[:1]...)...)
+	result.Spec = path.Join(append([]string{result.Root}, sanitizedPath...)...)
 
-	mutex.Lock()
-	if _, ok := pathSet[spec]; !ok {
-		pathSet[spec] = struct{}{}
-		ginkgo.AddReportEntry(rootSpec)
-	}
-	mutex.Unlock()
-
-	return spec
+	return result
 }
 
+// CleanupIfSuccess removes logs for successfully passed Describe specs by using describePath.
+// If all tests passed then we'll remove rootPath dir.
 func CleanupIfSuccess(basePath string, report ginkgo.Report) {
 	specFailedByLogsPath := map[string]bool{}
 
 	for _, sr := range report.SpecReports {
-		if len(sr.ContainerHierarchyTexts) == 0 {
+		lp := GetLogsPath(sr, basePath)
+		if lp.Describe == "" {
 			continue
 		}
-
-		for _, re := range sr.ReportEntries {
-			specFailedByLogsPath[re.Name] = specFailedByLogsPath[re.Name] || sr.Failed()
-		}
+		specFailedByLogsPath[lp.Describe] = specFailedByLogsPath[lp.Describe] || sr.Failed()
 	}
 
 	suiteFailed := false
@@ -106,11 +104,13 @@ func CleanupIfSuccess(basePath string, report ginkgo.Report) {
 		if failed {
 			suiteFailed = true
 		} else {
+			core.Log.Info("cleanup after 'Describe'", "describePath", logsPath)
 			_ = os.RemoveAll(logsPath)
 		}
 	}
 
 	if !suiteFailed {
+		core.Log.Info("suite didn't fail, so cleanup everything")
 		_ = os.RemoveAll(withTimePrefix(basePath))
 	}
 }

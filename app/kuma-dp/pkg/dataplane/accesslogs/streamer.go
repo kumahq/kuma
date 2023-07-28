@@ -13,10 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var logger = core.Log.WithName("access-log-streamer")
@@ -38,9 +36,9 @@ func (s *accessLogStreamer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogStreamer(dataplane kumadp.Dataplane) *accessLogStreamer {
+func NewAccessLogStreamer(socketName string) component.Component {
 	return &accessLogStreamer{
-		address: envoy.AccessLogSocketName(dataplane.Name, dataplane.Mesh),
+		address: socketName,
 		senders: map[string]*logSender{},
 	}
 }

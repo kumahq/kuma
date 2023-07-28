@@ -3,7 +3,12 @@ package multitenant
 import (
 	"context"
 	"errors"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
+
+const spanAttributeName = "tenantID"
 
 // GlobalTenantID is a unique ID used for storing resources that are not tenant-aware
 var GlobalTenantID = ""
@@ -31,6 +36,10 @@ func (s singleTenant) GetIDs(context.Context) ([]string, error) {
 }
 
 func WithTenant(ctx context.Context, tenantId string) context.Context {
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span.SetAttributes(attribute.String(spanAttributeName, tenantId))
+	}
+
 	return context.WithValue(ctx, tenantCtx{}, tenantId)
 }
 

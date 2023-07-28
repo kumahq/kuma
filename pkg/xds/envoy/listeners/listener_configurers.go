@@ -17,21 +17,19 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }
 
-func InboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
+		Protocol: protocol,
+		Address:  address,
+		Port:     port,
 	})
 }
 
-func OutboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func OutboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OutboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
+		Protocol: protocol,
+		Address:  address,
+		Port:     port,
 	})
 }
 

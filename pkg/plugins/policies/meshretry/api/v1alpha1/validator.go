@@ -17,7 +17,7 @@ func (r *MeshRetryResource) validate() error {
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateTo(r.Spec.To, r.Spec.TargetRef.Kind))
 	return verr.OrNil()
 }
 
@@ -26,6 +26,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 		},
@@ -33,16 +34,31 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	return targetRefErr
 }
 
-func validateTo(to []To) validators.ValidationError {
+func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
+
+		var supportedKinds []common_api.TargetRefKind
+		switch topLevelKind {
+		case common_api.MeshGateway:
+			supportedKinds = []common_api.TargetRefKind{
+				common_api.Mesh,
+			}
+		default:
+			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
-			},
-		}))
+			}
+		}
+
+		verr.AddErrorAt(
+			path.Field("targetRef"),
+			matcher_validators.ValidateTargetRef(
+				toItem.TargetRef,
+				&matcher_validators.ValidateTargetRefOpts{SupportedKinds: supportedKinds},
+			),
+		)
 		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))
 	}
 	return verr

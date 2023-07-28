@@ -1,8 +1,6 @@
 package insights
 
 import (
-	"fmt"
-
 	"golang.org/x/time/rate"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -24,9 +22,6 @@ func Setup(rt runtime.Runtime) error {
 			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout.Duration), 1)
 		},
 		Registry: registry.Global(),
-		AddressPortGenerator: func(svc string) string {
-			return fmt.Sprintf("%s.%s:%d", svc, rt.Config().DNSServer.Domain, rt.Config().DNSServer.ServiceVipPort)
-		},
 	}, rt.Tenants())
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }

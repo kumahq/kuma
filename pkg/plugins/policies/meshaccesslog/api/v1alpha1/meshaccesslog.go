@@ -2,6 +2,8 @@
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
@@ -70,6 +72,11 @@ type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	Attributes []JsonValue `json:"attributes,omitempty"`
+	// Body is a raw string or an OTLP any value as described at
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+	// It can contain placeholders available on
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 	// +kubebuilder:example="otel-collector:4317"
 	// +kubebuilder:validation:MinLength=1

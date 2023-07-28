@@ -482,6 +482,23 @@ violations:
   - field: spec.to[0].default.conf.http.hostSelection[2].predicate
     message: OmitPreviousPriorities must only be specified once`,
 			}),
+			Entry("top-level targetRef MeshGateway", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: gateway-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      tcp:
+        maxConnectAttempt: 5`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.kind
+    message: value is not supported`,
+			}),
 		)
 	})
 })

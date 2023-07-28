@@ -49,6 +49,8 @@ type kumaDeploymentOptions struct {
 	transparentProxyV1          bool
 	apiHeaders                  []string
 	zoneName                    string
+	verifyKuma                  bool
+	setupKumactl                bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -61,7 +63,9 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
-	k.transparentProxyV1 = true
+	k.transparentProxyV1 = false
+	k.verifyKuma = true
+	k.setupKumactl = true
 
 	// Apply options.
 	for _, o := range opts {
@@ -364,6 +368,18 @@ func WithApiHeaders(headers ...string) KumaDeploymentOption {
 func WithZoneName(zoneName string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneName = zoneName
+	})
+}
+
+func WithoutVerifyingKuma() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.verifyKuma = false
+	})
+}
+
+func WithoutConfiguringKumactl() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.setupKumactl = false
 	})
 }
 

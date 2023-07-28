@@ -38,8 +38,8 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
-		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
+		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, localClusterName).
+			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		if proxy.Dataplane.IsUsingTransparentProxy() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() || endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
@@ -92,7 +92,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 			switch protocol {
 			// configuration for HTTP case
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
@@ -130,8 +130,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
 
-		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP)).
+		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 

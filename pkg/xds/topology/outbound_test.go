@@ -108,8 +108,18 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-							{Service: "redis", Port: 10001},
-							{Service: "elastic", Port: 10002},
+							{
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "redis",
+								},
+								Port: 10001,
+							},
+							{
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "elastic",
+								},
+								Port: 10002,
+							},
 						},
 					},
 				},

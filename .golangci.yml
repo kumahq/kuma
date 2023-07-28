@@ -23,6 +23,8 @@ linters:
     - whitespace
 
 run:
+  build-tags:
+    - experimental
   skip-files:
     - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository

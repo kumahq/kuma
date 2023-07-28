@@ -91,9 +91,8 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 							Configure(
 								HttpInboundRoutes(
@@ -113,9 +112,8 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
 				},
@@ -176,9 +174,8 @@ var _ = Describe("MeshRateLimit", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: generator.OriginInbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 							Configure(
 								HttpInboundRoutes(
@@ -284,9 +281,8 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17778",
 				Origin: generator.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
 			}},
@@ -312,9 +308,8 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17777",
 				Origin: generator.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 						Configure(
 							HttpInboundRoutes(
@@ -353,9 +348,8 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17778",
 				Origin: generator.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 					)).MustBuild(),
 			}},
@@ -380,9 +374,8 @@ var _ = Describe("MeshRateLimit", func() {
 			resources: []*core_xds.Resource{{
 				Name:   "inbound:127.0.0.1:17777",
 				Origin: generator.OriginInbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
 						Configure(
 							HttpInboundRoutes(

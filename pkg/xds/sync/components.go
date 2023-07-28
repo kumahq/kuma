@@ -35,6 +35,7 @@ func DefaultIngressProxyBuilder(
 		apiVersion:         apiVersion,
 		meshCache:          rt.MeshCache(),
 		zone:               rt.Config().Multizone.Zone.Name,
+		ingressTagFilters:  rt.Config().Experimental.IngressTagFilters,
 	}
 }
 

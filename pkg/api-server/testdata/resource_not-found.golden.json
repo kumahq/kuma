@@ -1,6 +1,6 @@
 {
  "type": "/std-errors",
- "status": "404",
+ "status": 404,
  "title": "Could not retrieve a resource",
  "detail": "Not found",
  "details": "Not found"

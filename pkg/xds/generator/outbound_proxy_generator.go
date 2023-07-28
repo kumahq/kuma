@@ -111,7 +111,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+	serviceName := outbound.GetService()
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]
 	var timeoutPolicyConf *mesh_proto.Timeout_Conf
@@ -119,7 +119,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
 	}
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
@@ -183,11 +183,10 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 			Configure(envoy_listeners.Timeout(timeoutPolicyConf, protocol))
 		return filterChainBuilder
 	}()
-	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
+	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag))).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -207,20 +206,19 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 		for _, c := range service.Clusters() {
 			cluster := c.(*envoy_common.ClusterImpl)
-
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
+			clusterName := cluster.Name()
+			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
-			clusterName := cluster.Name()
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster(clusterName)).
+						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
 							ctx.Mesh.Resource,
@@ -233,7 +231,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, isIPv6, endpoints...)).
+						Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, endpoints...)).
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
@@ -246,7 +244,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(clusterName)).
+					Configure(envoy_clusters.EdsCluster()).
 					Configure(envoy_clusters.LB(cluster.LB())).
 					Configure(envoy_clusters.Http2())
 

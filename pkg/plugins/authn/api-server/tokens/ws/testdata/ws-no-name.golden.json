@@ -1,6 +1,6 @@
 {
   "type": "/std-errors",
-  "status": "400",
+  "status": 400,
   "title": "Invalid request",
   "detail": "Resource is not valid",
   "invalid_parameters": [

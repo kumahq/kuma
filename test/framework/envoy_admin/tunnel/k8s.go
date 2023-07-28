@@ -22,11 +22,11 @@ var _ envoy_admin.Tunnel = &K8sTunnel{}
 func NewK8sEnvoyAdminTunnel(
 	t testing.TestingT,
 	endpoint string,
-) (envoy_admin.Tunnel, error) {
+) envoy_admin.Tunnel {
 	return &K8sTunnel{
 		endpoint: endpoint,
 		t:        t,
-	}, nil
+	}
 }
 
 func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {

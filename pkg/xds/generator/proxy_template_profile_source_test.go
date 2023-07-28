@@ -144,6 +144,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -190,9 +191,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/service: backend
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "1-envoy-config.golden.yaml",
@@ -215,9 +218,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/service: backend
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
@@ -253,9 +258,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/protocol: http
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "3-envoy-config.golden.yaml",
@@ -288,9 +295,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/protocol: http
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006

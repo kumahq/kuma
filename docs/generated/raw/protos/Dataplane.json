@@ -205,10 +205,6 @@
                     "type": "integer",
                     "description": "Port on which the consumed service will be available to this data plane proxy. When transparent proxying is not used, Envoy will bind to this port."
                 },
-                "service": {
-                    "type": "string",
-                    "description": "DEPRECATED: use `networking.outbound[].tags['kuma.io/service']` Service name identified by the value of `kuma.io/service`."
-                },
                 "tags": {
                     "additionalProperties": {
                         "type": "string"

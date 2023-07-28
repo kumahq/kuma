@@ -26,15 +26,15 @@ func GenerateClusters(
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
-			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion)
-
 			clusterName := cluster.Name()
+			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
+
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
 				if meshCtx.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster(clusterName)).
+						Configure(envoy_clusters.EdsCluster()).
 						Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
 							meshCtx.Resource,
@@ -47,7 +47,7 @@ func GenerateClusters(
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, isIPv6, endpoints...)).
+						Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, endpoints...)).
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
@@ -60,7 +60,7 @@ func GenerateClusters(
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(clusterName)).
+					Configure(envoy_clusters.EdsCluster()).
 					Configure(envoy_clusters.Http2())
 
 				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {

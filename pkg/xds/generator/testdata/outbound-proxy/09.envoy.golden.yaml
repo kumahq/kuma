@@ -78,6 +78,15 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          accessLog:
+          - name: envoy.access_loggers.file
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              logFormat:
+                textFormatSource:
+                  inlineString: |
+                    [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              path: /var/log
           commonHttpProtocolOptions:
             idleTimeout: 0s
           httpFilters:
@@ -85,7 +94,7 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
-            name: 'outbound:'
+            name: outbound:api-http
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -94,15 +103,18 @@ resources:
             virtualHosts:
             - domains:
               - '*'
+              name: api-http
               routes:
               - match:
                   prefix: /
                 route:
                   cluster: api-http-_0__mesh2
                   timeout: 0s
+          statPrefix: api-http
           streamIdleTimeout: 0s
     metadata:
       filterMetadata:
-        io.kuma.tags: {}
+        io.kuma.tags:
+          kuma.io/service: api-http
     name: outbound:127.0.0.1:30001
     trafficDirection: OUTBOUND

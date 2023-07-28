@@ -33,11 +33,9 @@ func VirtualHost(builder *envoy_virtual_hosts.VirtualHostBuilder) RouteConfigura
 		}))
 }
 
-func CommonRouteConfiguration(name string) RouteConfigurationBuilderOpt {
+func CommonRouteConfiguration() RouteConfigurationBuilderOpt {
 	return AddRouteConfigurationConfigurer(
-		&v3.CommonRouteConfigurationConfigurer{
-			Name: name,
-		})
+		&v3.CommonRouteConfigurationConfigurer{})
 }
 
 func IgnorePortInHostMatching() RouteConfigurationBuilderOpt {

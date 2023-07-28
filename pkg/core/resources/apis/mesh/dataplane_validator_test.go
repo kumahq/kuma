@@ -96,7 +96,8 @@ var _ = Describe("Dataplane", func() {
               outbound:
                 - port: 3333
                   address: 127.0.0.1
-                  service: redis`,
+                  tags:
+                    kuma.io/service: redis`,
 		),
 		Entry("dataplane with gateway", `
             type: Dataplane
@@ -111,7 +112,8 @@ var _ = Describe("Dataplane", func() {
                   version: "1"
               outbound:
                 - port: 3333
-                  service: redis`,
+                  tags:
+                    kuma.io/service: redis`,
 		),
 		Entry("dataplane with valid tags", `
             type: Dataplane
@@ -344,7 +346,8 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking
@@ -432,7 +435,8 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/service: kong
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound
@@ -451,7 +455,6 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/service: kong
                   inbound:
                     - port: 3333
-                      service: redis
                       tags:
                         kuma.io/service: kong`,
 			expected: `
@@ -472,7 +475,6 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/service: kong
                   outbound:
                     - port: 3333
-                      service: redis
                       tags:
                         kuma.io/service: kong`,
 			expected: `
@@ -534,7 +536,8 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: sub-backend
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].port
@@ -556,7 +559,8 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: backend
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].servicePort
@@ -576,7 +580,8 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: backend
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].address
@@ -595,7 +600,8 @@ var _ = Describe("Dataplane", func() {
                         version: "v1"
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["kuma.io/service"]
@@ -615,7 +621,8 @@ var _ = Describe("Dataplane", func() {
                         version:
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["version"]'
@@ -635,7 +642,8 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/protocol:
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
@@ -657,7 +665,8 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/protocol: not-yet-supported-protocol
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
@@ -675,7 +684,8 @@ var _ = Describe("Dataplane", func() {
                       version: "v1"
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.gateway.tags
@@ -694,7 +704,8 @@ var _ = Describe("Dataplane", func() {
                       version:
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["version"]'
@@ -713,7 +724,8 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/protocol: http
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["kuma.io/protocol"]'
@@ -772,9 +784,11 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: backend
                         version: "v1"
                   outbound:
-                    - service: redis
+                    - tags:
+                        kuma.io/service: redis
                     - port: 65536
-                      service: elastic`,
+                      tags:
+                        kuma.io/service: elastic`,
 			expected: `
                 violations:
                 - field: networking.outbound[0].port
@@ -797,7 +811,8 @@ var _ = Describe("Dataplane", func() {
                   outbound:
                     - port: 3333
                       address: invalid
-                      service: elastic`,
+                      tags:
+                        kuma.io/service: elastic`,
 			expected: `
                 violations:
                 - field: networking.outbound[0].address
@@ -818,7 +833,8 @@ var _ = Describe("Dataplane", func() {
                   outbound:
                     - port: 3333
                       address: invalid
-                      service: elastic`,
+                      tags:
+                        kuma.io/service: elastic`,
 			expected: `
                 violations:
                 - field: networking.outbound[0].address
@@ -839,7 +855,8 @@ var _ = Describe("Dataplane", func() {
                         inv@lidT/gN%me: value
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["inv@lidT/gN%me"]
@@ -860,7 +877,8 @@ var _ = Describe("Dataplane", func() {
                         invalidTagValue: inv@lid+t@g
                   outbound:
                     - port: 3333
-                      service: redis`,
+                      tags:
+                        kuma.io/service: redis`,
 			expected: `
                 violations:
                 - field: networking.inbound[0].tags["invalidTagValue"]

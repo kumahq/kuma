@@ -35,8 +35,8 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
         type: STRICT_DNS`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster(clusterName, false,
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.ProvidedEndpointCluster(false,
 				core_xds.Endpoint{
 					Target: address,
 					Port:   port,
@@ -80,8 +80,8 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
         type: STRICT_DNS`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster(clusterName, true,
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.ProvidedEndpointCluster(true,
 				core_xds.Endpoint{
 					Target: address,
 					Port:   port,
@@ -124,8 +124,8 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
         type: STATIC`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: address, Port: port})).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: address, Port: port})).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
@@ -156,8 +156,8 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
         type: STATIC`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{UnixDomainPath: path})).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{UnixDomainPath: path})).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 

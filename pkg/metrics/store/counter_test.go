@@ -2,7 +2,6 @@ package metrics_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -66,9 +65,6 @@ var _ = Describe("Counter", func() {
 				return tickCh
 			},
 			Registry: registry.Global(),
-			AddressPortGenerator: func(s string) string {
-				return fmt.Sprintf("%s.mesh:80", s)
-			},
 		}, multitenant.SingleTenant)
 
 		go func() {

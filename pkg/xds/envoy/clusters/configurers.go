@@ -71,20 +71,18 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func EdsCluster(name string) ClusterBuilderOpt {
+func EdsCluster() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.EdsClusterConfigurer{
-			Name: name,
-		})
+		builder.AddConfigurer(&v3.EdsClusterConfigurer{})
 		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }
 
 // ProvidedEndpointCluster sets the cluster with the defined endpoints, this is useful when endpoints are not discovered using EDS, so we don't use EdsCluster
-func ProvidedEndpointCluster(name string, hasIPv6 bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
+func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
-			Name:      name,
+			Name:      builder.name,
 			Endpoints: endpoints,
 			HasIPv6:   hasIPv6,
 		})
@@ -150,11 +148,9 @@ func DefaultTimeout() ClusterBuilderOpt {
 	})
 }
 
-func PassThroughCluster(name string) ClusterBuilderOpt {
+func PassThroughCluster() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.PassThroughClusterConfigurer{
-			Name: name,
-		})
+		builder.AddConfigurer(&v3.PassThroughClusterConfigurer{})
 		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})
 }

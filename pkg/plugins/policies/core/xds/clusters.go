@@ -70,7 +70,7 @@ func GatherTargetedClusters(
 ) map[*envoy_cluster.Cluster]string {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range outbounds {
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 		for _, splitCluster := range outboundSplitClusters[serviceName] {
 			targetedClusters[splitCluster] = serviceName
 		}

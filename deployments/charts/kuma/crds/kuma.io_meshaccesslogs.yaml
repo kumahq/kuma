@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.12.0
+    controller-gen.kubebuilder.io/version: v0.12.1
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -16,7 +16,14 @@ spec:
     singular: meshaccesslog
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -97,6 +104,11 @@ spec:
                                           type: string
                                       type: object
                                     type: array
+                                  body:
+                                    description: Body is a raw string or an OTLP any
+                                      value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                      It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
                                     description: Endpoint of OpenTelemetry collector.
                                       An empty port defaults to 4317.
@@ -160,6 +172,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -194,6 +207,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGateway
                     - MeshService
                     - MeshServiceSubset
                     - MeshHTTPRoute
@@ -275,6 +289,11 @@ spec:
                                           type: string
                                       type: object
                                     type: array
+                                  body:
+                                    description: Body is a raw string or an OTLP any
+                                      value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                      It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
                                     description: Endpoint of OpenTelemetry collector.
                                       An empty port defaults to 4317.
@@ -338,6 +357,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGateway
                           - MeshService
                           - MeshServiceSubset
                           - MeshHTTPRoute
@@ -368,3 +388,4 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}

@@ -47,19 +47,19 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgress(
 		mesh.NewZoneEgressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	overview, err := r.fetchOverview(request.Request.Context(), name)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a zone egress overview")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a zone egress overview")
 		return
 	}
 
 	res := rest.From.Resource(overview)
 	if err := response.WriteAsJson(res); err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a zone egress overview")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a zone egress overview")
 	}
 }
 
@@ -97,19 +97,19 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgresses(
 		mesh.NewZoneEgressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
 		return
 	}
 
 	page, err := pagination(request)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve zone egress overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve zone egress overviews")
 		return
 	}
 
 	overviews, err := r.fetchOverviews(request.Request.Context(), page)
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve zone egress overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve zone egress overviews")
 		return
 	}
 
@@ -119,7 +119,7 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgresses(
 	restList := rest.From.ResourceList(&overviews)
 	restList.Next = nextLink(request, overviews.GetPagination().NextOffset)
 	if err := response.WriteAsJson(restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not list zone egress overviews")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not list zone egress overviews")
 	}
 }
 

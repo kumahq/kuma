@@ -70,8 +70,7 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 			if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
 				return nil, errors.Wrap(err, "could not parse backend config")
 			}
-			path := envoy.AccessLogSocketName(proxy.Dataplane.Meta.GetName(), mesh)
-			return fileAccessLog(fmt.Sprintf("%s;%s", cfg.Address, format.String()), path)
+			return fileAccessLog(fmt.Sprintf("%s;%s", cfg.Address, format.String()), proxy.Metadata.AccessLogSocketPath)
 		} else {
 			log.V(1).Info("kuma-dp does not support accesslog via named pipe; falling back on grpc stream", "proxyID", proxy.Id)
 			return legacyTcpAccessLog(format, backend.Conf)

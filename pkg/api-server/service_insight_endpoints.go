@@ -19,6 +19,7 @@ import (
 
 type serviceInsightEndpoints struct {
 	resourceEndpoints
+	addressPortGenerator func(string) string
 }
 
 func (s *serviceInsightEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -36,7 +37,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	serviceInsight := mesh.NewServiceInsightResource()
 	err := s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 	} else {
 		stat := serviceInsight.Spec.Services[service]
 		if stat == nil {
@@ -44,6 +45,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{},
 			}
 		}
+		s.fillStaticInfo(service, stat)
 		out := rest.From.Resource(serviceInsight)
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
@@ -68,7 +70,7 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	serviceInsightList := &mesh.ServiceInsightResourceList{}
 	err := s.resManager.List(request.Request.Context(), serviceInsightList, store.ListByMesh(meshName))
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 		return
 	}
 
@@ -79,12 +81,20 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	}
 
 	if err := s.paginateResources(request, &restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not paginate resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not paginate resources")
 		return
 	}
 
 	if err := response.WriteAsJson(restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not list resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+	}
+}
+
+// fillStaticInfo fills static information, so we won't have to store this in the DB
+func (s *serviceInsightEndpoints) fillStaticInfo(name string, stat *v1alpha1.ServiceInsight_Service) {
+	stat.Dataplanes.Total = stat.Dataplanes.Online + stat.Dataplanes.Offline
+	if stat.ServiceType == v1alpha1.ServiceInsight_Service_internal {
+		stat.AddressPort = s.addressPortGenerator(name)
 	}
 }
 
@@ -98,6 +108,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, stat := range insight.Spec.Services {
+			s.fillStaticInfo(serviceName, stat)
 			out := rest.From.Resource(insight)
 			res := out.(*rest_unversioned.Resource)
 			res.Meta.Name = serviceName

@@ -184,6 +184,41 @@ var _ = Describe("IngressTrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("data plane proxy with advertised address", testCase{
+				destinations: core_xds.DestinationMap{
+					"redis": []mesh_proto.TagSelector{
+						{mesh_proto.ServiceTag: "redis"},
+					},
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: "default"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								AdvertisedAddress: "192.168.0.2",
+								Address:           "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+				},
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.2",
+							Port:   6379,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "mesh": "default"},
+							Weight: 1,
+						},
+					},
+				},
+			}),
 		)
 	})
 })

@@ -81,9 +81,8 @@ func (*ExternalServicesGenerator) generateCDS(
 		// name as we would overwrite some clusters with the latest one
 		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
-		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion).
+		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(
-				clusterName,
 				isIPV6,
 				endpoints...,
 			)).
@@ -175,8 +174,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 			)
 
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.Name(names.GetEgressFilterChainName(serviceName, meshName)),
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(serviceName, meshName)).Configure(
 				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),

@@ -180,7 +180,7 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 	// A Gateway is a single service across all listeners.
 	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
-	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
+	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		// Note that even for HTTPS cases, we don't enable client certificate
 		// forwarding. This is because this particular configurer will enable
 		// forwarding for the client certificate URI, which is OK for SPIFFE-
@@ -352,7 +352,7 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
+	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 		envoy_listeners.TcpProxyDeprecated(service, clusters...),
 		envoy_listeners.NetworkAccessLog(
 			ctx.Mesh.Resource.Meta.GetName(),

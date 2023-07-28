@@ -382,7 +382,7 @@ resources:
                 textFormatSource:
                   inlineString: |
                     logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-              path: /tmp/kuma-al-dp-1-mesh1.sock
+              path: /foo/log
           cluster: api-tcp
           idleTimeout: 101s
           statPrefix: api-tcp

@@ -19,7 +19,7 @@ type ConnectionInfoTracker interface {
 
 // SnapshotReconciler reconciles Envoy XDS configuration (Snapshot) by executing all generators (pkg/xds/generator)
 type SnapshotReconciler interface {
-	Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) error
+	Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) (bool, error)
 	Clear(proxyId *core_xds.ProxyId) error
 }
 

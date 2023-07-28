@@ -102,6 +102,14 @@ func inboundsSelectedByPolicy(
 			tags[k] = v
 		}
 		return inboundsSelectedByTags(tags, dpp, gateway)
+	case common_api.MeshGateway:
+		ref := policy.GetTargetRef()
+		return listenersSelectedByMeshGatewayRef(
+			ref.Name,
+			ref.Tags,
+			dpp,
+			gateway,
+		)
 	case common_api.MeshHTTPRoute:
 		rr, ok := policyResource.(*core_rules.ResolvedResource)
 		if !ok {
@@ -200,6 +208,26 @@ func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneReso
 				listener.GetTags(),
 			)
 			if mesh_proto.TagSelector(tags).Matches(listenerTags) {
+				result = append(result, core_rules.InboundListener{
+					Address: dpp.Spec.GetNetworking().GetAddress(),
+					Port:    listener.Port,
+				})
+			}
+		}
+	}
+	return result
+}
+
+func listenersSelectedByMeshGatewayRef(
+	name string,
+	tags map[string]string,
+	dpp *core_mesh.DataplaneResource,
+	gateway *core_mesh.MeshGatewayResource,
+) []core_rules.InboundListener {
+	result := []core_rules.InboundListener{}
+	if name == gateway.GetMeta().GetName() {
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			if mesh_proto.TagSelector(tags).Matches(listener.GetTags()) {
 				result = append(result, core_rules.InboundListener{
 					Address: dpp.Spec.GetNetworking().GetAddress(),
 					Port:    listener.Port,

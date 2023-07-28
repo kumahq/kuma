@@ -159,11 +159,6 @@
             proxy. When transparent proxying is not used, Envoy will bind to this
             port.    
         
-        - `service` (optional)
-        
-            DEPRECATED: use `networking.outbound[].tags['kuma.io/service']`
-            Service name identified by the value of `kuma.io/service`.    
-        
         - `tags` (optional)
         
             Tags of consumed data plane proxies.

@@ -21,8 +21,8 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster(given.clusterName)).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.CircuitBreaker(given.circuitBreaker)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
@@ -35,6 +35,7 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("CircuitBreaker with thresholds", testCase{
+			clusterName: "backend",
 			circuitBreaker: &core_mesh.CircuitBreakerResource{
 				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
@@ -59,6 +60,7 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
           edsConfig:
             ads: {}
             resourceApiVersion: V3
+        name: backend
         type: EDS`,
 		}),
 	)

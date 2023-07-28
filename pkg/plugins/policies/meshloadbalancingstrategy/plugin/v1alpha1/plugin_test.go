@@ -73,8 +73,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-backend",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("backend")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -104,9 +104,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "cluster-payment",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
-							"payment",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",
@@ -131,9 +130,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-backend",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
 							Configure(
 								HttpOutboundRoute(
@@ -156,9 +154,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "listener-payments",
 					Origin: generator.OriginOutbound,
-					Resource: NewListenerBuilder(envoy_common.APIV3).
-						Configure(OutboundListener("outbound:127.0.0.1:27778", "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP)).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
 							Configure(
 								HttpOutboundRoute(
@@ -268,8 +265,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-1:eds-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-						Configure(clusters.EdsCluster("mesh-1:eds-cluster")).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:eds-cluster").
+						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
@@ -299,9 +296,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				{
 					Name:   "mesh-2:static-cluster",
 					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
-							"mesh-2:static-cluster",
 							false,
 							core_xds.Endpoint{
 								Target: "192.168.0.1",

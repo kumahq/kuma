@@ -411,7 +411,7 @@ func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, s
 		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
 			tlsReady[svc] = true
 		} else {
-			tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
+			tlsReady[svc] = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
 		}
 	}
 	return tlsReady

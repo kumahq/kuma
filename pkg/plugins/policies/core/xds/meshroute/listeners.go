@@ -115,8 +115,6 @@ func makeSplit(
 		}
 
 		if _, ok := protocols[plugins_xds.InferProtocol(proxy.Routing, service)]; !ok {
-			protocol := plugins_xds.InferProtocol(proxy.Routing, service)
-			fmt.Println("no protocol", service, protocol)
 			return nil
 		}
 

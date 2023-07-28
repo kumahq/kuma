@@ -465,9 +465,8 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 }
 
 func httpListener(port uint32) envoy_common.NamedResource {
-	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
-		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false)).
 			Configure(HttpOutboundRoute(
 				"backend",
@@ -487,9 +486,8 @@ func httpListener(port uint32) envoy_common.NamedResource {
 }
 
 func tcpListener(port uint32) envoy_common.NamedResource {
-	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
-		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(TcpProxyDeprecated(
 				fmt.Sprintf("outbound:127.0.0.1:%d", port),
 				envoy_common.NewCluster(

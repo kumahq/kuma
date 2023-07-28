@@ -86,12 +86,16 @@ var _ = Describe("Matcher", func() {
 					},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
-							Port:    9091,
-							Service: "backend",
+							Port: 9091,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
 						},
 						{
-							Port:    9092,
-							Service: "web",
+							Port: 9092,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "web",
+							},
 						},
 					},
 				},
@@ -193,7 +197,7 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log).To(HaveLen(0))
+		Expect(log).To(BeEmpty())
 	})
 
 	It("should skip unknown backends", func() {

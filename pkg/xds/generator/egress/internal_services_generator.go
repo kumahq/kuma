@@ -105,8 +105,8 @@ func (*InternalServicesGenerator) generateCDS(
 		// name as we would overwrite some clusters with the latest one
 		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
-		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
-			Configure(envoy_clusters.EdsCluster(clusterName)).
+		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
+			Configure(envoy_clusters.EdsCluster()).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
@@ -186,7 +186,7 @@ func (*InternalServicesGenerator) addFilterChains(
 				clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
 				listenerBuilder.Configure(envoy_listeners.FilterChain(
-					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+					envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchServerNames(sni),
 						envoy_listeners.TcpProxyDeprecatedWithMetadata(clusterName, envoy_common.NewCluster(

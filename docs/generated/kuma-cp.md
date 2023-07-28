@@ -396,6 +396,9 @@ metrics:
     minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
     # Max time that MeshInsight could spend without resync
     maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
+  controlPlane:
+    # If true metrics show number of resources in the system should be reported
+    reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
 
 # Reports configuration
 reports:
@@ -689,10 +692,19 @@ experimental:
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
   # If true, KDS will sync using incremental xDS updates
   kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+  # This can trim the size of the ZoneIngress object significantly.
+  # The drawback is that you cannot use filtered out tags for traffic routing.
+  # If empty, no filter is applied.
+  ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
 
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
     # connections to a builtin gateway data plane proxy
     globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
+
+tracing:
+  openTelemetry:
+    endpoint: "" # e.g. otel-collector:4317
 ```

@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -17,24 +19,34 @@ var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("he
 
 type heartbeatComponent struct {
 	catalog     Catalog
-	newClientFn NewClientFn
+	getClientFn GetClientFn
 	request     *system_proto.PingRequest
 	interval    time.Duration
 
 	leader *Instance
-	client system_proto.InterCpPingServiceClient
+	metric prometheus.Summary
 }
 
 var _ component.Component = &heartbeatComponent{}
 
-type NewClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
+type GetClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
 
 func NewHeartbeatComponent(
 	catalog Catalog,
 	instance Instance,
 	interval time.Duration,
-	newClientFn NewClientFn,
-) component.Component {
+	newClientFn GetClientFn,
+	metrics core_metrics.Metrics,
+) (component.Component, error) {
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_heartbeat",
+		Help:       "Summary of Inter CP Heartbeat component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
+
 	return &heartbeatComponent{
 		catalog: catalog,
 		request: &system_proto.PingRequest{
@@ -42,9 +54,10 @@ func NewHeartbeatComponent(
 			Address:     instance.Address,
 			InterCpPort: uint32(instance.InterCpPort),
 		},
-		newClientFn: newClientFn,
+		getClientFn: newClientFn,
 		interval:    interval,
-	}
+		metric:      metric,
+	}, nil
 }
 
 func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
@@ -56,10 +69,13 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
+			start := core.Now()
 			if err := h.heartbeat(ctx, true); err != nil {
 				h.leader = nil
 				heartbeatLog.Error(err, "could not heartbeat the leader")
+				continue
 			}
+			h.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
 			if err := h.heartbeat(ctx, false); err != nil {
@@ -87,7 +103,11 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) error {
 		"ready", ready,
 	)
 	h.request.Ready = ready
-	resp, err := h.client.Ping(ctx, h.request)
+	client, err := h.getClientFn(h.leader.InterCpURL())
+	if err != nil {
+		return errors.Wrap(err, "could not get or create a client to a leader")
+	}
+	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
 		return errors.Wrap(err, "could not send a heartbeat to a leader")
 	}
@@ -111,7 +131,7 @@ func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
 		"previousLeaderAddress", h.leader.Address,
 		"newLeaderAddress", newLeader.Leader,
 	)
-	h.client, err = h.newClientFn(h.leader.InterCpURL())
+	_, err = h.getClientFn(h.leader.InterCpURL())
 	if err != nil {
 		return errors.Wrap(err, "could not create a client to a leader")
 	}

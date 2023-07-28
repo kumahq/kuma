@@ -140,6 +140,8 @@ type DataplaneRuntime struct {
 	EnvoyLogLevel string `json:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
+	// SocketDir dir to store socket used between Envoy and the dp process
+	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 }
 
 // DataplaneResources defines the resources available to a dataplane proxy.

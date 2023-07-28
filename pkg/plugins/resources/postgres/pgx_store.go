@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/attribute"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -26,6 +28,11 @@ type pgxResourceStore struct {
 }
 
 var _ store.ResourceStore = &pgxResourceStore{}
+
+// This attribute is necessary for tracing integrations like Datadog, to have
+// full insights into sql queries connected with traces.
+// ref. https://github.com/DataDog/dd-trace-go/blob/3d97fcec9f8b21fdd821af526d27d4335b26da66/contrib/database/sql/conn.go#L290
+var spanTypeSQLAttribute = attribute.String("span.type", "sql")
 
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
 	pool, err := connect(config, customizer)
@@ -61,6 +68,7 @@ func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_conf
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithAttributes(spanTypeSQLAttribute))
 	customizer.Customize(pgxConfig)
 
 	if err != nil {
