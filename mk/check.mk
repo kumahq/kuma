@@ -75,16 +75,16 @@ lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
 .PHONY: check
 check: format/common lint ## Dev: Run code checks (go fmt, go vet, ...)
 	@untracked() { git ls-files --other --directory --exclude-standard --no-empty-directory; }; \
-	diff() { git --no-pager diff --name-only; }; \
+	check-changes() { git --no-pager diff "$$@"; }; \
 	if [ $$(untracked | wc -l) -gt 0 ]; then \
 		FAILED=true; \
 		echo "The following files are untracked:"; \
 		untracked; \
 	fi; \
-	if [ $$(diff | wc -l) -gt 0 ]; then \
+	if [ $$(check-changes --name-only | wc -l) -gt 0 ]; then \
 		FAILED=true; \
 		echo "The following changes (result of code generators and code checks) have been detected:"; \
-		diff; \
+		check-changes; \
 	fi; \
 	if [ "$$FAILED" = true ]; then exit 1; fi
 
