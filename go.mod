@@ -9,12 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-<<<<<<< HEAD
 	github.com/cilium/ebpf v0.10.0
-	github.com/containerd/cgroups v1.1.0
-=======
-	github.com/cilium/ebpf v0.11.0
->>>>>>> 490549efb (fix(sec): get rid of dependency on containerd (#7387))
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.3.0
 	github.com/emicklei/go-restful/v3 v3.10.2
