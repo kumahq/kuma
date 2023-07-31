@@ -1,10 +1,10 @@
 package cgroups
 
 import (
-    "path/filepath"
-    "sync"
+	"path/filepath"
+	"sync"
 
-    "golang.org/x/sys/unix"
+	"golang.org/x/sys/unix"
 )
 
 // TAKEN FROM https://github.com/containerd/cgroups/blob/v1.1.0/utils.go
@@ -30,7 +30,6 @@ var (
 	checkMode sync.Once
 	cgMode    CGMode
 )
-
 
 // Mode returns the cgroups mode running on the host
 func Mode() CGMode {
