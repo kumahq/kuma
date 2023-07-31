@@ -21,7 +21,7 @@ func addZoneEndpoints(ws *restful.WebService, resManager manager.ResourceManager
 	ws.Route(ws.GET("/status/zones").To(func(request *restful.Request, response *restful.Response) {
 		zoneOverviews, err := fetchOverviews(resManager, request.Request.Context())
 		if err != nil {
-			rest_errors.HandleError(response, err, "Could not retrieve a zone overview")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a zone overview")
 			return
 		}
 

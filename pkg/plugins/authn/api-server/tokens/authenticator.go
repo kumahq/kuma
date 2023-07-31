@@ -25,7 +25,7 @@ func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authentic
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
 			u, err := validator.Validate(request.Request.Context(), token)
 			if err != nil {
-				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
+				rest_errors.HandleError(request.Request.Context(), response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
 				log.Info("authentication rejected", "reason", err.Error())
 				return
 			}

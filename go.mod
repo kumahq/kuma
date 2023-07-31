@@ -10,14 +10,13 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cilium/ebpf v0.11.0
-	github.com/containerd/cgroups v1.1.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.3.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/evanphx/json-patch/v5 v5.6.0
-	github.com/exaring/otelpgx v0.5.0
+	github.com/exaring/otelpgx v0.5.1
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.4
 	github.com/goburrow/cache v0.1.4
@@ -38,7 +37,7 @@ require (
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.11.0
-	github.com/onsi/gomega v1.27.8
+	github.com/onsi/gomega v1.27.10
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
@@ -72,23 +71,23 @@ require (
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
-	google.golang.org/grpc v1.56.2
+	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.12.2
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
-	k8s.io/api v0.27.3
-	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.3
-	k8s.io/client-go v0.27.3
+	k8s.io/api v0.27.4
+	k8s.io/apiextensions-apiserver v0.27.4
+	k8s.io/apimachinery v0.27.4
+	k8s.io/client-go v0.27.4
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
-	k8s.io/kubectl v0.27.3
+	k8s.io/kubectl v0.27.4
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/controller-tools v0.12.1
 	// When updating this also update version in: test/framework/k8s.go
-	sigs.k8s.io/gateway-api v0.7.1-0.20230613222957-c9540a9cf448
+	sigs.k8s.io/gateway-api v0.7.1-0.20230727082008-1764e458047d
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -110,7 +109,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
 	github.com/containerd/containerd v1.7.0 // indirect
-	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
@@ -132,7 +130,6 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
@@ -179,7 +176,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
-	github.com/opencontainers/runtime-spec v1.1.0-rc.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/otp v1.2.0 // indirect
@@ -216,7 +212,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
-	k8s.io/component-base v0.27.3 // indirect
+	k8s.io/component-base v0.27.4 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

@@ -33,7 +33,7 @@ func BuildEndpointMap(
 			}
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target: iface.DataplaneIP,
+				Target: iface.DataplaneAdvertisedIP,
 				Port:   iface.DataplanePort,
 				Tags:   withMesh,
 				Weight: 1,

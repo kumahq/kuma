@@ -34,7 +34,7 @@ func API() {
 		// given no MeshCircuitBreakers
 		mcb, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mcb).To(HaveLen(0))
+		Expect(mcb).To(BeEmpty())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -98,7 +98,7 @@ spec:
 		// given no MeshCircuitBreakers
 		mcb, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mcb).To(HaveLen(0))
+		Expect(mcb).To(BeEmpty())
 
 		// when
 		err = k8s.KubectlApplyFromStringE(

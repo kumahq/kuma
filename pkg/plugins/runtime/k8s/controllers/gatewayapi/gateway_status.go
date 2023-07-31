@@ -42,7 +42,7 @@ func (r *GatewayReconciler) updateStatus(
 	return nil
 }
 
-func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayAddress {
+func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayStatusAddress {
 	if instance == nil {
 		return nil
 	}
@@ -50,18 +50,18 @@ func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.Gatew
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
-	var addrs []gatewayapi.GatewayAddress
+	var addrs []gatewayapi.GatewayStatusAddress
 
 	if lb := instance.Status.LoadBalancer; lb != nil {
 		for _, addr := range instance.Status.LoadBalancer.Ingress {
 			if addr.IP != "" {
-				addrs = append(addrs, gatewayapi.GatewayAddress{
+				addrs = append(addrs, gatewayapi.GatewayStatusAddress{
 					Type:  &ipType,
 					Value: addr.IP,
 				})
 			}
 			if addr.Hostname != "" {
-				addrs = append(addrs, gatewayapi.GatewayAddress{
+				addrs = append(addrs, gatewayapi.GatewayStatusAddress{
 					Type:  &hostnameType,
 					Value: addr.Hostname,
 				})

@@ -23,8 +23,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, envoy_names.GetOutboundRouteName(c.Service)).
 			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.TagsHeader(c.DpTags)).
-			Configure(envoy_routes.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3).
-				Configure(envoy_virtual_hosts.CommonVirtualHost(c.Service)).
+			Configure(envoy_routes.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3, c.Service).
 				Configure(envoy_virtual_hosts.Routes(c.Routes)))),
 	}
 

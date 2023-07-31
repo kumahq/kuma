@@ -1,3 +1,5 @@
+SHELL := /usr/bin/env bash
+
 .PHONY: help
 help: ## Display this help screen
 	@# Display top-level targets since they are the ones most developes will need.

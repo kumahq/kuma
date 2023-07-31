@@ -31,14 +31,14 @@ func New(
 	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
-	hasher, cache := newKDSContext(log)
+	hashFn, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
+	reconciler := reconcile.NewReconciler(hashFn, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -115,14 +115,8 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
-	hasher := hasher{}
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) { //nolint:unparam
+	hashFn := util_xds_v3.IDHash{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
-}
-
-type hasher struct{}
-
-func (_ hasher) ID(node *envoy_core.Node) string {
-	return node.Id
+	return hashFn, util_xds_v3.NewSnapshotCache(false, hashFn, logger)
 }
