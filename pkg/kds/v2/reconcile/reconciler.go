@@ -50,9 +50,9 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	}
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	snapshot, err := r.cache.GetSnapshot(id)
+	snapshot, _ := r.cache.GetSnapshot(id)
 	if err != nil {
-		return err
+		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to error here
 	}
 	r.cache.ClearSnapshot(id)
 	if snapshot == nil {
