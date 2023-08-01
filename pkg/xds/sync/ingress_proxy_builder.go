@@ -111,6 +111,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 				zoneEgressesList.Items,
 				gateways.Items,
 			),
+			VirtualOutbounds: meshCtx.Resources.VirtualOutbounds().Items,
 		}
 
 		meshResourceList = append(meshResourceList, meshResources)

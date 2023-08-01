@@ -195,8 +195,9 @@ type ZoneEgressProxy struct {
 }
 
 type MeshIngressResources struct {
-	Mesh        *core_mesh.MeshResource
-	EndpointMap EndpointMap
+	Mesh             *core_mesh.MeshResource
+	EndpointMap      EndpointMap
+	VirtualOutbounds []*core_mesh.VirtualOutboundResource
 }
 
 type ZoneIngressProxy struct {

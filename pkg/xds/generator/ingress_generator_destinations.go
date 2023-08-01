@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -26,7 +27,7 @@ func buildDestinations(
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destinations)
 	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
 	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
-
+	addVirtualOutboundDestinations(ingressProxy, destinations)
 	return destinations
 }
 
@@ -184,4 +185,35 @@ func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
 	}
 
 	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+}
+
+func addVirtualOutboundDestinations(
+	ingressProxy *core_xds.ZoneIngressProxy,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	for _, availableService := range ingressProxy.ZoneIngressResource.Spec.AvailableServices {
+		availableSvcsByMesh[availableService.Mesh] = append(availableSvcsByMesh[availableService.Mesh], availableService)
+	}
+	for _, mrl := range ingressProxy.MeshResourceList {
+		meshName := mrl.Mesh.GetMeta().GetName()
+		addVirtualOutboundDestinationsForMesh(mrl.VirtualOutbounds, availableSvcsByMesh[meshName], destinations)
+	}
+}
+
+func addVirtualOutboundDestinationsForMesh(
+	virtualOutbounds []*core_mesh.VirtualOutboundResource,
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, availableService := range availableServices {
+		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
+			service := availableService.Tags[mesh_proto.ServiceTag]
+			tags := envoy_tags.Tags{}
+			for _, param := range matched.Spec.GetConf().GetParameters() {
+				tags[param.TagKey] = availableService.Tags[param.TagKey]
+			}
+			destinations[service] = append(destinations[service], tags)
+		}
+	}
 }
