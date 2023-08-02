@@ -10,24 +10,30 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-func buildDestinations(
-	ingressProxy *core_xds.ZoneIngressProxy,
-) map[string][]envoy_tags.Tags {
-	destinations := map[string][]envoy_tags.Tags{}
-	policies := ingressProxy.PolicyResources
+type destinations map[string]map[string][]envoy_tags.Tags
 
-	trafficRoutes := policies[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items
-	meshHTTPRoutes := policies[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+func (d destinations) get(mesh string, service string) []envoy_tags.Tags {
+	forMesh := d[mesh]
+	return append(forMesh[service], forMesh[mesh_proto.MatchAllTag]...)
+}
 
-	addTrafficRouteDestinations(trafficRoutes, destinations)
-	addMeshHTTPRouteDestinations(meshHTTPRoutes, destinations)
-	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
-	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
-
-	return destinations
+func buildDestinations(ingressProxy *core_xds.ZoneIngressProxy) destinations {
+	dest := destinations{}
+	for _, meshResources := range ingressProxy.MeshResourceList {
+		res := xds_context.Resources{MeshLocalResources: meshResources.Resources}
+		destForMesh := map[string][]envoy_tags.Tags{}
+		meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+		addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
+		addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
+		addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
+		addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
+		dest[meshResources.Mesh.GetMeta().GetName()] = destForMesh
+	}
+	return dest
 }
 
 func addMeshGatewayDestinations(

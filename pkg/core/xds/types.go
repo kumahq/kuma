@@ -197,13 +197,12 @@ type ZoneEgressProxy struct {
 type MeshIngressResources struct {
 	Mesh        *core_mesh.MeshResource
 	EndpointMap EndpointMap
+	Resources   map[core_model.ResourceType]core_model.ResourceList
 }
 
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
-	GatewayRoutes       *core_mesh.MeshGatewayRouteResourceList
 	MeshGateways        *core_mesh.MeshGatewayResourceList
-	PolicyResources     map[core_model.ResourceType]core_model.ResourceList
 	MeshResourceList    []*MeshIngressResources
 }
 

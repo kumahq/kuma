@@ -35,11 +35,11 @@ func (i IngressGenerator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	destinations := buildDestinations(proxy.ZoneIngressProxy)
+	dest := buildDestinations(proxy.ZoneIngressProxy)
 
 	listener, err := i.generateLDS(
 		proxy.ZoneIngressProxy.ZoneIngressResource,
-		destinations,
+		dest,
 		proxy.APIVersion,
 	)
 	if err != nil {
@@ -54,7 +54,7 @@ func (i IngressGenerator) Generate(
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		services := i.services(mr)
 
-		cdsResources, err := i.generateCDS(services, destinations, proxy.APIVersion, mr)
+		cdsResources, err := i.generateCDS(services, dest, proxy.APIVersion, mr)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func (i IngressGenerator) Generate(
 // certificates and mTLS settings.
 func (i IngressGenerator) generateLDS(
 	ingress *core_mesh.ZoneIngressResource,
-	destinations map[string][]envoy_tags.Tags,
+	dest destinations,
 	apiVersion core_xds.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	networking := ingress.Spec.GetNetworking()
@@ -104,14 +104,14 @@ func (i IngressGenerator) generateLDS(
 
 	for _, inbound := range ingress.Spec.GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
-		serviceDestinations := destinations[service]
-		serviceDestinations = append(serviceDestinations, destinations[mesh_proto.MatchAllTag]...)
+		mesh := inbound.GetMesh()
+		serviceDestinations := dest.get(mesh, service)
 		clusterName := envoy_names.GetMeshClusterName(inbound.Mesh, service)
 
 		for _, destination := range serviceDestinations {
 			meshDestination := destination.
 				WithTags(mesh_proto.ServiceTag, service).
-				WithTags("mesh", inbound.GetMesh())
+				WithTags("mesh", mesh)
 			sni := tls.SNIFromTags(meshDestination)
 			if sniUsed[sni] {
 				continue
@@ -179,7 +179,7 @@ func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
 
 func (i IngressGenerator) generateCDS(
 	services []string,
-	destinations map[string][]envoy_tags.Tags,
+	dest destinations,
 	apiVersion core_xds.APIVersion,
 	mr *core_xds.MeshIngressResources,
 ) ([]*core_xds.Resource, error) {
@@ -188,8 +188,7 @@ func (i IngressGenerator) generateCDS(
 		meshName := mr.Mesh.GetMeta().GetName()
 		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 
-		tags := append(destinations[service], destinations[mesh_proto.MatchAllTag]...)
-		tagSlice := envoy_tags.TagsSlice(tags)
+		tagSlice := envoy_tags.TagsSlice(dest.get(meshName, service))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
 			envoy_tags.Without(mesh_proto.ServiceTag),
 			envoy_tags.With("mesh"),

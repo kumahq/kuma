@@ -39,14 +39,6 @@ resources:
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
-        - region
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
-        - version
     name: mesh2:backend
     type: EDS
 - name: mesh1:backend
@@ -208,36 +200,6 @@ resources:
           statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
-        - backend{mesh=mesh2,version=v2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
-                version: v2
-          statPrefix: mesh2_backend
-    - filterChainMatch:
-        serverNames:
-        - backend{mesh=mesh2,region=eu}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
-                region: eu
-          statPrefix: mesh2_backend
-    - filterChainMatch:
-        serverNames:
         - backend{mesh=mesh2}
         transportProtocol: tls
       filters:
@@ -294,21 +256,6 @@ resources:
             filterMetadata:
               envoy.lb:
                 mesh: mesh2
-          statPrefix: mesh2_frontend
-    - filterChainMatch:
-        serverNames:
-        - frontend{mesh=mesh2,version=v2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:frontend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
-                version: v2
           statPrefix: mesh2_frontend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
