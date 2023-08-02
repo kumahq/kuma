@@ -19,6 +19,9 @@ for i in \
     sigs.k8s.io/controller-tools/cmd/controller-gen@$(go list -f '{{.Version}}' -m sigs.k8s.io/controller-tools) \
     github.com/mikefarah/yq/v4@v4.30.8 \
     github.com/norwoodj/helm-docs/cmd/helm-docs@v1.11.0 \
+    github.com/google/go-jsonnet/cmd/jsonnet@v0.20.0 \
+    github.com/google/go-jsonnet/cmd/jsonnetfmt@v0.20.0 \
+    github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@v0.5.1 \
     golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20220513142942-846f273ed465; do
   echo "install go dep: ${i}"
   GOBIN=${OUTPUT_BIN_DIR} go install "${i}" &
