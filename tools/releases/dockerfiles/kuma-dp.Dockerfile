@@ -1,6 +1,6 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH as envoy
-FROM kumahq/base-nossl-debian11:no-push-$ARCH
+FROM kumahq/base-busybox:no-push-$ARCH
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp \

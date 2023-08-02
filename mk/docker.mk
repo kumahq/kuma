@@ -25,24 +25,20 @@ export DOCKER_BUILDKIT := 1
 # add targets to build images for each arch
 # $(1) - GOOS to build for
 define IMAGE_TARGETS_BY_ARCH
-.PHONY: image/static/$(1)
-image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
-	docker build -t kumahq/static-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
-
 .PHONY: image/base/$(1)
 image/base/$(1): ## Dev: Rebuild `kuma-base` Docker image
-	docker build -t kumahq/base-nossl-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
+	docker build -t kumahq/base-busybox:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
 
 .PHONY: image/base-root/$(1)
-image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
-	docker build -t kumahq/base-root-debian11:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
+image/base-root/$(1): image/base/$(1) ## Dev: Rebuild `kuma-base-root` Docker image
+	docker build -t kumahq/base-root-busybox:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
 
 .PHONY: image/envoy/$(1)
 image/envoy/$(1): build/artifacts-linux-$(1)/envoy ## Dev: Rebuild `envoy` Docker image
 	docker build -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
 
 .PHONY: image/kuma-cp/$(1)
-image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
+image/kuma-cp/$(1): image/base/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
 	docker build -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
 
 .PHONY: image/kuma-dp/$(1)

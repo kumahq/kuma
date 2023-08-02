@@ -1,5 +1,5 @@
 ARG ARCH
-FROM kumahq/base-root-debian11:no-push-$ARCH
+FROM kumahq/base-root-busybox:no-push-$ARCH
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/kuma-cni/kuma-cni /opt/cni/bin/kuma-cni

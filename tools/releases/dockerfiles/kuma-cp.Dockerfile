@@ -1,5 +1,5 @@
 ARG ARCH
-FROM kumahq/static-debian11:no-push-$ARCH
+FROM kumahq/base-busybox:no-push-$ARCH
 ARG ARCH
 
 COPY /build/artifacts-linux-${ARCH}/kuma-cp/kuma-cp /usr/bin
