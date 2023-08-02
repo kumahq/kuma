@@ -17,8 +17,13 @@ jobs:
       - name: git checkout
         uses: actions/checkout@v3
         with:
+<<<<<<< HEAD
           fetch-depth: 0
       - name: create branch and tag
+=======
+          go-version: "1.20.6"
+      - name: install-kuma-ci-tools
+>>>>>>> d75a50fd5 (chore(deps): update go from 1.20.5 to 1.20.6 (#7414))
         run: |
           OLD_VERSION=$(git describe --abbrev=0 --tags)
           IFS=. read -r major minor patch <<< "${OLD_VERSION#v}"
