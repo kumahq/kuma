@@ -109,10 +109,10 @@ func (i IngressGenerator) generateLDS(
 		clusterName := envoy_names.GetMeshClusterName(inbound.Mesh, service)
 
 		for _, destination := range serviceDestinations {
-			meshDestination := destination.
+			sni := tls.SNIFromTags(destination.
 				WithTags(mesh_proto.ServiceTag, service).
-				WithTags("mesh", mesh)
-			sni := tls.SNIFromTags(meshDestination)
+				WithTags("mesh", mesh),
+			)
 			if sniUsed[sni] {
 				continue
 			}
@@ -120,9 +120,7 @@ func (i IngressGenerator) generateLDS(
 
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithName(clusterName),
-				envoy_common.WithTags(
-					meshDestination.WithoutTags(mesh_proto.ServiceTag),
-				),
+				envoy_common.WithTags(destination),
 			)
 
 			filterChain := envoy_listeners.FilterChain(
@@ -191,7 +189,6 @@ func (i IngressGenerator) generateCDS(
 		tagSlice := envoy_tags.TagsSlice(dest.get(meshName, service))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
 			envoy_tags.Without(mesh_proto.ServiceTag),
-			envoy_tags.With("mesh"),
 		)
 
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).

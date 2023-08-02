@@ -202,7 +202,6 @@ type MeshIngressResources struct {
 
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
-	MeshGateways        *core_mesh.MeshGatewayResourceList
 	MeshResourceList    []*MeshIngressResources
 }
 

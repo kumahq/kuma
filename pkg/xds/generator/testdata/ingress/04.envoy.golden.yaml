@@ -13,14 +13,9 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
         - region
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - mesh
         - version
     name: mesh1:backend
     type: EDS
@@ -33,12 +28,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
     name: mesh2:backend
     type: EDS
 - name: mesh1:backend
@@ -166,7 +155,6 @@ resources:
           metadataMatch:
             filterMetadata:
               envoy.lb:
-                mesh: mesh1
                 version: v2
           statPrefix: mesh1_backend
     - filterChainMatch:
@@ -181,7 +169,6 @@ resources:
           metadataMatch:
             filterMetadata:
               envoy.lb:
-                mesh: mesh1
                 region: eu
           statPrefix: mesh1_backend
     - filterChainMatch:
@@ -193,10 +180,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh1
           statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
@@ -207,10 +190,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh2:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
           statPrefix: mesh2_backend
     - filterChainMatch:
         serverNames:
@@ -225,7 +204,6 @@ resources:
             filterMetadata:
               envoy.lb:
                 cloud: gke
-                mesh: mesh2
                 region: eu
           statPrefix: mesh2_frontend
     - filterChainMatch:
@@ -241,7 +219,6 @@ resources:
             filterMetadata:
               envoy.lb:
                 cloud: aks
-                mesh: mesh2
           statPrefix: mesh2_frontend
     - filterChainMatch:
         serverNames:
@@ -252,10 +229,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh2:frontend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
           statPrefix: mesh2_frontend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector

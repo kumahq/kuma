@@ -285,7 +285,6 @@ var _ = Describe("IngressGenerator", func() {
 			expected: "04.envoy.golden.yaml",
 			meshResourceList: []*core_xds.MeshIngressResources{
 				{
-
 					Mesh: builders.Mesh().WithName("mesh1").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
 						"backend": {

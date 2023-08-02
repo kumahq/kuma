@@ -199,8 +199,8 @@ var _ = Describe("Proxy Builder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			routes := proxy.ZoneIngressProxy.PolicyResources[core_mesh.TrafficRouteType].GetItems()
-			Expect(routes[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+			trafficRouteList := proxy.ZoneIngressProxy.MeshResourceList[0].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
+			Expect(trafficRouteList.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -228,7 +228,6 @@ var _ = Describe("Proxy Builder", func() {
 				Port:   8080,
 				Tags: map[string]string{
 					"kuma.io/service": "cross-mesh-gateway",
-					"mesh":            "default",
 				},
 				Weight: 1,
 			}}))
