@@ -18,4 +18,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "${{ github.base_ref }}" "${{ github.head_ref }}" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
+          tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
