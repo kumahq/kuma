@@ -203,6 +203,11 @@ func addVirtualOutboundDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService,
 	destinations map[string][]envoy_tags.Tags,
 ) {
+	// If there are no VirtualOutbounds, we are not modifying destinations
+	if len(virtualOutbounds) == 0 {
+		return
+	}
+
 	for _, availableService := range availableServices {
 		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
 			service := availableService.Tags[mesh_proto.ServiceTag]
