@@ -90,26 +90,6 @@ resources:
     name: es-with-tls
     transportSocketMatches:
     - match:
-        kuma.io/external-service-name: es-0
-        kuma.io/protocol: http
-        kuma.io/zone: zone-4
-      name: hostname-0.com
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          sni: hostname-0.com
-    - match:
-        kuma.io/external-service-name: es-1
-        kuma.io/protocol: http
-        kuma.io/zone: zone-3
-      name: hostname-1.com
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          sni: hostname-1.com
-    - match:
         kuma.io/external-service-name: es-2
         kuma.io/protocol: http
         kuma.io/zone: zone-2
@@ -129,6 +109,26 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           sni: hostname-3.com
+    - match:
+        kuma.io/external-service-name: es-1
+        kuma.io/protocol: http
+        kuma.io/zone: zone-3
+      name: hostname-1.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-1.com
+    - match:
+        kuma.io/external-service-name: es-0
+        kuma.io/protocol: http
+        kuma.io/zone: zone-4
+      name: hostname-0.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-0.com
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
