@@ -13,10 +13,6 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
         - region
         - version
     name: mesh1:backend
@@ -80,7 +76,6 @@ resources:
           metadataMatch:
             filterMetadata:
               envoy.lb:
-                mesh: mesh1
                 region: eu
                 version: v1
           statPrefix: mesh1_backend
@@ -93,10 +88,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh1
           statPrefix: mesh1_backend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector

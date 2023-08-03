@@ -8,11 +8,9 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -63,28 +61,6 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
 	zoneEgressesList *core_mesh.ZoneEgressResourceList,
 ) (*core_xds.ZoneIngressProxy, error) {
-	routes := &core_mesh.TrafficRouteResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, routes); err != nil {
-		return nil, err
-	}
-
-	gatewayRoutes := &core_mesh.MeshGatewayRouteResourceList{}
-	if _, err := registry.Global().DescriptorFor(core_mesh.MeshGatewayRouteType); err == nil { // GatewayRoute may not be registered
-		if err := p.ReadOnlyResManager.List(ctx, gatewayRoutes); err != nil {
-			return nil, err
-		}
-	}
-
-	gateways := &core_mesh.MeshGatewayResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, gateways); err != nil {
-		return nil, err
-	}
-
-	meshHTTPRoutes := &meshhttproute_api.MeshHTTPRouteResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, meshHTTPRoutes); err != nil {
-		return nil, err
-	}
-
 	var meshList core_mesh.MeshResourceList
 	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
 		return nil, err
@@ -109,8 +85,9 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 				meshCtx.Resources.Dataplanes().Items,
 				meshCtx.Resources.ExternalServices().Items,
 				zoneEgressesList.Items,
-				gateways.Items,
+				meshCtx.Resources.Gateways().Items,
 			),
+			Resources: meshCtx.Resources.MeshLocalResources,
 		}
 
 		meshResourceList = append(meshResourceList, meshResources)
@@ -118,13 +95,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 
 	return &core_xds.ZoneIngressProxy{
 		ZoneIngressResource: zoneIngress,
-		GatewayRoutes:       gatewayRoutes,
-		MeshGateways:        gateways,
-		PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
-			meshhttproute_api.MeshHTTPRouteType: meshHTTPRoutes,
-			core_mesh.TrafficRouteType:          routes,
-		},
-		MeshResourceList: meshResourceList,
+		MeshResourceList:    meshResourceList,
 	}, nil
 }
 

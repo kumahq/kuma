@@ -8,12 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
     name: mesh1:backend
     type: EDS
 - name: mesh2:mesh-gateway
@@ -25,12 +19,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
     name: mesh2:mesh-gateway
     type: EDS
 - name: mesh1:backend
@@ -87,10 +75,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh1:backend
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh1
           statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
@@ -101,10 +85,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh2:mesh-gateway
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh2
           statPrefix: mesh2_mesh-gateway
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
