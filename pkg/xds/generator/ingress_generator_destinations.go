@@ -24,6 +24,10 @@ func (d destinations) get(mesh string, service string) []envoy_tags.Tags {
 
 func buildDestinations(ingressProxy *core_xds.ZoneIngressProxy) destinations {
 	dest := destinations{}
+	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	for _, service := range ingressProxy.ZoneIngressResource.Spec.AvailableServices {
+		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
+	}
 	for _, meshResources := range ingressProxy.MeshResourceList {
 		res := xds_context.Resources{MeshLocalResources: meshResources.Resources}
 		destForMesh := map[string][]envoy_tags.Tags{}
@@ -32,7 +36,7 @@ func buildDestinations(ingressProxy *core_xds.ZoneIngressProxy) destinations {
 		addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 		addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 		addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-		addVirtualOutboundDestinations(res.VirtualOutbounds().Items, ingressProxy.ZoneIngressResource.Spec.AvailableServices, destForMesh)
+		addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableSvcsByMesh[meshResources.Mesh.GetMeta().GetName()], destForMesh)
 		dest[meshResources.Mesh.GetMeta().GetName()] = destForMesh
 	}
 	return dest
