@@ -8,6 +8,7 @@ BASE_REF=$3
 HEAD_REF=$4
 PREDEFINED_GLOBS=$5
 LABEL_TO_ADD=$6
+NO_BACKPORT_AUTOLABEL=$7
 
 # Enable recursive globs, needs bash 4!
 shopt -s globstar
@@ -36,9 +37,12 @@ if [ ${#MATCHING_FILES[@]} -gt 0 ]; then
   echo "Matching files:"
   printf '%s\n' "${MATCHING_FILES[@]}"
 
-  echo "Adding '$LABEL_TO_ADD' label to the pull request."
-  gh issue edit "$PR_NUMBER" --add-label "$LABEL_TO_ADD" -R "$REPO"
+  if gh api repos/kumahq/kuma/issues/7450/labels | jq '.[].name' | grep -q "$NO_BACKPORT_AUTOLABEL" ; then
+    echo "Not doing anything, '$NO_BACKPORT_AUTOLABEL' label present."
+  else
+    echo "Adding '$LABEL_TO_ADD' label to the pull request."
+    gh issue edit "$PR_NUMBER" --add-label "$LABEL_TO_ADD" -R "$REPO"
+  fi
 else
-  echo "No matching files found. Removing existing label if present."
-  gh issue edit "$PR_NUMBER" --remove-label "$LABEL_TO_ADD" -R "$REPO"
+  echo "No matching files found. Not adding any label."
 fi

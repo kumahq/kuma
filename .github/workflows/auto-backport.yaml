@@ -5,6 +5,7 @@ on:
 env:
   PREDEFINED_GLOBS: ".github/**/*,.circleci/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
   LABEL_TO_ADD: backport
+  NO_BACKPORT_AUTOLABEL: no-backport-autolabel
 jobs:
   backport_label:
     runs-on: ubuntu-latest
@@ -16,4 +17,4 @@ jobs:
       - name: Check diff and add label
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "${{ github.base_ref }}" "${{ github.head_ref }}" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD"
+        run: tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "${{ github.base_ref }}" "${{ github.head_ref }}" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
