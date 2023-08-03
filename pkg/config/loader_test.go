@@ -215,6 +215,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.ControllersConcurrency.PodController).To(Equal(10))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -510,6 +512,9 @@ runtime:
     clientConfig:
       qps: 100
       burstQps: 100
+    leaderElection:
+      leaseDuration: 199s
+      renewDeadline: 99s
 reports:
   enabled: false
 general:
@@ -785,6 +790,8 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER":                           "10",
 				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS":                                                "100",
 				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS":                                          "100",
+				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
+				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
