@@ -118,6 +118,10 @@ func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
 	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
 }
 
+func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
+	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
+}
+
 func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {
 	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
 }

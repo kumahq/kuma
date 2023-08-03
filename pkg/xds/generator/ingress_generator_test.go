@@ -713,5 +713,83 @@ var _ = Describe("IngressGenerator", func() {
 				},
 			},
 		}),
+		Entry("with VirtualOutbound", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-0
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-1
+`,
+			expected: "virtual-outbound.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/instance": "ins-0",
+									"mesh":             "mesh1",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/instance": "ins-1",
+									"mesh":             "mesh1",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.VirtualOutboundType: &core_mesh.VirtualOutboundResourceList{
+							Items: []*core_mesh.VirtualOutboundResource{
+								{
+									Spec: &mesh_proto.VirtualOutbound{
+										Selectors: []*mesh_proto.Selector{
+											{
+												Match: map[string]string{
+													mesh_proto.ServiceTag:  mesh_proto.MatchAllTag,
+													mesh_proto.InstanceTag: mesh_proto.MatchAllTag,
+												},
+											},
+										},
+										Conf: &mesh_proto.VirtualOutbound_Conf{
+											Host: "{{.svc}}.{{.inst}}.mesh",
+											Port: "8080",
+											Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+												{
+													Name:   "svc",
+													TagKey: mesh_proto.ServiceTag,
+												},
+												{
+													Name:   "inst",
+													TagKey: mesh_proto.InstanceTag,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
 	)
 })
