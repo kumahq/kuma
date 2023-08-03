@@ -44,7 +44,11 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v3
         with:
+<<<<<<< HEAD
           go-version: 1.18
+=======
+          go-version: "1.20.7"
+>>>>>>> 95b033a3d (chore(deps): update to go 1.20.7 (#7429))
       - uses: actions/cache@v3
         with:
           path: |
