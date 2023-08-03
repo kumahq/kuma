@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 REPO=$1
 PR_NUMBER=$2
 BASE_REF=$3
