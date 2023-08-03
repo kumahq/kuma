@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/cgroups"
+	"github.com/containerd/cgroups"
 )
 
 type UIntOrString struct {
