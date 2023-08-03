@@ -17,7 +17,7 @@ shopt -s globstar
 IFS=',' read -ra PREDEFINED_GLOBS_ARR <<< "$PREDEFINED_GLOBS"
 
 # Get the changed files in the PR using git diff
-CHANGED_FILES=$(git diff --name-only "$BASE_REF" "$HEAD_REF")
+CHANGED_FILES=$(git diff --name-only origin/"$BASE_REF" origin/"$HEAD_REF")
 echo "Changed files:"
 echo "$CHANGED_FILES"
 
