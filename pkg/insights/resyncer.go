@@ -64,6 +64,10 @@ type resyncer struct {
 	eventBufferCapacity int
 	metrics             core_metrics.Metrics
 	now                 func() time.Time
+
+	idleTime           prometheus.Summary
+	timeToProcessItem  prometheus.Summary
+	itemProcessingTime prometheus.Summary
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -75,17 +79,36 @@ type resyncer struct {
 // by RateLimiter. FullResyncInterval is provided by goroutine with Ticker, it runs
 // resync every t = FullResyncInterval - MinResyncInterval.
 func NewResyncer(config *Config) component.Component {
+	idleTime := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "insights_resyncer_processor_idle_time",
+		Help:       "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	timeToProcessItem := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "insights_resyncer_event_time_to_process",
+		Help:       "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	itemProcessingTime := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "insights_resyncer_event_time_processing",
+		Help:       "Summary of the time spent to process an event",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	config.Metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 	r := &resyncer{
+		rm:                    config.ResourceManager,
+		eventFactory:          config.EventReaderFactory,
 		minResyncInterval:     config.MinResyncInterval,
 		stepsBeforeFullResync: int(config.FullResyncInterval.Round(config.MinResyncInterval).Seconds() / config.MinResyncInterval.Seconds()),
-		eventFactory:          config.EventReaderFactory,
-		rm:                    config.ResourceManager,
+		tick:                  config.Tick,
 		registry:              config.Registry,
 		tenantFn:              config.TenantFn,
 		eventBufferCapacity:   config.EventBufferCapacity,
 		metrics:               config.Metrics,
 		now:                   config.Now,
-		tick:                  config.Tick,
+		idleTime:              idleTime,
+		timeToProcessItem:     timeToProcessItem,
+		itemProcessingTime:    itemProcessingTime,
 	}
 	if config.Now == nil {
 		r.now = time.Now
@@ -153,22 +176,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		cancel()
 		close(resyncEvents)
 	}()
-	idleTime := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_processor_idle_time",
-		Help:       "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	timeToProcessItem := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_event_time_to_process",
-		Help:       "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	itemProcessingTime := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "insights_resyncer_event_time_processing",
-		Help:       "Summary of the time spent to process an event",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	r.metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 	go func() {
 		// We dequeue from the resyncEvents channel and actually do the insight update we want.
 		for {
@@ -183,8 +190,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					continue
 				}
 				startProcessingTime := r.now()
-				idleTime.Observe(startProcessingTime.Sub(start).Seconds())
-				timeToProcessItem.Observe(startProcessingTime.Sub(event.time).Seconds())
+				r.idleTime.Observe(startProcessingTime.Sub(start).Seconds())
+				r.timeToProcessItem.Observe(startProcessingTime.Sub(event.time).Seconds())
 				if event.flag&FlagService == FlagService {
 					err := r.createOrUpdateServiceInsight(ctx, event.tenantId, event.mesh)
 					if err != nil {
@@ -197,7 +204,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						log.Error(err, "unable to resync MeshInsight", "event", event)
 					}
 				}
-				itemProcessingTime.Observe(time.Since(startProcessingTime).Seconds())
+				r.itemProcessingTime.Observe(time.Since(startProcessingTime).Seconds())
 			}
 		}
 	}()
