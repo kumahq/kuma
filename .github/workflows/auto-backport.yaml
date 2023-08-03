@@ -6,10 +6,10 @@ env:
   PREDEFINED_GLOBS: ".github/**/*,.circleci/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
   LABEL_TO_ADD: backport
   NO_BACKPORT_AUTOLABEL: no-backport-autolabel
-permissions:
-  issues: write
 jobs:
   backport_label:
+    permissions:
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
