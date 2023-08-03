@@ -36,8 +36,9 @@ if [ ${#MATCHING_FILES[@]} -gt 0 ]; then
   echo "Matching files:"
   printf '%s\n' "${MATCHING_FILES[@]}"
 
-  echo "Adding '$LABEL_TO_ADD' label to the pull request..."
+  echo "Adding '$LABEL_TO_ADD' label to the pull request."
   gh issue edit "$PR_NUMBER" --add-label "$LABEL_TO_ADD" -R "$REPO"
 else
-  echo "No matching files found. Not adding any label."
+  echo "No matching files found. Removing existing label if present."
+  gh issue edit "$PR_NUMBER" --remove-label "$LABEL_TO_ADD" -R "$REPO"
 fi
