@@ -14,7 +14,6 @@ resources:
       - fallbackPolicy: NO_FALLBACK
         keys:
         - kuma.io/instance
-        - mesh
     name: mesh1:backend
     type: EDS
 - name: mesh1:backend
@@ -73,7 +72,6 @@ resources:
             filterMetadata:
               envoy.lb:
                 kuma.io/instance: ins-0
-                mesh: mesh1
           statPrefix: mesh1_backend
     - filterChainMatch:
         serverNames:
@@ -88,7 +86,6 @@ resources:
             filterMetadata:
               envoy.lb:
                 kuma.io/instance: ins-1
-                mesh: mesh1
           statPrefix: mesh1_backend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
