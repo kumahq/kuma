@@ -74,3 +74,41 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 		return lb
 	}
 }
+
+// MeshContexts is an aggregate of all MeshContexts across all meshes
+type MeshContexts struct {
+	Hash               string
+	Meshes             []*core_mesh.MeshResource
+	MeshContextsByName map[string]MeshContext
+	ZoneEgressByName   map[string]*core_mesh.ZoneEgressResource
+}
+
+func (m MeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
+	var resources []*core_mesh.DataplaneResource
+	for _, meshCtx := range m.MeshContextsByName {
+		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
+	}
+	return resources
+}
+
+func (m MeshContexts) ZoneEgresses() []*core_mesh.ZoneEgressResource {
+	for _, meshCtx := range m.MeshContextsByName {
+		return meshCtx.Resources.ZoneEgresses().Items // all mesh contexts has the same list
+	}
+	return nil
+}
+
+func (m MeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource {
+	for _, meshCtx := range m.MeshContextsByName {
+		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
+	}
+	return nil
+}
+
+func (m MeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResource {
+	var resources []*core_mesh.MeshGatewayResource
+	for _, meshCtx := range m.MeshContextsByName {
+		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
+	}
+	return resources
+}

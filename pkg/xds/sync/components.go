@@ -1,12 +1,9 @@
 package sync
 
 import (
-	"context"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
@@ -29,29 +26,18 @@ func DefaultIngressProxyBuilder(
 	apiVersion core_xds.APIVersion,
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
-		ResManager:         rt.ResourceManager(),
-		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
-		LookupIP:           rt.LookupIP(),
-		apiVersion:         apiVersion,
-		meshCache:          rt.MeshCache(),
-		zone:               rt.Config().Multizone.Zone.Name,
-		ingressTagFilters:  rt.Config().Experimental.IngressTagFilters,
+		ResManager:        rt.ResourceManager(),
+		LookupIP:          rt.LookupIP(),
+		apiVersion:        apiVersion,
+		zone:              rt.Config().Multizone.Zone.Name,
+		ingressTagFilters: rt.Config().Experimental.IngressTagFilters,
 	}
 }
 
-func DefaultEgressProxyBuilder(
-	ctx context.Context,
-	rt core_runtime.Runtime,
-	apiVersion core_xds.APIVersion,
-) *EgressProxyBuilder {
+func DefaultEgressProxyBuilder(rt core_runtime.Runtime, apiVersion core_xds.APIVersion) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
-		ctx:                ctx,
-		ResManager:         rt.ResourceManager(),
-		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
-		LookupIP:           rt.LookupIP(),
-		meshCache:          rt.MeshCache(),
-		apiVersion:         apiVersion,
-		zone:               rt.Config().Multizone.Zone.Name,
+		apiVersion: apiVersion,
+		zone:       rt.Config().Multizone.Zone.Name,
 	}
 }
 
@@ -65,7 +51,6 @@ func DefaultDataplaneWatchdogFactory(
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion core_xds.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
@@ -78,11 +63,7 @@ func DefaultDataplaneWatchdogFactory(
 		apiVersion,
 	)
 
-	egressProxyBuilder := DefaultEgressProxyBuilder(
-		ctx,
-		rt,
-		apiVersion,
-	)
+	egressProxyBuilder := DefaultEgressProxyBuilder(rt, apiVersion)
 
 	deps := DataplaneWatchdogDependencies{
 		DataplaneProxyBuilder: dataplaneProxyBuilder,
