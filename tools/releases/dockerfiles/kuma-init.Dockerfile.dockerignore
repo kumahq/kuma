@@ -6,5 +6,3 @@
 !tools/releases/templates/LICENSE
 !tools/releases/templates/NOTICE-kumactl
 !tools/releases/templates/README
-!tools/releases/scripts/iptables
-!tools/releases/scripts/empty
