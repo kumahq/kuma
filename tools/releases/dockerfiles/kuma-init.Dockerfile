@@ -1,9 +1,9 @@
 # until there is a distroless iptables image we have to use something else
-FROM ubuntu:lunar@sha256:a7c141915b6648277343c50356614414ff4244ba86ae38ab27a1f3fb9ffee5b3
+FROM ubuntu:jammy@sha256:0bced47fffa3361afa981854fcabcd4577cd43cebbb808cea2b1f33a3dd7f508
 ARG ARCH
 
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu7 iproute2=6.1.0-1ubuntu2 adduser=3.129ubuntu1 && \
+    apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu5.1 iproute2=5.15.0-1ubuntu2 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
