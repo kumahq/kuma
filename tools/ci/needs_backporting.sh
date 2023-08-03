@@ -38,11 +38,12 @@ if [ ${#MATCHING_FILES[@]} -gt 0 ]; then
   printf '%s\n' "${MATCHING_FILES[@]}"
 
   if gh api repos/kumahq/kuma/issues/7450/labels | jq '.[].name' | grep -q "$NO_BACKPORT_AUTOLABEL" ; then
-    echo "Not doing anything, '$NO_BACKPORT_AUTOLABEL' label present."
+    echo "Removing $LABEL_TO_ADD because '$NO_BACKPORT_AUTOLABEL' label present."
+    gh issue edit "$PR_NUMBER" --remove-label "$LABEL_TO_ADD" -R "$REPO"
   else
     echo "Adding '$LABEL_TO_ADD' label to the pull request."
     gh issue edit "$PR_NUMBER" --add-label "$LABEL_TO_ADD" -R "$REPO"
   fi
 else
-  echo "No matching files found. Not adding any label."
+  echo "No matching files found. Not changing any label."
 fi
