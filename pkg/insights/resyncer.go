@@ -171,8 +171,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	r.metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 	go func() {
 		// We dequeue from the resyncEvents channel and actually do the insight update we want.
-		start := r.now()
 		for {
+			start := r.now()
 			select {
 			case <-ctx.Done():
 				log.Info("stopped resyncEvents loop")
