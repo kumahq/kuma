@@ -246,7 +246,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			if !ok {
 				return errors.New("end of events channel")
 			}
-			resourceChanged := event.(events.ResourceChangedEvent)
+			resourceChanged, ok := event.(events.ResourceChangedEvent)
+			if !ok {
+				continue
+			}
 			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 			if err != nil {
 				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
