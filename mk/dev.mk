@@ -32,9 +32,18 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+<<<<<<< HEAD
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
 export PATH := $(CI_TOOLS_BIN_DIR):$(GOPATH_BIN_DIR):$(PATH)
+=======
+# Change here and `make check` ensures these are used for CI
+K8S_MIN_VERSION = v1.22.9-k3s1
+K8S_MAX_VERSION = v1.27.1-k3s1
+export GO_VERSION=1.20.7
+export GOLANGCI_LINT_VERSION=v1.53.3
+GOOS := $(shell go env GOOS)
+>>>>>>> 95b033a3d (chore(deps): update to go 1.20.7 (#7429))
 GOARCH := $(shell go env GOARCH)
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
