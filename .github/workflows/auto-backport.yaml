@@ -12,9 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Check diff and add label
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch origin master:refs/remotes/origin/master
           tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "${{ github.base_ref }}" "${{ github.head_ref }}" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
