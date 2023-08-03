@@ -8,9 +8,8 @@ env:
   NO_BACKPORT_AUTOLABEL: no-backport-autolabel
 jobs:
   backport_label:
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
