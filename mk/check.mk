@@ -3,7 +3,7 @@ fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 .PHONY: fmt/go
 fmt/go: ## Dev: Run go fmt
-	go fmt $(GOFLAGS) ./...
+	go fmt ./...
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files

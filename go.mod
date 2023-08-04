@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma
 
-go 1.18
+go 1.20
 
 require (
 	cirello.io/pglock v1.10.0
@@ -189,3 +189,5 @@ require (
 )
 
 replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20221019125100-747a4fedfd7a
+
+replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview
