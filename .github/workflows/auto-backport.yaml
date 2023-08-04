@@ -1,10 +1,7 @@
 name: Auto backport label
 on:
   pull_request:
-    types: [opened, synchronize]
-  issues:
-    types:
-      - labeled
+    types: [opened, synchronize, labeled]
 env:
   PREDEFINED_GLOBS: ".github/**/*,.circleci/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
   LABEL_TO_ADD: backport
