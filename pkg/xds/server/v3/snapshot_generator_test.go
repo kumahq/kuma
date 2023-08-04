@@ -91,10 +91,10 @@ var _ = Describe("GenerateSnapshot", func() {
 	r := rand.New(rand.NewSource(GinkgoRandomSeed()))
 
 	BeforeEach(func() {
-
 		store = &shuffleStore{
 			ResourceStore: memory.NewStore(), r: r,
 		}
+		store = core_store.NewPaginationStore(store)
 
 		rm := manager.NewResourceManager(store)
 
