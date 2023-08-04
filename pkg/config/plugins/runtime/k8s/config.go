@@ -104,6 +104,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Qps:      100,
 			BurstQps: 100,
 		},
+		LeaderElection: LeaderElection{
+			LeaseDuration: config_types.Duration{Duration: 15 * time.Second},
+			RenewDeadline: config_types.Duration{Duration: 10 * time.Second},
+		},
 	}
 }
 
@@ -131,6 +135,8 @@ type KubernetesRuntimeConfig struct {
 	ControllersConcurrency ControllersConcurrency `json:"controllersConcurrency"`
 	// Kubernetes client configuration
 	ClientConfig ClientConfig `json:"clientConfig"`
+	// Kubernetes leader election configuration
+	LeaderElection LeaderElection `json:"leaderElection"`
 }
 
 type ControllersConcurrency struct {
@@ -146,6 +152,16 @@ type ClientConfig struct {
 	// BurstQps defines maximum burst requests kubernetes client is allowed to make per second
 	// Default value 100. If set to 0 kube-client default value of 10 will be used.
 	BurstQps int `json:"burstQps" envconfig:"kuma_runtime_kubernetes_client_config_burst_qps"`
+}
+
+type LeaderElection struct {
+	// LeaseDuration is the duration that non-leader candidates will
+	// wait to force acquire leadership. This is measured against time of
+	// last observed ack. Default is 15 seconds.
+	LeaseDuration config_types.Duration `json:"leaseDuration" envconfig:"kuma_runtime_kubernetes_leader_election_lease_duration"`
+	// RenewDeadline is the duration that the acting controlplane will retry
+	// refreshing leadership before giving up. Default is 10 seconds.
+	RenewDeadline config_types.Duration `json:"renewDeadline" envconfig:"kuma_runtime_kubernetes_leader_election_renew_deadline"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
