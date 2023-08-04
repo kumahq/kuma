@@ -37,7 +37,7 @@ if [ ${#MATCHING_FILES[@]} -gt 0 ]; then
   echo "Matching files:"
   printf '%s\n' "${MATCHING_FILES[@]}"
 
-  if gh api repos/kumahq/kuma/issues/7450/labels | jq '.[].name' | grep -q "$NO_BACKPORT_AUTOLABEL" ; then
+  if gh api repos/kumahq/kuma/issues/"$PR_NUMBER"/labels | jq '.[].name' | grep -q "$NO_BACKPORT_AUTOLABEL" ; then
     echo "Removing $LABEL_TO_ADD because '$NO_BACKPORT_AUTOLABEL' label present."
     gh issue edit "$PR_NUMBER" --remove-label "$LABEL_TO_ADD" -R "$REPO"
   else
