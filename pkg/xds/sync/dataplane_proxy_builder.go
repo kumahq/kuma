@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -23,8 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-var syncLog = core.Log.WithName("sync")
 
 type DataplaneProxyBuilder struct {
 	Zone       string

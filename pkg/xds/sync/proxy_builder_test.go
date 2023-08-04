@@ -102,18 +102,16 @@ var _ = Describe("Proxy Builder", func() {
 	initializeStore(ctx, rt.ResourceManager(), "default_resources.yaml")
 
 	Describe("Build() zone egress", func() {
-		egressProxyBuilder := sync.DefaultEgressProxyBuilder(
-			ctx,
-			rt,
-			envoy_common.APIV3,
-		)
+		egressProxyBuilder := sync.DefaultEgressProxyBuilder(rt, envoy_common.APIV3)
 
 		It("should build proxy object for egress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-egress-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := egressProxyBuilder.Build(ctx, rk)
+			proxy, err := egressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -193,9 +191,11 @@ var _ = Describe("Proxy Builder", func() {
 		It("should build proxy object for ingress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-ingress-zone-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(ctx, rk)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

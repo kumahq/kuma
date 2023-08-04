@@ -165,7 +165,25 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 		ControlPlane: d.EnvoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not have a mesh!
 	}
-	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key)
+
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
+	if err != nil {
+		return SyncResult{}, err
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	}
+
+	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -180,12 +198,10 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	if err != nil {
 		return SyncResult{}, err
 	}
-	result := SyncResult{
-		ProxyType: mesh_proto.IngressProxyType,
-		Status:    GeneratedStatus,
-	}
 	if changed {
 		result.Status = ChangedStatus
+	} else {
+		result.Status = GeneratedStatus
 	}
 	return result, nil
 }
@@ -198,7 +214,24 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not have a mesh!
 	}
 
-	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key)
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
+	if err != nil {
+		return SyncResult{}, err
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.EgressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	}
+
+	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -213,12 +246,10 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	if err != nil {
 		return SyncResult{}, err
 	}
-	result := SyncResult{
-		ProxyType: mesh_proto.IngressProxyType,
-		Status:    GeneratedStatus,
-	}
 	if changed {
 		result.Status = ChangedStatus
+	} else {
+		result.Status = GeneratedStatus
 	}
 	return result, nil
 }

@@ -8,27 +8,28 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type IngressProxyBuilder struct {
-	ResManager         manager.ResourceManager
-	ReadOnlyResManager manager.ReadOnlyResourceManager
-	LookupIP           lookup.LookupIPFunc
-	meshCache          *xds_cache.Cache
+	ResManager manager.ResourceManager
+	LookupIP   lookup.LookupIPFunc
 
 	apiVersion        core_xds.APIVersion
 	zone              string
 	ingressTagFilters []string
 }
 
-func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey) (*core_xds.Proxy, error) {
-	zoneIngress, err := p.getZoneIngress(ctx, key)
+func (p *IngressProxyBuilder) Build(
+	ctx context.Context,
+	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) (*core_xds.Proxy, error) {
+	zoneIngress, err := p.getZoneIngress(ctx, key, aggregatedMeshCtxs)
 	if err != nil {
 		return nil, err
 	}
@@ -38,53 +39,32 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 		return nil, err
 	}
 
-	zoneEgressesList := &core_mesh.ZoneEgressResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, zoneEgressesList); err != nil {
-		return nil, err
-	}
-
-	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx, zoneIngress, zoneEgressesList)
-	if err != nil {
-		return nil, err
-	}
-
 	proxy := &core_xds.Proxy{
 		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
-		ZoneIngressProxy: zoneIngressProxy,
+		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
 	}
 	return proxy, nil
 }
 
 func (p *IngressProxyBuilder) buildZoneIngressProxy(
-	ctx context.Context,
 	zoneIngress *core_mesh.ZoneIngressResource,
-	zoneEgressesList *core_mesh.ZoneEgressResourceList,
-) (*core_xds.ZoneIngressProxy, error) {
-	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
-		return nil, err
-	}
-
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) *core_xds.ZoneIngressProxy {
+	zoneEgressesList := aggregatedMeshCtxs.ZoneEgresses()
 	var meshResourceList []*core_xds.MeshIngressResources
 
-	for _, mesh := range meshList.Items {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		meshName := mesh.GetMeta().GetName()
-
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
-		if err != nil {
-			return nil, err
-		}
-
-		destinations := ingress.BuildDestinationMap(meshName, zoneIngress)
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		meshResources := &core_xds.MeshIngressResources{
 			Mesh: mesh,
 			EndpointMap: ingress.BuildEndpointMap(
-				destinations,
+				ingress.BuildDestinationMap(meshName, zoneIngress),
 				meshCtx.Resources.Dataplanes().Items,
 				meshCtx.Resources.ExternalServices().Items,
-				zoneEgressesList.Items,
+				zoneEgressesList,
 				meshCtx.Resources.Gateways().Items,
 			),
 			Resources: meshCtx.Resources.MeshLocalResources,
@@ -96,68 +76,59 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	return &core_xds.ZoneIngressProxy{
 		ZoneIngressResource: zoneIngress,
 		MeshResourceList:    meshResourceList,
-	}, nil
+	}
 }
 
-func (p *IngressProxyBuilder) getZoneIngress(ctx context.Context, key core_model.ResourceKey) (*core_mesh.ZoneIngressResource, error) {
+func (p *IngressProxyBuilder) getZoneIngress(
+	ctx context.Context,
+	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) (*core_mesh.ZoneIngressResource, error) {
 	zoneIngress := core_mesh.NewZoneIngressResource()
-	if err := p.ReadOnlyResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
+	if err := p.ResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
 		return nil, err
 	}
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	if err := p.updateIngress(ctx, zoneIngress); err != nil {
+	if err := p.updateIngress(ctx, zoneIngress, aggregatedMeshCtxs); err != nil {
 		return nil, err
 	}
 	return zoneIngress, nil
 }
 
-func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource) error {
-	allMeshDataplanes := &core_mesh.DataplaneResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {
-		return err
-	}
-	allMeshGateways := &core_mesh.MeshGatewayResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, allMeshGateways); err != nil {
-		return err
-	}
-	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
-
-	availableExternalServices, err := p.getIngressExternalServices(ctx)
-	if err != nil {
-		return err
-	}
-
+func (p *IngressProxyBuilder) updateIngress(
+	ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) error {
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, allMeshGateways.Items, availableExternalServices.Items, p.ingressTagFilters)
+	return ingress.UpdateAvailableServices(
+		ctx,
+		p.ResManager,
+		zoneIngress,
+		aggregatedMeshCtxs.AllDataplanes(),
+		aggregatedMeshCtxs.AllMeshGateways(),
+		p.getIngressExternalServices(aggregatedMeshCtxs).Items,
+		p.ingressTagFilters,
+	)
 }
 
-func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
-	meshList := &core_mesh.MeshResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, meshList, store.ListOrdered()); err != nil {
-		return nil, err
-	}
-
+func (p *IngressProxyBuilder) getIngressExternalServices(
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) *core_mesh.ExternalServiceResourceList {
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshList.Items {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if !mesh.ZoneEgressEnabled() {
 			continue
 		}
-		meshName := mesh.GetMeta().GetName()
 
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
-		if err != nil {
-			return nil, err
-		}
-
-		meshExternalServices := meshCtx.Resources.ExternalServices().Items
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(mesh.GetMeta().GetName())
 
 		// look for external services that are only available in my zone and expose them
-		for _, es := range meshExternalServices {
+		for _, es := range meshCtx.Resources.ExternalServices().Items {
 			if es.Spec.Tags[mesh_proto.ZoneTag] == p.zone {
 				externalServices = append(externalServices, es)
 			}
@@ -165,5 +136,5 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 	}
 
 	allMeshExternalServices.Items = externalServices
-	return allMeshExternalServices, nil
+	return allMeshExternalServices
 }
