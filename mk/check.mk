@@ -91,3 +91,5 @@ check: format/common lint ## Dev: Run code checks (go fmt, go vet, ...)
 .PHONY: update-vulnerable-dependencies
 update-vulnerable-dependencies:
 	@$(KUMA_DIR)/tools/ci/update-vulnerable-dependencies.sh
+
+# dummy change
