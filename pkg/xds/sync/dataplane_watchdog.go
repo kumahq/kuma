@@ -166,7 +166,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not have a mesh!
 	}
 
-	meshContexts, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -174,16 +174,16 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	result := SyncResult{
 		ProxyType: mesh_proto.IngressProxyType,
 	}
-	syncForConfig := meshContexts.Hash != d.lastHash
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	if !syncForConfig {
 		result.Status = SkipStatus
 		return result, nil
 	}
 	if syncForConfig {
-		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", meshContexts.Hash)
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
 	}
 
-	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, meshContexts)
+	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -214,7 +214,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not have a mesh!
 	}
 
-	meshContexts, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
 	if err != nil {
 		return SyncResult{}, err
 	}
@@ -222,16 +222,16 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	result := SyncResult{
 		ProxyType: mesh_proto.EgressProxyType,
 	}
-	syncForConfig := meshContexts.Hash != d.lastHash
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	if !syncForConfig {
 		result.Status = SkipStatus
 		return result, nil
 	}
 	if syncForConfig {
-		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", meshContexts.Hash)
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
 	}
 
-	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, meshContexts)
+	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
 		return SyncResult{}, err
 	}

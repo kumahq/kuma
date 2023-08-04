@@ -24,8 +24,12 @@ type IngressProxyBuilder struct {
 	ingressTagFilters []string
 }
 
-func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContexts xds_context.MeshContexts) (*core_xds.Proxy, error) {
-	zoneIngress, err := p.getZoneIngress(ctx, key, meshContexts)
+func (p *IngressProxyBuilder) Build(
+	ctx context.Context,
+	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) (*core_xds.Proxy, error) {
+	zoneIngress, err := p.getZoneIngress(ctx, key, aggregatedMeshCtxs)
 	if err != nil {
 		return nil, err
 	}
@@ -38,31 +42,26 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 	proxy := &core_xds.Proxy{
 		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
-		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, meshContexts),
+		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
 	}
 	return proxy, nil
 }
 
 func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
-	meshContexts xds_context.MeshContexts,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) *core_xds.ZoneIngressProxy {
-	zoneEgressesList := meshContexts.ZoneEgresses()
+	zoneEgressesList := aggregatedMeshCtxs.ZoneEgresses()
 	var meshResourceList []*core_xds.MeshIngressResources
 
-	for _, mesh := range meshContexts.Meshes {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		meshName := mesh.GetMeta().GetName()
-		meshCtx, ok := meshContexts.MeshContextsByName[meshName]
-		if !ok {
-			panic("there should be a corresponding mesh context for every mesh in mesh contexts")
-		}
-
-		destinations := ingress.BuildDestinationMap(meshName, zoneIngress)
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		meshResources := &core_xds.MeshIngressResources{
 			Mesh: mesh,
 			EndpointMap: ingress.BuildEndpointMap(
-				destinations,
+				ingress.BuildDestinationMap(meshName, zoneIngress),
 				meshCtx.Resources.Dataplanes().Items,
 				meshCtx.Resources.ExternalServices().Items,
 				zoneEgressesList,
@@ -83,7 +82,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 func (p *IngressProxyBuilder) getZoneIngress(
 	ctx context.Context,
 	key core_model.ResourceKey,
-	meshContexts xds_context.MeshContexts,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_mesh.ZoneIngressResource, error) {
 	zoneIngress := core_mesh.NewZoneIngressResource()
 	if err := p.ResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
@@ -92,7 +91,7 @@ func (p *IngressProxyBuilder) getZoneIngress(
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	if err := p.updateIngress(ctx, zoneIngress, meshContexts); err != nil {
+	if err := p.updateIngress(ctx, zoneIngress, aggregatedMeshCtxs); err != nil {
 		return nil, err
 	}
 	return zoneIngress, nil
@@ -100,7 +99,7 @@ func (p *IngressProxyBuilder) getZoneIngress(
 
 func (p *IngressProxyBuilder) updateIngress(
 	ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource,
-	meshContexts xds_context.MeshContexts,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) error {
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
@@ -109,27 +108,24 @@ func (p *IngressProxyBuilder) updateIngress(
 		ctx,
 		p.ResManager,
 		zoneIngress,
-		meshContexts.AllDataplanes(),
-		meshContexts.AllMeshGateways(),
-		p.getIngressExternalServices(meshContexts).Items,
+		aggregatedMeshCtxs.AllDataplanes(),
+		aggregatedMeshCtxs.AllMeshGateways(),
+		p.getIngressExternalServices(aggregatedMeshCtxs).Items,
 		p.ingressTagFilters,
 	)
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(
-	meshContexts xds_context.MeshContexts,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) *core_mesh.ExternalServiceResourceList {
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshContexts.Meshes {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if !mesh.ZoneEgressEnabled() {
 			continue
 		}
 
-		meshCtx, ok := meshContexts.MeshContextsByName[mesh.GetMeta().GetName()]
-		if !ok {
-			panic("there should be a corresponding mesh context for every mesh in mesh contexts")
-		}
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(mesh.GetMeta().GetName())
 
 		// look for external services that are only available in my zone and expose them
 		for _, es := range meshCtx.Resources.ExternalServices().Items {

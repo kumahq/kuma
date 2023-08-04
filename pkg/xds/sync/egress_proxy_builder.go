@@ -26,9 +26,9 @@ type EgressProxyBuilder struct {
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
-	meshContexts xds_context.MeshContexts,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
-	zoneEgress, ok := meshContexts.ZoneEgressByName[key.Name]
+	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
 	if !ok {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
@@ -36,7 +36,7 @@ func (p *EgressProxyBuilder) Build(
 	// As egress is using SNI to identify the services, we need to filter out
 	// meshes with no mTLS enabled and with ZoneEgress enabled
 	var meshes []*core_mesh.MeshResource
-	for _, mesh := range meshContexts.Meshes {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if mesh.ZoneEgressEnabled() {
 			meshes = append(meshes, mesh)
 		}
@@ -44,7 +44,7 @@ func (p *EgressProxyBuilder) Build(
 
 	// We don't want to process services from our local zone ingress
 	var zoneIngresses []*core_mesh.ZoneIngressResource
-	for _, zoneIngress := range meshContexts.ZoneIngresses() {
+	for _, zoneIngress := range aggregatedMeshCtxs.ZoneIngresses() {
 		if zoneIngress.IsRemoteIngress(p.zone) {
 			zoneIngresses = append(zoneIngresses, zoneIngress)
 		}
@@ -59,11 +59,7 @@ func (p *EgressProxyBuilder) Build(
 
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
-
-		meshCtx, ok := meshContexts.MeshContextsByName[meshName]
-		if !ok {
-			panic("there should be a corresponding mesh context for every mesh in mesh contexts")
-		}
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
 		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items

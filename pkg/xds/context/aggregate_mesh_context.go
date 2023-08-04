@@ -15,10 +15,10 @@ func AggregateMeshContexts(
 	ctx context.Context,
 	resManager manager.ReadOnlyResourceManager,
 	fetcher meshContextFetcher,
-) (MeshContexts, error) {
+) (AggregatedMeshContexts, error) {
 	var meshList core_mesh.MeshResourceList
 	if err := resManager.List(ctx, &meshList, core_store.ListOrdered()); err != nil {
-		return MeshContexts{}, err
+		return AggregatedMeshContexts{}, err
 	}
 
 	var meshContexts []MeshContext
@@ -26,7 +26,7 @@ func AggregateMeshContexts(
 	for _, mesh := range meshList.Items {
 		meshCtx, err := fetcher(ctx, mesh.GetMeta().GetName())
 		if err != nil {
-			return MeshContexts{}, err
+			return AggregatedMeshContexts{}, err
 		}
 		meshContexts = append(meshContexts, meshCtx)
 		meshContextsByName[mesh.Meta.GetName()] = meshCtx
@@ -39,7 +39,7 @@ func AggregateMeshContexts(
 		}
 	}
 
-	result := MeshContexts{
+	result := AggregatedMeshContexts{
 		Hash:               aggregatedHash(meshContexts),
 		Meshes:             meshList.Items,
 		MeshContextsByName: meshContextsByName,
