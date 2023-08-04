@@ -21,7 +21,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 GINKGO_TEST:=$(GENV) $(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
-test: build/ebpf
+test:
 	# -race required CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(EXTRA_GOENV) CGO_ENABLED=1 go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
 
