@@ -363,10 +363,18 @@ runtime:
     clientConfig:
       # Qps defines maximum requests kubernetes client is allowed to make per second.
       # Default value 100. If set to 0 kube-client default value of 5 will be used.
-      qps: 100
+      qps: 100 # ENV: KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS
       # BurstQps defines maximum burst requests kubernetes client is allowed to make per second
       # Default value 100. If set to 0 kube-client default value of 10 will be used.
-      burstQps: 100
+      burstQps: 100 # ENV: KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS
+    leaderElection:
+      # LeaseDuration is the duration that non-leader candidates will
+      # wait to force acquire leadership. This is measured against time of
+      # last observed ack. Default is 15 seconds.
+      leaseDuration: 15s # ENV: KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION
+      # RenewDeadline is the duration that the acting controlplane will retry
+      # refreshing leadership before giving up. Default is 10 seconds.
+      renewDeadline: 10s # ENV: KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
