@@ -400,10 +400,12 @@ metrics:
     # How long zone can stay Online without active KDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_ZONE_IDLE_TIMEOUT
   mesh:
-    # Min time that should pass between MeshInsight resync
-    minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
-    # Max time that MeshInsight could spend without resync
-    maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
+    # Minimum time between 2 refresh of insights
+    minResyncInterval: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL
+    # time between triggering a full refresh of all the insights
+    fullResyncInterval: 20s # ENV: KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL
+    # the size of the buffer between event creation and processing
+    bufferSize: 1000 # ENV: KUMA_METRICS_MESH_BUFFER_SIZE
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT

@@ -134,3 +134,9 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use MinResyncInterval instead"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use FullResyncInterval instead"
