@@ -3,23 +3,21 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/attribute"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
@@ -29,13 +27,8 @@ type pgxResourceStore struct {
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-// This attribute is necessary for tracing integrations like Datadog, to have
-// full insights into sql queries connected with traces.
-// ref. https://github.com/DataDog/dd-trace-go/blob/3d97fcec9f8b21fdd821af526d27d4335b26da66/contrib/database/sql/conn.go#L290
-var spanTypeSQLAttribute = attribute.String("span.type", "sql")
-
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
-	pool, err := connect(config, customizer)
+	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
 		return nil, err
 	}
@@ -47,35 +40,6 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	return &pgxResourceStore{
 		pool: pool,
 	}, nil
-}
-
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
-	connectionString, err := postgresStoreConfig.ConnectionString()
-	if err != nil {
-		return nil, err
-	}
-	pgxConfig, err := pgxpool.ParseConfig(connectionString)
-
-	if postgresStoreConfig.MaxOpenConnections == 0 {
-		// pgx MaxCons must be > 0, see https://github.com/jackc/puddle/blob/c5402ce53663d3c6481ea83c2912c339aeb94adc/pool.go#L160
-		// so unlimited is just max int
-		pgxConfig.MaxConns = math.MaxInt32
-	} else {
-		pgxConfig.MaxConns = int32(postgresStoreConfig.MaxOpenConnections)
-	}
-	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
-	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
-	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithAttributes(spanTypeSQLAttribute))
-	customizer.Customize(pgxConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
 }
 
 func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
