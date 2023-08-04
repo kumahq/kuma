@@ -9,10 +9,20 @@ env:
 jobs:
   backport_label:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Check diff and add label
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
           git fetch origin master:refs/remotes/origin/master
           tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
