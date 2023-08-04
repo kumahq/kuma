@@ -35,15 +35,10 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 		return nil, err
 	}
 
-	zoneIngressProxy, err := p.buildZoneIngressProxy(zoneIngress, meshContexts)
-	if err != nil {
-		return nil, err
-	}
-
 	proxy := &core_xds.Proxy{
 		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
-		ZoneIngressProxy: zoneIngressProxy,
+		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, meshContexts),
 	}
 	return proxy, nil
 }
@@ -51,7 +46,7 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
 	meshContexts xds_context.MeshContexts,
-) (*core_xds.ZoneIngressProxy, error) {
+) *core_xds.ZoneIngressProxy {
 	zoneEgressesList := meshContexts.ZoneEgresses()
 	var meshResourceList []*core_xds.MeshIngressResources
 
@@ -82,7 +77,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	return &core_xds.ZoneIngressProxy{
 		ZoneIngressResource: zoneIngress,
 		MeshResourceList:    meshResourceList,
-	}, nil
+	}
 }
 
 func (p *IngressProxyBuilder) getZoneIngress(
@@ -107,11 +102,6 @@ func (p *IngressProxyBuilder) updateIngress(
 	ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource,
 	meshContexts xds_context.MeshContexts,
 ) error {
-	availableExternalServices, err := p.getIngressExternalServices(meshContexts)
-	if err != nil {
-		return err
-	}
-
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
@@ -121,14 +111,14 @@ func (p *IngressProxyBuilder) updateIngress(
 		zoneIngress,
 		meshContexts.AllDataplanes(),
 		meshContexts.AllMeshGateways(),
-		availableExternalServices.Items,
+		p.getIngressExternalServices(meshContexts).Items,
 		p.ingressTagFilters,
 	)
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(
 	meshContexts xds_context.MeshContexts,
-) (*core_mesh.ExternalServiceResourceList, error) {
+) *core_mesh.ExternalServiceResourceList {
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
 	for _, mesh := range meshContexts.Meshes {
@@ -150,5 +140,5 @@ func (p *IngressProxyBuilder) getIngressExternalServices(
 	}
 
 	allMeshExternalServices.Items = externalServices
-	return allMeshExternalServices, nil
+	return allMeshExternalServices
 }
