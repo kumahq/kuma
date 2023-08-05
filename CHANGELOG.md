@@ -14,6 +14,19 @@
 * fix(sec): get rid of dependency on containerd (backport of #7387) [#7392](https://github.com/kumahq/kuma/pull/7392) @kumahq
 
 
+## 2.2.4
+> Released on 2023/08/04
+
+* chore(deps): security update [#7454](https://github.com/kumahq/kuma/pull/7454) @kumahq
+* chore(deps): update go from 1.20.5 to 1.20.6 (backport of #7414) [#7417](https://github.com/kumahq/kuma/pull/7417) @kumahq
+* chore(deps): update to go 1.20.7 (backport of #7429) [#7432](https://github.com/kumahq/kuma/pull/7432) @kumahq
+* chore(deps): upgrade envoy to 1.25.9 [#7366](https://github.com/kumahq/kuma/pull/7366) @lukidzi
+* fix(containerd): only build cgroups on linux (backport of #7408) [#7422](https://github.com/kumahq/kuma/pull/7422) @kumahq
+* fix(kuma-cp): don't leak goroutine on every tick in SimpleWatchdog (backport of #7348) [#7355](https://github.com/kumahq/kuma/pull/7355) @kumahq
+* fix(kuma-cp): order resources for building VIPs (backport of #7333) [#7362](https://github.com/kumahq/kuma/pull/7362) @kumahq
+* fix(sec): get rid of dependency on containerd (backport of #7387) [#7391](https://github.com/kumahq/kuma/pull/7391) @kumahq
+
+
 ## 2.1.5
 > Released on 2023/07/27
 
