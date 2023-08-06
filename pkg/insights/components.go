@@ -1,8 +1,6 @@
 package insights
 
 import (
-	"golang.org/x/time/rate"
-
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -13,15 +11,23 @@ func Setup(rt runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Zone {
 		return nil
 	}
+	minResyncInterval := rt.Config().Metrics.Mesh.MinResyncInterval.Duration
+	if rt.Config().Metrics.Mesh.MinResyncTimeout.Duration != 0 {
+		minResyncInterval = rt.Config().Metrics.Mesh.MinResyncTimeout.Duration
+	}
+	fullResyncInterval := rt.Config().Metrics.Mesh.FullResyncInterval.Duration
+	if rt.Config().Metrics.Mesh.MaxResyncTimeout.Duration != 0 {
+		fullResyncInterval = rt.Config().Metrics.Mesh.MaxResyncTimeout.Duration
+	}
 	resyncer := NewResyncer(&Config{
-		ResourceManager:    rt.ResourceManager(),
-		EventReaderFactory: rt.EventReaderFactory(),
-		MinResyncTimeout:   rt.Config().Metrics.Mesh.MinResyncTimeout.Duration,
-		MaxResyncTimeout:   rt.Config().Metrics.Mesh.MaxResyncTimeout.Duration,
-		RateLimiterFactory: func() *rate.Limiter {
-			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout.Duration), 1)
-		},
-		Registry: registry.Global(),
-	}, rt.Tenants())
+		ResourceManager:     rt.ResourceManager(),
+		EventReaderFactory:  rt.EventReaderFactory(),
+		MinResyncInterval:   minResyncInterval,
+		FullResyncInterval:  fullResyncInterval,
+		Registry:            registry.Global(),
+		TenantFn:            rt.Tenants(),
+		EventBufferCapacity: rt.Config().Metrics.Mesh.BufferSize,
+		Metrics:             rt.Metrics(),
+	})
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }

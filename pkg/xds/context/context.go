@@ -74,3 +74,53 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 		return lb
 	}
 }
+
+// AggregatedMeshContexts is an aggregate of all MeshContext across all meshes
+type AggregatedMeshContexts struct {
+	Hash               string
+	Meshes             []*core_mesh.MeshResource
+	MeshContextsByName map[string]MeshContext
+	ZoneEgressByName   map[string]*core_mesh.ZoneEgressResource
+}
+
+// MustGetMeshContext panics if there is no mesh context for given mesh. Call it when iterating over .Meshes
+// There is a guarantee that for every Mesh in .Meshes there is a MeshContext.
+func (m AggregatedMeshContexts) MustGetMeshContext(meshName string) MeshContext {
+	meshCtx, ok := m.MeshContextsByName[meshName]
+	if !ok {
+		panic("there should be a corresponding mesh context for every mesh in mesh contexts")
+	}
+	return meshCtx
+}
+
+func (m AggregatedMeshContexts) AllDataplanes() []*core_mesh.DataplaneResource {
+	var resources []*core_mesh.DataplaneResource
+	for _, mesh := range m.Meshes {
+		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
+		resources = append(resources, meshCtx.Resources.Dataplanes().Items...)
+	}
+	return resources
+}
+
+func (m AggregatedMeshContexts) ZoneEgresses() []*core_mesh.ZoneEgressResource {
+	for _, meshCtx := range m.MeshContextsByName {
+		return meshCtx.Resources.ZoneEgresses().Items // all mesh contexts has the same list
+	}
+	return nil
+}
+
+func (m AggregatedMeshContexts) ZoneIngresses() []*core_mesh.ZoneIngressResource {
+	for _, meshCtx := range m.MeshContextsByName {
+		return meshCtx.Resources.ZoneIngresses().Items // all mesh contexts has the same list
+	}
+	return nil
+}
+
+func (m AggregatedMeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResource {
+	var resources []*core_mesh.MeshGatewayResource
+	for _, mesh := range m.Meshes {
+		meshCtx := m.MustGetMeshContext(mesh.Meta.GetName())
+		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
+	}
+	return resources
+}

@@ -12,6 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -27,9 +28,6 @@ var _ = Describe("IngressGenerator", func() {
 		ingress          string
 		expected         string
 		meshResourceList []*core_xds.MeshIngressResources
-		trafficRoutes    []*core_mesh.TrafficRouteResource
-		meshGateways     *core_mesh.MeshGatewayResourceList
-		meshHTTPRoutes   []*v1alpha1.MeshHTTPRouteResource
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -45,25 +43,12 @@ var _ = Describe("IngressGenerator", func() {
 				},
 				Spec: zoneIngress,
 			}
-			if given.meshGateways == nil {
-				given.meshGateways = &core_mesh.MeshGatewayResourceList{}
-			}
 			proxy := &core_xds.Proxy{
 				Id:         *core_xds.BuildProxyId("default", "ingress"),
 				APIVersion: envoy_common.APIV3,
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
 					ZoneIngressResource: zoneIngressRes,
-					GatewayRoutes:       &core_mesh.MeshGatewayRouteResourceList{},
-					MeshGateways:        given.meshGateways,
-					PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
-						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
-							Items: given.trafficRoutes,
-						},
-						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
-							Items: given.meshHTTPRoutes,
-						},
-					},
-					MeshResourceList: given.meshResourceList,
+					MeshResourceList:    given.meshResourceList,
 				},
 			}
 
@@ -131,19 +116,23 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
-				},
-			},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -157,21 +146,6 @@ var _ = Describe("IngressGenerator", func() {
 `,
 			expected:         "02.envoy.golden.yaml",
 			meshResourceList: []*core_xds.MeshIngressResources{},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-						},
-					},
-				},
-			},
 		}),
 		Entry("03. trafficroute with many destinations", testCase{
 			ingress: `
@@ -220,44 +194,48 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
-				},
-			},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-						},
-					},
-				},
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Split: []*mesh_proto.TrafficRoute_Split{
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
 								{
-									Weight: util_proto.UInt32(10),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-										"version":             "v2",
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
 									},
 								},
 								{
-									Weight: util_proto.UInt32(90),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-										"region":              "eu",
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Split: []*mesh_proto.TrafficRoute_Split{
+												{
+													Weight: util_proto.UInt32(10),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "backend",
+														"version":             "v2",
+													},
+												},
+												{
+													Weight: util_proto.UInt32(90),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "backend",
+														"region":              "eu",
+													},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -334,6 +312,69 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: map[string]string{
+												mesh_proto.ServiceTag: "*",
+												"version":             "v2",
+											},
+										},
+									},
+								},
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Split: []*mesh_proto.TrafficRoute_Split{
+												{
+													Weight: util_proto.UInt32(10),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "backend",
+														"version":             "v2",
+													},
+												},
+												{
+													Weight: util_proto.UInt32(90),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "backend",
+														"region":              "eu",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 				{
 					Mesh: builders.Mesh().WithName("mesh2").Build(),
@@ -380,89 +421,49 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
-				},
-			},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-						},
-					},
-				},
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: map[string]string{
-								mesh_proto.ServiceTag: "*",
-								"version":             "v2",
-							},
-						},
-					},
-				},
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Split: []*mesh_proto.TrafficRoute_Split{
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
 								{
-									Weight: util_proto.UInt32(10),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-										"version":             "v2",
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
 									},
 								},
 								{
-									Weight: util_proto.UInt32(90),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-										"region":              "eu",
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Split: []*mesh_proto.TrafficRoute_Split{
-								{
-									Weight: util_proto.UInt32(10),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "frontend",
-										"region":              "eu",
-										"cloud":               "gke",
-									},
-								},
-								{
-									Weight: util_proto.UInt32(90),
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "frontend",
-										"cloud":               "aks",
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Split: []*mesh_proto.TrafficRoute_Split{
+												{
+													Weight: util_proto.UInt32(10),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "frontend",
+														"region":              "eu",
+														"cloud":               "gke",
+													},
+												},
+												{
+													Weight: util_proto.UInt32(90),
+													Destination: map[string]string{
+														mesh_proto.ServiceTag: "frontend",
+														"cloud":               "aks",
+													},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -495,32 +496,36 @@ var _ = Describe("IngressGenerator", func() {
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
 						"backend": {},
 					},
-				},
-			},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-						},
-					},
-				},
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchService("foo"),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchService("foo"),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -557,6 +562,25 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{
+								{
+									Spec: &mesh_proto.TrafficRoute{
+										Sources: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Destinations: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchAnyService(),
+										}},
+										Conf: &mesh_proto.TrafficRoute_Conf{
+											Destination: mesh_proto.MatchAnyService(),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 				{
 					Mesh: builders.Mesh().WithName("mesh2").Build(),
@@ -573,41 +597,30 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
-				},
-			},
-			trafficRoutes: []*core_mesh.TrafficRouteResource{
-				{
-					Spec: &mesh_proto.TrafficRoute{
-						Sources: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Destinations: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchAnyService(),
-						}},
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Destination: mesh_proto.MatchAnyService(),
-						},
-					},
-				},
-			},
-			meshGateways: &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{{
-					Meta: &test_model.ResourceMeta{Name: "mesh-gateway", Mesh: "mesh2"},
-					Spec: &mesh_proto.MeshGateway{
-						Selectors: []*mesh_proto.Selector{{
-							Match: mesh_proto.MatchService("mesh-gateway"),
-						}},
-						Conf: &mesh_proto.MeshGateway_Conf{
-							Listeners: []*mesh_proto.MeshGateway_Listener{
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
+							Items: []*core_mesh.MeshGatewayResource{
 								{
-									Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
-									Port:      80,
-									CrossMesh: true,
+									Meta: &test_model.ResourceMeta{Name: "mesh-gateway", Mesh: "mesh2"},
+									Spec: &mesh_proto.MeshGateway{
+										Selectors: []*mesh_proto.Selector{{
+											Match: mesh_proto.MatchService("mesh-gateway"),
+										}},
+										Conf: &mesh_proto.MeshGateway_Conf{
+											Listeners: []*mesh_proto.MeshGateway_Listener{
+												{
+													Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+													Port:      80,
+													CrossMesh: true,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
 					},
-				}},
+				},
 			},
 		}),
 		Entry("with MeshHTTPRoute", testCase{
@@ -657,41 +670,123 @@ var _ = Describe("IngressGenerator", func() {
 							},
 						},
 					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
+							Items: []*v1alpha1.MeshHTTPRouteResource{
+								{
+									Spec: &v1alpha1.MeshHTTPRoute{
+										TargetRef: common_api.TargetRef{
+											Kind: common_api.MeshService,
+											Name: "frontend",
+										},
+										To: []v1alpha1.To{{
+											TargetRef: common_api.TargetRef{
+												Kind: common_api.MeshService,
+												Name: "backend",
+											},
+											Rules: []v1alpha1.Rule{{
+												Matches: []v1alpha1.Match{{
+													Path: &v1alpha1.PathMatch{
+														Type:  v1alpha1.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: v1alpha1.RuleConf{
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshServiceSubset,
+															Name: "backend",
+															Tags: map[string]string{
+																"version": "v1",
+																"region":  "eu",
+															},
+														},
+													}},
+												},
+											}},
+										}},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
-			meshHTTPRoutes: []*v1alpha1.MeshHTTPRouteResource{
+		}),
+		Entry("with VirtualOutbound", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-0
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-1
+`,
+			expected: "virtual-outbound.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
 				{
-					Spec: &v1alpha1.MeshHTTPRoute{
-						TargetRef: common_api.TargetRef{
-							Kind: common_api.MeshService,
-							Name: "frontend",
-						},
-						To: []v1alpha1.To{{
-							TargetRef: common_api.TargetRef{
-								Kind: common_api.MeshService,
-								Name: "backend",
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/instance": "ins-0",
+									"mesh":             "mesh1",
+								},
+								Weight: 1,
 							},
-							Rules: []v1alpha1.Rule{{
-								Matches: []v1alpha1.Match{{
-									Path: &v1alpha1.PathMatch{
-										Type:  v1alpha1.PathPrefix,
-										Value: "/v1",
-									},
-								}},
-								Default: v1alpha1.RuleConf{
-									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: common_api.TargetRef{
-											Kind: common_api.MeshServiceSubset,
-											Name: "backend",
-											Tags: map[string]string{
-												"version": "v1",
-												"region":  "eu",
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/instance": "ins-1",
+									"mesh":             "mesh1",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.VirtualOutboundType: &core_mesh.VirtualOutboundResourceList{
+							Items: []*core_mesh.VirtualOutboundResource{
+								{
+									Spec: &mesh_proto.VirtualOutbound{
+										Selectors: []*mesh_proto.Selector{
+											{
+												Match: map[string]string{
+													mesh_proto.ServiceTag:  mesh_proto.MatchAllTag,
+													mesh_proto.InstanceTag: mesh_proto.MatchAllTag,
+												},
 											},
 										},
-									}},
+										Conf: &mesh_proto.VirtualOutbound_Conf{
+											Host: "{{.svc}}.{{.inst}}.mesh",
+											Port: "8080",
+											Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+												{
+													Name:   "svc",
+													TagKey: mesh_proto.ServiceTag,
+												},
+												{
+													Name:   "inst",
+													TagKey: mesh_proto.InstanceTag,
+												},
+											},
+										},
+									},
 								},
-							}},
-						}},
+							},
+						},
 					},
 				},
 			},

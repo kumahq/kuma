@@ -27,15 +27,14 @@ func BuildEndpointMap(
 			if !ok {
 				continue
 			}
-			withMesh := tags.Tags(inbound.Tags).WithTags("mesh", dataplane.GetMeta().GetMesh())
-			if !selectors.Matches(withMesh) {
+			if !selectors.Matches(inbound.Tags) {
 				continue
 			}
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target: iface.DataplaneAdvertisedIP,
 				Port:   iface.DataplanePort,
-				Tags:   withMesh,
+				Tags:   inbound.Tags,
 				Weight: 1,
 			})
 		}
@@ -61,7 +60,7 @@ func BuildEndpointMap(
 					Port:   listener.GetPort(),
 					Tags: mesh_proto.Merge[tags.Tags](
 						dpTags, gateway.Spec.GetTags(), listener.GetTags(),
-					).WithTags("mesh", dataplane.GetMeta().GetMesh()),
+					),
 					Weight: 1,
 				})
 			}
@@ -74,8 +73,7 @@ func BuildEndpointMap(
 		if !ok {
 			continue
 		}
-		withMesh := tags.Tags(es.Spec.GetTags()).WithTags("mesh", es.GetMeta().GetMesh())
-		if !selectors.Matches(withMesh) {
+		if !selectors.Matches(es.Spec.GetTags()) {
 			continue
 		}
 
@@ -84,7 +82,7 @@ func BuildEndpointMap(
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target:          iface.Address,
 				Port:            iface.Port,
-				Tags:            withMesh,
+				Tags:            es.Spec.GetTags(),
 				Weight:          1,
 				ExternalService: &core_xds.ExternalService{},
 			})

@@ -57,15 +57,18 @@ var _ = Describe("Counter", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		resyncer := insights.NewResyncer(&insights.Config{
-			MinResyncTimeout:   5 * time.Second,
-			MaxResyncTimeout:   1 * time.Minute,
+			MinResyncInterval:  5 * time.Second,
+			FullResyncInterval: 5 * time.Second,
 			ResourceManager:    resManager,
 			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) <-chan time.Time {
 				return tickCh
 			},
-			Registry: registry.Global(),
-		}, multitenant.SingleTenant)
+			Registry:            registry.Global(),
+			TenantFn:            multitenant.SingleTenant,
+			EventBufferCapacity: 10,
+			Metrics:             metrics,
+		})
 
 		go func() {
 			err := resyncer.Start(stop)

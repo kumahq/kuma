@@ -8,26 +8,38 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-func buildDestinations(
-	ingressProxy *core_xds.ZoneIngressProxy,
-) map[string][]envoy_tags.Tags {
-	destinations := map[string][]envoy_tags.Tags{}
-	policies := ingressProxy.PolicyResources
+type destinations map[string]map[string][]envoy_tags.Tags
 
-	trafficRoutes := policies[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items
-	meshHTTPRoutes := policies[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+func (d destinations) get(mesh string, service string) []envoy_tags.Tags {
+	forMesh := d[mesh]
+	return append(forMesh[service], forMesh[mesh_proto.MatchAllTag]...)
+}
 
-	addTrafficRouteDestinations(trafficRoutes, destinations)
-	addMeshHTTPRouteDestinations(meshHTTPRoutes, destinations)
-	addGatewayRouteDestinations(ingressProxy.GatewayRoutes.Items, destinations)
-	addMeshGatewayDestinations(ingressProxy.MeshGateways.Items, destinations)
-
-	return destinations
+func buildDestinations(ingressProxy *core_xds.ZoneIngressProxy) destinations {
+	dest := destinations{}
+	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	for _, service := range ingressProxy.ZoneIngressResource.Spec.AvailableServices {
+		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
+	}
+	for _, meshResources := range ingressProxy.MeshResourceList {
+		res := xds_context.Resources{MeshLocalResources: meshResources.Resources}
+		destForMesh := map[string][]envoy_tags.Tags{}
+		meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+		addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
+		addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
+		addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
+		addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
+		addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableSvcsByMesh[meshResources.Mesh.GetMeta().GetName()], destForMesh)
+		dest[meshResources.Mesh.GetMeta().GetName()] = destForMesh
+	}
+	return dest
 }
 
 func addMeshGatewayDestinations(
@@ -184,4 +196,26 @@ func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
 	}
 
 	destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+}
+
+func addVirtualOutboundDestinations(
+	virtualOutbounds []*core_mesh.VirtualOutboundResource,
+	availableServices []*mesh_proto.ZoneIngress_AvailableService,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	// If there are no VirtualOutbounds, we are not modifying destinations
+	if len(virtualOutbounds) == 0 {
+		return
+	}
+
+	for _, availableService := range availableServices {
+		for _, matched := range dns.Match(virtualOutbounds, availableService.Tags) {
+			service := availableService.Tags[mesh_proto.ServiceTag]
+			tags := envoy_tags.Tags{}
+			for _, param := range matched.Spec.GetConf().GetParameters() {
+				tags[param.TagKey] = availableService.Tags[param.TagKey]
+			}
+			destinations[service] = append(destinations[service], tags)
+		}
+	}
 }

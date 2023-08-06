@@ -68,6 +68,8 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			LeaderElectionID:        "cp-leader-lease",
 			LeaderElectionNamespace: systemNamespace,
 			Logger:                  core.Log.WithName("kube-manager"),
+			LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
 
 			// Disable metrics bind address as we use kube metrics registry directly.
 			MetricsBindAddress: "0",

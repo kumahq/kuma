@@ -105,7 +105,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1", "mesh": "default"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
 						},
 					},
@@ -113,14 +113,14 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target:          "192.168.0.1",
 							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default", mesh_proto.ZoneTag: "zone-2"},
+							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
 							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 						},
 						{
 							Target:          "192.168.0.2",
 							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default", mesh_proto.ZoneTag: "zone-2"},
+							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
 							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 						},
@@ -178,7 +178,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1", "mesh": "default"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
 						},
 					},
@@ -213,7 +213,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target: "192.168.0.2",
 							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "mesh": "default"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis"},
 							Weight: 1,
 						},
 					},

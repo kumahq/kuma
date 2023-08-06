@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -124,6 +125,8 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 	return opts
 }
 
+var ErrSkipUpsert = errors.New("don't do upsert")
+
 func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
 	upsert := func(ctx context.Context) error {
 		create := false
@@ -136,6 +139,9 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 			}
 		}
 		if err := fn(resource); err != nil {
+			if err == ErrSkipUpsert { // Way to skip inserts when there are no change
+				return nil
+			}
 			return err
 		}
 		if create {
