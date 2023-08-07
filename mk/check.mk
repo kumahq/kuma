@@ -22,7 +22,7 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
-	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v
 
 .PHONY: helm-lint
 helm-lint:
