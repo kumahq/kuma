@@ -38,7 +38,7 @@ BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install
 BUILD_TEST_BINARIES := test-server
 
 # Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
+Build_Go_Application = $(GO_BUILD) $$(GOENV) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
 
 .PHONY: build
 build: build/release build/test
