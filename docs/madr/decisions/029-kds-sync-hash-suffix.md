@@ -65,11 +65,23 @@ name := fmt.Sprintf("%s-%s", resourceName, hash(resourceMesh, resourceZone, reso
 Since renaming is happening on the KDS Server, KDS Client doesn't need to know anything about hashes. 
 It will automatically remove old policies and create new policies. 
 
-Information that we're using to build hash has to be set as `labels` on the resource. For example, 
-when syncing DPP from Zone to Global we'll get: 
+Information that we're using to build hash has to be set as `labels` on the resource. Today, 
+when syncing DPP from Zone to Global we have the following name on Global:
+
+```
+zone-1.my-dpp.ns-from-zone
+```
+
+but with hash, the name will look like
+
+```
+my-dpp-c8fh421p
+```
+
+Because we don't want to lose the information about zone and namespace, we have to put it as labels:
 
 * Zone(Kubernetes)
-```
+```yaml
 kind: Dataplane
 metadata:
   name: my-dpp
@@ -82,11 +94,11 @@ metadata:
 ```yaml
 kind: Dataplane
 metadata:
-  name: my-dpp-{{hash("mesh-1", "zone-1", "my-ns")}}
+  name: my-dpp-c8fh421p
   namespace: kuma-system
   labels: 
     kuma.io/mesh: mesh-1
-    kuma.io/namespace: my-ns
+    kuma.io/namespace: ns-from-zone
     kuma.io/zone: zone-1
 ```
 
