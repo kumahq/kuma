@@ -65,6 +65,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.opentelemetry.io/proto/otlp v1.2.0
 	go.uber.org/multierr v1.11.0
+<<<<<<< HEAD
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/net v0.33.0
@@ -76,6 +77,19 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.33.0
+=======
+	go.uber.org/zap v1.25.0
+	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/net v0.13.0
+	golang.org/x/sys v0.11.0
+	golang.org/x/text v0.12.0
+	golang.org/x/time v0.3.0 // indirect
+	gonum.org/v1/gonum v0.13.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731193218-e0aa005b6bdf
+	google.golang.org/grpc v1.57.0
+	google.golang.org/protobuf v1.31.0
+>>>>>>> e230f4166 (chore(deps): bump golang.org/x/sys from 0.10.0 to 0.11.0 (#7471))
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.14.3
 	k8s.io/api v0.29.3
