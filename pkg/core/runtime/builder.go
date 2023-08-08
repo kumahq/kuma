@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -98,6 +99,7 @@ type Builder struct {
 	*runtimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
+	apiWebServiceCustomize   func(*restful.WebService) error
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -273,6 +275,11 @@ func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.P
 	return b
 }
 
+func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService) error) *Builder {
+	b.apiWebServiceCustomize = customize
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -378,6 +385,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:              b.interCpPool,
 			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
 			tenants:                  b.tenants,
+			apiWebServiceCustomize:   b.apiWebServiceCustomize,
 		},
 		Manager: b.cm,
 	}, nil
@@ -505,4 +513,11 @@ func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 
 func (b *Builder) Tenants() multitenant.Tenants {
 	return b.tenants
+}
+
+func (b *Builder) APIWebServiceCustomize() func(*restful.WebService) error {
+	if b.apiWebServiceCustomize == nil {
+		return func(*restful.WebService) error { return nil }
+	}
+	return b.apiWebServiceCustomize
 }

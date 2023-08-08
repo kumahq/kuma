@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
+
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -82,6 +84,7 @@ type RuntimeContext interface {
 	InterCPClientPool() *client.Pool
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
 	Tenants() multitenant.Tenants
+	APIWebServiceCustomize() func(ws *restful.WebService) error
 }
 
 type Access struct {
@@ -169,6 +172,7 @@ type runtimeContext struct {
 	interCpPool              *client.Pool
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
+	apiWebServiceCustomize   func(*restful.WebService) error
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -289,4 +293,11 @@ func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomizati
 
 func (rc *runtimeContext) Tenants() multitenant.Tenants {
 	return rc.tenants
+}
+
+func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
+	if rc.apiWebServiceCustomize == nil {
+		return func(*restful.WebService) error { return nil }
+	}
+	return rc.apiWebServiceCustomize
 }
