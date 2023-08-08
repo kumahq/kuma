@@ -190,8 +190,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					continue
 				}
 				startProcessingTime := r.now()
-				r.idleTime.Observe(startProcessingTime.Sub(start).Seconds())
-				r.timeToProcessItem.Observe(startProcessingTime.Sub(event.time).Seconds())
+				r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
+				r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 				if event.flag&FlagService == FlagService {
 					err := r.createOrUpdateServiceInsight(ctx, event.tenantId, event.mesh)
 					if err != nil {
@@ -204,7 +204,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						log.Error(err, "unable to resync MeshInsight", "event", event)
 					}
 				}
-				r.itemProcessingTime.Observe(time.Since(startProcessingTime).Seconds())
+				r.itemProcessingTime.Observe(float64(time.Since(startProcessingTime).Milliseconds()))
 			}
 		}
 	}()
