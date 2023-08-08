@@ -214,10 +214,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	ticker := r.tick(r.minResyncInterval)
 	steps := 0
 	for {
-		steps += 1
 		select {
 		// We tick every minResyncInterval and flush the batch so we process updates
 		case now := <-ticker:
+			steps += 1
 			// Every fullResyncInterval we also add to the batch an update for each existing entities so we refresh all of them
 			tickCtx, cancelTimeout := context.WithDeadline(ctx, now.Add(r.minResyncInterval))
 			if steps == r.stepsBeforeFullResync {
