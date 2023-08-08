@@ -11,6 +11,12 @@ updates:
       k8s-libs:
           patterns:
             - "k8s.io/*"
+      go.opentelemetry.io/otel:
+          patterns:
+            - "go.opentelemetry.io/otel*"
+      go.opentelemetry.io/contrib:
+          patterns:
+            - "go.opentelemetry.io/contrib/*"
 
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
