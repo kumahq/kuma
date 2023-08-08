@@ -92,7 +92,7 @@ function version_info() {
     if [[ "$ciDeclared" == "true" ]]; then
       ciDir="ci"
     fi
-    if [[ "$ciDeclared" == "true" ]] || git diff --quiet && git diff --cached --quiet; then
+    if [[ "$ciDeclared" == "true" ]] || { git diff --quiet && git diff --cached --quiet; }; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
       describedTag=$(git describe --tags 2>/dev/null || echo "none")
