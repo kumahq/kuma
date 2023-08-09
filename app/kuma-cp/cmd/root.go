@@ -32,14 +32,14 @@ func newRootCmd() *cobra.Command {
 		Short: "Universal Control Plane for Envoy-based Service Mesh",
 		Long:  `Universal Control Plane for Envoy-based Service Mesh.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			level, errLevel := kuma_log.ParseLogLevel(args.logLevel)
-			format, errFormat := kuma_log.ParseLogFormat(args.logFormat)
-			if errLevel != nil {
-				return errLevel
+			level, err := kuma_log.ParseLogLevel(args.logLevel)			
+			if err != nil {
+				return err
 			}
 			
-			if errFormat != nil {
-				return errFormat
+			format, err := kuma_log.ParseLogFormat(args.logFormat)			
+			if err != nil {
+				return err
 			}
 
 			if args.outputPath != "" {

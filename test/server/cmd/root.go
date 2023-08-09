@@ -22,14 +22,14 @@ func NewRootCmd() *cobra.Command {
 		Short: "Test Server for Kuma e2e testing",
 		Long:  `Test Server for Kuma e2e testing.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			format, errFormat := kuma_log.ParseLogFormat(args.logFormat)
-			level, errLevel := kuma_log.ParseLogLevel(args.logLevel)
-			if errLevel != nil {
-				return errLevel
+			format, err := kuma_log.ParseLogFormat(args.logFormat)
+			if err != nil {
+				return err
 			}
-			
-			if errFormat != nil {
-				return errFormat
+
+			level, err := kuma_log.ParseLogLevel(args.logLevel)			
+			if err != nil {
+				return err
 			}
 			
 			core.SetLogger(core.NewLogger(level, format))

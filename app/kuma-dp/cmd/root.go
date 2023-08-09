@@ -30,16 +30,16 @@ func NewRootCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 		Short: "Dataplane manager for Envoy-based Service Mesh",
 		Long:  `Dataplane manager for Envoy-based Service Mesh.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			format, errFormat := kuma_log.ParseLogFormat(args.logFormat)
-			level, errLevel := kuma_log.ParseLogLevel(args.logLevel)
-			if errLevel != nil {
-				return errLevel
+			level, err := kuma_log.ParseLogLevel(args.logLevel)			
+			if err != nil {
+				return err
 			}
 			
-			if errFormat != nil {
-				return errFormat
+			format, err := kuma_log.ParseLogFormat(args.logFormat)			
+			if err != nil {
+				return err
 			}
-
+			
 			if args.outputPath != "" {
 				output, err := filepath.Abs(args.outputPath)
 				if err != nil {
