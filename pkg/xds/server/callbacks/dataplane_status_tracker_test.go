@@ -40,6 +40,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	It("should properly handle ADS connection open/close", func() {
 		// given
 		streamID := int64(1)
+		n := &envoy_core.Node{Id: "my-node"}
 
 		By("simulating start of ADS subscription")
 		// when
@@ -62,7 +63,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating end of ADS subscription")
 		// when
-		callbacks.OnStreamClosed(streamID)
+		callbacks.OnStreamClosed(streamID, n)
 
 		By("ensuring ADS subscription final state")
 		// when
