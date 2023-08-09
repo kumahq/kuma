@@ -190,8 +190,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					continue
 				}
 				startProcessingTime := r.now()
-				r.idleTime.Observe(startProcessingTime.Sub(start).Seconds())
-				r.timeToProcessItem.Observe(startProcessingTime.Sub(event.time).Seconds())
+				r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
+				r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 				if event.flag&FlagService == FlagService {
 					err := r.createOrUpdateServiceInsight(ctx, event.tenantId, event.mesh)
 					if err != nil {
@@ -204,7 +204,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						log.Error(err, "unable to resync MeshInsight", "event", event)
 					}
 				}
-				r.itemProcessingTime.Observe(time.Since(startProcessingTime).Seconds())
+				r.itemProcessingTime.Observe(float64(time.Since(startProcessingTime).Milliseconds()))
 			}
 		}
 	}()
@@ -214,10 +214,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	ticker := r.tick(r.minResyncInterval)
 	steps := 0
 	for {
-		steps += 1
 		select {
 		// We tick every minResyncInterval and flush the batch so we process updates
 		case now := <-ticker:
+			steps += 1
 			// Every fullResyncInterval we also add to the batch an update for each existing entities so we refresh all of them
 			tickCtx, cancelTimeout := context.WithDeadline(ctx, now.Add(r.minResyncInterval))
 			if steps == r.stepsBeforeFullResync {
@@ -230,6 +230,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					meshList := &core_mesh.MeshResourceList{}
 					tenantCtx := multitenant.WithTenant(tickCtx, tenantId)
 					if err := r.rm.List(tenantCtx, meshList); err != nil {
+						if ctx.Err() == context.DeadlineExceeded {
+							break // we will see the deadline msg in batch flush. There is no point in iterating further.
+						}
 						log.Error(err, "failed to get list of meshes", "tenantId", tenantId)
 					}
 					for _, mesh := range meshList.Items {

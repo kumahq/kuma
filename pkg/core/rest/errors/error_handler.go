@@ -120,6 +120,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Conflict",
 			Detail: err.Error(),
 		}
+	case errors.Is(err, &ServiceUnavailable{}):
+		kumaErr = types.Error{
+			Status: 503,
+			Title:  "Service unavailable",
+			Detail: err.Error(),
+		}
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError
 		errors.As(err, &accessErr)
