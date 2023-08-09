@@ -253,6 +253,13 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			if !ok {
 				continue
 			}
+			supported, err := r.tenantFn.IDSupported(ctx, resourceChanged.TenantID)
+			if err != nil {
+				log.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
+			}
+			if !supported {
+				continue
+			}
 			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 			if err != nil {
 				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
@@ -584,5 +591,5 @@ func getOrDefault(version string) string {
 }
 
 func (r *resyncer) NeedLeaderElection() bool {
-	return true
+	return !r.tenantFn.SupportsSharding()
 }
