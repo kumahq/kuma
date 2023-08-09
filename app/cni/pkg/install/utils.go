@@ -33,15 +33,15 @@ func CreateNewLogger(name string, logLevel kuma_log.LogLevel, logFormat kuma_log
 	return core.NewLoggerTo(os.Stderr, logLevel, logFormat).WithName(name)
 }
 
-func SetLogUtils(logger *logr.Logger, level string, name string, format string) error {
-	logFormat, errFormat := kuma_log.ParseLogFormat(format)
-	logLevel, errLevel := kuma_log.ParseLogLevel(level)
-	if errFormat != nil {
-		return errFormat
+func ConfigureLogger(logger *logr.Logger, level string, name string, format string) error {
+	logFormat, err := kuma_log.ParseLogFormat(format)
+	if err != nil {
+		return err
 	}
-	
-	if errLevel != nil {
-		return errLevel
+
+	logLevel, err := kuma_log.ParseLogLevel(level)	
+	if err != nil {
+		return err
 	}
 
 	*logger = CreateNewLogger(name, logLevel, logFormat)

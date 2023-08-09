@@ -216,7 +216,7 @@ func Run() {
 		os.Exit(1)
 	}
 
-	err = SetLogUtils(&log, installerConfig.CniLogLevel, defaultLogName, installerConfig.CniLogFormat)
+	err = ConfigureLogger(&log, installerConfig.CniLogLevel, defaultLogName, installerConfig.CniLogFormat)
 	if err != nil {
 		log.Error(err, "error occurred during setting the log level")
 		os.Exit(2)

@@ -101,7 +101,7 @@ func hijackMainProcessStderr(logLevel string, logFormat string) (*os.File, error
 	}
 	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
 	os.Stderr = file
-	if err := install.SetLogUtils(&log, logLevel, defaultLogName, logFormat); err != nil {
+	if err := install.ConfigureLogger(&log, logLevel, defaultLogName, logFormat); err != nil {
 		return file, errors.Wrap(err, "wrong set the right log level")
 	}
 
