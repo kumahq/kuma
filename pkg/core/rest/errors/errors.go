@@ -17,3 +17,9 @@ type Conflict struct{}
 func (m *Conflict) Error() string {
 	return "Conflict"
 }
+
+type ServiceUnavailable struct{}
+
+func (m *ServiceUnavailable) Error() string {
+	return "Service unavailable"
+}
