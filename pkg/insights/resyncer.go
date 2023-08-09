@@ -230,6 +230,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					meshList := &core_mesh.MeshResourceList{}
 					tenantCtx := multitenant.WithTenant(tickCtx, tenantId)
 					if err := r.rm.List(tenantCtx, meshList); err != nil {
+						if ctx.Err() == context.DeadlineExceeded {
+							break // we will see the deadline msg in batch flush. There is no point in iterating further.
+						}
 						log.Error(err, "failed to get list of meshes", "tenantId", tenantId)
 					}
 					for _, mesh := range meshList.Items {
