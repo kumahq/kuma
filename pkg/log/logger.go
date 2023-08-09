@@ -45,6 +45,17 @@ func (l LogLevel) String() string {
 	}
 }
 
+func (l LogFormat) String() string {
+	switch l {
+	case Json:
+		return "json"
+	case Logfmt:
+		return "logfmt"
+	default:
+		return "unknown"
+	}
+}
+
 func ParseLogFormat(text string) (LogFormat, error) {
 	switch text {
 	case "json":
