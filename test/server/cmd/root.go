@@ -40,7 +40,7 @@ func NewRootCmd() *cobra.Command {
 	}
 	
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
-	cmd.PersistentFlags().StringVar(&args.logFormat, "log-format", args.logFormat, "specify logformat, json | logfmt (default)")
+	cmd.PersistentFlags().StringVar(&args.logFormat, "log-format", kuma_log.Logfmt.String(), kuma_cmd.UsageOptions("log format", kuma_log.Json, kuma_log.Logfmt))
 
 	cmd.AddCommand(newHealthCheckCmd())
 	cmd.AddCommand(newEchoHTTPCmd())
