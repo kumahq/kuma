@@ -207,5 +207,13 @@ var _ = Describe("EgressGenerator", func() {
 			fileWithResourcesName: "06.mixed-services-with-external-in-other-zone.yaml",
 			expected:              "06.mixed-services-with-external-in-other-zone.golden.yaml",
 		}),
+		Entry("use default if a MeshHTTPRoute exists, internal", testCase{
+			fileWithResourcesName: "traffic-by-default-meshhttproute.yaml",
+			expected:              "traffic-by-default-meshhttproute.golden.yaml",
+		}),
+		Entry("subsets with MeshHTTPRoute, internal", testCase{
+			fileWithResourcesName: "subsets-with-meshhttproute.yaml",
+			expected:              "subsets-with-meshhttproute.golden.yaml",
+		}),
 	)
 })
