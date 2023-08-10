@@ -12,8 +12,11 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -67,42 +70,52 @@ var _ = Describe("EgressGenerator", func() {
 				res, err := rest_types.YAML.UnmarshalCore(bytes)
 				Expect(err).ToNot(HaveOccurred())
 
-				meshName := res.GetMeta().GetMesh()
-
 				switch res.Descriptor().Name {
 				case core_mesh.ZoneEgressType:
 					Expect(zoneEgress).To(BeNil(), "there can be only one zone egress in resources")
 					zoneEgress = res.(*core_mesh.ZoneEgressResource)
+					continue
 				case core_mesh.ZoneIngressType:
 					zoneIngresses = append(zoneIngresses, res.(*core_mesh.ZoneIngressResource))
+					continue
 				case core_mesh.TrafficPermissionType:
 					trafficPermissions = append(trafficPermissions, res.(*core_mesh.TrafficPermissionResource))
-				case core_mesh.MeshType:
-					meshName := res.GetMeta().GetName()
+					continue
+				}
 
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
+				meshName := res.GetMeta().GetMesh()
+				if res.Descriptor().Name == core_mesh.MeshType {
+					meshName = res.GetMeta().GetName()
+				}
+
+				if _, ok := meshResourcesMap[meshName]; !ok {
+					meshResourcesMap[meshName] = &core_xds.MeshResources{
+						Resources: map[core_model.ResourceType]core_model.ResourceList{
+							core_mesh.TrafficRouteType:          &core_mesh.TrafficRouteResourceList{},
+							meshhttproute_api.MeshHTTPRouteType: &meshhttproute_api.MeshHTTPRouteResourceList{},
+						},
 					}
+				}
 
+				switch res.Descriptor().Name {
+				case core_mesh.MeshType:
 					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
 				case core_mesh.ExternalServiceType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
 					meshResourcesMap[meshName].ExternalServices = append(
 						meshResourcesMap[meshName].ExternalServices,
 						res.(*core_mesh.ExternalServiceResource),
 					)
 				case core_mesh.TrafficRouteType:
-					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
-					}
-
 					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
 					routeList.Items = append(
 						routeList.Items,
 						res.(*core_mesh.TrafficRouteResource),
+					)
+				case meshhttproute_api.MeshHTTPRouteType:
+					routeList := meshResourcesMap[meshName].Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
+					routeList.Items = append(
+						routeList.Items,
+						res.(*meshhttproute_api.MeshHTTPRouteResource),
 					)
 				}
 			}
