@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -139,28 +138,6 @@ func (i IngressGenerator) generateLDS(
 	}
 
 	return inboundListenerBuilder.Build()
-}
-
-func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
-	var service string
-	tags := envoy_tags.Tags{}
-
-	switch targetRef.Kind {
-	case common_api.MeshService:
-		service = targetRef.Name
-	case common_api.MeshServiceSubset:
-		service = targetRef.Name
-		tags = targetRef.Tags
-	case common_api.Mesh:
-		service = mesh_proto.MatchAllTag
-	case common_api.MeshSubset:
-		service = mesh_proto.MatchAllTag
-		tags = targetRef.Tags
-	default:
-		return nil, false
-	}
-
-	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }
 
 func (_ IngressGenerator) services(mr *core_xds.MeshIngressResources) []string {
