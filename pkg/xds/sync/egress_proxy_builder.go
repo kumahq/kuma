@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -66,9 +67,11 @@ func (p *EgressProxyBuilder) Build(
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
+		httpRoutes := meshCtx.Resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList)
 
 		resourceMap := map[core_model.ResourceType]core_model.ResourceList{
-			core_mesh.TrafficRouteType: trafficRoutes,
+			core_mesh.TrafficRouteType:          trafficRoutes,
+			meshhttproute_api.MeshHTTPRouteType: httpRoutes,
 		}
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
