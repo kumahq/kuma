@@ -3,6 +3,8 @@ package setup
 import (
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -46,6 +48,10 @@ func (t *testRuntimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomiz
 
 func (t *testRuntimeContext) Tenants() multitenant.Tenants {
 	return t.tenants
+}
+
+func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
+	return func(*restful.WebService) error { return nil }
 }
 
 func (t *testRuntimeContext) Add(c ...component.Component) error {
