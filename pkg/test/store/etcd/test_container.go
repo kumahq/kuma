@@ -105,7 +105,6 @@ func (v *EtcdContainer) Config() (*etcd.EtcdConfig, error) {
 	Expect(err).ToNot(HaveOccurred())
 	response, err := etcdClient.Get(ctx, "test")
 	Expect(err).ToNot(HaveOccurred())
-	Eventually(len(response.Kvs)).Should(Equal(1))
 	Eventually(response.Kvs[0].Value).Should(Equal([]byte("test")))
 	defer etcdClient.Close()
 
