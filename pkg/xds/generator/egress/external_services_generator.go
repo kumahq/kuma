@@ -30,7 +30,7 @@ func (g *ExternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
-	destinations := buildDestinations(meshResources.TrafficRoutes)
+	destinations := buildDestinations(meshResources.Resources[core_mesh.TrafficRouteType])
 	services := g.buildServices(endpointMap, zone, meshResources)
 
 	g.addFilterChains(

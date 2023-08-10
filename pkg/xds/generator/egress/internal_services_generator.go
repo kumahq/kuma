@@ -29,7 +29,7 @@ func (g *InternalServicesGenerator) Generate(
 	zone := xdsCtx.ControlPlane.Zone
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
-	destinations := buildDestinations(meshResources.TrafficRoutes)
+	destinations := buildDestinations(meshResources.Resources[core_mesh.TrafficRouteType])
 	services := g.buildServices(endpointMap, meshResources.Mesh.ZoneEgressEnabled(), zone)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
