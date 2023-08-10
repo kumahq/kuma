@@ -1,0 +1,29 @@
+# Human-readable name for this member.
+name: node1
+
+# Path to the data directory.
+data-dir: /etcd-data
+
+# List of comma separated URLs to listen on for client traffic.
+listen-client-urls: http://0.0.0.0:2379
+
+# List of this member's client URLs to advertise to the public.
+# The URLs needed to be a comma-separated list.
+advertise-client-urls: http://0.0.0.0:2379
+
+# List of comma separated URLs to listen on for peer traffic.
+listen-peer-urls: http://0.0.0.0:2380
+
+# List of this member's peer URLs to advertise to the rest of the cluster.
+# The URLs needed to be a comma-separated list.
+initial-advertise-peer-urls: http://0.0.0.0:2380
+
+# Comma separated string of initial cluster configuration for bootstrapping.
+# Example: initial-cluster: "infra0=http://10.0.1.10:2380,infra1=http://10.0.1.11:2380,infra2=http://10.0.1.12:2380"
+initial-cluster:  node1=http://0.0.0.0:2380
+
+# Initial cluster token for the etcd cluster during bootstrap.
+initial-cluster-token: 'etcd-cluster'
+
+# Initial cluster state ('new' or 'existing').
+initial-cluster-state: 'new'

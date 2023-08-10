@@ -55,6 +55,14 @@ run/postgres/start: ## Dev: start Postgres for Control Plane with initial schema
 run/postgres/stop: ## Dev: stop Postgres
 	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml down
 
+.PHONY: run/etcd/start
+run/etcd/start: ## Dev: start Etcd for Control Plane with initial schema
+	 docker-compose -f $(TOOLS_DIR)/etcd/docker-compose.yaml up -d --build
+
+.PHONY: run/etcd/stop
+run/etcd/stop: ## Dev: stop Etcd
+	docker-compose -f $(TOOLS_DIR)/etcd/docker-compose.yaml down
+
 .PHONY: run/kuma-cp
 run/kuma-cp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-cp` locally (use CP_STORE=postgres to use postgres as a store and POSTGRES_MODE=tls to enabled TLS, use EXTRA_CP_ENV to add extra Kuma env vars)
 ifeq ($(CP_STORE),postgres)

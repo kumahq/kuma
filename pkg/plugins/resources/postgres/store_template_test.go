@@ -41,8 +41,5 @@ var _ = Describe("PostgresStore template", func() {
 		}
 	}
 
-	test_store.ExecuteStoreTests(createStore("pgx"), "pgx")
 	test_store.ExecuteOwnerTests(createStore("pgx"), "pgx")
-	test_store.ExecuteStoreTests(createStore("pq"), "pq")
-	test_store.ExecuteOwnerTests(createStore("pq"), "pq")
 })

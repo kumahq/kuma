@@ -220,3 +220,175 @@ func (l *ListOptions) IsCacheable() bool {
 func (l *ListOptions) HashCode() string {
 	return fmt.Sprintf("%s:%t:%s:%d:%s", l.Mesh, l.Ordered, l.NameContains, l.PageSize, l.PageOffset)
 }
+
+type resourceMetaWrap struct {
+	resourceMeta     core_model.ResourceMeta
+	meshName         *string
+	name             *string
+	version          *string
+	nameExtensions   core_model.ResourceNameExtensions
+	createTime       *time.Time
+	modificationTime *time.Time
+}
+
+func (r resourceMetaWrap) GetName() string {
+	if r.name == nil {
+		return r.resourceMeta.GetName()
+	} else {
+		return *r.name
+	}
+}
+
+func (r resourceMetaWrap) GetNameExtensions() core_model.ResourceNameExtensions {
+	if r.nameExtensions == nil {
+		return r.resourceMeta.GetNameExtensions()
+	} else {
+		return r.nameExtensions
+	}
+}
+
+func (r resourceMetaWrap) GetVersion() string {
+	if r.version == nil {
+		return r.resourceMeta.GetVersion()
+	} else {
+		return *r.version
+	}
+}
+
+func (r resourceMetaWrap) GetMesh() string {
+	if r.meshName == nil {
+		return r.resourceMeta.GetMesh()
+	} else {
+		return *r.meshName
+	}
+}
+
+func (r resourceMetaWrap) GetCreationTime() time.Time {
+	if r.createTime == nil {
+		return r.resourceMeta.GetCreationTime()
+	} else {
+		return *r.createTime
+	}
+}
+
+func (r resourceMetaWrap) GetModificationTime() time.Time {
+	if r.modificationTime == nil {
+		return r.resourceMeta.GetModificationTime()
+	} else {
+		return *r.modificationTime
+	}
+}
+
+type ResourceMetaWrapFunc func(wrap *resourceMetaWrap)
+
+func WithMeshName(meshName string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.meshName = &meshName
+	}
+}
+
+func WithResourceMeta(resourceMeta core_model.ResourceMeta) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.resourceMeta = resourceMeta
+	}
+}
+
+func WithName(name string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.name = &name
+	}
+}
+
+func WithVersion(version string) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.version = &version
+	}
+}
+
+func WithResourceNameExtensions(resourceNameExtensions core_model.ResourceNameExtensions) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.nameExtensions = resourceNameExtensions
+	}
+}
+
+func WithCreationTime(creationTime time.Time) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.createTime = &creationTime
+	}
+}
+
+func WithModificationTime(modificationTime time.Time) ResourceMetaWrapFunc {
+	return func(wrap *resourceMetaWrap) {
+		wrap.modificationTime = &modificationTime
+	}
+}
+
+func ResouceMetaWrap(resourceMetaWrapFunc ...ResourceMetaWrapFunc) core_model.ResourceMeta {
+	wrap := &resourceMetaWrap{}
+	for _, fn := range resourceMetaWrapFunc {
+		fn(wrap)
+	}
+	return wrap
+}
+
+type ListIndexOptions struct {
+	Name string
+	Mesh string
+	Type core_model.ResourceType
+}
+
+type ListIndexOptionsFunc func(*ListIndexOptions)
+
+func WithListIndexOptions(typ core_model.ResourceType, mesh, name string) ListIndexOptionsFunc {
+	return func(opts *ListIndexOptions) {
+		opts.Type = typ
+		opts.Mesh = mesh
+		opts.Name = name
+	}
+}
+
+func NewListIndexOptions(fs ...ListIndexOptionsFunc) *ListIndexOptions {
+	opts := &ListIndexOptions{}
+	for _, f := range fs {
+		f(opts)
+	}
+	return opts
+}
+
+type DeleteIndexOptions struct {
+	Name string
+	Mesh string
+	Type core_model.ResourceType
+
+	Owner struct {
+		Name string
+		Mesh string
+		Type core_model.ResourceType
+	}
+}
+
+type DeleteIndexOptionsFunc func(*DeleteIndexOptions)
+
+func WithDeleteIndexOptions(typ core_model.ResourceType, mesh, name string) DeleteIndexOptionsFunc {
+	return func(opts *DeleteIndexOptions) {
+		opts.Type = typ
+		opts.Mesh = mesh
+		opts.Name = name
+	}
+}
+
+func WithDeleteIndexOwnerOptions(typ core_model.ResourceType, mesh, name string) DeleteIndexOptionsFunc {
+	return func(opts *DeleteIndexOptions) {
+		opts.Owner.Type = typ
+		opts.Owner.Mesh = mesh
+		opts.Owner.Name = name
+	}
+}
+
+func NewDeleteIndexOptions(fs ...DeleteIndexOptionsFunc) *DeleteIndexOptions {
+	opts := &DeleteIndexOptions{}
+	for _, f := range fs {
+		f(opts)
+	}
+	return opts
+}

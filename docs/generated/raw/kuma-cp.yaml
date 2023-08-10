@@ -13,6 +13,12 @@ store:
     # Namespace where Control Plane is installed to.
     systemNamespace: kuma-system # ENV: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
 
+  # Etcd Store configuration (used when store.type=postgres)
+  etcd:
+    # Host of the etcd
+    endpoints:
+      - http://127.0.0.1:2379
+
   # Postgres Store configuration (used when store.type=postgres)
   postgres:
     # Host of the Postgres DB

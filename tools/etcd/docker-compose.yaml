@@ -1,0 +1,54 @@
+version: "3"
+services:
+  etcd1:
+    # etcd uses gcr.io/etcd-development/etcd as a primary container registry, and quay.io/coreos/etcd as secondary.
+    image: quay.io/coreos/etcd:latest
+    container_name: etcd1
+    restart: always
+    networks:
+      - etcd-net
+    ports:
+      - "20000:2379"
+      - "20001:2380"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_NAME=etcd1
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd1:2380
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd1:2379
+      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
+      - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCDCTL_API=3
+    volumes:
+      - $PWD/etcd1_data:/etcd-data
+      - /etc/localtime:/etc/localtime
+
+  etcd2:
+    image: quay.io/coreos/etcd:latest
+    container_name: etcd2
+    restart: always
+    networks:
+      - etcd-net
+    ports:
+      - "20002:2379"
+      - "20003:2380"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_NAME=etcd2
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd2:2380
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd2:2379
+      - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
+      - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCDCTL_API=3
+    volumes:
+      - $PWD/etcd2_data:/etcd-data
+      - /etc/localtime:/etc/localtime
+
+networks:
+  etcd-net:
+    driver: bridge
