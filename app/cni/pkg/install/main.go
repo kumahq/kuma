@@ -29,7 +29,6 @@ const (
 	defaultLogName     = "install-cni"
 )
 
-
 var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel, kuma_log.Logfmt)
 
 func removeBinFiles() error {

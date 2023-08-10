@@ -15,6 +15,7 @@ Migrate database to which Control Plane is connected. The database contains all 
 ### Options inherited from parent commands
 
 ```
+      --log-format string            log format: one of json|logfmt (default "logfmt")
       --log-level string             log level: one of off|info|debug (default "info")
       --log-max-age int              maximum number of days to retain old log files based on the timestamp encoded in their filename (default 30)
       --log-max-retained-files int   maximum number of the old log files to retain (default 1000)

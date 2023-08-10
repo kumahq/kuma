@@ -39,7 +39,7 @@ func ConfigureLogger(logger *logr.Logger, level string, name string, format stri
 		return err
 	}
 
-	logLevel, err := kuma_log.ParseLogLevel(level)	
+	logLevel, err := kuma_log.ParseLogLevel(level)
 	if err != nil {
 		return err
 	}

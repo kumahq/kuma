@@ -18,8 +18,10 @@ import (
 	logger_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/logger"
 )
 
-type LogLevel int
-type LogFormat int
+type (
+	LogLevel  int
+	LogFormat int
+)
 
 const (
 	OffLevel LogLevel = iota
@@ -27,7 +29,7 @@ const (
 	DebugLevel
 )
 
-const ( 
+const (
 	Json LogFormat = iota
 	Logfmt
 )
@@ -62,8 +64,8 @@ func ParseLogFormat(text string) (LogFormat, error) {
 		return Json, nil
 	case "logfmt":
 		return Logfmt, nil
-	default: 
-		return Logfmt, errors.Errorf("unkown log format %q", text)
+	default:
+		return Logfmt, errors.Errorf("unknown log format %q", text)
 	}
 }
 
@@ -97,7 +99,7 @@ func NewLoggerTo(destWriter io.Writer, level LogLevel, format LogFormat) logr.Lo
 	return zapr.NewLogger(newZapLoggerTo(destWriter, level, format))
 }
 
-func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts ...zap.Option) *zap.Logger {
+func newZapLoggerTo(destWriter io.Writer, level LogLevel, format LogFormat, opts ...zap.Option) *zap.Logger {
 	var lvl zap.AtomicLevel
 	switch level {
 	case OffLevel:
@@ -112,7 +114,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts 
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
-	
+
 	var enc zapcore.Encoder
 	encCfg := zap.NewDevelopmentEncoderConfig()
 
@@ -124,7 +126,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel,format LogFormat, opts 
 	default:
 		enc = zapcore.NewConsoleEncoder(encCfg)
 	}
-	
+
 	sink := zapcore.AddSync(destWriter)
 	opts = append(opts, zap.AddCallerSkip(1), zap.ErrorOutput(sink))
 	return zap.New(zapcore.NewCore(&kube_log_zap.KubeAwareEncoder{Encoder: enc, Verbose: level == DebugLevel}, sink, lvl)).

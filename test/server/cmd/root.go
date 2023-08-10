@@ -14,7 +14,7 @@ var testServerLog = core.Log.WithName("test-server")
 
 func NewRootCmd() *cobra.Command {
 	args := struct {
-		logLevel string
+		logLevel  string
 		logFormat string
 	}{}
 	cmd := &cobra.Command{
@@ -27,18 +27,18 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			level, err := kuma_log.ParseLogLevel(args.logLevel)			
+			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
 			}
-			
+
 			core.SetLogger(core.NewLogger(level, format))
 
 			cmd.SilenceUsage = true
 			return nil
 		},
 	}
-	
+
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	cmd.PersistentFlags().StringVar(&args.logFormat, "log-format", kuma_log.Logfmt.String(), kuma_cmd.UsageOptions("log format", kuma_log.Json, kuma_log.Logfmt))
 
