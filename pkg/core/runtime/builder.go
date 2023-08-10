@@ -48,7 +48,7 @@ type BuilderContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ListenerFactory
+	EventBus() events.EventBus
 	APIManager() api_server.APIManager
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
@@ -82,7 +82,7 @@ type Builder struct {
 	lif            lookup.LookupIPFunc
 	eac            admin.EnvoyAdminClient
 	metrics        metrics.Metrics
-	erf            events.ListenerFactory
+	erf            events.EventBus
 	apim           api_server.APIManager
 	xds            xds_runtime.XDSRuntimeContext
 	cap            secrets.CaProvider
@@ -200,7 +200,7 @@ func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	return b
 }
 
-func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
+func (b *Builder) WithEventBus(erf events.EventBus) *Builder {
 	b.erf = erf
 	return b
 }
@@ -447,7 +447,7 @@ func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
 
-func (b *Builder) EventReaderFactory() events.ListenerFactory {
+func (b *Builder) EventBus() events.EventBus {
 	return b.erf
 }
 

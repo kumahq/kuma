@@ -67,7 +67,7 @@ type RuntimeContext interface {
 	LookupIP() lookup.LookupIPFunc
 	EnvoyAdminClient() admin.EnvoyAdminClient
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ListenerFactory
+	EventBus() events.EventBus
 	APIInstaller() api_server.APIInstaller
 	XDS() xds_runtime.XDSRuntimeContext
 	CAProvider() secrets.CaProvider
@@ -156,7 +156,7 @@ type runtimeContext struct {
 	lif                      lookup.LookupIPFunc
 	eac                      admin.EnvoyAdminClient
 	metrics                  metrics.Metrics
-	erf                      events.ListenerFactory
+	erf                      events.EventBus
 	apim                     api_server.APIInstaller
 	xds                      xds_runtime.XDSRuntimeContext
 	cap                      secrets.CaProvider
@@ -179,7 +179,7 @@ func (rc *runtimeContext) Metrics() metrics.Metrics {
 	return rc.metrics
 }
 
-func (rc *runtimeContext) EventReaderFactory() events.ListenerFactory {
+func (rc *runtimeContext) EventBus() events.EventBus {
 	return rc.erf
 }
 

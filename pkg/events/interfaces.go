@@ -23,6 +23,10 @@ type ResourceChangedEvent struct {
 	TenantID  string
 }
 
+type TriggerInsightsComputationEvent struct {
+	TenantID string
+}
+
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
@@ -36,4 +40,9 @@ type Emitter interface {
 
 type ListenerFactory interface {
 	Subscribe() Listener
+}
+
+type EventBus interface {
+	Emitter
+	ListenerFactory
 }

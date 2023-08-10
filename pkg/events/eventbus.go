@@ -6,18 +6,18 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 )
 
-func NewEventBus() *EventBus {
-	return &EventBus{
+func NewEventBus() EventBus {
+	return &eventBus{
 		subscribers: map[string]chan Event{},
 	}
 }
 
-type EventBus struct {
+type eventBus struct {
 	mtx         sync.RWMutex
 	subscribers map[string]chan Event
 }
 
-func (b *EventBus) Subscribe() Listener {
+func (b *eventBus) Subscribe() Listener {
 	id := core.NewUUID()
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
@@ -34,7 +34,7 @@ func (b *EventBus) Subscribe() Listener {
 	}
 }
 
-func (b *EventBus) Send(event Event) {
+func (b *eventBus) Send(event Event) {
 	b.mtx.RLock()
 	defer b.mtx.RUnlock()
 	switch e := event.(type) {
