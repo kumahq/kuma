@@ -67,7 +67,7 @@ func (p *EgressProxyBuilder) Build(
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
-		httpRoutes := meshCtx.Resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList)
+		httpRoutes := meshCtx.Resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType)
 
 		resourceMap := map[core_model.ResourceType]core_model.ResourceList{
 			core_mesh.TrafficRouteType:          trafficRoutes,

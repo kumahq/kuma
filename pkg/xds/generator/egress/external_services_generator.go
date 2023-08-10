@@ -6,6 +6,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -31,9 +32,10 @@ func (g *ExternalServicesGenerator) Generate(
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	trafficRoutes := meshResources.Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
+	httpRoutes := meshResources.Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
 	destinations := buildDestinations(
 		trafficRoutes.Items,
-		nil,
+		httpRoutes.Items,
 	)
 	services := g.buildServices(endpointMap, zone, meshResources)
 
