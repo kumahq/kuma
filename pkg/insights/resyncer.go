@@ -286,9 +286,6 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 	for _, mesh := range meshList.Items {
 		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh|FlagService)
 	}
-	if err := batch.flush(tenantCtx, resyncEvents); err != nil {
-		log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
-	}
 }
 
 func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
