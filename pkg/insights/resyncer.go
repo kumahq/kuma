@@ -227,7 +227,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					log.Error(err, "could not get tenants")
 				}
 				for _, tenantId := range tenantIds {
-					r.addMeshesToBatch(tickCtx, batch, tenantId, resyncEvents)
+					r.addMeshesToBatch(tickCtx, batch, tenantId)
 				}
 			}
 			// We flush the batch
@@ -241,7 +241,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			}
 			if triggerEvent, ok := event.(events.TriggerInsightsComputationEvent); ok {
 				ctx := context.Background()
-				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID, resyncEvents)
+				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID)
 				if err := batch.flush(ctx, resyncEvents); err != nil {
 					log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 				}
@@ -276,7 +276,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string, resyncEvents chan resyncEvent) {
+func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string) {
 	meshList := &core_mesh.MeshResourceList{}
 	tenantCtx := multitenant.WithTenant(ctx, tenantID)
 	if err := r.rm.List(tenantCtx, meshList); err != nil {
