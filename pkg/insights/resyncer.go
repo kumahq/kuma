@@ -227,17 +227,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					log.Error(err, "could not get tenants")
 				}
 				for _, tenantId := range tenantIds {
-					meshList := &core_mesh.MeshResourceList{}
-					tenantCtx := multitenant.WithTenant(tickCtx, tenantId)
-					if err := r.rm.List(tenantCtx, meshList); err != nil {
-						if ctx.Err() == context.DeadlineExceeded {
-							break // we will see the deadline msg in batch flush. There is no point in iterating further.
-						}
-						log.Error(err, "failed to get list of meshes", "tenantId", tenantId)
-					}
-					for _, mesh := range meshList.Items {
-						batch.add(now, tenantId, mesh.GetMeta().GetName(), FlagMesh|FlagService)
-					}
+					r.addMeshesToBatch(tickCtx, batch, tenantId)
 				}
 			}
 			// We flush the batch
@@ -249,35 +239,52 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			if !ok {
 				return errors.New("end of events channel")
 			}
-			resourceChanged, ok := event.(events.ResourceChangedEvent)
-			if !ok {
-				continue
+			if triggerEvent, ok := event.(events.TriggerInsightsComputationEvent); ok {
+				ctx := context.Background()
+				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID)
+				if err := batch.flush(ctx, resyncEvents); err != nil {
+					log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
+				}
 			}
-			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
-			if err != nil {
-				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+			if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
+				desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+				if err != nil {
+					log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+				}
+				if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
+					continue
+				}
+				meshName := resourceChanged.Key.Mesh
+				if desc.Name == core_mesh.MeshType {
+					meshName = resourceChanged.Key.Name
+				}
+				var f actionFlag
+				// 'Update' events doesn't affect MeshInsight except for DataplaneInsight, because that's how we find online/offline Dataplane's status
+				if resourceChanged.Operation != events.Update || resourceChanged.Type == core_mesh.DataplaneInsightType {
+					f |= FlagMesh
+				}
+				// Only a subset of types influence service insights
+				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType || resourceChanged.Type == core_mesh.ExternalServiceType {
+					f |= FlagService
+				}
+				batch.add(r.now(), resourceChanged.TenantID, meshName, f)
 			}
-			if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
-				continue
-			}
-			meshName := resourceChanged.Key.Mesh
-			if desc.Name == core_mesh.MeshType {
-				meshName = resourceChanged.Key.Name
-			}
-			var f actionFlag
-			// 'Update' events doesn't affect MeshInsight except for DataplaneInsight, because that's how we find online/offline Dataplane's status
-			if resourceChanged.Operation != events.Update || resourceChanged.Type == core_mesh.DataplaneInsightType {
-				f |= FlagMesh
-			}
-			// Only a subset of types influence service insights
-			if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType || resourceChanged.Type == core_mesh.ExternalServiceType {
-				f |= FlagService
-			}
-			batch.add(r.now(), resourceChanged.TenantID, meshName, f)
 		case <-stop:
 			log.Info("stop")
 			return nil
 		}
+	}
+}
+
+func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string) {
+	meshList := &core_mesh.MeshResourceList{}
+	tenantCtx := multitenant.WithTenant(ctx, tenantID)
+	if err := r.rm.List(tenantCtx, meshList); err != nil {
+		log.Error(err, "failed to get list of meshes", "tenantId", tenantCtx)
+		return
+	}
+	for _, mesh := range meshList.Items {
+		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh|FlagService)
 	}
 }
 
