@@ -1051,6 +1051,20 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
+	It("should sync on full resync", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.TriggerInsightsComputationEvent{}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
+	})
+
 	It("should not update things twice", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
