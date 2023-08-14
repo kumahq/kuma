@@ -50,7 +50,7 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	_ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
+	_ = E2ESynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
 		if Config.CleanupLogsOnSuccess {
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
