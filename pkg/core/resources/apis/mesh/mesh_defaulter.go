@@ -16,6 +16,13 @@ func (mesh *MeshResource) Default() error {
 				return errors.Wrap(err, "could not convert the backend")
 			}
 
+			if cfg.SkipMTLS == nil && cfg.Tls == nil{
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Enabled: proto.Bool(true),
+					Mode: mesh_proto.PrometheusTlsConfig_activeMTLSBackend,
+				}
+			}
+
 			if cfg.Port == 0 {
 				cfg.Port = 5670
 			}

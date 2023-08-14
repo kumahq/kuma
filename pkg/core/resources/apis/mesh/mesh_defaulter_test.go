@@ -52,6 +52,9 @@ var _ = Describe("MeshResource", func() {
                       path: /metrics
                       tags:
                         kuma.io/service: dataplane-metrics
+                      tls:
+                        enabled: true
+                        mode: activeMTLSBackend
 `,
 			}),
 			Entry("when defaults are set", testCase{

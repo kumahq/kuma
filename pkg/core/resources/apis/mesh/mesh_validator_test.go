@@ -14,9 +14,24 @@ var _ = Describe("Mesh", func() {
 		expected string
 	}
 	Describe("Validate()", func() {
-		It("should pass validation", func() {
-			// given
-			spec := `
+    DescribeTable("should pass validation",
+			func(given testCase) {
+				// given
+				mesh := NewMeshResource()
+
+        // when
+        err := util_proto.FromYAML([]byte(given.mesh), mesh.Spec)
+        // then
+        Expect(err).ToNot(HaveOccurred())
+
+        // when
+        err = mesh.Validate()
+
+        // then
+        Expect(err).ToNot(HaveOccurred())
+			},
+			Entry("multiple ca backends of the same name and tls prometheus config", testCase{
+				mesh: `
             mtls:
               enabledBackend: builtin-1
               backends:
@@ -79,6 +94,9 @@ var _ = Describe("Mesh", func() {
                   - name: sidecar
                     port: 12345
                     path: "/stats/sidecar"
+                  tls:
+                    enabled: true
+                    mode: delegated
             constraints:
               dataplaneProxy:
                 requirements:
@@ -90,21 +108,89 @@ var _ = Describe("Mesh", func() {
                     k8s.kuma.io/namespace: ns-1
                     kuma.io/zone: west
             routing:
-              zoneEgress: true
-`
-			mesh := NewMeshResource()
-
-			// when
-			err := util_proto.FromYAML([]byte(spec), mesh.Spec)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = mesh.Validate()
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
+              zoneEgress: true`,	
+        expected: "",
+			}),
+      Entry("multiple ca backends of the same name", testCase{
+				mesh: `
+            mtls:
+              enabledBackend: builtin-1
+              backends:
+              - name: builtin-1
+                type: builtin
+                dpCert:
+                  rotation:
+                    expiration: 2y
+            logging:
+              backends:
+              - name: file-1
+                type: file
+                conf:
+                  path: /path/to/file
+              - name: file-2
+                format: '%START_TIME% %KUMA_SOURCE_SERVICE%'
+                type: file
+                conf:
+                  path: /path/to/file2
+              - name: tcp-1
+                type: tcp
+                conf:
+                  address: kibana:1234
+              - name: tcp-2
+                format: '%START_TIME% %KUMA_DESTINATION_SERVICE%'
+                type: tcp
+                conf:
+                  address: kibana:1234
+              defaultBackend: tcp-1
+            tracing:
+              backends:
+              - name: zipkin-us
+                sampling: 80.0
+                type: zipkin
+                conf:
+                  url: http://zipkin.local:9411/v2/spans
+                  traceId128bit: true
+                  apiVersion: httpProto
+                  sharedSpanContext: true
+              - name: zipkin-eu
+                type: zipkin
+                conf:
+                  url: http://zipkin.local:9411/v2/spans
+              defaultBackend: zipkin-us
+            metrics:
+              enabledBackend: prom-1
+              backends:
+              - name: prom-1
+                type: prometheus
+                conf:
+                  skipMTLS: false
+                  port: 5670
+                  path: /metrics
+                  envoy:
+                    filterRegex: ^server[0-9]+
+                    usedOnly: true
+                  aggregate:
+                  - name: application
+                    port: 1234
+                    path: "/stats"
+                  - name: sidecar
+                    port: 12345
+                    path: "/stats/sidecar"
+            constraints:
+              dataplaneProxy:
+                requirements:
+                - tags:
+                    k8s.kuma.io/namespace: ns-1
+                    kuma.io/zone: east
+                restrictions:
+                - tags:
+                    k8s.kuma.io/namespace: ns-1
+                    kuma.io/zone: west
+            routing:
+              zoneEgress: true`,	
+        expected: "",
+			}),
+    )
 
 		DescribeTable("should validate fields",
 			func(given testCase) {
@@ -583,6 +669,23 @@ var _ = Describe("Mesh", func() {
                   message: 'duplicate entry: sidecar, values have to be unique'
                 - field: metrics.backends[1].conf.aggregate[1].name
                   message: 'duplicate entry: app, values have to be unique'`,
+			}),
+      Entry("metrics contains skipMTLS and tls configuration", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                    conf:
+                      skipMTLS: true
+                      tls:
+                        enabled: true
+                        mode: delegated
+                `,
+				expected: `
+                violations:
+                - field: metrics.backends[0].conf
+                  message: 'skipMTLS and tls configuration cannot be defined together'`,
 			}),
 		)
 	})
