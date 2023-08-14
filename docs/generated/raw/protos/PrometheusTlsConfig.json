@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/PrometheusTlsConfig",
+    "definitions": {
+        "PrometheusTlsConfig": {
+            "properties": {
+                "enabled": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then endpoints for scraping metrics will require TLS, when false there if no tls configured. If nil, then it is treated as true."
+                },
+                "mode": {
+                    "enum": [
+                        "delegated",
+                        0,
+                        "activeMTLSBackend",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Tls Config",
+            "description": "PrometheusEnvoyConfig defines Tls configuration for Prometheus listener."
+        }
+    }
+}
