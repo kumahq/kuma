@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgo_kube "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1alpha1"
@@ -81,7 +80,6 @@ func TestConformance(t *testing.T) {
 
 	suiteOpts := suite.Options{
 		Client:               client,
-		RESTClient:           clientset.CoreV1().RESTClient().(*rest.RESTClient),
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
