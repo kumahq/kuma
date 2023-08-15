@@ -19,7 +19,7 @@ endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
 # Change here and `make check` ensures these are used for CI
-K8S_MIN_VERSION = v1.22.9-k3s1
+K8S_MIN_VERSION = v1.23.17-k3s1
 K8S_MAX_VERSION = v1.27.1-k3s1
 export GO_VERSION=1.20.7
 export GOLANGCI_LINT_VERSION=v1.53.3
