@@ -147,6 +147,21 @@ mtls:
 	return YamlUniversal(mesh)
 }
 
+func MTLSMeshWithEgressUniversal(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+`, name)
+	return YamlUniversal(mesh)
+}
+
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,

@@ -15,11 +15,13 @@ import (
 
 func Test() {
 	noEgressMeshName := "meshhttproute"
+	egressMeshName := "meshhttproute-egress"
 
 	BeforeAll(func() {
 		// Global
 		Expect(multizone.Global.Install(MTLSMeshUniversal(noEgressMeshName))).To(Succeed())
-		for _, meshName := range []string{noEgressMeshName} {
+		Expect(multizone.Global.Install(MTLSMeshWithEgressUniversal(egressMeshName))).To(Succeed())
+		for _, meshName := range []string{noEgressMeshName, egressMeshName} {
 			Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 			err := NewClusterSetup().
@@ -61,13 +63,13 @@ func Test() {
 	})
 
 	E2EAfterEach(func() {
-		for _, meshName := range []string{noEgressMeshName} {
+		for _, meshName := range []string{noEgressMeshName, egressMeshName} {
 			Expect(DeleteMeshResources(multizone.Global, meshName, v1alpha1.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		}
 	})
 
 	E2EAfterAll(func() {
-		for _, meshName := range []string{noEgressMeshName} {
+		for _, meshName := range []string{noEgressMeshName, egressMeshName} {
 			Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
 			Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 			Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
@@ -115,6 +117,7 @@ spec:
 			}, "30s", "500ms").Should(Succeed())
 		},
 		Entry("without zoneEgress", noEgressMeshName),
+		Entry("with zoneEgress", egressMeshName),
 	)
 
 	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
