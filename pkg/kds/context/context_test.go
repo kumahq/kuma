@@ -469,6 +469,7 @@ var _ = Describe("Context", func() {
 		resource := func(given testCase) model.Resource {
 			descriptor := model.ResourceTypeDescriptor{
 				IsPluginOriginated: given.isResourcePluginOriginated,
+				Resource:           core_mesh.NewCircuitBreakerResource(),
 			}
 
 			meta := &test_model.ResourceMeta{Name: given.name}
@@ -485,7 +486,8 @@ var _ = Describe("Context", func() {
 				kdsCtx := context.DefaultContext(ctx, rm, cfg)
 
 				// when
-				out, _ := kdsCtx.GlobalResourceMapper(resource(given))
+				out, err := kdsCtx.GlobalResourceMapper(resource(given))
+				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				Expect(out.GetMeta().GetName()).To(Equal(given.expectedName))
@@ -498,7 +500,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "custom-namespace",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo",
+				expectedName: "foo-xw46fx28d8666769",
 			}),
 			Entry("shouldn't be removed when store type is kubernetes "+
 				"and resource isn't plugin originated", testCase{
@@ -508,7 +510,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "custom-namespace",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo.custom-namespace",
+				expectedName: "foo-xw46fx28d8666769.custom-namespace",
 			}),
 			Entry("shouldn't be removed when store type is not kubernetes",
 				testCase{
@@ -518,7 +520,7 @@ var _ = Describe("Context", func() {
 						k8sSystemNamespace: "custom-namespace",
 					},
 					name:         "foo.custom-namespace",
-					expectedName: "foo.custom-namespace",
+					expectedName: "foo-xw46fx28d8666769.custom-namespace",
 				}),
 			Entry("shouldn't be removed when suffix is not k8s system "+
 				"namespace", testCase{
@@ -528,7 +530,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "kuma-system",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo.custom-namespace",
+				expectedName: "foo-xw46fx28d8666769.custom-namespace",
 			}),
 		)
 	})
