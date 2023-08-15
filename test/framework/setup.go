@@ -373,14 +373,18 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 		transparent := opts.transparent != nil && *opts.transparent // default false
+		serviceName := name
+		if opts.serviceName != "" {
+			serviceName = opts.serviceName
+		}
 		if appYaml == "" {
 			if transparent {
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", serviceName, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
-					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", serviceName, "80", "8080")
 				} else {
-					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", serviceName, "80", "8080")
 				}
 			}
 		}
@@ -389,7 +393,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			token := opts.token
 			var err error
 			if token == "" {
-				token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
+				token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName)
 				if err != nil {
 					return err
 				}
