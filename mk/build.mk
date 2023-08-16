@@ -20,11 +20,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
-<<<<<<< HEAD
-COREDNS_VERSION = v1.10.1
-=======
 COREDNS_VERSION = v1.11.1
->>>>>>> 0e4b2af68 (chore(deps): update CoreDNS to v1.11.1 (#7523))
 
 # List of binaries that we have build/release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
