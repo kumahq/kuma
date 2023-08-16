@@ -23,17 +23,11 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-<<<<<<< HEAD
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v
-=======
-# An optional extension to the coredns packages
-COREDNS_EXT ?=
-COREDNS_VERSION = v1.11.1
->>>>>>> 0e4b2af68 (chore(deps): update CoreDNS to v1.11.1 (#7523))
 
 COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
-COREDNS_VERSION ?= v1.10.1
+COREDNS_VERSION ?= v1.11.1
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
