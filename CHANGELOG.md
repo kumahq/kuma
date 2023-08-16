@@ -14,6 +14,14 @@
 * fix(sec): get rid of dependency on containerd (backport of #7387) [#7392](https://github.com/kumahq/kuma/pull/7392) @kumahq
 
 
+## 2.1.6
+> Released on 2023/08/09
+
+* chore(deps): bump go from 1.18 to 1.20.7 [#7446](https://github.com/kumahq/kuma/pull/7446) [#7489](https://github.com/kumahq/kuma/pull/7489) @michaelbeaumont
+* chore(deps): security update [#7405](https://github.com/kumahq/kuma/pull/7405) [#7442](https://github.com/kumahq/kuma/pull/7442) @kumahq
+* fix(sec): get rid of dependency on containerd (backport of #7387) [#7390](https://github.com/kumahq/kuma/pull/7390) @kumahq
+
+
 ## 2.2.4
 > Released on 2023/08/04
 
