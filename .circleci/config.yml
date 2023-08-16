@@ -6,7 +6,7 @@ parameters:
     default: "1.20.7"
   first_k8s_version:
     type: string
-    default: "v1.22.9-k3s1"
+    default: "v1.23.17-k3s1"
   last_k8s_version:
     type: string
     default: "v1.27.1-k3s1"
