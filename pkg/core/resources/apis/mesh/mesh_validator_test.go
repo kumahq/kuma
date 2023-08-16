@@ -14,21 +14,21 @@ var _ = Describe("Mesh", func() {
 		expected string
 	}
 	Describe("Validate()", func() {
-    DescribeTable("should pass validation",
+		DescribeTable("should pass validation",
 			func(given testCase) {
 				// given
 				mesh := NewMeshResource()
 
-        // when
-        err := util_proto.FromYAML([]byte(given.mesh), mesh.Spec)
-        // then
-        Expect(err).ToNot(HaveOccurred())
+				// when
+				err := util_proto.FromYAML([]byte(given.mesh), mesh.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-        // when
-        err = mesh.Validate()
+				// when
+				err = mesh.Validate()
 
-        // then
-        Expect(err).ToNot(HaveOccurred())
+				// then
+				Expect(err).ToNot(HaveOccurred())
 			},
 			Entry("multiple ca backends of the same name and tls prometheus config", testCase{
 				mesh: `
@@ -108,10 +108,10 @@ var _ = Describe("Mesh", func() {
                     k8s.kuma.io/namespace: ns-1
                     kuma.io/zone: west
             routing:
-              zoneEgress: true`,	
-        expected: "",
+              zoneEgress: true`,
+				expected: "",
 			}),
-      Entry("multiple ca backends of the same name", testCase{
+			Entry("multiple ca backends of the same name", testCase{
 				mesh: `
             mtls:
               enabledBackend: builtin-1
@@ -187,10 +187,10 @@ var _ = Describe("Mesh", func() {
                     k8s.kuma.io/namespace: ns-1
                     kuma.io/zone: west
             routing:
-              zoneEgress: true`,	
-        expected: "",
+              zoneEgress: true`,
+				expected: "",
 			}),
-    )
+		)
 
 		DescribeTable("should validate fields",
 			func(given testCase) {
@@ -670,7 +670,7 @@ var _ = Describe("Mesh", func() {
                 - field: metrics.backends[1].conf.aggregate[1].name
                   message: 'duplicate entry: app, values have to be unique'`,
 			}),
-      Entry("metrics contains skipMTLS and tls configuration", testCase{
+			Entry("metrics contains skipMTLS and tls configuration", testCase{
 				mesh: `
                 metrics:
                   backends:

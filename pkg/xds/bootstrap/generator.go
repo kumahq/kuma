@@ -121,6 +121,8 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		Resources:           request.Resources,
 		AccessLogSocketPath: accessLogSocketPath,
 		MetricsSocketPath:   metricsSocketPath,
+		MetricsCertPath:     request.MetricsCertPath,
+		MetricsKeyPath:      request.MetricsKeyPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

@@ -19,6 +19,8 @@ type BootstrapRequest struct {
 	Resources           ProxyResources    `json:"resources"`
 	AccessLogSocketPath string            `json:"accessLogSocketPath"`
 	MetricsSocketPath   string            `json:"metricsSocketPath"`
+	MetricsCertPath     string            `json:"metricsCertPath"`
+	MetricsKeyPath      string            `json:"metricsKeyPath"`
 }
 
 type Version struct {

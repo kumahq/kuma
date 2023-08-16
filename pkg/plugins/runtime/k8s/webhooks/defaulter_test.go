@@ -139,6 +139,9 @@ var _ = Describe("Defaulter", func() {
 						"port": 5670,
 						"tags": {
 						  "kuma.io/service": "dataplane-metrics"
+						},
+						"tls": {
+						  "enabled": true
 						}
 					  }
 					}
@@ -190,6 +193,9 @@ var _ = Describe("Defaulter", func() {
 						"port": 5670,
 						"tags": {
 						  "kuma.io/service": "dataplane-metrics"
+						},
+						"tls": {
+						  "enabled": true
 						}
 					  }
 					}

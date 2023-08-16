@@ -56,6 +56,13 @@ func ServerSideStaticMTLS(mtlsCerts core_xds.ServerSideMTLSCerts) FilterChainBui
 	})
 }
 
+func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerSideStaticTLSConfigurer{
+		CertPath: tlsCerts.CertPath,
+		KeyPath:  tlsCerts.KeyPath,
+	})
+}
+
 func HttpConnectionManager(statsName string, forwardClientCertDetails bool) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,

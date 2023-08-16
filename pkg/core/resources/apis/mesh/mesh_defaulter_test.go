@@ -54,7 +54,6 @@ var _ = Describe("MeshResource", func() {
                         kuma.io/service: dataplane-metrics
                       tls:
                         enabled: true
-                        mode: activeMTLSBackend
 `,
 			}),
 			Entry("when defaults are set", testCase{
@@ -69,6 +68,37 @@ var _ = Describe("MeshResource", func() {
                       port: 1234
                       tags:
                         kuma.io/service: dataplane-metrics
+                      tls:
+                        enabled: true
+                        mode: activeMTLSBackend
+`,
+				expected: `
+                metrics:
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    conf:
+                      path: /non-standard-path
+                      port: 1234
+                      tags:
+                        kuma.io/service: dataplane-metrics
+                      tls:
+                        enabled: true
+`,
+			}),
+			Entry("when skipMTLS is set should translate to tls", testCase{
+				input: `
+                metrics:
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    conf:
+                      path: /non-standard-path
+                      port: 1234
+                      tags:
+                        kuma.io/service: dataplane-metrics
                       skipMTLS: true
 `,
 				expected: `
@@ -82,7 +112,8 @@ var _ = Describe("MeshResource", func() {
                       port: 1234
                       tags:
                         kuma.io/service: dataplane-metrics
-                      skipMTLS: true
+                      tls:
+                        enabled: false
 `,
 			}),
 		)
@@ -95,6 +126,38 @@ var _ = Describe("MeshResource", func() {
 `,
 				expected: `
                 metrics: {}
+`,
+			}),
+			Entry("when mode is set", testCase{
+				input: `
+                metrics:
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    conf:
+                      path: /non-standard-path
+                      port: 1234
+                      tags:
+                        kuma.io/service: dataplane-metrics
+                      tls:
+                        enabled: true
+                        mode: delegated
+`,
+				expected: `
+                metrics:
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    conf:
+                      path: /non-standard-path
+                      port: 1234
+                      tags:
+                        kuma.io/service: dataplane-metrics
+                      tls:
+                        enabled: true
+                        mode: delegated
 `,
 			}),
 		)

@@ -172,21 +172,39 @@ func KumaIDMatcher(tagName, tagValue string) *envoy_type_matcher.StringMatcher {
 	}
 }
 
-func StaticDownstreamTlsContext(keyPair *tls.KeyPair) *envoy_tls.DownstreamTlsContext {
+func StaticDownstreamTlsContext(keyPair *tls.KeyPair, keyPairPaths *tls.KeyPairPaths) *envoy_tls.DownstreamTlsContext {
+	var cert *envoy_core.DataSource
+	var key *envoy_core.DataSource
+	if keyPairPaths != nil {
+		cert = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_Filename{
+				Filename: keyPairPaths.CertPath,
+			},
+		}
+		key = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_Filename{
+				Filename: keyPairPaths.KeyPath,
+			},
+		}
+	}
+	if keyPair != nil {
+		cert = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_InlineBytes{
+				InlineBytes: keyPair.CertPEM,
+			},
+		}
+		key = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_InlineBytes{
+				InlineBytes: keyPair.KeyPEM,
+			},
+		}
+	}
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext: &envoy_tls.CommonTlsContext{
 			TlsCertificates: []*envoy_tls.TlsCertificate{
 				{
-					CertificateChain: &envoy_core.DataSource{
-						Specifier: &envoy_core.DataSource_InlineBytes{
-							InlineBytes: keyPair.CertPEM,
-						},
-					},
-					PrivateKey: &envoy_core.DataSource{
-						Specifier: &envoy_core.DataSource_InlineBytes{
-							InlineBytes: keyPair.KeyPEM,
-						},
-					},
+					CertificateChain: cert,
+					PrivateKey:       key,
 				},
 			},
 		},

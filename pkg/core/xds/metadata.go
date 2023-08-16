@@ -30,6 +30,8 @@ const (
 	FieldFeatures                   = "features"
 	FieldAccessLogSocketPath        = "accessLogSocketPath"
 	FieldMetricsSocketPath          = "metricsSocketPath"
+	FieldMetricsCertPath            = "metricsCertPath"
+	FieldMetricsKeyPath             = "metricsKeyPath"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -58,6 +60,8 @@ type DataplaneMetadata struct {
 	SocketDir           string
 	AccessLogSocketPath string
 	MetricsSocketPath   string
+	MetricsCertPath     string
+	MetricsKeyPath      string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -179,6 +183,13 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 		mesh := metadata.Resource.GetMeta().GetMesh()
 		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, name, mesh)
 		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, name, mesh)
+	}
+
+	if xdsMetadata.Fields[FieldMetricsCertPath] != nil {
+		metadata.MetricsCertPath = xdsMetadata.Fields[FieldMetricsCertPath].GetStringValue()
+	}
+	if xdsMetadata.Fields[FieldMetricsKeyPath] != nil {
+		metadata.MetricsKeyPath = xdsMetadata.Fields[FieldMetricsKeyPath].GetStringValue()
 	}
 
 	if listValue := xdsMetadata.Fields[FieldFeatures]; listValue != nil {

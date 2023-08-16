@@ -11,9 +11,9 @@
                 },
                 "mode": {
                     "enum": [
-                        "delegated",
-                        0,
                         "activeMTLSBackend",
+                        0,
+                        "delegated",
                         1
                     ],
                     "oneOf": [

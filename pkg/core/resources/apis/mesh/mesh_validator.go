@@ -265,7 +265,7 @@ func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationErro
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
 		return verr
 	}
-	if cfg.SkipMTLS != nil && cfg.Tls != nil{
+	if cfg.SkipMTLS != nil && cfg.Tls != nil {
 		verr.AddViolation("", "skipMTLS and tls configuration cannot be defined together")
 		return verr
 	}

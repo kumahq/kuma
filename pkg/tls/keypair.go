@@ -16,6 +16,11 @@ type KeyPair struct {
 	KeyPEM  []byte
 }
 
+type KeyPairPaths struct {
+	KeyPath  string
+	CertPath string
+}
+
 func ToKeyPair(key crypto.PrivateKey, cert []byte) (*KeyPair, error) {
 	keyPem, err := pemEncodeKey(key)
 	if err != nil {

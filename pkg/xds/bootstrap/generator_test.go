@@ -372,6 +372,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				DNSPort:            53001,
 				EmptyDNSPort:       53002,
 				DataplaneTokenPath: "/path/to/file",
+				MetricsCertPath:    "/path/cert/pem",
+				MetricsKeyPath:     "/path/key/pem",
 			},
 			expectedConfigFile: "generator.default-config-token-path.golden.yaml",
 			hdsEnabled:         true,
