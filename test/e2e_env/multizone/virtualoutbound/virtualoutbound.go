@@ -42,7 +42,6 @@ routing:
 }
 
 func virtualOutbound(namespace, meshName, meshYAML string) {
-
 	BeforeAll(func() {
 		Expect(multizone.Global.Install(YamlUniversal(meshYAML))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
