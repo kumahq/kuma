@@ -19,7 +19,7 @@ type ServerSideStaticMTLSConfigurer struct {
 var _ FilterChainConfigurer = &ServerSideStaticMTLSConfigurer{}
 
 func (c *ServerSideStaticMTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext := tls.StaticDownstreamTlsContext(&c.MTLSCerts.ServerPair, nil)
+	tlsContext := tls.StaticDownstreamTlsContextWithValue(&c.MTLSCerts.ServerPair)
 	tlsContext.RequireClientCertificate = util_proto.Bool(true)
 
 	tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
