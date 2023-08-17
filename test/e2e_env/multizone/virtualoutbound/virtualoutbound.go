@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -15,35 +17,19 @@ import (
 
 func VirtualOutbound() {
 	_ = Describe("No Zone Egress", func() {
-		virtualOutbound("virtual-outbounds", "virtual-outbounds", `
-type: Mesh
-name: virtual-outbounds
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-`)
+		virtualOutbound("virtual-outbounds", samples.MeshMTLSBuilder())
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		virtualOutbound("virtual-outbounds-ze", "virtual-outbounds-ze", `
-type: Mesh
-name: virtual-outbounds-ze
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-routing:
-  zoneEgress: true
-`)
+		virtualOutbound("virtual-outbounds-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
 	}, Ordered)
 }
 
-func virtualOutbound(namespace, meshName, meshYAML string) {
+func virtualOutbound(meshName string, meshBuilder *builders.MeshBuilder) {
+	namespace := meshName
+
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(YamlUniversal(meshYAML))).To(Succeed())
+		Expect(multizone.Global.Install(ResourceUniversal(meshBuilder.WithName(meshName).Build()))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().

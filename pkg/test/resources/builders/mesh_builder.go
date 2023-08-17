@@ -77,6 +77,14 @@ func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
 	return m
 }
 
+func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.ZoneEgress = true
+	return m
+}
+
 func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuilder {
 	fn(m.res)
 	return m

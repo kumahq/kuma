@@ -8,6 +8,8 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -15,36 +17,18 @@ import (
 
 func Test() {
 	_ = Describe("No Zone Egress", func() {
-		test("meshhttproute", `
-type: Mesh
-name: meshhttproute
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-`)
+		test("meshhttproute", samples.MeshMTLSBuilder())
 	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
-		test("meshhttproute-ze", `
-type: Mesh
-name: meshhttproute-ze
-mtls:
-  enabledBackend: ca-1
-  backends:
-    - name: ca-1
-      type: builtin
-routing:
-  zoneEgress: true
-`)
+		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
 	}, Ordered)
 }
 
-func test(meshName, meshYAML string) {
+func test(meshName string, meshBuilder *builders.MeshBuilder) {
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(YamlUniversal(meshYAML))).To(Succeed())
+		Expect(multizone.Global.Install(ResourceUniversal(meshBuilder.WithName(meshName).Build()))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
