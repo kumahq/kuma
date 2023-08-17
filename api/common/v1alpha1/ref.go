@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"golang.org/x/exp/maps"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 type TargetRefKind string
@@ -61,29 +59,6 @@ func (in TargetRef) Hash() TargetRefHash {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
 	return TargetRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh))
-}
-
-func (in TargetRef) EnvoyTags() (map[string]string, bool) {
-	var service string
-	tags := map[string]string{}
-
-	switch in.Kind {
-	case MeshService:
-		service = in.Name
-	case MeshServiceSubset:
-		service = in.Name
-		tags = in.Tags
-	case Mesh:
-		service = mesh_proto.MatchAllTag
-	case MeshSubset:
-		service = mesh_proto.MatchAllTag
-		tags = in.Tags
-	default:
-		return nil, false
-	}
-
-	tags[mesh_proto.ServiceTag] = service
-	return tags, true
 }
 
 // BackendRef defines where to forward traffic.

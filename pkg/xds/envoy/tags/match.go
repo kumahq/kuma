@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 )
@@ -105,6 +106,29 @@ func (t Tags) String() string {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", key, t[key]))
 	}
 	return strings.Join(pairs, ",")
+}
+
+func FromTargetRef(ref common_api.TargetRef) (Tags, bool) {
+	var service string
+	tags := map[string]string{}
+
+	switch ref.Kind {
+	case common_api.MeshService:
+		service = ref.Name
+	case common_api.MeshServiceSubset:
+		service = ref.Name
+		tags = ref.Tags
+	case common_api.Mesh:
+		service = mesh_proto.MatchAllTag
+	case common_api.MeshSubset:
+		service = mesh_proto.MatchAllTag
+		tags = ref.Tags
+	default:
+		return nil, false
+	}
+
+	tags[mesh_proto.ServiceTag] = service
+	return tags, true
 }
 
 type (
