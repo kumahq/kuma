@@ -2,7 +2,6 @@ package virtualoutbound
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,17 +14,17 @@ import (
 )
 
 func VirtualOutbound() {
-	//	_ = Describe("No Zone Egress", func() {
-	//		virtualOutbound("virtual-outbounds", "virtual-outbounds", `
-	//type: Mesh
-	//name: virtual-outbounds
-	//mtls:
-	//  enabledBackend: ca-1
-	//  backends:
-	//    - name: ca-1
-	//      type: builtin
-	//`)
-	//	}, Ordered)
+	_ = Describe("No Zone Egress", func() {
+		virtualOutbound("virtual-outbounds", "virtual-outbounds", `
+type: Mesh
+name: virtual-outbounds
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`)
+	}, Ordered)
 
 	_ = Describe("Zone Egress", func() {
 		virtualOutbound("virtual-outbounds-ze", "virtual-outbounds-ze", `
@@ -121,9 +120,6 @@ conf:
 `, meshName)
 		err := multizone.Global.Install(YamlUniversal(virtualOutboundAll))
 		Expect(err).ToNot(HaveOccurred())
-
-		println("go")
-		time.Sleep(10 * time.Hour)
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(

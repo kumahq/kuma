@@ -1,6 +1,8 @@
 package zoneproxy
 
 import (
+	"golang.org/x/exp/maps"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -87,27 +89,48 @@ func AddFilterChains(
 	apiVersion core_xds.APIVersion,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	destinationsPerService map[string][]envoy_tags.Tags,
+	endpointMap core_xds.EndpointMap,
 ) {
-	sniUsed := map[string]bool{}
+	sniUsed := map[string]struct{}{}
 	for _, service := range availableServices {
 		serviceName := service.Tags[mesh_proto.ServiceTag]
 		destinations := destinationsPerService[serviceName]
 		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
 		clusterName := envoy_names.GetMeshClusterName(service.Mesh, serviceName)
+		serviceEndpoints := endpointMap[serviceName]
 
 		for _, destination := range destinations {
 			sni := tls.SNIFromTags(destination.
 				WithTags(mesh_proto.ServiceTag, serviceName).
 				WithTags("mesh", service.Mesh),
 			)
-			if sniUsed[sni] {
+			if _, ok := sniUsed[sni]; ok {
 				continue
 			}
-			sniUsed[sni] = true
+			sniUsed[sni] = struct{}{}
+
+			// relevantTags is a set of tags for which it actually makes sense to do LB split on.
+			// If the endpoint list is the same with or without the tag, we should just not do the split.
+			// However, we should preserve full SNI, because the client expects Zone Proxy to support it.
+			// This solves the problem that Envoy deduplicate endpoints of the same address and different metadata.
+			relevantTags := envoy_tags.Tags{}
+			for key, value := range destination {
+				matchedTargets := map[string]struct{}{}
+				allTargets := map[string]struct{}{}
+				for _, endpoint := range serviceEndpoints {
+					if endpoint.Tags[key] == value {
+						matchedTargets[endpoint.Target] = struct{}{}
+					}
+					allTargets[endpoint.Target] = struct{}{}
+				}
+				if !maps.Equal(matchedTargets, allTargets) {
+					relevantTags[key] = value
+				}
+			}
 
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithName(clusterName),
-				envoy_common.WithTags(destination),
+				envoy_common.WithTags(relevantTags),
 			)
 
 			filterChain := envoy_listeners.FilterChain(

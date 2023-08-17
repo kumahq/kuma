@@ -39,7 +39,7 @@ func (g *InternalServicesGenerator) Generate(
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 	)
 
-	zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations)
+	zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
 
 	cds, err := zoneproxy.GenerateCDS(services, destinations, proxy.APIVersion, meshName, OriginEgress)
 	if err != nil {
