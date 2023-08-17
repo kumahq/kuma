@@ -1,6 +1,8 @@
 package zoneproxy
 
 import (
+	"fmt"
+
 	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -118,10 +120,11 @@ func AddFilterChains(
 				matchedTargets := map[string]struct{}{}
 				allTargets := map[string]struct{}{}
 				for _, endpoint := range serviceEndpoints {
-					if endpoint.Tags[key] == value {
-						matchedTargets[endpoint.Target] = struct{}{}
+					address := fmt.Sprintf("%s:%d", endpoint.Target, endpoint.Port)
+					if endpoint.Tags[key] == value || value == mesh_proto.MatchAllTag {
+						matchedTargets[address] = struct{}{}
 					}
-					allTargets[endpoint.Target] = struct{}{}
+					allTargets[address] = struct{}{}
 				}
 				if !maps.Equal(matchedTargets, allTargets) {
 					relevantTags[key] = value
