@@ -143,11 +143,6 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.ExternalServices,
 					trafficPermissions,
 				)
-				//meshResources.Resources = map[core_model.ResourceType]core_model.ResourceList{
-				//	core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
-				//		Items: meshResources.TrafficRoutes,
-				//	},
-				//}
 			}
 
 			gen := egress.Generator{
@@ -217,7 +212,7 @@ var _ = Describe("EgressGenerator", func() {
 			fileWithResourcesName: "06.mixed-services-with-external-in-other-zone.yaml",
 			expected:              "06.mixed-services-with-external-in-other-zone.golden.yaml",
 		}),
-		FEntry("use default if a MeshHTTPRoute exists, internal", testCase{
+		Entry("use default if a MeshHTTPRoute exists, internal", testCase{
 			fileWithResourcesName: "traffic-by-default-meshhttproute.yaml",
 			expected:              "traffic-by-default-meshhttproute.golden.yaml",
 		}),

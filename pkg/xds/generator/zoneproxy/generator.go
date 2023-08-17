@@ -77,7 +77,7 @@ func GenerateEDS(
 	return resources, nil
 }
 
-// AddFilterChains generates one Ingress Listener. Generated listener assumes that
+// AddFilterChains adds filter chains to a listener. Generated listener assumes that
 // mTLS is on. Using TLSInspector we sniff SNI value. SNI value has service name
 // and tag values specified with the following format:
 // "backend{cluster=2,version=1}". We take all possible destinations from
