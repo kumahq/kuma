@@ -185,7 +185,8 @@ type MeshResources struct {
 	ExternalServiceRateLimits      ExternalServiceRateLimitMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
-	Dynamic ExternalServiceDynamicPolicies
+	Dynamic   ExternalServiceDynamicPolicies
+	Resources map[core_model.ResourceType]core_model.ResourceList
 }
 
 type ZoneEgressProxy struct {

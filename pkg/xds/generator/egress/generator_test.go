@@ -12,8 +12,10 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -124,6 +126,11 @@ var _ = Describe("EgressGenerator", func() {
 					meshResources.ExternalServices,
 					trafficPermissions,
 				)
+				meshResources.Resources = map[core_model.ResourceType]core_model.ResourceList{
+					core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+						Items: meshResources.TrafficRoutes,
+					},
+				}
 			}
 
 			gen := egress.Generator{

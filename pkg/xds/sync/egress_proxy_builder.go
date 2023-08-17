@@ -91,7 +91,8 @@ func (p *EgressProxyBuilder) Build(
 				externalServices,
 				rateLimits,
 			),
-			Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
+			Resources: meshCtx.Resources.MeshLocalResources,
 		}
 
 		for _, es := range externalServices {

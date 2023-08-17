@@ -8,12 +8,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - mesh
     name: mesh-1:service-in-zone-2
     type: EDS
 - name: mesh-1:service-in-zone-2
@@ -54,10 +48,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: mesh-1:service-in-zone-2
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh-1
           statPrefix: mesh-1_service-in-zone-2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
