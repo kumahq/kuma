@@ -14,11 +14,37 @@ import (
 )
 
 func Test() {
-	meshName := "meshhttproute"
+	_ = Describe("No Zone Egress", func() {
+		test("meshhttproute", `
+type: Mesh
+name: meshhttproute
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`)
+	}, Ordered)
 
+	_ = Describe("Zone Egress", func() {
+		test("meshhttproute-ze", `
+type: Mesh
+name: meshhttproute-ze
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+`)
+	}, Ordered)
+}
+
+func test(meshName, meshYAML string) {
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(multizone.Global.Install(YamlUniversal(meshYAML))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
