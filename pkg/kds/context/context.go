@@ -197,6 +197,11 @@ func AddHashSuffix(r model.Resource) (model.Resource, error) {
 	if r.Descriptor().Scope == model.ScopeGlobal {
 		return r, nil
 	}
+	if r.Descriptor().Name == system.SecretType {
+		// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
+		// particular format to be able to reference them
+		return r, nil
+	}
 
 	var name string
 	var namespace string
