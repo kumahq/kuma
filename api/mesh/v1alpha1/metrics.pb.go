@@ -471,7 +471,8 @@ type PrometheusTlsConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// mode defines how configured is the TLS for Prometheus.
-	// Supported values, delegated, disabled, activeMTLSBackend. Default to `activeMTLSBackend`.
+	// Supported values, delegated, disabled, activeMTLSBackend. Default to
+	// `activeMTLSBackend`.
 	Mode PrometheusTlsConfig_Mode `protobuf:"varint,1,opt,name=mode,proto3,enum=kuma.mesh.v1alpha1.PrometheusTlsConfig_Mode" json:"mode,omitempty"`
 }
 

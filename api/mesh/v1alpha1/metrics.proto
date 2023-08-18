@@ -111,6 +111,7 @@ message PrometheusTlsConfig {
   }
 
   // mode defines how configured is the TLS for Prometheus.
-  // Supported values, delegated, disabled, activeMTLSBackend. Default to `activeMTLSBackend`.
+  // Supported values, delegated, disabled, activeMTLSBackend. Default to
+  // `activeMTLSBackend`.
   Mode mode = 1;
 }

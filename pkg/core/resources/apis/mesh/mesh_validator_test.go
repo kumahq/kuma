@@ -95,7 +95,6 @@ var _ = Describe("Mesh", func() {
                     port: 12345
                     path: "/stats/sidecar"
                   tls:
-                    enabled: true
                     mode: delegated
             constraints:
               dataplaneProxy:
@@ -679,8 +678,55 @@ var _ = Describe("Mesh", func() {
                     conf:
                       skipMTLS: true
                       tls:
-                        enabled: true
                         mode: delegated
+                `,
+				expected: `
+                violations:
+                - field: metrics.backends[0].conf
+                  message: 'skipMTLS and tls configuration cannot be defined together'`,
+			}),
+			Entry("metrics contains skipMTLS with different value and tls configuration", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                    conf:
+                      skipMTLS: false
+                      tls:
+                        mode: delegated
+                `,
+				expected: `
+                violations:
+                - field: metrics.backends[0].conf
+                  message: 'skipMTLS and tls configuration cannot be defined together'`,
+			}),
+			Entry("metrics contains not skipMTLS and disabled", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                    conf:
+                      skipMTLS: false
+                      tls:
+                        mode: disabled
+                `,
+				expected: `
+                violations:
+                - field: metrics.backends[0].conf
+                  message: 'skipMTLS and tls configuration cannot be defined together'`,
+			}),
+			Entry("metrics contains skipMTLS and activeMTLSBackend", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                    conf:
+                      skipMTLS: true
+                      tls:
+                        mode: activeMTLSBackend
                 `,
 				expected: `
                 violations:

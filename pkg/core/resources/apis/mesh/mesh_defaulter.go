@@ -31,6 +31,12 @@ func (mesh *MeshResource) Default() error {
 					Mode: mesh_proto.PrometheusTlsConfig_activeMTLSBackend,
 				}
 			}
+			if cfg.Tls != nil && cfg.SkipMTLS != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegated {
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Mode: mesh_proto.PrometheusTlsConfig_delegated,
+				}
+				cfg.SkipMTLS = nil
+			}
 
 			if cfg.Port == 0 {
 				cfg.Port = 5670
