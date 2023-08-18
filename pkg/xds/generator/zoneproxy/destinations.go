@@ -20,8 +20,8 @@ func BuildMeshDestinations(
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {
 	destForMesh := map[string][]envoy_tags.Tags{}
-	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
 	addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
+	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)

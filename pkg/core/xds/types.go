@@ -77,6 +77,10 @@ type Endpoint struct {
 	ExternalService *ExternalService
 }
 
+func (e Endpoint) Address() string {
+	return fmt.Sprintf("%s:%d", e.Target, e.Port)
+}
+
 // EndpointList is a list of Endpoints with convenience methods.
 type EndpointList []Endpoint
 

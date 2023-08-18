@@ -1,8 +1,6 @@
 package zoneproxy
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -118,7 +116,7 @@ func AddFilterChains(
 				matchedTargets := map[string]struct{}{}
 				allTargets := map[string]struct{}{}
 				for _, endpoint := range serviceEndpoints {
-					address := fmt.Sprintf("%s:%d", endpoint.Target, endpoint.Port)
+					address := endpoint.Address()
 					if endpoint.Tags[key] == value || value == mesh_proto.MatchAllTag {
 						matchedTargets[address] = struct{}{}
 					}
