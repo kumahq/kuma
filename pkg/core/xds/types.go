@@ -177,7 +177,6 @@ type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
 	Mesh                           *core_mesh.MeshResource
-	TrafficRoutes                  []*core_mesh.TrafficRouteResource
 	ExternalServices               []*core_mesh.ExternalServiceResource
 	ExternalServicePermissionMap   ExternalServicePermissionMap
 	EndpointMap                    EndpointMap

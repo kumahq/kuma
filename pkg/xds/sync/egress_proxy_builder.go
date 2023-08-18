@@ -69,7 +69,6 @@ func (p *EgressProxyBuilder) Build(
 
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
-			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
 			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,

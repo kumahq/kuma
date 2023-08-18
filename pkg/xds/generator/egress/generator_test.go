@@ -107,10 +107,6 @@ var _ = Describe("EgressGenerator", func() {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{}
 					}
 
-					meshResourcesMap[meshName].TrafficRoutes = append(
-						meshResourcesMap[meshName].TrafficRoutes,
-						res.(*core_mesh.TrafficRouteResource),
-					)
 					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
 					routeList.Items = append(
 						routeList.Items,
