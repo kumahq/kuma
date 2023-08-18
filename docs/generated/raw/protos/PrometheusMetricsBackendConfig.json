@@ -95,17 +95,14 @@
         },
         "kuma.mesh.v1alpha1.PrometheusTlsConfig": {
             "properties": {
-                "enabled": {
-                    "additionalProperties": true,
-                    "type": "boolean",
-                    "description": "If true then endpoints for scraping metrics will require TLS, when false there if no tls configured. If nil, then it is treated as true."
-                },
                 "mode": {
                     "enum": [
                         "activeMTLSBackend",
                         0,
                         "delegated",
-                        1
+                        1,
+                        "disabled",
+                        2
                     ],
                     "oneOf": [
                         {

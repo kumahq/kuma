@@ -119,7 +119,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 											Port: 1234,
 											Path: "/metrics",
 											Tls: &mesh_proto.PrometheusTlsConfig{
-												Mode:    mesh_proto.PrometheusTlsConfig_delegated,
+												Mode: mesh_proto.PrometheusTlsConfig_delegated,
 											},
 										}),
 									},
