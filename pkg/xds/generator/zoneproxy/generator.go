@@ -3,8 +3,6 @@ package zoneproxy
 import (
 	"fmt"
 
-	"golang.org/x/exp/maps"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -126,7 +124,7 @@ func AddFilterChains(
 					}
 					allTargets[address] = struct{}{}
 				}
-				if !maps.Equal(matchedTargets, allTargets) {
+				if len(matchedTargets) < len(allTargets) {
 					relevantTags[key] = value
 				}
 			}
