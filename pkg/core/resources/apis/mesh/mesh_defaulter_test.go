@@ -52,8 +52,7 @@ var _ = Describe("MeshResource", func() {
                       path: /metrics
                       tags:
                         kuma.io/service: dataplane-metrics
-                      tls:
-                        enabled: true
+                      tls: {}
 `,
 			}),
 			Entry("when defaults are set", testCase{
@@ -83,8 +82,7 @@ var _ = Describe("MeshResource", func() {
                       port: 1234
                       tags:
                         kuma.io/service: dataplane-metrics
-                      tls:
-                        enabled: true
+                      tls: {}
 `,
 			}),
 			Entry("when skipMTLS is set should translate to tls", testCase{
@@ -110,10 +108,11 @@ var _ = Describe("MeshResource", func() {
                     conf:
                       path: /non-standard-path
                       port: 1234
+                      skipMTLS: true
                       tags:
                         kuma.io/service: dataplane-metrics
                       tls:
-                        enabled: false
+                        mode: disabled
 `,
 			}),
 		)
@@ -141,7 +140,6 @@ var _ = Describe("MeshResource", func() {
                       tags:
                         kuma.io/service: dataplane-metrics
                       tls:
-                        enabled: true
                         mode: delegated
 `,
 				expected: `
@@ -156,7 +154,6 @@ var _ = Describe("MeshResource", func() {
                       tags:
                         kuma.io/service: dataplane-metrics
                       tls:
-                        enabled: true
                         mode: delegated
 `,
 			}),

@@ -97,8 +97,8 @@ message PrometheusEnvoyConfig {
 // PrometheusEnvoyConfig defines Tls configuration for Prometheus listener.
 message PrometheusTlsConfig {
   enum Mode {
-    // This is a substitute of `skipMTLS` set to false. In this situation,
     // control-plane delivers certificates to the prometheus listener.
+    // This should be used when prometheus is running inside the Mesh.
     activeMTLSBackend = 0;
     // In this way user is resposible for providing certificates to dataplanes.
     // Path for the certificte and the key needs to be provided to the dataplane
@@ -106,12 +106,11 @@ message PrometheusTlsConfig {
     // * KUMA_DATAPLANE_METRICS_CERT_PATH
     // * KUMA_DATAPLANE_METRICS_KEY_PATH
     delegated = 1;
+    // allows disabling mTLS for the prometheus listener.
+    disabled = 2;
   }
-  // If true then endpoints for scraping metrics will require TLS, when false
-  // there if no tls configured. If nil, then it is treated as true.
-  google.protobuf.BoolValue enabled = 1;
 
   // mode defines how configured is the TLS for Prometheus.
-  // Supported values, delegated, activeMTLSBackend. Default to `activeMTLSBackend`.
-  Mode mode = 2;
+  // Supported values, delegated, disabled, activeMTLSBackend. Default to `activeMTLSBackend`.
+  Mode mode = 1;
 }

@@ -140,9 +140,7 @@ var _ = Describe("Defaulter", func() {
 						"tags": {
 						  "kuma.io/service": "dataplane-metrics"
 						},
-						"tls": {
-						  "enabled": true
-						}
+						"tls": {}
 					  }
 					}
 				  ]
@@ -194,9 +192,7 @@ var _ = Describe("Defaulter", func() {
 						"tags": {
 						  "kuma.io/service": "dataplane-metrics"
 						},
-						"tls": {
-						  "enabled": true
-						}
+						"tls": {}
 					  }
 					}
 				  ]

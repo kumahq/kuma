@@ -154,8 +154,7 @@ var _ = Describe("Mesh Manager", func() {
                           path: /metrics
                           tags:
                             kuma.io/service: dataplane-metrics
-                          tls:
-                            enabled: true
+                          tls: {}
 `,
 				}),
 			)
@@ -383,8 +382,7 @@ var _ = Describe("Mesh Manager", func() {
                           path: /non-standard-path
                           tags:
                             kuma.io/service: custom-prom
-                          tls:
-                            enabled: true
+                          tls: {}
 `,
 				}),
 				Entry("when config remain unchanged", testCase{
@@ -423,8 +421,7 @@ var _ = Describe("Mesh Manager", func() {
                           path: /non-standard-path
                           tags:
                             kuma.io/service: custom-prom
-                          tls:
-                            enabled: true
+                          tls: {}
 `,
 				}),
 			)

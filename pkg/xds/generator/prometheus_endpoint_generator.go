@@ -178,12 +178,12 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 }
 
 func secureMetricsWithMeshMtls(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_mesh.MeshResource) bool {
-	return (cfg.Tls != nil && cfg.Tls.Enabled.GetValue() && cfg.Tls.Mode == mesh_proto.PrometheusTlsConfig_activeMTLSBackend && mesh.MTLSEnabled()) ||
+	return (cfg.Tls != nil && cfg.Tls.Mode == mesh_proto.PrometheusTlsConfig_activeMTLSBackend && mesh.MTLSEnabled()) ||
 		(!cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled() && cfg.Tls == nil)
 }
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, metadata *core_xds.DataplaneMetadata) bool {
-	if cfg.Tls != nil && cfg.Tls.Enabled.GetValue() && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegated {
+	if cfg.Tls != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegated {
 		if metadata.MetricsCertPath == "" || metadata.MetricsKeyPath == "" {
 			prometheusLog.Info("cannot configure TLS for prometheus listener because paths to the certificate and the key wasn't provided, fallback to not secured endpoint")
 			return false

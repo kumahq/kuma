@@ -40,7 +40,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		schema := "http"
-		if prometheusEndpoint.GetTls() != nil && prometheusEndpoint.Tls.GetEnabled().Value && prometheusEndpoint.Tls.GetMode() == v1alpha1.PrometheusTlsConfig_delegated {
+		if prometheusEndpoint.GetTls() != nil && prometheusEndpoint.Tls.GetMode() == v1alpha1.PrometheusTlsConfig_delegated {
 			schema = "https"
 		}
 

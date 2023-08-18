@@ -3,7 +3,6 @@ package generator_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
@@ -120,7 +119,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 											Port: 1234,
 											Path: "/metrics",
 											Tls: &mesh_proto.PrometheusTlsConfig{
-												Enabled: &wrapperspb.BoolValue{Value: true},
 												Mode:    mesh_proto.PrometheusTlsConfig_delegated,
 											},
 										}),
