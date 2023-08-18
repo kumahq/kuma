@@ -62,7 +62,6 @@ func (p *EgressProxyBuilder) Build(
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
-		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
