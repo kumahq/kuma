@@ -39,7 +39,7 @@ endif
 
 # Package envoy
 	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
-	cp build/artifacts-$(1)-$(2)/envoy/envoy $$@/bin
+	cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
 
 	# Set permissions correctly
 	find $$@ -type f | xargs chmod 555
