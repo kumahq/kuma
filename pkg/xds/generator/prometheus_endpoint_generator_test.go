@@ -623,7 +623,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 												"kuma.io/service": "dataplane-metrics",
 											},
 											Tls: &mesh_proto.PrometheusTlsConfig{
-												Mode: mesh_proto.PrometheusTlsConfig_delegatedTLS,
+												Mode: mesh_proto.PrometheusTlsConfig_providedTLS,
 											},
 										}),
 									},
@@ -763,7 +763,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 												"kuma.io/service": "dataplane-metrics",
 											},
 											Tls: &mesh_proto.PrometheusTlsConfig{
-												Mode: mesh_proto.PrometheusTlsConfig_delegatedTLS,
+												Mode: mesh_proto.PrometheusTlsConfig_providedTLS,
 											},
 										}),
 									},

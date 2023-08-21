@@ -31,9 +31,9 @@ func (mesh *MeshResource) Default() error {
 					Mode: mesh_proto.PrometheusTlsConfig_activeMTLSBackend,
 				}
 			}
-			if cfg.Tls != nil && cfg.SkipMTLS != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegatedTLS {
+			if cfg.Tls != nil && cfg.SkipMTLS != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_providedTLS {
 				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
-					Mode: mesh_proto.PrometheusTlsConfig_delegatedTLS,
+					Mode: mesh_proto.PrometheusTlsConfig_providedTLS,
 				}
 				cfg.SkipMTLS = nil
 			}

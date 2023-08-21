@@ -8,7 +8,7 @@
                     "enum": [
                         "activeMTLSBackend",
                         0,
-                        "delegatedTLS",
+                        "providedTLS",
                         1,
                         "disabled",
                         2

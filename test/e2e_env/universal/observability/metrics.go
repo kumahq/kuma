@@ -24,8 +24,7 @@ metrics:
       path: /metrics
       port: 1234
       tls:
-        enabled: true
-        mode: delegatedTLS`, mesh)
+        mode: providedTLS`, mesh)
 	return YamlUniversal(yaml)
 }
 
