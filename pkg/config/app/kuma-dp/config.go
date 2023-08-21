@@ -142,10 +142,15 @@ type DataplaneRuntime struct {
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
-	// MetricsCertPath path to the certificate for metrics listener
-	MetricsCertPath string `json:"metricsCertPath,omitempty" envconfig:"kuma_dataplane_metrics_cert_path"`
-	// MetricsKeyPath path to the key for metrics listener
-	MetricsKeyPath string `json:"metricsKeyPath,omitempty" envconfig:"kuma_dataplane_metrics_key_path"`
+	// Metrics defines properties of metrics
+	Metrics Metrics `json:"metrics,omitempty"`
+}
+
+type Metrics struct {
+	// CertPath path to the certificate for metrics listener
+	CertPath string `json:"metricsCertPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_cert_path"`
+	// KeyPath path to the key for metrics listener
+	KeyPath string `json:"metricsKeyPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_key_path"`
 }
 
 // DataplaneResources defines the resources available to a dataplane proxy.

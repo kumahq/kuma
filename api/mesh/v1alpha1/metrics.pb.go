@@ -31,8 +31,8 @@ const (
 	// In this way user is resposible for providing certificates to dataplanes.
 	// Path for the certificte and the key needs to be provided to the dataplane
 	// by environments variables:
-	// * KUMA_DATAPLANE_METRICS_CERT_PATH
-	// * KUMA_DATAPLANE_METRICS_KEY_PATH
+	// * KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH
+	// * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
 	PrometheusTlsConfig_delegated PrometheusTlsConfig_Mode = 1
 	// allows disabling mTLS for the prometheus listener.
 	PrometheusTlsConfig_disabled PrometheusTlsConfig_Mode = 2

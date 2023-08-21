@@ -84,7 +84,8 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if accessLogSocketPath == "" {
 		accessLogSocketPath = core_xds.AccessLogSocketName(os.TempDir(), request.Name, request.Mesh)
 	}
-	metricsSocketPath := request.MetricsSocketPath
+	metricsSocketPath := request.MetricsResources.SocketPath
+
 	if metricsSocketPath == "" {
 		metricsSocketPath = core_xds.MetricsHijackerSocketName(os.TempDir(), request.Name, request.Mesh)
 	}
@@ -121,8 +122,8 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		Resources:           request.Resources,
 		AccessLogSocketPath: accessLogSocketPath,
 		MetricsSocketPath:   metricsSocketPath,
-		MetricsCertPath:     request.MetricsCertPath,
-		MetricsKeyPath:      request.MetricsKeyPath,
+		MetricsCertPath:     request.MetricsResources.CertPath,
+		MetricsKeyPath:      request.MetricsResources.KeyPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

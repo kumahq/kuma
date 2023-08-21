@@ -41,8 +41,8 @@ func PrometheusMetrics() {
 				WithArgs([]string{"echo", "--instance", "test-server"}),
 				WithServiceName("test-server"),
 				WithDpEnvs(map[string]string{
-					"KUMA_DATAPLANE_METRICS_CERT_PATH": "/kuma/server.crt",
-					"KUMA_DATAPLANE_METRICS_KEY_PATH":  "/kuma/server.key",
+					"KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH": "/kuma/server.crt",
+					"KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH":  "/kuma/server.key",
 				}),
 			)).
 			Install(TestServerUniversal("test-server-no-tls", mesh,
