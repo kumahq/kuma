@@ -111,6 +111,15 @@ func AddFilterChains(
 			// If the endpoint list is the same with or without the tag, we should just not do the split.
 			// However, we should preserve full SNI, because the client expects Zone Proxy to support it.
 			// This solves the problem that Envoy deduplicate endpoints of the same address and different metadata.
+			// example 1:
+			// Ingress1 (10.0.0.1) supports service:a,version:1 and service:a,version:2
+			// Ingress2 (10.0.0.2) supports service:a,version:1 and service:a,version:2
+			// If we want to split by version, we don't need to do LB subset on version.
+			//
+			// example 2:
+			// Ingress1 (10.0.0.1) supports service:a,version:1
+			// Ingress2 (10.0.0.2) supports service:a,version:2
+			// If we want to split by version, we need LB subset.
 			relevantTags := envoy_tags.Tags{}
 			for key, value := range destination {
 				matchedTargets := map[string]struct{}{}

@@ -2,13 +2,11 @@ package egress
 
 import (
 	"context"
-	"sort"
-
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -29,8 +27,7 @@ func (g *InternalServicesGenerator) Generate(
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
-	services := maps.Keys(servicesMap)
-	sort.Strings(services)
+	services := util_maps.SortedKeys(servicesMap)
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
 
