@@ -994,7 +994,12 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
-	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		return err
+	}
+	// speed up namespace termination by terminating pods without grace period.
+	// Namespace is then deleted in ~6s instead of ~43s.
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
