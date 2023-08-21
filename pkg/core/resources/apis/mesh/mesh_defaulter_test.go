@@ -139,7 +139,7 @@ var _ = Describe("MeshResource", func() {
                       tags:
                         kuma.io/service: dataplane-metrics
                       tls:
-                        mode: delegated
+                        mode: delegatedTLS
 `,
 				expected: `
                 metrics:
@@ -153,7 +153,7 @@ var _ = Describe("MeshResource", func() {
                       tags:
                         kuma.io/service: dataplane-metrics
                       tls:
-                        mode: delegated
+                        mode: delegatedTLS
 `,
 			}),
 		)

@@ -105,8 +105,8 @@ message PrometheusTlsConfig {
     // by environments variables:
     // * KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH
     // * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
-    delegated = 1;
-    // allows disabling mTLS for the prometheus listener.
+    delegatedTLS = 1;
+    // allows disabling TLS for the prometheus listener.
     disabled = 2;
   }
 

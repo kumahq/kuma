@@ -97,7 +97,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 		switch prometheusEndpoint.Tls.GetMode() {
 		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
 			match = envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address)
-		case mesh_proto.PrometheusTlsConfig_delegated:
+		case mesh_proto.PrometheusTlsConfig_delegatedTLS:
 			match = envoy_listeners.MatchTransportProtocol("tls")
 		}
 		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
@@ -132,7 +132,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 						}),
 				),
 			))
-		case mesh_proto.PrometheusTlsConfig_delegated:
+		case mesh_proto.PrometheusTlsConfig_delegatedTLS:
 			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.ServerSideStaticTLS(core_xds.ServerSideTLSCertPaths{
@@ -183,7 +183,7 @@ func secureMetricsWithMeshMtls(cfg *mesh_proto.PrometheusMetricsBackendConfig, m
 }
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, metadata *core_xds.DataplaneMetadata) bool {
-	if cfg.Tls != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegated {
+	if cfg.Tls != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_delegatedTLS {
 		if metadata.MetricsCertPath == "" || metadata.MetricsKeyPath == "" {
 			prometheusLog.Info("cannot configure TLS for prometheus listener because paths to the certificate and the key wasn't provided, fallback to not secured endpoint")
 			return false

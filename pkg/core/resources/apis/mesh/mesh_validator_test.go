@@ -95,7 +95,7 @@ var _ = Describe("Mesh", func() {
                     port: 12345
                     path: "/stats/sidecar"
                   tls:
-                    mode: delegated
+                    mode: delegatedTLS
             constraints:
               dataplaneProxy:
                 requirements:
@@ -678,7 +678,7 @@ var _ = Describe("Mesh", func() {
                     conf:
                       skipMTLS: true
                       tls:
-                        mode: delegated
+                        mode: delegatedTLS
                 `,
 				expected: `
                 violations:
@@ -694,7 +694,7 @@ var _ = Describe("Mesh", func() {
                     conf:
                       skipMTLS: false
                       tls:
-                        mode: delegated
+                        mode: delegatedTLS
                 `,
 				expected: `
                 violations:
