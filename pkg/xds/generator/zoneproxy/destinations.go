@@ -1,13 +1,13 @@
-package generator
+package zoneproxy
 
 import (
 	"reflect"
 
 	"golang.org/x/exp/slices"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -15,31 +15,18 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-type destinations map[string]map[string][]envoy_tags.Tags
-
-func (d destinations) get(mesh string, service string) []envoy_tags.Tags {
-	forMesh := d[mesh]
-	return append(forMesh[service], forMesh[mesh_proto.MatchAllTag]...)
-}
-
-func buildDestinations(ingressProxy *core_xds.ZoneIngressProxy) destinations {
-	dest := destinations{}
-	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
-	for _, service := range ingressProxy.ZoneIngressResource.Spec.AvailableServices {
-		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
-	}
-	for _, meshResources := range ingressProxy.MeshResourceList {
-		res := xds_context.Resources{MeshLocalResources: meshResources.Resources}
-		destForMesh := map[string][]envoy_tags.Tags{}
-		meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
-		addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
-		addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
-		addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
-		addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-		addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableSvcsByMesh[meshResources.Mesh.GetMeta().GetName()], destForMesh)
-		dest[meshResources.Mesh.GetMeta().GetName()] = destForMesh
-	}
-	return dest
+func BuildMeshDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
+	res xds_context.Resources,
+) map[string][]envoy_tags.Tags {
+	destForMesh := map[string][]envoy_tags.Tags{}
+	addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
+	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
+	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
+	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
+	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
+	return destForMesh
 }
 
 func addMeshGatewayDestinations(
@@ -218,4 +205,26 @@ func addVirtualOutboundDestinations(
 			destinations[service] = append(destinations[service], tags)
 		}
 	}
+}
+
+func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
+	var service string
+	tags := envoy_tags.Tags{}
+
+	switch targetRef.Kind {
+	case common_api.MeshService:
+		service = targetRef.Name
+	case common_api.MeshServiceSubset:
+		service = targetRef.Name
+		tags = targetRef.Tags
+	case common_api.Mesh:
+		service = mesh_proto.MatchAllTag
+	case common_api.MeshSubset:
+		service = mesh_proto.MatchAllTag
+		tags = targetRef.Tags
+	default:
+		return nil, false
+	}
+
+	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }

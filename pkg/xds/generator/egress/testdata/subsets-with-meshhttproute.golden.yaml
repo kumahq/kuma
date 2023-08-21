@@ -8,6 +8,12 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - version
     name: mesh-1:service-in-zone-2
     type: EDS
 - name: mesh-1:service-in-zone-2
@@ -39,6 +45,34 @@ resources:
         portValue: 10002
     enableReusePort: false
     filterChains:
+    - filterChainMatch:
+        serverNames:
+        - service-in-zone-2{mesh=mesh-1,version=v1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:service-in-zone-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                version: v1
+          statPrefix: mesh-1_service-in-zone-2
+    - filterChainMatch:
+        serverNames:
+        - service-in-zone-2{mesh=mesh-1,version=v2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:service-in-zone-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                version: v2
+          statPrefix: mesh-1_service-in-zone-2
     - filterChainMatch:
         serverNames:
         - service-in-zone-2{mesh=mesh-1}
