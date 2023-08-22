@@ -30,6 +30,27 @@ resources:
         resourceApiVersion: V3
     name: mesh2:backend
     type: EDS
+- name: mesh2:frontend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh2_frontend
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - cloud
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - cloud
+        - region
+    name: mesh2:frontend
+    type: EDS
 - name: mesh1:backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -96,6 +117,12 @@ resources:
               os: ubuntu
               region: asia
               version: v3
+- name: mesh2:frontend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh2:frontend
+    endpoints:
+    - lbEndpoints:
       - endpoint:
           address:
             socketAddress:

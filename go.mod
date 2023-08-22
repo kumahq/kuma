@@ -4,7 +4,7 @@ module github.com/kumahq/kuma
 go 1.20
 
 require (
-	cirello.io/pglock v1.13.0
+	cirello.io/pglock v1.14.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/Nordix/simple-ipam v1.0.0
@@ -12,7 +12,7 @@ require (
 	github.com/cilium/ebpf v0.11.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.3.0
-	github.com/emicklei/go-restful/v3 v3.10.2
+	github.com/emicklei/go-restful/v3 v3.11.0
 	github.com/envoyproxy/go-control-plane v0.11.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/evanphx/json-patch/v5 v5.6.0
@@ -50,7 +50,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
 	github.com/spiffe/go-spiffe/v2 v2.1.6
-	github.com/testcontainers/testcontainers-go v0.22.0
+	github.com/testcontainers/testcontainers-go v0.23.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.0
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
@@ -68,13 +68,13 @@ require (
 	golang.org/x/sys v0.11.0
 	golang.org/x/text v0.12.0
 	golang.org/x/time v0.3.0 // indirect
-	gonum.org/v1/gonum v0.13.0
+	gonum.org/v1/gonum v0.14.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731193218-e0aa005b6bdf
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	helm.sh/helm/v3 v3.12.2
+	helm.sh/helm/v3 v3.12.3
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
 	k8s.io/api v0.27.4
 	k8s.io/apiextensions-apiserver v0.27.4
@@ -87,7 +87,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.15.1
 	sigs.k8s.io/controller-tools v0.12.1
 	// When updating this also update version in: test/framework/k8s.go
-	sigs.k8s.io/gateway-api v0.7.1-0.20230727082008-1764e458047d
+	sigs.k8s.io/gateway-api v0.8.0-rc1
 	sigs.k8s.io/yaml v1.3.0
 )
 

@@ -21,7 +21,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 	resyncer := NewResyncer(&Config{
 		ResourceManager:     rt.ResourceManager(),
-		EventReaderFactory:  rt.EventReaderFactory(),
+		EventReaderFactory:  rt.EventBus(),
 		MinResyncInterval:   minResyncInterval,
 		FullResyncInterval:  fullResyncInterval,
 		Registry:            registry.Global(),
