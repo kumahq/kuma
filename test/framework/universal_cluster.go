@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -403,7 +404,11 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 }
 
 func (c *UniversalCluster) DeleteMesh(mesh string) error {
-	return c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+		})
+	return err
 }
 
 func (c *UniversalCluster) DeleteMeshApps(mesh string) error {

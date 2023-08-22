@@ -1003,7 +1003,11 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
+		func() (string, error) {
+			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+		})
+	return err
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
