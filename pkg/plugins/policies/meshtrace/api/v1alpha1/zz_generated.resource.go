@@ -133,4 +133,6 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Mesh Traces",
 	IsPluginOriginated:  true,
 	IsTargetRefBased:    true,
+	HasToTargetRef:      false,
+	HasFromTargetRef:    false,
 }

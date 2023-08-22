@@ -12,4 +12,6 @@ type PolicyEntry struct {
 	PluralDisplayName   string `json:"pluralDisplayName"`
 	IsExperimental      bool   `json:"isExperimental"`
 	IsTargetRefBased    bool   `json:"isTargetRefBased"`
+	IsInbound           bool   `json:"isInbound"`
+	IsOutbound          bool   `json:"isOutbound"`
 }

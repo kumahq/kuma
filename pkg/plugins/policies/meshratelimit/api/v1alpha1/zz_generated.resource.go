@@ -133,4 +133,6 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Mesh Rate Limits",
 	IsPluginOriginated:  true,
 	IsTargetRefBased:    true,
+	HasToTargetRef:      false,
+	HasFromTargetRef:    true,
 }

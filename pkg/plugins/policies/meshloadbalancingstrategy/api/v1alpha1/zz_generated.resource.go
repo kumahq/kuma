@@ -133,4 +133,6 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	PluralDisplayName:   "Mesh Load Balancing Strategies",
 	IsPluginOriginated:  true,
 	IsTargetRefBased:    true,
+	HasToTargetRef:      true,
+	HasFromTargetRef:    false,
 }

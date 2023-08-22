@@ -133,4 +133,6 @@ var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Mesh Proxy Patches",
 	IsPluginOriginated:  true,
 	IsTargetRefBased:    true,
+	HasToTargetRef:      false,
+	HasFromTargetRef:    false,
 }

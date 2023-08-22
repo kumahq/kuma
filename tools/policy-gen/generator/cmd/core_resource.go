@@ -173,5 +173,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		PluralDisplayName: "{{.PluralDisplayName}}",
 		IsPluginOriginated: true,
 		IsTargetRefBased: true,
+		HasToTargetRef: {{.HasTo}},
+		HasFromTargetRef: {{.HasFrom}},
 	}
 `))
