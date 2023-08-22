@@ -114,6 +114,8 @@ type ResourceTypeDescriptor struct {
 	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
+	// IsTargetRefBased indicates if a policy uses targetRef or not
+	IsTargetRefBased bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 }

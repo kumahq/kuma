@@ -132,4 +132,5 @@ var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Traffic Permission",
 	PluralDisplayName:   "Mesh Traffic Permissions",
 	IsPluginOriginated:  true,
+	IsTargetRefBased:    true,
 }

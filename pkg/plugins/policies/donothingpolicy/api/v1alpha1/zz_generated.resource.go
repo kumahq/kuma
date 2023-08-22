@@ -132,4 +132,5 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Do Nothing Policy",
 	PluralDisplayName:   "Do Nothing Policies",
 	IsPluginOriginated:  true,
+	IsTargetRefBased:    true,
 }

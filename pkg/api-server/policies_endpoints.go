@@ -24,6 +24,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly b
 				SingularDisplayName: def.SingularDisplayName,
 				PluralDisplayName:   def.PluralDisplayName,
 				IsExperimental:      def.IsExperimental,
+				IsTargetRefBased:    def.IsTargetRefBased,
 			})
 		}
 		sort.SliceStable(response.Policies, func(i, j int) bool {
