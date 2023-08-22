@@ -24,7 +24,7 @@ message ZoneInsight {
   // Statistics about Envoy Admin Streams
   EnvoyAdminStreams envoy_admin_streams = 2;
 
-  bool authTokenProvided = 3;
+  bool auth_token_provided = 3;
 }
 
 message EnvoyAdminStreams {
