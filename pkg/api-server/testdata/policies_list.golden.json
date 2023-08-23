@@ -72,7 +72,7 @@
    "path": "meshgateways",
    "singularDisplayName": "Mesh Gateway",
    "pluralDisplayName": "Mesh Gateways",
-   "isExperimental": true,
+   "isExperimental": false,
    "isTargetRefBased": false,
    "isInbound": false,
    "isOutbound": false
@@ -83,7 +83,7 @@
    "path": "meshgatewayroutes",
    "singularDisplayName": "Mesh Gateway Route",
    "pluralDisplayName": "Mesh Gateway Routes",
-   "isExperimental": true,
+   "isExperimental": false,
    "isTargetRefBased": false,
    "isInbound": false,
    "isOutbound": false

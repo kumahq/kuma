@@ -35,6 +35,8 @@ kuma-dp run [flags]
       --envoy-log-level string                    Envoy log level. Available values are: [trace][debug][info][warning|warn][error][critical][off]. By default it inherits Kuma DP logging level.
   -h, --help                                      help for run
       --mesh string                               Mesh that Dataplane belongs to
+      --metrics-cert-path string                  A path to the certificate for metrics listener
+      --metrics-key-path string                   A path to the certificate key for metrics listener
       --name string                               Name of the Dataplane
       --proxy-type string                         type of the Dataplane ("dataplane", "ingress") (default "dataplane")
 ```

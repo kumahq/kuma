@@ -77,6 +77,8 @@ node:
     dynamicMetadata:
       test: value
     features: []
+    metricsCertPath: ""
+    metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
       envoy:

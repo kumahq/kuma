@@ -12,14 +12,18 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
+	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("error"), ctx, context.Background())
 	var kumaErr types.Error
 	switch {
 	case store.IsResourceNotFound(err):
@@ -27,6 +31,18 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Status: 404,
 			Title:  title,
 			Detail: "Not found",
+		}
+	case errors.Is(err, &rest.InvalidResourceError{}):
+		kumaErr = types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &registry.InvalidResourceType{}):
+		kumaErr = types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
 		}
 	case store.IsResourcePreconditionFailed(err):
 		kumaErr = types.Error{
@@ -155,7 +171,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Detail: err.Error(),
 		}
 	default:
-		core.Log.Error(err, title)
+		log.Error(err, title)
 		kumaErr = types.Error{
 			Status: 500,
 			Title:  title,
@@ -174,6 +190,6 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 		kumaErr.Causes = append(kumaErr.Causes, types.Cause{Field: ip.Field, Message: ip.Reason})
 	}
 	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
-		core.Log.Error(err, "Could not write the error response")
+		log.Error(err, "Could not write the error response")
 	}
 }

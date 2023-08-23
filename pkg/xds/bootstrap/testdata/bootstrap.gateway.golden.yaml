@@ -48,6 +48,8 @@ node:
     accessLogSocketPath: /tmp/kuma-al-gateway-1.default-default.sock
     dataplane.proxyType: dataplane
     features: []
+    metricsCertPath: ""
+    metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-gateway-1.default-default.sock
     version:
       envoy:

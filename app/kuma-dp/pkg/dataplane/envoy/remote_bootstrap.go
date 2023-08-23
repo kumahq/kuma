@@ -184,7 +184,11 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		Features:            b.features,
 		Resources:           resources,
 		AccessLogSocketPath: params.AccessLogSocketPath,
-		MetricsSocketPath:   params.MetricsSocketPath,
+		MetricsResources: types.MetricsResources{
+			SocketPath: params.MetricsSocketPath,
+			CertPath:   params.MetricsCertPath,
+			KeyPath:    params.MetricsKeyPath,
+		},
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

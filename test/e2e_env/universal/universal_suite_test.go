@@ -105,4 +105,5 @@ var (
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
+	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 )

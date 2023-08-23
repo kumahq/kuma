@@ -156,6 +156,11 @@ type ServerSideMTLSCerts struct {
 	ServerPair util_tls.KeyPair
 }
 
+type ServerSideTLSCertPaths struct {
+	CertPath string
+	KeyPath  string
+}
+
 type IdentityCertRequest interface {
 	Name() string
 }
