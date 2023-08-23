@@ -54,7 +54,7 @@
    "path": "meshgateways",
    "singularDisplayName": "Mesh Gateway",
    "pluralDisplayName": "Mesh Gateways",
-   "isExperimental": false
+   "isExperimental": true
   },
   {
    "name": "MeshGatewayRoute",
@@ -62,7 +62,7 @@
    "path": "meshgatewayroutes",
    "singularDisplayName": "Mesh Gateway Route",
    "pluralDisplayName": "Mesh Gateway Routes",
-   "isExperimental": false
+   "isExperimental": true
   },
   {
    "name": "MeshHTTPRoute",
