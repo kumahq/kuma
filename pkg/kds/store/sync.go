@@ -155,7 +155,7 @@ func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOpt
 	}
 
 	for _, r := range onUpdate {
-		log.Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+		log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
