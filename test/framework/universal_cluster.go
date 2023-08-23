@@ -404,10 +404,12 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 }
 
 func (c *UniversalCluster) DeleteMesh(mesh string) error {
-	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, DefaultTimeout,
+	now := time.Now()
+	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, 1*time.Second,
 		func() (string, error) {
 			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
 		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Now().Sub(now).String())
 	return err
 }
 
