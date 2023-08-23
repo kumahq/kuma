@@ -24,7 +24,7 @@ import (
 var inPassThroughIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
 var inPassThroughIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
 
-var prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
+var prometheusRequestHeaders = []string{"accept", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 var logger = core.Log.WithName("metrics-hijacker")
 
 var _ component.Component = &Hijacker{}
