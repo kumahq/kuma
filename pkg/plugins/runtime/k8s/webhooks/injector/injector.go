@@ -58,7 +58,7 @@ func New(
 		converter:        converter,
 		defaultAdminPort: envoyAdminPort,
 		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
-			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.WaitForDataplaneReady),
+			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady),
 		systemNamespace: systemNamespace,
 	}, nil
 }
