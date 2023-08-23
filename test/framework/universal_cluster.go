@@ -409,7 +409,7 @@ func (c *UniversalCluster) DeleteMesh(mesh string) error {
 		func() (string, error) {
 			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
 		})
-	Logf("mesh: " + mesh + " deleted in: " + time.Now().Sub(now).String())
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
 	return err
 }
 

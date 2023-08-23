@@ -1003,10 +1003,12 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
+	now := time.Now()
 	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
 			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
 		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
 	return err
 }
 
