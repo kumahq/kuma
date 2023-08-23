@@ -28,7 +28,7 @@ var (
 )
 
 var (
-	prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
+	prometheusRequestHeaders = []string{"accept", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 	logger                   = core.Log.WithName("metrics-hijacker")
 )
 
