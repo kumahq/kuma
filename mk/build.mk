@@ -26,7 +26,7 @@ GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v $(GOFLAGS) $(LD_F
 GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} $(GOENV) go build -v
 
 COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
-COREDNS_VERSION ?= v1.10.1
+COREDNS_VERSION ?= v1.11.1
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
@@ -100,7 +100,7 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
 	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
 	cd $(COREDNS_TMP_DIRECTORY) && \
 		GOOS= GOARCH= go generate coredns.go && \
-		go get github.com/coredns/alternate@f0d10f2aa3aaf31ba841a3f2e7a69fa664d8fccc && \
+		go get github.com/coredns/alternate && \
 		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 else
