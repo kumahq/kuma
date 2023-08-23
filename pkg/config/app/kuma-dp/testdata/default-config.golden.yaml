@@ -10,6 +10,7 @@ dataplane:
   proxyType: dataplane
 dataplaneRuntime:
   binaryPath: envoy
+  metrics: {}
   resources: {}
 dns:
   coreDnsBinaryPath: coredns
