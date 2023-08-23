@@ -205,6 +205,8 @@ type Injector struct {
 	// EBPF is a configuration for ebpf if transparent proxy should be installed
 	// using ebpf instead of iptables
 	EBPF EBPF `json:"ebpf"`
+	// WaitForDataplaneReady enabled a script that waits until Envoy is ready
+	WaitForDataplaneReady bool `json:"waitForDataplaneReady" envconfig:"kuma_runtime_kubernetes_injector_wait_for_dataplane_ready"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection

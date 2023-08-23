@@ -21,4 +21,5 @@ Dataplane manager for Envoy-based Service Mesh.
 
 * [kuma-dp run](kuma-dp_run.md)	 - Launch Dataplane (Envoy)
 * [kuma-dp version](kuma-dp_version.md)	 - Print version
+* [kuma-dp wait](kuma-dp_wait.md)	 - Waits for Dataplane to be ready
 

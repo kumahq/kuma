@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"time"
@@ -28,6 +29,7 @@ type DataplaneProxyFactory struct {
 	DefaultAdminPort   uint32
 	ContainerConfig    runtime_k8s.DataplaneContainer
 	BuiltinDNS         runtime_k8s.BuiltinDNS
+	WaitForDataplane   bool
 }
 
 func NewDataplaneProxyFactory(
@@ -36,6 +38,7 @@ func NewDataplaneProxyFactory(
 	defaultAdminPort uint32,
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
+	waitForDataplane bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:    controlPlaneURL,
@@ -43,6 +46,7 @@ func NewDataplaneProxyFactory(
 		DefaultAdminPort:   defaultAdminPort,
 		ContainerConfig:    containerConfig,
 		BuiltinDNS:         builtinDNS,
+		WaitForDataplane:   waitForDataplane,
 	}
 }
 
@@ -67,6 +71,15 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
 	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
 	return adminPort, err
+}
+
+func (i *DataplaneProxyFactory) waitForDataplaneOrDefault(annotations map[string]string, defaultWaitForDataplane bool) (bool, error) {
+	enabled, exists, err := metadata.Annotations(annotations).GetEnabled(metadata.KumaWaitForDataplaneReady)
+	if exists {
+		return enabled, err
+	} else {
+		return defaultWaitForDataplane, err
+	}
 }
 
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
@@ -98,6 +111,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
+	waitForDataplaneReady, err := i.waitForDataplaneOrDefault(annotations, i.WaitForDataplane)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+
 	args := []string{
 		"run",
 		"--log-level=info",
@@ -108,7 +126,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 			"--concurrency="+strconv.FormatInt(cpuCount, 10))
 	}
 
-	return kube_core.Container{
+	container := kube_core.Container{
 		Image:           i.ContainerConfig.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args:            args,
@@ -157,7 +175,17 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
 			},
 		},
-	}, nil
+	}
+	if waitForDataplaneReady {
+		container.Lifecycle = &kube_core.Lifecycle{
+			PostStart: &kube_core.LifecycleHandler{
+				Exec: &kube_core.ExecAction{
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", adminPort)},
+				},
+			},
+		}
+	}
+	return container, nil
 }
 
 func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
