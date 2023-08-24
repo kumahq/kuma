@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -107,7 +108,7 @@ spec:
 	})
 
 	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
-	target := fmt.Sprintf("http://%s:8080", gatewayHost)
+	target := fmt.Sprintf("http://%s", net.JoinHostPort(gatewayHost, "8080"))
 
 	keepConnectionOpen := func() {
 		// Open TCP connections to the gateway
