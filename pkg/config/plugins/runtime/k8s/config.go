@@ -253,6 +253,8 @@ type SidecarContainer struct {
 	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `json:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
+	// WaitForDataplaneReady enabled a script that waits until Envoy is ready
+	WaitForDataplaneReady bool `json:"waitForDataplaneReady" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_wait_for_dataplane_ready"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.
