@@ -73,15 +73,6 @@ func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (u
 	return adminPort, err
 }
 
-func (i *DataplaneProxyFactory) waitForDataplaneOrDefault(annotations map[string]string, defaultWaitForDataplane bool) (bool, error) {
-	enabled, exists, err := metadata.Annotations(annotations).GetEnabled(metadata.KumaWaitForDataplaneReady)
-	if exists {
-		return enabled, err
-	} else {
-		return defaultWaitForDataplane, err
-	}
-}
-
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
 	r, _, err := metadata.Annotations(annotations).GetDurationWithDefault(i.ContainerConfig.DrainTime.Duration, metadata.KumaSidecarDrainTime)
 	return r, err
@@ -111,7 +102,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
-	waitForDataplaneReady, err := i.waitForDataplaneOrDefault(annotations, i.WaitForDataplane)
+	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
 		return kube_core.Container{}, err
 	}

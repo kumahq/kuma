@@ -20,13 +20,13 @@ func newWaitCmd() *cobra.Command {
 	}{
 		url:            "http://localhost:9901/ready",
 		requestTimeout: 500 * time.Millisecond,
-		timeout:        60 * time.Second,
+		timeout:        180 * time.Second,
 		checkFrequency: 1 * time.Second,
 	}
 	cmd := &cobra.Command{
 		Use:   "wait",
-		Short: "Waits for Dataplane to be ready",
-		Long:  `Waits for Dataplane (Envoy) to be ready.`,
+		Short: "Waits for data plane proxy to be ready",
+		Long:  `Waits for data plane proxy (Envoy) to be ready.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client := &http.Client{
 				Timeout: args.requestTimeout,
@@ -35,25 +35,26 @@ func newWaitCmd() *cobra.Command {
 			defer ticker.Stop()
 			timeout := time.After(args.timeout)
 
-			waitLog.Info("waiting for Dataplane to be ready for %s", args.timeout)
+			waitLog.Info("waiting for data plane proxy to be ready", "timeout", args.timeout)
 			for {
 				select {
 				case <-ticker.C:
-					err := checkIfEnvoyReady(client, args.url)
-					if err == nil {
-						waitLog.Info("dataplane is ready!")
+					if err := checkIfEnvoyReady(client, args.url); err != nil {
+						waitLog.Info("data plane proxy is not ready", "err", err)
+					} else {
+						waitLog.Info("data plane is ready")
 						return nil
 					}
 				case <-timeout:
-					return fmt.Errorf("timeout occurred while waiting for Dataplane to be ready")
+					return fmt.Errorf("timeout occurred while waiting for data plane proxy to be ready")
 				}
 			}
 		},
 	}
 
-	cmd.PersistentFlags().DurationVar(&args.checkFrequency, "check-frequency", args.checkFrequency, `frequency of checking if the Dataplane is ready`)
-	cmd.PersistentFlags().DurationVar(&args.timeout, "timeout", args.timeout, `timeout defines how long waits for the Dataplane`)
-	cmd.PersistentFlags().DurationVar(&args.requestTimeout, "request-timeout", args.requestTimeout, `requestTimeout defines timeout for the request to the Dataplane`)
+	cmd.PersistentFlags().DurationVar(&args.checkFrequency, "check-frequency", args.checkFrequency, `frequency of checking if the data plane proxy is ready`)
+	cmd.PersistentFlags().DurationVar(&args.timeout, "timeout", args.timeout, `timeout defines how long waits for the data plane proxy`)
+	cmd.PersistentFlags().DurationVar(&args.requestTimeout, "request-timeout", args.requestTimeout, `requestTimeout defines timeout for the request to the data plane proxy`)
 	cmd.PersistentFlags().StringVar(&args.url, "url", args.url, `url at which admin is exposed`)
 
 	return cmd

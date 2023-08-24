@@ -33,16 +33,21 @@ func WaitForEnvoyReady() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	// different name to avoid snapshot cache
-	pod := func(id int, waitForDataplane string) InstallFunc {
-		return YamlK8s(fmt.Sprintf(`apiVersion: v1
+	It("should setup connectivity before app starts", func() {
+		// the pod simulates what many app does which is connecting to external destination (like a database) immediately
+		// restartPolicy is Never so if we fail we won't restart and the test fails.
+		err := NewClusterSetup().
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
 kind: Pod
 metadata:
-  name: wait-for-envoy-%d
+  name: wait-for-envoy
   namespace: %s
+  labels:
+    app: wait-for-envoy
   annotations:
     kuma.io/mesh: %s
-    kuma.io/wait-for-dataplane-ready: "%s"
+    kuma.io/wait-for-dataplane-ready: "true"
 spec:
   restartPolicy: Never
   containers:
@@ -52,19 +57,19 @@ spec:
     - /bin/bash
     - -c
     - --
-    - 'while true; do curl --fail test-server_wait-for-envoy_svc_80.mesh && echo "succeeded" || { echo "failed" ; exit 1; }; done'
+    - 'curl --max-time 3 --fail test-server_wait-for-envoy_svc_80.mesh && test-server echo --port 80'
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      successThreshold: 1
     resources:
       limits:
         cpu: 50m
-        memory: 64Mi`, id, namespace, meshName, waitForDataplane, framework.Config.GetUniversalImage()))
-	}
-
-	It("remove Dataplane of evicted Pod", func() {
-		// TODO: flaky because config is delivered too fast, how to slow it down?
-		// when not waiting for envoy to be ready
-		Expect(kubernetes.Cluster.Install(pod(1, "false"))).ToNot(Succeed())
-
-		// when waiting for envoy to be ready
-		Expect(kubernetes.Cluster.Install(pod(2, "true"))).To(Succeed())
+        memory: 64Mi`, namespace, meshName, framework.Config.GetUniversalImage()))).
+			Install(framework.WaitNumPods(namespace, 1, "wait-for-envoy")).
+			Install(framework.WaitPodsAvailable(namespace, "wait-for-envoy")).
+			Setup(kubernetes.Cluster)
+		Expect(err).ToNot(HaveOccurred())
 	})
 }
