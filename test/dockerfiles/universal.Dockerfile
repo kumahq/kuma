@@ -14,6 +14,7 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
 COPY --from=envoy /envoy /usr/bin/envoy
+COPY --from=envoy /usr /usr/bin/usr
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin

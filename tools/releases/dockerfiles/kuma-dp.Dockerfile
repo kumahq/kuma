@@ -8,5 +8,6 @@ COPY /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp \
     /usr/bin/
 
 COPY --from=envoy /envoy /usr/bin/envoy
+COPY --from=envoy /glibc/usr /usr/bin/usr
 
 ENTRYPOINT ["/usr/bin/kuma-dp"]
