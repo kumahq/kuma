@@ -1,10 +1,10 @@
 ## kuma-dp wait
 
-Waits for Dataplane to be ready
+Waits for data plane proxy to be ready
 
 ### Synopsis
 
-Waits for Dataplane (Envoy) to be ready.
+Waits for data plane proxy (Envoy) to be ready.
 
 ```
 kuma-dp wait [flags]
@@ -13,10 +13,10 @@ kuma-dp wait [flags]
 ### Options
 
 ```
-      --check-frequency duration   frequency of checking if the Dataplane is ready (default 1s)
+      --check-frequency duration   frequency of checking if the data plane proxy is ready (default 1s)
   -h, --help                       help for wait
-      --request-timeout duration   requestTimeout defines timeout for the request to the Dataplane (default 500ms)
-      --timeout duration           timeout defines how long waits for the Dataplane (default 1m0s)
+      --request-timeout duration   requestTimeout defines timeout for the request to the data plane proxy (default 500ms)
+      --timeout duration           timeout defines how long waits for the data plane proxy (default 3m0s)
       --url string                 url at which admin is exposed (default "http://localhost:9901/ready")
 ```
 
