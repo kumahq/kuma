@@ -43,8 +43,7 @@ type PodRedirect struct {
 	TransparentProxyEbpfTCAttachIface        string
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
-	ExcludeOutboundTCPPortsForUIDs           []string
-	ExcludeOutboundUDPPortsForUIDs           []string
+	ExcludeOutboundPortsForUIDs              []string
 }
 
 func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedirect, error) {
@@ -62,15 +61,23 @@ func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedi
 	}
 
 	podRedirect.ExcludeOutboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
+	excludeOutboundPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPortsForUIDs)
+	if exists {
+		podRedirect.ExcludeOutboundPortsForUIDs = strings.Split(excludeOutboundPortsForUIDs, ";")
+	}
 
 	excludeOutboundTCPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs)
 	if exists {
-		podRedirect.ExcludeOutboundTCPPortsForUIDs = strings.Split(excludeOutboundTCPPortsForUIDs, ";")
+		for _, v := range strings.Split(excludeOutboundTCPPortsForUIDs, ";") {
+			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("tcp:%s", v))
+		}
 	}
 
 	excludeOutboundUDPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs)
 	if exists {
-		podRedirect.ExcludeOutboundUDPPortsForUIDs = strings.Split(excludeOutboundUDPPortsForUIDs, ";")
+		for _, v := range strings.Split(excludeOutboundUDPPortsForUIDs, ";") {
+			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("udp:%s", v))
+		}
 	}
 
 	podRedirect.RedirectPortOutbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
@@ -158,17 +165,9 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--skip-resolv-conf",
 	}
 
-	for _, exclusion := range pr.ExcludeOutboundTCPPortsForUIDs {
+	for _, exclusion := range pr.ExcludeOutboundPortsForUIDs {
 		result = append(result,
-			"--exclude-outbound-tcp-ports-for-uids",
-			exclusion,
-		)
-	}
-
-	for _, exclusion := range pr.ExcludeOutboundUDPPortsForUIDs {
-		result = append(result,
-			"--exclude-outbound-udp-ports-for-uids",
-			exclusion,
+			"--exclude-outbound-ports-for-uids", exclusion,
 		)
 	}
 

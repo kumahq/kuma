@@ -17,6 +17,7 @@ import (
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
 func RunSpecs(t *testing.T, description string) {
+	format.TruncatedDiff = false
 	if strings.HasPrefix(description, "E2E") {
 		panic("Use RunE2ESpecs for e2e tests!")
 	}

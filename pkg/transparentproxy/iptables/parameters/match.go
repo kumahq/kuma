@@ -27,6 +27,13 @@ func (p *MatchParameter) Negate() ParameterBuilder {
 	return p
 }
 
+func Multiport() *MatchParameter {
+	return &MatchParameter{
+		name:       "multiport",
+		parameters: []ParameterBuilder{},
+	}
+}
+
 func Match(matchParameters ...*MatchParameter) *Parameter {
 	var parameters []ParameterBuilder
 
