@@ -103,6 +103,7 @@ build/artifacts-$(1)-$(2)/coredns:
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
+	mkdir -p $$(@)/usr && \
 	[ -f $$(@)/envoy ] || \
 	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v1.27.0-glibc/envoy-$(1)-$(2)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
 
