@@ -2,6 +2,7 @@ package observability
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -98,7 +99,7 @@ func PrometheusMetrics() {
 			stdout, _, err := client.CollectResponse(
 				universal.Cluster,
 				clientName,
-				fmt.Sprintf("http://%s:1234/metrics", host),
+				fmt.Sprintf("http://%s/metrics", net.JoinHostPort(host, "1234")),
 			)
 
 			// then
