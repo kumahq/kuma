@@ -87,7 +87,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.15.1
 	sigs.k8s.io/controller-tools v0.13.0
 	// When updating this also update version in: test/framework/k8s.go
-	sigs.k8s.io/gateway-api v0.8.0-rc1
+	sigs.k8s.io/gateway-api v0.8.0-rc2
 	sigs.k8s.io/yaml v1.3.0
 )
 
