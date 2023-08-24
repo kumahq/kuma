@@ -17,12 +17,7 @@ func newWaitCmd() *cobra.Command {
 		requestTimeout time.Duration
 		timeout        time.Duration
 		checkFrequency time.Duration
-	}{
-		url:            "http://localhost:9901/ready",
-		requestTimeout: 500 * time.Millisecond,
-		timeout:        180 * time.Second,
-		checkFrequency: 1 * time.Second,
-	}
+	}{}
 	cmd := &cobra.Command{
 		Use:   "wait",
 		Short: "Waits for data plane proxy to be ready",
@@ -52,10 +47,10 @@ func newWaitCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().DurationVar(&args.checkFrequency, "check-frequency", args.checkFrequency, `frequency of checking if the data plane proxy is ready`)
-	cmd.PersistentFlags().DurationVar(&args.timeout, "timeout", args.timeout, `timeout defines how long waits for the data plane proxy`)
-	cmd.PersistentFlags().DurationVar(&args.requestTimeout, "request-timeout", args.requestTimeout, `requestTimeout defines timeout for the request to the data plane proxy`)
-	cmd.PersistentFlags().StringVar(&args.url, "url", args.url, `url at which admin is exposed`)
+	cmd.PersistentFlags().DurationVar(&args.checkFrequency, "check-frequency", time.Second, `frequency of checking if the data plane proxy is ready`)
+	cmd.PersistentFlags().DurationVar(&args.timeout, "timeout", 180*time.Second, `timeout defines how long waits for the data plane proxy`)
+	cmd.PersistentFlags().DurationVar(&args.requestTimeout, "request-timeout", 500*time.Millisecond, `requestTimeout defines timeout for the request to the data plane proxy`)
+	cmd.PersistentFlags().StringVar(&args.url, "url", "http://localhost:9901/ready", `url at which admin is exposed`)
 
 	return cmd
 }
