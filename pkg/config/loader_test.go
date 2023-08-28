@@ -229,6 +229,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.General.DNSCacheTTL.Duration).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
+			Expect(cfg.General.GracefulShutdownDuration.Duration).To(Equal(39 * time.Second))
 
 			Expect(cfg.Mode).To(Equal(config_core.Zone))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
@@ -528,6 +529,7 @@ general:
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   dnsCacheTTL: 19s
   workDir: /custom/work/dir
+  gracefulShutdownDuration: 39s
 mode: zone
 multizone:
   global:
@@ -805,6 +807,7 @@ proxy:
 				"KUMA_GENERAL_TLS_CIPHER_SUITES":                                                           "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_GENERAL_DNS_CACHE_TTL":                                                               "19s",
 				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
+				"KUMA_GENERAL_GRACEFUL_SHUTDOWN_DURATION":                                                  "39s",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",

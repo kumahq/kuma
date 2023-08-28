@@ -158,6 +158,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	case <-stop:
 		muxServerLog.Info("stopping gracefully")
 		grpcServer.GracefulStop()
+		muxServerLog.Info("completed graceful shutdown")
 		return nil
 	case err := <-errChan:
 		return err

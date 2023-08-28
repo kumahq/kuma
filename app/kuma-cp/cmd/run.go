@@ -30,8 +30,6 @@ import (
 
 var runLog = controlPlaneLog.WithName("run")
 
-const gracefullyShutdownDuration = 3 * time.Second
-
 // This is the open file limit below which the control plane may not
 // reasonably have enough descriptors to accept all its clients.
 const minOpenFileLimit = 4096
@@ -145,10 +143,11 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
+			gracefulShutdownDuration := rt.Config().General.GracefulShutdownDuration.Duration
+			runLog.Info("Stop signal received. Waiting for components to stop gracefully...", "duration", gracefulShutdownDuration.String())
 			select {
 			case <-ctx.Done():
-			case <-time.After(gracefullyShutdownDuration):
+			case <-time.After(gracefulShutdownDuration):
 			}
 			runLog.Info("Stopping Control Plane")
 			return nil
