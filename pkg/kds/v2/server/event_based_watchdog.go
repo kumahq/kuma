@@ -7,6 +7,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -39,7 +40,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 	defer fullResyncTicker.Stop()
 
 	// for the first reconcile assign all types
-	changedTypes := e.ProvidedTypes
+	changedTypes := maps.Clone(e.ProvidedTypes)
 
 	for {
 		select {
@@ -64,7 +65,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			}
 		case <-fullResyncTicker.C:
 			e.Log.V(1).Info("schedule full resync")
-			changedTypes = e.ProvidedTypes
+			changedTypes = maps.Clone(e.ProvidedTypes)
 		case event := <-e.Listener.Recv():
 			resChange, ok := event.(events.ResourceChangedEvent)
 			if !ok {
