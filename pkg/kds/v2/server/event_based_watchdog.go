@@ -47,6 +47,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			if err := e.Reconciler.Clear(e.Ctx, e.Node); err != nil {
 				e.Log.Error(err, "reconcile clear failed")
 			}
+			e.Listener.Close()
 			return
 		case <-flushTicker.C:
 			if len(changedTypes) == 0 {

@@ -37,7 +37,7 @@ func New(
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
-	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
+	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
 	if err != nil {
 		return nil, err
