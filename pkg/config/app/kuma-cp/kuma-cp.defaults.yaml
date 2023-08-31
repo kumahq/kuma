@@ -707,6 +707,14 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+  kdsEventBasedWatchdog:
+    # If true, then experimental event based watchdog to generate KDS snapshot is used.
+    enabled: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED
+    # How often we flush changes when experimental event based watchdog is used.
+    flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+    # How often we schedule full KDS resync when experimental event based watchdog is used.
+    fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
 
 proxy:
   gateway:

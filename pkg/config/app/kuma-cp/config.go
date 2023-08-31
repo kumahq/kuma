@@ -232,6 +232,11 @@ var DefaultConfig = func() Config {
 			KDSDeltaEnabled:                 false,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
+			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
+				Enabled:            false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+			},
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
@@ -388,6 +393,17 @@ type ExperimentalConfig struct {
 	// The drawback is that you cannot use filtered out tags for traffic routing.
 	// If empty, no filter is applied.
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
+	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
+}
+
+type ExperimentalKDSEventBasedWatchdog struct {
+	// If true, then experimental event based watchdog to generate KDS snapshot is used.
+	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
+	// How often we flush changes when experimental event based watchdog is used.
+	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
+	// How often we schedule full KDS resync when experimental event based watchdog is used.
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 }
 
 func (e ExperimentalConfig) Validate() error {
