@@ -739,6 +739,135 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_mesh-not-found.golden.json")))
 		})
+
+		It("should return 400 when json is invalid", func() {
+			// given
+			json := `{"foo": }`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidJson.golden.json")))
+		})
+
+		It("should return 400 when resourceType is empty", func() {
+			// given
+			json := `{"type": "", "name": "foo"}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onEmptyResourceType.golden.json")))
+		})
+
+		It("should return 400 when meta is invalid", func() {
+			// given
+			json := `{"type": "TrafficRoute", "name": 4}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaSchema.golden.json")))
+		})
+
+		It("should return 400 when spec is invalid", func() {
+			// given
+			json := `{"type": "TrafficRoute", "sample": "foo", "sources": [
+					{
+						"match": {
+							"kuma.io/service": 4
+						}
+					}
+				]}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidSpecSchema.golden.json")))
+		})
+
+		It("should return 400 when spec is invalid on new policies", func() {
+			// given
+			json := `{
+				"type": "MeshTrafficPermission",
+				"name": "sample",
+				"spec": {
+					"targetRef": {
+						"kind": "MeshService",
+						"name": 2
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidSpecNewSchema.golden.json")))
+		})
+
+		It("should return 400 when meta type doesn't match on new policies", func() {
+			// given
+			json := `{
+				"type": "TrafficPermission",
+				"name": "sample",
+				"spec": {
+					"targetRef": {
+						"kind": "Mesh"
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaTypeWithNewSchema.golden.json")))
+		})
 	})
 
 	Describe("On DELETE", func() {

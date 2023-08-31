@@ -301,6 +301,9 @@ runtime:
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
         envVars: {} # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
+        # If true, it enables a postStart script that waits until Envoy is ready.
+        # With the current Kubernetes behavior, any other container in the Pod will wait until the script is complete.
+        waitForDataplaneReady: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.

@@ -118,6 +118,8 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					core_xds.FieldFeatures:            util_proto.MustNewValueForStruct(features),
 					core_xds.FieldAccessLogSocketPath: util_proto.MustNewValueForStruct(parameters.AccessLogSocketPath),
 					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
+					core_xds.FieldMetricsCertPath:     util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
+					core_xds.FieldMetricsKeyPath:      util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
 				},
 			},
 		},

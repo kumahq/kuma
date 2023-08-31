@@ -12,8 +12,11 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -81,7 +84,12 @@ var _ = Describe("EgressGenerator", func() {
 					meshName := res.GetMeta().GetName()
 
 					if _, ok := meshResourcesMap[meshName]; !ok {
-						meshResourcesMap[meshName] = &core_xds.MeshResources{}
+						meshResourcesMap[meshName] = &core_xds.MeshResources{
+							Resources: map[core_model.ResourceType]core_model.ResourceList{
+								core_mesh.TrafficRouteType:          &core_mesh.TrafficRouteResourceList{},
+								meshhttproute_api.MeshHTTPRouteType: &meshhttproute_api.MeshHTTPRouteResourceList{},
+							},
+						}
 					}
 
 					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
@@ -99,9 +107,16 @@ var _ = Describe("EgressGenerator", func() {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{}
 					}
 
-					meshResourcesMap[meshName].TrafficRoutes = append(
-						meshResourcesMap[meshName].TrafficRoutes,
+					routeList := meshResourcesMap[meshName].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
+					routeList.Items = append(
+						routeList.Items,
 						res.(*core_mesh.TrafficRouteResource),
+					)
+				case meshhttproute_api.MeshHTTPRouteType:
+					routeList := meshResourcesMap[meshName].Resources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList)
+					routeList.Items = append(
+						routeList.Items,
+						res.(*meshhttproute_api.MeshHTTPRouteResource),
 					)
 				}
 			}
@@ -192,6 +207,14 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("06. mixed-services-with-external-in-other-zone", testCase{
 			fileWithResourcesName: "06.mixed-services-with-external-in-other-zone.yaml",
 			expected:              "06.mixed-services-with-external-in-other-zone.golden.yaml",
+		}),
+		Entry("use default if a MeshHTTPRoute exists, internal", testCase{
+			fileWithResourcesName: "traffic-by-default-meshhttproute.yaml",
+			expected:              "traffic-by-default-meshhttproute.golden.yaml",
+		}),
+		Entry("subsets with MeshHTTPRoute, internal", testCase{
+			fileWithResourcesName: "subsets-with-meshhttproute.yaml",
+			expected:              "subsets-with-meshhttproute.golden.yaml",
 		}),
 	)
 })

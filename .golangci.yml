@@ -15,12 +15,14 @@ linters:
     - ineffassign
     - misspell
     - nonamedreturns
+    - nosprintfhostport
     - staticcheck
     - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
+
 run:
   build-tags:
     - experimental

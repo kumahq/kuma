@@ -8,17 +8,27 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func Test() {
-	meshName := "meshhttproute"
+	_ = Describe("No Zone Egress", func() {
+		test("meshhttproute", samples.MeshMTLSBuilder())
+	}, Ordered)
 
+	_ = Describe("Zone Egress", func() {
+		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
+	}, Ordered)
+}
+
+func test(meshName string, meshBuilder *builders.MeshBuilder) {
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(multizone.Global.Install(ResourceUniversal(meshBuilder.WithName(meshName).Build()))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
