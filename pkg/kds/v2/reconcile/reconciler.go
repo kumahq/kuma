@@ -8,6 +8,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -64,19 +65,37 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	return nil
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
-	new, err := r.generator.GenerateSnapshot(ctx, node)
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}) error {
+	id, err := r.hashId(ctx, node)
+	if err != nil {
+		return err
+	}
+	old, _ := r.cache.GetSnapshot(id)
+
+	// construct builder with unchanged types from the old snapshot
+	builder := cache_v2.NewSnapshotBuilder()
+	if old != nil {
+		for _, typ := range util_kds_v2.GetSupportedTypes() {
+			resType := core_model.ResourceType(typ)
+			if _, ok := changedTypes[resType]; ok {
+				continue
+			}
+
+			oldRes := old.GetResources(typ)
+			if len(oldRes) > 0 {
+				builder = builder.With(resType, maps.Values(oldRes))
+			}
+		}
+	}
+
+	new, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
 	if err != nil {
 		return err
 	}
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id, err := r.hashId(ctx, node)
-	if err != nil {
-		return err
-	}
-	old, _ := r.cache.GetSnapshot(id)
+
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)

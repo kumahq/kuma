@@ -338,6 +338,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -664,6 +667,10 @@ experimental:
   kdsDeltaEnabled: true
   useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
+  kdsEventBasedWatchdog:
+    enabled: true
+    flushInterval: 10s
+    fullResyncInterval: 15s
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -906,6 +913,9 @@ proxy:
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED":                                       "true",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 			},

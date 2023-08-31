@@ -10,9 +10,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
@@ -41,7 +43,7 @@ func New(
 		return nil, err
 	}
 	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.Tenants())
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics(), providedTypes, rt.EventBus(), rt.Config().Experimental.KDSEventBasedWatchdog)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +73,15 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
+func newSyncTracker(
+	log logr.Logger,
+	reconciler reconcile_v2.Reconciler,
+	refresh time.Duration,
+	metrics core_metrics.Metrics,
+	providedTypes []model.ResourceType,
+	eventBus events.EventBus,
+	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
+) (envoy_xds.Callbacks, error) {
 	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "kds_delta_generation",
 		Help:       "Summary of KDS Snapshot generation",
@@ -87,8 +97,26 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err
 	}
+	changedTypes := map[model.ResourceType]struct{}{}
+	for _, typ := range providedTypes {
+		changedTypes[typ] = struct{}{}
+	}
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
-		log := log.WithValues("streamID", streamID, "node", node)
+		if experimentalWatchdogCfg.Enabled {
+			return &EventBasedWatchdog{
+				Ctx:                  ctx,
+				Node:                 node,
+				StreamID:             streamID,
+				Listener:             eventBus.Subscribe(),
+				Reconciler:           reconciler,
+				ProvidedTypes:        changedTypes,
+				KdsGenerations:       kdsGenerations,
+				KdsGenerationsErrors: kdsGenerationsErrors,
+				Log:                  log,
+				FlushInterval:        experimentalWatchdogCfg.FlushInterval.Duration,
+				FullResyncInterval:   experimentalWatchdogCfg.FullResyncInterval.Duration,
+			}, nil
+		}
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
@@ -99,7 +127,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
 				}()
 				log.V(1).Info("on tick")
-				return reconciler.Reconcile(ctx, node)
+				return reconciler.Reconcile(ctx, node, changedTypes)
 			},
 			OnError: func(err error) {
 				kdsGenerationsErrors.Inc()
