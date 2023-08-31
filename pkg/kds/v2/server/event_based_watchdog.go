@@ -19,7 +19,6 @@ import (
 type EventBasedWatchdog struct {
 	Ctx                  context.Context
 	Node                 *envoy_core.Node
-	StreamID             int64
 	Listener             events.Listener
 	Reconciler           reconcile.Reconciler
 	ProvidedTypes        map[model.ResourceType]struct{}

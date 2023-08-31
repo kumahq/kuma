@@ -40,7 +40,12 @@ type snapshotGenerator struct {
 	resourceMapper  reconcile.ResourceMapper
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node, builder cache_kds_v2.SnapshotBuilder, resTypes map[model.ResourceType]struct{}) (envoy_cache.ResourceSnapshot, error) {
+func (s *snapshotGenerator) GenerateSnapshot(
+	ctx context.Context,
+	node *envoy_core.Node,
+	builder cache_kds_v2.SnapshotBuilder,
+	resTypes map[model.ResourceType]struct{},
+) (envoy_cache.ResourceSnapshot, error) {
 	for typ := range resTypes {
 		resources, err := s.getResources(ctx, typ, node)
 		if err != nil {

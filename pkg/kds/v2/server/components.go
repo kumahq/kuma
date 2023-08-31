@@ -102,11 +102,11 @@ func newSyncTracker(
 		changedTypes[typ] = struct{}{}
 	}
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+		log := log.WithValues("streamID", streamID, "node", node)
 		if experimentalWatchdogCfg.Enabled {
 			return &EventBasedWatchdog{
 				Ctx:                  ctx,
 				Node:                 node,
-				StreamID:             streamID,
 				Listener:             eventBus.Subscribe(),
 				Reconciler:           reconciler,
 				ProvidedTypes:        changedTypes,
