@@ -67,6 +67,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.11.2
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
+<<<<<<< HEAD
 	k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver v0.26.3
 	k8s.io/apimachinery v0.26.3
@@ -79,6 +80,20 @@ require (
 	sigs.k8s.io/controller-tools v0.11.3
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
 	sigs.k8s.io/gateway-api v0.6.2
+=======
+	k8s.io/api v0.28.1
+	k8s.io/apiextensions-apiserver v0.28.0
+	k8s.io/apimachinery v0.28.1
+	k8s.io/client-go v0.28.1
+	k8s.io/klog/v2 v2.100.1
+	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
+	k8s.io/kubectl v0.28.1
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	sigs.k8s.io/controller-runtime v0.15.1
+	sigs.k8s.io/controller-tools v0.13.0
+	// When updating this also update version in: test/framework/k8s.go
+	sigs.k8s.io/gateway-api v0.8.0-rc1
+>>>>>>> b661ed3d8 (chore(deps): bump the k8s-libs group with 3 updates (#7606))
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -193,8 +208,13 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+<<<<<<< HEAD
 	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/component-base v0.26.3 // indirect
+=======
+	gotest.tools/v3 v3.5.0 // indirect
+	k8s.io/component-base v0.28.1 // indirect
+>>>>>>> b661ed3d8 (chore(deps): bump the k8s-libs group with 3 updates (#7606))
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
