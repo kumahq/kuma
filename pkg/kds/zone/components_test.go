@@ -264,7 +264,7 @@ var _ = Describe("Zone Sync", func() {
 			clientStream := serverStream.ClientStream(stop)
 
 			zoneStore = memory.NewStore()
-			zoneSyncer = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
+			zoneSyncer = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, 10)
 
 			wg.Add(1)
 			go func() {

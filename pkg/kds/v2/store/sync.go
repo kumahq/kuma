@@ -66,14 +66,16 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 }
 
 type syncResourceStore struct {
-	log           logr.Logger
-	resourceStore store.ResourceStore
+	log                  logr.Logger
+	resourceStore        store.ResourceStore
+	maxListQueryElements int
 }
 
-func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
+func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore, maxListQueryElements uint32) ResourceSyncer {
 	return &syncResourceStore{
-		log:           log,
-		resourceStore: resourceStore,
+		log:                  log,
+		resourceStore:        resourceStore,
+		maxListQueryElements: int(maxListQueryElements),
 	}
 }
 
@@ -86,7 +88,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	if err != nil {
 		return err
 	}
-	if upstreamResponse.IsInitialRequest {
+	if len(upstream.GetItems()) >= s.maxListQueryElements || upstreamResponse.IsInitialRequest {
 		if err := s.resourceStore.List(ctx, downstream); err != nil {
 			return err
 		}

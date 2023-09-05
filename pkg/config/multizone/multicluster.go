@@ -41,6 +41,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
+			MaxListQueryElements:     0,
 		},
 	}
 }
@@ -98,10 +99,11 @@ func DefaultZoneConfig() *ZoneConfig {
 		GlobalAddress: "",
 		Name:          "",
 		KDS: &KdsClientConfig{
-			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
-			MaxMsgSize:      10 * 1024 * 1024,
-			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
-			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
+			RefreshInterval:      config_types.Duration{Duration: 1 * time.Second},
+			MaxMsgSize:           10 * 1024 * 1024,
+			MsgSendTimeout:       config_types.Duration{Duration: 60 * time.Second},
+			NackBackoff:          config_types.Duration{Duration: 5 * time.Second},
+			MaxListQueryElements: 0,
 		},
 	}
 }
