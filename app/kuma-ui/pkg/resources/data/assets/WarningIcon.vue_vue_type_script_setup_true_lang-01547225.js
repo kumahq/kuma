@@ -1,0 +1,1 @@
+import{d as n,o as t,a,b as i,x as s}from"./index-afe12193.js";const d=n({__name:"WarningIcon",props:{size:{default:"64"},hideTitle:{type:Boolean,default:!1}},setup(o){const e=o;return(c,r)=>(t(),a(i(s),{icon:"warning",color:"#0b172d","secondary-color":"#ffd68c",size:e.size,"hide-title":e.hideTitle},null,8,["size","hide-title"]))}});export{d as _};
