@@ -86,8 +86,15 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	if err != nil {
 		return err
 	}
-	if err := s.resourceStore.List(ctx, downstream); err != nil {
-		return err
+	if upstreamResponse.IsInitialRequest {
+		if err := s.resourceStore.List(ctx, downstream); err != nil {
+			return err
+		}
+	} else {
+		upstreamChangeKeys := append(ToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
+		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
+			return err
+		}
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
@@ -309,4 +316,12 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
+}
+
+func ToResourceKeys(rs core_model.ResourceList) []core_model.ResourceKey {
+	rkey := []core_model.ResourceKey{}
+	for _, r := range rs.GetItems() {
+		rkey = append(rkey, core_model.MetaToResourceKey(r.GetMeta()))
+	}
+	return rkey
 }

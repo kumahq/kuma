@@ -180,15 +180,28 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
-	if opts.Mesh != "" {
-		argsIndex++
-		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
-		statementArgs = append(statementArgs, opts.Mesh)
-	}
-	if opts.NameContains != "" {
-		argsIndex++
-		statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
-		statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
+	if len(opts.ResourceKeys) > 0 {
+		statement += " ("
+		for idx, rk := range opts.ResourceKeys {
+			if idx > 0 {
+				statement += " OR "
+			}
+			statement += fmt.Sprintf("(mesh=$%d AND name=$%d))", argsIndex+1, argsIndex+2)
+			argsIndex += 2
+			statementArgs = append(statementArgs, rk.Mesh, rk.Name)
+		}
+		statement += ")"
+	} else {
+		if opts.Mesh != "" {
+			argsIndex++
+			statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+			statementArgs = append(statementArgs, opts.Mesh)
+		}
+		if opts.NameContains != "" {
+			argsIndex++
+			statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
+			statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
+		}
 	}
 	statement += " ORDER BY name, mesh"
 

@@ -47,7 +47,7 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 
 	// At least one of the following options is required to trigger the paginationStore to do work.
 	// Otherwise, it delegates the request and returns early.
-	if opts.FilterFunc == nil && opts.PageSize == 0 && opts.PageOffset == "" && !opts.Ordered {
+	if opts.FilterFunc == nil && opts.PageSize == 0 && opts.PageOffset == "" && !opts.Ordered && len(opts.ResourceKeys) == 0 {
 		return p.delegate.List(ctx, list, optionsFunc...)
 	}
 
@@ -64,6 +64,16 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 	filteredList, err := registry.Global().NewList(list.GetItemType())
 	if err != nil {
 		return err
+	}
+
+	if len(opts.ResourceKeys) > 0 {
+		for _, rk := range opts.ResourceKeys {
+			for _, item := range fullList.GetItems() {
+				if item.GetMeta().GetMesh() == rk.Mesh && item.GetMeta().GetName() == rk.Name {
+					_ = filteredList.AddItem(item)
+				}
+			}
+		}
 	}
 
 	for _, item := range fullList.GetItems() {
