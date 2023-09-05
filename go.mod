@@ -51,7 +51,17 @@ require (
 	github.com/testcontainers/testcontainers-go v0.21.1-0.20230802082724-c0797a06f2c2 // UPDATE TO RELEASE TAG ASAP
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
+<<<<<<< HEAD
 	go.opentelemetry.io/proto/otlp v0.20.0
+=======
+	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.43.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.43.0
+	go.opentelemetry.io/otel v1.17.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.17.0
+	go.opentelemetry.io/otel/sdk v1.17.0
+	go.opentelemetry.io/otel/trace v1.17.0
+	go.opentelemetry.io/proto/otlp v1.0.0
+>>>>>>> 11e7465f4 (chore(deps): bump the go-opentelemetry-io-contrib group with 2 updates (#7613))
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
