@@ -8,7 +8,6 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/prometheus/client_golang/prometheus"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
@@ -82,19 +81,8 @@ func newSyncTracker(
 	eventBus events.EventBus,
 	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
 ) (envoy_xds.Callbacks, error) {
-	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "kds_delta_generation",
-		Help:       "Summary of KDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	if err := metrics.Register(kdsGenerations); err != nil {
-		return nil, err
-	}
-	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
-		Help: "Counter of errors during KDS generation",
-		Name: "kds_delta_generation_errors",
-	})
-	if err := metrics.Register(kdsGenerationsErrors); err != nil {
+	kdsMetrics, err := NewMetrics(metrics)
+	if err != nil {
 		return nil, err
 	}
 	changedTypes := map[model.ResourceType]struct{}{}
@@ -105,16 +93,19 @@ func newSyncTracker(
 		log := log.WithValues("streamID", streamID, "node", node)
 		if experimentalWatchdogCfg.Enabled {
 			return &EventBasedWatchdog{
-				Ctx:                  ctx,
-				Node:                 node,
-				Listener:             eventBus.Subscribe(),
-				Reconciler:           reconciler,
-				ProvidedTypes:        changedTypes,
-				KdsGenerations:       kdsGenerations,
-				KdsGenerationsErrors: kdsGenerationsErrors,
-				Log:                  log,
-				FlushInterval:        experimentalWatchdogCfg.FlushInterval.Duration,
-				FullResyncInterval:   experimentalWatchdogCfg.FullResyncInterval.Duration,
+				Ctx:           ctx,
+				Node:          node,
+				Listener:      eventBus.Subscribe(),
+				Reconciler:    reconciler,
+				ProvidedTypes: changedTypes,
+				Metrics:       kdsMetrics,
+				Log:           log,
+				NewFlushTicker: func() *time.Ticker {
+					return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
+				},
+				NewFullResyncTicker: func() *time.Ticker {
+					return time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration)
+				},
 			}, nil
 		}
 		return &util_watchdog.SimpleWatchdog{
@@ -123,14 +114,20 @@ func newSyncTracker(
 			},
 			OnTick: func(context.Context) error {
 				start := core.Now()
-				defer func() {
-					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
-				}()
 				log.V(1).Info("on tick")
-				return reconciler.Reconcile(ctx, node, changedTypes)
+				err, changed := reconciler.Reconcile(ctx, node, changedTypes)
+				if err != nil {
+					result := ResultNoChanges
+					if changed {
+						result = ResultChanged
+					}
+					kdsMetrics.KdsGenerations.WithLabelValues(ReasonResync, result).
+						Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}
+				return err
 			},
 			OnError: func(err error) {
-				kdsGenerationsErrors.Inc()
+				kdsMetrics.KdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {

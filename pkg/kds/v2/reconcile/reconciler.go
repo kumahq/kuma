@@ -65,10 +65,10 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	return nil
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}) error {
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}) (error, bool) {
 	id, err := r.hashId(ctx, node)
 	if err != nil {
-		return err
+		return err, false
 	}
 	old, _ := r.cache.GetSnapshot(id)
 
@@ -90,22 +90,26 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 
 	new, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
 	if err != nil {
-		return err
+		return err, false
 	}
 	if new == nil {
-		return errors.New("nil snapshot")
+		return errors.New("nil snapshot"), false
 	}
 
-	new = r.Version(new, old)
-	r.logChanges(new, old, node)
-	r.meterConfigReadyForDelivery(new, old)
-	return r.cache.SetSnapshot(ctx, id, new)
+	new, changed := r.Version(new, old)
+	if changed {
+		r.logChanges(new, old, node)
+		r.meterConfigReadyForDelivery(new, old)
+		return r.cache.SetSnapshot(ctx, id, new), true
+	}
+	return nil, false
 }
 
-func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
+func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache.ResourceSnapshot, bool) {
 	if new == nil {
-		return nil
+		return nil, false
 	}
+	changed := false
 	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		version := new.GetVersion(typ)
@@ -120,13 +124,10 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 		if version == "" {
 			version = core.NewUUID()
 		}
-		if new == nil {
-			continue
-		}
 		if new.GetVersion(typ) == version {
 			continue
 		}
-
+		changed = true
 		n := map[string]envoy_types.ResourceWithTTL{}
 		for k, v := range new.GetResourcesAndTTL(typ) {
 			n[k] = v
@@ -135,7 +136,7 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 	}
 	return &cache_v2.Snapshot{
 		Resources: newResources,
-	}
+	}, changed
 }
 
 func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
