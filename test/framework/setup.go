@@ -535,7 +535,9 @@ networking:
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
-			WithIPv6(Config.IPV6))
+			WithIPv6(Config.IPV6),
+			WithDpEnvs(opts.dpEnvs),
+		)
 		return cluster.DeployApp(opt...)
 	}
 }

@@ -1195,12 +1195,11 @@ var _ = Describe("TrafficRoute", func() {
 					expected: core_xds.EndpointMap{
 						"service-in-zone2": []core_xds.Endpoint{
 							{
-								Target:          "192.168.0.100",
-								Port:            12345,
-								Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
-								Weight:          2, // local weight is bumped to 2 to factor two instances of Ingresses
-								Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 0},
-								ExternalService: &core_xds.ExternalService{},
+								Target:   "192.168.0.100",
+								Port:     12345,
+								Tags:     map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
+								Weight:   2, // local weight is bumped to 2 to factor two instances of Ingresses
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
 							},
 						},
 						"test": []core_xds.Endpoint{

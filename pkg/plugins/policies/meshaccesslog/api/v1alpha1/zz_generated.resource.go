@@ -132,4 +132,7 @@ var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Access Log",
 	PluralDisplayName:   "Mesh Access Logs",
 	IsPluginOriginated:  true,
+	IsTargetRefBased:    true,
+	HasToTargetRef:      true,
+	HasFromTargetRef:    true,
 }

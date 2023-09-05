@@ -66,7 +66,7 @@ func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 	}
 	expected, err := os.ReadFile(g.GoldenFilePath)
 	if err != nil {
-		return false, errors.Wrap(err, "could not read golden file")
+		return false, errors.Wrapf(err, "could not read golden file to compare with: '%v'", actualContent)
 	}
 
 	// Generate a new instance of the matcher for this match. Since

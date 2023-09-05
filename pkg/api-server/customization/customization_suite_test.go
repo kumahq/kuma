@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -84,6 +85,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
+		func(*restful.WebService) error { return nil },
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

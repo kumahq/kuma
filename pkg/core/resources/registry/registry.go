@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -25,6 +26,22 @@ func NewTypeRegistry() TypeRegistry {
 	}
 }
 
+type InvalidResourceType struct {
+	ResType model.ResourceType
+}
+
+func (e *InvalidResourceType) Error() string {
+	return fmt.Sprintf("invalid resource type %q", e.ResType)
+}
+
+func (e *InvalidResourceType) Is(target error) bool {
+	t, ok := target.(*InvalidResourceType)
+	if !ok {
+		return false
+	}
+	return t.ResType == e.ResType || t.ResType == ""
+}
+
 type typeRegistry struct {
 	descriptors map[model.ResourceType]model.ResourceTypeDescriptor
 }
@@ -32,7 +49,7 @@ type typeRegistry struct {
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return model.ResourceTypeDescriptor{}, errors.Errorf("invalid resource type %q", resType)
+		return model.ResourceTypeDescriptor{}, &InvalidResourceType{ResType: resType}
 	}
 	return typDesc, nil
 }

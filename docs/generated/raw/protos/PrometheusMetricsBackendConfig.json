@@ -35,6 +35,11 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.PrometheusEnvoyConfig",
                     "additionalProperties": true,
                     "description": "Configuration of Envoy's metrics."
+                },
+                "tls": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.PrometheusTlsConfig",
+                    "additionalProperties": true,
+                    "description": "Configuration of TLS for prometheus listener."
                 }
             },
             "additionalProperties": true,
@@ -87,6 +92,33 @@
             "type": "object",
             "title": "Prometheus Envoy Config",
             "description": "PrometheusEnvoyConfig defines filters that should be passed to Envoy for filtering."
+        },
+        "kuma.mesh.v1alpha1.PrometheusTlsConfig": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "activeMTLSBackend",
+                        0,
+                        "providedTLS",
+                        1,
+                        "disabled",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Prometheus Tls Config",
+            "description": "PrometheusEnvoyConfig defines Tls configuration for Prometheus listener."
         }
     }
 }

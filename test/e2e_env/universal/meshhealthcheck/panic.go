@@ -74,6 +74,9 @@ networking:
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		for i := 7; i <= 10; i++ {
+			Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", fmt.Sprintf("dp-echo-%d", i), "-m", meshName)).To(Succeed())
+		}
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 

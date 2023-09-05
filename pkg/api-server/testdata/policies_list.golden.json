@@ -6,7 +6,10 @@
    "path": "circuit-breakers",
    "singularDisplayName": "Circuit Breaker",
    "pluralDisplayName": "Circuit Breakers",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "FaultInjection",
@@ -14,7 +17,10 @@
    "path": "fault-injections",
    "singularDisplayName": "Fault Injection",
    "pluralDisplayName": "Fault Injections",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "HealthCheck",
@@ -22,7 +28,10 @@
    "path": "health-checks",
    "singularDisplayName": "Health Check",
    "pluralDisplayName": "Health Checks",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "MeshAccessLog",
@@ -30,7 +39,10 @@
    "path": "meshaccesslogs",
    "singularDisplayName": "Mesh Access Log",
    "pluralDisplayName": "Mesh Access Logs",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": true
   },
   {
    "name": "MeshCircuitBreaker",
@@ -38,7 +50,10 @@
    "path": "meshcircuitbreakers",
    "singularDisplayName": "Mesh Circuit Breaker",
    "pluralDisplayName": "Mesh Circuit Breakers",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": true
   },
   {
    "name": "MeshFaultInjection",
@@ -46,7 +61,10 @@
    "path": "meshfaultinjections",
    "singularDisplayName": "Mesh Fault Injection",
    "pluralDisplayName": "Mesh Fault Injections",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": false
   },
   {
    "name": "MeshGateway",
@@ -54,7 +72,10 @@
    "path": "meshgateways",
    "singularDisplayName": "Mesh Gateway",
    "pluralDisplayName": "Mesh Gateways",
-   "isExperimental": true
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "MeshGatewayRoute",
@@ -62,7 +83,10 @@
    "path": "meshgatewayroutes",
    "singularDisplayName": "Mesh Gateway Route",
    "pluralDisplayName": "Mesh Gateway Routes",
-   "isExperimental": true
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "MeshHTTPRoute",
@@ -70,7 +94,10 @@
    "path": "meshhttproutes",
    "singularDisplayName": "Mesh HTTP Route",
    "pluralDisplayName": "Mesh HTTP Routes",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": true
   },
   {
    "name": "MeshHealthCheck",
@@ -78,7 +105,10 @@
    "path": "meshhealthchecks",
    "singularDisplayName": "Mesh Health Check",
    "pluralDisplayName": "Mesh Health Checks",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": true
   },
   {
    "name": "MeshLoadBalancingStrategy",
@@ -86,7 +116,10 @@
    "path": "meshloadbalancingstrategies",
    "singularDisplayName": "Mesh Load Balancing Strategy",
    "pluralDisplayName": "Mesh Load Balancing Strategies",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": true
   },
   {
    "name": "MeshProxyPatch",
@@ -94,7 +127,10 @@
    "path": "meshproxypatches",
    "singularDisplayName": "Mesh Proxy Patch",
    "pluralDisplayName": "Mesh Proxy Patches",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "MeshRateLimit",
@@ -102,7 +138,10 @@
    "path": "meshratelimits",
    "singularDisplayName": "Mesh Rate Limit",
    "pluralDisplayName": "Mesh Rate Limits",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": false
   },
   {
    "name": "MeshRetry",
@@ -110,7 +149,10 @@
    "path": "meshretries",
    "singularDisplayName": "Mesh Retry",
    "pluralDisplayName": "Mesh Retries",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": true
   },
   {
    "name": "MeshTCPRoute",
@@ -118,7 +160,10 @@
    "path": "meshtcproutes",
    "singularDisplayName": "Mesh TCP Route",
    "pluralDisplayName": "Mesh TCP Routes",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": true
   },
   {
    "name": "MeshTimeout",
@@ -126,7 +171,10 @@
    "path": "meshtimeouts",
    "singularDisplayName": "Mesh Timeout",
    "pluralDisplayName": "Mesh Timeouts",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": true
   },
   {
    "name": "MeshTrace",
@@ -134,7 +182,10 @@
    "path": "meshtraces",
    "singularDisplayName": "Mesh Trace",
    "pluralDisplayName": "Mesh Traces",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "MeshTrafficPermission",
@@ -142,7 +193,10 @@
    "path": "meshtrafficpermissions",
    "singularDisplayName": "Mesh Traffic Permission",
    "pluralDisplayName": "Mesh Traffic Permissions",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": false
   },
   {
    "name": "ProxyTemplate",
@@ -150,7 +204,10 @@
    "path": "proxytemplates",
    "singularDisplayName": "Proxy Template",
    "pluralDisplayName": "Proxy Templates",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "RateLimit",
@@ -158,7 +215,10 @@
    "path": "rate-limits",
    "singularDisplayName": "Rate Limit",
    "pluralDisplayName": "Rate Limits",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "Retry",
@@ -166,7 +226,10 @@
    "path": "retries",
    "singularDisplayName": "Retry",
    "pluralDisplayName": "Retries",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "Timeout",
@@ -174,7 +237,10 @@
    "path": "timeouts",
    "singularDisplayName": "Timeout",
    "pluralDisplayName": "Timeouts",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "TrafficLog",
@@ -182,7 +248,10 @@
    "path": "traffic-logs",
    "singularDisplayName": "Traffic Log",
    "pluralDisplayName": "Traffic Logs",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "TrafficPermission",
@@ -190,7 +259,10 @@
    "path": "traffic-permissions",
    "singularDisplayName": "Traffic Permission",
    "pluralDisplayName": "Traffic Permissions",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "TrafficRoute",
@@ -198,7 +270,10 @@
    "path": "traffic-routes",
    "singularDisplayName": "Traffic Route",
    "pluralDisplayName": "Traffic Routes",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "TrafficTrace",
@@ -206,7 +281,10 @@
    "path": "traffic-traces",
    "singularDisplayName": "Traffic Trace",
    "pluralDisplayName": "Traffic Traces",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   },
   {
    "name": "VirtualOutbound",
@@ -214,7 +292,10 @@
    "path": "virtual-outbounds",
    "singularDisplayName": "Virtual Outbound",
    "pluralDisplayName": "Virtual Outbounds",
-   "isExperimental": false
+   "isExperimental": false,
+   "isTargetRefBased": false,
+   "isInbound": false,
+   "isOutbound": false
   }
  ]
 }

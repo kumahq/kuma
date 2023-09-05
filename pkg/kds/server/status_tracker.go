@@ -8,6 +8,8 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -69,13 +71,19 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return errors.Errorf("request has no metadata")
+	}
+
 	// initialize subscription
 	subscription := &system_proto.KDSSubscription{
-		Id:               core.NewUUID(),
-		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:      util_proto.MustTimestampProto(core.Now()),
-		Status:           system_proto.NewSubscriptionStatus(),
-		Version:          system_proto.NewVersion(),
+		Id:                core.NewUUID(),
+		GlobalInstanceId:  c.runtimeInfo.GetInstanceId(),
+		ConnectTime:       util_proto.MustTimestampProto(core.Now()),
+		Status:            system_proto.NewSubscriptionStatus(),
+		Version:           system_proto.NewVersion(),
+		AuthTokenProvided: containsAuthToken(md),
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -200,4 +208,9 @@ func readVersion(metadata *structpb.Struct, version *system_proto.Version) error
 		version.KumaCp.KumaCpGlobalCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaCp.GetVersion())
 	}
 	return nil
+}
+
+func containsAuthToken(md metadata.MD) bool {
+	values := md.Get("authorization")
+	return len(values) == 1
 }

@@ -379,21 +379,7 @@ var _ = Describe("IngressGenerator", func() {
 				{
 					Mesh: builders.Mesh().WithName("mesh2").Build(),
 					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Target: "192.168.0.3",
-								Port:   2521,
-								Tags: map[string]string{
-									"kuma.io/service": "backend",
-									"cloud":           "eks",
-									"arch":            "ARM",
-									"os":              "ubuntu",
-									"region":          "asia",
-									"version":         "v3",
-									"mesh":            "mesh2",
-								},
-								Weight: 1,
-							},
+						"frontend": {
 							{
 								Target: "192.168.0.4",
 								Port:   2521,
@@ -415,6 +401,22 @@ var _ = Describe("IngressGenerator", func() {
 									"kuma.io/service": "frontend",
 									"cloud":           "aks",
 									"version":         "v2",
+									"mesh":            "mesh2",
+								},
+								Weight: 1,
+							},
+						},
+						"backend": {
+							{
+								Target: "192.168.0.3",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"cloud":           "eks",
+									"arch":            "ARM",
+									"os":              "ubuntu",
+									"region":          "asia",
+									"version":         "v3",
 									"mesh":            "mesh2",
 								},
 								Weight: 1,

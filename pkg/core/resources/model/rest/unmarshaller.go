@@ -2,14 +2,19 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 var YAML = &unmarshaler{unmarshalFn: func(bytes []byte, i interface{}) error {
@@ -21,8 +26,32 @@ type unmarshaler struct {
 	unmarshalFn func([]byte, interface{}) error
 }
 
+type InvalidResourceError struct {
+	Reason string
+}
+
+func (e *InvalidResourceError) Error() string {
+	return e.Reason
+}
+
+func (e *InvalidResourceError) Is(target error) bool {
+	t, ok := target.(*InvalidResourceError)
+	if !ok {
+		return false
+	}
+	return t.Reason == e.Reason || t.Reason == ""
+}
+
 func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
-	restResource, err := u.Unmarshal(bytes)
+	m := v1alpha1.ResourceMeta{}
+	if err := u.unmarshalFn(bytes, &m); err != nil {
+		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid meta type: '%s'", err.Error())}
+	}
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(m.Type))
+	if err != nil {
+		return nil, err
+	}
+	restResource, err := u.Unmarshal(bytes, desc)
 	if err != nil {
 		return nil, err
 	}
@@ -33,51 +62,30 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 	return coreRes, nil
 }
 
-func (u *unmarshaler) UnmarshalToCore(bytes []byte, res core_model.Resource) error {
-	restResource, err := u.Unmarshal(bytes)
-	if err != nil {
-		return err
-	}
-	coreRes, err := To.Core(restResource)
-	if err != nil {
-		return err
-	}
-	res.SetMeta(coreRes.GetMeta())
-	if err := res.SetSpec(coreRes.GetSpec()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
-	meta := v1alpha1.ResourceMeta{}
-	if err := u.unmarshalFn(bytes, &meta); err != nil {
-		return nil, errors.Wrap(err, "invalid meta type")
-	}
-
-	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(meta.Type))
-	if err != nil {
-		return nil, err
-	}
-
+func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
-
 	if desc.IsPluginOriginated {
 		// desc.Schema is set only for new plugin originated policies
-		if err := u.rawSchemaValidation(bytes, desc.Schema); err != nil {
-			return nil, err
+		rawObj := map[string]interface{}{}
+		// Unfortunately to validate new policies we must first unmarshal into a rawObj
+		if err := u.unmarshalFn(bytes, &rawObj); err != nil {
+			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: '%s'", desc.Name, err.Error())}
+		}
+		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
+		res := validator.Validate(rawObj)
+		if !res.IsValid() {
+			return nil, toValidationError(res)
 		}
 	}
 
 	if err := u.unmarshalFn(bytes, restResource); err != nil {
-		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
+		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: '%s'", desc.Name, err.Error())}
 	}
 
 	if err := core_model.Validate(resource); err != nil {
 		return nil, err
 	}
-
 	return restResource, nil
 }
 
@@ -110,4 +118,17 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 	}
 	rs.GetPagination().SetTotal(rsr.ResourceList.Total)
 	return nil
+}
+
+func toValidationError(res *validate.Result) *validators.ValidationError {
+	verr := &validators.ValidationError{}
+	for _, e := range res.Errors {
+		parts := strings.Split(e.Error(), " ")
+		if len(parts) > 1 && strings.HasPrefix(parts[0], "spec.") {
+			verr.AddViolation(parts[0], strings.Join(parts[1:], " "))
+		} else {
+			verr.AddViolation("", e.Error())
+		}
+	}
+	return verr
 }

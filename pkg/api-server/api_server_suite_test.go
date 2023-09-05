@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -247,6 +248,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
+		func(*restful.WebService) error { return nil },
 	)
 	if err != nil {
 		return nil, cfg, stop, err

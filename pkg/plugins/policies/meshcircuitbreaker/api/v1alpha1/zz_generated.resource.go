@@ -132,4 +132,7 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Circuit Breaker",
 	PluralDisplayName:   "Mesh Circuit Breakers",
 	IsPluginOriginated:  true,
+	IsTargetRefBased:    true,
+	HasToTargetRef:      true,
+	HasFromTargetRef:    true,
 }
