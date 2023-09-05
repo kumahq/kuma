@@ -522,8 +522,8 @@ github.com/subosito/gotenv v1.4.2 h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8
 github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
 github.com/testcontainers/testcontainers-go v0.23.0 h1:ERYTSikX01QczBLPZpqsETTBO7lInqEP349phDOVJVs=
 github.com/testcontainers/testcontainers-go v0.23.0/go.mod h1:3gzuZfb7T9qfcH2pHpV4RLlWrPjeWNQah6XlYQ32c4I=
-github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.0 h1:zIQ7aamYlB5hkaz+GpSJofECrETKK2/d4cGFVi0Dk2M=
-github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.0/go.mod h1:9fD6hW6qgtifaqUp8TGD7Z3GINVYgv+UPcSSSvEgtcc=
+github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.1 h1:DHbC1ebTll9L15xkkaGjGu64JYenuGaRUoLgH6kZkNY=
+github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.1/go.mod h1:iJG7NJCRiIuZDcIZt8rgCOmN1CplbAXpcB6XWcnfn6U=
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.12 h1:igJgVw1JdKH+trcLWLeLwZjU9fEfPesQ+9/e4MQ44S8=
 github.com/urfave/cli v1.22.12/go.mod h1:sSBEIC79qR6OvcmsD4U3KABeOTxDqQtdDnaFuUN30b8=

@@ -51,7 +51,7 @@ require (
 	github.com/spf13/viper v1.16.0
 	github.com/spiffe/go-spiffe/v2 v2.1.6
 	github.com/testcontainers/testcontainers-go v0.23.0
-	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.0
+	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.1
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.43.0
