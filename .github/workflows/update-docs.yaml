@@ -12,7 +12,7 @@ jobs:
   generate-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: master
@@ -38,7 +38,7 @@ jobs:
               cp versions.yml ../docs-build/raw/
             fi
           done
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{ env.DOCS_REPO }}
           path: docs
