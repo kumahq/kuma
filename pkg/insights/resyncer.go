@@ -260,6 +260,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 				if err != nil {
 					log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+					continue
 				}
 				if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
 					continue
@@ -267,6 +268,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				supported, err := r.tenantFn.IDSupported(ctx, resourceChanged.TenantID)
 				if err != nil {
 					log.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
+					continue
 				}
 				if !supported {
 					continue
