@@ -74,11 +74,11 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 				}
 			}
 		}
-	}
-
-	for _, item := range fullList.GetItems() {
-		if opts.Filter(item) {
-			_ = filteredList.AddItem(item)
+	} else {
+		for _, item := range fullList.GetItems() {
+			if opts.Filter(item) {
+				_ = filteredList.AddItem(item)
+			}
 		}
 	}
 

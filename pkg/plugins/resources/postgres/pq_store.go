@@ -181,12 +181,12 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
 	if len(opts.ResourceKeys) > 0 {
-		statement += " ("
+		statement += " AND ("
 		for idx, rk := range opts.ResourceKeys {
 			if idx > 0 {
 				statement += " OR "
 			}
-			statement += fmt.Sprintf("(mesh=$%d AND name=$%d))", argsIndex+1, argsIndex+2)
+			statement += fmt.Sprintf("(mesh=$%d AND name=$%d)", argsIndex+1, argsIndex+2)
 			argsIndex += 2
 			statementArgs = append(statementArgs, rk.Mesh, rk.Name)
 		}
