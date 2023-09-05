@@ -44,6 +44,7 @@ require (
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
+<<<<<<< HEAD
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.13.0
 	github.com/spiffe/go-spiffe/v2 v2.1.4
@@ -57,6 +58,32 @@ require (
 	golang.org/x/text v0.11.0
 	golang.org/x/time v0.3.0
 	google.golang.org/genproto v0.0.0-20230526161137-0005af68ea54 // indirect
+=======
+	github.com/spf13/cobra v1.7.0
+	github.com/spf13/viper v1.16.0
+	github.com/spiffe/go-spiffe/v2 v2.1.6
+	github.com/testcontainers/testcontainers-go v0.23.0
+	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.0
+	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netns v0.0.4
+	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.43.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.43.0
+	go.opentelemetry.io/otel v1.17.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.17.0
+	go.opentelemetry.io/otel/sdk v1.17.0
+	go.opentelemetry.io/otel/trace v1.17.0
+	go.opentelemetry.io/proto/otlp v1.0.0
+	go.uber.org/multierr v1.11.0
+	go.uber.org/zap v1.25.0
+	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/net v0.14.0
+	golang.org/x/sys v0.11.0
+	golang.org/x/text v0.13.0
+	golang.org/x/time v0.3.0 // indirect
+	gonum.org/v1/gonum v0.14.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731193218-e0aa005b6bdf
+>>>>>>> 11e7465f4 (chore(deps): bump the go-opentelemetry-io-contrib group with 2 updates (#7613))
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
