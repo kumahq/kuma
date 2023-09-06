@@ -189,17 +189,27 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					// Usually this shouldn't close if there's no closed context
 					continue
 				}
+				if event.flag == 0 {
+					continue
+				}
 				startProcessingTime := r.now()
 				r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 				r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
+				tenantCtx := multitenant.WithTenant(ctx, event.tenantId)
+				dpOverviews, err := r.dpOverviews(tenantCtx, event.mesh)
+				if err != nil {
+					log.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
+					continue
+				}
+
 				if event.flag&FlagService == FlagService {
-					err := r.createOrUpdateServiceInsight(ctx, event.tenantId, event.mesh)
+					err := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews)
 					if err != nil {
 						log.Error(err, "unable to resync ServiceInsight", "event", event)
 					}
 				}
 				if event.flag&FlagMesh == FlagMesh {
-					err := r.createOrUpdateMeshInsight(ctx, event.tenantId, event.mesh)
+					err := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews)
 					if err != nil {
 						log.Error(err, "unable to resync MeshInsight", "event", event)
 					}
@@ -250,8 +260,17 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 				if err != nil {
 					log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+					continue
 				}
 				if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
+					continue
+				}
+				supported, err := r.tenantFn.IDSupported(ctx, resourceChanged.TenantID)
+				if err != nil {
+					log.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
+					continue
+				}
+				if !supported {
 					continue
 				}
 				meshName := resourceChanged.Key.Mesh
@@ -267,13 +286,29 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType || resourceChanged.Type == core_mesh.ExternalServiceType {
 					f |= FlagService
 				}
-				batch.add(r.now(), resourceChanged.TenantID, meshName, f)
+				if f != 0 {
+					batch.add(r.now(), resourceChanged.TenantID, meshName, f)
+				}
 			}
 		case <-stop:
 			log.Info("stop")
 			return nil
 		}
 	}
+}
+
+func (r *resyncer) dpOverviews(ctx context.Context, mesh string) ([]*core_mesh.DataplaneOverviewResource, error) {
+	dataplanes := &core_mesh.DataplaneResourceList{}
+	if err := r.rm.List(ctx, dataplanes, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+
+	dpInsights := &core_mesh.DataplaneInsightResourceList{}
+	if err := r.rm.List(ctx, dpInsights, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+	overviews := core_mesh.NewDataplaneOverviews(*dataplanes, *dpInsights)
+	return overviews.Items, nil
 }
 
 func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string) {
@@ -313,23 +348,13 @@ func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight
 	}
 }
 
-func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, tenantId string, mesh string) error {
-	ctx = multitenant.WithTenant(ctx, tenantId)
+func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string, dpOverviews []*core_mesh.DataplaneOverviewResource) error {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
-	dp := &core_mesh.DataplaneResourceList{}
-	if err := r.rm.List(ctx, dp, store.ListByMesh(mesh)); err != nil {
-		return err
-	}
-	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := r.rm.List(ctx, dpInsights, store.ListByMesh(mesh)); err != nil {
-		return err
-	}
-	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
 
-	for _, dpOverview := range dpOverviews.Items {
+	for _, dpOverview := range dpOverviews {
 		status, _ := dpOverview.GetStatus()
 		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
@@ -400,8 +425,7 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, tenantId st
 	return nil
 }
 
-func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, tenantId string, mesh string) error {
-	ctx = multitenant.WithTenant(ctx, tenantId)
+func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, dpOverviews []*core_mesh.DataplaneOverviewResource) error {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
@@ -420,23 +444,10 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, tenantId strin
 		},
 	}
 
-	dataplanes := &core_mesh.DataplaneResourceList{}
-	if err := r.rm.List(ctx, dataplanes, store.ListByMesh(mesh)); err != nil {
-		return err
-	}
-
-	insight.Dataplanes.Total = uint32(len(dataplanes.GetItems()))
-
-	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := r.rm.List(ctx, dpInsights, store.ListByMesh(mesh)); err != nil {
-		return err
-	}
-
+	insight.Dataplanes.Total = uint32(len(dpOverviews))
 	internalServices := map[string]struct{}{}
 
-	dpOverviews := core_mesh.NewDataplaneOverviews(*dataplanes, *dpInsights)
-
-	for _, dpOverview := range dpOverviews.Items {
+	for _, dpOverview := range dpOverviews {
 		dpInsight := dpOverview.Spec.DataplaneInsight
 		dpSubscription := dpInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
 		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
@@ -591,5 +602,5 @@ func getOrDefault(version string) string {
 }
 
 func (r *resyncer) NeedLeaderElection() bool {
-	return true
+	return !r.tenantFn.SupportsSharding()
 }
