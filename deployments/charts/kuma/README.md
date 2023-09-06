@@ -174,9 +174,9 @@ A Helm chart for the Kuma Control Plane
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
-| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
+| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
