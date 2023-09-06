@@ -16,6 +16,8 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 	kube_metrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	kube_metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -58,12 +60,14 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		kube_ctrl.Options{
 			Scheme: scheme,
 			Cache: cache.Options{
-				UnsafeDisableDeepCopy: pointer.To(true),
+				DefaultUnsafeDisableDeepCopy: pointer.To(true),
 			},
 			// Admission WebHook Server
-			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-			CertDir:                 b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
+				Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+				Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+				CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			}),
 			LeaderElection:          true,
 			LeaderElectionID:        "cp-leader-lease",
 			LeaderElectionNamespace: systemNamespace,
@@ -72,7 +76,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
 
 			// Disable metrics bind address as we use kube metrics registry directly.
-			MetricsBindAddress: "0",
+			Metrics: kube_metricsserver.Options{
+				BindAddress: "0",
+			},
 		},
 	)
 	if err != nil {
@@ -114,10 +120,10 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	kubeCache, err := cache.New(config, cache.Options{
-		Scheme:     scheme,
-		Mapper:     restMapper,
-		SyncPeriod: &resyncPeriod,
-		Namespaces: []string{systemNamespace},
+		Scheme:            scheme,
+		Mapper:            restMapper,
+		SyncPeriod:        &resyncPeriod,
+		DefaultNamespaces: map[string]cache.Config{systemNamespace: {}},
 	})
 	if err != nil {
 		return nil, err
