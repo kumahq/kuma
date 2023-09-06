@@ -22,6 +22,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	kube_ctrlr "sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+<<<<<<< HEAD
+=======
+	kube_metrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	kube_metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+>>>>>>> 433f65276 (chore(deps): bump sigs.k8s.io/controller-runtime from 0.15.1 to 0.16.1 (#7643))
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -57,6 +63,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	mgr, err := kube_ctrl.NewManager(
 		config,
 		kube_ctrl.Options{
+<<<<<<< HEAD
 			Scheme:   scheme,
 			NewCache: kuma_kube_cache.New,
 			// Admission WebHook Server
@@ -67,6 +74,29 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
+=======
+			Scheme: scheme,
+			Cache: cache.Options{
+				DefaultUnsafeDisableDeepCopy: pointer.To(true),
+			},
+			// Admission WebHook Server
+			WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
+				Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+				Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+				CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			}),
+			LeaderElection:          true,
+			LeaderElectionID:        "cp-leader-lease",
+			LeaderElectionNamespace: systemNamespace,
+			Logger:                  core.Log.WithName("kube-manager"),
+			LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
+
+			// Disable metrics bind address as we use kube metrics registry directly.
+			Metrics: kube_metricsserver.Options{
+				BindAddress: "0",
+			},
+>>>>>>> 433f65276 (chore(deps): bump sigs.k8s.io/controller-runtime from 0.15.1 to 0.16.1 (#7643))
 		},
 	)
 	if err != nil {
@@ -113,10 +143,17 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	kubeCache, err := cache.New(config, cache.Options{
+<<<<<<< HEAD
 		Scheme:    scheme,
 		Mapper:    restMapper,
 		Resync:    &resyncPeriod,
 		Namespace: systemNamespace,
+=======
+		Scheme:            scheme,
+		Mapper:            restMapper,
+		SyncPeriod:        &resyncPeriod,
+		DefaultNamespaces: map[string]cache.Config{systemNamespace: {}},
+>>>>>>> 433f65276 (chore(deps): bump sigs.k8s.io/controller-runtime from 0.15.1 to 0.16.1 (#7643))
 	})
 	if err != nil {
 		return nil, err
