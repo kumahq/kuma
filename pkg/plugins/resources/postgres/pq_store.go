@@ -207,17 +207,16 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 			iter++
 		}
 		statement += ")"
-	} else {
-		if opts.Mesh != "" {
-			argsIndex++
-			statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
-			statementArgs = append(statementArgs, opts.Mesh)
-		}
-		if opts.NameContains != "" {
-			argsIndex++
-			statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
-			statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
-		}
+	}
+	if opts.Mesh != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		statementArgs = append(statementArgs, opts.Mesh)
+	}
+	if opts.NameContains != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
+		statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
 	}
 	statement += " ORDER BY name, mesh"
 

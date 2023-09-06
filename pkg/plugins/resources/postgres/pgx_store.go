@@ -212,17 +212,16 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 			iter++
 		}
 		statement += ")"
-	} else {
-		if opts.Mesh != "" {
-			argsIndex++
-			statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
-			statementArgs = append(statementArgs, opts.Mesh)
-		}
-		if opts.NameContains != "" {
-			argsIndex++
-			statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
-			statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
-		}
+	}
+	if opts.Mesh != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
+		statementArgs = append(statementArgs, opts.Mesh)
+	}
+	if opts.NameContains != "" {
+		argsIndex++
+		statement += fmt.Sprintf(" AND name LIKE $%d", argsIndex)
+		statementArgs = append(statementArgs, "%"+opts.NameContains+"%")
 	}
 	statement += " ORDER BY name, mesh"
 
@@ -248,13 +247,13 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	return nil
 }
 
-func resourceNamesByMesh(resourceKeys []core_model.ResourceKey) ResourceNamesByMesh {
+func resourceNamesByMesh(resourceKeys map[core_model.ResourceKey]struct{}) ResourceNamesByMesh {
 	resourceNamesByMesh := ResourceNamesByMesh{}
-	for _, rk := range resourceKeys {
-		if val, exists := resourceNamesByMesh[rk.Mesh]; exists {
-			resourceNamesByMesh[rk.Mesh] = append(val, rk.Name)
+	for key := range resourceKeys {
+		if val, exists := resourceNamesByMesh[key.Mesh]; exists {
+			resourceNamesByMesh[key.Mesh] = append(val, key.Name)
 		} else {
-			resourceNamesByMesh[rk.Mesh] = []string{rk.Name}
+			resourceNamesByMesh[key.Mesh] = []string{key.Name}
 		}
 	}
 	return resourceNamesByMesh

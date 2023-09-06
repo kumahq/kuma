@@ -67,11 +67,9 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 	}
 
 	if len(opts.ResourceKeys) > 0 {
-		for _, rk := range opts.ResourceKeys {
-			for _, item := range fullList.GetItems() {
-				if item.GetMeta().GetMesh() == rk.Mesh && item.GetMeta().GetName() == rk.Name {
-					_ = filteredList.AddItem(item)
-				}
+		for _, item := range fullList.GetItems() {
+			if _, exists := opts.ResourceKeys[model.MetaToResourceKey(item.GetMeta())]; exists {
+				_ = filteredList.AddItem(item)
 			}
 		}
 	} else {

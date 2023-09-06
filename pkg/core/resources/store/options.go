@@ -161,7 +161,7 @@ type ListOptions struct {
 	FilterFunc   ListFilterFunc
 	NameContains string
 	Ordered      bool
-	ResourceKeys []core_model.ResourceKey
+	ResourceKeys map[core_model.ResourceKey]struct{}
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -216,7 +216,11 @@ func ListOrdered() ListOptionsFunc {
 
 func ListByResourceKeys(rk []core_model.ResourceKey) ListOptionsFunc {
 	return func(opts *ListOptions) {
-		opts.ResourceKeys = rk
+		resourcesKeys := map[core_model.ResourceKey]struct{}{}
+		for _, val := range rk {
+			resourcesKeys[val] = struct{}{}
+		}
+		opts.ResourceKeys = resourcesKeys
 	}
 }
 
