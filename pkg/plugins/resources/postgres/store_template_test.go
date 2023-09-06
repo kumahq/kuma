@@ -13,10 +13,11 @@ import (
 )
 
 var _ = Describe("PostgresStore template", func() {
-	createStore := func(storeName string) func() store.ResourceStore {
+	createStore := func(storeName string, maxListQueryElements int) func() store.ResourceStore {
 		return func() store.ResourceStore {
 			cfg, err := c.Config(test_postgres.WithRandomDb)
 			Expect(err).ToNot(HaveOccurred())
+			cfg.MaxListQueryElements = uint32(maxListQueryElements)
 			cfg.MaxOpenConnections = 2
 
 			pqMetrics, err := core_metrics.NewMetrics("Standalone")
@@ -41,8 +42,10 @@ var _ = Describe("PostgresStore template", func() {
 		}
 	}
 
-	test_store.ExecuteStoreTests(createStore("pgx"), "pgx")
-	test_store.ExecuteOwnerTests(createStore("pgx"), "pgx")
-	test_store.ExecuteStoreTests(createStore("pq"), "pq")
-	test_store.ExecuteOwnerTests(createStore("pq"), "pq")
+	test_store.ExecuteStoreTests(createStore("pgx", 0), "pgx")
+	test_store.ExecuteStoreTests(createStore("pgx", 4), "pgx")
+	test_store.ExecuteOwnerTests(createStore("pgx", 0), "pgx")
+	test_store.ExecuteStoreTests(createStore("pq", 0), "pq")
+	test_store.ExecuteStoreTests(createStore("pq", 4), "pq")
+	test_store.ExecuteOwnerTests(createStore("pq", 0), "pq")
 })
