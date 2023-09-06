@@ -106,6 +106,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -245,7 +246,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
-			Expect(cfg.Multizone.Global.KDS.MaxListQueryElements).To(Equal(uint32(111)))
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -254,7 +254,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
-			Expect(cfg.Multizone.Zone.KDS.MaxListQueryElements).To(Equal(uint32(112)))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
@@ -369,6 +368,7 @@ store:
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
+    maxListQueryElements: 111
     tls:
       mode: verifyFull
       certPath: /path/to/cert
@@ -549,7 +549,6 @@ multizone:
       maxMsgSize: 1
       msgSendTimeout: 10s
       nackBackoff: 11s
-      maxListQueryElements: 111
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -560,7 +559,6 @@ multizone:
       msgSendTimeout: 20s
       nackBackoff: 21s
       tlsSkipVerify: true
-      maxListQueryElements: 112
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -711,6 +709,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
+				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
@@ -833,7 +832,6 @@ proxy:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
-				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_LIST_QUERY_ELEMENTS":                                        "111",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -842,7 +840,6 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
-				"KUMA_MULTIZONE_ZONE_KDS_MAX_LIST_QUERY_ELEMENTS":                                          "112",
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",

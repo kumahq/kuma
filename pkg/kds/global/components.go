@@ -79,11 +79,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
-	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(
-		kdsDeltaGlobalLog,
-		rt.ResourceStore(),
-		rt.Config().Multizone.Global.KDS.MaxListQueryElements,
-	)
+	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore())
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())

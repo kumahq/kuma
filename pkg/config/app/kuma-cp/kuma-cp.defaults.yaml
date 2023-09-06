@@ -44,6 +44,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -475,8 +477,6 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
-      # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
-      maxListQueryElements: 0 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MAX_LIST_QUERY_ELEMENTS
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -497,8 +497,6 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF
-      # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
-      maxListQueryElements: 0 # ENV: KUMA_MULTIZONE_ZONE_KDS_MAX_LIST_QUERY_ELEMENTS
 
 # Diagnostics configuration
 diagnostics:

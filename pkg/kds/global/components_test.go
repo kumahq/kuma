@@ -247,7 +247,7 @@ var _ = Describe("Global Sync", func() {
 
 			// Start 1 Kuma CP Global
 			globalStore = memory.NewStore()
-			globalSyncer = sync_store_v2.NewResourceSyncer(core.Log, globalStore, 10)
+			globalSyncer = sync_store_v2.NewResourceSyncer(core.Log, globalStore)
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}
 			for _, ss := range serverStreams {

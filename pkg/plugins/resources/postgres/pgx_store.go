@@ -22,8 +22,11 @@ import (
 )
 
 type pgxResourceStore struct {
-	pool *pgxpool.Pool
+	pool                 *pgxpool.Pool
+	maxListQueryElements uint32
 }
+
+type ResourceNamesByMesh map[string][]string
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
@@ -38,7 +41,8 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}
 
 	return &pgxResourceStore{
-		pool: pool,
+		pool:                 pool,
+		maxListQueryElements: config.MaxListQueryElements,
 	}, nil
 }
 
@@ -183,15 +187,29 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
-	if len(opts.ResourceKeys) > 0 {
+	rkSize := len(opts.ResourceKeys)
+	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
 		statement += " AND ("
-		for idx, rk := range opts.ResourceKeys {
-			if idx > 0 {
+		res := resourceNamesByMesh(opts.ResourceKeys)
+		iter := 0
+		for mesh, names := range res {
+			if iter > 0 {
 				statement += " OR "
 			}
-			statement += fmt.Sprintf("(mesh=$%d AND name=$%d)", argsIndex+1, argsIndex+2)
-			argsIndex += 2
-			statementArgs = append(statementArgs, rk.Mesh, rk.Name)
+			argsIndex++
+			statement += fmt.Sprintf("(mesh=$%d AND", argsIndex)
+			statementArgs = append(statementArgs, mesh)
+			for idx, name := range names {
+				argsIndex++
+				if idx == 0 {
+					statement += fmt.Sprintf(" name IN ($%d", argsIndex)
+				} else {
+					statement += fmt.Sprintf(",$%d", argsIndex)
+				}
+				statementArgs = append(statementArgs, name)
+			}
+			statement += "))"
+			iter++
 		}
 		statement += ")"
 	} else {
@@ -228,6 +246,18 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 
 	resources.GetPagination().SetTotal(uint32(total))
 	return nil
+}
+
+func resourceNamesByMesh(resourceKeys []core_model.ResourceKey) ResourceNamesByMesh {
+	resourceNamesByMesh := ResourceNamesByMesh{}
+	for _, rk := range resourceKeys {
+		if val, exists := resourceNamesByMesh[rk.Mesh]; exists {
+			resourceNamesByMesh[rk.Mesh] = append(val, rk.Name)
+		} else {
+			resourceNamesByMesh[rk.Mesh] = []string{rk.Name}
+		}
+	}
+	return resourceNamesByMesh
 }
 
 func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {

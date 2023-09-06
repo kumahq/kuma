@@ -20,7 +20,8 @@ import (
 )
 
 type postgresResourceStore struct {
-	db *sql.DB
+	db                   *sql.DB
+	maxListQueryElements uint32
 }
 
 var _ store.ResourceStore = &postgresResourceStore{}
@@ -36,7 +37,8 @@ func NewPqStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig)
 	}
 
 	return &postgresResourceStore{
-		db: db,
+		db:                   db,
+		maxListQueryElements: config.MaxListQueryElements,
 	}, nil
 }
 
@@ -180,15 +182,29 @@ func (r *postgresResourceStore) List(_ context.Context, resources core_model.Res
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
-	if len(opts.ResourceKeys) > 0 {
+	rkSize := len(opts.ResourceKeys)
+	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
 		statement += " AND ("
-		for idx, rk := range opts.ResourceKeys {
-			if idx > 0 {
+		res := resourceNamesByMesh(opts.ResourceKeys)
+		iter := 0
+		for mesh, names := range res {
+			if iter > 0 {
 				statement += " OR "
 			}
-			statement += fmt.Sprintf("(mesh=$%d AND name=$%d)", argsIndex+1, argsIndex+2)
-			argsIndex += 2
-			statementArgs = append(statementArgs, rk.Mesh, rk.Name)
+			argsIndex++
+			statement += fmt.Sprintf("(mesh=$%d AND", argsIndex)
+			statementArgs = append(statementArgs, mesh)
+			for idx, name := range names {
+				argsIndex++
+				if idx == 0 {
+					statement += fmt.Sprintf(" name IN ($%d", argsIndex)
+				} else {
+					statement += fmt.Sprintf(",$%d", argsIndex)
+				}
+				statementArgs = append(statementArgs, name)
+			}
+			statement += "))"
+			iter++
 		}
 		statement += ")"
 	} else {

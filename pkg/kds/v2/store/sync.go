@@ -66,16 +66,14 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 }
 
 type syncResourceStore struct {
-	log                  logr.Logger
-	resourceStore        store.ResourceStore
-	maxListQueryElements int
+	log           logr.Logger
+	resourceStore store.ResourceStore
 }
 
-func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore, maxListQueryElements uint32) ResourceSyncer {
+func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
 	return &syncResourceStore{
-		log:                  log,
-		resourceStore:        resourceStore,
-		maxListQueryElements: int(maxListQueryElements),
+		log:           log,
+		resourceStore: resourceStore,
 	}
 }
 
@@ -88,12 +86,12 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	if err != nil {
 		return err
 	}
-	if len(upstream.GetItems()) >= s.maxListQueryElements || upstreamResponse.IsInitialRequest {
+	if upstreamResponse.IsInitialRequest {
 		if err := s.resourceStore.List(ctx, downstream); err != nil {
 			return err
 		}
 	} else {
-		upstreamChangeKeys := append(ToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
+		upstreamChangeKeys := append(core_model.ResourceListToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
 		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
 			return err
 		}
@@ -318,12 +316,4 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
-}
-
-func ToResourceKeys(rs core_model.ResourceList) []core_model.ResourceKey {
-	rkey := []core_model.ResourceKey{}
-	for _, r := range rs.GetItems() {
-		rkey = append(rkey, core_model.MetaToResourceKey(r.GetMeta()))
-	}
-	return rkey
 }

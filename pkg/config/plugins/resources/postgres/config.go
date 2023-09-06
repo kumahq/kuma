@@ -75,6 +75,8 @@ type PostgresStoreConfig struct {
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	// MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+	MaxListQueryElements uint32 `json:"maxListQueryElements" envconfig:"kuma_store_postgres_max_list_query_elements"`
 }
 
 func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
@@ -274,6 +276,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
 		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
 		HealthCheckInterval:         DefaultHealthCheckInterval,
+		MaxListQueryElements:        0,
 	}
 }
 
