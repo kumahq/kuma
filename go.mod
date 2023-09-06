@@ -58,6 +58,7 @@ require (
 	golang.org/x/time v0.3.0
 	google.golang.org/genproto v0.0.0-20230526161137-0005af68ea54 // indirect
 	google.golang.org/grpc v1.57.0
+<<<<<<< HEAD
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -79,6 +80,25 @@ require (
 require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230525234035-dd9d682886f9
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19
+=======
+	google.golang.org/protobuf v1.31.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	helm.sh/helm/v3 v3.12.3
+	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
+	k8s.io/api v0.28.1
+	k8s.io/apiextensions-apiserver v0.28.1
+	k8s.io/apimachinery v0.28.1
+	k8s.io/client-go v0.28.1
+	k8s.io/klog/v2 v2.100.1
+	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
+	k8s.io/kubectl v0.28.1
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	sigs.k8s.io/controller-runtime v0.16.1
+	sigs.k8s.io/controller-tools v0.13.0
+	// When updating this also update version in: test/framework/k8s.go
+	sigs.k8s.io/gateway-api v0.8.0
+	sigs.k8s.io/yaml v1.3.0
+>>>>>>> bda2e40c0 (chore(deps): bump sigs.k8s.io/gateway-api from 0.8.0-rc1 to 0.8.0 (#7644))
 )
 
 require (
