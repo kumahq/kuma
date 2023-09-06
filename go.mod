@@ -72,11 +72,19 @@ require (
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
 	k8s.io/klog/v2 v2.100.1
+<<<<<<< HEAD
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
 	k8s.io/kubectl v0.27.2
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/controller-tools v0.12.0
+=======
+	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
+	k8s.io/kubectl v0.28.1
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	sigs.k8s.io/controller-runtime v0.16.1
+	sigs.k8s.io/controller-tools v0.13.0
+>>>>>>> 433f65276 (chore(deps): bump sigs.k8s.io/controller-runtime from 0.15.1 to 0.16.1 (#7643))
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v0.7.1-0.20230613222957-c9540a9cf448
 	sigs.k8s.io/yaml v1.3.0
@@ -186,11 +194,19 @@ require (
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
+<<<<<<< HEAD
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/tools v0.9.3 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/api v0.122.0 // indirect
+=======
+	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/tools v0.12.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
+	google.golang.org/api v0.126.0 // indirect
+>>>>>>> 433f65276 (chore(deps): bump sigs.k8s.io/controller-runtime from 0.15.1 to 0.16.1 (#7643))
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
