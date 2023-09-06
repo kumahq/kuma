@@ -77,7 +77,7 @@ require (
 	helm.sh/helm/v3 v3.12.3
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
 	k8s.io/api v0.28.1
-	k8s.io/apiextensions-apiserver v0.28.0
+	k8s.io/apiextensions-apiserver v0.28.1
 	k8s.io/apimachinery v0.28.1
 	k8s.io/client-go v0.28.1
 	k8s.io/klog/v2 v2.100.1
@@ -87,7 +87,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.16.1
 	sigs.k8s.io/controller-tools v0.13.0
 	// When updating this also update version in: test/framework/k8s.go
-	sigs.k8s.io/gateway-api v0.8.0-rc1
+	sigs.k8s.io/gateway-api v0.8.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
