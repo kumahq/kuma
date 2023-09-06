@@ -22,6 +22,7 @@ var CatalogKey = model.ResourceKey{
 
 type ConfigCatalog struct {
 	resManager manager.ResourceManager
+	ConfigCatalogReader
 }
 
 var _ Catalog = &ConfigCatalog{}
@@ -29,22 +30,10 @@ var _ Catalog = &ConfigCatalog{}
 func NewConfigCatalog(resManager manager.ResourceManager) Catalog {
 	return &ConfigCatalog{
 		resManager: resManager,
+		ConfigCatalogReader: ConfigCatalogReader{
+			resManager: resManager,
+		},
 	}
-}
-
-func (c *ConfigCatalog) Instances(ctx context.Context) ([]Instance, error) {
-	cfg := system.NewConfigResource()
-	if err := c.resManager.Get(ctx, cfg, store.GetBy(CatalogKey)); err != nil {
-		if store.IsResourceNotFound(err) {
-			return []Instance{}, nil
-		}
-		return nil, err
-	}
-	var instances ConfigInstances
-	if err := json.Unmarshal([]byte(cfg.Spec.Config), &instances); err != nil {
-		return nil, err
-	}
-	return instances.Instances, nil
 }
 
 func (c *ConfigCatalog) Replace(ctx context.Context, instances []Instance) (bool, error) {
@@ -99,4 +88,31 @@ func (c *ConfigCatalog) ReplaceLeader(ctx context.Context, leader Instance) erro
 		}
 		return nil
 	})
+}
+
+type ConfigCatalogReader struct {
+	resManager manager.ReadOnlyResourceManager
+}
+
+var _ Reader = &ConfigCatalogReader{}
+
+func NewConfigCatalogReader(resManager manager.ReadOnlyResourceManager) Reader {
+	return &ConfigCatalogReader{
+		resManager: resManager,
+	}
+}
+
+func (c *ConfigCatalogReader) Instances(ctx context.Context) ([]Instance, error) {
+	cfg := system.NewConfigResource()
+	if err := c.resManager.Get(ctx, cfg, store.GetBy(CatalogKey)); err != nil {
+		if store.IsResourceNotFound(err) {
+			return []Instance{}, nil
+		}
+		return nil, err
+	}
+	var instances ConfigInstances
+	if err := json.Unmarshal([]byte(cfg.Spec.Config), &instances); err != nil {
+		return nil, err
+	}
+	return instances.Instances, nil
 }
