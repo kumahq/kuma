@@ -13,7 +13,8 @@ kumactl inspect meshhttproute NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshhttproute
+  -h, --help          help for meshhttproute
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

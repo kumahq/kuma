@@ -13,7 +13,8 @@ kumactl inspect meshratelimit NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshratelimit
+  -h, --help          help for meshratelimit
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

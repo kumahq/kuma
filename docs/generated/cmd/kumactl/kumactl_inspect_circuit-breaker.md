@@ -13,7 +13,8 @@ kumactl inspect circuit-breaker NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for circuit-breaker
+  -h, --help          help for circuit-breaker
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
