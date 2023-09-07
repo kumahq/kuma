@@ -13,7 +13,8 @@ kumactl inspect proxytemplate NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for proxytemplate
+  -h, --help          help for proxytemplate
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

@@ -13,7 +13,8 @@ kumactl inspect meshtrafficpermission NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshtrafficpermission
+  -h, --help          help for meshtrafficpermission
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

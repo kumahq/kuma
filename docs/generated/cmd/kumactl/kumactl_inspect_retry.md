@@ -13,7 +13,8 @@ kumactl inspect retry NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for retry
+  -h, --help          help for retry
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
