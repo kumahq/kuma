@@ -13,8 +13,13 @@ kumactl install logging [flags]
 ### Options
 
 ```
+<<<<<<< HEAD:docs/generated/cmd/kumactl/kumactl_install_logging.md
   -h, --help               help for logging
       --namespace string   namespace to install logging to (default "kuma-logging")
+=======
+  -h, --help          help for meshtcproute
+  -m, --mesh string   mesh to use (default "default")
+>>>>>>> 5141208c6 (fix(kumactl): add `--mesh` parameter to `inspect <policy>` (#7696)):docs/generated/cmd/kumactl/kumactl_inspect_meshtcproute.md
 ```
 
 ### Options inherited from parent commands
