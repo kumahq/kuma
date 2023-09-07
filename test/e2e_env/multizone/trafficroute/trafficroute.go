@@ -313,7 +313,8 @@ conf:
     kuma.io/service: '*'
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "route-all-tr-test", Mesh: meshName})
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 		})
 
 		It("should loadbalance all requests equally by default", func() {
