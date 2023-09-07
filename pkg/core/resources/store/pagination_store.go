@@ -66,18 +66,15 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		return err
 	}
 
-	if len(opts.ResourceKeys) > 0 {
-		for _, item := range fullList.GetItems() {
-			if _, exists := opts.ResourceKeys[model.MetaToResourceKey(item.GetMeta())]; exists {
-				_ = filteredList.AddItem(item)
-			}
+	for _, item := range fullList.GetItems() {
+		_, exists := opts.ResourceKeys[model.MetaToResourceKey(item.GetMeta())]
+		if len(opts.ResourceKeys) > 0 && !exists {
+			continue
 		}
-	} else {
-		for _, item := range fullList.GetItems() {
-			if opts.Filter(item) {
-				_ = filteredList.AddItem(item)
-			}
+		if !opts.Filter(item) {
+			continue
 		}
+		_ = filteredList.AddItem(item)
 	}
 
 	filteredItems := filteredList.GetItems()
