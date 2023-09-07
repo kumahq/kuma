@@ -95,7 +95,11 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 		return errors.Wrap(err, "invalid node ID")
 	}
 	dpKey := proxyId.ToResourceKey()
+<<<<<<< HEAD
 	metadata := core_xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
+=======
+	metadata := core_xds.DataplaneMetadataFromXdsMetadata(request.Metadata(), os.TempDir(), dpKey)
+>>>>>>> 27ea0f00c (fix(xds): backwards compatibility on access logs paths (#7662))
 	if metadata == nil {
 		return errors.New("metadata in xDS Node cannot be nil")
 	}
