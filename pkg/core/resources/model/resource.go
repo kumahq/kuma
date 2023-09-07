@@ -267,6 +267,14 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 	}
 }
 
+func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
+	rkey := []ResourceKey{}
+	for _, r := range rl.GetItems() {
+		rkey = append(rkey, MetaToResourceKey(r.GetMeta()))
+	}
+	return rkey
+}
+
 type ResourceList interface {
 	GetItemType() ResourceType
 	GetItems() []Resource
