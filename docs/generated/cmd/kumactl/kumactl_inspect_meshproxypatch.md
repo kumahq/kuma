@@ -13,7 +13,8 @@ kumactl inspect meshproxypatch NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshproxypatch
+  -h, --help          help for meshproxypatch
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
