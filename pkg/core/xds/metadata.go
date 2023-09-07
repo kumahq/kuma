@@ -133,7 +133,11 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
+<<<<<<< HEAD
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
+=======
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir string, dpKey model.ResourceKey) *DataplaneMetadata {
+>>>>>>> 27ea0f00c (fix(xds): backwards compatibility on access logs paths (#7662))
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
 	// the DiscoveryRequest can still be crafted manually to crash the CP.
@@ -164,6 +168,17 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 				"value", value)
 		}
 	}
+<<<<<<< HEAD
+=======
+	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the metadata https://github.com/kumahq/kuma/issues/7220 (remove the parameter tmpDir of the function too)
+	if xdsMetadata.Fields[FieldAccessLogSocketPath] != nil {
+		metadata.AccessLogSocketPath = xdsMetadata.Fields[FieldAccessLogSocketPath].GetStringValue()
+		metadata.MetricsSocketPath = xdsMetadata.Fields[FieldMetricsSocketPath].GetStringValue()
+	} else {
+		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
+		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
+	}
+>>>>>>> 27ea0f00c (fix(xds): backwards compatibility on access logs paths (#7662))
 
 	if listValue := xdsMetadata.Fields[fieldFeatures]; listValue != nil {
 		metadata.Features = Features{}
