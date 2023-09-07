@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshtimeout
 
-Inspect TrafficLog
+Inspect MeshTimeout
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshTimeout.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshtimeout NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshtimeout
   -m, --mesh string   mesh to use (default "default")
 ```
 

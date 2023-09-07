@@ -22,10 +22,14 @@ import (
 )
 
 type testPolicyInspectClient struct {
-	response *api_server_types.PolicyInspectEntryList
+	ensureMesh string
+	response   *api_server_types.PolicyInspectEntryList
 }
 
 func (t *testPolicyInspectClient) Inspect(ctx context.Context, policyDesc model.ResourceTypeDescriptor, mesh, name string) (*api_server_types.PolicyInspectEntryList, error) {
+	if t.ensureMesh != "" {
+		Expect(mesh).To(Equal(t.ensureMesh))
+	}
 	return t.response, nil
 }
 
@@ -36,6 +40,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 	type testCase struct {
 		goldenFile         string
 		serverResponseFile string
+		mesh               string
 		cmdArgs            []string
 	}
 	DescribeTable("kumactl inspect dataplane",
@@ -52,7 +57,8 @@ var _ = Describe("kumactl inspect POLICY", func() {
 
 			rootCtx.Runtime.NewPolicyInspectClient = func(client util_http.Client) resources.PolicyInspectClient {
 				return &testPolicyInspectClient{
-					response: entryList,
+					response:   entryList,
+					ensureMesh: given.mesh,
 				}
 			}
 
@@ -73,6 +79,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 		Entry("inbound policy", testCase{
 			goldenFile:         "inspect-traffic-permission.golden.txt",
 			serverResponseFile: "inspect-traffic-permission.server-response.json",
+			mesh:               "default",
 			cmdArgs:            []string{"inspect", "traffic-permission", "tp1"},
 		}),
 		Entry("outbound policy", testCase{
@@ -94,6 +101,12 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			goldenFile:         "inspect-traffic-trace.golden.txt",
 			serverResponseFile: "inspect-traffic-trace.server-response.json",
 			cmdArgs:            []string{"inspect", "traffic-trace", "tt1"},
+		}),
+		Entry("other-mesh", testCase{
+			goldenFile:         "inspect-traffic-trace-other-mesh.golden.txt",
+			serverResponseFile: "inspect-traffic-trace-other-mesh.server-response.json",
+			mesh:               "other-mesh",
+			cmdArgs:            []string{"inspect", "traffic-trace", "tt1", "--mesh", "other-mesh"},
 		}),
 	)
 })

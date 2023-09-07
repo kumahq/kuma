@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshratelimit
 
-Inspect TrafficLog
+Inspect MeshRateLimit
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshRateLimit.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshratelimit NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshratelimit
   -m, --mesh string   mesh to use (default "default")
 ```
 

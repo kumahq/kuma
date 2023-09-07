@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshtcproute
 
-Inspect TrafficLog
+Inspect MeshTCPRoute
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshTCPRoute.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshtcproute NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshtcproute
   -m, --mesh string   mesh to use (default "default")
 ```
 

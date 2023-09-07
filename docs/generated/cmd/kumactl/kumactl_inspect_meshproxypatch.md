@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshproxypatch
 
-Inspect TrafficLog
+Inspect MeshProxyPatch
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshProxyPatch.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshproxypatch NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshproxypatch
   -m, --mesh string   mesh to use (default "default")
 ```
 

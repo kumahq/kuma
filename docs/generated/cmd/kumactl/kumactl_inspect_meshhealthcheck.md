@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshhealthcheck
 
-Inspect TrafficLog
+Inspect MeshHealthCheck
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshHealthCheck.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshhealthcheck NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshhealthcheck
   -m, --mesh string   mesh to use (default "default")
 ```
 

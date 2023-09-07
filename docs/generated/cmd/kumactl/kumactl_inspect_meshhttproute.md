@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshhttproute
 
-Inspect TrafficLog
+Inspect MeshHTTPRoute
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshHTTPRoute.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshhttproute NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshhttproute
   -m, --mesh string   mesh to use (default "default")
 ```
 

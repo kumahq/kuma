@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshloadbalancingstrategy
 
-Inspect TrafficLog
+Inspect MeshLoadBalancingStrategy
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshLoadBalancingStrategy.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshloadbalancingstrategy NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshloadbalancingstrategy
   -m, --mesh string   mesh to use (default "default")
 ```
 

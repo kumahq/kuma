@@ -1,19 +1,19 @@
-## kumactl inspect traffic-log
+## kumactl inspect meshretry
 
-Inspect TrafficLog
+Inspect MeshRetry
 
 ### Synopsis
 
-Inspect TrafficLog.
+Inspect MeshRetry.
 
 ```
-kumactl inspect traffic-log NAME [flags]
+kumactl inspect meshretry NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for traffic-log
+  -h, --help          help for meshretry
   -m, --mesh string   mesh to use (default "default")
 ```
 
