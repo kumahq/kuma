@@ -11,7 +11,7 @@ services, dataplanes and their status.
 
 ## Considered Options
 
-* extend `GlobalInsight` with data from `MeshInsight` and `ZoneInsight`.
+* Extend `GlobalInsight` with data from `MeshInsight` and `ZoneInsight`.
 
 ## Decision Outcome
 
@@ -88,3 +88,9 @@ Most of this data is already computed. To assemble this, we need:
 - `dataplanes` are present in `MeshInsight.Dataplanes` we only need to aggregate them to get the overall count.
 - `zones` info can be extracted and aggregated from `ZoneInsight`
 - `policies` are present in `MeshInsight.Policies` we just need to aggregate them to get the overall count.
+
+#### Global Insight as a resource
+
+Right now Global Insight is not one of the Kuma resources it is computed on the fly after calling `/global-insights` endpoint.
+Global Resource should be treated as any other resource in Kuma, and stored in control plane storage. Thanks to this
+we would be able to compute them on a constant basis and cache the result.
