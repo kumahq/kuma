@@ -164,7 +164,8 @@ conf:
         version: v2
 `, v1Weight, v2Weight)
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "route-20-80-split", Mesh: meshName})
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
@@ -215,7 +216,8 @@ conf:
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "route-by-path", Mesh: meshName})
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
@@ -269,7 +271,8 @@ conf:
       version: v2
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "two-splits", Mesh: meshName})
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
