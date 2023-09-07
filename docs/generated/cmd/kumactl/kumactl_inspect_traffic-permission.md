@@ -13,7 +13,8 @@ kumactl inspect traffic-permission NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for traffic-permission
+  -h, --help          help for traffic-permission
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

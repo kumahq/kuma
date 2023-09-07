@@ -13,7 +13,8 @@ kumactl inspect meshtrace NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshtrace
+  -h, --help          help for meshtrace
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
