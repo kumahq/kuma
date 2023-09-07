@@ -62,6 +62,7 @@ networking:
 
 	E2EAfterAll(func() {
 		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
