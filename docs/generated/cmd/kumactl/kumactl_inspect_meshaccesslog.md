@@ -13,7 +13,8 @@ kumactl inspect meshaccesslog NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshaccesslog
+  -h, --help          help for meshaccesslog
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

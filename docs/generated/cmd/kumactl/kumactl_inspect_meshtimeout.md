@@ -13,7 +13,8 @@ kumactl inspect meshtimeout NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshtimeout
+  -h, --help          help for meshtimeout
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
