@@ -13,7 +13,8 @@ kumactl inspect meshhealthcheck NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshhealthcheck
+  -h, --help          help for meshhealthcheck
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

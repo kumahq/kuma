@@ -13,7 +13,8 @@ kumactl inspect meshloadbalancingstrategy NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshloadbalancingstrategy
+  -h, --help          help for meshloadbalancingstrategy
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

@@ -13,7 +13,8 @@ kumactl inspect meshretry NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshretry
+  -h, --help          help for meshretry
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
