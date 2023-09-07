@@ -13,7 +13,8 @@ kumactl inspect traffic-log NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for traffic-log
+  -h, --help          help for traffic-log
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
