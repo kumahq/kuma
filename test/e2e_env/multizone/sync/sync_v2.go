@@ -9,6 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/kds/hash"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -136,7 +138,7 @@ conf:
 
 		It("should sync policy update", func() {
 			// given
-			name := "tr-update"
+			name := hash.ZoneName(&model.ResourceMeta{Name: "tr-update", Mesh: meshName})
 			Expect(global.Install(YamlUniversal(universalPolicyNamed(name, 100, meshName)))).To(Succeed())
 			policySyncedToZones(name)
 

@@ -500,7 +500,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "custom-namespace",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo-xw46fx28d8666769",
+				expectedName: "foo-zxw6c95d42zfz9cc",
 			}),
 			Entry("shouldn't be removed when store type is kubernetes "+
 				"and resource isn't plugin originated", testCase{
@@ -510,7 +510,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "custom-namespace",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo-xw46fx28d8666769.custom-namespace",
+				expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
 			}),
 			Entry("shouldn't be removed when store type is not kubernetes",
 				testCase{
@@ -520,7 +520,7 @@ var _ = Describe("Context", func() {
 						k8sSystemNamespace: "custom-namespace",
 					},
 					name:         "foo.custom-namespace",
-					expectedName: "foo-xw46fx28d8666769.custom-namespace",
+					expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
 				}),
 			Entry("shouldn't be removed when suffix is not k8s system "+
 				"namespace", testCase{
@@ -530,7 +530,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "kuma-system",
 				},
 				name:         "foo.custom-namespace",
-				expectedName: "foo-xw46fx28d8666769.custom-namespace",
+				expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
 			}),
 		)
 	})

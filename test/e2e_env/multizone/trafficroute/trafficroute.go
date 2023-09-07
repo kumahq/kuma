@@ -9,6 +9,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/hash"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -90,7 +92,8 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, multizone.Zones()...)).Should(Succeed())
+		name := hash.ZoneName(&test_model.ResourceMeta{Name: "three-way-route", Mesh: meshName})
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: name}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")

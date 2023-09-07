@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/kds/hash"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -134,7 +136,7 @@ spec:
 
 		It("should sync policy update", func() {
 			// given
-			name := "tr-update"
+			name := hash.ZoneName(&model.ResourceMeta{Name: "tr-update", Mesh: meshName})
 			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
 			policySyncedToZones(name)
 

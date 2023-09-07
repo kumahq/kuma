@@ -2,9 +2,6 @@ package context
 
 import (
 	"context"
-	"encoding/hex"
-	"fmt"
-	"hash/fnv"
 	"reflect"
 	"strings"
 
@@ -13,7 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"k8s.io/apimachinery/pkg/util/rand"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -27,13 +23,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 )
 
@@ -203,41 +199,11 @@ func AddHashSuffix(r model.Resource) (model.Resource, error) {
 		return r, nil
 	}
 
-	var name string
-	var namespace string
-
-	if n, ns, err := util_k8s.CoreNameToK8sName(r.GetMeta().GetName()); err == nil {
-		name = n
-		namespace = ns
-	} else {
-		name = r.GetMeta().GetName()
-	}
-
-	nameWithHash := fmt.Sprintf("%s-%s", name, hash(r.GetMeta().GetMesh()))
-
-	var coreName string
-	if namespace != "" {
-		coreName = util_k8s.K8sNamespacedNameToCoreName(nameWithHash, namespace)
-	} else {
-		coreName = nameWithHash
-	}
-
 	newObj := r.Descriptor().NewObject()
-	newObj.SetMeta(util.NewResourceMeta(coreName, r.GetMeta().GetMesh()))
+	newObj.SetMeta(util.NewResourceMeta(hash.ZoneName(r.GetMeta()), r.GetMeta().GetMesh()))
 	_ = newObj.SetSpec(r.GetSpec())
 
 	return newObj, nil
-}
-
-func hash(ss ...string) string {
-	hasher := fnv.New64a()
-	for _, s := range ss {
-		_, _ = hasher.Write([]byte(s))
-	}
-	b := []byte{}
-	b = hasher.Sum(b)
-
-	return rand.SafeEncodeString(hex.EncodeToString(b))
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
