@@ -10,7 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -138,7 +138,7 @@ conf:
 
 		It("should sync policy update", func() {
 			// given
-			name := hash.ZoneName(&model.ResourceMeta{Name: "tr-update", Mesh: meshName})
+			name := "tr-update"
 			Expect(global.Install(YamlUniversal(universalPolicyNamed(name, 100, meshName)))).To(Succeed())
 			policySyncedToZones(name)
 
@@ -146,11 +146,12 @@ conf:
 			Expect(global.Install(YamlUniversal(universalPolicyNamed(name, 101, meshName)))).To(Succeed())
 
 			// then
+			hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "tr-update", Mesh: meshName})
 			Eventually(func() (string, error) {
-				return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
+				return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 			Eventually(func() (string, error) {
-				return zone2.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
+				return zone2.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 		})
 

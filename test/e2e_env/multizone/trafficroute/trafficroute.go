@@ -92,8 +92,8 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		name := hash.ZoneName(&test_model.ResourceMeta{Name: "three-way-route", Mesh: meshName})
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: name}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "three-way-route", Mesh: meshName})
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
@@ -124,7 +124,8 @@ conf:
     kuma.io/service: another-test-server
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.ZoneName(&test_model.ResourceMeta{Name: "route-echo-to-backend", Mesh: meshName})
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
