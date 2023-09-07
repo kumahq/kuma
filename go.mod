@@ -26,7 +26,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.41.15
+	github.com/gruntwork-io/terratest v0.43.13
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -216,5 +216,3 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview
