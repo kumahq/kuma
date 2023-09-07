@@ -36,10 +36,7 @@ type State struct {
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
-	globalOptions := append(
-		[]framework.KumaDeploymentOption{framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true")},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...,
-	)
+	globalOptions := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
 	wg := sync.WaitGroup{}
@@ -65,7 +62,6 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
@@ -86,9 +82,9 @@ func SetupAndGetState() []byte {
 	uniZone1Options := append(
 		[]framework.KumaDeploymentOption{
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
+			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...,
 	)
@@ -108,9 +104,9 @@ func SetupAndGetState() []byte {
 	uniZone2Options := append(
 		[]framework.KumaDeploymentOption{
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
+			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)

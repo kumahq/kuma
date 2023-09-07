@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
@@ -28,6 +29,7 @@ type testRuntimeContext struct {
 	metrics                  core_metrics.Metrics
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
+	eventBus                 events.EventBus
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -48,6 +50,10 @@ func (t *testRuntimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomiz
 
 func (t *testRuntimeContext) Tenants() multitenant.Tenants {
 	return t.tenants
+}
+
+func (t *testRuntimeContext) EventBus() events.EventBus {
+	return t.eventBus
 }
 
 func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
@@ -85,6 +91,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
+		eventBus:                 events.NewEventBus(),
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

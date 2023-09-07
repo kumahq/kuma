@@ -27,5 +27,9 @@
   "maxHeapSizeBytes": 0
  },
  "accessLogSocketPath": "/tmp/access",
- "metricsSocketPath": "/tmp/metric"
+ "metricsResources": {
+  "socketPath": "/tmp/metric",
+  "certPath": "/tmp/cert.pem",
+  "keyPath": "/tmp/key.pem"
+ }
 }

@@ -159,7 +159,8 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	return result, nil
 }
 
-// syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
+// syncIngress synces state of Ingress Dataplane.
+// It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.EnvoyCpCtx,
@@ -206,8 +207,8 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	return result, nil
 }
 
-// syncEgress syncs state of Egress Dataplane. Notice that it does not use
-// Mesh Hash yet because Egress supports many Meshes.
+// syncEgress syncs state of Egress Dataplane.
+// It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.EnvoyCpCtx,

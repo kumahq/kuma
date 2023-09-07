@@ -107,6 +107,9 @@ var _ = Describe("Remote Bootstrap", func() {
 				params.DynamicMetadata = map[string]string{
 					"test": "value",
 				}
+				params.MetricsCertPath = "/tmp/cert.pem"
+				params.MetricsKeyPath = "/tmp/key.pem"
+
 				return testCase{
 					config:                       cfg,
 					params:                       params,

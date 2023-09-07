@@ -13,7 +13,8 @@ kumactl inspect traffic-trace NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for traffic-trace
+  -h, --help          help for traffic-trace
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

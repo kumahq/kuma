@@ -139,7 +139,12 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	if statusCode != 200 {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	return rest.JSON.UnmarshalToCore(b, res)
+	restRes, err := rest.JSON.Unmarshal(b, res.Descriptor())
+	if err != nil {
+		return err
+	}
+	res.SetMeta(restRes.GetMeta())
+	return res.SetSpec(restRes.GetSpec())
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {

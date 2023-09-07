@@ -35,6 +35,8 @@ type BootstrapParams struct {
 	DynamicMetadata     map[string]string
 	MetricsSocketPath   string
 	AccessLogSocketPath string
+	MetricsCertPath     string
+	MetricsKeyPath      string
 }
 
 type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)

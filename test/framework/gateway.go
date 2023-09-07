@@ -21,7 +21,6 @@ networking:
       kuma.io/service: edge-gateway
 `, mesh)
 		return cluster.DeployApp(
-			WithKumactlFlow(),
 			WithName(name),
 			WithMesh(mesh),
 			WithToken(token),

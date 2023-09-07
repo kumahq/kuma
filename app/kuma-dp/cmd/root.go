@@ -67,6 +67,7 @@ func NewRootCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newRunCmd(opts, rootCtx))
 	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(newWaitCmd())
 
 	return cmd
 }

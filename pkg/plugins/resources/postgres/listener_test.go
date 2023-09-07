@@ -31,7 +31,7 @@ var _ = Describe("Events", func() {
 		cfg = *c
 		ver, err := MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
+		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
 	})
 
 	DescribeTable("should receive a notification from pq listener",

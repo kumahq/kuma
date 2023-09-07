@@ -22,8 +22,11 @@ import (
 )
 
 type pgxResourceStore struct {
-	pool *pgxpool.Pool
+	pool                 *pgxpool.Pool
+	maxListQueryElements uint32
 }
+
+type ResourceNamesByMesh map[string][]string
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
@@ -38,7 +41,8 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}
 
 	return &pgxResourceStore{
-		pool: pool,
+		pool:                 pool,
+		maxListQueryElements: config.MaxListQueryElements,
 	}, nil
 }
 
@@ -183,6 +187,32 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
+	rkSize := len(opts.ResourceKeys)
+	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
+		statement += " AND ("
+		res := resourceNamesByMesh(opts.ResourceKeys)
+		iter := 0
+		for mesh, names := range res {
+			if iter > 0 {
+				statement += " OR "
+			}
+			argsIndex++
+			statement += fmt.Sprintf("(mesh=$%d AND", argsIndex)
+			statementArgs = append(statementArgs, mesh)
+			for idx, name := range names {
+				argsIndex++
+				if idx == 0 {
+					statement += fmt.Sprintf(" name IN ($%d", argsIndex)
+				} else {
+					statement += fmt.Sprintf(",$%d", argsIndex)
+				}
+				statementArgs = append(statementArgs, name)
+			}
+			statement += "))"
+			iter++
+		}
+		statement += ")"
+	}
 	if opts.Mesh != "" {
 		argsIndex++
 		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
@@ -215,6 +245,18 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 
 	resources.GetPagination().SetTotal(uint32(total))
 	return nil
+}
+
+func resourceNamesByMesh(resourceKeys map[core_model.ResourceKey]struct{}) ResourceNamesByMesh {
+	resourceNamesByMesh := ResourceNamesByMesh{}
+	for key := range resourceKeys {
+		if val, exists := resourceNamesByMesh[key.Mesh]; exists {
+			resourceNamesByMesh[key.Mesh] = append(val, key.Name)
+		} else {
+			resourceNamesByMesh[key.Mesh] = []string{key.Name}
+		}
+	}
+	return resourceNamesByMesh
 }
 
 func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {

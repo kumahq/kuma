@@ -167,7 +167,7 @@ runuser -u kuma-dp -- \
 				return err
 			}
 
-			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully\n"))
+			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.\n"))
 			return nil
 		},
 	}

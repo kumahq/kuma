@@ -8,6 +8,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -64,29 +65,51 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	return nil
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
-	new, err := r.generator.GenerateSnapshot(ctx, node)
-	if err != nil {
-		return err
-	}
-	if new == nil {
-		return errors.New("nil snapshot")
-	}
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}) (error, bool) {
 	id, err := r.hashId(ctx, node)
 	if err != nil {
-		return err
+		return err, false
 	}
 	old, _ := r.cache.GetSnapshot(id)
-	new = r.Version(new, old)
-	r.logChanges(new, old, node)
-	r.meterConfigReadyForDelivery(new, old)
-	return r.cache.SetSnapshot(ctx, id, new)
+
+	// construct builder with unchanged types from the old snapshot
+	builder := cache_v2.NewSnapshotBuilder()
+	if old != nil {
+		for _, typ := range util_kds_v2.GetSupportedTypes() {
+			resType := core_model.ResourceType(typ)
+			if _, ok := changedTypes[resType]; ok {
+				continue
+			}
+
+			oldRes := old.GetResources(typ)
+			if len(oldRes) > 0 {
+				builder = builder.With(resType, maps.Values(oldRes))
+			}
+		}
+	}
+
+	new, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
+	if err != nil {
+		return err, false
+	}
+	if new == nil {
+		return errors.New("nil snapshot"), false
+	}
+
+	new, changed := r.Version(new, old)
+	if changed {
+		r.logChanges(new, old, node)
+		r.meterConfigReadyForDelivery(new, old)
+		return r.cache.SetSnapshot(ctx, id, new), true
+	}
+	return nil, false
 }
 
-func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
+func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache.ResourceSnapshot, bool) {
 	if new == nil {
-		return nil
+		return nil, false
 	}
+	changed := false
 	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		version := new.GetVersion(typ)
@@ -101,13 +124,10 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 		if version == "" {
 			version = core.NewUUID()
 		}
-		if new == nil {
-			continue
-		}
 		if new.GetVersion(typ) == version {
 			continue
 		}
-
+		changed = true
 		n := map[string]envoy_types.ResourceWithTTL{}
 		for k, v := range new.GetResourcesAndTTL(typ) {
 			n[k] = v
@@ -116,7 +136,7 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 	}
 	return &cache_v2.Snapshot{
 		Resources: newResources,
-	}
+	}, changed
 }
 
 func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
