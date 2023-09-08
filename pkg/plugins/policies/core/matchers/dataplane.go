@@ -168,14 +168,19 @@ func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, re
 
 func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta core_model.ResourceMeta) bool {
 	if len(refMeta.GetNameExtensions()) == 0 {
-		return hash.ZoneName(refMeta.GetMesh(), refName) == resourceMeta.GetName()
+		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
 	}
 
 	if ns := refMeta.GetNameExtensions()[controllers.KubeNamespaceTag]; ns != "" {
-		return hash.ZoneName(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns)) == resourceMeta.GetName()
+		return equalNames(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns), resourceMeta.GetName())
 	}
 
 	return false
+}
+
+func equalNames(mesh, n1, n2 string) bool {
+	// instead of dragging the info if it's Zone or Standalone we can simply check 3 possible combinations
+	return n1 == n2 || hash.ZoneName(mesh, n1) == n2 || hash.ZoneName(mesh, n2) == n1
 }
 
 func unresolve(rl []core_model.Resource) []core_model.Resource {
