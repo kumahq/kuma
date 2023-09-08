@@ -44,6 +44,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"

@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -25,14 +26,20 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 	DescribeTable("should parse metadata",
 		func(given testCase) {
 			// when
-			metadata := xds.DataplaneMetadataFromXdsMetadata(given.node, "/tmp")
+			metadata := xds.DataplaneMetadataFromXdsMetadata(given.node, "/tmp", core_model.ResourceKey{
+				Name: "dp-1",
+				Mesh: "mesh",
+			})
 
 			// then
 			Expect(*metadata).To(Equal(given.expected))
 		},
 		Entry("from empty node", testCase{
-			node:     &structpb.Struct{},
-			expected: xds.DataplaneMetadata{},
+			node: &structpb.Struct{},
+			expected: xds.DataplaneMetadata{
+				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
+				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
+			},
 		}),
 		Entry("from non-empty node", testCase{
 			node: &structpb.Struct{
@@ -91,7 +98,9 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
-				DynamicMetadata: map[string]string{},
+				AccessLogSocketPath: "/tmp/kuma-al-dp-1-mesh.sock",
+				MetricsSocketPath:   "/tmp/kuma-mh-dp-1-mesh.sock",
+				DynamicMetadata:     map[string]string{},
 			},
 		}),
 	)
@@ -121,7 +130,27 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		}
 
 		// when
-		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp")
+		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp", core_model.ResourceKey{
+			Name: "dp-1",
+			Mesh: "mesh",
+		})
+
+		// then
+		Expect(metadata.AccessLogSocketPath).To(Equal("/tmp/kuma-al-dp-1-mesh.sock"))
+		Expect(metadata.MetricsSocketPath).To(Equal("/tmp/kuma-mh-dp-1-mesh.sock"))
+	})
+
+	It("should fallback to service side generated paths without dpp in metadata", func() { // remove with https://github.com/kumahq/kuma/issues/7220
+		// given
+		node := &structpb.Struct{
+			Fields: map[string]*structpb.Value{},
+		}
+
+		// when
+		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp", core_model.ResourceKey{
+			Name: "dp-1",
+			Mesh: "mesh",
+		})
 
 		// then
 		Expect(metadata.AccessLogSocketPath).To(Equal("/tmp/kuma-al-dp-1-mesh.sock"))
@@ -154,7 +183,10 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		}
 
 		// when
-		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp")
+		metadata := xds.DataplaneMetadataFromXdsMetadata(node, "/tmp", core_model.ResourceKey{
+			Name: "dp-1",
+			Mesh: "mesh",
+		})
 
 		// then
 		// We don't want to validate KumaDpVersion.KumaCpCompatible

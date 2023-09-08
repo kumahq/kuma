@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -389,6 +390,33 @@ func ExecuteStoreTests(
 					}
 					return res
 				}, Equal([]string{"list-res-1.demo", "list-res-2.demo"})))
+			})
+
+			It("should return a list of 2 resources by resource key", func() {
+				// given two resources
+				createResource("list-res-1.demo")
+				createResource("list-res-2.demo")
+				rs3 := createResource("list-mes-1.demo")
+				rs4 := createResource("list-mes-1.default")
+
+				list := core_mesh.TrafficRouteResourceList{}
+				rk := []core_model.ResourceKey{core_model.MetaToResourceKey(rs3.GetMeta()), core_model.MetaToResourceKey(rs4.GetMeta())}
+
+				// when
+				err := s.List(context.Background(), &list, store.ListByResourceKeys(rk))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(list.Pagination.Total).To(Equal(uint32(2)))
+				// and
+				Expect(list.Items).To(WithTransform(func(itms []*core_mesh.TrafficRouteResource) []string {
+					var res []string
+					for _, v := range itms {
+						res = append(res, v.GetMeta().GetName())
+					}
+					return res
+				}, Equal([]string{"list-mes-1.default", "list-mes-1.demo"})))
 			})
 
 			Describe("Pagination", func() {

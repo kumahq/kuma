@@ -66,4 +66,5 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
 	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
+	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 )
