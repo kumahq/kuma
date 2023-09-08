@@ -86,14 +86,12 @@ func Setup(rt core_runtime.Runtime) error {
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsZoneLog.WithValues("peer-id", session.PeerID())
 		log.Info("new session created")
-		errChan := make(chan error, 1)
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
-				errChan <- errors.Wrap(err, "StreamKumaResources finished with an error")
+				session.SetError(errors.Wrap(err, "StreamKumaResources finished with an error"))
 			} else {
 				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
-			close(errChan)
 		}()
 		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
 			Callbacks(
@@ -107,12 +105,12 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				errChan <- errors.Wrap(err, "KDSSink finished with an error")
+				session.SetError(errors.Wrap(err, "KDSSink finished with an error"))
 			} else {
 				log.V(1).Info("KDSSink finished gracefully")
 			}
-			close(errChan)
 		}()
+		return nil
 	})
 
 	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
