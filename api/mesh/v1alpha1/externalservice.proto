@@ -51,12 +51,12 @@ message ExternalService {
       // mTLS.
       google.protobuf.BoolValue allowRenegotiation = 5;
 
-      // If true then hostname verification will be skipped during certificate verification.
-      google.protobuf.BoolValue skipHostnameVerification = 6;
-
       // ServerName overrides the default Server Name Indicator set by Kuma.
       // The default value is set to "address" specified in "networking".
-      google.protobuf.StringValue server_name = 7;
+      google.protobuf.StringValue server_name = 6;
+
+      // If true then hostname verification will be skipped during certificate verification.
+      google.protobuf.BoolValue skipHostnameVerification = 7;
     }
 
     TLS tls = 2;
