@@ -56,7 +56,7 @@ should look like this:
     "total": 5,
     "internal": 4,
     "external": 1,
-    "internal_by_status": {
+    "internalByStatus": {
       "Online": 2,
       "Offline": 1,
       "pariallyDegrated": 1
