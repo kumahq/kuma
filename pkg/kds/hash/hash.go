@@ -8,15 +8,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	k8s_strings "k8s.io/utils/strings"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
-func ZoneName(rm core_model.ResourceMeta) string {
-	if n, ns, err := util_k8s.CoreNameToK8sName(rm.GetName()); err == nil {
-		return util_k8s.K8sNamespacedNameToCoreName(addSuffix(n, hash(rm.GetMesh(), n)), ns)
+func ZoneName(mesh, name string) string {
+	if n, ns, err := util_k8s.CoreNameToK8sName(name); err == nil {
+		return util_k8s.K8sNamespacedNameToCoreName(addSuffix(n, hash(mesh, n)), ns)
 	} else {
-		return addSuffix(rm.GetName(), hash(rm.GetMesh(), rm.GetName()))
+		return addSuffix(name, hash(mesh, name))
 	}
 }
 

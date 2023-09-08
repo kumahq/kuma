@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -167,11 +168,11 @@ func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, re
 
 func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta core_model.ResourceMeta) bool {
 	if len(refMeta.GetNameExtensions()) == 0 {
-		return refName == resourceMeta.GetName()
+		return hash.ZoneName(refMeta.GetMesh(), refName) == resourceMeta.GetName()
 	}
 
 	if ns := refMeta.GetNameExtensions()[controllers.KubeNamespaceTag]; ns != "" {
-		return util_k8s.K8sNamespacedNameToCoreName(refName, ns) == resourceMeta.GetName()
+		return hash.ZoneName(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns)) == resourceMeta.GetName()
 	}
 
 	return false
