@@ -83,7 +83,7 @@ should look like this:
 #### How to get data
 
 Most of this data is already computed. To assemble this, we need:
-- `services` are mostly present in `MeshInsight`, missing part is `internal_by_status` data. We need to extend `MeshInsight.Services`
+- `services` are mostly present in `MeshInsight`, missing part is `internalByStatus` data. We need to extend `MeshInsight.Services`
    with this information. Moreover, we need to aggregate this to get the overall count.
 - `dataplanes` are present in `MeshInsight.Dataplanes` we only need to aggregate them to get the overall count.
 - `zones` info can be extracted and aggregated from `ZoneInsight`
