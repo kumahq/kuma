@@ -238,6 +238,9 @@ controlPlane:
       # -- If true, TLS cert of the server is not verified.
       skipVerify: false
 
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+
   image:
     # -- Kuma CP ImagePullPolicy
     pullPolicy: IfNotPresent
