@@ -71,7 +71,7 @@ should look like this:
   "dataplanes": {
     "online": 23,
     "offline": 10,
-    "partially_degraded": 17,
+    "partiallyDegraded": 17,
     "total": 50
   },
   "policies": {
