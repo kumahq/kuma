@@ -31,14 +31,14 @@
             However, some servers requires this setting, especially when using
             mTLS.    
         
-        - `skipHostnameVerification` (optional)
-        
-            If true then hostname verification will be skipped during certificate verification.    
-        
         - `serverName` (optional)
         
             ServerName overrides the default Server Name Indicator set by Kuma.
             The default value is set to "address" specified in "networking".    
+        
+        - `skipHostnameVerification` (optional)
+        
+            If true then hostname verification will be skipped during certificate verification.    
     
     - `disableHostDNSEntry` (optional)
     
