@@ -102,7 +102,9 @@
                         "BUILTIN",
                         1,
                         "KOYEB_INGRESS_GATEWAY",
-                        999
+                        999,
+                        "KOYEB_GLOBAL_LOAD_BALANCER",
+                        998
                     ],
                     "oneOf": [
                         {

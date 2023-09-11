@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	glbmetadata "github.com/kumahq/kuma/pkg/plugins/runtime/globalloadbalancer/metadata"
 	igwmetadata "github.com/kumahq/kuma/pkg/plugins/runtime/ingressgateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"
@@ -60,7 +61,7 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
-		case metadata.OriginGateway, igwmetadata.OriginIngressGateway:
+		case metadata.OriginGateway, igwmetadata.OriginIngressGateway, glbmetadata.OriginGlobalLoadBalancer:
 			listeners.Gateway[core_rules.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),

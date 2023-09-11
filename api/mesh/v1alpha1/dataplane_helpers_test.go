@@ -287,6 +287,7 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(dp.IsDelegatedGateway()).To(BeFalse())
 			Expect(dp.IsBuiltinGateway()).To(BeFalse())
 			Expect(dp.IsKoyebIngressGateway()).To(BeFalse())
+			Expect(dp.IsKoyebGlobalLoadBalancer()).To(BeFalse())
 		})
 	})
 
@@ -300,6 +301,7 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
 			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
+			Expect(gw.IsKoyebGlobalLoadBalancer()).To(BeFalse())
 		})
 	})
 
@@ -315,6 +317,7 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
 			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
+			Expect(gw.IsKoyebGlobalLoadBalancer()).To(BeFalse())
 		})
 	})
 
@@ -330,11 +333,12 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(gw.IsDelegatedGateway()).To(BeFalse())
 			Expect(gw.IsBuiltinGateway()).To(BeTrue())
 			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
+			Expect(gw.IsKoyebGlobalLoadBalancer()).To(BeFalse())
 		})
 	})
 
 	Describe("with koyeb ingress gateway networking", func() {
-		It("should be a gateway", func() {
+		It("should be an ingress gateway", func() {
 			gw := Dataplane{
 				Networking: &Dataplane_Networking{
 					Gateway: &Dataplane_Networking_Gateway{
@@ -345,6 +349,23 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(gw.IsDelegatedGateway()).To(BeFalse())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
 			Expect(gw.IsKoyebIngressGateway()).To(BeTrue())
+			Expect(gw.IsKoyebGlobalLoadBalancer()).To(BeFalse())
+		})
+	})
+
+	Describe("with koyeb global load balancer networking", func() {
+		It("should be a global load balancer", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_KOYEB_GLOBAL_LOAD_BALANCER,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeFalse())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
+			Expect(gw.IsKoyebGlobalLoadBalancer()).To(BeTrue())
 		})
 	})
 })

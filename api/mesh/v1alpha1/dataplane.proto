@@ -183,6 +183,9 @@ message Dataplane {
         // The `KOYEB_INGRESS_GATEWAY` gateway type configures data plane proxy
         // itself as an Ingress Gateway.
         KOYEB_INGRESS_GATEWAY = 999;
+        // The `KOYEB_GLOBAL_LOAD_BALANCER` gateway type configures data plane proxy
+        // itself as a Global Load Balancer.
+        KOYEB_GLOBAL_LOAD_BALANCER = 998;
       }
 
       // Tags associated with a gateway of this data plane to, e.g.

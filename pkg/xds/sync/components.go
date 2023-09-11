@@ -42,6 +42,14 @@ func DefaultIngressGatewayProxyBuilder(
 	}
 }
 
+func DefaultGlobalLoadBalancerProxyBuilder(
+	dataplaneProxyBuilder *DataplaneProxyBuilder,
+) *GlobalLoadBalancerProxyBuilder {
+	return &GlobalLoadBalancerProxyBuilder{
+		dataplaneProxyBuilder,
+	}
+}
+
 func DefaultEgressProxyBuilder(rt core_runtime.Runtime, apiVersion core_xds.APIVersion) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
 		apiVersion: apiVersion,
@@ -72,21 +80,23 @@ func DefaultDataplaneWatchdogFactory(
 	)
 
 	ingressGatewayProxyBuilder := DefaultIngressGatewayProxyBuilder(ingressProxyBuilder)
+	globalLoadBalancerProxyBuilder := DefaultGlobalLoadBalancerProxyBuilder(dataplaneProxyBuilder)
 
 	egressProxyBuilder := DefaultEgressProxyBuilder(rt, apiVersion)
 
 	deps := DataplaneWatchdogDependencies{
-		DataplaneProxyBuilder:      dataplaneProxyBuilder,
-		DataplaneReconciler:        dataplaneReconciler,
-		IngressProxyBuilder:        ingressProxyBuilder,
-		IngressReconciler:          ingressReconciler,
-		EgressProxyBuilder:         egressProxyBuilder,
-		EgressReconciler:           egressReconciler,
-		IngressGatewayProxyBuilder: ingressGatewayProxyBuilder,
-		EnvoyCpCtx:                 envoyCpCtx,
-		MeshCache:                  rt.MeshCache(),
-		MetadataTracker:            metadataTracker,
-		ResManager:                 rt.ReadOnlyResourceManager(),
+		DataplaneProxyBuilder:          dataplaneProxyBuilder,
+		DataplaneReconciler:            dataplaneReconciler,
+		IngressProxyBuilder:            ingressProxyBuilder,
+		IngressReconciler:              ingressReconciler,
+		EgressProxyBuilder:             egressProxyBuilder,
+		EgressReconciler:               egressReconciler,
+		IngressGatewayProxyBuilder:     ingressGatewayProxyBuilder,
+		GlobalLoadBalancerProxyBuilder: globalLoadBalancerProxyBuilder,
+		EnvoyCpCtx:                     envoyCpCtx,
+		MeshCache:                      rt.MeshCache(),
+		MetadataTracker:                metadataTracker,
+		ResManager:                     rt.ReadOnlyResourceManager(),
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

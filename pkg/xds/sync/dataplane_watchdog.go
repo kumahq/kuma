@@ -18,17 +18,18 @@ import (
 )
 
 type DataplaneWatchdogDependencies struct {
-	DataplaneProxyBuilder      *DataplaneProxyBuilder
-	DataplaneReconciler        SnapshotReconciler
-	IngressProxyBuilder        *IngressProxyBuilder
-	IngressReconciler          SnapshotReconciler
-	EgressProxyBuilder         *EgressProxyBuilder
-	EgressReconciler           SnapshotReconciler
-	IngressGatewayProxyBuilder *IngressGatewayProxyBuilder
-	EnvoyCpCtx                 *xds_context.ControlPlaneContext
-	MeshCache                  *mesh.Cache
-	MetadataTracker            DataplaneMetadataTracker
-	ResManager                 core_manager.ReadOnlyResourceManager
+	DataplaneProxyBuilder          *DataplaneProxyBuilder
+	DataplaneReconciler            SnapshotReconciler
+	IngressProxyBuilder            *IngressProxyBuilder
+	IngressReconciler              SnapshotReconciler
+	EgressProxyBuilder             *EgressProxyBuilder
+	EgressReconciler               SnapshotReconciler
+	IngressGatewayProxyBuilder     *IngressGatewayProxyBuilder
+	GlobalLoadBalancerProxyBuilder *GlobalLoadBalancerProxyBuilder
+	EnvoyCpCtx                     *xds_context.ControlPlaneContext
+	MeshCache                      *mesh.Cache
+	MetadataTracker                DataplaneMetadataTracker
+	ResManager                     core_manager.ReadOnlyResourceManager
 }
 
 type Status string
@@ -103,14 +104,14 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	}
 }
 
-// syncIngressGatewayDataplane syncs state of an IngressGateway
+// syncIngressGateway syncs state of an IngressGateway
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
 //
 // NOTE(nicoche): this is definitely something we dont't want to keep. We would
 // like to keep the functions syncDataplane / syncIngress untouched if possible.
 // The main problem is that syncDataplane operates on a single mesh while we
 // want to operate on all meshes, like an Ingress.
-func (d *DataplaneWatchdog) syncIngressGatewayDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
+func (d *DataplaneWatchdog) syncIngressGateway(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, d.ResManager, d.MeshCache.GetMeshContext)
 	if err != nil {
 		return SyncResult{}, err
@@ -159,11 +160,63 @@ func (d *DataplaneWatchdog) syncIngressGatewayDataplane(ctx context.Context, met
 	return result, nil
 }
 
+// syncGlobalLoadBalancer syncs state of a GlobalLoadBalancer
+//
+// NOTE(nicoche) we don't want to keep the cache mechanism here because
+// the freshness of data does not only depend on Kuma's state. We are
+// going to build the Proxy by also talking to Koyeb APIs.
+// Note that some code is pasted from syncDataplane, though.
+func (d *DataplaneWatchdog) syncGlobalLoadBalancer(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
+	meshCtx, err := d.MeshCache.GetMeshContext(ctx, d.key.Mesh)
+	if err != nil {
+		return SyncResult{}, err
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.DataplaneProxyType,
+	}
+
+	envoyCtx := &xds_context.Context{
+		ControlPlane: d.EnvoyCpCtx,
+		Mesh:         meshCtx,
+	}
+	proxy, err := d.GlobalLoadBalancerProxyBuilder.Build(ctx, d.key, meshCtx)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	networking := proxy.Dataplane.Spec.Networking
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, networking.AdvertisedAddress)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not get Envoy Admin mTLS certs")
+	}
+	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
+	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
+		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
+	}
+	proxy.Metadata = metadata
+	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, err
+	}
+	d.lastHash = meshCtx.Hash
+
+	if changed {
+		result.Status = ChangedStatus
+	} else {
+		result.Status = GeneratedStatus
+	}
+	return result, nil
+}
+
 // syncDataplane syncs state of the Dataplane.
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	if d.key.IsKoyebIngressGateway() {
-		return d.syncIngressGatewayDataplane(ctx, metadata)
+		return d.syncIngressGateway(ctx, metadata)
+	}
+
+	if d.key.IsKoyebGlobalLoadBalancer() {
+		return d.syncGlobalLoadBalancer(ctx, metadata)
 	}
 
 	meshCtx, err := d.MeshCache.GetMeshContext(ctx, d.key.Mesh)

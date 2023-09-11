@@ -28,6 +28,8 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	// Register Ingress Gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/ingressgateway/register"
+	// Register Global Load Balancer resources.
+	_ "github.com/kumahq/kuma/pkg/plugins/runtime/globalloadbalancer/register"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )

@@ -40,6 +40,10 @@ func (k ResourceKey) IsKoyebIngressGateway() bool {
 	return k.Mesh == "default" && strings.Contains(k.Name, "ingress-gateway")
 }
 
+func (k ResourceKey) IsKoyebGlobalLoadBalancer() bool {
+	return k.Mesh == "default" && strings.Contains(k.Name, "global-load-balancer")
+}
+
 type ResourceScope string
 
 const (

@@ -468,6 +468,11 @@ func (d *Dataplane) IsKoyebIngressGateway() bool {
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY
 }
 
+func (d *Dataplane) IsKoyebGlobalLoadBalancer() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_KOYEB_GLOBAL_LOAD_BALANCER
+}
+
 func (t MultiValueTagSet) String() string {
 	var tags []string
 	for tag := range t {

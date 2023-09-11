@@ -86,10 +86,10 @@ ingress: _build-dp _init-default
     --dataplane-token-file=/tmp/dp-token-ingress \
     --dataplane-file=koyeb/samples/mesh-default/ingress-par1.yaml
 
-
-#glb: _build-dp _init-default
-#  {{artifacts}}/kumactl/kumactl generate zone-ingress-token --zone par1  > /tmp/dp-token-glb
-#  {{artifacts}}/kuma-dp/kuma-dp run --dataplane-token-file /tmp/dp-token-glb --dns-coredns-config-template-path ./koyeb/samples/Corefile --dns-coredns-port 10053 --dns-envoy-port 10050 --log-level info --cp-address https://localhost:5678 --ca-cert-file ./build/koyeb/tls-cert/ca.pem --admin-port 4243 -d ./koyeb/samples/ingress-glb.yaml  --proxy-type ingress
+glb: _build-dp _init-default
+  cat koyeb/samples/mesh-default/mesh-gateway-global-load-balancer.yaml | {{kumactl}} apply --config-file {{kumactl-configs}}/global-cp.yaml -f -
+  {{kumactl}} generate dataplane-token -m default --valid-for 720h --config-file {{kumactl-configs}}/par1-cp.yaml > /tmp/glb-par1-token
+  {{dev-kuma-dp}} run --dataplane-token-file /tmp/glb-par1-token --log-level info --cp-address https://localhost:5678 -d ./koyeb/samples/mesh-default/global-load-balancer-par1.yaml
 
 igw: _build-dp _init-default
   cat koyeb/samples/mesh-default/mesh-gateway-ingress-gateway.yaml | {{kumactl}} apply --config-file {{kumactl-configs}}/global-cp.yaml -f -

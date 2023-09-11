@@ -50,7 +50,9 @@
         
             - `BUILTIN`
         
-            - `KOYEB_INGRESS_GATEWAY`    
+            - `KOYEB_INGRESS_GATEWAY`
+        
+            - `KOYEB_GLOBAL_LOAD_BALANCER`    
     
     - `inbound` (optional, repeated)
     
