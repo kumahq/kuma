@@ -973,7 +973,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            true,
 	SingularDisplayName: "Mesh Gateway",
 	PluralDisplayName:   "Mesh Gateways",
-	IsExperimental:      false,
+	IsExperimental:      true,
 }
 
 func init() {
@@ -1082,7 +1082,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            true,
 	SingularDisplayName: "Mesh Gateway Route",
 	PluralDisplayName:   "Mesh Gateway Routes",
-	IsExperimental:      false,
+	IsExperimental:      true,
 }
 
 func init() {

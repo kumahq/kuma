@@ -132,7 +132,4 @@ var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Health Check",
 	PluralDisplayName:   "Mesh Health Checks",
 	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
 }
