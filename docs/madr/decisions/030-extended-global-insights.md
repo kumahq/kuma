@@ -57,9 +57,9 @@ should look like this:
     "internal": 4,
     "external": 1,
     "internalByStatus": {
-      "Online": 2,
-      "Offline": 1,
-      "pariallyDegrated": 1
+      "online": 2,
+      "offline": 1,
+      "partiallyDegraded": 1
      }
   },
   "zones": {
@@ -89,8 +89,12 @@ Most of this data is already computed. To assemble this, we need:
 - `zones` info can be extracted and aggregated from `ZoneInsight`
 - `policies` are present in `MeshInsight.Policies` we just need to aggregate them to get the overall count.
 
-#### Global Insight as a resource
+#### Computing Global Insight
 
-Right now Global Insight is not one of the Kuma resources it is computed on the fly after calling `/global-insights` endpoint.
-Global Resource should be treated as any other resource in Kuma, and stored in control plane storage. Thanks to this
-we would be able to compute them on a constant basis and cache the result.
+Computing Global Insight is not heavy, since we have all the data computed already, so we will create it when asked for. 
+We will add some small cache for it so don't recompute it too often.
+
+#### Generating openapi schema 
+
+We would like to create new endpoint and generate Go types from OpenAPI schema. OpenAPI recommends to write schema first 
+and then generate language specific code from it. [Source](https://learn.openapis.org/best-practices.html)
