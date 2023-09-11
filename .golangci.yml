@@ -21,8 +21,11 @@ linters:
     - unparam
     - unused
     - whitespace
+    - nosprintfhostport
 
 run:
+  build-tags:
+    - experimental
   skip-files:
     - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
@@ -132,3 +135,9 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use MinResyncInterval instead"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use FullResyncInterval instead"

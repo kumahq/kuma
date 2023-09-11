@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upgrade to `2.4.x`
 
+### Configuration change
+
+The configuration: `Metrics.Mesh.MinResyncTimeout` and `Metrics.Mesh.MaxResyncTimeout` are replaced by `Metrics.Mesh.MinResyncInterval` and `Metrics.Mesh.FullResyncInterval`.
+You can still use the current configs but it will be removed in the future.
+
 ### **Breaking changes**
 
 #### Removal of service field in Dataplane outbound

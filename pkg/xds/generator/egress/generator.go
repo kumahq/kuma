@@ -3,16 +3,15 @@ package egress
 import (
 	"context"
 
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
@@ -91,14 +90,12 @@ func (g Generator) Generate(
 			resources.AddSet(rs)
 		}
 
-		// If the resources are empty after all generator pass, it means there is filter chain,
-		// if there is no filter chain there is no need to build a listener
-		if !resources.Empty() {
-			listener, err := listenerBuilder.Build()
-			if err != nil {
-				return nil, err
-			}
-
+		listener, err := listenerBuilder.Build()
+		if err != nil {
+			return nil, err
+		}
+		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
+			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
 				Origin:   OriginEgress,
@@ -122,26 +119,4 @@ func (g Generator) Generate(
 		resources.AddSet(rs)
 	}
 	return resources, nil
-}
-
-func buildDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-) map[string][]envoy_tags.Tags {
-	destinations := map[string][]envoy_tags.Tags{}
-
-	for _, tr := range trafficRoutes {
-		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
-		}
-
-		for _, http := range tr.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
-			}
-		}
-	}
-
-	return destinations
 }

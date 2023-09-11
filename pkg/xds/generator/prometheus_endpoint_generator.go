@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -29,6 +30,8 @@ const OriginPrometheus = "prometheus"
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct{}
+
+var prometheusLog = core.Log.WithName("prometheus-endpoint-generator")
 
 func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)
@@ -89,13 +92,20 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 	var listener envoy_common.NamedResource
-	if secureMetrics(prometheusEndpoint, xdsCtx.Mesh.Resource) {
-		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
+	if secureMetricsWithMeshMtls(prometheusEndpoint, xdsCtx.Mesh.Resource) || secureMetrics(prometheusEndpoint, proxy.Metadata) {
+		var match envoy_listeners.FilterChainBuilderOpt
+		switch prometheusEndpoint.Tls.GetMode() {
+		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
+			match = envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address)
+		case mesh_proto.PrometheusTlsConfig_providedTLS:
+			match = envoy_listeners.MatchTransportProtocol("tls")
+		}
+		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(prometheusListenerName).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-					envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address),
+					match,
 					envoy_listeners.StaticEndpoints(prometheusListenerName,
 						[]*envoy_common.StaticEndpointPath{
 							{
@@ -104,8 +114,11 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 								RewritePath: statsPath,
 							},
 						})),
-			)).
-			Configure(envoy_listeners.FilterChain(
+			))
+
+		switch prometheusEndpoint.Tls.GetMode() {
+		case mesh_proto.PrometheusTlsConfig_activeMTLSBackend:
+			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
 					envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker),
 					envoy_listeners.NetworkRBAC(prometheusListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
@@ -118,8 +131,26 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 							},
 						}),
 				),
-			)).
-			Build()
+			))
+		case mesh_proto.PrometheusTlsConfig_providedTLS:
+			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
+					envoy_listeners.ServerSideStaticTLS(core_xds.ServerSideTLSCertPaths{
+						CertPath: proxy.Metadata.MetricsCertPath,
+						KeyPath:  proxy.Metadata.MetricsKeyPath,
+					}),
+					envoy_listeners.StaticEndpoints(prometheusListenerName,
+						[]*envoy_common.StaticEndpointPath{
+							{
+								ClusterName: metricsHijackerClusterName,
+								Path:        prometheusEndpoint.Path,
+								RewritePath: statsPath,
+							},
+						}),
+				),
+			))
+		}
+		listener, err = listenerBuilder.Build()
 	} else {
 		listener, err = envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(prometheusListenerName).
@@ -146,8 +177,22 @@ func (g PrometheusEndpointGenerator) Generate(ctx context.Context, xdsCtx xds_co
 	return resources, nil
 }
 
-func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_mesh.MeshResource) bool {
-	return !cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled()
+func secureMetricsWithMeshMtls(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_mesh.MeshResource) bool {
+	return (cfg.Tls != nil && cfg.Tls.Mode == mesh_proto.PrometheusTlsConfig_activeMTLSBackend && mesh.MTLSEnabled()) ||
+		(!cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled() && cfg.Tls == nil)
+}
+
+func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, metadata *core_xds.DataplaneMetadata) bool {
+	if cfg.Tls != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_providedTLS {
+		if metadata.MetricsCertPath == "" || metadata.MetricsKeyPath == "" {
+			prometheusLog.Info("cannot configure TLS for prometheus listener because paths to the certificate and the key wasn't provided, fallback to not secured endpoint")
+			return false
+		}
+		if metadata.MetricsCertPath != "" && metadata.MetricsKeyPath != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // we cannot use url.Values{} because generated url looks 'usedonly='

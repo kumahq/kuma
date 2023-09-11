@@ -129,26 +129,25 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 	defer state.mu.Unlock()
 
 	if state.dataplaneId == (core_model.ResourceKey{}) {
-		var dpType core_model.ResourceType
-		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir())
-
-		// If the dataplane was started with a resource YAML, then it
-		// will be serialized in the node metadata and we would know
-		// the underlying type directly. Since that is optional, we
-		// can't depend on it here, so we map from the proxy type,
-		// which is guaranteed.
-		switch md.GetProxyType() {
-		case mesh_proto.IngressProxyType:
-			dpType = core_mesh.ZoneIngressType
-		case mesh_proto.DataplaneProxyType:
-			dpType = core_mesh.DataplaneType
-		case mesh_proto.EgressProxyType:
-			dpType = core_mesh.ZoneEgressType
-		}
-
 		// Infer the Dataplane ID.
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = proxyId.ToResourceKey()
+			var dpType core_model.ResourceType
+			md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir(), state.dataplaneId)
+
+			// If the dataplane was started with a resource YAML, then it
+			// will be serialized in the node metadata and we would know
+			// the underlying type directly. Since that is optional, we
+			// can't depend on it here, so we map from the proxy type,
+			// which is guaranteed.
+			switch md.GetProxyType() {
+			case mesh_proto.IngressProxyType:
+				dpType = core_mesh.ZoneIngressType
+			case mesh_proto.DataplaneProxyType:
+				dpType = core_mesh.DataplaneType
+			case mesh_proto.EgressProxyType:
+				dpType = core_mesh.ZoneEgressType
+			}
 
 			log := statusTrackerLog.WithValues(
 				"proxyName", state.dataplaneId.Name,
@@ -199,7 +198,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 			subscription.Status.Total.ResponsesRejected++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesRejected++
 		} else {
-			log.Info("config accepted")
+			log.V(1).Info("config accepted")
 			subscription.Status.Total.ResponsesAcknowledged++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesAcknowledged++
 		}
@@ -244,7 +243,7 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 		)
 	}
 
-	log.Info("config sent")
+	log.V(1).Info("config sent")
 }
 
 // To keep logs short, we want to log "Listeners" instead of full qualified Envoy type url name

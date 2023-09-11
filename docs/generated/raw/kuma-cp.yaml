@@ -44,6 +44,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -313,6 +315,9 @@ runtime:
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
         envVars: {} # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
+        # If true, it enables a postStart script that waits until Envoy is ready.
+        # With the current Kubernetes behavior, any other container in the Pod will wait until the script is complete.
+        waitForDataplaneReady: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.
@@ -360,10 +365,18 @@ runtime:
     clientConfig:
       # Qps defines maximum requests kubernetes client is allowed to make per second.
       # Default value 100. If set to 0 kube-client default value of 5 will be used.
-      qps: 100
+      qps: 100 # ENV: KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS
       # BurstQps defines maximum burst requests kubernetes client is allowed to make per second
       # Default value 100. If set to 0 kube-client default value of 10 will be used.
-      burstQps: 100
+      burstQps: 100 # ENV: KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS
+    leaderElection:
+      # LeaseDuration is the duration that non-leader candidates will
+      # wait to force acquire leadership. This is measured against time of
+      # last observed ack. Default is 15 seconds.
+      leaseDuration: 15s # ENV: KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION
+      # RenewDeadline is the duration that the acting controlplane will retry
+      # refreshing leadership before giving up. Default is 10 seconds.
+      renewDeadline: 10s # ENV: KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
@@ -389,10 +402,12 @@ metrics:
     # How long zone can stay Online without active KDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_ZONE_IDLE_TIMEOUT
   mesh:
-    # Min time that should pass between MeshInsight resync
-    minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
-    # Max time that MeshInsight could spend without resync
-    maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
+    # Minimum time between 2 refresh of insights
+    minResyncInterval: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL
+    # time between triggering a full refresh of all the insights
+    fullResyncInterval: 20s # ENV: KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL
+    # the size of the buffer between event creation and processing
+    bufferSize: 1000 # ENV: KUMA_METRICS_MESH_BUFFER_SIZE
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
@@ -694,6 +709,14 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+  kdsEventBasedWatchdog:
+    # If true, then experimental event based watchdog to generate KDS snapshot is used.
+    enabled: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED
+    # How often we flush changes when experimental event based watchdog is used.
+    flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+    # How often we schedule full KDS resync when experimental event based watchdog is used.
+    fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
 
 proxy:
   gateway:

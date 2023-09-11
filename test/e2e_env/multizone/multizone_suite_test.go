@@ -21,6 +21,7 @@ import (
 	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/virtualoutbound"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
@@ -33,7 +34,7 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	_ = SynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
+	_ = E2ESynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
 		if Config.CleanupLogsOnSuccess {
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
@@ -64,4 +65,6 @@ var (
 	_ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
+	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
+	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 )

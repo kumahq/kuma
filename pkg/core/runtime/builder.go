@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -47,7 +48,7 @@ type BuilderContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ListenerFactory
+	EventBus() events.EventBus
 	APIManager() api_server.APIManager
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
@@ -81,7 +82,7 @@ type Builder struct {
 	lif            lookup.LookupIPFunc
 	eac            admin.EnvoyAdminClient
 	metrics        metrics.Metrics
-	erf            events.ListenerFactory
+	erf            events.EventBus
 	apim           api_server.APIManager
 	xds            xds_runtime.XDSRuntimeContext
 	cap            secrets.CaProvider
@@ -98,6 +99,7 @@ type Builder struct {
 	*runtimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
+	apiWebServiceCustomize   func(*restful.WebService) error
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -198,7 +200,7 @@ func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	return b
 }
 
-func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
+func (b *Builder) WithEventBus(erf events.EventBus) *Builder {
 	b.erf = erf
 	return b
 }
@@ -270,6 +272,11 @@ func (b *Builder) WithMultitenancy(tenants multitenant.Tenants) *Builder {
 
 func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.PgxConfigCustomization) *Builder {
 	b.pgxConfigCustomizationFn = pgxConfigCustomizationFn
+	return b
+}
+
+func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService) error) *Builder {
+	b.apiWebServiceCustomize = customize
 	return b
 }
 
@@ -378,6 +385,7 @@ func (b *Builder) Build() (Runtime, error) {
 			interCpPool:              b.interCpPool,
 			pgxConfigCustomizationFn: b.pgxConfigCustomizationFn,
 			tenants:                  b.tenants,
+			apiWebServiceCustomize:   b.apiWebServiceCustomize,
 		},
 		Manager: b.cm,
 	}, nil
@@ -439,7 +447,7 @@ func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
 
-func (b *Builder) EventReaderFactory() events.ListenerFactory {
+func (b *Builder) EventBus() events.EventBus {
 	return b.erf
 }
 
@@ -505,4 +513,11 @@ func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 
 func (b *Builder) Tenants() multitenant.Tenants {
 	return b.tenants
+}
+
+func (b *Builder) APIWebServiceCustomize() func(*restful.WebService) error {
+	if b.apiWebServiceCustomize == nil {
+		return func(*restful.WebService) error { return nil }
+	}
+	return b.apiWebServiceCustomize
 }

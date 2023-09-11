@@ -21,6 +21,12 @@ type Tenants interface {
 	// Some may return error on missing tenant, whereas Kuma never requires tenant set in context.
 	GetID(ctx context.Context) (string, error)
 	GetIDs(ctx context.Context) ([]string, error)
+
+	// SupportsSharding returns true if Tenants implementation supports sharding.
+	// It means that GetIDs will return only subset of tenants.
+	SupportsSharding() bool
+	// IDSupported returns true if given tenant is in the current shard.
+	IDSupported(ctx context.Context, id string) (bool, error)
 }
 
 var SingleTenant = &singleTenant{}
@@ -33,6 +39,14 @@ func (s singleTenant) GetID(context.Context) (string, error) {
 
 func (s singleTenant) GetIDs(context.Context) ([]string, error) {
 	return []string{""}, nil
+}
+
+func (s singleTenant) SupportsSharding() bool {
+	return false
+}
+
+func (s singleTenant) IDSupported(ctx context.Context, id string) (bool, error) {
+	return true, nil
 }
 
 func WithTenant(ctx context.Context, tenantId string) context.Context {

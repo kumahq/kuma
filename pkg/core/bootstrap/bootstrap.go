@@ -285,7 +285,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}
-	builder.WithEventReaderFactory(eventBus)
+	builder.WithEventBus(eventBus)
 
 	paginationStore := core_store.NewPaginationStore(rs)
 	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())

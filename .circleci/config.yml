@@ -3,10 +3,10 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.20.5"
+    default: "1.20.7"
   first_k8s_version:
     type: string
-    default: "v1.22.9-k3s1"
+    default: "v1.23.17-k3s1"
   last_k8s_version:
     type: string
     default: "v1.27.1-k3s1"
@@ -334,6 +334,7 @@ jobs:
 
             if [[ "<< parameters.deltaKDS >>" == true ]]; then
               export KUMA_DELTA_KDS=true
+              export KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then

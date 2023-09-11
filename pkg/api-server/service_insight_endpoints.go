@@ -37,7 +37,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	serviceInsight := mesh.NewServiceInsightResource()
 	err := s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve a resource")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 	} else {
 		stat := serviceInsight.Spec.Services[service]
 		if stat == nil {
@@ -70,7 +70,7 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	serviceInsightList := &mesh.ServiceInsightResourceList{}
 	err := s.resManager.List(request.Request.Context(), serviceInsightList, store.ListByMesh(meshName))
 	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 		return
 	}
 
@@ -81,12 +81,12 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	}
 
 	if err := s.paginateResources(request, &restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not paginate resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not paginate resources")
 		return
 	}
 
 	if err := response.WriteAsJson(restList); err != nil {
-		rest_errors.HandleError(response, err, "Could not list resources")
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
 	}
 }
 

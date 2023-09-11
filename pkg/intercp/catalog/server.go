@@ -27,7 +27,7 @@ func NewServer(heartbeats *Heartbeats, leaderInfo component.LeaderInfo) system_p
 }
 
 func (s *server) Ping(_ context.Context, request *system_proto.PingRequest) (*system_proto.PingResponse, error) {
-	serverLog.Info("received ping", "instanceID", request.InstanceId, "address", request.Address, "ready", request.Ready)
+	serverLog.V(1).Info("received ping", "instanceID", request.InstanceId, "address", request.Address, "ready", request.Ready)
 	instance := Instance{
 		Id:          request.InstanceId,
 		Address:     request.Address,

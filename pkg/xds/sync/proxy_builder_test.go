@@ -102,18 +102,16 @@ var _ = Describe("Proxy Builder", func() {
 	initializeStore(ctx, rt.ResourceManager(), "default_resources.yaml")
 
 	Describe("Build() zone egress", func() {
-		egressProxyBuilder := sync.DefaultEgressProxyBuilder(
-			ctx,
-			rt,
-			envoy_common.APIV3,
-		)
+		egressProxyBuilder := sync.DefaultEgressProxyBuilder(rt, envoy_common.APIV3)
 
 		It("should build proxy object for egress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-egress-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := egressProxyBuilder.Build(ctx, rk)
+			proxy, err := egressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -193,14 +191,16 @@ var _ = Describe("Proxy Builder", func() {
 		It("should build proxy object for ingress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-ingress-zone-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(ctx, rk)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			routes := proxy.ZoneIngressProxy.PolicyResources[core_mesh.TrafficRouteType].GetItems()
-			Expect(routes[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+			trafficRouteList := proxy.ZoneIngressProxy.MeshResourceList[0].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
+			Expect(trafficRouteList.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -228,7 +228,6 @@ var _ = Describe("Proxy Builder", func() {
 				Port:   8080,
 				Tags: map[string]string{
 					"kuma.io/service": "cross-mesh-gateway",
-					"mesh":            "default",
 				},
 				Weight: 1,
 			}}))

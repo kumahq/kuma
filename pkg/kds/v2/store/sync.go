@@ -86,8 +86,15 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	if err != nil {
 		return err
 	}
-	if err := s.resourceStore.List(ctx, downstream); err != nil {
-		return err
+	if upstreamResponse.IsInitialRequest {
+		if err := s.resourceStore.List(ctx, downstream); err != nil {
+			return err
+		}
+	} else {
+		upstreamChangeKeys := append(core_model.ResourceListToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
+		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
+			return err
+		}
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
@@ -186,7 +193,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 
 	for _, r := range onUpdate {
-		log.Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+		log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime

@@ -3,39 +3,35 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/attribute"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
 type pgxResourceStore struct {
-	pool *pgxpool.Pool
+	pool                 *pgxpool.Pool
+	maxListQueryElements uint32
 }
+
+type ResourceNamesByMesh map[string][]string
 
 var _ store.ResourceStore = &pgxResourceStore{}
 
-// This attribute is necessary for tracing integrations like Datadog, to have
-// full insights into sql queries connected with traces.
-// ref. https://github.com/DataDog/dd-trace-go/blob/3d97fcec9f8b21fdd821af526d27d4335b26da66/contrib/database/sql/conn.go#L290
-var spanTypeSQLAttribute = attribute.String("span.type", "sql")
-
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
-	pool, err := connect(config, customizer)
+	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
 		return nil, err
 	}
@@ -45,37 +41,9 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	}
 
 	return &pgxResourceStore{
-		pool: pool,
+		pool:                 pool,
+		maxListQueryElements: config.MaxListQueryElements,
 	}, nil
-}
-
-func connect(postgresStoreConfig config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
-	connectionString, err := postgresStoreConfig.ConnectionString()
-	if err != nil {
-		return nil, err
-	}
-	pgxConfig, err := pgxpool.ParseConfig(connectionString)
-
-	if postgresStoreConfig.MaxOpenConnections == 0 {
-		// pgx MaxCons must be > 0, see https://github.com/jackc/puddle/blob/c5402ce53663d3c6481ea83c2912c339aeb94adc/pool.go#L160
-		// so unlimited is just max int
-		pgxConfig.MaxConns = math.MaxInt32
-	} else {
-		pgxConfig.MaxConns = int32(postgresStoreConfig.MaxOpenConnections)
-	}
-	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
-	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
-	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithAttributes(spanTypeSQLAttribute))
-	customizer.Customize(pgxConfig)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
 }
 
 func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -219,6 +187,32 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
+	rkSize := len(opts.ResourceKeys)
+	if rkSize > 0 && rkSize < int(r.maxListQueryElements) {
+		statement += " AND ("
+		res := resourceNamesByMesh(opts.ResourceKeys)
+		iter := 0
+		for mesh, names := range res {
+			if iter > 0 {
+				statement += " OR "
+			}
+			argsIndex++
+			statement += fmt.Sprintf("(mesh=$%d AND", argsIndex)
+			statementArgs = append(statementArgs, mesh)
+			for idx, name := range names {
+				argsIndex++
+				if idx == 0 {
+					statement += fmt.Sprintf(" name IN ($%d", argsIndex)
+				} else {
+					statement += fmt.Sprintf(",$%d", argsIndex)
+				}
+				statementArgs = append(statementArgs, name)
+			}
+			statement += "))"
+			iter++
+		}
+		statement += ")"
+	}
 	if opts.Mesh != "" {
 		argsIndex++
 		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
@@ -251,6 +245,18 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 
 	resources.GetPagination().SetTotal(uint32(total))
 	return nil
+}
+
+func resourceNamesByMesh(resourceKeys map[core_model.ResourceKey]struct{}) ResourceNamesByMesh {
+	resourceNamesByMesh := ResourceNamesByMesh{}
+	for key := range resourceKeys {
+		if val, exists := resourceNamesByMesh[key.Mesh]; exists {
+			resourceNamesByMesh[key.Mesh] = append(val, key.Name)
+		} else {
+			resourceNamesByMesh[key.Mesh] = []string{key.Name}
+		}
+	}
+	return resourceNamesByMesh
 }
 
 func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {

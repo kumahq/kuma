@@ -24,10 +24,9 @@ func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []model.ResourceType, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
-		resourceTypes:   types,
 		resourceFilter:  filter,
 		resourceMapper:  mapper,
 	}
@@ -35,14 +34,17 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
-	resourceTypes   []model.ResourceType
 	resourceFilter  reconcile.ResourceFilter
 	resourceMapper  reconcile.ResourceMapper
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (envoy_cache.ResourceSnapshot, error) {
-	builder := cache_kds_v2.NewSnapshotBuilder()
-	for _, typ := range s.resourceTypes {
+func (s *snapshotGenerator) GenerateSnapshot(
+	ctx context.Context,
+	node *envoy_core.Node,
+	builder cache_kds_v2.SnapshotBuilder,
+	resTypes map[model.ResourceType]struct{},
+) (envoy_cache.ResourceSnapshot, error) {
+	for typ := range resTypes {
 		resources, err := s.getResources(ctx, typ, node)
 		if err != nil {
 			return nil, err

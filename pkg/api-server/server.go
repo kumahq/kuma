@@ -99,6 +99,7 @@ func NewApiServer(
 	access runtime.Access,
 	envoyAdminClient admin.EnvoyAdminClient,
 	tokenIssuers builtin.TokenIssuers,
+	wsCustomize func(*restful.WebService) error,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -158,6 +159,12 @@ func NewApiServer(
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	addWhoamiEndpoints(ws)
+
+	ws.SetDynamicRoutes(true)
+	if err := wsCustomize(ws); err != nil {
+		return nil, errors.Wrap(err, "couldn't customize webservice")
+	}
+
 	container.Add(ws)
 
 	path := cfg.ApiServer.BasePath
@@ -479,6 +486,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.Access(),
 		rt.EnvoyAdminClient(),
 		rt.TokenIssuers(),
+		rt.APIWebServiceCustomize(),
 	)
 	if err != nil {
 		return err

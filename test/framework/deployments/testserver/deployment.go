@@ -2,27 +2,29 @@ package testserver
 
 import (
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/test/framework"
 )
 
 type DeploymentOpts struct {
-	Name               string
-	Namespace          string
-	Mesh               string
-	ReachableServices  []string
-	WithStatefulSet    bool
-	ServiceAccount     string
-	echoArgs           []string
-	healthcheckTCPArgs []string
-	Replicas           int32
-	WaitingToBeReady   bool
-	EnableProbes       bool
-	PodAnnotations     map[string]string
-	NodeSelector       map[string]string
-	protocol           string
-	tlsKey             string
-	tlsCrt             string
+	Name                string
+	Namespace           string
+	Mesh                string
+	ReachableServices   []string
+	WithStatefulSet     bool
+	ServiceAccount      string
+	echoArgs            []string
+	healthcheckTCPArgs  []string
+	Replicas            int32
+	WaitingToBeReady    bool
+	EnableProbes        bool
+	PodAnnotations      map[string]string
+	NodeSelector        map[string]string
+	protocol            string
+	tlsKey              string
+	tlsCrt              string
+	initContainersToAdd []corev1.Container
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -128,6 +130,12 @@ func WithNodeSelector(selector map[string]string) DeploymentOptsFn {
 func WithServicePortAppProtocol(protocol string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.protocol = protocol
+	}
+}
+
+func AddInitContainer(initContainer corev1.Container) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.initContainersToAdd = append(opts.initContainersToAdd, initContainer)
 	}
 }
 

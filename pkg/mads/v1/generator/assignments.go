@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -38,12 +39,17 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 			continue
 		}
 
+		schema := "http"
+		if prometheusEndpoint.GetTls() != nil && prometheusEndpoint.Tls.GetMode() == v1alpha1.PrometheusTlsConfig_providedTLS {
+			schema = "https"
+		}
+
 		// TODO: could also group by service, and have one assignment per service
 		assignment := &observability_v1.MonitoringAssignment{
 			Mesh:    dataplane.Meta.GetMesh(),
 			Service: dataplane.Spec.GetIdentifyingService(),
 			Targets: []*observability_v1.MonitoringAssignment_Target{{
-				Scheme:      "http",
+				Scheme:      schema,
 				Name:        dataplane.GetMeta().GetName(),
 				Address:     mads.Address(dataplane, prometheusEndpoint),
 				MetricsPath: prometheusEndpoint.GetPath(),

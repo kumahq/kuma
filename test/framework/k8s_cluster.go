@@ -280,12 +280,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		"--dataplane-repository":      Config.KumaDPImageRepo,
 		"--dataplane-init-repository": Config.KumaInitImageRepo,
 	}
-	if Config.Arch == "arm64" {
-		argsMap["--control-plane-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--cni-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--ingress-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--egress-node-selector"] = "kubernetes.io/arch=arm64"
-	}
 	if Config.KumaImageRegistry != "" {
 		argsMap["--control-plane-registry"] = Config.KumaImageRegistry
 		argsMap["--dataplane-registry"] = Config.KumaImageRegistry
@@ -371,13 +365,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
-	}
-	if Config.Arch == "arm64" {
-		values[`controlPlane.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`cni.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`ingress.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`egress.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`hooks.nodeSelector.kubernetes\.io/arch`] = "arm64"
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
@@ -1007,11 +994,22 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
-	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		return err
+	}
+	// speed up namespace termination by terminating pods without grace period.
+	// Namespace is then deleted in ~6s instead of ~43s.
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+	now := time.Now()
+	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
+		func() (string, error) {
+			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
+	return err
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {

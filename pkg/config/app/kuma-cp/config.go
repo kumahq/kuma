@@ -90,10 +90,16 @@ func (d *ZoneMetrics) Validate() error {
 }
 
 type MeshMetrics struct {
-	// MinResyncTimeout is a minimal time that should pass between MeshInsight resync
+	// Deprecated: use MinResyncInterval instead
 	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
-	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
+	// Deprecated: use FullResyncInterval instead
 	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+	// BufferSize the size of the buffer between event creation and processing
+	BufferSize int `json:"bufferSize" envconfig:"kuma_metrics_mesh_buffer_size"`
+	// MinResyncInterval the minimum time between 2 refresh of insights.
+	MinResyncInterval config_types.Duration `json:"minResyncInterval" envconfig:"kuma_metrics_mesh_min_resync_interval"`
+	// FullResyncInterval time between triggering a full refresh of all the insights
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_metrics_mesh_full_resync_interval"`
 }
 
 type ControlPlaneMetrics struct {
@@ -106,8 +112,11 @@ func (d *MeshMetrics) Sanitize() {
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
-		return errors.New("MaxResyncTimeout should be greater than MinResyncTimeout")
+	if d.MinResyncTimeout.Duration != 0 && d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
+		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
+	}
+	if d.MinResyncInterval.Duration <= d.FullResyncInterval.Duration {
+		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
 	}
 	return nil
 }
@@ -200,8 +209,9 @@ var DefaultConfig = func() Config {
 				IdleTimeout:       config_types.Duration{Duration: 5 * time.Minute},
 			},
 			Mesh: &MeshMetrics{
-				MinResyncTimeout: config_types.Duration{Duration: 1 * time.Second},
-				MaxResyncTimeout: config_types.Duration{Duration: 20 * time.Second},
+				MinResyncInterval:  config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 20 * time.Second},
+				BufferSize:         1000,
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
@@ -222,6 +232,11 @@ var DefaultConfig = func() Config {
 			KDSDeltaEnabled:                 false,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
+			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
+				Enabled:            false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+			},
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),
@@ -378,6 +393,17 @@ type ExperimentalConfig struct {
 	// The drawback is that you cannot use filtered out tags for traffic routing.
 	// If empty, no filter is applied.
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
+	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
+}
+
+type ExperimentalKDSEventBasedWatchdog struct {
+	// If true, then experimental event based watchdog to generate KDS snapshot is used.
+	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
+	// How often we flush changes when experimental event based watchdog is used.
+	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
+	// How often we schedule full KDS resync when experimental event based watchdog is used.
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 }
 
 func (e ExperimentalConfig) Validate() error {

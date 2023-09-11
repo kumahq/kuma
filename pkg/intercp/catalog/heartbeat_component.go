@@ -97,7 +97,7 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) error {
 		heartbeatLog.V(1).Info("this instance is a leader. No need to send a heartbeat.")
 		return nil
 	}
-	heartbeatLog.Info("sending a heartbeat to a leader",
+	heartbeatLog.V(1).Info("sending a heartbeat to a leader",
 		"instanceId", h.request.InstanceId,
 		"leaderAddress", h.leader.Address,
 		"ready", ready,

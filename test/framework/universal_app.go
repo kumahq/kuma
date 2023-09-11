@@ -192,6 +192,7 @@ type UniversalApp struct {
 	mainAppEnv    map[string]string
 	mainAppArgs   []string
 	dpApp         *ssh.App
+	dpEnv         map[string]string
 	ports         map[string]string
 	container     string
 	containerName string
@@ -424,6 +425,7 @@ func (s *UniversalApp) CreateDP(
 	builtindns bool,
 	proxyType string,
 	concurrency int,
+	envsMap map[string]string,
 ) {
 	// create the token file on the app container
 	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
@@ -467,7 +469,7 @@ func (s *UniversalApp) CreateDP(
 		args = append(args, "--proxy-type", proxyType)
 	}
 
-	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], nil, args)
+	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
 
 func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, transparentProxyV1 bool) {

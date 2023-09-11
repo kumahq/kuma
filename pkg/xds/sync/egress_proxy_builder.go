@@ -6,28 +6,19 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {
-	ctx context.Context
-
-	ResManager         manager.ResourceManager
-	ReadOnlyResManager manager.ReadOnlyResourceManager
-	LookupIP           lookup.LookupIPFunc
-	meshCache          *xds_cache.Cache
-
 	zone       string
 	apiVersion core_xds.APIVersion
 }
@@ -35,46 +26,29 @@ type EgressProxyBuilder struct {
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
-	zoneEgress := core_mesh.NewZoneEgressResource()
-
-	if err := p.ReadOnlyResManager.Get(
-		ctx,
-		zoneEgress,
-		core_store.GetBy(key),
-	); err != nil {
-		return nil, err
-	}
-
-	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
-		return nil, err
+	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
+	if !ok {
+		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
 	// As egress is using SNI to identify the services, we need to filter out
 	// meshes with no mTLS enabled and with ZoneEgress enabled
 	var meshes []*core_mesh.MeshResource
-	for _, mesh := range meshList.Items {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if mesh.ZoneEgressEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}
 
-	var zoneIngressesList core_mesh.ZoneIngressResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &zoneIngressesList); err != nil {
-		return nil, err
-	}
-
 	// We don't want to process services from our local zone ingress
 	var zoneIngresses []*core_mesh.ZoneIngressResource
-	for _, zoneIngress := range zoneIngressesList.Items {
+	for _, zoneIngress := range aggregatedMeshCtxs.ZoneIngresses() {
 		if zoneIngress.IsRemoteIngress(p.zone) {
 			zoneIngresses = append(zoneIngresses, zoneIngress)
 		}
 	}
-
-	// Resolve hostnames to ips in zoneIngresses.
-	zoneIngresses = xds_topology.ResolveZoneIngressAddresses(xdsServerLog, p.LookupIP, zoneIngresses)
 
 	// It's done for achieving stable xds config
 	sort.Slice(zoneIngresses, func(a, b int) bool {
@@ -85,21 +59,15 @@ func (p *EgressProxyBuilder) Build(
 
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
-
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, meshName)
-		if err != nil {
-			return nil, err
-		}
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
-		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
 
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
-			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
 			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
@@ -121,7 +89,8 @@ func (p *EgressProxyBuilder) Build(
 				externalServices,
 				rateLimits,
 			),
-			Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
+			Resources: meshCtx.Resources.MeshLocalResources,
 		}
 
 		for _, es := range externalServices {

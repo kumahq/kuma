@@ -33,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/virtualoutbound"
+	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
@@ -40,7 +41,7 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Kubernetes Suite")
 }
 
-var _ = SynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreState)
+var _ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreState)
 
 // SynchronizedAfterSuite keeps the main process alive until all other processes finish.
 // Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
@@ -83,4 +84,6 @@ var (
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
 	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
+	_ = Describe("Connectivity - Exclude Outbound Port", connectivity.ExcludeOutboundPort, Ordered)
+	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
 )

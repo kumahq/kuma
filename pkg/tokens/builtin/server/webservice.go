@@ -85,7 +85,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	}
 
 	if verr.HasViolations() {
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Invalid request")
 		return
 	}
 
@@ -96,7 +96,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		idReq.Tags,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -107,7 +107,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
 	}, validFor)
 	if err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -142,7 +142,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 	}
 
 	if err := d.dpAccess.ValidateGenerateZoneIngressToken(request.Request.Context(), idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -155,7 +155,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 	verr.Add(validForErr)
 
 	if verr.HasViolations() {
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Invalid request")
 		return
 	}
 
@@ -163,7 +163,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 		Zone: idReq.Zone,
 	}, validFor)
 	if err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -184,7 +184,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 	ctx := request.Request.Context()
 
 	if err := d.zoneAccess.ValidateGenerateZoneToken(request.Request.Context(), idReq.Zone, user.FromCtx(ctx)); err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 
@@ -198,7 +198,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 	verr.Add(validForErr)
 
 	if verr.HasViolations() {
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Invalid request")
 		return
 	}
 
@@ -207,7 +207,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 		Scope: idReq.Scope,
 	}, validFor)
 	if err != nil {
-		errors.HandleError(response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
 

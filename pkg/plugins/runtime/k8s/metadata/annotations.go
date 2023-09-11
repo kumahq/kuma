@@ -110,6 +110,8 @@ const (
 	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
 	// list of init containers
 	KumaInitFirst = "kuma.io/init-first"
+	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
+	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
