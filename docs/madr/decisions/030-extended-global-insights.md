@@ -51,32 +51,46 @@ should look like this:
 
 ```json
 {
-  "resources": ..., // <== this stays the same
-  "services": {
-    "total": 5,
-    "internal": 4,
-    "external": 1,
-    "internalByStatus": {
-      "online": 2,
-      "offline": 1,
-      "partiallyDegraded": 1
-     }
-  },
-  "zones": {
-    "cps": {
-      "online": 1,
-      "total": 1
-    }
-  },
-  "dataplanes": {
-    "online": 23,
-    "offline": 10,
-    "partiallyDegraded": 17,
-    "total": 50
-  },
-  "policies": {
-    "total": 100
-  }
+   "resources": ...,
+   // <== this stays the same
+   "services": {
+      "total": 5,
+      "internal": 4,
+      "external": 1,
+      "gatewayBuiltin": 1,
+      "gatewayProvided": 2,
+      "internalByStatus": {
+         "online": 2,
+         "offline": 1,
+         "partiallyDegraded": 1
+      }
+   },
+   "zones": {
+      "controlPlanes": {
+         "online": 1,
+         "total": 1
+      },
+      "zoneEgresses": {
+         "online": 1,
+         "total": 1
+      },
+      "zoneIngresses": {
+         "online": 1,
+         "total": 1
+      }
+   },
+   "dataplanes": {
+      "online": 23,
+      "offline": 10,
+      "partiallyDegraded": 17,
+      "total": 50
+   },
+   "policies": {
+      "total": 100
+   },
+   "meshes": {
+      "total": 3
+   }
 }
 ```
 
@@ -98,3 +112,10 @@ We will add some small cache for it so don't recompute it too often.
 
 We would like to create new endpoint and generate Go types from OpenAPI schema. OpenAPI recommends to write schema first 
 and then generate language specific code from it. [Source](https://learn.openapis.org/best-practices.html)
+
+Endpoint will be versioned and new endpoint will have path: `/v2/global-insights`
+
+#### Extending API for custom Kuma distributions
+
+We can add new field named `additionalData` with type `object` that translates to Go `map[string]interface{}` where developers
+can put anything they need extra for Global Insight. 
