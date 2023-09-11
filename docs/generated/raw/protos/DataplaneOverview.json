@@ -100,7 +100,9 @@
                         "DELEGATED",
                         0,
                         "BUILTIN",
-                        1
+                        1,
+                        "KOYEB_INGRESS_GATEWAY",
+                        999
                     ],
                     "oneOf": [
                         {

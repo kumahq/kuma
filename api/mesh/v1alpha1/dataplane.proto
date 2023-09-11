@@ -180,6 +180,9 @@ message Dataplane {
         // The `BUILTIN` gateway type configures data plane proxy itself as a
         // gateway.
         BUILTIN = 1;
+        // The `KOYEB_INGRESS_GATEWAY` gateway type configures data plane proxy
+        // itself as an Ingress Gateway.
+        KOYEB_INGRESS_GATEWAY = 999;
       }
 
       // Tags associated with a gateway of this data plane to, e.g.

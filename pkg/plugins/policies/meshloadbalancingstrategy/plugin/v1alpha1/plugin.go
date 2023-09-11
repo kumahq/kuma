@@ -141,7 +141,7 @@ func (p plugin) configureGateway(
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+	if !proxy.Dataplane.Spec.IsBuiltinGateway() && !proxy.Dataplane.Spec.IsKoyebIngressGateway() {
 		return nil
 	}
 

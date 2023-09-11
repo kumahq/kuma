@@ -65,6 +65,22 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 	)
 }
 
+func SetRequestHeader(name string, value string) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
+			hsts := &envoy_config_core_v3.HeaderValueOption{
+				Append: util_proto.Bool(false),
+				Header: &envoy_config_core_v3.HeaderValue{
+					Key:   name,
+					Value: value,
+				},
+			}
+
+			vh.RequestHeadersToAdd = append(vh.RequestHeadersToAdd, hsts)
+		}),
+	)
+}
+
 func Retry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {

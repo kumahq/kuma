@@ -17,8 +17,17 @@ import (
 func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds.IdentityCertRequest) (*envoy_tls.DownstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := downstreamMesh.MeshName()
+	defaultAdded := false
 	for _, meshName := range meshNames {
+		if meshName == "default" {
+			defaultAdded = true
+		}
 		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
+	}
+
+	// NOTE: Koyeb addition
+	if !defaultAdded {
+		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher("default"))
 	}
 
 	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers)

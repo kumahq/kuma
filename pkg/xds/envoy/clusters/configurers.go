@@ -189,3 +189,9 @@ func Http() ClusterBuilderOpt {
 		builder.AddConfigurer(&v3.HttpConfigurer{})
 	})
 }
+
+func HttpDownstreamProtocolOptions() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.HttpDownstreamConfigurer{})
+	})
+}

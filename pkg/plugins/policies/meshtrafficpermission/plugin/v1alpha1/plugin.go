@@ -43,7 +43,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return p.configureEgress(rs, proxy)
 	}
 
-	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
+	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() || proxy.Dataplane.Spec.IsKoyebIngressGateway() {
 		return nil
 	}
 

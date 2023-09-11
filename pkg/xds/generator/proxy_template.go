@@ -8,6 +8,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	ingress_gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/ingressgateway/metadata"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/core"
@@ -124,6 +125,7 @@ func init() {
 	// a proper solution for this is to rewrite as a custom ResourceManager
 	// TODO: https://github.com/kumahq/kuma/issues/5144
 	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewFailingProfile())
+	RegisterProfile(ingress_gateway_metadata.ProfileIngressGatewayProxy, NewFailingProfile())
 }
 
 type FailingResourceGenerator struct{}

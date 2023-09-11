@@ -48,7 +48,9 @@
         
             - `DELEGATED`
         
-            - `BUILTIN`    
+            - `BUILTIN`
+        
+            - `KOYEB_INGRESS_GATEWAY`    
     
     - `inbound` (optional, repeated)
     

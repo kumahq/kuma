@@ -66,7 +66,9 @@
             
                 - `TERMINATE`
             
-                - `PASSTHROUGH`    
+                - `PASSTHROUGH`
+            
+                - `KOYEB_IN_MESH_MTLS`    
             
             - `certificates` (optional, repeated)
             

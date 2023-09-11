@@ -194,6 +194,12 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 						path.Index(i).Field("tls").Field("certificates"),
 						"cannot have more than 2 certificates")
 				}
+			case mesh_proto.MeshGateway_TLS_KOYEB_IN_MESH_MTLS:
+				if len(tls.GetCertificates()) != 0 {
+					err.AddViolationAt(
+						path.Index(i).Field("tls").Field("certificates"),
+						"no certificate expected when using mTLS")
+				}
 			}
 		}
 		if tls := l.GetTls(); tls != nil && l.GetCrossMesh() {

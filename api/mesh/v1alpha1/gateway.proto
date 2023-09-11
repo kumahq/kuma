@@ -48,6 +48,9 @@ message MeshGateway {
       // ClientHello message of the TLS protocol. The certificate field
       // is ignored in this mode.
       PASSTHROUGH = 2;
+
+      // Use mTLS based on the mesh certif
+      KOYEB_IN_MESH_MTLS = 99;
     }
 
     message Options {

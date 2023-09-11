@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -11,10 +12,12 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	"github.com/kumahq/kuma/pkg/util/net"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -98,6 +101,13 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+					Configure(envoy_listeners.AddFilterChainConfigurer(
+						envoy_listeners_v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+							hcm.UpgradeConfigs = append(hcm.UpgradeConfigs, &envoy_hcm.HttpConnectionManager_UpgradeConfig{
+								UpgradeType: "websocket",
+								Enabled:     util_proto.Bool(true),
+							})
+						}))).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).

@@ -23,7 +23,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 	policies := resources.ListOrEmpty(rType)
 
 	var gateway *core_mesh.MeshGatewayResource
-	if dpp.Spec.IsBuiltinGateway() {
+	if dpp.Spec.IsBuiltinGateway() || dpp.Spec.IsKoyebIngressGateway() {
 		gateways := resources.Gateways()
 		gateway = xds_topology.SelectGateway(gateways.Items, dpp.Spec.Matches)
 	}

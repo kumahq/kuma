@@ -59,6 +59,14 @@ func (d *DataplaneResource) Validate() error {
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 
+	case d.Spec.IsKoyebIngressGateway():
+		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
+			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
+		}
+
+		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
+		err.Add(validateNetworking(d.Spec.GetNetworking()))
+
 	default:
 		if len(d.Spec.GetNetworking().GetInbound()) == 0 {
 			err.AddViolationAt(net, "has to contain at least one inbound interface or gateway")
@@ -246,6 +254,7 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
 		RequireService:      true,
+		RequireKoyebZone:    gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY,
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}),
 	)

@@ -286,6 +286,7 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(dp.IsDelegatedGateway()).To(BeFalse())
 			Expect(dp.IsBuiltinGateway()).To(BeFalse())
+			Expect(dp.IsKoyebIngressGateway()).To(BeFalse())
 		})
 	})
 
@@ -298,6 +299,7 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
 		})
 	})
 
@@ -312,6 +314,7 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
 		})
 	})
 
@@ -326,6 +329,22 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeFalse())
 			Expect(gw.IsBuiltinGateway()).To(BeTrue())
+			Expect(gw.IsKoyebIngressGateway()).To(BeFalse())
+		})
+	})
+
+	Describe("with koyeb ingress gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeFalse())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsKoyebIngressGateway()).To(BeTrue())
 		})
 	})
 })

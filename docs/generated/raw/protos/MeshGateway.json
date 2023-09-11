@@ -122,7 +122,9 @@
                         "TERMINATE",
                         1,
                         "PASSTHROUGH",
-                        2
+                        2,
+                        "KOYEB_IN_MESH_MTLS",
+                        99
                     ],
                     "oneOf": [
                         {

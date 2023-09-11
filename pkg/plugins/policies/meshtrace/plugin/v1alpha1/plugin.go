@@ -140,7 +140,7 @@ func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.Da
 		Service:          serviceName,
 		TrafficDirection: listener.TrafficDirection,
 		Destination:      destination,
-		IsGateway:        dataplane.Spec.IsBuiltinGateway(),
+		IsGateway:        dataplane.Spec.IsBuiltinGateway() || dataplane.Spec.IsKoyebIngressGateway(),
 	}
 
 	for _, chain := range listener.FilterChains {

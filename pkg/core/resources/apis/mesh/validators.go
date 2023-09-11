@@ -24,6 +24,7 @@ type (
 type ValidateTagsOpts struct {
 	RequireAtLeastOneTag    bool
 	RequireService          bool
+	RequireKoyebZone        bool
 	ExtraTagsValidators     []TagsValidatorFunc
 	ExtraTagKeyValidators   []TagKeyValidatorFunc
 	ExtraTagValueValidators []TagValueValidatorFunc
@@ -111,9 +112,14 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 			err.Add(validate(path, key, value))
 		}
 	}
-	_, defined := keyValues[mesh_proto.ServiceTag]
-	if opts.RequireService && !defined {
+	_, serviceDefined := keyValues[mesh_proto.ServiceTag]
+	if opts.RequireService && !serviceDefined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
+	}
+
+	_, koyebZoneDefined := keyValues[mesh_proto.KoyebZoneTag]
+	if opts.RequireKoyebZone && !koyebZoneDefined {
+		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.KoyebZoneTag))
 	}
 	return err
 }
