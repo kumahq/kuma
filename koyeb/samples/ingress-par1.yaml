@@ -1,0 +1,9 @@
+type: ZoneIngress
+name: zoneingress-par1
+networking:
+  address: 127.0.0.1
+  port: 10001
+  advertisedAddress: 127.0.0.1
+  advertisedPort: 10000
+  admin:
+    port: 9901

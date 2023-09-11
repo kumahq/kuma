@@ -1,0 +1,15 @@
+type: Dataplane
+mesh: default
+name: "ingress-gateway-par1"
+networking:
+  address: 127.0.0.1
+  #inbound:
+  #  - port: 5601
+  admin:
+    port: 9902
+  gateway:
+    type: "KOYEB_INGRESS_GATEWAY"
+    tags:
+      kuma.io/service: "ingress-gateway"
+      koyeb.com/datacenter: "par1"
+      koyeb.com/zone: "par"

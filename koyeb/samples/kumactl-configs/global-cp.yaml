@@ -1,0 +1,9 @@
+contexts:
+- controlPlane: global
+  name: global
+controlPlanes:
+- coordinates:
+    apiServer:
+      url: http://localhost:5681
+  name: global
+currentContext: global

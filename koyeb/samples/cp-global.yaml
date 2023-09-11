@@ -1,0 +1,60 @@
+mode: global
+
+# Resource Store configuration
+store:
+  type: postgres
+
+  # Postgres Store configuration (used when store.type=postgres)
+  postgres:
+    host: 127.0.0.1
+    port: 5532
+    ## User of the Postgres DB
+    #user: kuma # ENV: KUMA_STORE_POSTGRES_USER
+    ## Password of the Postgres DB
+    #password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
+    # Database name of the Postgres DB
+    dbName: cp-global # ENV: KUMA_STORE_POSTGRES_DB_NAME
+    # Driver to use, one of: pgx, postgres
+    tls:
+      mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+
+# API Server configuration
+apiServer:
+  # HTTP configuration of the API Server
+  http:
+    # If true then API Server will be served on HTTP
+    enabled: true # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    # Network interface on which HTTP API Server will be exposed
+    interface: 127.0.0.1 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
+    # Port of the API Server
+    port: 5681 # ENV: KUMA_API_SERVER_HTTP_PORT
+  # HTTPS configuration of the API Server
+  https:
+    # If true then API Server will be served on HTTPS
+    enabled: false # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+
+# Multizone mode
+multizone:
+  global:
+    kds:
+      # Port of a gRPC server that serves Kuma Discovery Service (KDS).
+      grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
+      # Interval for refreshing state of the world
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
+      # Interval for flushing Zone Insights (stats of multi-zone communication)
+      zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
+      # TlsEnabled turns on TLS for KDS
+      tlsEnabled: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED
+
+diagnostics:
+  # Port of Diagnostic Server for checking health and readiness of the Control Plane
+  serverPort: 5680 # ENV: KUMA_DIAGNOSTICS_SERVER_PORT
+
+interCp:
+  server:
+    port: 5683
+
+# Configuration of experimental features of Kuma
+experimental:
+  # If true, KDS will sync using incremental xDS updates
+  kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED

@@ -1,0 +1,103 @@
+mode: zone
+
+# Resource Store configuration
+store:
+  # Type of Store used in the Control Plane. Available values are: "kubernetes", "postgres" or "memory"
+  type: postgres
+
+  # Postgres Store configuration (used when store.type=postgres)
+  postgres:
+    host: 127.0.0.1
+    port: 5532
+    # User of the Postgres DB
+    user: kuma # ENV: KUMA_STORE_POSTGRES_USER
+    # Password of the Postgres DB
+    password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
+    # Database name of the Postgres DB
+    dbName: cp-par1 # ENV: KUMA_STORE_POSTGRES_DB_NAME
+    tls:
+      # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
+      mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+
+## Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
+#bootstrapServer:
+#  # Parameters of bootstrap configuration
+#  params:
+#    # Address of Envoy Admin
+#    adminAddress: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
+#    # Port of Envoy Admin
+#    adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+#    # Path to access log file of Envoy Admin
+#    adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
+#    # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
+#    xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+#    # Port of XDS Server. By default it is autoconfigured from KUMA_DP_SERVER_PORT
+#    xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
+#    # Connection timeout to the XDS Server
+#    xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
+
+  tlsCipherSuites: [] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES
+
+dpServer:
+  port: 5678
+
+# Envoy XDS server configuration
+xdsServer:
+  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
+  # Interval for flushing status of Dataplanes connected to the Control Plane
+  dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
+  nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
+  # A delay between proxy terminating a connection and the CP trying to deregister the proxy.
+  # It is used only in universal mode when you use direct lifecycle.
+  # Setting this setting to 0s disables the delay.
+  # Disabling this may cause race conditions that one instance of CP removes proxy object
+  # while proxy is connected to another instance of the CP.
+  dataplaneDeregistrationDelay: 10s # ENV: KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY
+
+# API Server configuration
+apiServer:
+  # HTTP configuration of the API Server
+  http:
+    # If true then API Server will be served on HTTP
+    enabled: true # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    # Network interface on which HTTP API Server will be exposed
+    interface: 127.0.0.1 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
+    # Port of the API Server
+    port: 6682 # ENV: KUMA_API_SERVER_HTTP_PORT
+  # HTTPS configuration of the API Server
+  https:
+    # If true then API Server will be served on HTTPS
+    enabled: false # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+
+# Multizone mode
+multizone:
+  global:
+    kds:
+      # Port of a gRPC server that serves Kuma Discovery Service (KDS).
+      grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
+      # Interval for refreshing state of the world
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
+      # Interval for flushing Zone Insights (stats of multi-zone communication)
+      zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
+      # TlsEnabled turns on TLS for KDS
+      tlsEnabled: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED
+  zone:
+    # Kuma Zone name used to mark the zone dataplane resources
+    name: "par1" # ENV: KUMA_MULTIZONE_ZONE_NAME
+    # GlobalAddress URL of Global Kuma CP
+    globalAddress: "grpc://localhost:5685" # ENV KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
+
+diagnostics:
+  # Port of Diagnostic Server for checking health and readiness of the Control Plane
+  serverPort: 6680 # ENV: KUMA_DIAGNOSTICS_SERVER_PORT
+
+interCp:
+  server:
+    port: 6683
+
+# Configuration of experimental features of Kuma
+experimental:
+  # If true, KDS will sync using incremental xDS updates
+  kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED

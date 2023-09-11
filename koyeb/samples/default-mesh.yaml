@@ -1,0 +1,12 @@
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-inline
+  backends:
+    - name: ca-inline
+      type: provided
+      conf:
+        cert:
+          secret: manually-generated-ca-cert
+        key:
+          secret: manually-generated-ca-key

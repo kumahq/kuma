@@ -1,0 +1,16 @@
+type: MeshTrace
+name: abc
+mesh: abc
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://localhost:9411/api/v2/spans
+          apiVersion: httpJson
+    tags:
+      - name: host
+        header:
+          name: host

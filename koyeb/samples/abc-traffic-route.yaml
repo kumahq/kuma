@@ -1,0 +1,13 @@
+type: TrafficRoute
+mesh: abc
+name: global-deployment-active
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: 'dp-8001'
+conf:
+  destination:
+    kuma.io/service: 'dp-8001'
+    koyeb.com/global-deployment: 'active'
