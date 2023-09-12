@@ -9,3 +9,10 @@ conf:
   - port: 5600
     protocol: HTTP
     hostname: "*"
+  - port: 5603
+    protocol: HTTPS
+    hostname: "*"
+    tls:
+      mode: TERMINATE
+      certificates:
+        - secret: glb-cert

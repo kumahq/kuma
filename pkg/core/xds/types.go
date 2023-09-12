@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/coord"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
@@ -149,6 +150,10 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+
+	// GlobalLoadBalancerProxy is available only when XDS is generated for data plane proxy
+	// of type Gateway with GatewayType GlobalLoadBalancer
+	GlobalLoadBalancerProxy *GlobalLoadBalancerProxy
 }
 
 type ServerSideMTLSCerts struct {
@@ -212,6 +217,34 @@ type MeshIngressResources struct {
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
 	MeshResourceList    []*MeshIngressResources
+}
+
+type GlobalLoadBalancerProxy struct {
+	Datacenters []*KoyebDatacenter
+	EndpointMap EndpointMap
+	// KoyebServices []*KoyebService
+	KoyebApps []*KoyebApp
+}
+
+type KoyebDatacenter struct {
+	ID       string
+	RegionID string
+	Coord    coord.Coord
+	Domain   string
+}
+
+type KoyebApp struct {
+	Domains  []string
+	Services []*KoyebService
+}
+
+type KoyebService struct {
+	ID string
+	// The datacenters where the service is healthily deployed on
+	DatacenterIDs   map[string]struct{}
+	Port            uint32
+	DeploymentGroup string
+	Paths           []string
 }
 
 type VIPDomains struct {

@@ -90,6 +90,15 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 	})
 }
 
+func AggregateCluster(clusters ...string) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.AggregateClusterConfigurer{
+			Clusters: clusters,
+		})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+	})
+}
+
 func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.HealthCheckConfigurer{

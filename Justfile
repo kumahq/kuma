@@ -12,6 +12,7 @@ dev-kuma-dp := if use_debugger == "yes" { "dlv debug app/kuma-dp/main.go --" } e
 
 kumactl-configs := "./koyeb/samples/kumactl-configs"
 
+glb-cert-path := "./build/koyeb/glb-certs"
 ca-cert-path := "./build/koyeb/certs"
 client-certs-path := "./build/koyeb/client-certs"
 
@@ -27,7 +28,7 @@ run-db:
 stop-db:
   docker stop kuma-db
 
-gen-certs: _generate-ca-cert _generate-client-certs
+gen-certs: _generate-ca-cert _generate-client-certs _generate-glb-cert
 
 # This generates a CA cert and its key. Those are expected to be loaded into each mesh
 _generate-ca-cert:
@@ -47,6 +48,16 @@ _generate-client-certs:
   openssl rsa -in {{client-certs-path}}/client.key -text > {{client-certs-path}}/client-key.pem
   openssl x509 -req -in {{client-certs-path}}/client.csr -CA {{ca-cert-path}}/crt.pem -CAkey {{ca-cert-path}}/key.pem -CAcreateserial -extfile ./koyeb/samples/client-cert-extensions-with-spiffe.ext -out {{client-certs-path}}/final.crt -days 5000 -sha256
   openssl x509 -in {{client-certs-path}}/client.crt -out {{client-certs-path}}/final.pem -text
+
+_generate-glb-cert:
+  mkdir -p {{glb-cert-path}}
+  {{kumactl}} generate tls-certificate --type=server --hostname=koyeb.app,localhost  --cert-file {{glb-cert-path}}/glb.crt --key-file {{glb-cert-path}}/glb.key
+
+_inject_glb-cert-secret:
+  export SECRET_NAME=glb-cert ; \
+  export SECRET_MESH=default ; \
+  export SECRET_BASE64_ENCODED=$(cat {{glb-cert-path}}/glb.key {{glb-cert-path}}/glb.crt | base64) ; \
+  cat koyeb/samples/secret-template.yaml | envsubst | {{kumactl}} apply --config-file {{kumactl-configs}}/kumactl-configs/global-cp.yaml -f -
 
 _build-cp:
   make build/kuma-cp
@@ -86,7 +97,7 @@ ingress: _build-dp _init-default
     --dataplane-token-file=/tmp/dp-token-ingress \
     --dataplane-file=koyeb/samples/mesh-default/ingress-par1.yaml
 
-glb: _build-dp _init-default
+glb: _build-dp _init-default _inject_glb-cert-secret
   cat koyeb/samples/mesh-default/mesh-gateway-global-load-balancer.yaml | {{kumactl}} apply --config-file {{kumactl-configs}}/global-cp.yaml -f -
   {{kumactl}} generate dataplane-token -m default --valid-for 720h --config-file {{kumactl-configs}}/par1-cp.yaml > /tmp/glb-par1-token
   {{dev-kuma-dp}} run --dataplane-token-file /tmp/glb-par1-token --log-level info --cp-address https://localhost:5678 -d ./koyeb/samples/mesh-default/global-load-balancer-par1.yaml
@@ -97,7 +108,52 @@ igw: _build-dp _init-default
   {{kumactl}} generate dataplane-token -m default --valid-for 720h --config-file {{kumactl-configs}}/par1-cp.yaml > /tmp/igw-par1-token
   {{dev-kuma-dp}} run --dataplane-token-file /tmp/igw-par1-token --log-level info --cp-address https://localhost:5678 -d ./koyeb/samples/mesh-default/ingress-gateway-par1.yaml
 
-test: test-http test-http2 test-grpc test-ws
+test: test-http test-http2 test-grpc test-ws test-glb
+
+test-http:
+  # Check that the target container is live
+  curl --fail http://localhost:8001/health -s --output /dev/null
+  @echo
+
+  # Check that the IGW is live
+  curl --fail http://localhost:5601/health
+  @echo
+
+  # Check that the IGW is live in HTTPs
+  curl --fail -k https://localhost:5602/health --key {{client-certs-path}}/client.key --cert {{client-certs-path}}/final.pem --cacert {{ca-cert-path}}/crt.pem
+  @echo
+
+  # Check that the IGW routing works in HTTP
+  curl --fail http://localhost:5601 -H "x-koyeb-route: dp-8001_prod" -s --output /dev/null
+  @echo
+
+  # Check that the IGW routing works in HTTPS
+  curl --fail https://localhost:5602 --key {{client-certs-path}}/client.key --cert {{client-certs-path}}/final.pem --cacert {{ca-cert-path}}/crt.pem -H "x-koyeb-route: dp-8001_prod" -s -k --output /dev/null
+  @echo
+
+  # Check that the GLB is live
+  curl --fail http://localhost:5600/health
+  @echo
+  curl --fail -k https://localhost:5603/health
+  @echo
+  @echo
+
+  # Check that the GLB forwards correctly HTTP1. The grep ensures that the path as perceived by the container is correctly stripped
+  curl --fail http://localhost:5600/http -H "host: http.local.koyeb.app" -s | grep 'path: /$'
+  curl --fail http://localhost:5600/http -H "host: http.local.koyeb.app" --http2-prior-knowledge -s  | grep 'path: /$'
+  curl --fail -k https://localhost:5603/http -H "host: http.local.koyeb.app" -s | grep 'path: /$'
+  curl --fail -k https://localhost:5603/http -H "host: http.local.koyeb.app" --http2-prior-knowledge -s  | grep 'path: /$'
+  @echo
+
+test-glb:
+  # Check that an unknowns Host routes to a 404
+  curl http://localhost:5600/ -H "Host: unknown-host.com" --output /dev/null -s -w "%{http_code}\n" | grep 404
+  @echo
+
+  # Check that unknown paths return a 404
+  curl http://localhost:5600/blibablou -H "host: http.local.koyeb.app" --output /dev/null -s -w "%{http_code}\n" | grep 404
+  curl http://localhost:5600           -H "host: http.local.koyeb.app" --output /dev/null -s -w "%{http_code}\n" | grep 404
+  @echo
 
 test-grpc:
   # Check that the target container is live
@@ -106,62 +162,44 @@ test-grpc:
 
   # Check that the IGW routes correctly
   grpcurl --plaintext -H "X-Koyeb-Route: dp-8004_prod" localhost:5601 main.HelloWorld/Greeting
+  # echo '{}' | INSECURE=yes /Users/nicolas/perso/evans/evans --verbose --host localhost --port 5602 --tls --certkey ./build/koyeb/client-certs/client.key --cert ./build/koyeb/client-certs/final.pem --cacert ./build/koyeb/client-certs/client-ca.pem -r cli --header "x-koyeb-route=dp-8004_prod" call main.HelloWorld.Greeting
   @echo
 
-#  grpcurl -authority grpc.local.koyeb.app -plaintext -servername grpc.local.koyeb.app localhost:5600 list
-#  grpcurl -authority grpc.local.koyeb.app -plaintext -servername grpc.local.koyeb.app localhost:5600 main.HelloWorld/Greeting
+  # Check that the GLB routes correctly
+  grpcurl -authority grpc.koyeb.app -insecure localhost:5603 list
+  grpcurl -authority grpc.koyeb.app -insecure localhost:5603 main.HelloWorld/Greeting
+  @echo
 
+
+# Note that we do not test in SSL because websocat seems not to allow it. e2e tests will catch errors on SSL
 test-ws:
-  echo "hello" | websocat  ws://127.0.0.1:5601 -H 'x-koyeb-route: dp-8011_prod'
+  # Test that the IGW routes correctly
+  echo "hello" | websocat ws://127.0.0.1:5601 -H 'x-koyeb-route: dp-8011_prod'
+  # Test that the GLB routes correctly
+  echo "hello" | websocat  -t -     ws-ll-c:http-request:tcp:127.0.0.1:5600      --request-header 'Host: http.local.koyeb.app'     --request-header 'Upgrade: websocket'     --request-header 'Sec-WebSocket-Key: mYUkMl6bemnLatx/g7ySfw=='     --request-header 'Sec-WebSocket-Version: 13'     --request-header 'Connection: Upgrade'     --request-uri=/ws
+  @echo
 
 test-http2:
   # Check that the target container is live
-  curl http://localhost:8002/health -s --fail --output /dev/null
-  curl http://localhost:8002/health -s --http2 -s --fail  --output /dev/null
-  curl http://localhost:8002/health --http2-prior-knowledge -s --fail --output /dev/null
+  curl --fail http://localhost:8002/health -s --output /dev/null
+  curl --fail http://localhost:8002/health -s --http2 -s --output /dev/null
+  curl --fail http://localhost:8002/health --http2-prior-knowledge -s --output /dev/null
   @echo
 
   # Check that the IGW routes correctly
-  curl http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" -s --fail --output /dev/null
-  curl http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" --http2 -s --fail --output /dev/null
-  curl http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" --http2-prior-knowledge -s --fail --output /dev/null
+  curl --fail http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" -s --output /dev/null
+  curl --fail http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" --http2 -s --output /dev/null
+  curl --fail http://localhost:5601/health -H "x-koyeb-route: dp-8002_prod" --http2-prior-knowledge -s --output /dev/null
   @echo
 
-#  curl http://localhost:8002/health -s --fail --output /dev/null
-#  curl http://localhost:8002/health --http2 -s --fail  --output /dev/null
-#  curl http://localhost:8002/health --http2-prior-knowledge -s --fail --output /dev/null
-#  curl http://localhost:5600/health -H "host: http2.local.koyeb.app" -s --fail --output /dev/null
-#  curl http://localhost:5600/health -H "host: http2.local.koyeb.app" --http2 -s --fail --output /dev/null
-#  curl http://localhost:5600/health -H "host: http2.local.koyeb.app" --http2-prior-knowledge -s --fail --output /dev/null
-
-test-http:
-  # Check that the target container is live
-  curl http://localhost:8001/health -s --fail --output /dev/null
+  # Check that the GLB routes correctly
+  curl --fail http://localhost:5600/http2 -H "host: http.local.koyeb.app" -s --output /dev/null
+  curl --fail http://localhost:5600/http2 -H "host: http.local.koyeb.app" --http2 -s --output /dev/null
+  curl --fail http://localhost:5600/http2 -H "host: http.local.koyeb.app" --http2-prior-knowledge -s --output /dev/null
+  curl --fail https://localhost:5603/http2 -H "host: http.local.koyeb.app" -k -s --output /dev/null
+  curl --fail https://localhost:5603/http2 -H "host: http.local.koyeb.app" -k --http2 -s --output /dev/null
+  curl --fail https://localhost:5603/http2 -H "host: http.local.koyeb.app" -k --http2-prior-knowledge -s --output /dev/null
   @echo
-
-  # Check that the IGW is live
-  curl http://localhost:5601/health
-  @echo
-
-  # Check that the IGW is live in HTTPs
-  curl -k https://localhost:5602/health --key {{client-certs-path}}/client.key --cert {{client-certs-path}}/final.pem --cacert {{ca-cert-path}}/crt.pem
-  @echo
-
-  # Check that the IGW routing works in HTTP
-  curl -k http://localhost:5601 -H "x-koyeb-route: dp-8001_prod" -s --fail --output /dev/null
-  @echo
-
-  # Check that the IGW routing works in HTTPS
-  curl -k https://localhost:5602 --key {{client-certs-path}}/client.key --cert {{client-certs-path}}/final.pem --cacert {{ca-cert-path}}/crt.pem -H "x-koyeb-route: dp-8001_prod" -s --fail --output /dev/null
-  @echo
-
-#  curl http://localhost:5600/health
-#  @echo
-#  curl http://127.0.0.1:5600/health
-#  curl http://localhost:5600 -H "host: http.local.koyeb.app" -s --fail --output /dev/null
-#  curl http://localhost:5600 -H "host: http.local.koyeb.app" --http2-prior-knowledge -s --fail --output /dev/null
-#
-#test: test-http test-http2 test-grpc
 
 dp-container-ws:
   docker run -ti -p 8011:8080 jmalloc/echo-server

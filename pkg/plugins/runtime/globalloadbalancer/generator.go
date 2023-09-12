@@ -4,14 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/globalloadbalancer/metadata"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -31,6 +35,7 @@ type GatewayListener struct {
 	Protocol     mesh_proto.MeshGateway_Listener_Protocol
 	ResourceName string
 	Resources    *mesh_proto.MeshGateway_Listener_Resources // TODO verify these don't conflict when merging
+	TLS          *mesh_proto.MeshGateway_TLS_Conf
 }
 
 // GatewayListenerInfo holds everything needed to generate resources for a
@@ -126,7 +131,7 @@ func MakeGatewayListener(
 	gateway *core_mesh.MeshGatewayResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
 ) GatewayListener {
-	return GatewayListener{
+	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
 		Protocol: listeners[0].GetProtocol(),
 		ResourceName: envoy_names.GetGatewayListenerName(
@@ -136,6 +141,12 @@ func MakeGatewayListener(
 		),
 		Resources: listeners[0].GetResources(),
 	}
+
+	if listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS {
+		listener.TLS = listeners[0].GetTls()
+	}
+
+	return listener
 }
 
 func (g Generator) Generate(
@@ -145,38 +156,145 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	_, err := GatewayListenerInfoFromProxy(ctx, xdsCtx.Mesh, proxy, g.Zone)
+	listenerInfos, err := GatewayListenerInfoFromProxy(ctx, xdsCtx.Mesh, proxy, g.Zone)
 	if err != nil {
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}
 
-	// var limits []RuntimeResoureLimitListener
+	var limits []RuntimeResoureLimitListener
 
-	// for _, info := range listenerInfos {
-	// 	cdsResources, err := g.generateCDS(ctx, xdsCtx, proxy)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	resources.AddSet(cdsResources)
+	for _, info := range listenerInfos {
+		cdsResources, err := g.generateCDS(ctx, xdsCtx, proxy)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(cdsResources)
 
-	// 	ldsResources, limit, err := g.generateLDS(xdsCtx, info)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	resources.AddSet(ldsResources)
+		ldsResources, limit, err := g.generateLDS(xdsCtx, info)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(ldsResources)
 
-	// 	if limit != nil {
-	// 		limits = append(limits, *limit)
-	// 	}
+		if limit != nil {
+			limits = append(limits, *limit)
+		}
 
-	// 	rdsResources, err := g.generateRDS(xdsCtx, proxy, info)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	resources.AddSet(rdsResources)
-	// }
+		rdsResources, err := g.generateRDS(proxy, info)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(rdsResources)
+	}
 
-	// resources.Add(g.generateRTDS(limits))
+	resources.Add(g.generateRTDS(limits))
+
+	return resources, nil
+}
+
+func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
+	layer := map[string]interface{}{}
+	for _, limit := range limits {
+		layer[fmt.Sprintf("envoy.resource_limits.listener.%s.connection_limit", limit.Name)] = limit.ConnectionLimit
+	}
+
+	res := &core_xds.Resource{
+		Name:   "globalloadbalancer.listeners",
+		Origin: metadata.OriginGlobalLoadBalancer,
+		Resource: &envoy_service_runtime_v3.Runtime{
+			Name:  "globalloadbalancer.listeners",
+			Layer: util_proto.MustStruct(layer),
+		},
+	}
+
+	return res
+}
+
+func (g Generator) generateLDS(xdsCtx xds_context.Context, info GatewayListenerInfo) (*core_xds.ResourceSet, *RuntimeResoureLimitListener, error) {
+	resources := core_xds.NewResourceSet()
+
+	listenerBuilder, limit := GenerateListener(info)
+
+	protocol := info.Listener.Protocol
+	if protocol != mesh_proto.MeshGateway_Listener_HTTP && protocol != mesh_proto.MeshGateway_Listener_HTTPS {
+		return nil, nil, errors.New("only HTTP and HTTPS are supported by Koyeb Global Load Balancer")
+	}
+
+	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[protocol].Generate(xdsCtx, info)
+	if err != nil {
+		return nil, limit, err
+	}
+	resources.AddSet(res)
+
+	for _, filterChainBuilder := range filterChainBuilders {
+		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+	}
+
+	res, err = BuildResourceSet(listenerBuilder)
+	if err != nil {
+		return nil, limit, errors.Wrapf(err, "failed to build listener resource")
+	}
+	resources.AddSet(res)
+
+	return resources, limit, nil
+}
+
+func (g Generator) generateCDS(
+	ctx context.Context,
+	xdsCtx xds_context.Context,
+	proxy *core_xds.Proxy,
+) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
+
+	clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, xdsCtx, proxy)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", proxy.Id)
+	}
+	resources.AddSet(clusterRes)
+
+	return resources, nil
+}
+
+func (g Generator) generateRDS(proxy *core_xds.Proxy, info GatewayListenerInfo) (*core_xds.ResourceSet, error) {
+	switch info.Listener.Protocol {
+	case mesh_proto.MeshGateway_Listener_HTTPS,
+		mesh_proto.MeshGateway_Listener_HTTP:
+	default:
+		return nil, nil
+	}
+
+	resources := core_xds.NewResourceSet()
+	routeConfig := GenerateRouteConfig(info)
+
+	// For each koyeb app, add a VirtualHost with the domains of that app.
+	// For each virtual host:
+	//   * attach the right X-Koyeb-Route header, so the Ingress Gateway knows,
+	//   in turn, who to route tp
+	//   * choose the right aggregate cluster to route to, depending  on the
+	//   path
+	for _, koyebApp := range proxy.GlobalLoadBalancerProxy.KoyebApps {
+		routeBuilders, err := GenerateRouteBuilders(proxy, koyebApp.Services)
+		if err != nil {
+			return nil, err
+		}
+
+		vh, err := GenerateVirtualHost(proxy, routeBuilders, koyebApp.Domains)
+		if err != nil {
+			return nil, err
+		}
+
+		routeConfig.Configure(envoy_routes.VirtualHost(vh))
+	}
+
+	// Add a fallback virtual host which catchs every other request.
+	vh := GenerateFallbackVirtualHost(proxy)
+	routeConfig.Configure(envoy_routes.VirtualHost(vh))
+
+	res, err := BuildResourceSet(routeConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build route configuration resource")
+	}
+	resources.AddSet(res)
 
 	return resources, nil
 }
