@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,6 +32,30 @@ func ExecuteOwnerTests(
 	})
 
 	Context("Store: "+storeName, func() {
+		FIt("should delete secret when its owner is deleted", func() {
+			// setup
+			meshRes := core_mesh.NewMeshResource()
+			err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			name := "secret-1"
+			secretRes := secret_model.NewSecretResource()
+			err = s.Create(context.Background(), secretRes,
+				store.CreateByKey(name, mesh),
+				store.CreatedAt(time.Now()),
+				store.CreateWithOwner(meshRes))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = s.Delete(context.Background(), meshRes, store.DeleteByKey(mesh, model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			actual := secret_model.NewSecretResource()
+			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+			Expect(store.IsResourceNotFound(err)).To(BeTrue())
+		})
+
 		It("should delete resource when its owner is deleted", func() {
 			// setup
 			meshRes := core_mesh.NewMeshResource()
