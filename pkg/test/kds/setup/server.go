@@ -91,7 +91,7 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
-		eventBus:                 events.NewEventBus(),
+		eventBus:                 events.NewEventBus(20),
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

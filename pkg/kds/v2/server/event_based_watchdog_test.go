@@ -48,7 +48,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		kdsMetrics, err := NewMetrics(metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		eventBus = events.NewEventBus()
+		eventBus = events.NewEventBus(10)
 
 		stopCh = make(chan struct{})
 		flushCh = make(chan time.Time)
@@ -59,7 +59,7 @@ var _ = Describe("Event Based Watchdog", func() {
 		watchdog = &EventBasedWatchdog{
 			Ctx:        context.Background(),
 			Node:       nil,
-			Listener:   eventBus.Subscribe(),
+			EventBus:   eventBus,
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
 				mesh.TrafficPermissionType: {},
