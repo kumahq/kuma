@@ -9,7 +9,9 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -26,15 +28,17 @@ var _ secret_store.SecretStore = &KubernetesStore{}
 type KubernetesStore struct {
 	reader    kube_client.Reader
 	writer    kube_client.Writer
+	scheme    *runtime.Scheme
 	converter Converter
 	// Namespace to store Secrets in, e.g. namespace where Control Plane is installed to
 	namespace string
 }
 
-func NewStore(reader kube_client.Reader, writer kube_client.Writer, namespace string) (secret_store.SecretStore, error) {
+func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runtime.Scheme, namespace string) (secret_store.SecretStore, error) {
 	return &KubernetesStore{
 		reader:    reader,
 		writer:    writer,
+		scheme:    scheme,
 		converter: DefaultConverter(),
 		namespace: namespace,
 	}, nil
@@ -53,6 +57,16 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 			metadata.KumaMeshLabel: opts.Mesh,
 		}
 		secret.SetLabels(labels)
+	}
+
+	if opts.Owner != nil {
+		k8sOwner, err := s.converter.ToKubernetesObject(opts.Owner)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+		}
+		if err := controllerutil.SetOwnerReference(k8sOwner, secret, s.scheme); err != nil {
+			return errors.Wrap(err, "failed to set owner reference for object")
+		}
 	}
 
 	if err := s.writer.Create(ctx, secret); err != nil {

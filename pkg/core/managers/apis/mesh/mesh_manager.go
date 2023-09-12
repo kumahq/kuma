@@ -8,7 +8,6 @@ import (
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -119,10 +118,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 			return err
 		}
 	}
-	// delete all secrets
-	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
-		return errors.Wrap(err, "could not delete associated secrets")
-	}
+	// secrets are deleted via owner reference
 	return notFoundErr
 }
 

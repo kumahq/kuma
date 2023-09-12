@@ -9,6 +9,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -77,7 +78,7 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, k8sClient, ns)
+		s, err = k8s.NewStore(k8sClient, k8sClient, runtime.NewScheme(), ns)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
