@@ -10,7 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/ingressgateway/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -194,7 +194,7 @@ func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.
 
 	res := &core_xds.Resource{
 		Name:   "ingressgateway.listeners",
-		Origin: metadata.OriginGateway,
+		Origin: metadata.OriginIngressGateway,
 		Resource: &envoy_service_runtime_v3.Runtime{
 			Name:  "ingressgateway.listeners",
 			Layer: util_proto.MustStruct(layer),
