@@ -218,7 +218,22 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			}
 		}
 	}()
-	eventReader := r.eventFactory.Subscribe()
+	eventReader := r.eventFactory.Subscribe(func(event events.Event) bool {
+		if _, ok := event.(events.TriggerInsightsComputationEvent); ok {
+			return true
+		}
+		if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
+			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+			if err != nil {
+				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+				return false
+			}
+			if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
+				return false
+			}
+		}
+		return true
+	})
 	defer eventReader.Close()
 	batch := &eventBatch{events: map[string]*resyncEvent{}}
 	ticker := r.tick(r.minResyncInterval)
@@ -257,14 +272,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				}
 			}
 			if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
-				desc, err := r.registry.DescriptorFor(resourceChanged.Type)
-				if err != nil {
-					log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
-					continue
-				}
-				if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
-					continue
-				}
 				supported, err := r.tenantFn.IDSupported(ctx, resourceChanged.TenantID)
 				if err != nil {
 					log.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
@@ -274,7 +281,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					continue
 				}
 				meshName := resourceChanged.Key.Mesh
-				if desc.Name == core_mesh.MeshType {
+				if resourceChanged.Type == core_mesh.MeshType {
 					meshName = resourceChanged.Key.Name
 				}
 				var f actionFlag

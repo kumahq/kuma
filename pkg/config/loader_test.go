@@ -344,6 +344,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
+			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -676,6 +677,8 @@ experimental:
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
+eventBus:
+  bufferSize: 30
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -921,6 +924,7 @@ proxy:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",
 		}),

@@ -95,7 +95,7 @@ func newSyncTracker(
 			return &EventBasedWatchdog{
 				Ctx:           ctx,
 				Node:          node,
-				Listener:      eventBus.Subscribe(),
+				EventBus:      eventBus,
 				Reconciler:    reconciler,
 				ProvidedTypes: changedTypes,
 				Metrics:       kdsMetrics,

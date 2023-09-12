@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/config/eventbus"
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
@@ -169,6 +170,8 @@ type Config struct {
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
 	Tracing tracing.Config `json:"tracing"`
+	// EventBus is a configuration of the event bus which is local to one instance of CP.
+	EventBus eventbus.Config `json:"eventBus"`
 }
 
 func (c *Config) Sanitize() {
@@ -238,8 +241,9 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 			},
 		},
-		Proxy:   xds.DefaultProxyConfig(),
-		InterCp: intercp.DefaultInterCpConfig(),
+		Proxy:    xds.DefaultProxyConfig(),
+		InterCp:  intercp.DefaultInterCpConfig(),
+		EventBus: eventbus.Default(),
 	}
 }
 
