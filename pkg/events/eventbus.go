@@ -26,6 +26,8 @@ type eventBus struct {
 	bufferSize  uint
 }
 
+// Subscribe subscribes to a stream of events given Predicates
+// Predicate should not block on I/O, otherwise the whole event bus can block.
 func (b *eventBus) Subscribe(predicates ...Predicate) Listener {
 	id := core.NewUUID()
 	b.mtx.Lock()
