@@ -281,7 +281,10 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return err
 	}
 	builder.WithResourceStore(rs)
-	eventBus := events.NewEventBus(cfg.EventBus.BufferSize)
+	eventBus, err := events.NewEventBus(cfg.EventBus.BufferSize, builder.Metrics())
+	if err != nil {
+		return err
+	}
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}

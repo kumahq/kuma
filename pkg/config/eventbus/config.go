@@ -12,6 +12,6 @@ func (c Config) Validate() error {
 
 func Default() Config {
 	return Config{
-		BufferSize: 20,
+		BufferSize: 100,
 	}
 }

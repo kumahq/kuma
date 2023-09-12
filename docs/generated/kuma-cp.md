@@ -735,5 +735,5 @@ tracing:
 eventBus:
   # BufferSize controls the buffer for every single event listener.
   # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
-  bufferSize: 20 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
+  bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
 ```

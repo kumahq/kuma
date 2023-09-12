@@ -48,7 +48,10 @@ var _ = Describe("Event Based Watchdog", func() {
 		kdsMetrics, err := NewMetrics(metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		eventBus = events.NewEventBus(10)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		eventBus, err = events.NewEventBus(10, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		stopCh = make(chan struct{})
 		flushCh = make(chan time.Time)
