@@ -1,0 +1,13 @@
+type: Dataplane
+mesh: default
+name: "global-load-balancer-par1"
+networking:
+  address: 127.0.0.1
+  admin:
+    port: 9903
+  gateway:
+    type: "KOYEB_GLOBAL_LOAD_BALANCER"
+    tags:
+      kuma.io/service: "global-load-balancer"
+      koyeb.com/datacenter: "par1"
+      koyeb.com/zone: "par"

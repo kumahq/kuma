@@ -3,8 +3,6 @@ mesh: default
 name: "ingress-gateway-par1"
 networking:
   address: 127.0.0.1
-  #inbound:
-  #  - port: 5601
   admin:
     port: 9902
   gateway:
