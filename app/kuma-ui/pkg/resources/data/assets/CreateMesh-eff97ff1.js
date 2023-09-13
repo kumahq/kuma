@@ -1,7 +1,0 @@
-import{d as p,L as u,t as _,o as m,g as b,w as e,h as a,i as n,C as h,l as t,m as o,D as f,W as g,A as v,_ as y,z as x,B as A,q as C}from"./index-cf0727dc.js";import{O as N,a as S,b as k}from"./OnboardingPage-46f5b350.js";const l=s=>(x("data-v-b1a7b6b7"),s=s(),A(),s),B={class:"mb-4 text-center"},D=l(()=>o("i",null,"default",-1)),I=l(()=>o("p",{class:"mt-4 text-center"},`
-            This mesh is empty. Next, you add services and their data plane proxies.
-          `,-1)),w=p({__name:"CreateMesh",setup(s){const r=[{label:"Name",key:"name"},{label:"Services",key:"servicesAmount"},{label:"DPPs",key:"dppsAmount"}],{t:i}=u(),c=_({total:1,data:[{name:"default",servicesAmount:0,dppsAmount:0}]});return(O,V)=>(m(),b(y,null,{default:e(({can:d})=>[a(h,{title:n(i)("onboarding.routes.create-mesh.title")},null,8,["title"]),t(),a(v,null,{default:e(()=>[a(N,null,{header:e(()=>[a(S,null,{title:e(()=>[t(`
-              Create the mesh
-            `)]),_:1})]),content:e(()=>[o("p",B,[t(`
-            When you install, `+f(n(i)("common.product.name"))+" creates a ",1),D,t(` mesh, but you can add as many meshes as you need.
-          `)]),t(),a(n(g),{class:"table",fetcher:()=>c.value,headers:r,"disable-pagination":""},null,8,["fetcher"]),t(),I]),navigation:e(()=>[a(k,{"next-step":"onboarding-add-services","previous-step":d("use zones")?"onboarding-multi-zone":"onboarding-configuration-types"},null,8,["previous-step"])]),_:2},1024)]),_:2},1024)]),_:1}))}});const M=C(w,[["__scopeId","data-v-b1a7b6b7"]]);export{M as default};
