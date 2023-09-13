@@ -47,3 +47,11 @@ func (s sampleTenants) GetID(ctx context.Context) (string, error) {
 func (s sampleTenants) GetIDs(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
+
+func (s sampleTenants) SupportsSharding() bool {
+	return false
+}
+
+func (s sampleTenants) IDSupported(ctx context.Context, id string) (bool, error) {
+	return true, nil
+}

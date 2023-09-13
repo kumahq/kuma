@@ -73,6 +73,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			return tmpl.Execute(cmd.OutOrStdout(), entryList)
 		},
 	}
+	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	return cmd
 }
 

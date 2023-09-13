@@ -142,7 +142,7 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
-func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir string) *DataplaneMetadata {
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir string, dpKey model.ResourceKey) *DataplaneMetadata {
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
 	// the DiscoveryRequest can still be crafted manually to crash the CP.
@@ -178,11 +178,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 	if xdsMetadata.Fields[FieldAccessLogSocketPath] != nil {
 		metadata.AccessLogSocketPath = xdsMetadata.Fields[FieldAccessLogSocketPath].GetStringValue()
 		metadata.MetricsSocketPath = xdsMetadata.Fields[FieldMetricsSocketPath].GetStringValue()
-	} else if metadata.Resource != nil {
-		name := metadata.Resource.GetMeta().GetName()
-		mesh := metadata.Resource.GetMeta().GetMesh()
-		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, name, mesh)
-		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, name, mesh)
+	} else {
+		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
+		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
 	}
 
 	if xdsMetadata.Fields[FieldMetricsCertPath] != nil {

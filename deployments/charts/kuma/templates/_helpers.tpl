@@ -372,17 +372,3 @@ env:
 {{- end }}
 {{- end }}
 {{- end }}
-
-{{/*
-params: { image: { registry?, repository, tag? }, root: $ }
-returns: formatted image string
-*/}}
-{{- define "kubectl.formatImage" -}}
-{{- $img := .image }}
-{{- $tag := .tag }}
-{{- $root := .root }}
-{{- $registry := ($img.registry | default $root.Values.kubectl.image.registry) -}}
-{{- $repo := ($img.repository | default $root.Values.kubectl.image.repository) -}}
-{{- $imageTag := ($tag | default $root.Values.kubectl.image.tag) -}}
-{{- printf "%s/%s:%s" $registry $repo $imageTag -}}
-{{- end -}}

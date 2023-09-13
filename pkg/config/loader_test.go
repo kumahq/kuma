@@ -106,6 +106,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -338,8 +339,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
+			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -364,6 +369,7 @@ store:
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
+    maxListQueryElements: 111
     tls:
       mode: verifyFull
       certPath: /path/to/cert
@@ -664,9 +670,15 @@ experimental:
   kdsDeltaEnabled: true
   useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
+  kdsEventBasedWatchdog:
+    enabled: true
+    flushInterval: 10s
+    fullResyncInterval: 15s
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
+eventBus:
+  bufferSize: 30
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -700,6 +712,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
+				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
@@ -906,8 +919,12 @@ proxy:
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED":                                       "true",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",
 		}),

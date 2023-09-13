@@ -21,6 +21,6 @@ type TestEventReaderFactory struct {
 	Reader *TestEventReader
 }
 
-func (t *TestEventReaderFactory) Subscribe() events.Listener {
+func (t *TestEventReaderFactory) Subscribe(...events.Predicate) events.Listener {
 	return t.Reader
 }

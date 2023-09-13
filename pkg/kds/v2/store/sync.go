@@ -86,8 +86,15 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	if err != nil {
 		return err
 	}
-	if err := s.resourceStore.List(ctx, downstream); err != nil {
-		return err
+	if upstreamResponse.IsInitialRequest {
+		if err := s.resourceStore.List(ctx, downstream); err != nil {
+			return err
+		}
+	} else {
+		upstreamChangeKeys := append(core_model.ResourceListToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
+		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
+			return err
+		}
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 

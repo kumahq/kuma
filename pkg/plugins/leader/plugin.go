@@ -26,7 +26,7 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 			pglock.WithLeaseDuration(5*time.Second),
 			pglock.WithHeartbeatFrequency(1*time.Second),
 			pglock.WithOwner(b.GetInstanceId()),
-			pglock.WithLogger(&leader_postgres.KumaPqLockLogger{}),
+			pglock.WithLevelLogger(&leader_postgres.KumaPqLockLogger{}),
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create postgres lock client")

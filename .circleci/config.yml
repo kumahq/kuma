@@ -334,6 +334,7 @@ jobs:
 
             if [[ "<< parameters.deltaKDS >>" == true ]]; then
               export KUMA_DELTA_KDS=true
+              export KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then
