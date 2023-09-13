@@ -82,7 +82,7 @@ should look like this:
          "total": 1
       }
    },
-   "dataplanes": {
+   "dataplanesByType": {
       "standard": {
          "online": 23,
          "offline": 10,
