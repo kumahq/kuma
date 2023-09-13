@@ -245,9 +245,10 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 		return result
 	}
 	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		RequireService:      true,
-		RequireKoyebZone:    gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY || gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_GLOBAL_LOAD_BALANCER,
-		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
+		RequireService:         true,
+		RequireKoyebRegion:     gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY || gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_GLOBAL_LOAD_BALANCER,
+		RequireKoyebDatacenter: gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_INGRESS_GATEWAY || gateway.Type == mesh_proto.Dataplane_Networking_Gateway_KOYEB_GLOBAL_LOAD_BALANCER,
+		ExtraTagsValidators:    []TagsValidatorFunc{validateProtocol},
 	}),
 	)
 

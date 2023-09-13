@@ -10,4 +10,4 @@ networking:
     tags:
       kuma.io/service: "ingress-gateway"
       koyeb.com/datacenter: "par1"
-      koyeb.com/zone: "par"
+      koyeb.com/region: "par"
