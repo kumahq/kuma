@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("KubernetesStore template", func() {
-	test_store.ExecuteStoreTests(func() store.ResourceStore {
+	test_store.ExecuteStoreTests(func() store.CustomizableResourceStore {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())

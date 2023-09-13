@@ -18,7 +18,7 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.CustomizableResourceStore, error) {
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")

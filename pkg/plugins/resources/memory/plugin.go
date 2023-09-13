@@ -20,7 +20,7 @@ func init() {
 	core_plugins.Register(core_plugins.Memory, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.CustomizableResourceStore, error) {
 	log.Info("kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane.")
 	return NewStore(), nil
 }

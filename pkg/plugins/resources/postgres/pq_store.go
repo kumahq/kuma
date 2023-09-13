@@ -19,14 +19,14 @@ import (
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 )
 
+var _ store.CustomizableResourceStore = &postgresResourceStore{}
+
 type postgresResourceStore struct {
 	db                   *sql.DB
 	maxListQueryElements uint32
 }
 
-var _ store.ResourceStore = &postgresResourceStore{}
-
-func NewPqStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
+func NewPqStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.CustomizableResourceStore, error) {
 	db, err := common_postgres.ConnectToDb(config)
 	if err != nil {
 		return nil, err
@@ -360,4 +360,12 @@ func registerPqMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 		return err
 	}
 	return nil
+}
+
+func (r *postgresResourceStore) ResourceStore(core_model.ResourceType) store.ResourceStore {
+	return r
+}
+
+func (r *postgresResourceStore) WrapAll(wrapper store.ResourceStoreWrapper) {
+	wrapper(r)
 }

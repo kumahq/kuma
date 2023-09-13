@@ -58,7 +58,7 @@ func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_co
 
 type shuffleStore struct {
 	r *rand.Rand
-	core_store.ResourceStore
+	core_store.CustomizableResourceStore
 }
 
 func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opts ...core_store.ListOptionsFunc) error {
@@ -66,7 +66,7 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 	if err != nil {
 		return err
 	}
-	if err := s.ResourceStore.List(ctx, newList, opts...); err != nil {
+	if err := s.CustomizableResourceStore.List(ctx, newList, opts...); err != nil {
 		return err
 	}
 	resources := newList.GetItems()
@@ -82,7 +82,7 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
 
 var _ = Describe("GenerateSnapshot", func() {
-	var store core_store.ResourceStore
+	var store core_store.CustomizableResourceStore
 	var gen *v3.TemplateSnapshotGenerator
 	var proxyBuilder *sync.DataplaneProxyBuilder
 	var mCtxBuilder xds_context.MeshContextBuilder
@@ -91,7 +91,7 @@ var _ = Describe("GenerateSnapshot", func() {
 
 	BeforeEach(func() {
 		store = &shuffleStore{
-			ResourceStore: memory.NewStore(), r: r,
+			CustomizableResourceStore: memory.NewStore(), r: r,
 		}
 		store = core_store.NewPaginationStore(store)
 

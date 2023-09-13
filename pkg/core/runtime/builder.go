@@ -38,7 +38,7 @@ import (
 // BuilderContext provides access to Builder's interim state.
 type BuilderContext interface {
 	ComponentManager() component.Manager
-	ResourceStore() core_store.ResourceStore
+	ResourceStore() core_store.CustomizableResourceStore
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.CustomizableResourceManager
@@ -69,7 +69,7 @@ var _ BuilderContext = &Builder{}
 type Builder struct {
 	cfg            kuma_cp.Config
 	cm             component.Manager
-	rs             core_store.ResourceStore
+	rs             core_store.CustomizableResourceStore
 	ss             store.SecretStore
 	cs             core_store.ResourceStore
 	rm             core_manager.CustomizableResourceManager
@@ -125,7 +125,7 @@ func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
+func (b *Builder) WithResourceStore(rs core_store.CustomizableResourceStore) *Builder {
 	b.rs = rs
 	return b
 }
@@ -395,7 +395,7 @@ func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
 
-func (b *Builder) ResourceStore() core_store.ResourceStore {
+func (b *Builder) ResourceStore() core_store.CustomizableResourceStore {
 	return b.rs
 }
 

@@ -6,12 +6,22 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func NewCustomizableResourceStore(defaultStore ResourceStore, customStores map[model.ResourceType]ResourceStore) ResourceStore {
+type ResourceStoreWrapper = func(delegate ResourceStore) ResourceStore
+
+type CustomizableResourceStore interface {
+	ResourceStore
+	ResourceStore(model.ResourceType) ResourceStore
+	WrapAll(ResourceStoreWrapper)
+}
+
+func NewCustomizableResourceStore(defaultStore ResourceStore, customStores map[model.ResourceType]ResourceStore) CustomizableResourceStore {
 	return &customizableResourceStore{
 		defaultStore: defaultStore,
 		customStores: customStores,
 	}
 }
+
+var _ CustomizableResourceStore = &customizableResourceStore{}
 
 type customizableResourceStore struct {
 	defaultStore ResourceStore
@@ -43,4 +53,11 @@ func (m *customizableResourceStore) ResourceStore(typ model.ResourceType) Resour
 		return customManager
 	}
 	return m.defaultStore
+}
+
+func (m *customizableResourceStore) WrapAll(wrapper ResourceStoreWrapper) {
+	m.defaultStore = wrapper(m.defaultStore)
+	for typ, store := range m.customStores {
+		m.customStores[typ] = wrapper(store)
+	}
 }

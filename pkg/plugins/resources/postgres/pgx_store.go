@@ -21,6 +21,8 @@ import (
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
+var _ store.CustomizableResourceStore = &pgxResourceStore{}
+
 type pgxResourceStore struct {
 	pool                 *pgxpool.Pool
 	maxListQueryElements uint32
@@ -28,9 +30,7 @@ type pgxResourceStore struct {
 
 type ResourceNamesByMesh map[string][]string
 
-var _ store.ResourceStore = &pgxResourceStore{}
-
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.CustomizableResourceStore, error) {
 	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
 		return nil, err
@@ -245,6 +245,14 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 
 	resources.GetPagination().SetTotal(uint32(total))
 	return nil
+}
+
+func (r *pgxResourceStore) ResourceStore(core_model.ResourceType) store.ResourceStore {
+	return r
+}
+
+func (r *pgxResourceStore) WrapAll(wrapper store.ResourceStoreWrapper) {
+	wrapper(r)
 }
 
 func resourceNamesByMesh(resourceKeys map[core_model.ResourceKey]struct{}) ResourceNamesByMesh {

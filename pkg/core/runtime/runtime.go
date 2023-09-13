@@ -56,7 +56,7 @@ type RuntimeContext interface {
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
-	ResourceStore() core_store.ResourceStore
+	ResourceStore() core_store.CustomizableResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
@@ -144,7 +144,7 @@ var _ RuntimeContext = &runtimeContext{}
 type runtimeContext struct {
 	cfg                      kuma_cp.Config
 	rm                       core_manager.ResourceManager
-	rs                       core_store.ResourceStore
+	rs                       core_store.CustomizableResourceStore
 	ss                       store.SecretStore
 	cs                       core_store.ResourceStore
 	rom                      core_manager.ReadOnlyResourceManager
@@ -199,7 +199,7 @@ func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm
 }
 
-func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
+func (rc *runtimeContext) ResourceStore() core_store.CustomizableResourceStore {
 	return rc.rs
 }
 

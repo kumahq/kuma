@@ -13,8 +13,8 @@ import (
 )
 
 var _ = Describe("PostgresStore template", func() {
-	createStore := func(storeName string, maxListQueryElements int) func() store.ResourceStore {
-		return func() store.ResourceStore {
+	createStore := func(storeName string, maxListQueryElements int) func() store.CustomizableResourceStore {
+		return func() store.CustomizableResourceStore {
 			cfg, err := c.Config(test_postgres.WithRandomDb)
 			Expect(err).ToNot(HaveOccurred())
 			cfg.MaxListQueryElements = uint32(maxListQueryElements)
@@ -29,7 +29,7 @@ var _ = Describe("PostgresStore template", func() {
 			_, err = MigrateDb(*cfg)
 			Expect(err).ToNot(HaveOccurred())
 
-			var pStore store.ResourceStore
+			var pStore store.CustomizableResourceStore
 			if storeName == "pgx" {
 				cfg.DriverName = postgres.DriverNamePgx
 				pStore, err = NewPgxStore(pgxMetrics, *cfg, config.NoopPgxConfigCustomizationFn)

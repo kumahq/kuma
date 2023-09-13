@@ -11,12 +11,14 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
+var _ store.CustomizableResourceStore = &MeteredStore{}
+
 type MeteredStore struct {
-	delegate store.ResourceStore
+	delegate store.CustomizableResourceStore
 	metric   *prometheus.HistogramVec
 }
 
-func NewMeteredStore(delegate store.ResourceStore, metrics core_metrics.Metrics) (*MeteredStore, error) {
+func NewMeteredStore(delegate store.CustomizableResourceStore, metrics core_metrics.Metrics) (*MeteredStore, error) {
 	meteredStore := MeteredStore{
 		delegate: delegate,
 		metric: prometheus.NewHistogramVec(prometheus.HistogramOpts{
@@ -70,4 +72,10 @@ func (m *MeteredStore) List(ctx context.Context, list model.ResourceList, option
 	return m.delegate.List(ctx, list, optionsFunc...)
 }
 
-var _ store.ResourceStore = &MeteredStore{}
+func (m *MeteredStore) ResourceStore(typ model.ResourceType) store.ResourceStore {
+	return m.delegate.ResourceStore(typ)
+}
+
+func (m *MeteredStore) WrapAll(wrapper store.ResourceStoreWrapper) {
+	wrapper(m)
+}
