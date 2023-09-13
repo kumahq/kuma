@@ -21,3 +21,4 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v1.53.3
+          only-new-issues: true
