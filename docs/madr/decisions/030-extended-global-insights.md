@@ -92,6 +92,10 @@ should look like this:
 }
 ```
 
+It is worth point out that we are removing old response entirely since most of this information is present in new response,
+and old response was schema less. With introduction of OpenAPI schema we want to use explicit types and if any information
+from old response will be needed we can easily extend new schema and add them.
+
 #### How to get data
 
 Most of this data is already computed. To assemble this, we need:
