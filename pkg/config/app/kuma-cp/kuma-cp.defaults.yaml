@@ -727,3 +727,9 @@ proxy:
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
+
+# Configuration of the event bus which is local to one instance of CP
+eventBus:
+  # BufferSize controls the buffer for every single event listener.
+  # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
+  bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
