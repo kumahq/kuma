@@ -1,1 +1,0 @@
-import{d as s,r as _,o as n,g as o,w as e,h as a,n as l,A as c,_ as p}from"./index-6483d091.js";const f=s({__name:"OnboardingView",setup(u){return(i,m)=>{const t=_("router-view");return n(),o(p,null,{default:e(()=>[a(c,null,{default:e(()=>[a(t,null,{default:e(({Component:r})=>[(n(),o(l(r)))]),_:1})]),_:1})]),_:1})}}});export{f as default};
