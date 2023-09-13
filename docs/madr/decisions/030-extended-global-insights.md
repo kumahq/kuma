@@ -61,6 +61,11 @@ should look like this:
          "online": 2,
          "offline": 1,
          "partiallyDegraded": 1
+      },
+      "gatewayBuiltinByStatus": {
+         "online": 2,
+         "offline": 1,
+         "partiallyDegraded": 1
       }
    },
    "zones": {
@@ -78,10 +83,18 @@ should look like this:
       }
    },
    "dataplanes": {
-      "online": 23,
-      "offline": 10,
-      "partiallyDegraded": 17,
-      "total": 50
+      "standard": {
+         "online": 23,
+         "offline": 10,
+         "partiallyDegraded": 17,
+         "total": 50   
+      },
+      "gateway": {
+         "online": 23,
+         "offline": 10,
+         "partiallyDegraded": 17,
+         "total": 50
+      }
    },
    "policies": {
       "total": 100
@@ -99,9 +112,8 @@ from old response will be needed we can easily extend new schema and add them.
 #### How to get data
 
 Most of this data is already computed. To assemble this, we need:
-- `services` are mostly present in `MeshInsight`, missing part is `internalByStatus` data. We need to extend `MeshInsight.Services`
-   with this information. Moreover, we need to aggregate this to get the overall count.
-- `dataplanes` are present in `MeshInsight.Dataplanes` we only need to aggregate them to get the overall count.
+- `services` We can easily extract this information from `ServiceInsight`, we only need to aggregate them to get the overall count. 
+- `dataplanes` are present in `MeshInsight.Dataplanes`, we only need to aggregate them to get the overall count.
 - `zones` info can be extracted and aggregated from `ZoneInsight`
 - `policies` are present in `MeshInsight.Policies` we just need to aggregate them to get the overall count.
 
