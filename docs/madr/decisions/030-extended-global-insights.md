@@ -51,8 +51,6 @@ should look like this:
 
 ```json
 {
-   "resources": ...,
-   // <== this stays the same
    "services": {
       "total": 5,
       "internal": 4,
@@ -113,9 +111,11 @@ We will add some small cache for it so don't recompute it too often.
 We would like to create new endpoint and generate Go types from OpenAPI schema. OpenAPI recommends to write schema first 
 and then generate language specific code from it. [Source](https://learn.openapis.org/best-practices.html)
 
-Endpoint will be versioned and new endpoint will have path: `/v2/global-insights`
+We will be adding new endpoint named `/global-insight`
 
 #### Extending API for custom Kuma distributions
 
-We can add new field named `additionalData` with type `object` that translates to Go `map[string]interface{}` where developers
-can put anything they need extra for Global Insight. 
+OpenAPI schema can be easily extended in custom distributions. Custom distribution specs can link end extend Kuma specs.
+Types generated in custom distros can reuse types built in Kuma using [import mapping](https://github.com/deepmap/oapi-codegen#import-mappings).
+Then we can use `APIWebServiceCustomize` from Runtime so we can remove Kuma implementation of Global Insight service and replace it with
+custom one.
