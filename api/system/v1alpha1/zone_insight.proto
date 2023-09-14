@@ -71,6 +71,9 @@ message KDSSubscription {
 
   // Config of Zone Kuma CP
   string config = 8;
+
+  // Indicates if subscription provided auth token
+  bool auth_token_provided = 9;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.

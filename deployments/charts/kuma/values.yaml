@@ -238,6 +238,9 @@ controlPlane:
       # -- If true, TLS cert of the server is not verified.
       skipVerify: false
 
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+
   image:
     # -- Kuma CP ImagePullPolicy
     pullPolicy: IfNotPresent
@@ -606,15 +609,13 @@ kumactl:
     tag:
 
 kubectl:
-  # kuma image that support v1.20.15 image */ } }
-  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
   image:
     # -- The kubectl image registry
-    registry: kumahq
+    registry: docker.io
     # -- The kubectl image repository
-    repository: kubectl
+    repository: bitnami/kubectl
     # -- The kubectl image tag
-    tag: "v1.20.15"
+    tag: "1.27.5"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

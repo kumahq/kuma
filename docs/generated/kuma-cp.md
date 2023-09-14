@@ -47,6 +47,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -316,6 +318,9 @@ runtime:
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
         envVars: {} # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
+        # If true, it enables a postStart script that waits until Envoy is ready.
+        # With the current Kubernetes behavior, any other container in the Pod will wait until the script is complete.
+        waitForDataplaneReady: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.
@@ -707,6 +712,14 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+  kdsEventBasedWatchdog:
+    # If true, then experimental event based watchdog to generate KDS snapshot is used.
+    enabled: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED
+    # How often we flush changes when experimental event based watchdog is used.
+    flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+    # How often we schedule full KDS resync when experimental event based watchdog is used.
+    fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
 
 proxy:
   gateway:
@@ -717,4 +730,10 @@ proxy:
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
+
+# Configuration of the event bus which is local to one instance of CP
+eventBus:
+  # BufferSize controls the buffer for every single event listener.
+  # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
+  bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
 ```

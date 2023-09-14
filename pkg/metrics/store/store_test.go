@@ -73,4 +73,24 @@ var _ = Describe("Metered Store", func() {
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "update", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
+
+	It("should public metrics of UPDATE conflict", func() {
+		// when
+		mesh := core_mesh.NewMeshResource()
+		anotherMesh := core_mesh.NewMeshResource()
+		err := store.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = store.Get(context.Background(), anotherMesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = store.Update(context.Background(), mesh)
+		Expect(err).ToNot(HaveOccurred())
+		err = store.Update(context.Background(), anotherMesh)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceConflict(err)).To(BeTrue())
+		Expect(test_metrics.FindMetric(metrics, "store_conflicts", "resource_type", "Mesh").GetCounter().GetValue()).To(Equal(1.0))
+	})
 })

@@ -198,5 +198,5 @@ func isInsightType(typ core_model.ResourceType) bool {
 }
 
 func (f *subscriptionFinalizer) NeedLeaderElection() bool {
-	return true
+	return !f.tenants.SupportsSharding()
 }

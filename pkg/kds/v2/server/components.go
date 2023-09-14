@@ -8,11 +8,12 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/prometheus/client_golang/prometheus"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
@@ -35,13 +36,13 @@ func New(
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
-	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
+	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
 	if err != nil {
 		return nil, err
 	}
 	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.Tenants())
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics(), providedTypes, rt.EventBus(), rt.Config().Experimental.KDSEventBasedWatchdog)
 	if err != nil {
 		return nil, err
 	}
@@ -71,38 +72,62 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
-	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "kds_delta_generation",
-		Help:       "Summary of KDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	if err := metrics.Register(kdsGenerations); err != nil {
+func newSyncTracker(
+	log logr.Logger,
+	reconciler reconcile_v2.Reconciler,
+	refresh time.Duration,
+	metrics core_metrics.Metrics,
+	providedTypes []model.ResourceType,
+	eventBus events.EventBus,
+	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
+) (envoy_xds.Callbacks, error) {
+	kdsMetrics, err := NewMetrics(metrics)
+	if err != nil {
 		return nil, err
 	}
-	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
-		Help: "Counter of errors during KDS generation",
-		Name: "kds_delta_generation_errors",
-	})
-	if err := metrics.Register(kdsGenerationsErrors); err != nil {
-		return nil, err
+	changedTypes := map[model.ResourceType]struct{}{}
+	for _, typ := range providedTypes {
+		changedTypes[typ] = struct{}{}
 	}
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
+		if experimentalWatchdogCfg.Enabled {
+			return &EventBasedWatchdog{
+				Ctx:           ctx,
+				Node:          node,
+				EventBus:      eventBus,
+				Reconciler:    reconciler,
+				ProvidedTypes: changedTypes,
+				Metrics:       kdsMetrics,
+				Log:           log,
+				NewFlushTicker: func() *time.Ticker {
+					return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
+				},
+				NewFullResyncTicker: func() *time.Ticker {
+					return time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration)
+				},
+			}, nil
+		}
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
 			OnTick: func(context.Context) error {
 				start := core.Now()
-				defer func() {
-					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
-				}()
 				log.V(1).Info("on tick")
-				return reconciler.Reconcile(ctx, node)
+				err, changed := reconciler.Reconcile(ctx, node, changedTypes)
+				if err != nil {
+					result := ResultNoChanges
+					if changed {
+						result = ResultChanged
+					}
+					kdsMetrics.KdsGenerations.WithLabelValues(ReasonResync, result).
+						Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}
+				return err
 			},
 			OnError: func(err error) {
-				kdsGenerationsErrors.Inc()
+				kdsMetrics.KdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {

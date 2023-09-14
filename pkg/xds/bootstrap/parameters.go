@@ -34,6 +34,8 @@ type configParameters struct {
 	XdsConnectTimeout   time.Duration
 	AccessLogSocketPath string
 	MetricsSocketPath   string
+	MetricsCertPath     string
+	MetricsKeyPath      string
 	DataplaneToken      string
 	DataplaneTokenPath  string
 	DataplaneResource   string

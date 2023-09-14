@@ -4,6 +4,10 @@ metadata:
   name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  {{- with .Values.controlPlane.serviceAccountAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
   {{- range . }}

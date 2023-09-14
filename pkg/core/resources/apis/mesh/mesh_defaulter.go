@@ -16,6 +16,28 @@ func (mesh *MeshResource) Default() error {
 				return errors.Wrap(err, "could not convert the backend")
 			}
 
+			if cfg.SkipMTLS == nil && cfg.Tls == nil {
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Mode: mesh_proto.PrometheusTlsConfig_activeMTLSBackend,
+				}
+			}
+			if cfg.Tls == nil && cfg.SkipMTLS != nil && cfg.SkipMTLS.Value {
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Mode: mesh_proto.PrometheusTlsConfig_disabled,
+				}
+			}
+			if cfg.Tls == nil && cfg.SkipMTLS != nil && !cfg.SkipMTLS.Value {
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Mode: mesh_proto.PrometheusTlsConfig_activeMTLSBackend,
+				}
+			}
+			if cfg.Tls != nil && cfg.SkipMTLS != nil && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_providedTLS {
+				cfg.Tls = &mesh_proto.PrometheusTlsConfig{
+					Mode: mesh_proto.PrometheusTlsConfig_providedTLS,
+				}
+				cfg.SkipMTLS = nil
+			}
+
 			if cfg.Port == 0 {
 				cfg.Port = 5670
 			}

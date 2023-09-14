@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -85,7 +86,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be able to access admin endpoints using client certs and HTTPS", func() {
 		// when
-		resp, err := httpsClient.Get(fmt.Sprintf("https://%s:%d/secrets", externalIP, httpsPort))
+		resp, err := httpsClient.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -94,7 +95,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s:%d/secrets", externalIP, httpPort))
+		resp, err := http.Get(fmt.Sprintf("http://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -107,7 +108,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
 		// when
-		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s:%d/secrets", externalIP, httpsPort))
+		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"strings"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -101,10 +101,18 @@ func (p *postgresLeaderElector) IsLeader() bool {
 
 type KumaPqLockLogger struct{}
 
-func (k *KumaPqLockLogger) Println(msgParts ...interface{}) {
-	stringParts := make([]string, len(msgParts))
-	for i, msgPart := range msgParts {
-		stringParts[i] = fmt.Sprint(msgPart)
+func (k *KumaPqLockLogger) keyValues(args []interface{}) []interface{} {
+	var line []interface{}
+	for i, arg := range args {
+		line = append(append(line, strconv.Itoa(i)), fmt.Sprint(arg))
 	}
-	log.Info(strings.Join(stringParts, " "))
+	return line
+}
+
+func (k *KumaPqLockLogger) Error(msg string, args ...interface{}) {
+	log.Error(nil, msg, k.keyValues(args)...)
+}
+
+func (k *KumaPqLockLogger) Debug(msg string, args ...interface{}) {
+	log.V(1).Info(msg, k.keyValues(args)...)
 }

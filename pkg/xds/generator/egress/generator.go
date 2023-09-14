@@ -3,6 +3,7 @@ package egress
 import (
 	"context"
 
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -89,14 +90,12 @@ func (g Generator) Generate(
 			resources.AddSet(rs)
 		}
 
-		// If the resources are empty after all generator pass, it means there is filter chain,
-		// if there is no filter chain there is no need to build a listener
-		if !resources.Empty() {
-			listener, err := listenerBuilder.Build()
-			if err != nil {
-				return nil, err
-			}
-
+		listener, err := listenerBuilder.Build()
+		if err != nil {
+			return nil, err
+		}
+		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
+			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
 				Origin:   OriginEgress,

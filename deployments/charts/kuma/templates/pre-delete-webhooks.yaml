@@ -90,7 +90,7 @@ spec:
       {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: pre-delete-job
-          image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
           command:
             - 'kubectl'
             - 'delete'

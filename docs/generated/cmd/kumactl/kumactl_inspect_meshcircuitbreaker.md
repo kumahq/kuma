@@ -13,7 +13,8 @@ kumactl inspect meshcircuitbreaker NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshcircuitbreaker
+  -h, --help          help for meshcircuitbreaker
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

@@ -21,6 +21,7 @@ linters:
     - unparam
     - unused
     - whitespace
+    - nosprintfhostport
 
 run:
   build-tags:
