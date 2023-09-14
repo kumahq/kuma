@@ -122,6 +122,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
 
+			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
+			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
+			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
+
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
 			Expect(cfg.ApiServer.HTTP.Interface).To(Equal("192.168.0.1"))
@@ -376,6 +380,10 @@ store:
       keyPath: /path/to/key
       caPath: /path/to/rootCert
       disableSSLSNI: true
+    readReplica:
+      host: ro.host
+      port: 35432
+      ratio: 80
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -713,6 +721,9 @@ eventBus:
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
 				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
