@@ -1,4 +1,4 @@
-package policy_test
+package referencegrants_test
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
 )
 
 var k8sScheme *kube_runtime.Scheme
@@ -88,8 +88,8 @@ var _ = Describe("ReferenceGrant support", func() {
 			&simplePolicy,
 		).Build()
 
-		ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toSameSvc)
-		permitted, err := policy.IsReferencePermitted(
+		ref := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(defaultNs), toSameSvc)
+		permitted, err := referencegrants.IsReferencePermitted(
 			context.Background(),
 			kubeClient,
 			ref,
@@ -103,8 +103,8 @@ var _ = Describe("ReferenceGrant support", func() {
 				&simplePolicy,
 			).Build()
 
-			ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toOtherSvc)
-			permitted, err := policy.IsReferencePermitted(
+			ref := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(defaultNs), toOtherSvc)
+			permitted, err := referencegrants.IsReferencePermitted(
 				context.Background(),
 				kubeClient,
 				ref,
@@ -117,8 +117,8 @@ var _ = Describe("ReferenceGrant support", func() {
 				&simplePolicy,
 			).Build()
 
-			ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toOtherExternalSvc)
-			permitted, err := policy.IsReferencePermitted(
+			ref := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(defaultNs), toOtherExternalSvc)
+			permitted, err := referencegrants.IsReferencePermitted(
 				context.Background(),
 				kubeClient,
 				ref,
@@ -142,8 +142,8 @@ var _ = Describe("ReferenceGrant support", func() {
 			).Build()
 
 			By("denying if the name doesn't match")
-			ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toOtherExternalSvc)
-			permitted, err := policy.IsReferencePermitted(
+			ref := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(defaultNs), toOtherExternalSvc)
+			permitted, err := referencegrants.IsReferencePermitted(
 				context.Background(),
 				kubeClient,
 				ref,
@@ -155,8 +155,8 @@ var _ = Describe("ReferenceGrant support", func() {
 			toOtherSpecificExternalSvc := toOtherExternalSvc.DeepCopy()
 			toOtherSpecificExternalSvc.Name = permittedToExtSvcName
 
-			ref = policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), *toOtherSpecificExternalSvc)
-			permitted, err = policy.IsReferencePermitted(
+			ref = referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(defaultNs), *toOtherSpecificExternalSvc)
+			permitted, err = referencegrants.IsReferencePermitted(
 				context.Background(),
 				kubeClient,
 				ref,
