@@ -44,6 +44,21 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
+<<<<<<< HEAD
+=======
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
+
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error) {
+	f(session, errorCh)
+}
+
+type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error)
+
+func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error) {
+	f(session, errorCh)
+}
+
+>>>>>>> 71eeaf0cb (fix(kuma-cp): set error when KDS clients fails in goroutine (#7725))
 type server struct {
 	config        multizone.KdsServerConfig
 	callbacks     Callbacks
