@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
-{{- if and (eq .Values.controlPlane.environment "kubernetes") (not .Values.noHelmHooks) }}
->>>>>>> 50047eeea (chore(helm): allow to disable all helm hooks (#7757))
+{{- if not .Values.noHelmHooks }}
 # HELM first deletes RBAC of Kuma, then it tries to delete Secrets. We've got validating webhook on Secrets.
 # But even that the policy of this webhook is Ignore, it fails because Kuma does not have permission to access Secrets anymore.
 # Therefore we first need to delete webhook so we can delete the rest of the deployment
@@ -108,3 +105,4 @@ spec:
              limits:
                cpu: "100m"
                memory: "256Mi"
+  {{- end }}
