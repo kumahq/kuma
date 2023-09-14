@@ -78,7 +78,7 @@ func (v memoryVersion) String() string {
 	return strconv.FormatUint(uint64(v), 10)
 }
 
-var _ store.CustomizableResourceStore = &memoryStore{}
+var _ store.ResourceStore = &memoryStore{}
 
 type memoryStore struct {
 	records     memoryStoreRecords
@@ -86,7 +86,7 @@ type memoryStore struct {
 	eventWriter events.Emitter
 }
 
-func NewStore() store.CustomizableResourceStore {
+func NewStore() store.ResourceStore {
 	return &memoryStore{}
 }
 
@@ -275,14 +275,6 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 	rs.GetPagination().SetTotal(uint32(len(records)))
 
 	return nil
-}
-
-func (c *memoryStore) ResourceStore(core_model.ResourceType) store.ResourceStore {
-	return c
-}
-
-func (c *memoryStore) WrapAll(wrapper store.ResourceStoreWrapper) {
-	wrapper(c)
 }
 
 func (c *memoryStore) findRecord(

@@ -20,7 +20,7 @@ func init() {
 	core_plugins.Register(core_plugins.Postgres, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.CustomizableResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
 		return nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")

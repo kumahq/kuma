@@ -21,7 +21,7 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
-var _ store.CustomizableResourceStore = &KubernetesStore{}
+var _ store.ResourceStore = &KubernetesStore{}
 
 func typeIsUnregistered(err error) bool {
 	var typeErr *k8s_registry.UnknownTypeError
@@ -34,7 +34,7 @@ type KubernetesStore struct {
 	Scheme    *kube_runtime.Scheme
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.CustomizableResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: converter,
@@ -202,14 +202,6 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 
 	rs.GetPagination().SetTotal(uint32(len(fullList.GetItems())))
 	return nil
-}
-
-func (s *KubernetesStore) ResourceStore(core_model.ResourceType) store.ResourceStore {
-	return s
-}
-
-func (s *KubernetesStore) WrapAll(wrapper store.ResourceStoreWrapper) {
-	wrapper(s)
 }
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {

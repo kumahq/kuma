@@ -20,7 +20,7 @@ func init() {
 	core_plugins.Register(core_plugins.Memory, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.CustomizableResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
 	log.Info("kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane.")
 	return NewStore(), nil
 }
@@ -30,6 +30,6 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 }
 
 func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Emitter) error {
-	context.ResourceStore().(*memoryStore).SetEventWriter(writer)
+	context.ResourceStore().DefaultResourceStore().(*memoryStore).SetEventWriter(writer)
 	return nil
 }

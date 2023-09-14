@@ -16,22 +16,14 @@ import (
 // * On Postgres, we keep the object in a column as a string. We would have to use JSON column type and convert it to native SQL queries.
 //
 // The in-memory filtering has been tested with 10,000 Dataplanes and proved to be fast enough, although not that efficient.
-func NewPaginationStore(delegate CustomizableResourceStore) CustomizableResourceStore {
+func NewPaginationStore(delegate ResourceStore) ResourceStore {
 	return &paginationStore{
 		delegate: delegate,
 	}
 }
 
 type paginationStore struct {
-	delegate CustomizableResourceStore
-}
-
-func (p *paginationStore) ResourceStore(typ model.ResourceType) ResourceStore {
-	return p.delegate.ResourceStore(typ)
-}
-
-func (p *paginationStore) WrapAll(wrapper ResourceStoreWrapper) {
-	wrapper(p)
+	delegate ResourceStore
 }
 
 func (p *paginationStore) Create(ctx context.Context, resource model.Resource, optionsFunc ...CreateOptionsFunc) error {
