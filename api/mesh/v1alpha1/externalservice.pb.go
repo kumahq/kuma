@@ -169,7 +169,7 @@ type ExternalService_Networking_TLS struct {
 	ClientKey *v1alpha1.DataSource `protobuf:"bytes,4,opt,name=client_key,json=clientKey,proto3" json:"client_key,omitempty"`
 	// If true then TLS session will allow renegotiation.
 	// It's not recommended to set this to true because of security reasons.
-	// However, some servers requires this setting, especially when using
+	// However, some servers require this setting, especially when using
 	// mTLS.
 	AllowRenegotiation *wrapperspb.BoolValue `protobuf:"bytes,5,opt,name=allowRenegotiation,proto3" json:"allowRenegotiation,omitempty"`
 	// ServerName overrides the default Server Name Indicator set by Kuma.
