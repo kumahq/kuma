@@ -30,6 +30,6 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 }
 
 func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Emitter) error {
-	context.ResourceStore().(*memoryStore).SetEventWriter(writer)
+	context.ResourceStore().DefaultResourceStore().(*memoryStore).SetEventWriter(writer)
 	return nil
 }
