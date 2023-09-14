@@ -130,6 +130,33 @@ Most of this data is already computed. To assemble this, we need:
 - `policies` are present in `MeshInsight.Policies` we just need to aggregate them to get the overall count.
 - `meshes` can be easily extracted from `MeshInsight`
 
+In order to get data needed for `dataplanes` object we would have to extend `MeshInsight.DataplanesByType` object. 
+To make this change backward compatible we would have to add two fields `gatewayBuiltin` and `gatewayDelegated`. MeshInsight
+dataplanesByType would look like this: 
+
+```json
+{
+  "dataplanesByType": {
+    "standard": {
+      "total": 2,
+      "online": 2
+    },
+    "gateway": {
+      "total": 1,
+      "online": 1
+    },
+    "gatewayBuiltin": {
+      "total": 0,
+      "online": 0
+    },
+    "gatewayDelegated": {
+      "total": 1,
+      "online": 1
+    }
+  }
+}
+```
+
 #### Computing Global Insight
 
 Computing Global Insight is not heavy, since we have all the data computed already, so we will create it when asked for. 
