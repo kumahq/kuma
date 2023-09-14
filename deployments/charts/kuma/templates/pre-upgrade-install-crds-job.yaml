@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 {{- if .Values.installCrdsOnUpgrade.enabled }}
+=======
+{{- if (and .Values.installCrdsOnUpgrade.enabled (and (not .Values.noHelmHooks) (eq .Values.controlPlane.environment "kubernetes"))) }}
+>>>>>>> 50047eeea (chore(helm): allow to disable all helm hooks (#7757))
   {{ $hook := "pre-upgrade,pre-install" }}
   {{- $serviceAccountName := printf "%s-install-crds" (include "kuma.name" .) }}
 apiVersion: v1
