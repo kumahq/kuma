@@ -66,11 +66,23 @@ endif
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	$$(call GATE_PUSH,docker run --rm \
-	  -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
-	  -e PULP_HOST=$(PULP_HOST) \
-	  -v $(TOP)/build/distributions/out:/files:ro -it $(PULP_RELEASE_IMAGE) \
-	  release --file=/files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
-	  --package-type=$(PULP_PACKAGE_TYPE) --dist-name=binaries --dist-version=$(PULP_DIST_VERSION) --publish)
+		-e PULP_USERNAME="${PULP_USERNAME}" \
+		-e PULP_PASSWORD="${PULP_PASSWORD}" \
+		-e PULP_HOST=$(PULP_HOST) \
+		-e CLOUDSMITH_API_KEY='$(CLOUDSMITH_API_KEY)' \
+		-e CLOUDSMITH_DRY_RUN='' \
+		-e IGNORE_CLOUDSMITH_FAILURES=x \
+		-e USE_CLOUDSMITH=x \
+		-e USE_PULP=x \
+		-v $(TOP)/build/distributions/out:/files:ro \
+		-it \
+		$(PULP_RELEASE_IMAGE) \
+		release \
+		--file=/files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
+		--package-type=$(PULP_PACKAGE_TYPE) \
+		--dist-name=binaries \
+		--dist-version=$(PULP_DIST_VERSION) \
+		--publish)
 endef
 
 # These are meant to be used inside foreach
