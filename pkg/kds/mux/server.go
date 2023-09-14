@@ -43,16 +43,16 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
 
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error {
-	return f(session)
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error) {
+	f(session, errorCh)
 }
 
-type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error
+type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error)
 
-func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error {
-	return f(session)
+func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error) {
+	f(session, errorCh)
 }
 
 type server struct {
