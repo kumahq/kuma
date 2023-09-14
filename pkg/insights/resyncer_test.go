@@ -1111,7 +1111,7 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
-			g.Expect(*test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "changed").Summary.SampleCount).To(Equal(uint64(1)))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "changed").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		}).Should(Succeed())
 
 		eventCh <- events.ResourceChangedEvent{
@@ -1128,7 +1128,7 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
-			g.Expect(*test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "no_changes").Summary.SampleCount).To(Equal(uint64(1)))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "no_changes").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		}).Should(Succeed())
 	})
 })
