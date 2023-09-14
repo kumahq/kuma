@@ -1,5 +1,16 @@
-{{- if .Values.patchSystemNamespace }}
-  {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+{{- if .Values.disableHelmHooks }}
+  {{- $errorMessage := ".Values.disableHelmHooks is set. You must manually create and label the system namespace with kuma.io/system-namespace: \"true\" before installing or upgrading the chart" }}
+  {{- $systemNamespace := (lookup "v1" "Namespace" "" .Release.Namespace) }}
+  {{- if not $systemNamespace }}
+      {{- fail $errorMessage }}
+    {{- end }}
+  {{- $systemNamespaceLabels := ($systemNamespace).metadata.labels }}
+  {{- if ne (get $systemNamespaceLabels "kuma.io/system-namespace") "true" }}
+    {{- fail $errorMessage }}
+  {{- end }}
+{{- else}}
+  {{- if .Values.patchSystemNamespace }}
+    {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -110,3 +121,4 @@ spec:
             - '--patch'
             - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
   {{- end }}
+{{- end }}
