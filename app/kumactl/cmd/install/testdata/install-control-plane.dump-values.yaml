@@ -17,6 +17,9 @@ installCrdsOnUpgrade:
   # This field will be deprecated in a future release, please use .global.imagePullSecrets
   imagePullSecrets: []
 
+# -- Whether to disable all helm hooks
+noHelmHooks: false
+
 controlPlane:
   # -- Labels to add to resources in addition to default labels
   extraLabels: {}
