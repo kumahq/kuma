@@ -175,10 +175,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream); err != nil {
-		errorCh <- errors.Wrap(err, "closing Global to Zone Sync stream after callback error")
-		return
-	}
+	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, errorCh)
 	<-stop
 	log.Info("Global to Zone Sync rpc stream stopped")
 	if err := stream.CloseSend(); err != nil {
@@ -194,10 +191,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	if err := c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream); err != nil {
-		errorCh <- errors.Wrap(err, "closing Zone to Global Sync stream after callback error")
-		return
-	}
+	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, errorCh)
 	<-stop
 	log.Info("Zone to Global Sync rpc stream stopped")
 	if err := stream.CloseSend(); err != nil {

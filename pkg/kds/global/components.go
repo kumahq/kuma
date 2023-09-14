@@ -87,6 +87,7 @@ func Setup(rt runtime.Runtime) error {
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
 				log.Error(err, "StreamKumaResources finished with an error")
+				session.SetError(err)
 			} else {
 				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
@@ -100,6 +101,7 @@ func Setup(rt runtime.Runtime) error {
 		go func() {
 			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
+				session.SetError(err)
 			} else {
 				log.V(1).Info("KDSSink finished gracefully")
 			}
