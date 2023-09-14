@@ -51,57 +51,69 @@ should look like this:
 
 ```json
 {
-   "services": {
-      "total": 5,
-      "internal": 4,
-      "external": 1,
-      "gatewayBuiltin": 1,
-      "gatewayProvided": 2,
-      "internalByStatus": {
-         "online": 2,
-         "offline": 1,
-         "partiallyDegraded": 1
-      },
-      "gatewayBuiltinByStatus": {
-         "online": 2,
-         "offline": 1,
-         "partiallyDegraded": 1
-      }
-   },
-   "zones": {
-      "controlPlanes": {
-         "online": 1,
-         "total": 1
-      },
-      "zoneEgresses": {
-         "online": 1,
-         "total": 1
-      },
-      "zoneIngresses": {
-         "online": 1,
-         "total": 1
-      }
-   },
-   "dataplanes": {
-      "standard": {
-         "online": 23,
-         "offline": 10,
-         "partiallyDegraded": 17,
-         "total": 50   
-      },
-      "gateway": {
-         "online": 23,
-         "offline": 10,
-         "partiallyDegraded": 17,
-         "total": 50
-      }
-   },
-   "policies": {
-      "total": 100
-   },
-   "meshes": {
-      "total": 3
-   }
+  "services": {
+    "external": {
+      "total": 1
+    },
+    "internal": {
+      "online": 2,
+      "offline": 1,
+      "partiallyDegraded": 1,
+      "total": 4
+    },
+    "gatewayBuiltin": {
+      "online": 2,
+      "offline": 1,
+      "partiallyDegraded": 1,
+      "total": 4
+    },
+    "gatewayDelegated": {
+      "online": 2,
+      "offline": 1,
+      "partiallyDegraded": 1,
+      "total": 4
+    }
+  },
+  "zones": {
+    "controlPlanes": {
+      "online": 1,
+      "total": 1
+    },
+    "zoneEgresses": {
+      "online": 1,
+      "total": 1
+    },
+    "zoneIngresses": {
+      "online": 1,
+      "total": 1
+    }
+  },
+  "dataplanes": {
+    "standard": {
+      "online": 23,
+      "offline": 10,
+      "partiallyDegraded": 17,
+      "total": 50
+    },
+    "gatewayBuiltin": {
+      "online": 23,
+      "offline": 10,
+      "partiallyDegraded": 17,
+      "total": 50
+    },
+    "gatewayDelegated": {
+      "online": 23,
+      "offline": 10,
+      "partiallyDegraded": 17,
+      "total": 50
+    }
+  },
+  "policies": {
+    "total": 100
+  },
+  "meshes": {
+    "total": 3
+  }
 }
 ```
 
@@ -116,6 +128,7 @@ Most of this data is already computed. To assemble this, we need:
 - `dataplanes` are present in `MeshInsight.Dataplanes`, we only need to aggregate them to get the overall count.
 - `zones` info can be extracted and aggregated from `ZoneInsight`
 - `policies` are present in `MeshInsight.Policies` we just need to aggregate them to get the overall count.
+- `meshes` can be easily extracted from `MeshInsight`
 
 #### Computing Global Insight
 
