@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-{{- if .Values.installCrdsOnUpgrade.enabled }}
-=======
-{{- if (and .Values.installCrdsOnUpgrade.enabled (and (not .Values.noHelmHooks) (eq .Values.controlPlane.environment "kubernetes"))) }}
->>>>>>> 50047eeea (chore(helm): allow to disable all helm hooks (#7757))
+{{- if and .Values.installCrdsOnUpgrade.enabled (not .Values.noHelmHooks) }}
   {{ $hook := "pre-upgrade,pre-install" }}
   {{- $serviceAccountName := printf "%s-install-crds" (include "kuma.name" .) }}
 apiVersion: v1
@@ -87,7 +83,7 @@ data:
     fi
   save_crds.sh: |
     set -e
-    
+
     crds="$(kumactl install crds --no-config {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
     if [ -n "${crds}" ]; then
