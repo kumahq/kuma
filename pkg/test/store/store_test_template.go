@@ -18,7 +18,7 @@ import (
 )
 
 func ExecuteStoreTests(
-	createStore func() store.CustomizableResourceStore,
+	createStore func() store.ResourceStore,
 	storeName string,
 ) {
 	const mesh = "default-mesh"

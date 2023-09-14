@@ -21,12 +21,12 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
-var _ store.ResourceStore = &KubernetesStore{}
-
 func typeIsUnregistered(err error) bool {
 	var typeErr *k8s_registry.UnknownTypeError
 	return errors.As(err, &typeErr)
 }
+
+var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
 	Client    kube_client.Client

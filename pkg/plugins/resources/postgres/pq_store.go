@@ -19,12 +19,12 @@ import (
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 )
 
-var _ store.ResourceStore = &postgresResourceStore{}
-
 type postgresResourceStore struct {
 	db                   *sql.DB
 	maxListQueryElements uint32
 }
+
+var _ store.ResourceStore = &postgresResourceStore{}
 
 func NewPqStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	db, err := common_postgres.ConnectToDb(config)

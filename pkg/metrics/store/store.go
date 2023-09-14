@@ -11,8 +11,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-var _ store.ResourceStore = &MeteredStore{}
-
 type MeteredStore struct {
 	delegate  store.ResourceStore
 	metric    *prometheus.HistogramVec
@@ -80,3 +78,5 @@ func (m *MeteredStore) List(ctx context.Context, list model.ResourceList, option
 	}()
 	return m.delegate.List(ctx, list, optionsFunc...)
 }
+
+var _ store.ResourceStore = &MeteredStore{}

@@ -21,14 +21,14 @@ import (
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
-var _ store.ResourceStore = &pgxResourceStore{}
-
 type pgxResourceStore struct {
 	pool                 *pgxpool.Pool
 	maxListQueryElements uint32
 }
 
 type ResourceNamesByMesh map[string][]string
+
+var _ store.ResourceStore = &pgxResourceStore{}
 
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
 	pool, err := postgres.ConnectToDbPgx(config, customizer)
