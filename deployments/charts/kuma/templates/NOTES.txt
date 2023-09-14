@@ -1,3 +1,40 @@
 The Kuma Control Plane has been installed!
 
 You can access the control-plane via either the GUI, kubectl, the HTTP API, or the kumactl CLI.
+{{- if .Values.noHelmHooks }}
+
+-------------------------------------------------------------------------------
+
+ WARNING
+
+    When the "noHelmHooks" value is provided, you will need to manually delete
+    the "ValidatingWebhookConfiguration" responsible for validating {{ include "kuma.name" . }} resources
+    before you can uninstall Helm release. This is because the validation provided
+    by the webhook is not necessary during the release removal and might potentially
+    even prevent you from doing it. You can do this by running the following command:
+
+    kubectl delete ValidatingWebhookConfiguration {{ include "kuma.name" . }}-validating-webhook-configuration
+
+ WARNING
+
+    When the "noHelmHooks" value is set, Helm will not automatically update
+    the CustomResourceDefinitions (CRDs) when upgrading release. You must manually
+    update the CRDs if the new {{ include "kuma.name" . }} version has changes
+    to the CRDs. You can achieve this by calling the following command:
+
+    kumactl install crds --no-config{{ if .Values.experimental.gatewayAPI }} --experimental-gatewayapi{{ end }} | kubectl apply -f
+
+{{- if and .Values.experimental.ebpf.enabled (not .Values.cni.enabled) }}
+
+ WARNING
+
+    When the "noHelmHooks" value is set, Helm will not automatically uninstall
+    the eBPF resources. You will need to manually uninstall these resources after
+    uninstalling Helm release. To do this, run the following command:
+
+    kumactl uninstall ebpf --cleanup-image-registry {{ .Values.global.image.registry }} --cleanup-image-repository {{ .Values.dataPlane.initImage.repository }}
+
+{{- end }}
+
+-------------------------------------------------------------------------------
+{{- end }}
