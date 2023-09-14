@@ -85,7 +85,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 
 	builder.
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
-		WithResourceStore(store.NewPaginationStore(resources_memory.NewStore())).
+		WithResourceStore(store.NewCustomizableResourceStore(store.NewPaginationStore(resources_memory.NewStore()))).
 		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
 		WithResourceValidators(core_runtime.ResourceValidators{
 			Dataplane: dataplane.NewMembershipValidator(),
