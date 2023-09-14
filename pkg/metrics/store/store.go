@@ -14,8 +14,9 @@ import (
 var _ store.CustomizableResourceStore = &MeteredStore{}
 
 type MeteredStore struct {
-	delegate store.CustomizableResourceStore
-	metric   *prometheus.HistogramVec
+	delegate  store.CustomizableResourceStore
+	metric    *prometheus.HistogramVec
+	conflicts *prometheus.CounterVec
 }
 
 func NewMeteredStore(delegate store.CustomizableResourceStore, metrics core_metrics.Metrics) (*MeteredStore, error) {
@@ -25,8 +26,12 @@ func NewMeteredStore(delegate store.CustomizableResourceStore, metrics core_metr
 			Name: "store",
 			Help: "Summary of Store operations",
 		}, []string{"operation", "resource_type"}),
+		conflicts: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "store_conflicts",
+			Help: "Counter of store conflicts while update",
+		}, []string{"resource_type"}),
 	}
-	if err := metrics.Register(meteredStore.metric); err != nil {
+	if err := metrics.BulkRegister(meteredStore.metric, meteredStore.conflicts); err != nil {
 		return nil, err
 	}
 	return &meteredStore, nil
@@ -45,7 +50,11 @@ func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, opti
 	defer func() {
 		m.metric.WithLabelValues("update", string(resource.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
-	return m.delegate.Update(ctx, resource, optionsFunc...)
+	err := m.delegate.Update(ctx, resource, optionsFunc...)
+	if store.IsResourceConflict(err) {
+		m.conflicts.WithLabelValues(string(resource.Descriptor().Name)).Inc()
+	}
+	return err
 }
 
 func (m *MeteredStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...store.DeleteOptionsFunc) error {
