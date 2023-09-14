@@ -43,7 +43,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 		roConfig := config
 		roConfig.Host = config.ReadReplica.Host
 		roConfig.Port = int(config.ReadReplica.Port)
-		roPool, err = postgres.ConnectToDbPgx(roConfig)
+		roPool, err = postgres.ConnectToDbPgx(roConfig, customizer)
 		if err != nil {
 			return nil, err
 		}
