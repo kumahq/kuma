@@ -26,7 +26,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.41.15
+	github.com/gruntwork-io/terratest v0.43.13
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -64,14 +64,14 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
-	golang.org/x/net v0.14.0
+	golang.org/x/net v0.15.0
 	golang.org/x/sys v0.12.0
 	golang.org/x/text v0.13.0
 	golang.org/x/time v0.3.0 // indirect
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130
+	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731193218-e0aa005b6bdf
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.58.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.12.3
@@ -93,7 +93,7 @@ require (
 
 require (
 	cloud.google.com/go v0.110.4 // indirect
-	cloud.google.com/go/compute v1.20.1 // indirect
+	cloud.google.com/go/compute v1.21.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/logging v1.7.0 // indirect
 	cloud.google.com/go/longrunning v0.5.1 // indirect
@@ -112,7 +112,7 @@ require (
 	github.com/containerd/containerd v1.7.3 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
+	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.5+incompatible // indirect
@@ -197,11 +197,11 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.17.0 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/oauth2 v0.8.0 // indirect
+	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/api v0.126.0 // indirect
@@ -216,5 +216,3 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-replace github.com/gruntwork-io/terratest => github.com/lahabana/terratest v0.42.0-preview

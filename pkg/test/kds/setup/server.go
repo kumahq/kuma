@@ -85,13 +85,17 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 	if err != nil {
 		return nil, err
 	}
+	eventBus, err := events.NewEventBus(20, metrics)
+	if err != nil {
+		return nil, err
+	}
 	rt := &testRuntimeContext{
 		rom:                      manager.NewResourceManager(store),
 		cfg:                      kuma_cp.Config{},
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
-		eventBus:                 events.NewEventBus(),
+		eventBus:                 eventBus,
 	}
 	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }

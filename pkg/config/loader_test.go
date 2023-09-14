@@ -106,6 +106,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -120,6 +121,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
+
+			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
+			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
+			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -343,6 +348,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
+			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -367,12 +373,17 @@ store:
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
+    maxListQueryElements: 111
     tls:
       mode: verifyFull
       certPath: /path/to/cert
       keyPath: /path/to/key
       caPath: /path/to/rootCert
       disableSSLSNI: true
+    readReplica:
+      host: ro.host
+      port: 35432
+      ratio: 80
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -674,6 +685,8 @@ experimental:
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
+eventBus:
+  bufferSize: 30
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -707,6 +720,10 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
+				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
@@ -918,6 +935,7 @@ proxy:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",
 		}),

@@ -47,6 +47,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -66,6 +68,14 @@ store:
     # MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
     # to re-establish the database connection after connection loss.
     maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
+    # ReadReplica is a setting for a DB replica used only for read queries
+    readReplica:
+      # Host of the Postgres DB read replica. If not set, read replica is not used.
+      host: "" # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_HOST
+      # Port of the Postgres DB read replica
+      port: 5432 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_PORT
+      # Ratio in [0-100] range. How many SELECT queries (out of 100) will use read replica.
+      ratio: 100 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_RATIO
 
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
@@ -728,4 +738,10 @@ proxy:
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
+
+# Configuration of the event bus which is local to one instance of CP
+eventBus:
+  # BufferSize controls the buffer for every single event listener.
+  # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
+  bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
 ```

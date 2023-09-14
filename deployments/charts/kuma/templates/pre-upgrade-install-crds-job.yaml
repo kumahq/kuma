@@ -1,4 +1,4 @@
-{{- if (and .Values.installCrdsOnUpgrade.enabled (eq .Values.controlPlane.environment "kubernetes")) }}
+{{- if (and .Values.installCrdsOnUpgrade.enabled (and (not .Values.noHelmHooks) (eq .Values.controlPlane.environment "kubernetes"))) }}
   {{ $hook := "pre-upgrade,pre-install" }}
   {{- $serviceAccountName := printf "%s-install-crds" (include "kuma.name" .) }}
 apiVersion: v1
@@ -123,7 +123,7 @@ spec:
       {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: pre-upgrade-job
-          image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
           securityContext:
           {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:

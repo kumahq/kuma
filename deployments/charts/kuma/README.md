@@ -16,6 +16,7 @@ A Helm chart for the Kuma Control Plane
 | patchSystemNamespace | bool | `true` | Whether to patch the target namespace with the system label |
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
+| noHelmHooks | bool | `false` | Whether to disable all helm hooks |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
@@ -74,6 +75,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
 | controlPlane.tls.kdsZoneClient.skipVerify | bool | `false` | If true, TLS cert of the server is not verified. |
+| controlPlane.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
@@ -174,9 +176,9 @@ A Helm chart for the Kuma Control Plane
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
-| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
+| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
