@@ -18,7 +18,7 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 # -- Whether to disable all helm hooks
-disableHelmHooks: false
+noHelmHooks: false
 
 controlPlane:
   # -- Environment that control plane is run in, useful when running universal global control plane on k8s

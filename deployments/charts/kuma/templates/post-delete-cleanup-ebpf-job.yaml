@@ -1,4 +1,4 @@
-{{- if and (.Values.experimental.ebpf.enabled) (and (not .Values.cni.enabled) (not .Values.disableHelmHooks)) }}
+{{- if and (.Values.experimental.ebpf.enabled) (and (not .Values.cni.enabled) (not .Values.noHelmHooks)) }}
   {{- $serviceAccountName := printf "%s-cleanup-node-ebpf-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount

@@ -1,5 +1,5 @@
-{{- if .Values.disableHelmHooks }}
-  {{- $errorMessage := ".Values.disableHelmHooks is set. You must manually create and label the system namespace with kuma.io/system-namespace: \"true\" before installing or upgrading the chart" }}
+{{- if .Values.noHelmHooks }}
+  {{- $errorMessage := ".Values.noHelmHooks is set. You must manually create and label the system namespace with kuma.io/system-namespace: \"true\" before installing or upgrading the chart" }}
   {{- $systemNamespace := (lookup "v1" "Namespace" "" .Release.Namespace) }}
   {{- if not $systemNamespace }}
       {{- fail $errorMessage }}
