@@ -2,6 +2,8 @@ package secrets_test
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,7 +25,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
-var _ = Describe("Secrets", func() {
+var _ = Describe("Secrets", Ordered, func() {
 	var secrets Secrets
 	var metrics core_metrics.Metrics
 	var now time.Time
@@ -99,14 +101,26 @@ var _ = Describe("Secrets", func() {
 		}
 	}
 
+	BeforeAll(func() {
+		core_mesh.AllowedMTLSBackends = 2
+	})
+
+	AfterAll(func() {
+		core_mesh.AllowedMTLSBackends = 1
+	})
+
 	BeforeEach(func() {
 		resStore := memory.NewStore()
+		rm := manager.NewResourceManager(resStore)
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
 		builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
 		}
-		err := builtinCaManager.EnsureBackends(context.Background(), "default", newMesh().Spec.Mtls.Backends)
+		mesh := newMesh()
+		err := rm.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = builtinCaManager.EnsureBackends(context.Background(), mesh, mesh.Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
 		m, err := core_metrics.NewMetrics("local")

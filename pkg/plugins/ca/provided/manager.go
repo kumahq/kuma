@@ -2,7 +2,7 @@ package provided
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 
 	"github.com/pkg/errors"
 
@@ -11,6 +11,7 @@ import (
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
