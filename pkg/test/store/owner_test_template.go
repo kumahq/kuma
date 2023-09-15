@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
