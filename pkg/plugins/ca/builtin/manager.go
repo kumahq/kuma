@@ -105,7 +105,11 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 			Data: util_proto.Bytes(keyPair.CertPEM),
 		},
 	}
-	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateBy(certSecretResKey(mesh, backend.Name))); err != nil {
+	owner := core_mesh.NewMeshResource()
+	if err := b.secretManager.Get(ctx, owner, core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
+		return manager.MeshNotFound(mesh)
+	}
+	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(owner), core_store.CreateBy(certSecretResKey(mesh, backend.Name))); err != nil {
 		if !core_store.IsResourceAlreadyExists(err) {
 			return err
 		}
@@ -117,7 +121,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 			Data: util_proto.Bytes(keyPair.KeyPEM),
 		},
 	}
-	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateBy(keySecretResKey(mesh, backend.Name))); err != nil {
+	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(owner), core_store.CreateBy(keySecretResKey(mesh, backend.Name))); err != nil {
 		if !core_store.IsResourceAlreadyExists(err) {
 			return err
 		}
