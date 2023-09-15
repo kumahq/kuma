@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"context"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,6 +20,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	secrets_k8s "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"

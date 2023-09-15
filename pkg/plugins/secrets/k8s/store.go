@@ -3,8 +3,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,11 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -28,23 +28,23 @@ import (
 var _ secret_store.SecretStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	reader           kube_client.Reader
-	writer           kube_client.Writer
-	scheme           *runtime.Scheme
-	secretsConverter Converter
+	reader             kube_client.Reader
+	writer             kube_client.Writer
+	scheme             *runtime.Scheme
+	secretsConverter   Converter
 	resourcesConverter common_k8s.Converter
 	// Namespace to store Secrets in, e.g. namespace where Control Plane is installed to
-	namespace          string
+	namespace string
 }
 
 func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runtime.Scheme, namespace string) (secret_store.SecretStore, error) {
 	return &KubernetesStore{
-		reader:           reader,
-		writer:           writer,
-		scheme:           scheme,
-		secretsConverter: DefaultConverter(),
+		reader:             reader,
+		writer:             writer,
+		scheme:             scheme,
+		secretsConverter:   DefaultConverter(),
 		resourcesConverter: k8s.NewSimpleConverter(),
-		namespace:        namespace,
+		namespace:          namespace,
 	}, nil
 }
 
