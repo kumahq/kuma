@@ -1,4 +1,4 @@
-package policy
+package referencegrants
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func PolicyReferenceSecret(from gatewayapi.ReferenceGrantFrom, to gatewayapi.Sec
 }
 
 // IsReferencePermitted returns whether the given reference is permitted with respect
-// to ReferencePolicies.
+// to ReferenceGrants.
 func IsReferencePermitted(
 	ctx context.Context,
 	client kube_client.Client,
@@ -87,7 +87,7 @@ func IsReferencePermitted(
 
 	policies := &gatewayapi.ReferenceGrantList{}
 	if err := client.List(ctx, policies, kube_client.InNamespace(reference.toNamespace)); err != nil {
-		return false, errors.Wrap(err, "failed to list ReferencePolicies")
+		return false, errors.Wrap(err, "failed to list ReferenceGrants")
 	}
 
 	for _, policy := range policies.Items {

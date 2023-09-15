@@ -17,7 +17,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
+	referencegrants "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
 )
 
 type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
@@ -269,10 +269,10 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 	}
 	var referencedSecrets []referencedSecret
 	for _, certRef := range l.TLS.CertificateRefs {
-		policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gatewayNamespace), certRef)
+		policyRef := referencegrants.PolicyReferenceSecret(referencegrants.FromGatewayIn(gatewayNamespace), certRef)
 
 		name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
-		if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+		if permitted, err := referencegrants.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
 			return nil, nil, err
 		} else if !permitted {
 			return nil, &certRefCondition{
