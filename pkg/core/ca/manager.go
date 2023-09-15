@@ -2,6 +2,7 @@ package ca
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -16,7 +17,7 @@ type Manager interface {
 	// ValidateBackend validates that backend configuration is correct
 	ValidateBackend(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error
 	// EnsureBackends ensures the given CA backends managed by this manager are available
-	EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error
+	EnsureBackends(ctx context.Context, mesh model.Resource, backends []*mesh_proto.CertificateAuthorityBackend) error
 	// UsedSecrets returns a list of secrets that are used by the manager
 	UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error)
 

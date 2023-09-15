@@ -38,9 +38,10 @@ func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager 
 
 var _ core_ca.Manager = &builtinCaManager{}
 
-func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh core_model.Resource, backends []*mesh_proto.CertificateAuthorityBackend) error {
 	for _, backend := range backends {
-		_, err := b.getCa(ctx, mesh, backend.Name)
+		meshName := mesh.GetMeta().GetName()
+		_, err := b.getCa(ctx, meshName, backend.Name)
 		if err == nil {
 			log.V(1).Info("CA secrets already exist. Nothing to create", "mesh", mesh, "backend", backend.Name)
 			continue
@@ -53,7 +54,7 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, back
 		if err := b.create(ctx, mesh, backend); err != nil {
 			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
-		log.Info("CA created", "mesh", mesh)
+		log.Info("CA created", "mesh", meshName)
 	}
 	return nil
 }
@@ -81,7 +82,8 @@ func (b *builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.Certific
 	}, nil
 }
 
-func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource, backend *mesh_proto.CertificateAuthorityBackend) error {
+	meshName := mesh.GetMeta().GetName()
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		return errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
@@ -95,9 +97,9 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 		}
 		opts = append(opts, withExpirationTime(duration))
 	}
-	keyPair, err := newRootCa(mesh, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
+	keyPair, err := newRootCa(meshName, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", mesh)
+		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", meshName)
 	}
 
 	certSecret := &core_system.SecretResource{
@@ -105,15 +107,11 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 			Data: util_proto.Bytes(keyPair.CertPEM),
 		},
 	}
-	owner := core_mesh.NewMeshResource()
-	if err := b.secretManager.Get(ctx, owner, core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
-		return manager.MeshNotFound(mesh)
-	}
-	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(owner), core_store.CreateBy(certSecretResKey(mesh, backend.Name))); err != nil {
+	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(certSecretResKey(meshName, backend.Name))); err != nil {
 		if !core_store.IsResourceAlreadyExists(err) {
 			return err
 		}
-		log.V(1).Info("CA certificate already exists. Nothing to create", "mesh", mesh, "backend", backend.Name)
+		log.V(1).Info("CA certificate already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
 
 	keySecret := &core_system.SecretResource{
@@ -121,11 +119,11 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 			Data: util_proto.Bytes(keyPair.KeyPEM),
 		},
 	}
-	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(owner), core_store.CreateBy(keySecretResKey(mesh, backend.Name))); err != nil {
+	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(mesh), core_store.CreateBy(keySecretResKey(meshName, backend.Name))); err != nil {
 		if !core_store.IsResourceAlreadyExists(err) {
 			return err
 		}
-		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", mesh, "backend", backend.Name)
+		log.V(1).Info("CA secret key already exists. Nothing to create", "mesh", meshName, "backend", backend.Name)
 	}
 	return nil
 }
