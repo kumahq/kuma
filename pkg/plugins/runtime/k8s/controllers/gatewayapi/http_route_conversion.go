@@ -127,21 +127,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		}
 	}
 
-	for _, condition := range []kube_meta.Condition{
-		{
-			Type:   string(gatewayapi.RouteConditionAccepted),
-			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.RouteReasonAccepted),
-		}, {
-			Type:   string(gatewayapi.RouteConditionResolvedRefs),
-			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.RouteReasonResolvedRefs),
-		},
-	} {
-		if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
-			kube_apimeta.SetStatusCondition(&conditions, condition)
-		}
-	}
+	conditions = prepareConditions(conditions)
 
 	var routeConf *mesh_proto.MeshGatewayRoute_Conf
 	if len(rules) > 0 {
