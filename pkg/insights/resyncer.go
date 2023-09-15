@@ -29,7 +29,7 @@ var log = core.Log.WithName("mesh-insight-resyncer")
 
 const (
 	ReasonResync    = "resync"
-	ReasonTrigger   = "trigger"
+	ReasonForce     = "force"
 	ReasonEvent     = "event"
 	ResultChanged   = "changed"
 	ResultNoChanges = "no_changes"
@@ -266,7 +266,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						anyChanged = true
 					}
 				}
-				reason := strings.Join(util_maps.SortedKeys(event.reasons), "&")
+				reason := strings.Join(util_maps.SortedKeys(event.reasons), "_and_")
 				result := ResultNoChanges
 				if anyChanged {
 					result = ResultChanged
@@ -323,7 +323,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			}
 			if triggerEvent, ok := event.(events.TriggerInsightsComputationEvent); ok {
 				ctx := context.Background()
-				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID, ReasonTrigger)
+				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID, ReasonForce)
 				if err := batch.flush(ctx, resyncEvents); err != nil {
 					log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 				}
