@@ -32,7 +32,7 @@ func ExecuteOwnerTests(
 	})
 
 	Context("Store: "+storeName, func() {
-		FIt("should delete secret when its owner is deleted", func() {
+		It("should delete secret when its owner is deleted", func() {
 			// setup
 			meshRes := core_mesh.NewMeshResource()
 			err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
