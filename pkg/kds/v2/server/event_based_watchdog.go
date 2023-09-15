@@ -70,7 +70,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			if len(changedTypes) == 0 {
 				continue
 			}
-			reason := strings.Join(util_maps.SortedKeys(reasons), "&")
+			reason := strings.Join(util_maps.SortedKeys(reasons), "_and_")
 			e.Log.V(1).Info("reconcile", "changedTypes", changedTypes, "reason", reason)
 			start := core.Now()
 			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes)
