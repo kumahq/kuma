@@ -2,6 +2,7 @@ package provided
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 
@@ -79,7 +80,7 @@ func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend *mes
 	return pair, nil
 }
 
-func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh string, backend []*mesh_proto.CertificateAuthorityBackend) error {
+func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh model.Resource, backend []*mesh_proto.CertificateAuthorityBackend) error {
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
