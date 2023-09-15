@@ -2,12 +2,12 @@ package controllers_test
 
 import (
 	"context"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,7 +43,9 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 
-		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, runtime.NewScheme(), "default")
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, scheme, "default")
 		Expect(err).ToNot(HaveOccurred())
 
 		resourceManager = resources_manager.NewResourceManager(store)
