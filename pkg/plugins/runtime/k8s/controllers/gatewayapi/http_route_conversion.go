@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
+	referencegrants "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -190,7 +190,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
 	}
 
-	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
+	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
 
 	gk := policyRef.GroupKindReferredTo()
 	namespacedName := policyRef.NamespacedNameReferredTo()
@@ -253,18 +253,18 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
 	}
 
-	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
+	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
 
 	gk := policyRef.GroupKindReferredTo()
 	namespacedName := policyRef.NamespacedNameReferredTo()
 
-	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+	if permitted, err := referencegrants.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
 		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
 	} else if !permitted {
 		return unresolvedBackendTags,
 			&ResolvedRefsConditionFalse{
 				Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
-				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
+				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferenceGrant", gk, namespacedName),
 			},
 			nil
 	}
