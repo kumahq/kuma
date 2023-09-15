@@ -3,7 +3,6 @@ package provided
 import (
 	"context"
 
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
