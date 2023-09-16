@@ -39,7 +39,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/insights"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -87,20 +89,7 @@ func init() {
 	}
 }
 
-func NewApiServer(
-	resManager manager.ResourceManager,
-	meshContextBuilder xds_context.MeshContextBuilder,
-	wsManager customization.APIInstaller,
-	defs []model.ResourceTypeDescriptor,
-	cfg *kuma_cp.Config,
-	metrics metrics.Metrics,
-	getInstanceId func() string, getClusterId func() string,
-	authenticator authn.Authenticator,
-	access runtime.Access,
-	envoyAdminClient admin.EnvoyAdminClient,
-	tokenIssuers builtin.TokenIssuers,
-	wsCustomize func(*restful.WebService) error,
-) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, meshContextBuilder xds_context.MeshContextBuilder, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, metrics metrics.Metrics, getInstanceId func() string, getClusterId func() string, authenticator authn.Authenticator, access runtime.Access, envoyAdminClient admin.EnvoyAdminClient, tokenIssuers builtin.TokenIssuers, wsCustomize func(*restful.WebService) error, tenants multitenant.Tenants) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
@@ -136,7 +125,18 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
+	var globalInsightService insights.GlobalInsightService
+	if cfg.Store.Cache.Enabled {
+		globalInsightService = insights.NewCachedGlobalInsightService(
+			insights.NewDefaultGlobalInsightService(resManager),
+			tenants,
+			cfg.Store.Cache.ExpirationTime.Duration,
+		)
+	} else {
+		globalInsightService = insights.NewDefaultGlobalInsightService(resManager)
+	}
+
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService)
 	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
@@ -217,7 +217,7 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_access.ResourceAccess) {
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_access.ResourceAccess, globalInsightService insights.GlobalInsightService) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
@@ -252,6 +252,11 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 		resourceAccess: resourceAccess,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
+
+	globalInsightEndpoint := globalInsightEndpoint{
+		globalInsightService: globalInsightService,
+	}
+	globalInsightEndpoint.addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	switch cfg.Store.Type {
@@ -487,6 +492,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.EnvoyAdminClient(),
 		rt.TokenIssuers(),
 		rt.APIWebServiceCustomize(),
+		rt.Tenants(),
 	)
 	if err != nil {
 		return err

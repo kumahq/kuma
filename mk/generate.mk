@@ -94,6 +94,9 @@ generate/kumapolicy-gen/%: $(POLICY_GEN) generate/dirs/%
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
 
+generate/oas:
+	$(POLICY_GEN) k8s-resource --plugin-dir pkg/api-server/specs/types/$* --gomodule $(GO_MODULE)
+
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
 		mkdir -p $(POLICIES_DIR)/$*/api/$$version ; \

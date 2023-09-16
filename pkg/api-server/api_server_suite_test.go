@@ -215,41 +215,27 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	}
 
 	resManager := manager.NewResourceManager(t.store)
-	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
+	apiServer, err := api_server.NewApiServer(resManager, xds_context.NewMeshContextBuilder(
 		resManager,
-		xds_context.NewMeshContextBuilder(
-			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
-			net.LookupIP,
-			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
-			cfg.DNSServer.Domain,
-			80,
+		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		net.LookupIP,
+		cfg.Multizone.Zone.Name,
+		vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
+		cfg.DNSServer.Domain,
+		80,
+	), customization.NewAPIList(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, t.metrics(), func() string { return "instance-id" }, func() string { return "cluster-id" }, certs.ClientCertAuthenticator, runtime.Access{
+		ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+		DataplaneTokenAccess: nil,
+		EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+			cfg.Access.Static.ViewConfigDump,
+			cfg.Access.Static.ViewStats,
+			cfg.Access.Static.ViewClusters,
 		),
-		customization.NewAPIList(),
-		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
-		&cfg,
-		t.metrics(),
-		func() string { return "instance-id" },
-		func() string { return "cluster-id" },
-		certs.ClientCertAuthenticator,
-		runtime.Access{
-			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-			DataplaneTokenAccess: nil,
-			EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
-				cfg.Access.Static.ViewConfigDump,
-				cfg.Access.Static.ViewStats,
-				cfg.Access.Static.ViewClusters,
-			),
-		},
-		&test_runtime.DummyEnvoyAdminClient{},
-		builtin.TokenIssuers{
-			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
-			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
-			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
-		},
-		func(*restful.WebService) error { return nil },
-	)
+	}, &test_runtime.DummyEnvoyAdminClient{}, builtin.TokenIssuers{
+		DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+		ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
+	}, func(*restful.WebService) error { return nil }, nil)
 	if err != nil {
 		return nil, cfg, stop, err
 	}
