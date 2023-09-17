@@ -41,7 +41,7 @@ spec:
       tls:
         mode: TERMINATE
         certificates:
-        - secret: example-kuma-io-certificate
+        - secret: kuma-io-certificate-k8s
       tags:
         hostname: example.kuma.io
     - port: 8082
@@ -56,7 +56,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: example-kuma-io-certificate
+  name: kuma-io-certificate-k8s
   namespace: %s
   labels:
     kuma.io/mesh: simple-gateway 
