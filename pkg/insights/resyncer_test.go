@@ -71,6 +71,7 @@ var _ = Describe("Insight Persistence", func() {
 			Registry:            registry.Global(),
 			TenantFn:            multitenant.SingleTenant,
 			EventBufferCapacity: 10,
+			EventProcessors:     10,
 			Metrics:             metric,
 		})
 		go func() {

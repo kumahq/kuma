@@ -101,6 +101,8 @@ type MeshMetrics struct {
 	MinResyncInterval config_types.Duration `json:"minResyncInterval" envconfig:"kuma_metrics_mesh_min_resync_interval"`
 	// FullResyncInterval time between triggering a full refresh of all the insights
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_metrics_mesh_full_resync_interval"`
+	// EventProcessors is a number of workers that process metrics events.
+	EventProcessors int `json:"eventProcessors" envconfig:"kuma_metrics_mesh_event_processors"`
 }
 
 type ControlPlaneMetrics struct {
@@ -215,6 +217,7 @@ var DefaultConfig = func() Config {
 				MinResyncInterval:  config_types.Duration{Duration: 1 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 20 * time.Second},
 				BufferSize:         1000,
+				EventProcessors:    1,
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,

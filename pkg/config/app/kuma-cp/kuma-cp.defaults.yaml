@@ -416,6 +416,8 @@ metrics:
     fullResyncInterval: 20s # ENV: KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL
     # the size of the buffer between event creation and processing
     bufferSize: 1000 # ENV: KUMA_METRICS_MESH_BUFFER_SIZE
+    # the number of workers that process metrics events
+    eventProcessors: 1 # ENV: KUMA_METRICS_MESH_EVENT_PROCESSORS
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT

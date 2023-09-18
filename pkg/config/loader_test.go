@@ -286,6 +286,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Metrics.Mesh.MinResyncInterval.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Mesh.FullResyncInterval.Duration).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.BufferSize).To(Equal(23))
+			Expect(cfg.Metrics.Mesh.EventProcessors).To(Equal(2))
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
 			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
 			Expect(cfg.Metrics.ControlPlane.ReportResourcesCount).To(BeTrue())
@@ -598,6 +599,7 @@ metrics:
     fullResyncInterval: 35s
     minResyncInterval: 27s
     bufferSize: 23
+    eventProcessors: 2
   dataplane:
     subscriptionLimit: 47
     idleTimeout: 1m
@@ -877,6 +879,7 @@ eventBus:
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
 				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
 				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",
+				"KUMA_METRICS_MESH_EVENT_PROCESSORS":                                                       "2",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",

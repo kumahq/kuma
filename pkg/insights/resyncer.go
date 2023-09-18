@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -58,6 +59,7 @@ type Config struct {
 	Tick                func(d time.Duration) <-chan time.Time
 	TenantFn            multitenant.Tenants
 	EventBufferCapacity int
+	EventProcessors     int
 	Metrics             core_metrics.Metrics
 	Now                 func() time.Time
 }
@@ -72,6 +74,7 @@ type resyncer struct {
 	registry            registry.TypeRegistry
 	tenantFn            multitenant.Tenants
 	eventBufferCapacity int
+	eventProcessors     int
 	metrics             core_metrics.Metrics
 	now                 func() time.Time
 
@@ -128,6 +131,7 @@ func NewResyncer(config *Config) component.Component {
 		timeToProcessItem:     timeToProcessItem,
 		itemProcessingTime:    itemProcessingTime,
 		allPolicyTypes:        allPolicyTypes,
+		eventProcessors:       config.EventProcessors,
 	}
 	if config.Now == nil {
 		r.now = time.Now
@@ -159,12 +163,22 @@ const (
 // eventBatch keeps all the outstanding changes. The idea is that we linger an entire batch for some amount of time and we flush the batch all at once
 type eventBatch struct {
 	events map[string]*resyncEvent
+	sync.Mutex
+}
+
+var flushAll = func(*resyncEvent) bool {
+	return true
 }
 
 // flush sends the current batch to the resyncEvents chan, if the context is cancelled we interrupt the sending but keep the items in the batch.
 // if an item is successfully put in the chanel we remove it.
-func (e *eventBatch) flush(ctx context.Context, resyncEvents chan resyncEvent) error {
+func (e *eventBatch) flush(ctx context.Context, resyncEvents chan resyncEvent, predicate func(*resyncEvent) bool) error {
+	e.Lock()
+	defer e.Unlock()
 	for k, event := range e.events {
+		if !predicate(event) {
+			continue
+		}
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("context done and the batch wasn't complete, update will be delayed, outstanding events: %d", len(e.events))
@@ -188,6 +202,8 @@ func (e *eventBatch) add(
 	if actionFlag == 0x00 { // No action so no need to persist
 		return
 	}
+	e.Lock()
+	defer e.Unlock()
 	key := tenantId + ":" + mesh
 	if elt := e.events[key]; elt != nil {
 		// If the item is already present just merge the actionFlag
@@ -221,60 +237,62 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		cancel()
 		close(resyncEvents)
 	}()
-	go func() {
-		// We dequeue from the resyncEvents channel and actually do the insight update we want.
-		for {
-			start := r.now()
-			select {
-			case <-ctx.Done():
-				log.Info("stopped resyncEvents loop")
-				return
-			case event, more := <-resyncEvents:
-				if !more {
-					// Usually this shouldn't close if there's no closed context
-					continue
-				}
-				if event.flag == 0 {
-					continue
-				}
-				startProcessingTime := r.now()
-				r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
-				r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
-				tenantCtx := multitenant.WithTenant(ctx, event.tenantId)
-				dpOverviews, err := r.dpOverviews(tenantCtx, event.mesh)
-				if err != nil {
-					log.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
-					continue
-				}
+	for i := 0; i < r.eventProcessors; i++ {
+		go func() {
+			// We dequeue from the resyncEvents channel and actually do the insight update we want.
+			for {
+				start := r.now()
+				select {
+				case <-ctx.Done():
+					log.Info("stopped resyncEvents loop")
+					return
+				case event, more := <-resyncEvents:
+					if !more {
+						// Usually this shouldn't close if there's no closed context
+						continue
+					}
+					if event.flag == 0 {
+						continue
+					}
+					startProcessingTime := r.now()
+					r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
+					r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
+					tenantCtx := multitenant.WithTenant(ctx, event.tenantId)
+					dpOverviews, err := r.dpOverviews(tenantCtx, event.mesh)
+					if err != nil {
+						log.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
+						continue
+					}
 
-				anyChanged := false
-				if event.flag&FlagService == FlagService {
-					err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews)
-					if err != nil {
-						log.Error(err, "unable to resync ServiceInsight", "event", event)
+					anyChanged := false
+					if event.flag&FlagService == FlagService {
+						err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews)
+						if err != nil {
+							log.Error(err, "unable to resync ServiceInsight", "event", event)
+						}
+						if changed {
+							anyChanged = true
+						}
 					}
-					if changed {
-						anyChanged = true
+					if event.flag&FlagMesh == FlagMesh {
+						err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, event.types)
+						if err != nil {
+							log.Error(err, "unable to resync MeshInsight", "event", event)
+						}
+						if changed {
+							anyChanged = true
+						}
 					}
+					reason := strings.Join(util_maps.SortedKeys(event.reasons), "_and_")
+					result := ResultNoChanges
+					if anyChanged {
+						result = ResultChanged
+					}
+					r.itemProcessingTime.WithLabelValues(reason, result).Observe(float64(time.Since(startProcessingTime).Milliseconds()))
 				}
-				if event.flag&FlagMesh == FlagMesh {
-					err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, event.types)
-					if err != nil {
-						log.Error(err, "unable to resync MeshInsight", "event", event)
-					}
-					if changed {
-						anyChanged = true
-					}
-				}
-				reason := strings.Join(util_maps.SortedKeys(event.reasons), "_and_")
-				result := ResultNoChanges
-				if anyChanged {
-					result = ResultChanged
-				}
-				r.itemProcessingTime.WithLabelValues(reason, result).Observe(float64(time.Since(startProcessingTime).Milliseconds()))
 			}
-		}
-	}()
+		}()
+	}
 	eventReader := r.eventFactory.Subscribe(func(event events.Event) bool {
 		if _, ok := event.(events.TriggerInsightsComputationEvent); ok {
 			return true
@@ -308,12 +326,18 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				if err != nil {
 					log.Error(err, "could not get tenants")
 				}
+				wg := sync.WaitGroup{}
+				wg.Add(len(tenantIds))
 				for _, tenantId := range tenantIds {
-					r.addMeshesToBatch(tickCtx, batch, tenantId, ReasonResync)
+					go func(tenantId string) {
+						r.addMeshesToBatch(tickCtx, batch, tenantId, ReasonResync)
+						wg.Done()
+					}(tenantId)
 				}
+				wg.Wait()
 			}
 			// We flush the batch
-			if err := batch.flush(tickCtx, resyncEvents); err != nil {
+			if err := batch.flush(tickCtx, resyncEvents, flushAll); err != nil {
 				log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 			}
 			cancelTimeout()
@@ -324,7 +348,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			if triggerEvent, ok := event.(events.TriggerInsightsComputationEvent); ok {
 				ctx := context.Background()
 				r.addMeshesToBatch(ctx, batch, triggerEvent.TenantID, ReasonForce)
-				if err := batch.flush(ctx, resyncEvents); err != nil {
+				if err := batch.flush(ctx, resyncEvents, func(event *resyncEvent) bool {
+					return event.tenantId == triggerEvent.TenantID
+				}); err != nil {
 					log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 				}
 			}
