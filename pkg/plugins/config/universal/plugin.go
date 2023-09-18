@@ -14,5 +14,5 @@ func init() {
 }
 
 func (p *plugin) NewConfigStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
-	return pc.ResourceStore(), nil
+	return pc.ResourceStore().DefaultResourceStore(), nil
 }

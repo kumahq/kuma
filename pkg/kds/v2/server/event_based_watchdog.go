@@ -21,7 +21,7 @@ import (
 type EventBasedWatchdog struct {
 	Ctx                 context.Context
 	Node                *envoy_core.Node
-	Listener            events.Listener
+	EventBus            events.EventBus
 	Reconciler          reconcile.Reconciler
 	ProvidedTypes       map[model.ResourceType]struct{}
 	Metrics             *Metrics
@@ -34,6 +34,19 @@ var _ util_watchdog.Watchdog = &EventBasedWatchdog{}
 
 func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 	tenantID, _ := multitenant.TenantFromCtx(e.Ctx)
+	listener := e.EventBus.Subscribe(func(event events.Event) bool {
+		resChange, ok := event.(events.ResourceChangedEvent)
+		if !ok {
+			return false
+		}
+		if resChange.TenantID != tenantID {
+			return false
+		}
+		if _, ok := e.ProvidedTypes[resChange.Type]; !ok {
+			return false
+		}
+		return true
+	})
 	flushTicker := e.NewFlushTicker()
 	defer flushTicker.Stop()
 	fullResyncTicker := e.NewFullResyncTicker()
@@ -51,13 +64,13 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			if err := e.Reconciler.Clear(e.Ctx, e.Node); err != nil {
 				e.Log.Error(err, "reconcile clear failed")
 			}
-			e.Listener.Close()
+			listener.Close()
 			return
 		case <-flushTicker.C:
 			if len(changedTypes) == 0 {
 				continue
 			}
-			reason := strings.Join(util_maps.SortedKeys(reasons), "&")
+			reason := strings.Join(util_maps.SortedKeys(reasons), "_and_")
 			e.Log.V(1).Info("reconcile", "changedTypes", changedTypes, "reason", reason)
 			start := core.Now()
 			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes)
@@ -80,17 +93,8 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			e.Log.V(1).Info("schedule full resync")
 			changedTypes = maps.Clone(e.ProvidedTypes)
 			reasons[ReasonResync] = struct{}{}
-		case event := <-e.Listener.Recv():
-			resChange, ok := event.(events.ResourceChangedEvent)
-			if !ok {
-				continue
-			}
-			if resChange.TenantID != tenantID {
-				continue
-			}
-			if _, ok := e.ProvidedTypes[resChange.Type]; !ok {
-				continue
-			}
+		case event := <-listener.Recv():
+			resChange := event.(events.ResourceChangedEvent)
 			e.Log.V(1).Info("schedule sync for type", "typ", resChange.Type)
 			changedTypes[resChange.Type] = struct{}{}
 			reasons[ReasonEvent] = struct{}{}

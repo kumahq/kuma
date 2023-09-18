@@ -77,11 +77,12 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: github.event.inputs.release == 'true'
-        uses: tibdex/github-app-token@0d49dd721133f900ebd5e0dff2810704e8defbc6 # v1.8.2
+        uses: tibdex/github-app-token@0914d50df753bbc42180d982a6550f195390069f # v2.0.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          repository: ${{ env.GH_OWNER }}/charts
+          repositories: >-
+            [${{ env.GH_OWNER }}"/charts"]
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:

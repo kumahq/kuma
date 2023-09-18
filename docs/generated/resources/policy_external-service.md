@@ -28,7 +28,7 @@
         
             If true then TLS session will allow renegotiation.
             It's not recommended to set this to true because of security reasons.
-            However, some servers requires this setting, especially when using
+            However, some servers require this setting, especially when using
             mTLS.    
         
         - `serverName` (optional)

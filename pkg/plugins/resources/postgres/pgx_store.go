@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,8 @@ import (
 
 type pgxResourceStore struct {
 	pool                 *pgxpool.Pool
+	roPool               *pgxpool.Pool
+	roRatio              uint
 	maxListQueryElements uint32
 }
 
@@ -35,14 +38,29 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 	if err != nil {
 		return nil, err
 	}
+	var roPool *pgxpool.Pool
+	if config.ReadReplica.Host != "" {
+		roConfig := config
+		roConfig.Host = config.ReadReplica.Host
+		roConfig.Port = int(config.ReadReplica.Port)
+		roPool, err = postgres.ConnectToDbPgx(roConfig, customizer)
+		if err != nil {
+			return nil, err
+		}
+		if err := registerMetrics(metrics, roPool, "ro"); err != nil {
+			return nil, errors.Wrapf(err, "could not register DB metrics")
+		}
+	}
 
-	if err := registerMetrics(metrics, pool); err != nil {
+	if err := registerMetrics(metrics, pool, "rw"); err != nil {
 		return nil, errors.Wrapf(err, "could not register DB metrics")
 	}
 
 	return &pgxResourceStore{
 		pool:                 pool,
+		roPool:               roPool,
 		maxListQueryElements: config.MaxListQueryElements,
+		roRatio:              config.ReadReplica.Ratio,
 	}, nil
 }
 
@@ -148,7 +166,7 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.pool.QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
+	row := r.pickRoPool().QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
@@ -178,6 +196,17 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 		return store.ErrorResourcePreconditionFailed(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
+}
+
+func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
+	if r.roPool == nil {
+		return r.pool
+	}
+	// #nosec G404 - math rand is enough
+	if rand.Int31n(101) <= int32(r.roRatio) {
+		return r.roPool
+	}
+	return r.pool
 }
 
 func (r *pgxResourceStore) List(ctx context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
@@ -225,7 +254,7 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	}
 	statement += " ORDER BY name, mesh"
 
-	rows, err := r.pool.Query(ctx, statement, statementArgs...)
+	rows, err := r.pickRoPool().Query(ctx, statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -286,15 +315,19 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 
 func (r *pgxResourceStore) Close() error {
 	r.pool.Close()
+	if r.roPool != nil {
+		r.roPool.Close()
+	}
 	return nil
 }
 
-func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
+func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool, poolName string) error {
 	postgresCurrentConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections",
 		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "open_connections",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().TotalConns())
@@ -305,6 +338,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "in_use",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().AcquiredConns())
@@ -315,6 +349,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "idle",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().IdleConns())
@@ -323,6 +358,9 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 	postgresMaxOpenConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections_max",
 		Help: "Max postgres store open connections",
+		ConstLabels: map[string]string{
+			"pool": poolName,
+		},
 	}, func() float64 {
 		return float64(pool.Stat().MaxConns())
 	})
@@ -330,6 +368,9 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 	postgresWaitConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_count",
 		Help: "Current waiting postgres store connections",
+		ConstLabels: map[string]string{
+			"pool": poolName,
+		},
 	}, func() float64 {
 		return float64(pool.Stat().EmptyAcquireCount())
 	})
@@ -337,6 +378,9 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 	postgresWaitConnectionDurationMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_duration",
 		Help: "Time Blocked waiting for new connection in seconds",
+		ConstLabels: map[string]string{
+			"pool": poolName,
+		},
 	}, func() float64 {
 		return pool.Stat().AcquireDuration().Seconds()
 	})
@@ -346,6 +390,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of closed postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "max_idle_conns",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().MaxIdleDestroyCount())
@@ -356,6 +401,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of closed postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "conn_max_life_time",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().MaxLifetimeDestroyCount())
@@ -366,6 +412,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Cumulative count of acquires from the pool",
 		ConstLabels: map[string]string{
 			"type": "successful",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().AcquireCount())
@@ -376,6 +423,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Cumulative count of acquires from the pool",
 		ConstLabels: map[string]string{
 			"type": "canceled",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().CanceledAcquireCount())
@@ -386,6 +434,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "constructing",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().ConstructingConns())
@@ -396,6 +445,7 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool) error {
 		Help: "Current number of postgres store connections",
 		ConstLabels: map[string]string{
 			"type": "new",
+			"pool": poolName,
 		},
 	}, func() float64 {
 		return float64(pool.Stat().NewConnsCount())

@@ -123,11 +123,11 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache
 		}
 		if version == "" {
 			version = core.NewUUID()
+			changed = true
 		}
 		if new.GetVersion(typ) == version {
 			continue
 		}
-		changed = true
 		n := map[string]envoy_types.ResourceWithTTL{}
 		for k, v := range new.GetResourcesAndTTL(typ) {
 			n[k] = v
