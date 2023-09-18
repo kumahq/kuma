@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -104,7 +105,22 @@ func newSyncTracker(
 					return time.NewTicker(experimentalWatchdogCfg.FlushInterval.Duration)
 				},
 				NewFullResyncTicker: func() *time.Ticker {
-					return time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration)
+					if experimentalWatchdogCfg.DelayFullResync {
+						// To ensure an even distribution of connections over time, we introduce a random delay within
+						// the full resync interval. This prevents clustering connections within a short timeframe
+						// and spreads them evenly across the entire interval. After the initial trigger, we reset
+						// the ticker, returning it to its full resync interval.
+						// #nosec G404 - math rand is enough
+						delay := time.Duration(experimentalWatchdogCfg.FullResyncInterval.Duration.Seconds()*rand.Float64()) * time.Second
+						ticker := time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration + delay)
+						go func() {
+							<-time.After(delay)
+							ticker.Reset(experimentalWatchdogCfg.FullResyncInterval.Duration)
+						}()
+						return ticker
+					} else {
+						return time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration)
+					}
 				},
 			}, nil
 		}

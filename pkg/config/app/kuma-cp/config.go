@@ -242,6 +242,7 @@ var DefaultConfig = func() Config {
 				Enabled:            false,
 				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    false,
 			},
 		},
 		Proxy:    xds.DefaultProxyConfig(),
@@ -411,6 +412,8 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
 	// How often we schedule full KDS resync when experimental event based watchdog is used.
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
+	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
+	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
 func (e ExperimentalConfig) Validate() error {
