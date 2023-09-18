@@ -34,6 +34,7 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
 				ep.ExternalService.AllowRenegotiation,
+				ep.ExternalService.SkipHostnameVerification,
 				ep.Target,
 				sni,
 			)

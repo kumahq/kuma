@@ -466,12 +466,13 @@ func NewExternalServiceEndpoint(
 	}
 
 	es := &core_xds.ExternalService{
-		TLSEnabled:         tls.GetEnabled(),
-		CaCert:             caCert,
-		ClientCert:         clientCert,
-		ClientKey:          clientKey,
-		AllowRenegotiation: tls.GetAllowRenegotiation().GetValue(),
-		ServerName:         tls.GetServerName().GetValue(),
+		TLSEnabled:               tls.GetEnabled(),
+		CaCert:                   caCert,
+		ClientCert:               clientCert,
+		ClientKey:                clientKey,
+		AllowRenegotiation:       tls.GetAllowRenegotiation().GetValue(),
+		SkipHostnameVerification: tls.GetSkipHostnameVerification().GetValue(),
+		ServerName:               tls.GetServerName().GetValue(),
 	}
 
 	if es.TLSEnabled {

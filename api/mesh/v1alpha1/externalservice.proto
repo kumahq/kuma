@@ -54,6 +54,9 @@ message ExternalService {
       // ServerName overrides the default Server Name Indicator set by Kuma.
       // The default value is set to "address" specified in "networking".
       google.protobuf.StringValue server_name = 6;
+
+      // If true then hostname verification will be skipped during certificate verification.
+      google.protobuf.BoolValue skipHostnameVerification = 7;
     }
 
     TLS tls = 2;

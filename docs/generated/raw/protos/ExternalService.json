@@ -71,6 +71,11 @@
                     "additionalProperties": true,
                     "type": "string",
                     "description": "ServerName overrides the default Server Name Indicator set by Kuma. The default value is set to \"address\" specified in \"networking\"."
+                },
+                "skipHostnameVerification": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then hostname verification will be skipped during certificate verification."
                 }
             },
             "additionalProperties": true,
