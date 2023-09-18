@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -64,14 +63,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 
 	if opts.Owner != nil {
-		var k8sOwner kube_meta.Object
-
-		switch opts.Owner.Descriptor().Name {
-		case secret_model.SecretType, secret_model.GlobalSecretType:
-			k8sOwner, err = s.secretsConverter.ToKubernetesObject(opts.Owner)
-		case mesh.MeshType:
-			k8sOwner, err = s.resourcesConverter.ToKubernetesObject(opts.Owner)
-		}
+		k8sOwner, err := s.resourcesConverter.ToKubernetesObject(opts.Owner)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 		}
