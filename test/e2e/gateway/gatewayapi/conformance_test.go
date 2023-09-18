@@ -90,6 +90,8 @@ func TestConformance(t *testing.T) {
 		},
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,
+			suite.SupportGatewayPort8080,
+			suite.SupportReferenceGrant,
 			suite.SupportHTTPResponseHeaderModification,
 			suite.SupportHTTPRoute,
 			suite.SupportHTTPRouteHostRewrite,
