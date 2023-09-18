@@ -180,7 +180,7 @@ func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta 
 
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if it's Zone or Standalone we can simply check 3 possible combinations
-	return n1 == n2 || hash.ZoneName(mesh, n1) == n2 || hash.ZoneName(mesh, n2) == n1
+	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
 }
 
 func unresolve(rl []core_model.Resource) []core_model.Resource {

@@ -200,7 +200,7 @@ func AddHashSuffix(r model.Resource) (model.Resource, error) {
 	}
 
 	newObj := r.Descriptor().NewObject()
-	newObj.SetMeta(util.NewResourceMeta(hash.ZoneName(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
+	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
 	_ = newObj.SetSpec(r.GetSpec())
 
 	return newObj, nil

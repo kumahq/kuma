@@ -145,7 +145,7 @@ conf:
 			Expect(global.Install(YamlUniversal(universalPolicyNamed(name, 101, meshName)))).To(Succeed())
 
 			// then
-			hashedName := hash.ZoneName(meshName, "tr-update")
+			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
 			Eventually(func() (string, error) {
 				return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))

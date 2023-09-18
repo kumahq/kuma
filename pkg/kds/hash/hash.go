@@ -11,7 +11,10 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
-func ZoneName(mesh, name string) string {
+// SyncedNameInZone returns the resource's name after syncing from Global to Zone.
+// It creates a new name by adding a hash suffix constructed from the 'mesh' and
+// the original 'name'.
+func SyncedNameInZone(mesh, name string) string {
 	if n, ns, err := util_k8s.CoreNameToK8sName(name); err == nil {
 		return util_k8s.K8sNamespacedNameToCoreName(addSuffix(n, hash(mesh, n)), ns)
 	} else {

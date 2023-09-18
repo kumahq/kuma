@@ -143,7 +143,7 @@ spec:
 			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 101)))).To(Succeed())
 
 			// then
-			hashedName := hash.ZoneName(meshName, "tr-update")
+			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
 			Eventually(func() (string, error) {
 				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
