@@ -728,6 +728,8 @@ experimental:
     flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
     # How often we schedule full KDS resync when experimental event based watchdog is used.
     fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+    # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
+    delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
 
 proxy:
   gateway:
