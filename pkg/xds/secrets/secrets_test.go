@@ -11,7 +11,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -23,7 +25,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
-var _ = Describe("Secrets", func() {
+var _ = Describe("Secrets", Ordered, func() {
 	var secrets Secrets
 	var metrics core_metrics.Metrics
 	var now time.Time
@@ -99,14 +101,27 @@ var _ = Describe("Secrets", func() {
 		}
 	}
 
+	BeforeAll(func() {
+		// since we actually create a mesh, and it goes through validation we have a default limit of 1
+		core_mesh.AllowedMTLSBackends = 2
+	})
+
+	AfterAll(func() {
+		core_mesh.AllowedMTLSBackends = 1
+	})
+
 	BeforeEach(func() {
 		resStore := memory.NewStore()
+		rm := manager.NewResourceManager(resStore)
 		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
 		builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
 		}
-		err := builtinCaManager.EnsureBackends(context.Background(), "default", newMesh().Spec.Mtls.Backends)
+		mesh := newMesh()
+		err := rm.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = builtinCaManager.EnsureBackends(context.Background(), mesh, mesh.Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
 		m, err := core_metrics.NewMetrics("local")

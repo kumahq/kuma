@@ -8,7 +8,6 @@ import (
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -77,18 +76,18 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
 		return err
 	}
-	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
-		return err
-	}
-
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
+		return err
+	}
+	// We need to first persist the mesh so that we can hook up secrets (cert/key) as their owner in EnsureCAs.
+	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
 		return err
 	}
 	if err := defaults_mesh.EnsureDefaultMeshResources(
 		ctx,
 		m.otherManagers,
-		opts.Name,
+		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		m.extensions,
 	); err != nil {
@@ -119,10 +118,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 			return err
 		}
 	}
-	// delete all secrets
-	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
-		return errors.Wrap(err, "could not delete associated secrets")
-	}
+	// secrets are deleted via owner reference
 	return notFoundErr
 }
 

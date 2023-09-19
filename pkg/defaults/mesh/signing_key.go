@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
-func ensureDataplaneTokenSigningKey(ctx context.Context, resManager manager.ResourceManager, meshName string) (bool, error) {
+func ensureDataplaneTokenSigningKey(ctx context.Context, resManager manager.ResourceManager, mesh model.Resource) (bool, error) {
+	meshName := mesh.GetMeta().GetName()
 	signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName)
 	_, _, err := signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {

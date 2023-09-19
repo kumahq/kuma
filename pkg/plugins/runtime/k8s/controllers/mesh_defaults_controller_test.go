@@ -20,6 +20,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	secrets_k8s "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
@@ -42,7 +43,11 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 
-		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, "default")
+		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,
+		// otherwise we will get "no kind is registered for the type v1alpha1.Mesh in scheme"
+		scheme, err := bootstrap_k8s.NewScheme()
+		Expect(err).ToNot(HaveOccurred())
+		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, scheme, "default")
 		Expect(err).ToNot(HaveOccurred())
 
 		resourceManager = resources_manager.NewResourceManager(store)
