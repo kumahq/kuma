@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -215,6 +216,7 @@ var _ = Describe("Stats callbacks", func() {
 				InitialResourceVersions: map[string]string{
 					"route-1": "123",
 				},
+				ResponseNonce: "1",
 			}
 			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
 
@@ -230,7 +232,8 @@ var _ = Describe("Stats callbacks", func() {
 				InitialResourceVersions: map[string]string{
 					"route-1": "123",
 				},
-				ErrorDetail: &status.Status{},
+				ResponseNonce: "1",
+				ErrorDetail:   &status.Status{},
 			}
 			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
 
@@ -249,6 +252,29 @@ var _ = Describe("Stats callbacks", func() {
 
 			// then
 			Expect(test_metrics.FindMetric(metrics, "delta_xds_responses_sent", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track config delivery", func() {
+			// given
+			nodeID := "x"
+			statsCallbacks.ConfigReadyForDelivery(nodeID + resource.RouteType)
+			currentTime = currentTime.Add(time.Second)
+
+			// when
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				Node: &corev3.Node{
+					Id: nodeID,
+				},
+				TypeUrl:       resource.RouteType,
+				ResponseNonce: "1",
+				ErrorDetail:   &status.Status{},
+			}
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_delivery").GetSummary().GetSampleSum()).To(Equal(float64(time.Second.Milliseconds())))
 		})
 	})
 })
