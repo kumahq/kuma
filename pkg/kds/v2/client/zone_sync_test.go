@@ -22,6 +22,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -86,7 +87,10 @@ var _ = Describe("Zone Delta Sync", func() {
 		clientStream := serverStream.ClientStream(stop)
 
 		zoneStore = memory.NewStore()
-		zoneSyncer = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		wg.Add(1)
 		go func() {

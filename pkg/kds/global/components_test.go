@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
@@ -247,7 +248,10 @@ var _ = Describe("Global Sync", func() {
 
 			// Start 1 Kuma CP Global
 			globalStore = memory.NewStore()
-			globalSyncer = sync_store_v2.NewResourceSyncer(core.Log, globalStore)
+			metrics, err := core_metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			globalSyncer, err = sync_store_v2.NewResourceSyncer(core.Log, globalStore, metrics)
+			Expect(err).ToNot(HaveOccurred())
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}
 			for _, ss := range serverStreams {

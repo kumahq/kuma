@@ -72,7 +72,10 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
-	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore())
+	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Metrics())
+	if err != nil {
+		return err
+	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
 	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
