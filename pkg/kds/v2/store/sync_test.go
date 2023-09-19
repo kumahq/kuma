@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -46,7 +47,10 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		syncer = sync_store.NewResourceSyncer(core.Log, resourceStore)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, metrics)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should create new resources in empty store", func() {
