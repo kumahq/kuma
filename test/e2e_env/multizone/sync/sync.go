@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -142,11 +143,12 @@ spec:
 			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 101)))).To(Succeed())
 
 			// then
+			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", name, "-oyaml")
+				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 			Eventually(func() (string, error) {
-				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
+				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 		})
 
