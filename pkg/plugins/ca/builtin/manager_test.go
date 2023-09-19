@@ -43,6 +43,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memoryStore), cipher.None(), nil, false)
 		caManager = builtin.NewBuiltinCaManager(secretManager)
 		mesh = core_mesh.NewMeshResource()
+		// Since mesh is the owner of secrets we can't operate on secrets without having the mesh in the store
 		err := rm.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})

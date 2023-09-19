@@ -27,10 +27,11 @@ import (
 var _ secret_store.SecretStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	reader             kube_client.Reader
-	writer             kube_client.Writer
-	scheme             *runtime.Scheme
-	secretsConverter   Converter
+	reader           kube_client.Reader
+	writer           kube_client.Writer
+	scheme           *runtime.Scheme
+	secretsConverter Converter
+	// secrets have a special converter, and we need to convert the mesh object since it's the owner
 	resourcesConverter common_k8s.Converter
 	// Namespace to store Secrets in, e.g. namespace where Control Plane is installed to
 	namespace string

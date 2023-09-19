@@ -43,6 +43,8 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 
+		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,
+		// otherwise we will get "no kind is registered for the type v1alpha1.Mesh in scheme"
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
 		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, scheme, "default")

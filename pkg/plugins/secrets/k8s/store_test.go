@@ -78,6 +78,8 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
+		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,
+		// otherwise we will get "no kind is registered for the type v1alpha1.Mesh in scheme"
 		s, err = k8s.NewStore(k8sClient, k8sClient, runtime.NewScheme(), ns)
 		Expect(err).ToNot(HaveOccurred())
 	})

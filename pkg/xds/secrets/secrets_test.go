@@ -102,6 +102,7 @@ var _ = Describe("Secrets", Ordered, func() {
 	}
 
 	BeforeAll(func() {
+		// since we actually create a mesh, and it goes through validation we have a default limit of 1
 		core_mesh.AllowedMTLSBackends = 2
 	})
 

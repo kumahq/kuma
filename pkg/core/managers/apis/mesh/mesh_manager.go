@@ -80,6 +80,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
+	// We need to first persist the mesh so that we can hook up secrets (cert/key) as their owner in EnsureCAs.
 	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
 		return err
 	}
