@@ -60,7 +60,7 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 		return nil
 	}
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		r.statsCallbacks.DiscardConfig(snapshot.GetVersion(typ))
+		r.statsCallbacks.DiscardConfig(node.Id + typ)
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	new, changed := r.Version(new, old)
 	if changed {
 		r.logChanges(new, old, node)
-		r.meterConfigReadyForDelivery(new, old)
+		r.meterConfigReadyForDelivery(new, old, node.Id)
 		return r.cache.SetSnapshot(ctx, id, new), true
 	}
 	return nil, false
@@ -164,10 +164,10 @@ func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cach
 	}
 }
 
-func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot) {
+func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, nodeID string) {
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
-			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
+			r.statsCallbacks.ConfigReadyForDelivery(nodeID + typ)
 		}
 	}
 }
