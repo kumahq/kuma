@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -33,14 +32,8 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		core.Now = time.Now
-	})
-
 	It("should compute global insight", func() {
 		// given
-		core.Now = func() time.Time { return time.Time{} }
-
 		globalInsightService := NewDefaultGlobalInsightService(rm)
 
 		err := createMeshInsight("default", rs)
@@ -67,6 +60,9 @@ var _ = Describe("Global Insight", func() {
 		// when
 		globalInsight, err := globalInsightService.GetGlobalInsight(context.Background())
 		Expect(err).ToNot(HaveOccurred())
+
+		// overwrite arbitrary CreatedAt so we can check equality
+		globalInsight.CreatedAt = time.Time{}
 
 		// then
 		result, err := json.Marshal(globalInsight)
