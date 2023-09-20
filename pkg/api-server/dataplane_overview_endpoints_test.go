@@ -290,5 +290,17 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 		)
+
+		It("should paginate correctly", func() {
+			// when
+			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?size=1")
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			Expect(response.StatusCode).To(Equal(200))
+			body, err := io.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).To(MatchJSON(fmt.Sprintf(`{"total": 3, "items": [%s], "next": "http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1"}`, dp1Json, apiServer.Address())))
+		})
 	})
 })
