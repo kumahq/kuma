@@ -27,18 +27,18 @@ func (ge *globalInsightEndpoint) getGlobalInsight(request *restful.Request, resp
 	ctx := request.Request.Context()
 	globalInsight, err := ge.globalInsightService.GetGlobalInsight(ctx)
 	if err != nil {
-		errors.HandleError(ctx, response, err, "Could not retrieve Global Insight")
+		errors.HandleError(ctx, response, err, "Could not retrieve GlobalInsight")
 		return
 	}
 
 	marshal, err := json.Marshal(globalInsight)
 	if err != nil {
-		errors.HandleError(ctx, response, err, "Error parsing response")
+		errors.HandleError(ctx, response, err, "Error serializing GlobalInsight")
 		return
 	}
 	_, err = response.ResponseWriter.Write(marshal)
 	if err != nil {
-		errors.HandleError(ctx, response, err, "Could not retrieve Global Insight")
+		errors.HandleError(ctx, response, err, "Could not write response")
 		return
 	}
 }
