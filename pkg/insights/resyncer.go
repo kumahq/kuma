@@ -264,9 +264,15 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						continue
 					}
 
+					externalServices := &core_mesh.ExternalServiceResourceList{}
+					if err := r.rm.List(ctx, externalServices, store.ListByMesh(event.mesh)); err != nil {
+						log.Error(err, "unable to get ExternalServices to recompute insights", "event", event)
+						continue
+					}
+
 					anyChanged := false
 					if event.flag&FlagService == FlagService {
-						err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews)
+						err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items)
 						if err != nil {
 							log.Error(err, "unable to resync ServiceInsight", "event", event)
 						}
@@ -275,7 +281,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 						}
 					}
 					if event.flag&FlagMesh == FlagMesh {
-						err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, event.types)
+						err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items, event.types)
 						if err != nil {
 							log.Error(err, "unable to resync MeshInsight", "event", event)
 						}
@@ -438,7 +444,12 @@ func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight
 	}
 }
 
-func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string, dpOverviews []*core_mesh.DataplaneOverviewResource) (error, bool) {
+func (r *resyncer) createOrUpdateServiceInsight(
+	ctx context.Context,
+	mesh string,
+	dpOverviews []*core_mesh.DataplaneOverviewResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+) (error, bool) {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
@@ -466,11 +477,7 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 		}
 	}
 
-	extServices := &core_mesh.ExternalServiceResourceList{}
-	if err := r.rm.List(ctx, extServices, store.ListByMesh(mesh)); err != nil {
-		return err, false
-	}
-	for _, es := range extServices.Items {
+	for _, es := range externalServices {
 		populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
 	}
 
@@ -517,7 +524,13 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 	return nil, changed
 }
 
-func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, dpOverviews []*core_mesh.DataplaneOverviewResource, types map[model.ResourceType]struct{}) (error, bool) {
+func (r *resyncer) createOrUpdateMeshInsight(
+	ctx context.Context,
+	mesh string,
+	dpOverviews []*core_mesh.DataplaneOverviewResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	types map[model.ResourceType]struct{},
+) (error, bool) {
 	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
@@ -589,15 +602,10 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, d
 		}
 	}
 
-	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := r.rm.List(ctx, externalServices, store.ListByMesh(mesh)); err != nil {
-		return err, false
-	}
-
 	insight.Services = &mesh_proto.MeshInsight_ServiceStat{
-		Total:    uint32(len(internalServices) + len(externalServices.Items)),
+		Total:    uint32(len(internalServices) + len(externalServices)),
 		Internal: uint32(len(internalServices)),
-		External: uint32(len(externalServices.Items)),
+		External: uint32(len(externalServices)),
 	}
 
 	key := MeshInsightKey(mesh)
