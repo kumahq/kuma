@@ -26,7 +26,7 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: generate/protos $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
+generate: generate/protos $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
 $(POLICY_GEN):
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
@@ -94,8 +94,13 @@ generate/kumapolicy-gen/%: $(POLICY_GEN) generate/dirs/%
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
 
+endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
+
 generate/oas:
-	$(POLICY_GEN) k8s-resource --plugin-dir pkg/api-server/specs/types/$* --gomodule $(GO_MODULE)
+	for endpoint in $(endpoints); do \
+		DEST=$${endpoint#"api/openapi/specs"}; \
+		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
+	done
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
