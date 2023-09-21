@@ -89,7 +89,22 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, meshContextBuilder xds_context.MeshContextBuilder, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, metrics metrics.Metrics, getInstanceId func() string, getClusterId func() string, authenticator authn.Authenticator, access runtime.Access, envoyAdminClient admin.EnvoyAdminClient, tokenIssuers builtin.TokenIssuers, wsCustomize func(*restful.WebService) error, tenants multitenant.Tenants) (*ApiServer, error) {
+func NewApiServer(
+	resManager manager.ResourceManager,
+	meshContextBuilder xds_context.MeshContextBuilder,
+	wsManager customization.APIInstaller,
+	defs []model.ResourceTypeDescriptor,
+	cfg *kuma_cp.Config,
+	metrics metrics.Metrics,
+	getInstanceId func() string,
+	getClusterId func() string,
+	authenticator authn.Authenticator,
+	access runtime.Access,
+	envoyAdminClient admin.EnvoyAdminClient,
+	tokenIssuers builtin.TokenIssuers,
+	wsCustomize func(*restful.WebService) error,
+	tenants multitenant.Tenants,
+) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
