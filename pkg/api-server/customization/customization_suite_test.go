@@ -56,23 +56,38 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
 	resManager := manager.NewResourceManager(store)
-	apiServer, err := api_server.NewApiServer(resManager, xds_context.NewMeshContextBuilder(
+	apiServer, err := api_server.NewApiServer(
 		resManager,
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
-		net.LookupIP,
-		cfg.Multizone.Zone.Name,
-		vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
-		cfg.DNSServer.Domain,
-		cfg.DNSServer.ServiceVipPort,
-	), wsManager, registry.Global().ObjectDescriptors(core_model.HasWsEnabled()), &cfg, metrics, func() string { return "instance-id" }, func() string { return "cluster-id" }, certs.ClientCertAuthenticator, runtime.Access{
-		ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-		DataplaneTokenAccess: nil,
-		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
-	}, &test_runtime.DummyEnvoyAdminClient{}, builtin.TokenIssuers{
-		DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
-		ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
-	}, func(*restful.WebService) error { return nil }, nil)
+		xds_context.NewMeshContextBuilder(
+			resManager,
+			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			net.LookupIP,
+			cfg.Multizone.Zone.Name,
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
+			cfg.DNSServer.Domain,
+			cfg.DNSServer.ServiceVipPort,
+		),
+		wsManager,
+		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
+		&cfg,
+		metrics,
+		func() string { return "instance-id" },
+		func() string { return "cluster-id" },
+		certs.ClientCertAuthenticator,
+		runtime.Access{
+			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+			DataplaneTokenAccess: nil,
+			EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
+		},
+		&test_runtime.DummyEnvoyAdminClient{},
+		builtin.TokenIssuers{
+			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
+		},
+		func(*restful.WebService) error { return nil },
+		nil,
+	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }
