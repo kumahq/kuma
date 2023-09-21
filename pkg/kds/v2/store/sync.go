@@ -96,7 +96,7 @@ func NewResourceSyncer(
 func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
 	now := core.Now()
 	defer func() {
-		s.metric.Observe(float64(time.Since(now)))
+		s.metric.Observe(float64(time.Since(now).Milliseconds()) / 1000)
 	}()
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(syncCtx, user.ControlPlane)
