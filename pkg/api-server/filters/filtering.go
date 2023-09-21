@@ -48,7 +48,9 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 			}, nil
 		}
 	default:
-		return nil
+		return func(request *restful.Request) (store.ListFilterFunc, error) {
+			return nil, nil
+		}
 	}
 }
 
