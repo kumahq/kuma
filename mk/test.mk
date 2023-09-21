@@ -6,7 +6,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test,./pkg/transparentproxy/istio/tools --race
 
 # -race requires CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
-UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),,GINKGO_EDITOR_INTEGRATION=true)
+UNIT_TEST_ENV=$(GOENV) TESTCONTAINERS_RYUK_DISABLED=true CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),,GINKGO_EDITOR_INTEGRATION=true)
 GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) -p --keep-going --keep-separate-reports --junit-report results.xml --output-dir $(REPORTS_DIR)
 
 .PHONY: test
