@@ -26,7 +26,6 @@ func NewCachedGlobalInsightService(globalInsightService GlobalInsightService, te
 	}
 }
 
-// TODO do we want to add cache metrics?
 func (gis *cachedGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
 	tenantID, err := gis.tenants.GetID(ctx)
 	if err != nil {

@@ -50,7 +50,12 @@ func (mi *MeshInsightBuilder) WithName(name string) *MeshInsightBuilder {
 	return mi
 }
 
-func (mi *MeshInsightBuilder) WithStandardDataplaneStats(online uint32, offline uint32, partiallyDegraded uint32, total uint32) *MeshInsightBuilder {
+func (mi *MeshInsightBuilder) WithStandardDataplaneStats(
+	online uint32,
+	offline uint32,
+	partiallyDegraded uint32,
+	total uint32,
+) *MeshInsightBuilder {
 	mi.res.Spec.DataplanesByType.Standard.Online = online
 	mi.res.Spec.DataplanesByType.Standard.Offline = offline
 	mi.res.Spec.DataplanesByType.Standard.PartiallyDegraded = partiallyDegraded
@@ -58,7 +63,12 @@ func (mi *MeshInsightBuilder) WithStandardDataplaneStats(online uint32, offline 
 	return mi
 }
 
-func (mi *MeshInsightBuilder) WithBuiltinGatewayDataplaneStats(online uint32, offline uint32, partiallyDegraded uint32, total uint32) *MeshInsightBuilder {
+func (mi *MeshInsightBuilder) WithBuiltinGatewayDataplaneStats(
+	online uint32,
+	offline uint32,
+	partiallyDegraded uint32,
+	total uint32,
+) *MeshInsightBuilder {
 	mi.res.Spec.DataplanesByType.GatewayBuiltin.Online = online
 	mi.res.Spec.DataplanesByType.GatewayBuiltin.Offline = offline
 	mi.res.Spec.DataplanesByType.GatewayBuiltin.PartiallyDegraded = partiallyDegraded
@@ -66,7 +76,12 @@ func (mi *MeshInsightBuilder) WithBuiltinGatewayDataplaneStats(online uint32, of
 	return mi
 }
 
-func (mi *MeshInsightBuilder) WithDelegatedGatewayDataplaneStats(online uint32, offline uint32, partiallyDegraded uint32, total uint32) *MeshInsightBuilder {
+func (mi *MeshInsightBuilder) WithDelegatedGatewayDataplaneStats(
+	online uint32,
+	offline uint32,
+	partiallyDegraded uint32,
+	total uint32,
+) *MeshInsightBuilder {
 	mi.res.Spec.DataplanesByType.GatewayDelegated.Online = online
 	mi.res.Spec.DataplanesByType.GatewayDelegated.Offline = offline
 	mi.res.Spec.DataplanesByType.GatewayDelegated.PartiallyDegraded = partiallyDegraded

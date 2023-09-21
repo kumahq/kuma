@@ -26,13 +26,11 @@ func NewDefaultGlobalInsightService(resManager resources_manager.ResourceManager
 	return &defaultGlobalInsightService{resManager: resManager}
 }
 
-// TODO do we want to add some metrics, like computing time?
 func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
 	globalInsights := &api_types.GlobalInsight{CreatedAt: core.Now()}
 
 	meshInsights := &mesh.MeshInsightResourceList{}
-	err := gis.resManager.List(ctx, meshInsights)
-	if err != nil {
+	if err := gis.resManager.List(ctx, meshInsights); err != nil {
 		return nil, err
 	}
 
@@ -41,69 +39,78 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 	gis.aggregateDataplanes(meshInsights, globalInsights)
 	gis.aggregatePolicies(meshInsights, globalInsights)
 
-	err = gis.aggregateServices(ctx, globalInsights)
-	if err != nil {
+	if err := gis.aggregateServices(ctx, globalInsights); err != nil {
 		return nil, err
 	}
 
-	err = gis.aggregateZoneControlPlanes(ctx, globalInsights)
-	if err != nil {
+	if err := gis.aggregateZoneControlPlanes(ctx, globalInsights); err != nil {
 		return nil, err
 	}
 
-	err = gis.aggregateZoneIngresses(ctx, globalInsights)
-	if err != nil {
+	if err := gis.aggregateZoneIngresses(ctx, globalInsights); err != nil {
 		return nil, err
 	}
 
-	err = gis.aggregateZoneEgresses(ctx, globalInsights)
-	if err != nil {
+	if err := gis.aggregateZoneEgresses(ctx, globalInsights); err != nil {
 		return nil, err
 	}
 
 	return globalInsights, nil
 }
 
-func (gis *defaultGlobalInsightService) aggregateDataplanes(meshInsights *mesh.MeshInsightResourceList, globalInsight *api_types.GlobalInsight) {
+func (gis *defaultGlobalInsightService) aggregateDataplanes(
+	meshInsights *mesh.MeshInsightResourceList,
+	globalInsight *api_types.GlobalInsight,
+) {
 	for _, meshInsight := range meshInsights.GetItems() {
-		spec := meshInsight.GetSpec().(*mesh_proto.MeshInsight)
-		dataplanesByType := spec.GetDataplanesByType()
-		globalInsight.Dataplanes.Standard.Online += int(dataplanesByType.GetStandard().GetOnline())
-		globalInsight.Dataplanes.Standard.Offline += int(dataplanesByType.GetStandard().GetOffline())
-		globalInsight.Dataplanes.Standard.PartiallyDegraded += int(dataplanesByType.GetStandard().GetPartiallyDegraded())
-		globalInsight.Dataplanes.Standard.Total += int(dataplanesByType.GetStandard().GetTotal())
+		dataplanesByType := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetDataplanesByType()
 
-		globalInsight.Dataplanes.GatewayBuiltin.Online += int(dataplanesByType.GetGatewayBuiltin().GetOnline())
-		globalInsight.Dataplanes.GatewayBuiltin.Offline += int(dataplanesByType.GetGatewayBuiltin().GetOffline())
-		globalInsight.Dataplanes.GatewayBuiltin.PartiallyDegraded += int(dataplanesByType.GetGatewayBuiltin().GetPartiallyDegraded())
-		globalInsight.Dataplanes.GatewayBuiltin.Total += int(dataplanesByType.GetGatewayBuiltin().GetTotal())
+		standard := dataplanesByType.GetStandard()
+		globalInsight.Dataplanes.Standard.Online += int(standard.GetOnline())
+		globalInsight.Dataplanes.Standard.Offline += int(standard.GetOffline())
+		globalInsight.Dataplanes.Standard.PartiallyDegraded += int(standard.GetPartiallyDegraded())
+		globalInsight.Dataplanes.Standard.Total += int(standard.GetTotal())
 
-		globalInsight.Dataplanes.GatewayDelegated.Online += int(dataplanesByType.GetGatewayDelegated().GetOnline())
-		globalInsight.Dataplanes.GatewayDelegated.Offline += int(dataplanesByType.GetGatewayDelegated().GetOffline())
-		globalInsight.Dataplanes.GatewayDelegated.PartiallyDegraded += int(dataplanesByType.GetGatewayDelegated().GetPartiallyDegraded())
-		globalInsight.Dataplanes.GatewayDelegated.Total += int(dataplanesByType.GetGatewayDelegated().GetTotal())
+		gatewayBuiltin := dataplanesByType.GetGatewayBuiltin()
+		globalInsight.Dataplanes.GatewayBuiltin.Online += int(gatewayBuiltin.GetOnline())
+		globalInsight.Dataplanes.GatewayBuiltin.Offline += int(gatewayBuiltin.GetOffline())
+		globalInsight.Dataplanes.GatewayBuiltin.PartiallyDegraded += int(gatewayBuiltin.GetPartiallyDegraded())
+		globalInsight.Dataplanes.GatewayBuiltin.Total += int(gatewayBuiltin.GetTotal())
+
+		gatewayDelegated := dataplanesByType.GetGatewayDelegated()
+		globalInsight.Dataplanes.GatewayDelegated.Online += int(gatewayDelegated.GetOnline())
+		globalInsight.Dataplanes.GatewayDelegated.Offline += int(gatewayDelegated.GetOffline())
+		globalInsight.Dataplanes.GatewayDelegated.PartiallyDegraded += int(gatewayDelegated.GetPartiallyDegraded())
+		globalInsight.Dataplanes.GatewayDelegated.Total += int(gatewayDelegated.GetTotal())
 	}
 }
 
-func (gis *defaultGlobalInsightService) aggregatePolicies(meshInsights *mesh.MeshInsightResourceList, globalInsight *api_types.GlobalInsight) {
+func (gis *defaultGlobalInsightService) aggregatePolicies(
+	meshInsights *mesh.MeshInsightResourceList,
+	globalInsight *api_types.GlobalInsight,
+) {
 	for _, meshInsight := range meshInsights.GetItems() {
-		spec := meshInsight.GetSpec().(*mesh_proto.MeshInsight)
-		for _, policy := range spec.GetPolicies() {
+		policies := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetPolicies()
+
+		for _, policy := range policies {
 			globalInsight.Policies.Total += int(policy.GetTotal())
 		}
 	}
 }
 
-func (gis *defaultGlobalInsightService) aggregateServices(ctx context.Context, globalInsight *api_types.GlobalInsight) error {
+func (gis *defaultGlobalInsightService) aggregateServices(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsight,
+) error {
 	serviceInsights := &mesh.ServiceInsightResourceList{}
-	err := gis.resManager.List(ctx, serviceInsights)
-	if err != nil {
+	if err := gis.resManager.List(ctx, serviceInsights); err != nil {
 		return err
 	}
 
 	for _, serviceInsight := range serviceInsights.GetItems() {
-		spec := serviceInsight.GetSpec().(*mesh_proto.ServiceInsight)
-		for _, service := range spec.GetServices() {
+		services := serviceInsight.GetSpec().(*mesh_proto.ServiceInsight).GetServices()
+
+		for _, service := range services {
 			switch service.GetServiceType() {
 			case mesh_proto.ServiceInsight_Service_internal:
 				updateServiceStatus(service.GetStatus(), &globalInsight.Services.Internal)
@@ -134,18 +141,25 @@ func updateServiceStatus(serviceStatus mesh_proto.ServiceInsight_Service_Status,
 	}
 }
 
-func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(ctx context.Context, globalInsight *api_types.GlobalInsight) error {
+func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsight,
+) error {
 	zoneInsights := &system.ZoneInsightResourceList{}
-	err := gis.resManager.List(ctx, zoneInsights)
-	if err != nil {
+	if err := gis.resManager.List(ctx, zoneInsights); err != nil {
 		return err
 	}
 
 	for _, zoneInsight := range zoneInsights.GetItems() {
-		spec := zoneInsight.GetSpec().(*system_proto.ZoneInsight)
-		for _, subscription := range spec.GetSubscriptions() {
+		subscriptions := zoneInsight.GetSpec().(*system_proto.ZoneInsight).GetSubscriptions()
+
+		for _, subscription := range subscriptions {
 			globalInsight.Zones.ControlPlanes.Total += 1
-			if subscription.GetDisconnectTime() == nil || subscription.GetDisconnectTime().AsTime().Before(subscription.GetConnectTime().AsTime()) {
+
+			disconnected := subscription.GetDisconnectTime()
+			connected := subscription.GetConnectTime().AsTime()
+
+			if disconnected == nil || disconnected.AsTime().Before(connected) {
 				globalInsight.Zones.ControlPlanes.Online += 1
 			}
 		}
@@ -154,17 +168,21 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(ctx context.C
 	return nil
 }
 
-func (gis *defaultGlobalInsightService) aggregateZoneIngresses(ctx context.Context, globalInsight *api_types.GlobalInsight) error {
+func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsight,
+) error {
 	zoneIngressInsights := &mesh.ZoneIngressInsightResourceList{}
-	err := gis.resManager.List(ctx, zoneIngressInsights)
-	if err != nil {
+	if err := gis.resManager.List(ctx, zoneIngressInsights); err != nil {
 		return err
 	}
 
 	for _, zoneIngressInsight := range zoneIngressInsights.GetItems() {
-		spec := zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight)
-		for _, subscription := range spec.GetSubscriptions() {
+		subscriptions := zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight).GetSubscriptions()
+
+		for _, subscription := range subscriptions {
 			globalInsight.Zones.ZoneIngresses.Total += 1
+
 			if subscription.GetDisconnectTime() == nil {
 				globalInsight.Zones.ZoneIngresses.Online += 1
 			}
@@ -174,17 +192,21 @@ func (gis *defaultGlobalInsightService) aggregateZoneIngresses(ctx context.Conte
 	return nil
 }
 
-func (gis *defaultGlobalInsightService) aggregateZoneEgresses(ctx context.Context, globalInsight *api_types.GlobalInsight) error {
+func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsight,
+) error {
 	zoneEgressInsights := &mesh.ZoneEgressInsightResourceList{}
-	err := gis.resManager.List(ctx, zoneEgressInsights)
-	if err != nil {
+	if err := gis.resManager.List(ctx, zoneEgressInsights); err != nil {
 		return err
 	}
 
 	for _, zoneEgressInsight := range zoneEgressInsights.GetItems() {
-		spec := zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight)
-		for _, subscription := range spec.GetSubscriptions() {
+		subscriptions := zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight).GetSubscriptions()
+
+		for _, subscription := range subscriptions {
 			globalInsight.Zones.ZoneEgresses.Total += 1
+
 			if subscription.GetDisconnectTime() == nil {
 				globalInsight.Zones.ZoneEgresses.Online += 1
 			}
