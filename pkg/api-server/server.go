@@ -140,15 +140,13 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	var globalInsightService insights.GlobalInsightService
+	globalInsightService := insights.NewDefaultGlobalInsightService(resManager)
 	if cfg.Store.Cache.Enabled {
 		globalInsightService = insights.NewCachedGlobalInsightService(
-			insights.NewDefaultGlobalInsightService(resManager),
+			globalInsightService,
 			tenants,
 			cfg.Store.Cache.ExpirationTime.Duration,
 		)
-	} else {
-		globalInsightService = insights.NewDefaultGlobalInsightService(resManager)
 	}
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService)
@@ -232,7 +230,14 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_access.ResourceAccess, globalInsightService insights.GlobalInsightService) {
+func addResourcesEndpoints(
+	ws *restful.WebService,
+	defs []model.ResourceTypeDescriptor,
+	resManager manager.ResourceManager,
+	cfg *kuma_cp.Config,
+	resourceAccess resources_access.ResourceAccess,
+	globalInsightService insights.GlobalInsightService,
+) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
