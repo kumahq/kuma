@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -48,6 +50,35 @@ func TestWs(t *testing.T) {
 type resourceApiClient struct {
 	address string
 	path    string
+}
+
+type TestMeta struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Mesh string `json:"mesh"`
+}
+
+type TestListResponse struct {
+	Total int        `json:"total"`
+	Next  string     `json:"next"`
+	Items []TestMeta `json:"items"`
+}
+
+func MatchListResponse(r TestListResponse) types.GomegaMatcher {
+	return And(
+		HaveHTTPStatus(http.StatusOK),
+		WithTransform(func(response *http.Response) (TestListResponse, error) {
+			res := TestListResponse{}
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				return res, nil
+			}
+			if err := json.Unmarshal(body, &res); err != nil {
+				return res, err
+			}
+			return res, nil
+		}, Equal(r)),
+	)
 }
 
 func (r *resourceApiClient) fullAddress() string {
