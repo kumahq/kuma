@@ -67,6 +67,14 @@
                 "gateway": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
                     "additionalProperties": true
+                },
+                "gatewayBuiltin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gatewayDelegated": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
                 }
             },
             "additionalProperties": true,

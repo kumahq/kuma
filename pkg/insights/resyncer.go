@@ -535,8 +535,10 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-			Standard: &mesh_proto.MeshInsight_DataplaneStat{},
-			Gateway:  &mesh_proto.MeshInsight_DataplaneStat{},
+			Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
+			Gateway:          &mesh_proto.MeshInsight_DataplaneStat{},
+			GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
+			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
 		Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
@@ -566,7 +568,12 @@ func (r *resyncer) createOrUpdateMeshInsight(
 
 		statByType := insight.GetDataplanesByType().GetStandard()
 		if networking.GetGateway() != nil {
-			statByType = insight.GetDataplanesByType().GetGateway()
+			switch networking.GetGateway().GetType() {
+			case mesh_proto.Dataplane_Networking_Gateway_BUILTIN:
+				statByType = insight.GetDataplanesByType().GetGatewayBuiltin()
+			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
+				statByType = insight.GetDataplanesByType().GetGatewayDelegated()
+			}
 		}
 
 		statByType.Total++
@@ -601,6 +608,11 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}
+
+	insight.DataplanesByType.Gateway.Online = insight.GetDataplanesByType().GetGatewayBuiltin().GetOnline() + insight.GetDataplanesByType().GetGatewayDelegated().GetOnline()
+	insight.DataplanesByType.Gateway.Offline = insight.GetDataplanesByType().GetGatewayBuiltin().GetOffline() + insight.GetDataplanesByType().GetGatewayDelegated().GetOffline()
+	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayBuiltin().GetPartiallyDegraded() + insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
+	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayBuiltin().GetTotal() + insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
 	insight.Services = &mesh_proto.MeshInsight_ServiceStat{
 		Total:    uint32(len(internalServices) + len(externalServices)),
