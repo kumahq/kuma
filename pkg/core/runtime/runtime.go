@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -33,7 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -60,6 +61,7 @@ type RuntimeContext interface {
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
+	GlobalInsightService() globalinsight.GlobalInsightService
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	ConfigManager() config_manager.ConfigManager
@@ -147,6 +149,7 @@ type runtimeContext struct {
 	rs                       core_store.ResourceStore
 	ss                       store.SecretStore
 	cs                       core_store.ResourceStore
+	gis                      globalinsight.GlobalInsightService
 	rom                      core_manager.ReadOnlyResourceManager
 	cam                      ca.Managers
 	dsl                      datasource.Loader
@@ -209,6 +212,10 @@ func (rc *runtimeContext) SecretStore() store.SecretStore {
 
 func (rc *runtimeContext) ConfigStore() core_store.ResourceStore {
 	return rc.cs
+}
+
+func (rc *runtimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
+	return rc.gis
 }
 
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {

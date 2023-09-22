@@ -1,18 +1,16 @@
 package api_server
 
 import (
-	"encoding/json"
-
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/insights"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 )
 
 const globalInsightPath = "/global-insight"
 
 type globalInsightEndpoint struct {
-	globalInsightService insights.GlobalInsightService
+	globalInsightService globalinsight.GlobalInsightService
 }
 
 func (ge *globalInsightEndpoint) addEndpoint(ws *restful.WebService) {
@@ -31,13 +29,7 @@ func (ge *globalInsightEndpoint) getGlobalInsight(request *restful.Request, resp
 		return
 	}
 
-	marshal, err := json.Marshal(globalInsight)
-	if err != nil {
-		errors.HandleError(ctx, response, err, "Error serializing GlobalInsight")
-		return
-	}
-	_, err = response.ResponseWriter.Write(marshal)
-	if err != nil {
+	if err = response.WriteAsJson(globalInsight); err != nil {
 		errors.HandleError(ctx, response, err, "Could not write response")
 		return
 	}

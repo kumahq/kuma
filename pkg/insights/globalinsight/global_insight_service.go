@@ -1,4 +1,4 @@
-package insights
+package globalinsight
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type GlobalInsightService interface {
@@ -17,20 +17,20 @@ type GlobalInsightService interface {
 }
 
 type defaultGlobalInsightService struct {
-	resManager resources_manager.ResourceManager
+	resourceStore core_store.ResourceStore
 }
 
 var _ GlobalInsightService = &defaultGlobalInsightService{}
 
-func NewDefaultGlobalInsightService(resManager resources_manager.ResourceManager) GlobalInsightService {
-	return &defaultGlobalInsightService{resManager: resManager}
+func NewDefaultGlobalInsightService(resourceStore core_store.ResourceStore) GlobalInsightService {
+	return &defaultGlobalInsightService{resourceStore: resourceStore}
 }
 
 func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*api_types.GlobalInsight, error) {
 	globalInsights := &api_types.GlobalInsight{CreatedAt: core.Now()}
 
 	meshInsights := &mesh.MeshInsightResourceList{}
-	if err := gis.resManager.List(ctx, meshInsights); err != nil {
+	if err := gis.resourceStore.List(ctx, meshInsights); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (gis *defaultGlobalInsightService) aggregateServices(
 	globalInsight *api_types.GlobalInsight,
 ) error {
 	serviceInsights := &mesh.ServiceInsightResourceList{}
-	if err := gis.resManager.List(ctx, serviceInsights); err != nil {
+	if err := gis.resourceStore.List(ctx, serviceInsights); err != nil {
 		return err
 	}
 
@@ -146,7 +146,7 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 	globalInsight *api_types.GlobalInsight,
 ) error {
 	zoneInsights := &system.ZoneInsightResourceList{}
-	if err := gis.resManager.List(ctx, zoneInsights); err != nil {
+	if err := gis.resourceStore.List(ctx, zoneInsights); err != nil {
 		return err
 	}
 
@@ -173,7 +173,7 @@ func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
 	globalInsight *api_types.GlobalInsight,
 ) error {
 	zoneIngressInsights := &mesh.ZoneIngressInsightResourceList{}
-	if err := gis.resManager.List(ctx, zoneIngressInsights); err != nil {
+	if err := gis.resourceStore.List(ctx, zoneIngressInsights); err != nil {
 		return err
 	}
 
@@ -197,7 +197,7 @@ func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
 	globalInsight *api_types.GlobalInsight,
 ) error {
 	zoneEgressInsights := &mesh.ZoneEgressInsightResourceList{}
-	if err := gis.resManager.List(ctx, zoneEgressInsights); err != nil {
+	if err := gis.resourceStore.List(ctx, zoneEgressInsights); err != nil {
 		return err
 	}
 
