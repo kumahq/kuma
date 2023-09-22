@@ -86,6 +86,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 		func(*restful.WebService) error { return nil },
+		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

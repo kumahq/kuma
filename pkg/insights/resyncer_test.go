@@ -257,6 +257,11 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
 			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
 			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+
+			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
+			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
+			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
+			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 

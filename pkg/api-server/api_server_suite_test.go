@@ -215,7 +215,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	}
 
 	resManager := manager.NewResourceManager(t.store)
-	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
+	apiServer, err := api_server.NewApiServer(
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
@@ -249,6 +249,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 		func(*restful.WebService) error { return nil },
+		nil,
 	)
 	if err != nil {
 		return nil, cfg, stop, err
