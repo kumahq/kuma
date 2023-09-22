@@ -24,28 +24,28 @@ import (
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
 	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("error"), ctx, context.Background())
-	var kumaErr types.Error
+	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 404,
 			Title:  title,
 			Detail: "Not found",
 		}
 	case errors.Is(err, &rest.InvalidResourceError{}):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
 			Detail: err.Error(),
 		}
 	case errors.Is(err, &registry.InvalidResourceType{}):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
 			Detail: err.Error(),
 		}
 	case store.IsResourcePreconditionFailed(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 412,
 			Title:  title,
 			Detail: "Precondition Failed",
@@ -53,13 +53,13 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 	case errors.Is(err, &store.PreconditionError{}):
 		var err2 *store.PreconditionError
 		errors.As(err, &err2)
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
 			Detail: err2.Reason,
 		}
 	case err == store.ErrorInvalidOffset:
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: "Invalid offset",
@@ -71,7 +71,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			},
 		}
 	case manager.IsMeshNotFound(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: "Mesh is not found",
@@ -83,7 +83,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			},
 		}
 	case validators.IsValidationError(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: "Resource is not valid",
@@ -95,7 +95,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			})
 		}
 	case api_server_types.IsMaxPageSizeExceeded(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: "Invalid page size",
@@ -107,7 +107,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			},
 		}
 	case err == api_server_types.InvalidPageSize:
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: "Invalid page size",
@@ -119,25 +119,25 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			},
 		}
 	case tokens.IsSigningKeyNotFound(err):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 404,
 			Title:  "Signing Key not found",
 			Detail: err.Error(),
 		}
 	case errors.Is(err, &MethodNotAllowed{}):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 405,
 			Title:  "Method not Allowed",
 			Detail: err.Error(),
 		}
 	case errors.Is(err, &Conflict{}):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 409,
 			Title:  "Conflict",
 			Detail: err.Error(),
 		}
 	case errors.Is(err, &ServiceUnavailable{}):
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 503,
 			Title:  "Service unavailable",
 			Detail: err.Error(),
@@ -145,34 +145,35 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError
 		errors.As(err, &accessErr)
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 403,
 			Title:  "Access Denied",
 			Detail: accessErr.Reason,
 		}
 	case errors.Is(err, &Unauthenticated{}):
 		var unauthenticated *Unauthenticated
-		errors.As(err, &err)
-		kumaErr = types.Error{
+		errors.As(err, &unauthenticated)
+		kumaErr = &types.Error{
 			Status: 401,
 			Title:  title,
 			Detail: unauthenticated.Error(),
 		}
 	case err == tokens.IssuerDisabled:
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: err.Error(),
 		}
 	case err == multitenant.TenantMissingErr:
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
 			Detail: err.Error(),
 		}
+	case errors.As(err, &kumaErr):
 	default:
 		log.Error(err, title)
-		kumaErr = types.Error{
+		kumaErr = &types.Error{
 			Status: 500,
 			Title:  title,
 			Detail: "Internal Server Error",
