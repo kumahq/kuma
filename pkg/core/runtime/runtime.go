@@ -148,9 +148,9 @@ type runtimeContext struct {
 	rm                       core_manager.ResourceManager
 	rs                       core_store.ResourceStore
 	ss                       store.SecretStore
-	cs  core_store.ResourceStore
-	gis globalinsight.GlobalInsightService
-	rom core_manager.ReadOnlyResourceManager
+	cs                       core_store.ResourceStore
+	gis                      globalinsight.GlobalInsightService
+	rom                      core_manager.ReadOnlyResourceManager
 	cam                      ca.Managers
 	dsl                      datasource.Loader
 	ext                      context.Context

@@ -74,9 +74,9 @@ type Builder struct {
 	ss             store.SecretStore
 	cs             core_store.ResourceStore
 	rm             core_manager.CustomizableResourceManager
-	rom core_manager.ReadOnlyResourceManager
-	gis globalinsight.GlobalInsightService
-	cam core_ca.Managers
+	rom            core_manager.ReadOnlyResourceManager
+	gis            globalinsight.GlobalInsightService
+	cam            core_ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
 	configm        config_manager.ConfigManager
