@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.0.3
 info:
   version: v1alpha1
   title: Kuma API
@@ -24,11 +24,7 @@ paths:
           description: name of the MeshFaultInjection
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: 'schema.yaml'
+          $ref: "#/components/responses/MeshFaultInjectionItem"
 
     put:
       summary: Creates or Updates MeshFaultInjection entity
@@ -47,12 +43,12 @@ paths:
           required: true
           description: name of the MeshFaultInjection
       requestBody:
-        description: MeshFaultInjection entity
+        description: Put request
         required: true
         content:
           application/json:
             schema:
-              $ref: 'schema.yaml'
+              $ref: '#/components/schemas/MeshFaultInjectionItem'
       responses:
         '200':
           description: Updated
@@ -93,37 +89,33 @@ paths:
           description: name of the mesh
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+          $ref: "#/components/responses/MeshFaultInjectionList"
 
-
-  /meshfaultinjections:
-    get:
-      summary: Returns a list of MeshFaultInjection from all meshes
-      tags: [ "MeshFaultInjection" ]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+components:
+  schemas:
+    MeshFaultInjectionItem:
+      $ref: 'schema.yaml'
+  responses:
+    MeshFaultInjectionItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshFaultInjectionItem'
+    MeshFaultInjectionList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshFaultInjectionItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

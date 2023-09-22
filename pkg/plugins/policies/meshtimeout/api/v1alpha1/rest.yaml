@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.0.3
 info:
   version: v1alpha1
   title: Kuma API
@@ -24,11 +24,7 @@ paths:
           description: name of the MeshTimeout
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: 'schema.yaml'
+          $ref: "#/components/responses/MeshTimeoutItem"
 
     put:
       summary: Creates or Updates MeshTimeout entity
@@ -47,12 +43,12 @@ paths:
           required: true
           description: name of the MeshTimeout
       requestBody:
-        description: MeshTimeout entity
+        description: Put request
         required: true
         content:
           application/json:
             schema:
-              $ref: 'schema.yaml'
+              $ref: '#/components/schemas/MeshTimeoutItem'
       responses:
         '200':
           description: Updated
@@ -93,37 +89,33 @@ paths:
           description: name of the mesh
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+          $ref: "#/components/responses/MeshTimeoutList"
 
-
-  /meshtimeouts:
-    get:
-      summary: Returns a list of MeshTimeout from all meshes
-      tags: [ "MeshTimeout" ]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+components:
+  schemas:
+    MeshTimeoutItem:
+      $ref: 'schema.yaml'
+  responses:
+    MeshTimeoutItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTimeoutItem'
+    MeshTimeoutList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshTimeoutItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
