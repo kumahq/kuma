@@ -1,4 +1,4 @@
-package insights
+package globalinsight_test
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -34,7 +35,7 @@ var _ = Describe("Global Insight", func() {
 
 	It("should compute global insight", func() {
 		// given
-		globalInsightService := NewDefaultGlobalInsightService(rm)
+		globalInsightService := globalinsight.NewDefaultGlobalInsightService(rm)
 
 		err := createMeshInsight("default", rs)
 		Expect(err).ToNot(HaveOccurred())

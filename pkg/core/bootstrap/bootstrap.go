@@ -41,6 +41,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
@@ -90,6 +91,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeConfigStore(cfg, builder); err != nil {
 		return nil, err
 	}
+
+	initializeGlobalInsightService(cfg, builder)
+
 	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
 	builder.ResourceStore().Customize(system.SecretType, builder.SecretStore())
 	builder.ResourceStore().Customize(system.GlobalSecretType, builder.SecretStore())
@@ -341,6 +345,19 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
+}
+
+func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Builder) {
+	globalInsightService := globalinsight.NewDefaultGlobalInsightService(builder.ResourceStore())
+	if cfg.Store.Cache.Enabled {
+		globalInsightService = globalinsight.NewCachedGlobalInsightService(
+			globalInsightService,
+			builder.Tenants(),
+			cfg.Store.Cache.ExpirationTime.Duration,
+		)
+	}
+
+	builder.WithGlobalInsightService(globalInsightService)
 }
 
 func initializeCaManagers(builder *core_runtime.Builder) error {
