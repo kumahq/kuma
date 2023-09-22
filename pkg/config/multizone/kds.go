@@ -27,6 +27,8 @@ type KdsServerConfig struct {
 	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_multizone_global_kds_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
+	// TlsKeyLogFile (debugging only) path to save key log file to be able to decrypt traffic.
+	TlsKeyLogFile string `json:"tlsKeyLogFile" envconfig:"kuma_multizone_global_kds_tls_key_log_file"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
@@ -78,6 +80,8 @@ type KdsClientConfig struct {
 	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_multizone_zone_kds_tls_skip_verify"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
 	RootCAFile string `json:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
+	// TlsKeyLogFile (debugging only) path to save key log file to be able to decrypt traffic.
+	TlsKeyLogFile string `json:"tlsKeyLogFile" envconfig:"kuma_multizone_zone_kds_tls_key_log_file"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`

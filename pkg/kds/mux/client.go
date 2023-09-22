@@ -76,7 +76,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig, err := tlsConfig(c.config.RootCAFile, c.config.TlsSkipVerify)
+		tlsConfig, err := tlsConfig(c.config.RootCAFile, c.config.TlsSkipVerify, c.config.TlsKeyLogFile)
 		if err != nil {
 			return errors.Wrap(err, "could not ")
 		}
@@ -283,7 +283,7 @@ func (c *client) NeedLeaderElection() bool {
 	return true
 }
 
-func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
+func tlsConfig(rootCaFile string, skipVerify bool, keyFile string) (*tls.Config, error) {
 	// #nosec G402 -- we let the user decide if they want to ignore verification
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: skipVerify,
@@ -300,6 +300,13 @@ func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
 			return nil, errors.New("failed to parse root certificate")
 		}
 		tlsConfig.RootCAs = roots
+	}
+	if keyFile != "" {
+		file, err := os.OpenFile(keyFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.KeyLogWriter = file
 	}
 	return tlsConfig, nil
 }

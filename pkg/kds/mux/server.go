@@ -4,12 +4,14 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"os"
 	"time"
+
+	"google.golang.org/grpc/credentials"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -105,12 +107,22 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
+
+	tlsCfg := &tls.Config{} // #nosec G402 - I'm setting it a couple of lines down
+	if s.config.TlsKeyFile != "" {
+		file, err := os.OpenFile(s.config.TlsKeyFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+		if err != nil {
+			return err
+		}
+		tlsCfg.KeyLogWriter = file
+	}
 	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+		tlsCfg.Certificates = []tls.Certificate{cert}
+		tlsCfg.MinVersion = tls.VersionTLS12
 		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
@@ -120,8 +132,8 @@ func (s *server) Start(stop <-chan struct{}) error {
 		if tlsCfg.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
 			return err
 		}
-		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
+	grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	for _, interceptor := range s.streamInterceptors {
 		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(interceptor))
 	}
