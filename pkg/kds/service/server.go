@@ -10,9 +10,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -62,6 +64,29 @@ func (g *GlobalKDSServiceServer) StreamClusters(stream mesh_proto.GlobalKDSServi
 	return g.streamEnvoyAdminRPC(ClustersRPC, g.envoyAdminRPCs.Clusters, stream, func() (util_grpc.ReverseUnaryMessage, error) {
 		return stream.Recv()
 	})
+}
+
+func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.ZoneHealthCheckRequest) (*mesh_proto.ZoneHealthCheckResponse, error) {
+	zone, err := util.ClientIDFromIncomingCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	insight := system.NewZoneInsightResource()
+	if err := g.resManager.Get(ctx, insight, core_store.GetByKey(zone, model.NoMesh)); err != nil {
+		return nil, err
+	}
+	if insight.Spec.HealthCheck == nil {
+		insight.Spec.HealthCheck = &system_proto.HealthCheck{}
+	}
+
+	insight.Spec.HealthCheck.Time = timestamppb.Now()
+
+	if err := g.resManager.Update(ctx, insight); err != nil {
+		return nil, err
+	}
+
+	return &mesh_proto.ZoneHealthCheckResponse{}, nil
 }
 
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
