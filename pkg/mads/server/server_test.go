@@ -50,7 +50,6 @@ func (t *testRuntime) Metrics() metrics.Metrics {
 }
 
 var _ = Describe("MADS Server", func() {
-
 	var rt *testRuntime
 	var stopCh chan struct{}
 	var errCh chan error
@@ -105,7 +104,7 @@ var _ = Describe("MADS Server", func() {
 
 		assignments, err := stream.WaitForAssignments()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(assignments).To(HaveLen(0))
+		Expect(assignments).To(BeEmpty())
 	})
 
 	It("should serve HTTP/1.1 requests", func() {

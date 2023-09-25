@@ -21,13 +21,12 @@ import (
 )
 
 var _ = Describe("KubernetesStore", func() {
-
 	var ks *k8s.KubernetesStore
 	var s store.ResourceStore
 	const name = "demo"
 	const mesh = "default"
 
-	var backend = struct {
+	backend := struct {
 		ParseYAML       func(yaml string) client.Object
 		Create          func(obj client.Object)
 		Get             func(obj client.Object, ns, name string)
@@ -580,7 +579,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(trl.Items).To(HaveLen(0))
+			Expect(trl.Items).To(BeEmpty())
 		})
 
 		It("should return a list of matching resource", func() {
@@ -702,7 +701,6 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			backend.AssertNotExists(&mesh_k8s.Mesh{}, "", "demo")
-
 		})
 
 		It("should return a list of matching Meshes", func() {
