@@ -7,7 +7,6 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 
 .PHONY: tidy
 tidy:
-	go mod edit -go=$(shell echo $(GO_VERSION) | grep -Eo '[0-9]\.[0-9]+')
 	@TOP=$(shell pwd) && \
 	for m in $$(find . -name go.mod) ; do \
 		( cd $$(dirname $$m) && go mod tidy ) ; \
