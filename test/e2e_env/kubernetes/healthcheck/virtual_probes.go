@@ -28,7 +28,7 @@ func VirtualProbes() {
 	})
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(mesh))
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should deploy test-server with probes", func() {

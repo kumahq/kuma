@@ -645,7 +645,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(secrets.Items).To(HaveLen(0))
+			Expect(secrets.Items).To(BeEmpty())
 		})
 
 		Describe("with resources loaded", func() {
