@@ -44,11 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v3
         with:
-<<<<<<< HEAD
-          go-version: "~1.21.1"
-=======
           go-version-file: go.mod
->>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
       - uses: actions/cache@v3
         with:
           path: |

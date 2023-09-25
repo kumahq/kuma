@@ -18,6 +18,8 @@ jobs:
         with:
           ref: "master"
       - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
       - env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
