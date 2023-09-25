@@ -1,0 +1,83 @@
+name: "Update insecure dependencies"
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: 0 8 * * *
+jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.generate-matrix.outputs.branches }}
+    steps:
+      - id: generate-matrix
+        run: |
+          # The head -1 is because GITHUB_OUTPUT is easier to work with single line output and this file is created with automation in `lifecycle.yaml`
+          ACTIVE_BRANCHES=`gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' | head -1`
+          echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+  update-insecure-dependencies:
+    needs:
+      - build-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@0914d50df753bbc42180d982a6550f195390069f # v2.0.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.1"
+      - name: "Install tools"
+        run: |
+          go install github.com/google/osv-scanner/cmd/osv-scanner@v1
+      - name: "Prepare commit body - before"
+        id: prepare_commit_body_before
+        run: |
+          SCAN_OUTPUT_BEFORE=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          echo "SCAN_OUTPUT_BEFORE<<EOF" >> $GITHUB_ENV
+          echo "$SCAN_OUTPUT_BEFORE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: "Update dependencies"
+        id: update
+        run: |
+          make update-vulnerable-dependencies
+      - name: "Prepare commit body - after"
+        id: prepare_commit_body_after
+        run: |
+          SCAN_OUTPUT_AFTER=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          echo "SCAN_OUTPUT_AFTER<<EOF" >> $GITHUB_ENV
+          echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: "Create Pull Request"
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore(deps): security update"
+          signoff: true
+          branch: chore/security-updates-${{ matrix.branch }}
+          body: |
+            Scan output:
+
+            Before update:
+            ${{ env.SCAN_OUTPUT_BEFORE }}
+
+            After update:
+            ${{ env.SCAN_OUTPUT_AFTER }}
+
+            If a package is showing up in the scan but the script is not trying to update it then it might be because there is no fixed version yet.
+          delete-branch: true
+          title: "chore(deps): security update"
+          draft: false
+          labels: dependencies,${{ matrix.branch }}
+          token: ${{ steps.github-app-token.outputs.token }}
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
