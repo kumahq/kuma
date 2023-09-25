@@ -1,33 +1,16 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
-<<<<<<< HEAD
 
 reusable:
 
   constants:
-    - &go_version "1.20.7"
+    - &go_version "1.21.1"
 
   docker_images:
-    - &golang_image "cimg/go:1.20.7"
+    - &golang_image "cimg/go:1.21.1"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
-=======
-parameters:
-  # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
-  go_version:
-    type: string
-    default: "1.21.1"
-  first_k8s_version:
-    type: string
-    default: "v1.23.17-k3s1"
-  last_k8s_version:
-    type: string
-    default: "v1.28.1-k3s1"
-  ubuntu_image:
-    type: string
-    default: "ubuntu-2204:2022.10.2"
->>>>>>> 630cd8bee (chore(deps): bump go from 1.20.7 to 1.21.1 (#7799))
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -79,10 +62,20 @@ commands:
             sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
             sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
           fi
+  skip_on_branch:
+    description: "Skip the job on the branch"
+    steps:
+    - run:
+        name: "Skip the job on the branch"
+        command: |
+          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
+            circleci-agent step halt
+            exit 0
+          fi
 
 executors:
   golang:
-    resource_class: large
+    resource_class: xlarge
     docker:
     - image: *golang_image
     environment:
@@ -205,6 +198,10 @@ jobs:
       name: vm-<< parameters.arch >>
     steps:
     - checkout
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - run:
         # Label based skip-test runs
         name: "Check if skip"
@@ -291,25 +288,38 @@ jobs:
               circleci-agent step halt
               exit 0
             }
+
+            # Handle skip tests on labels
             if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-test"
             fi
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
+            
+            # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
-              if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-                if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+            
+            # Handle force run tests on labels
+            if [[ $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
+              exit 0
+            fi
+            
+            # Handle legacy tests on branch
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+              if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+                skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
+              fi
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
-                fi
               fi
             fi
+
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
@@ -345,12 +355,15 @@ jobs:
           command: |
             if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
               export IPV6=true
+              export K8S_CLUSTER_TOOL=kind
               export KUMA_DEFAULT_RETRIES=60
               export KUMA_DEFAULT_TIMEOUT="6s"
             fi
+            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+              export K8S_CLUSTER_TOOL=kind
+            fi
             if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
-              export K3D=true
               export K3D_NETWORK_CNI=<< parameters.cniNetworkPlugin >>
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
@@ -381,9 +394,13 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - checkout
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - install_build_tools:
         go_arch: <<parameters.arch>>
-    - checkout
     - restore_cache:
         keys:
         # prefer the exact match
@@ -488,7 +505,7 @@ workflows:
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
-          parallelism: 5
+          parallelism: 3
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
       - e2e:
