@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("NamespaceReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
 
@@ -167,7 +166,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		nads := &v1.NetworkAttachmentDefinitionList{}
 		err = kubeClient.List(context.Background(), nads)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(nads.Items).To(HaveLen(0))
+		Expect(nads.Items).To(BeEmpty())
 	})
 
 	It("should ignore namespace namespaces without label", func() {
@@ -190,7 +189,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		nads := &v1.NetworkAttachmentDefinitionList{}
 		err = kubeClient.List(context.Background(), nads)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(nads.Items).To(HaveLen(0))
+		Expect(nads.Items).To(BeEmpty())
 	})
 
 	It("should skip creating NetworkAttachmentDefinition when CRD is absent in the cluster", func() {
@@ -213,7 +212,6 @@ var _ = Describe("NamespaceReconciler", func() {
 		nads := &v1.NetworkAttachmentDefinitionList{}
 		err = kubeClient.List(context.Background(), nads)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(nads.Items).To(HaveLen(0))
+		Expect(nads.Items).To(BeEmpty())
 	})
-
 })

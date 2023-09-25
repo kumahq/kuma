@@ -76,7 +76,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		})
+		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
@@ -109,6 +109,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		})
+		}).Should(Succeed())
 	})
 }

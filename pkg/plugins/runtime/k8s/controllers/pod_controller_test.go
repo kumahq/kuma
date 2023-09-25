@@ -31,7 +31,6 @@ import (
 )
 
 var _ = Describe("PodReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
 
@@ -308,7 +307,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should ignore Pods without Kuma sidecar", func() {
@@ -331,7 +330,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should not reconcile Ingress with namespace other than system", func() {
@@ -408,7 +407,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should ignore Pods without IP address", func() {
@@ -431,7 +430,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected", func() {

@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("ZoneIngressInsight Manager", func() {
-
 	It("should limit the number of subscription", func() {
 		// setup
 		s := memory.NewStore()
@@ -78,7 +77,7 @@ var _ = Describe("ZoneIngressInsight Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(actual.Spec.Subscriptions).To(HaveLen(0))
+		Expect(actual.Spec.Subscriptions).To(BeEmpty())
 		Expect(actual.Spec.Subscriptions).To(BeNil())
 	})
 })
