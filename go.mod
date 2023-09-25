@@ -1,6 +1,5 @@
 module github.com/kumahq/kuma
 
-// DO NOT CHANGE this is updated with `make tidy`
 go 1.21.1
 
 require (
