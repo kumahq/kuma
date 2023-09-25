@@ -16,6 +16,16 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+<<<<<<< HEAD
+=======
+# Change here and `make check` ensures these are used for CI
+# Note: These are _docker image tags_
+# If changing min version, update mk/kind.mk as well
+K8S_MIN_VERSION = v1.23.17-k3s1
+K8S_MAX_VERSION = v1.28.1-k3s1
+export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
+export GOLANGCI_LINT_VERSION=v1.54.1
+>>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 

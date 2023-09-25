@@ -43,7 +43,20 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v4
         with:
+<<<<<<< HEAD
           go-version: "1.21.1"
+=======
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.kuma-dev
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+>>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
       - name: Install dependencies
         run: |
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz" | sudo tar xvz --directory /usr/bin cr

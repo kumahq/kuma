@@ -23,6 +23,23 @@ shellcheck:
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
 	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v
+<<<<<<< HEAD
+=======
+else
+	@echo "skipping golangci-lint as it's done as a github action"
+endif
+
+.PHONY: golangci-lint-fmt
+golangci-lint-fmt:
+	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
+		--disable-all \
+		--enable gofumpt
+
+.PHONY: fmt/ci
+fmt/ci:
+	$(CI_TOOLS_BIN_DIR)/yq -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
+	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
+>>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
 
 .PHONY: helm-lint
 helm-lint:
