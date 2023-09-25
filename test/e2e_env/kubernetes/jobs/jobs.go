@@ -40,7 +40,7 @@ func Jobs() {
 			out, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(ContainSubstring("demo-job-client"))
-		}, "30s", "1s")
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should terminate jobs with mTLS", func() {

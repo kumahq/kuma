@@ -598,7 +598,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(trl.Items).To(HaveLen(0))
+			Expect(trl.Items).To(BeEmpty())
 		})
 
 		It("should return a list of matching resource", func() {
