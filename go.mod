@@ -1,7 +1,7 @@
 module github.com/kumahq/kuma
 
 // DO NOT CHANGE this is updated with `make tidy`
-go 1.20
+go 1.21
 
 require (
 	cirello.io/pglock v1.14.0
