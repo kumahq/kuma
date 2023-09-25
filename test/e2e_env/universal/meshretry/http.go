@@ -78,7 +78,7 @@ spec:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
@@ -115,6 +115,6 @@ spec:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}).Should(Succeed())
 	})
 }

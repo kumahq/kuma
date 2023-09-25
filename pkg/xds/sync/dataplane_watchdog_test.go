@@ -111,7 +111,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 		var ctx context.Context
 
 		BeforeEach(func() {
-			Expect(samples.MeshDefaultBuilder().Create(resManager))
+			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
 			resKey = core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
 
