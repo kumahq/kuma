@@ -39,9 +39,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
-	"github.com/kumahq/kuma/pkg/insights"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -103,7 +102,7 @@ func NewApiServer(
 	envoyAdminClient admin.EnvoyAdminClient,
 	tokenIssuers builtin.TokenIssuers,
 	wsCustomize func(*restful.WebService) error,
-	tenants multitenant.Tenants,
+	globalInsightService globalinsight.GlobalInsightService,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -139,15 +138,6 @@ func NewApiServer(
 		Path(cfg.ApiServer.BasePath).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
-
-	globalInsightService := insights.NewDefaultGlobalInsightService(resManager)
-	if cfg.Store.Cache.Enabled {
-		globalInsightService = insights.NewCachedGlobalInsightService(
-			globalInsightService,
-			tenants,
-			cfg.Store.Cache.ExpirationTime.Duration,
-		)
-	}
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService)
 	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
@@ -236,7 +226,7 @@ func addResourcesEndpoints(
 	resManager manager.ResourceManager,
 	cfg *kuma_cp.Config,
 	resourceAccess resources_access.ResourceAccess,
-	globalInsightService insights.GlobalInsightService,
+	globalInsightService globalinsight.GlobalInsightService,
 ) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
@@ -512,7 +502,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.EnvoyAdminClient(),
 		rt.TokenIssuers(),
 		rt.APIWebServiceCustomize(),
-		rt.Tenants(),
+		rt.GlobalInsightService(),
 	)
 	if err != nil {
 		return err

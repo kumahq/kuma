@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -86,7 +87,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 		func(*restful.WebService) error { return nil },
-		nil,
+		globalinsight.NewDefaultGlobalInsightService(store),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
