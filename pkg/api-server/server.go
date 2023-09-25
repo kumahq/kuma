@@ -25,6 +25,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	"github.com/kumahq/kuma/pkg/api-server/filters"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -231,6 +232,7 @@ func addResourcesEndpoints(
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
+		filter:         filters.Resource(mesh.DataplaneResourceTypeDescriptor),
 	}
 	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
@@ -286,6 +288,7 @@ func addResourcesEndpoints(
 			resManager:     resManager,
 			descriptor:     definition,
 			resourceAccess: resourceAccess,
+			filter:         filters.Resource(definition),
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name

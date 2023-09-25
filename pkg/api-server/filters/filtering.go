@@ -1,4 +1,4 @@
-package api_server
+package filters
 
 import (
 	"reflect"
@@ -12,6 +12,47 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
+
+// Resource return a store filter depending on the resource. We take a descriptor so that we can do advance filtering options
+// For example we could make a filter that works on top level targetRef by looking at the descriptor info
+func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *restful.Request) (store.ListFilterFunc, error) {
+	switch resDescriptor.Name {
+	case mesh.DataplaneType:
+		return func(request *restful.Request) (store.ListFilterFunc, error) {
+			gatewayFilter, err := gatewayModeFilterFromParameter(request)
+			if err != nil {
+				return nil, err
+			}
+
+			tags := parseTags(request.QueryParameters("tag"))
+
+			return func(rs core_model.Resource) bool {
+				dataplane := rs.(*mesh.DataplaneResource)
+				if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+					return false
+				}
+
+				if !dataplane.Spec.MatchTagsFuzzy(tags) {
+					return false
+				}
+
+				return true
+			}, nil
+		}
+	case mesh.ExternalServiceType:
+		return func(request *restful.Request) (store.ListFilterFunc, error) {
+			tags := parseTags(request.QueryParameters("tag"))
+
+			return func(rs core_model.Resource) bool {
+				return rs.(*mesh.ExternalServiceResource).Spec.MatchTagsFuzzy(tags)
+			}, nil
+		}
+	default:
+		return func(request *restful.Request) (store.ListFilterFunc, error) {
+			return nil, nil
+		}
+	}
+}
 
 type DpFilter func(*mesh_proto.Dataplane_Networking_Gateway) bool
 
@@ -50,28 +91,6 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 			return true
 		}, nil
 	}
-}
-
-func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
-	gatewayFilter, err := gatewayModeFilterFromParameter(request)
-	if err != nil {
-		return nil, err
-	}
-
-	tags := parseTags(request.QueryParameters("tag"))
-
-	return func(rs core_model.Resource) bool {
-		dataplane := rs.(*mesh.DataplaneResource)
-		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-			return false
-		}
-
-		if !dataplane.Spec.MatchTagsFuzzy(tags) {
-			return false
-		}
-
-		return true
-	}, nil
 }
 
 // Tags should be passed in form of ?tag=service:mobile&tag=version:v1
