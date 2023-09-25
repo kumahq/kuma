@@ -74,7 +74,7 @@ conf:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		})
+		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
@@ -100,13 +100,6 @@ conf:
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		})
+		}, "1m", "1s", MustPassRepeatedly(3)).Should(Succeed())
 	})
 }
