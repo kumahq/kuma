@@ -59,7 +59,9 @@ func Setup(rt core_runtime.Runtime) error {
 		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
-				log.Error(err, "StreamKumaResources finished with an error")
+				session.SetError(errors.Wrap(err, "StreamKumaResources finished with an error"))
+			} else {
+				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
@@ -74,7 +76,9 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				log.Error(err, "KDSSink finished with an error")
+				session.SetError(errors.Wrap(err, "KDSSink finished with an error"))
+			} else {
+				log.V(1).Info("KDSSink finished gracefully")
 			}
 		}()
 		return nil

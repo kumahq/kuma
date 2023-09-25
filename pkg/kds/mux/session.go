@@ -16,6 +16,7 @@ type Session interface {
 	ClientStream() mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient
 	PeerID() string
 	Error() <-chan error
+	SetError(err error)
 }
 
 type session struct {
@@ -77,7 +78,7 @@ func (s *session) handleRecv(stream MultiplexStream) {
 			s.clientStream.bufferStream.close()
 			s.serverStream.bufferStream.close()
 			// Recv always finishes with either an EOF or another error
-			s.setError(err)
+			s.SetError(err)
 			return
 		}
 		// convert legacy messages
@@ -134,11 +135,11 @@ func (s *session) handleSend(stream MultiplexStream, sendTimeout time.Duration) 
 				// 1) This is a malicious client reading stream byte by byte. In this case it's actually better to end the stream
 				// 2) A client is such overwhelmed that it cannot even let the server know that it's ready to receive more data.
 				//    In this case it's recommended to scale number of instances.
-				s.setError(errors.New("timeout while sending a message to peer"))
+				s.SetError(errors.New("timeout while sending a message to peer"))
 			}
 		}()
 		if err := stream.Send(msgToSend); err != nil {
-			s.setError(err)
+			s.SetError(err)
 			cancel()
 			return
 		}
@@ -146,7 +147,7 @@ func (s *session) handleSend(stream MultiplexStream, sendTimeout time.Duration) 
 	}
 }
 
-func (s *session) setError(err error) {
+func (s *session) SetError(err error) {
 	// execute this once so writers to this channel won't be stuck or trying to write to a close channel
 	// We only care about the first error, because it results in broken session anyway.
 	s.Once.Do(func() {
