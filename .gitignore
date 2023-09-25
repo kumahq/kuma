@@ -4,6 +4,9 @@
 # IDE: VS Code
 .vscode/
 
+# asdf
+.tool-versions
+
 # CI
 build/
 
