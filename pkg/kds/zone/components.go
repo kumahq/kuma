@@ -83,45 +83,6 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-<<<<<<< HEAD
-=======
-
-	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
-		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
-		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
-			kds_sync_store_v2.ZoneSyncCallback(
-				stream.Context(),
-				rt.KDSContext().Configs,
-				resourceSyncerV2,
-				rt.Config().Store.Type == store.KubernetesStore,
-				zone,
-				kubeFactory,
-				rt.Config().Store.Kubernetes.SystemNamespace,
-			),
-		)
-		go func() {
-			if err := syncClient.Receive(); err != nil {
-				errChan <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
-			} else {
-				log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
-			}
-		}()
-	})
-
-	onZoneToGlobalSyncStarted := mux.OnZoneToGlobalSyncStartedFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errChan chan error) {
-		log := kdsDeltaZoneLog.WithValues("kds-version", "v2", "peer-id", "global")
-		log.Info("ZoneToGlobalSync new session created")
-		session := kds_server_v2.NewServerStream(stream)
-		go func() {
-			if err := kdsServerV2.ZoneToGlobal(session); err != nil {
-				errChan <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
-			} else {
-				log.V(1).Info("ZoneToGlobalSync finished gracefully")
-			}
-		}()
-	})
-
->>>>>>> 71eeaf0cb (fix(kuma-cp): set error when KDS clients fails in goroutine (#7725))
 	muxClient := mux.NewClient(
 		rt.KDSContext().ZoneClientCtx,
 		rt.Config().Multizone.Zone.GlobalAddress,

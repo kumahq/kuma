@@ -153,41 +153,6 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 	}
 }
 
-<<<<<<< HEAD
-=======
-func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
-	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
-	stream, err := kdsClient.GlobalToZoneSync(ctx)
-	if err != nil {
-		errorCh <- err
-		return
-	}
-	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, errorCh)
-	<-stop
-	log.Info("Global to Zone Sync rpc stream stopped")
-	if err := stream.CloseSend(); err != nil {
-		errorCh <- errors.Wrap(err, "CloseSend returned an error")
-	}
-}
-
-func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
-	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
-	stream, err := kdsClient.ZoneToGlobalSync(ctx)
-	if err != nil {
-		errorCh <- err
-		return
-	}
-	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, errorCh)
-	<-stop
-	log.Info("Zone to Global Sync rpc stream stopped")
-	if err := stream.CloseSend(); err != nil {
-		errorCh <- errors.Wrap(err, "CloseSend returned an error")
-	}
-}
-
->>>>>>> 71eeaf0cb (fix(kuma-cp): set error when KDS clients fails in goroutine (#7725))
 func (c *client) startXDSConfigs(
 	ctx context.Context,
 	log logr.Logger,
