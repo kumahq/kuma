@@ -40,28 +40,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-<<<<<<< HEAD
       - name: Install chart-releaser
         run:
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
           | sudo tar xvz --directory /usr/bin cr
-      - name: Update chart versions
-=======
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v4
         with:
           go-version: "1.21.1"
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-            ~/.kuma-dev
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Install dependencies
->>>>>>> 630cd8bee (chore(deps): bump go from 1.20.7 to 1.21.1 (#7799))
+      - name: Update chart versions
         run: |
           git config user.name "${GH_USER}"
           git config user.email "${GH_EMAIL}"

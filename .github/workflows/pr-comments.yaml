@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # v1.6.0
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -44,11 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v3
         with:
-<<<<<<< HEAD
-          go-version: "~1.20.7"
-=======
-          go-version: "1.21.1"
->>>>>>> 630cd8bee (chore(deps): bump go from 1.20.7 to 1.21.1 (#7799))
+          go-version: "~1.21.1"
       - uses: actions/cache@v3
         with:
           path: |
