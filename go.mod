@@ -1,11 +1,6 @@
 module github.com/kumahq/kuma
 
-<<<<<<< HEAD
-// DO NOT CHANGE this is updated with `make tidy`
-go 1.21
-=======
 go 1.21.1
->>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
 
 require (
 	cirello.io/pglock v1.13.0

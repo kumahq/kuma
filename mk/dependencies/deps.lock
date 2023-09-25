@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 02869eb2d4911b7389209b0b4dd78ffaa40464c2
-=======
-0df6ececa47529d52f614fb447d03b9ac4587408
->>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
