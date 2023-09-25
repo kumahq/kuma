@@ -32,7 +32,11 @@ jobs:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-go@v3
         with:
+<<<<<<< HEAD
           go-version: "~1.20.7"
+=======
+          go-version: "1.21.1"
+>>>>>>> 630cd8bee (chore(deps): bump go from 1.20.7 to 1.21.1 (#7799))
       - name: "Install tools"
         run: |
           go install github.com/google/osv-scanner/cmd/osv-scanner@v1

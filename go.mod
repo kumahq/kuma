@@ -1,6 +1,11 @@
 module github.com/kumahq/kuma
 
+<<<<<<< HEAD
 go 1.20
+=======
+// DO NOT CHANGE this is updated with `make tidy`
+go 1.21.1
+>>>>>>> 630cd8bee (chore(deps): bump go from 1.20.7 to 1.21.1 (#7799))
 
 require (
 	cirello.io/pglock v1.10.0
