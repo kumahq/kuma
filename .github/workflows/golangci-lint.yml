@@ -20,4 +20,4 @@ jobs:
       - uses: golangci/golangci-lint-action@v3
         with:
           args: --fix=false --verbose
-          version: v1.53.3
+          version: v1.54.1
