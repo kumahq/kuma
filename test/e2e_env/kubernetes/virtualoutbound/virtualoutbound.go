@@ -31,7 +31,7 @@ func VirtualOutbound() {
 
 	E2EAfterAll(func() {
 		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName))
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {
