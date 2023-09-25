@@ -110,9 +110,9 @@ mtls:
 		// We must start client before server to test this properly. The client
 		// should get XDS refreshes first to trigger the race condition fixed by
 		// kumahq/kuma#3019
-		Expect(env.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))))
+		Expect(env.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)))).To(Succeed())
 
-		Expect(env.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))))
+		Expect(env.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"})))).To(Succeed())
 
 		By("Check inside-mesh communication")
 		trafficAllowed("test-server.mesh")
@@ -128,7 +128,7 @@ mtls:
   - name: ca-1
     type: builtin
     mode: PERMISSIVE`, meshName)
-		Expect(env.Cluster.Install(YamlUniversal(meshYaml)))
+		Expect(env.Cluster.Install(YamlUniversal(meshYaml))).To(Succeed())
 
 		By("inside-mesh communication never fails")
 		Consistently(func(g Gomega) {

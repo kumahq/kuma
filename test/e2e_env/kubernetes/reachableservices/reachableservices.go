@@ -44,7 +44,7 @@ func ReachableServices() {
 
 	E2EAfterAll(func() {
 		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName))
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to connect to reachable services", func() {
