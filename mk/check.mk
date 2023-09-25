@@ -27,12 +27,21 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 	# OOM.
 	$(GOENV) $(GOLANGCI_LINT) run \
 		--disable-all \
+<<<<<<< HEAD
 		--enable bodyclose,contextcheck,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,unparam,whitespace \
 		--timeout=10m -v
 	$(GOENV) $(GOLANGCI_LINT) run \
 		--disable-all \
 		--enable gosimple,staticcheck,unused \
 		--timeout=10m -v
+=======
+		--enable gofumpt
+
+.PHONY: fmt/ci
+fmt/ci:
+	$(CI_TOOLS_BIN_DIR)/yq -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
+	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
+>>>>>>> b9f215e7c (build(mk): use go.mod as source of truth for go version in makefiles (#7843))
 
 .PHONY: helm-lint
 helm-lint:
