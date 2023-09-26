@@ -175,7 +175,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			log.Error(err, "Global to Zone Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
 			return
 		}
 		log.Error(err, "Global to Zone Sync rpc stream failed, will restart in background")
@@ -183,6 +183,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			log.Error(err, "CloseSend returned an error")
 		}
 		errorCh <- err
+		return
 	}
 }
 
@@ -205,7 +206,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			log.Error(err, "Zone to Global Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
 			return
 		}
 		log.Error(err, "Zone to Global Sync rpc stream failed, will restart in background")
@@ -213,6 +214,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 			log.Error(err, "CloseSend returned an error")
 		}
 		errorCh <- err
+		return
 	}
 }
 
