@@ -62,7 +62,8 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "GlobalToZoneSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
-		return errors.Wrap(err, "GlobalToZoneSync rpc stream failed prematurely, will restart in background")
+		clientLog.Error(err, "GlobalToZoneSync rpc stream failed prematurely, will restart in background")
+		return status.Error(codes.Internal, "stream failed")
 	}
 }
 
@@ -82,6 +83,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 		}
-		return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed prematurely, will restart in background")
+		clientLog.Error(err, "ZoneToGlobalSync rpc stream failed prematurely, will restart in background")
+		return status.Error(codes.Internal, "stream failed")
 	}
 }
