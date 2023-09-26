@@ -175,11 +175,26 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, errorCh)
-	<-stop
-	log.Info("Global to Zone Sync rpc stream stopped")
-	if err := stream.CloseSend(); err != nil {
-		errorCh <- errors.Wrap(err, "CloseSend returned an error")
+	processingErrorsCh := make(chan error)
+	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
+	select {
+	case <-stop:
+		log.Info("Global to Zone Sync rpc stream stopped")
+		if err := stream.CloseSend(); err != nil {
+			errorCh <- errors.Wrap(err, "CloseSend returned an error")
+		}
+	case err := <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "Global to Zone Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
+			return
+		}
+		log.Error(err, "Global to Zone Sync rpc stream failed, will restart in background")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+		errorCh <- err
+		return
 	}
 }
 
@@ -191,11 +206,26 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, errorCh)
-	<-stop
-	log.Info("Zone to Global Sync rpc stream stopped")
-	if err := stream.CloseSend(); err != nil {
-		errorCh <- errors.Wrap(err, "CloseSend returned an error")
+	processingErrorsCh := make(chan error)
+	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
+	select {
+	case <-stop:
+		log.Info("Zone to Global Sync rpc stream stopped")
+		if err := stream.CloseSend(); err != nil {
+			errorCh <- errors.Wrap(err, "CloseSend returned an error")
+		}
+	case err := <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "Zone to Global Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
+			return
+		}
+		log.Error(err, "Zone to Global Sync rpc stream failed, will restart in background")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+		errorCh <- err
+		return
 	}
 }
 
