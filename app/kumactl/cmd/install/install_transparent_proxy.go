@@ -7,6 +7,7 @@ import (
 	"net"
 	os_user "os/user"
 	"runtime"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -46,6 +47,8 @@ type transparentProxyArgs struct {
 	Wait                           uint
 	DontWait                       bool
 	WaitInterval                   uint
+	MaxRetries                     int
+	SleepBetweenRetries            time.Duration
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -75,6 +78,8 @@ func newInstallTransparentProxy() *cobra.Command {
 		EbpfCgroupPath:                 "/sys/fs/cgroup",
 		EbpfTCAttachIface:              "",
 		VnetNetworks:                   []string{},
+		MaxRetries:                     5,
+		SleepBetweenRetries:            2 * time.Second,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -217,6 +222,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().UintVar(&args.Wait, "wait", 0, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error. Default value 0 means wait forever. To disable this behavior and exit immediately if the xtables lock is not available, use the --dont-wait flag")
 	cmd.Flags().BoolVar(&args.DontWait, "dont-wait", false, "disable the default behavior of waiting for the xtables exclusive lock. If the lock is not available when the application starts, the application will exit immediately with an error")
 	cmd.Flags().UintVar(&args.WaitInterval, "wait-interval", 0, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
+	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
 
 	return cmd
 }
@@ -283,6 +290,8 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		Stderr:                         cmd.OutOrStderr(),
 		Wait:                           wait,
 		WaitInterval:                   args.WaitInterval,
+		MaxRetries:                     args.MaxRetries,
+		SleepBetweenRetries:            args.SleepBetweenRetries,
 	}
 
 	if args.UseTransparentProxyEngineV1 {

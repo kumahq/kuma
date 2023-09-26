@@ -11,7 +11,8 @@ var _ = Describe("WaitParameter", func() {
 	DescribeTable("should return",
 		func(seconds int, verbose bool, want string) {
 			// given
-			wait := Wait(uint(seconds))
+			s := uint(seconds)
+			wait := Wait(&s)
 
 			// when
 			got := wait.Build(verbose)
