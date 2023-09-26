@@ -142,7 +142,7 @@ runuser -u kuma-dp -- \
 			}
 
 			if args.DNSUpstreamTargetChain != "RETURN" {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
+				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
 			if args.EbpfEnabled {
@@ -155,11 +155,11 @@ runuser -u kuma-dp -- \
 				}
 
 				if args.StoreFirewalld {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --store-firewalld will be ignored when --ebpf-enabled is being used"))
+					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used"))
 				}
 
 				if args.SkipDNSConntrackZoneSplit {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
+					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
 				}
 			}
 
@@ -167,7 +167,7 @@ runuser -u kuma-dp -- \
 				return err
 			}
 
-			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.\n"))
+			_, _ = cmd.OutOrStdout().Write([]byte("# transparent proxy set up successfully\n"))
 			return nil
 		},
 	}

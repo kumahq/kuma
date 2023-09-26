@@ -84,7 +84,7 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 // rules for used to see and debug if something goes wrong, which can be overwritten
 // in tests to not obfuscate the other, more relevant logs
 func saveIPTablesRestoreFile(runtimeOutput io.Writer, f *os.File, content string) error {
-	_, _ = fmt.Fprintln(runtimeOutput, "Writing following contents to rules file: ", f.Name())
+	_, _ = fmt.Fprintln(runtimeOutput, "# writing following contents to rules file: ", f.Name())
 	_, _ = fmt.Fprintln(runtimeOutput, content)
 
 	writer := bufio.NewWriter(f)
@@ -158,7 +158,7 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 func RestoreIPTables(cfg config.Config) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
-	_, _ = cfg.RuntimeStdout.Write([]byte("kumactl is about to apply the " +
+	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
 		"iptables rules that will enable transparent proxying on the machine. " +
 		"The SSH connection may drop. If that happens, just reconnect again.\n"))
 
@@ -186,7 +186,7 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		output += ipv6Output
 	}
 
-	_, _ = cfg.RuntimeStdout.Write([]byte("iptables set to diverge the traffic " +
+	_, _ = cfg.RuntimeStdout.Write([]byte("# iptables set to diverge the traffic " +
 		"to Envoy.\n"))
 
 	return output, nil
