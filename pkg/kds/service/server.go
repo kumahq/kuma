@@ -72,6 +72,8 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 		return nil, err
 	}
 
+	clientID := ClientID(ctx, zone)
+	log = log.WithValues("clientID", clientID)
 
 	insight := system.NewZoneInsightResource()
 	if err := manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone, Mesh: model.NoMesh}, insight, func(resource model.Resource) error {
