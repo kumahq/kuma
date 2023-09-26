@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -19,6 +22,8 @@ import (
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
+
+var log = core.Log.WithName("kds-service")
 
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs EnvoyAdminRPCs
@@ -67,30 +72,37 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 ) error {
 	zone, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
-		return err
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	clientID := ClientID(stream.Context(), zone)
-	core.Log.Info("Envoy Admin RPC stream started", "rpc", rpcName, "clientID", clientID)
+	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(clientID, stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
-		return err
+		logger.Error(err, "could not store stream connection")
+		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	defer func() {
 		rpc.ClientDisconnected(clientID)
 		// stream.Context() is cancelled here, we need to use another ctx
 		ctx := multitenant.CopyIntoCtx(stream.Context(), context.Background())
 		if err := g.storeStreamConnection(ctx, zone, rpcName, ""); err != nil {
-			core.Log.Error(err, "could not clear stream connection information in ZoneInsight", "rpc", rpcName, "clientID", clientID, "rpc", rpcName)
+			logger.Error(err, "could not clear stream connection information in ZoneInsight")
 		}
 	}()
 	for {
 		resp, err := recv()
-		if err != nil {
-			return err
+		if err == io.EOF {
+			return nil
 		}
-		core.Log.V(1).Info("Envoy Admin RPC response received", "rpc", rpc, "clientID", clientID, "requestId", resp.GetRequestId())
+		if err != nil {
+			logger.Error(err, "could not receive a message")
+			return status.Error(codes.Internal, "could not receive a message")
+		}
+		logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
 		if err := rpc.ResponseReceived(clientID, resp); err != nil {
-			return err
+			logger.Error(err, "could not mark the response as received")
+			return status.Error(codes.InvalidArgument, "could not mark the response as received")
 		}
 	}
 }
