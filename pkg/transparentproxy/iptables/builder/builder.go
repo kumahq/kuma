@@ -119,9 +119,9 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 	return f, nil
 }
 
-func runRestoreCmd(cmdName string, f *os.File) (string, error) {
+func runRestoreCmd(cmdName string, params []string) (string, error) {
 	// #nosec G204
-	cmd := exec.Command(cmdName, "--noflush", f.Name())
+	cmd := exec.Command(cmdName, params...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("executing command failed: %s (with output: %q)", err, output)
@@ -152,12 +152,7 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	cmdName := "iptables-restore"
-	if ipv6 {
-		cmdName = "ip6tables-restore"
-	}
-
-	return runRestoreCmd(cmdName, rulesFile)
+	return runRestoreCmd(buildRestore(cfg, rulesFile))
 }
 
 // RestoreIPTables
