@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"sync"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -30,7 +31,7 @@ func NewErrorRecorderStream(s stream.DeltaStream) ErrorRecorderStream {
 
 func (e *errorRecorderStream) Recv() (*envoy_sd.DeltaDiscoveryRequest, error) {
 	res, err := e.DeltaStream.Recv()
-	if err != nil {
+	if err != nil && err != io.EOF { // do not consider "end of stream" an error
 		e.Lock()
 		e.err = err
 		e.Unlock()
