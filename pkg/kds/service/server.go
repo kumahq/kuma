@@ -72,18 +72,17 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 		return nil, err
 	}
 
+
 	insight := system.NewZoneInsightResource()
-	if err := g.resManager.Get(ctx, insight, core_store.GetByKey(zone, model.NoMesh)); err != nil {
-		return nil, err
-	}
-	if insight.Spec.HealthCheck == nil {
-		insight.Spec.HealthCheck = &system_proto.HealthCheck{}
-	}
+	if err := manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone, Mesh: model.NoMesh}, insight, func(resource model.Resource) error {
+		if insight.Spec.HealthCheck == nil {
+			insight.Spec.HealthCheck = &system_proto.HealthCheck{}
+		}
 
-	insight.Spec.HealthCheck.Time = timestamppb.Now()
-
-	if err := g.resManager.Update(ctx, insight); err != nil {
-		return nil, err
+		insight.Spec.HealthCheck.Time = timestamppb.Now()
+		return nil
+	}, manager.WithConflictRetry(100*time.Millisecond, 10)); err != nil {
+		log.Error(err, "couldn't update zone insight", "zone", zone)
 	}
 
 	return &mesh_proto.ZoneHealthCheckResponse{}, nil
