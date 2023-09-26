@@ -13,9 +13,9 @@ func buildRestore(cfg config.Config, rulesFile *os.File) (string, []string) {
 		cmdName = ip6tablesRestore
 	}
 
-	return cmdName, NewParameters(
-		NoFlush(),
-		Wait(cfg.Wait),
-		WaitInterval(cfg.WaitInterval),
-	).Build(cfg.Verbose, rulesFile.Name())
+	parameters := NewParameters().
+		AppendIf(cfg.RestoreLegacy, Wait(cfg.Wait), WaitInterval(cfg.WaitInterval)).
+		Append(NoFlush())
+
+	return cmdName, parameters.Build(cfg.Verbose, rulesFile.Name())
 }
