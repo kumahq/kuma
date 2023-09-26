@@ -167,8 +167,8 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, er
 
 		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
 			"# [%d/%d] %s returned error: '%s'",
-			i + 1,
-			cfg.Retry.MaxRetries + 1,
+			i+1,
+			cfg.Retry.MaxRetries+1,
 			strings.Join(append([]string{cmdName}, params...), " "),
 			err.Error(),
 		)))

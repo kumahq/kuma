@@ -73,7 +73,7 @@ func CheckForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
 		return false, err
 	}
 
-	r := regexp.MustCompile("ip6?tables-restore v(.*?) \\((.*?)\\)")
+	r := regexp.MustCompile(`ip6?tables-restore v(.*?) \((.*?)\)`)
 	match := r.FindStringSubmatch(string(output))
 
 	return len(match) == 3 && match[2] == "legacy", nil
