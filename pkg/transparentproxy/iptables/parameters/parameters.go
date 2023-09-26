@@ -66,3 +66,23 @@ func (p *Parameter) Negate() ParameterBuilder {
 
 	return p.negate(p)
 }
+
+type Parameters []*Parameter
+
+func NewParameters(parameters ...*Parameter) Parameters {
+	return parameters
+}
+
+func (p Parameters) Build(verbose bool, additionalParameters ...string) []string {
+	var result []string
+
+	for _, parameter := range p {
+		builtParameter := parameter.Build(verbose)
+
+		if builtParameter != "" {
+			result = append(result, builtParameter)
+		}
+	}
+
+	return append(result, additionalParameters...)
+}
