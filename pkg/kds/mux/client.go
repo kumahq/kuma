@@ -89,7 +89,6 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		return err
 	}
 	defer func() {
-		core.Log.Info("closing the connection")
 		if err := conn.Close(); err != nil {
 			errs = errors.Wrapf(err, "failed to close a connection")
 		}
@@ -165,15 +164,15 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, errorCh)
+	processingErrorsCh := make(chan error)
+	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
 	select {
 	case <-stop:
 		log.Info("Global to Zone Sync rpc stream stopped")
 		if err := stream.CloseSend(); err != nil {
 			errorCh <- errors.Wrap(err, "CloseSend returned an error")
 		}
-		return
-	case err := <-errorCh:
+	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			log.Error(err, "Global to Zone Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
@@ -184,7 +183,6 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			log.Error(err, "CloseSend returned an error")
 		}
 		errorCh <- err
-		return
 	}
 }
 
@@ -196,15 +194,15 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 		errorCh <- err
 		return
 	}
-	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, errorCh)
+	processingErrorsCh := make(chan error)
+	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
 	select {
 	case <-stop:
 		log.Info("Zone to Global Sync rpc stream stopped")
 		if err := stream.CloseSend(); err != nil {
 			errorCh <- errors.Wrap(err, "CloseSend returned an error")
 		}
-		return
-	case err := <-errorCh:
+	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			log.Error(err, "Zone to Global Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
@@ -215,7 +213,6 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 			log.Error(err, "CloseSend returned an error")
 		}
 		errorCh <- err
-		return
 	}
 }
 
