@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type TransparentProxyConfig struct {
@@ -38,6 +39,8 @@ type TransparentProxyConfig struct {
 	RestoreLegacy                  bool
 	Wait                           *uint
 	WaitInterval                   uint
+	MaxRetries                     int
+	SleepBetweenRetries            time.Duration
 }
 
 const DebugLogLevel uint16 = 7
@@ -119,6 +122,11 @@ type LogConfig struct {
 	Level   uint16
 }
 
+type RetryConfig struct {
+	MaxRetries         int
+	SleepBetweenReties time.Duration
+}
+
 type Config struct {
 	Owner    Owner
 	Redirect Redirect
@@ -160,6 +168,9 @@ type Config struct {
 	// a long time, and you want to reduce the amount of CPU that iptables uses
 	// while waiting for the lock
 	WaitInterval uint
+	// Retry allows you to configure the number of times that the system should
+	// retry an installation if it fails
+	Retry RetryConfig
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
@@ -266,8 +277,12 @@ func defaultConfig() Config {
 			Level:   DebugLogLevel,
 		},
 		RestoreLegacy: false,
-		Wait:         &zero,
-		WaitInterval: 0,
+		Wait:          &zero,
+		WaitInterval:  0,
+		Retry: RetryConfig{
+			MaxRetries:         4,
+			SleepBetweenReties: 2 * time.Second,
+		},
 	}
 }
 
@@ -407,6 +422,15 @@ func MergeConfigWithDefaults(cfg Config) Config {
 
 	// .WaitInterval
 	result.WaitInterval = cfg.WaitInterval
+
+	// .Retry
+	if cfg.Retry.MaxRetries > 0 {
+		result.Retry.MaxRetries = cfg.Retry.MaxRetries
+	}
+
+	if cfg.Retry.SleepBetweenReties != 0 {
+		result.Retry.SleepBetweenReties = cfg.Retry.SleepBetweenReties
+	}
 
 	return result
 }

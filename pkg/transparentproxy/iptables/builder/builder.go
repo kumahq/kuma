@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
@@ -152,7 +153,41 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	return runRestoreCmd(buildRestore(cfg, rulesFile))
+	return restoreIPTablesWithRetry(cfg, rulesFile)
+}
+
+func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, error) {
+	cmdName, params := buildRestore(cfg, rulesFile)
+
+	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
+		output, err := runRestoreCmd(cmdName, params)
+		if err == nil {
+			return output, nil
+		}
+
+		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
+			"# [%d/%d] %s returned error: '%s'",
+			i + 1,
+			cfg.Retry.MaxRetries + 1,
+			strings.Join(append([]string{cmdName}, params...), " "),
+			err.Error(),
+		)))
+
+		if i < cfg.Retry.MaxRetries {
+			_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
+				" will try again in %s",
+				cfg.Retry.SleepBetweenReties.String(),
+			)))
+
+			time.Sleep(cfg.Retry.SleepBetweenReties)
+		}
+
+		_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+	}
+
+	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+
+	return "", errors.Errorf("%s failed", cmdName)
 }
 
 // RestoreIPTables
