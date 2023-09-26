@@ -34,6 +34,10 @@ type Parameter struct {
 }
 
 func (p *Parameter) Build(verbose bool) string {
+	if p == nil {
+		return ""
+	}
+
 	flag := p.short
 
 	if verbose {
@@ -56,7 +60,7 @@ func (p *Parameter) Build(verbose bool) string {
 }
 
 func (p *Parameter) Negate() ParameterBuilder {
-	if p.negate == nil {
+	if p == nil || p.negate == nil {
 		return p
 	}
 
