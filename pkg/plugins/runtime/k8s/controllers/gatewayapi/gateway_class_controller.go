@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -186,7 +187,7 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		config, ok := obj.(*mesh_k8s.MeshGatewayConfig)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to MeshGatewayConfig", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to MeshGatewayConfig", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 

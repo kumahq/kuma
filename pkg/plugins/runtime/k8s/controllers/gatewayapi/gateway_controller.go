@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -178,7 +179,7 @@ func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 	return func(_ context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		route, ok := obj.(*gatewayapi.HTTPRoute)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to HTTPRoute", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to HTTPRoute", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -209,7 +210,7 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		class, ok := obj.(*gatewayapi.GatewayClass)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayClass", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to GatewayClass", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -240,7 +241,7 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		config, ok := obj.(*mesh_k8s.MeshGatewayConfig)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to MeshGatewayConfig", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to MeshGatewayConfig", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -281,7 +282,7 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		grant, ok := obj.(*gatewayapi.ReferenceGrant)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to GatewayGrant", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -320,7 +321,7 @@ func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.Ma
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		secret, ok := obj.(*kube_core.Secret)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to Secret", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to Secret", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 

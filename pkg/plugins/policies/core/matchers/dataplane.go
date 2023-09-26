@@ -136,7 +136,7 @@ func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources
 		case common_api.MeshHTTPRoute:
 			mhr := resolveMeshHTTPRouteRef(r.GetMeta(), policy.GetTargetRef().Name, resources)
 			if mhr == nil {
-				core.Log.Info("unable to resolve TargetRef", "mesh", r.GetMeta().GetMesh(),
+				core.Log.WithName("matchers").Info("unable to resolve TargetRef", "mesh", r.GetMeta().GetMesh(),
 					"policyType", r.Descriptor().Name, "policyName", r.GetMeta().GetName(),
 					"targetRefKind", policy.GetTargetRef().Kind, "targetRefName", policy.GetTargetRef().Name,
 				)
