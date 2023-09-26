@@ -151,17 +151,9 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 	}
 
 	for _, zoneInsight := range zoneInsights.GetItems() {
-		subscriptions := zoneInsight.GetSpec().(*system_proto.ZoneInsight).GetSubscriptions()
-
-		for _, subscription := range subscriptions {
-			globalInsight.Zones.ControlPlanes.Total += 1
-
-			disconnected := subscription.GetDisconnectTime()
-			connected := subscription.GetConnectTime().AsTime()
-
-			if disconnected == nil || disconnected.AsTime().Before(connected) {
-				globalInsight.Zones.ControlPlanes.Online += 1
-			}
+		globalInsight.Zones.ControlPlanes.Total += 1
+		if zoneInsight.GetSpec().(*system_proto.ZoneInsight).IsOnline() {
+			globalInsight.Zones.ControlPlanes.Online += 1
 		}
 	}
 
@@ -178,14 +170,9 @@ func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
 	}
 
 	for _, zoneIngressInsight := range zoneIngressInsights.GetItems() {
-		subscriptions := zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight).GetSubscriptions()
-
-		for _, subscription := range subscriptions {
-			globalInsight.Zones.ZoneIngresses.Total += 1
-
-			if subscription.GetDisconnectTime() == nil {
-				globalInsight.Zones.ZoneIngresses.Online += 1
-			}
+		globalInsight.Zones.ZoneIngresses.Total += 1
+		if zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight).IsOnline() {
+			globalInsight.Zones.ZoneIngresses.Online += 1
 		}
 	}
 
@@ -202,14 +189,9 @@ func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
 	}
 
 	for _, zoneEgressInsight := range zoneEgressInsights.GetItems() {
-		subscriptions := zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight).GetSubscriptions()
-
-		for _, subscription := range subscriptions {
-			globalInsight.Zones.ZoneEgresses.Total += 1
-
-			if subscription.GetDisconnectTime() == nil {
-				globalInsight.Zones.ZoneEgresses.Online += 1
-			}
+		globalInsight.Zones.ZoneEgresses.Total += 1
+		if zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight).IsOnline() {
+			globalInsight.Zones.ZoneEgresses.Online += 1
 		}
 	}
 

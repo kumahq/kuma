@@ -51,16 +51,16 @@
   },
   "zones": {
     "controlPlanes": {
-      "online": 2,
-      "total": 4
+      "online": 1,
+      "total": 2
     },
     "zoneEgresses": {
-      "online": 2,
-      "total": 4
+      "online": 1,
+      "total": 2
     },
     "zoneIngresses": {
-      "online": 2,
-      "total": 4
+      "online": 1,
+      "total": 2
     }
   }
 }
