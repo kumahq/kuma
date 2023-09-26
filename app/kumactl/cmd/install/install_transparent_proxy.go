@@ -43,6 +43,9 @@ type transparentProxyArgs struct {
 	EbpfCgroupPath                 string
 	EbpfTCAttachIface              string
 	VnetNetworks                   []string
+	Wait                           uint
+	DontWait                       bool
+	WaitInterval                   uint
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -163,6 +166,10 @@ runuser -u kuma-dp -- \
 				}
 			}
 
+			if (args.Wait > 0 || args.WaitInterval > 0) && args.DontWait {
+				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --wait and --wait-interval will be ignored when --dont-wait is being used"))
+			}
+
 			if err := configureTransparentProxy(cmd, &args); err != nil {
 				return err
 			}
@@ -207,6 +214,9 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.VnetNetworks, "vnet", []string{}, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
+	cmd.Flags().UintVar(&args.Wait, "wait", 0, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error. Default value 0 means wait forever. To disable this behavior and exit immediately if the xtables lock is not available, use the --dont-wait flag")
+	cmd.Flags().BoolVar(&args.DontWait, "dont-wait", false, "disable the default behavior of waiting for the xtables exclusive lock. If the lock is not available when the application starts, the application will exit immediately with an error")
+	cmd.Flags().UintVar(&args.WaitInterval, "wait-interval", 0, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
 
 	return cmd
 }
@@ -239,6 +249,11 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		return errors.Wrapf(err, "unable to find the kuma-dp user")
 	}
 
+	var wait *uint
+	if !args.DontWait {
+		wait = &args.Wait
+	}
+
 	cfg := &config.TransparentProxyConfig{
 		DryRun:                         args.DryRun,
 		Verbose:                        args.Verbose,
@@ -266,6 +281,8 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		VnetNetworks:                   args.VnetNetworks,
 		Stdout:                         cmd.OutOrStdout(),
 		Stderr:                         cmd.OutOrStderr(),
+		Wait:                           wait,
+		WaitInterval:                   args.WaitInterval,
 	}
 
 	if args.UseTransparentProxyEngineV1 {

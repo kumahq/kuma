@@ -35,6 +35,8 @@ type TransparentProxyConfig struct {
 	VnetNetworks                   []string
 	Stdout                         io.Writer
 	Stderr                         io.Writer
+	Wait                           *uint
+	WaitInterval                   uint
 }
 
 const DebugLogLevel uint16 = 7
@@ -140,6 +142,19 @@ type Config struct {
 	// Log is the place where configuration for logging iptables rules will
 	// be placed
 	Log LogConfig
+	// Wait is the amount of time, in seconds, that the application should wait
+	// for the xtables exclusive lock before exiting. If the lock is not
+	// available within the specified time, the application will exit with
+	// an error. Default value *(0) means wait forever. To disable this behavior
+	// and exit immediately if the xtables lock is not available, set this to
+	// nil
+	Wait *uint
+	// WaitInterval is the amount of time, in microseconds, that iptables should
+	// wait between each iteration of the lock acquisition loop. This can be
+	// useful if the xtables lock is being held by another application for
+	// a long time, and you want to reduce the amount of CPU that iptables uses
+	// while waiting for the lock
+	WaitInterval uint
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
@@ -196,6 +211,8 @@ func (c Config) ShouldConntrackZoneSplit() bool {
 }
 
 func defaultConfig() Config {
+	zero := uint(0)
+
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
@@ -243,6 +260,8 @@ func defaultConfig() Config {
 			Enabled: false,
 			Level:   DebugLogLevel,
 		},
+		Wait:         &zero,
+		WaitInterval: 0,
 	}
 }
 
@@ -373,6 +392,12 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	if cfg.Log.Level != DebugLogLevel {
 		result.Log.Level = cfg.Log.Level
 	}
+
+	// .Wait
+	result.Wait = cfg.Wait
+
+	// .WaitInterval
+	result.WaitInterval = cfg.WaitInterval
 
 	return result
 }

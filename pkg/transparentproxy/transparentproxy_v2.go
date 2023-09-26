@@ -193,6 +193,8 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		IPv6:          ipv6,
 		Verbose:       tpConfig.Verbose,
 		DryRun:        tpConfig.DryRun,
+		Wait:          tpConfig.Wait,
+		WaitInterval:  tpConfig.WaitInterval,
 	}
 
 	return Setup(cfg)
