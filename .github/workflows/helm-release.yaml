@@ -46,7 +46,7 @@ jobs:
           | sudo tar xvz --directory /usr/bin cr
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21.1"
+          go-version-file: go.mod
       - name: Update chart versions
         run: |
           git config user.name "${GH_USER}"
