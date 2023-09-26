@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -57,6 +58,25 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 	err = exec.Command("ip6tables", "-t", "nat", "-L").Run()
 
 	return err == nil, nil
+}
+
+// CheckForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is
+// legacy.
+func CheckForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
+	cmdName := "iptables-restore"
+	if ipv6 {
+		cmdName = "ip6tables-restore"
+	}
+
+	output, err := exec.Command(cmdName, "--version").Output()
+	if err != nil {
+		return false, err
+	}
+
+	r := regexp.MustCompile("ip6?tables-restore v(.*?) \\((.*?)\\)")
+	match := r.FindStringSubmatch(string(output))
+
+	return len(match) == 3 && match[2] == "legacy", nil
 }
 
 func parseUint16(port string) (uint16, error) {
@@ -151,6 +171,11 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
 	}
 
+	restoreLegacy, err := CheckForIptablesRestoreLegacy(ipv6)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
+	}
+
 	cfg := config.Config{
 		Owner: config.Owner{
 			UID: tpConfig.UID,
@@ -193,6 +218,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		IPv6:          ipv6,
 		Verbose:       tpConfig.Verbose,
 		DryRun:        tpConfig.DryRun,
+		RestoreLegacy: restoreLegacy,
 		Wait:          tpConfig.Wait,
 		WaitInterval:  tpConfig.WaitInterval,
 	}
