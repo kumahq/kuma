@@ -153,6 +153,71 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 	}
 }
 
+<<<<<<< HEAD
+=======
+func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
+	stream, err := kdsClient.GlobalToZoneSync(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+	processingErrorsCh := make(chan error)
+	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
+	select {
+	case <-stop:
+		log.Info("Global to Zone Sync rpc stream stopped")
+		if err := stream.CloseSend(); err != nil {
+			errorCh <- errors.Wrap(err, "CloseSend returned an error")
+		}
+	case err := <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "Global to Zone Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
+			return
+		}
+		log.Error(err, "Global to Zone Sync rpc stream failed, will restart in background")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+		errorCh <- err
+		return
+	}
+}
+
+func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
+	stream, err := kdsClient.ZoneToGlobalSync(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+	processingErrorsCh := make(chan error)
+	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
+	select {
+	case <-stop:
+		log.Info("Zone to Global Sync rpc stream stopped")
+		if err := stream.CloseSend(); err != nil {
+			errorCh <- errors.Wrap(err, "CloseSend returned an error")
+		}
+	case err := <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "Zone to Global Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
+			return
+		}
+		log.Error(err, "Zone to Global Sync rpc stream failed, will restart in background")
+		if err := stream.CloseSend(); err != nil {
+			log.Error(err, "CloseSend returned an error")
+		}
+		errorCh <- err
+		return
+	}
+}
+
+>>>>>>> 6e83b4a96 (fix(kds): call CloseSend and exit a goroutine when sync fails to start (#7869))
 func (c *client) startXDSConfigs(
 	ctx context.Context,
 	log logr.Logger,
