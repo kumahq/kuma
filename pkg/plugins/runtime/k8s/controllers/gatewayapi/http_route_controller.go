@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -248,7 +249,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway, ok := obj.(*gatewayapi.Gateway)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to Gateway", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to Gateway", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -282,7 +283,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		grant, ok := obj.(*gatewayapi.ReferenceGrant)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to GatewayGrant", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 

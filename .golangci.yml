@@ -22,6 +22,7 @@ linters:
     - unused
     - whitespace
     - nosprintfhostport
+    - loggercheck
 
 run:
   build-tags:
