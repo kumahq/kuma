@@ -139,6 +139,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 }
 
+// StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
 	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
