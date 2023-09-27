@@ -151,10 +151,6 @@ type Config struct {
 	// Log is the place where configuration for logging iptables rules will
 	// be placed
 	Log LogConfig
-	// RestoreLegacy indicates whether the ip{6}tables-restore version is legacy
-	// (non-nftables). If RestoreLegacy is true, the flags "--wait" and
-	// "--wait-interval" are valid. These flags are invalid with nftables.
-	RestoreLegacy bool
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
 	// available within the specified time, the application will exit with
@@ -276,7 +272,6 @@ func defaultConfig() Config {
 			Enabled: false,
 			Level:   DebugLogLevel,
 		},
-		RestoreLegacy: false,
 		Wait:          &zero,
 		WaitInterval:  0,
 		Retry: RetryConfig{
@@ -413,9 +408,6 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	if cfg.Log.Level != DebugLogLevel {
 		result.Log.Level = cfg.Log.Level
 	}
-
-	// .RestoreLegacy
-	result.RestoreLegacy = cfg.RestoreLegacy
 
 	// .Wait
 	result.Wait = cfg.Wait

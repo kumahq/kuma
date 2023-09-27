@@ -7,14 +7,18 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
-func buildRestore(cfg config.Config, rulesFile *os.File) (string, []string) {
+func buildRestore(
+	cfg config.Config,
+	rulesFile *os.File,
+	restoreLegacy bool,
+) (string, []string) {
 	cmdName := iptablesRestore
 	if cfg.IPv6 {
 		cmdName = ip6tablesRestore
 	}
 
 	parameters := NewParameters().
-		AppendIf(cfg.RestoreLegacy, Wait(cfg.Wait), WaitInterval(cfg.WaitInterval)).
+		AppendIf(restoreLegacy, Wait(cfg.Wait), WaitInterval(cfg.WaitInterval)).
 		Append(NoFlush())
 
 	return cmdName, parameters.Build(cfg.Verbose, rulesFile.Name())

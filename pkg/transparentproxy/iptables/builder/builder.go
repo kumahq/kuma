@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -131,7 +132,7 @@ func runRestoreCmd(cmdName string, params []string) (string, error) {
 	return string(output), nil
 }
 
-func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
+func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool, ) (string, error) {
 	rulesFile, err := createRulesFile(cfg.IPv6)
 	if err != nil {
 		return "", err
@@ -157,7 +158,12 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 }
 
 func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, error) {
-	cmdName, params := buildRestore(cfg, rulesFile)
+	restoreLegacy, err := checkForIptablesRestoreLegacy(cfg.IPv6)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
+	}
+
+	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy)
 
 	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
 		output, err := runRestoreCmd(cmdName, params)
@@ -188,6 +194,29 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, er
 	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
 
 	return "", errors.Errorf("%s failed", cmdName)
+}
+
+// checkForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is
+// legacy (non-nftables). The --wait and --wait-interval flags are only valid
+// with legacy ip{6}tables-restore. These flags are invalid with nftables
+// because nftables back end transactions are atomic and there is no need for
+// the global xtables lock, which has proven problematic in environments with
+// large and/or rapidly changing rulesets.
+func checkForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
+	cmdName := "iptables-restore"
+	if ipv6 {
+		cmdName = "ip6tables-restore"
+	}
+
+	output, err := exec.Command(cmdName, "--version").Output()
+	if err != nil {
+		return false, err
+	}
+
+	r := regexp.MustCompile("ip6?tables-restore v(.*?) \\((.*?)\\)")
+	match := r.FindStringSubmatch(string(output))
+
+	return len(match) == 3 && match[2] == "legacy", nil
 }
 
 // RestoreIPTables
