@@ -175,6 +175,12 @@ type ExternalService_Networking_TLS struct {
 	// ServerName overrides the default Server Name Indicator set by Kuma.
 	// The default value is set to "address" specified in "networking".
 	ServerName *wrapperspb.StringValue `protobuf:"bytes,6,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
+<<<<<<< HEAD
+=======
+	// If true then hostname verification will be skipped during certificate
+	// verification.
+	SkipHostnameVerification *wrapperspb.BoolValue `protobuf:"bytes,7,opt,name=skipHostnameVerification,proto3" json:"skipHostnameVerification,omitempty"`
+>>>>>>> 078c2ef4f (feat(transparent-proxy): allow to wait for xtables lock and retry when installing tproxy fails (#7870))
 }
 
 func (x *ExternalService_Networking_TLS) Reset() {
