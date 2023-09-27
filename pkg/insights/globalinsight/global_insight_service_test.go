@@ -45,17 +45,17 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createServiceInsight("si-2", "payments", rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneInsight("zi-1", rs)
+		err = createZoneInsight("zi-1", true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneInsight("zi-2", rs)
+		err = createZoneInsight("zi-2", false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-1", "default", rs)
+		err = createZoneIngressInsight("zii-1", "default", true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-2", "payments", rs)
+		err = createZoneIngressInsight("zii-2", "payments", false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "default", rs)
+		err = createZoneEgressInsight("zei-1", "default", true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "payments", rs)
+		err = createZoneEgressInsight("zei-1", "payments", false, rs)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -109,43 +109,53 @@ func createServiceInsight(name string, mesh string, rs store.ResourceStore) erro
 		Create(rs)
 }
 
-func createZoneInsight(name string, rs store.ResourceStore) error {
-	return builders.ZoneInsight().
-		WithName(name).
-		AddSubscription(&system_proto.KDSSubscription{
+func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
+	builder := builders.ZoneInsight().WithName(name)
+
+	if online {
+		builder.AddSubscription(&system_proto.KDSSubscription{
 			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		}).
-		AddSubscription(&system_proto.KDSSubscription{
+		})
+	} else {
+		builder.AddSubscription(&system_proto.KDSSubscription{
 			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
 			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		}).
-		Create(rs)
+		})
+	}
+
+	return builder.Create(rs)
 }
 
-func createZoneIngressInsight(name string, mesh string, rs store.ResourceStore) error {
-	return builders.ZoneIngressInsight().
-		WithName(name).
-		WithMesh(mesh).
-		AddSubscription(&mesh_proto.DiscoverySubscription{
+func createZoneIngressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
+	builder := builders.ZoneIngressInsight().WithName(name).WithMesh(mesh)
+
+	if online {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		}).
-		AddSubscription(&mesh_proto.DiscoverySubscription{
+		})
+	} else {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
 			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		}).
-		Create(rs)
+		})
+	}
+
+	return builder.Create(rs)
 }
 
-func createZoneEgressInsight(name string, mesh string, rs store.ResourceStore) error {
-	return builders.ZoneEgressInsight().
-		WithName(name).
-		WithMesh(mesh).
-		AddSubscription(&mesh_proto.DiscoverySubscription{
+func createZoneEgressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
+	builder := builders.ZoneEgressInsight().WithName(name).WithMesh(mesh)
+
+	if online {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		}).
-		AddSubscription(&mesh_proto.DiscoverySubscription{
+		})
+	} else {
+		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
 			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		}).
-		Create(rs)
+		})
+	}
+
+	return builder.Create(rs)
 }

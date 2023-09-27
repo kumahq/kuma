@@ -244,7 +244,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				start := r.now()
 				select {
 				case <-ctx.Done():
-					log.Info("stopped resyncEvents loop")
 					return
 				case event, more := <-resyncEvents:
 					if !more {

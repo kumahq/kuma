@@ -2,9 +2,7 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -77,8 +75,6 @@ const everyListener = gatewayapi.SectionName("")
 type attachedRoutes struct {
 	// num is the number of allowed routes for a listener
 	num int32
-	// invalidRoutes can be empty
-	invalidRoutes []string
 }
 
 // AttachedRoutesForListeners tracks the relevant status for routes pointing to a
@@ -116,10 +112,6 @@ func attachedRoutesForListeners(
 
 					if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
 						attached.num++
-					}
-
-					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.RouteConditionResolvedRefs)) {
-						attached.invalidRoutes = append(attached.invalidRoutes, kube_client.ObjectKeyFromObject(&route).String())
 					}
 
 					attachedRoutes[sectionName] = attached
@@ -189,23 +181,6 @@ func mergeGatewayListenerStatuses(
 		// Check resolved status for routes for this listener and for
 		// non-specific parents.
 		previousStatus.AttachedRoutes = attachedRouteStatuses[name].num + attachedRouteStatuses[everyListener].num
-
-		// If we can't resolve refs on a route and our listener condition
-		// ResolvedRefs is otherwise true, set it to false.
-		invalidRoutes := append(attachedRouteStatuses[everyListener].invalidRoutes, attachedRouteStatuses[name].invalidRoutes...)
-
-		if len(invalidRoutes) > 0 &&
-			kube_apimeta.IsStatusConditionTrue(previousStatus.Conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
-			// We only set the ResolvedRefs condition and don't set ready false
-			message := fmt.Sprintf("Attached HTTPRoutes %s have unresolved BackendRefs", strings.Join(invalidRoutes, ", "))
-			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, kube_meta.Condition{
-				Type:               string(gatewayapi.ListenerConditionResolvedRefs),
-				Status:             kube_meta.ConditionFalse,
-				Reason:             string(gatewayapi.ListenerReasonRefNotPermitted),
-				Message:            message,
-				ObservedGeneration: gateway.GetGeneration(),
-			})
-		}
 
 		statuses = append(statuses, previousStatus)
 	}

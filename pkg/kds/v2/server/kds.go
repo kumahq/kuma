@@ -31,7 +31,12 @@ type server struct {
 }
 
 func (s *server) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
-	return s.Server.DeltaStreamHandler(stream, "")
+	errorStream := NewErrorRecorderStream(stream)
+	err := s.Server.DeltaStreamHandler(errorStream, "")
+	if err == nil {
+		err = errorStream.Err()
+	}
+	return err
 }
 
 // Delta xDS server expects `KDSSyncService_ZoneToGlobalSyncServer` to have Send(*v3.DeltaDiscoveryResponse)
@@ -45,5 +50,10 @@ func (s *server) ZoneToGlobalSync(stream mesh_proto.KDSSyncService_ZoneToGlobalS
 // on zone while kds.proto has different definition of `KDSSyncService_ZoneToGlobalSyncServer` then
 // expected by delta xDS server.
 func (s *server) ZoneToGlobal(stream stream.DeltaStream) error {
-	return s.Server.DeltaStreamHandler(stream, "")
+	errorStream := NewErrorRecorderStream(stream)
+	err := s.Server.DeltaStreamHandler(errorStream, "")
+	if err == nil {
+		err = errorStream.Err()
+	}
+	return err
 }
