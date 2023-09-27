@@ -58,6 +58,10 @@ func (p *Parameter) Build(verbose bool) string {
 		}
 	}
 
+	// Some parameters for flags like "--wait" or "--wait-interval" require an
+	// equal sign to be set, so "--wait 5" is invalid and should be "--wait=5"
+	// to work. If the `Parameter` object has a `connector` property and only
+	// one value, we will use it when joining the flag with the value.
 	connector := " "
 	if p.connector != "" && len(parameters) == 1 {
 		connector = p.connector
