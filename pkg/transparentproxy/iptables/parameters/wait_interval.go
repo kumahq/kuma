@@ -31,8 +31,9 @@ func WaitInterval(microseconds uint) *Parameter {
 	}
 
 	return &Parameter{
-		long:  "--wait-interval",
-		short: "-W",
+		long:      "--wait-interval",
+		short:     "-W",
+		connector: "=",
 		parameters: []ParameterBuilder{
 			&WaitIntervalParameter{microseconds: microseconds},
 		},

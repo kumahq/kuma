@@ -195,6 +195,10 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		DryRun:        tpConfig.DryRun,
 		Wait:          tpConfig.Wait,
 		WaitInterval:  tpConfig.WaitInterval,
+		Retry: config.RetryConfig{
+			MaxRetries:         tpConfig.MaxRetries,
+			SleepBetweenReties: tpConfig.SleepBetweenRetries,
+		},
 	}
 
 	return Setup(cfg)

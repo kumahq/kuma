@@ -29,6 +29,7 @@ type Parameter struct {
 	long       string
 	short      string
 	parameters []ParameterBuilder
+	connector  string
 	negate     func(parameter *Parameter) ParameterBuilder
 	negative   bool
 }
@@ -50,13 +51,19 @@ func (p *Parameter) Build(verbose bool) string {
 		result = append([]string{"!"}, result...)
 	}
 
+	var parameters []string
 	for _, parameter := range p.parameters {
 		if parameter != nil {
-			result = append(result, parameter.Build(verbose))
+			parameters = append(parameters, parameter.Build(verbose))
 		}
 	}
 
-	return strings.Join(result, " ")
+	connector := " "
+	if p.connector != "" && len(parameters) == 1 {
+		connector = p.connector
+	}
+
+	return strings.Join(append(result, parameters...), connector)
 }
 
 func (p *Parameter) Negate() ParameterBuilder {

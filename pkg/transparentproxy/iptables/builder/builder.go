@@ -132,7 +132,7 @@ func runRestoreCmd(cmdName string, params []string) (string, error) {
 	return string(output), nil
 }
 
-func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool, ) (string, error) {
+func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
 	rulesFile, err := createRulesFile(cfg.IPv6)
 	if err != nil {
 		return "", err
@@ -203,9 +203,9 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, er
 // the global xtables lock, which has proven problematic in environments with
 // large and/or rapidly changing rulesets.
 func checkForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
-	cmdName := "iptables-restore"
+	cmdName := iptablesRestore
 	if ipv6 {
-		cmdName = "ip6tables-restore"
+		cmdName = ip6tablesRestore
 	}
 
 	output, err := exec.Command(cmdName, "--version").Output()
@@ -213,10 +213,10 @@ func checkForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
 		return false, err
 	}
 
-	r := regexp.MustCompile("ip6?tables-restore v(.*?) \\((.*?)\\)")
+	r := regexp.MustCompile(`ip6?tables-restore v.*? \((.*?)\)`)
 	match := r.FindStringSubmatch(string(output))
 
-	return len(match) == 3 && match[2] == "legacy", nil
+	return len(match) == 2 && match[1] == "legacy", nil
 }
 
 // RestoreIPTables

@@ -270,8 +270,8 @@ func defaultConfig() Config {
 			Enabled: false,
 			Level:   DebugLogLevel,
 		},
-		Wait:          5,
-		WaitInterval:  0,
+		Wait:         5,
+		WaitInterval: 0,
 		Retry: RetryConfig{
 			MaxRetries:         4,
 			SleepBetweenReties: 2 * time.Second,

@@ -33,6 +33,7 @@ func Wait(seconds uint) *Parameter {
 	return &Parameter{
 		long:       "--wait",
 		short:      "-w",
+		connector:  "=",
 		parameters: []ParameterBuilder{&WaitParameter{seconds: seconds}},
 		negate:     nil, // no negation allowed
 	}
