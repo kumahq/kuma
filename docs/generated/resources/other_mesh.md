@@ -60,7 +60,7 @@
     
     - `skipValidation` (optional)
     
-        If enabled, allows to skip CA validation.
+        If enabled, skips CA validation.
 
 - `tracing` (optional)
 

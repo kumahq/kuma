@@ -251,7 +251,7 @@
                 },
                 "skipValidation": {
                     "type": "boolean",
-                    "description": "If enabled, allows to skip CA validation."
+                    "description": "If enabled, skips CA validation."
                 }
             },
             "additionalProperties": true,

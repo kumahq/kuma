@@ -932,7 +932,7 @@ type Mesh_Mtls struct {
 	EnabledBackend string `protobuf:"bytes,1,opt,name=enabledBackend,proto3" json:"enabledBackend,omitempty"`
 	// List of available Certificate Authority backends
 	Backends []*CertificateAuthorityBackend `protobuf:"bytes,2,rep,name=backends,proto3" json:"backends,omitempty"`
-	// If enabled, allows to skip CA validation.
+	// If enabled, skips CA validation.
 	SkipValidation bool `protobuf:"varint,3,opt,name=skipValidation,proto3" json:"skipValidation,omitempty"`
 }
 
