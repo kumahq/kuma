@@ -9,10 +9,6 @@ type WaitParameter struct {
 }
 
 func (p *WaitParameter) Build(bool) string {
-	if p.seconds == 0 {
-		return ""
-	}
-
 	return strconv.Itoa(int(p.seconds))
 }
 
@@ -29,20 +25,15 @@ func (p *WaitParameter) Negate() ParameterBuilder {
 //
 // ref. iptables(8) > OTHER OPTIONS
 // ref. iptables-restore(8) > DESCRIPTION
-func Wait(seconds *uint) *Parameter {
-	if seconds == nil {
+func Wait(seconds uint) *Parameter {
+	if seconds == 0 {
 		return nil
-	}
-
-	var parameters []ParameterBuilder
-	if *seconds > 0 {
-		parameters = append(parameters, &WaitParameter{seconds: *seconds})
 	}
 
 	return &Parameter{
 		long:       "--wait",
 		short:      "-w",
-		parameters: parameters,
+		parameters: []ParameterBuilder{&WaitParameter{seconds: seconds}},
 		negate:     nil, // no negation allowed
 	}
 }

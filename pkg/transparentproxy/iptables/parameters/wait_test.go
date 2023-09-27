@@ -11,8 +11,7 @@ var _ = Describe("WaitParameter", func() {
 	DescribeTable("should return",
 		func(seconds int, verbose bool, want string) {
 			// given
-			s := uint(seconds)
-			wait := Wait(&s)
+			wait := Wait(uint(seconds))
 
 			// when
 			got := wait.Build(verbose)
@@ -20,8 +19,8 @@ var _ = Describe("WaitParameter", func() {
 			// then
 			Expect(got).To(Equal(want))
 		},
-		Entry("wait without argument", 0, false, "-w"),
-		Entry("wait without argument- verbose", 0, true, "--wait"),
+		Entry("no flag when parameter is 0", 0, false, ""),
+		Entry("no flag when parameter is 0 - verbose", 0, true, ""),
 		Entry("wait seconds", 10, false, "-w 10"),
 		Entry("wait seconds - verbose", 10, true, "--wait 10"),
 	)

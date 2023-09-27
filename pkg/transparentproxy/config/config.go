@@ -37,7 +37,7 @@ type TransparentProxyConfig struct {
 	Stdout                         io.Writer
 	Stderr                         io.Writer
 	RestoreLegacy                  bool
-	Wait                           *uint
+	Wait                           uint
 	WaitInterval                   uint
 	MaxRetries                     int
 	SleepBetweenRetries            time.Duration
@@ -157,7 +157,7 @@ type Config struct {
 	// an error. Default value *(0) means wait forever. To disable this behavior
 	// and exit immediately if the xtables lock is not available, set this to
 	// nil
-	Wait *uint
+	Wait uint
 	// WaitInterval is the amount of time, in microseconds, that iptables should
 	// wait between each iteration of the lock acquisition loop. This can be
 	// useful if the xtables lock is being held by another application for
@@ -223,8 +223,6 @@ func (c Config) ShouldConntrackZoneSplit() bool {
 }
 
 func defaultConfig() Config {
-	zero := uint(0)
-
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
@@ -272,7 +270,7 @@ func defaultConfig() Config {
 			Enabled: false,
 			Level:   DebugLogLevel,
 		},
-		Wait:          &zero,
+		Wait:          5,
 		WaitInterval:  0,
 		Retry: RetryConfig{
 			MaxRetries:         4,
