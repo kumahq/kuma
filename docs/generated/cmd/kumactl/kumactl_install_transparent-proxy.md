@@ -75,6 +75,7 @@ kumactl install transparent-proxy [flags]
   -h, --help                                                                            help for transparent-proxy
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
+      --max-retries int                                                                 flag can be used to specify the maximum number of times to retry an installation before giving up (default 5)
       --redirect-all-dns-traffic                                                        redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf
       --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")
@@ -84,9 +85,12 @@ kumactl install transparent-proxy [flags]
       --redirect-inbound-port-v6 networking.transparentProxying.redirectPortInboundV6   IPv6 inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInboundV6 (default "15010")
       --redirect-outbound-port networking.transparentProxying.redirectPortOutbound      outbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortOutbound (default "15001")
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
+      --sleep-between-retries duration                                                  flag can be used to specify the amount of time to sleep between retries (default 2s)
       --store-firewalld                                                                 store the iptables changes with firewalld
       --verbose                                                                         verbose
       --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
+      --wait uint                                                                       specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error (default 5)
+      --wait-interval uint                                                              flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock
 ```
 
 ### Options inherited from parent commands

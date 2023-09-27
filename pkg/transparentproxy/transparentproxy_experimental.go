@@ -192,6 +192,12 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		IPv6:          ipv6,
 		Verbose:       tpConfig.Verbose,
 		DryRun:        tpConfig.DryRun,
+		Wait:          tpConfig.Wait,
+		WaitInterval:  tpConfig.WaitInterval,
+		Retry: config.RetryConfig{
+			MaxRetries:         tpConfig.MaxRetries,
+			SleepBetweenReties: tpConfig.SleepBetweenRetries,
+		},
 	}
 
 	return kumanet_tproxy.Setup(cfg)
