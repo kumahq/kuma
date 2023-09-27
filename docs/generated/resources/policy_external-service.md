@@ -38,7 +38,8 @@
         
         - `skipHostnameVerification` (optional)
         
-            If true then hostname verification will be skipped during certificate verification.    
+            If true then hostname verification will be skipped during certificate
+            verification.    
     
     - `disableHostDNSEntry` (optional)
     
