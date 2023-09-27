@@ -498,7 +498,12 @@ ingress:
 
   # -- Security context at the container level for ingress
   containerSecurityContext:
-   readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
+
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
@@ -602,7 +607,12 @@ egress:
 
   # -- Security context at the container level for egress
   containerSecurityContext:
-   readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
+
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
 
 kumactl:
   image:

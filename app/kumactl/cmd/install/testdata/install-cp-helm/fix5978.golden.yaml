@@ -611,6 +611,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-egress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -741,6 +742,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-ingress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux

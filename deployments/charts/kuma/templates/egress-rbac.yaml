@@ -5,4 +5,14 @@ metadata:
   name: {{ include "kuma.name" . }}-egress
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.egressLabels" . | nindent 4 }}
+{{- with .Values.egress.serviceAccountAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
 {{- end }}
