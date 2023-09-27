@@ -89,7 +89,7 @@ kumactl install transparent-proxy [flags]
       --use-transparent-proxy-engine-v1                                                 use legacy transparent proxy engine v1
       --verbose                                                                         verbose
       --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
-      --wait uint                                                                       specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error. Default value 0 means wait forever (default 5)
+      --wait uint                                                                       specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error (default 5)
       --wait-interval uint                                                              flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock
 ```
 
