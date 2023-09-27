@@ -133,7 +133,7 @@ func runRestoreCmd(cmdName string, params []string) (string, error) {
 }
 
 func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
-	rulesFile, err := createRulesFile(cfg.IPv6)
+	rulesFile, err := createRulesFile(ipv6)
 	if err != nil {
 		return "", err
 	}
@@ -154,16 +154,16 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	return restoreIPTablesWithRetry(cfg, rulesFile)
+	return restoreIPTablesWithRetry(cfg, rulesFile, ipv6)
 }
 
-func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File) (string, error) {
-	restoreLegacy, err := checkForIptablesRestoreLegacy(cfg.IPv6)
+func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) (string, error) {
+	restoreLegacy, err := checkForIptablesRestoreLegacy(ipv6)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
 	}
 
-	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy)
+	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy, ipv6)
 
 	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
 		output, err := runRestoreCmd(cmdName, params)

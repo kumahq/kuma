@@ -11,9 +11,10 @@ func buildRestore(
 	cfg config.Config,
 	rulesFile *os.File,
 	restoreLegacy bool,
+	ipv6 bool,
 ) (string, []string) {
 	cmdName := iptablesRestore
-	if cfg.IPv6 {
+	if ipv6 {
 		cmdName = ip6tablesRestore
 	}
 
