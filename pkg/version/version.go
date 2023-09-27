@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -39,6 +40,16 @@ func (b BuildInfo) FormatDetailedProductInfo() string {
 		base,
 		"\n",
 	)
+}
+
+func (b BuildInfo) UserAgent(component string) string {
+	return fmt.Sprintf("%s/%s (%s; %s; %s/%s)",
+		component,
+		b.Version,
+		runtime.GOOS,
+		runtime.GOARCH,
+		b.Product,
+		b.GitCommit[:7])
 }
 
 var Build BuildInfo
