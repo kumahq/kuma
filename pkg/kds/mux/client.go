@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 var muxClientLog = core.Log.WithName("kds-mux-client")
@@ -74,7 +75,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		return err
 	}
 	dialOpts := c.metrics.GRPCClientInterceptors()
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(
+	dialOpts = append(dialOpts, grpc.WithUserAgent(version.Build.UserAgent("kds")), grpc.WithDefaultCallOptions(
 		grpc.MaxCallSendMsgSize(int(c.config.MaxMsgSize)),
 		grpc.MaxCallRecvMsgSize(int(c.config.MaxMsgSize))),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
