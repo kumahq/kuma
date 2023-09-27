@@ -70,6 +70,22 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should create CA without validation", func() {
+			// given
+			meshName := "mesh-no-validation"
+
+			// when
+			mesh := samples.MeshMTLSBuilder().WithName(meshName).WithoutBackendValidation()
+			err := mesh.Create(resManager)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and enabled CA is created
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Build().Spec.Mtls.Backends[0])
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should create default resources", func() {
 			// given
 			meshName := "mesh-1"

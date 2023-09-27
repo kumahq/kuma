@@ -36,6 +36,9 @@ message Mesh {
 
     // List of available Certificate Authority backends
     repeated CertificateAuthorityBackend backends = 2 [ (doc.required) = true ];
+
+    // If enabled, allows to skip CA validation.
+    bool skipValidation = 3;
   }
 
   // mTLS settings.

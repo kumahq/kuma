@@ -56,7 +56,11 @@
             - `requestTimeout` (optional)
             
                 Timeout on request for to CA for root certificate chain.
-                If not specified, defaults to 10s.
+                If not specified, defaults to 10s.    
+    
+    - `skipValidation` (optional)
+    
+        If enabled, allows to skip CA validation.
 
 - `tracing` (optional)
 

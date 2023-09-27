@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -45,16 +46,32 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 		if !exist {
 			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
 			return verr.OrNil()
-		} else if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
-			if configErr, ok := err.(*validators.ValidationError); ok {
-				verr.AddErrorAt(path.Index(idx).Field("conf"), *configErr)
-			} else {
-				verr.AddViolationAt(path.Index(idx), err.Error())
+		} else if !resource.Spec.GetMtls().GetSkipValidation() {
+			if err := validateMTLSBackend(ctx, caManager, name, backend, path.Index(idx), &verr); err != nil {
 				return err
 			}
 		}
 	}
 	return verr.OrNil()
+}
+
+func validateMTLSBackend(
+	ctx context.Context,
+	caManager core_ca.Manager,
+	name string,
+	backend *mesh_proto.CertificateAuthorityBackend,
+	path validators.PathBuilder,
+	verr *validators.ValidationError,
+) error {
+	if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
+		if configErr, ok := err.(*validators.ValidationError); ok {
+			verr.AddErrorAt(path.Field("conf"), *configErr)
+		} else {
+			verr.AddViolationAt(path, err.Error())
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *meshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
