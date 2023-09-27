@@ -8,7 +8,7 @@ KIND_KUBECONFIG_DIR := $(HOME)/.kube
 # This is the name of the current config file to use.
 KIND_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/kind-$(KIND_CLUSTER_NAME)-config
 
-# Ensure Kubernetes tooling only gets the config we explicity specify.
+# Ensure Kubernetes tooling only gets the config we explicitly specify.
 unexport KUBECONFIG
 
 METRICS_SERVER_VERSION := 0.4.1
