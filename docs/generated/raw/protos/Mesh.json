@@ -248,6 +248,10 @@
                     },
                     "type": "array",
                     "description": "List of available Certificate Authority backends"
+                },
+                "skipValidation": {
+                    "type": "boolean",
+                    "description": "If enabled, skips CA validation."
                 }
             },
             "additionalProperties": true,
