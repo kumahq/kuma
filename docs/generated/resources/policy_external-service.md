@@ -35,6 +35,14 @@
         
             ServerName overrides the default Server Name Indicator set by Kuma.
             The default value is set to "address" specified in "networking".    
+<<<<<<< HEAD
+=======
+        
+        - `skipHostnameVerification` (optional)
+        
+            If true then hostname verification will be skipped during certificate
+            verification.    
+>>>>>>> 078c2ef4f (feat(transparent-proxy): allow to wait for xtables lock and retry when installing tproxy fails (#7870))
     
     - `disableHostDNSEntry` (optional)
     

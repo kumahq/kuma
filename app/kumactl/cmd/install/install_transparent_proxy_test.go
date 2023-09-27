@@ -74,7 +74,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			goldenFile:   "install-transparent-proxy.dns.golden.txt",
-			errorMessage: "# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it",
+			errorMessage: "# [WARNING] `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it",
 		}),
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
 			extraArgs: []string{
@@ -85,7 +85,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--skip-dns-conntrack-zone-split",
 			},
 			goldenFile:   "install-transparent-proxy.dns.golden.txt",
-			errorMessage: "# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it",
+			errorMessage: "# [WARNING] `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it",
 		}),
 		Entry("should generate defaults with overrides", testCase{
 			extraArgs: []string{

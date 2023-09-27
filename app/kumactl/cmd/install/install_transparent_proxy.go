@@ -7,6 +7,7 @@ import (
 	"net"
 	os_user "os/user"
 	"runtime"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -43,6 +44,10 @@ type transparentProxyArgs struct {
 	EbpfCgroupPath                 string
 	EbpfTCAttachIface              string
 	VnetNetworks                   []string
+	Wait                           uint
+	WaitInterval                   uint
+	MaxRetries                     int
+	SleepBetweenRetries            time.Duration
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -72,6 +77,10 @@ func newInstallTransparentProxy() *cobra.Command {
 		EbpfCgroupPath:                 "/sys/fs/cgroup",
 		EbpfTCAttachIface:              "",
 		VnetNetworks:                   []string{},
+		Wait:                           5,
+		WaitInterval:                   0,
+		MaxRetries:                     5,
+		SleepBetweenRetries:            2 * time.Second,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -142,7 +151,7 @@ runuser -u kuma-dp -- \
 			}
 
 			if args.DNSUpstreamTargetChain != "RETURN" {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
+				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
 			if args.EbpfEnabled {
@@ -155,11 +164,11 @@ runuser -u kuma-dp -- \
 				}
 
 				if args.StoreFirewalld {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --store-firewalld will be ignored when --ebpf-enabled is being used"))
+					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used"))
 				}
 
 				if args.SkipDNSConntrackZoneSplit {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
+					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
 				}
 			}
 
@@ -167,7 +176,11 @@ runuser -u kuma-dp -- \
 				return err
 			}
 
+<<<<<<< HEAD
 			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully\n"))
+=======
+			_, _ = cmd.OutOrStdout().Write([]byte("# transparent proxy set up successfully\n"))
+>>>>>>> 078c2ef4f (feat(transparent-proxy): allow to wait for xtables lock and retry when installing tproxy fails (#7870))
 			return nil
 		},
 	}
@@ -207,6 +220,10 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.VnetNetworks, "vnet", []string{}, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
+	cmd.Flags().UintVar(&args.Wait, "wait", args.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
+	cmd.Flags().UintVar(&args.WaitInterval, "wait-interval", args.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
+	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
 
 	return cmd
 }
@@ -266,6 +283,10 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		VnetNetworks:                   args.VnetNetworks,
 		Stdout:                         cmd.OutOrStdout(),
 		Stderr:                         cmd.OutOrStderr(),
+		Wait:                           args.Wait,
+		WaitInterval:                   args.WaitInterval,
+		MaxRetries:                     args.MaxRetries,
+		SleepBetweenRetries:            args.SleepBetweenRetries,
 	}
 
 	if args.UseTransparentProxyEngineV1 {
