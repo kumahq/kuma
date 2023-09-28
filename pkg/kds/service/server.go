@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
@@ -36,6 +37,7 @@ type GlobalKDSServiceServer struct {
 	resManager     manager.ResourceManager
 	instanceID     string
 	filters        []StreamInterceptor
+	extensions     context.Context
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -44,12 +46,14 @@ func NewGlobalKDSServiceServer(
 	resManager manager.ResourceManager,
 	instanceID string,
 	filters []StreamInterceptor,
+	extensions context.Context,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
 		envoyAdminRPCs: envoyAdminRPCs,
 		resManager:     resManager,
 		instanceID:     instanceID,
 		filters:        filters,
+		extensions:     extensions,
 	}
 }
 
@@ -109,6 +113,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 	clientID := ClientID(stream.Context(), zone)
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
 			if status.Code(err) == codes.InvalidArgument {

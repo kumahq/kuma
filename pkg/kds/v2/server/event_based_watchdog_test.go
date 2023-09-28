@@ -21,7 +21,7 @@ type staticReconciler struct {
 	changedResTypes chan map[core_model.ResourceType]struct{}
 }
 
-func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, m map[core_model.ResourceType]struct{}) (error, bool) {
+func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, m map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
 	s.changedResTypes <- m
 	return nil, true
 }

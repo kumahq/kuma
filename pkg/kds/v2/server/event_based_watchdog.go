@@ -73,7 +73,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			reason := strings.Join(util_maps.SortedKeys(reasons), "_and_")
 			e.Log.V(1).Info("reconcile", "changedTypes", changedTypes, "reason", reason)
 			start := core.Now()
-			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes)
+			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes, e.Log)
 			if err != nil {
 				e.Log.Error(err, "reconcile failed", "changedTypes", changedTypes, "reason", reason)
 				e.Metrics.KdsGenerationsErrors.Inc()
