@@ -48,10 +48,14 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
+	adminAddress := proxy.Metadata.GetAdminAddress()
+	if adminAddress == "" {
+		adminAddress = "127.0.0.1"
+	}
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
 		Configure(envoy_clusters.ProvidedEndpointCluster(
-			govalidator.IsIPv6(proxy.Metadata.GetAdminAddress()),
-			core_xds.Endpoint{Target: proxy.Metadata.GetAdminAddress(), Port: adminPort})).
+			govalidator.IsIPv6(adminAddress),
+			core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
@@ -65,7 +69,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 	}
 
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
-	if g.getAddress(proxy) != proxy.Metadata.GetAdminAddress() {
+	if g.getAddress(proxy) != adminAddress {
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
