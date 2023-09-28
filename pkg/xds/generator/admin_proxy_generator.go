@@ -3,6 +3,8 @@ package generator
 import (
 	"context"
 
+	"github.com/asaskevich/govalidator"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -45,10 +47,11 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 	// In contrast to `AdminPort`, we shouldn't trust `AdminAddress` from the Envoy node metadata
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
-	adminAddress := "127.0.0.1"
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
-		Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
+		Configure(envoy_clusters.ProvidedEndpointCluster(
+			govalidator.IsIPv6(proxy.Metadata.GetAdminAddress()),
+			core_xds.Endpoint{Target: proxy.Metadata.GetAdminAddress(), Port: adminPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
@@ -62,7 +65,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 	}
 
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
-	if g.getAddress(proxy) != "127.0.0.1" {
+	if g.getAddress(proxy) != proxy.Metadata.GetAdminAddress() {
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
