@@ -27,10 +27,15 @@ import (
 
 var log = core.Log.WithName("kds-service")
 
+type StreamInterceptor interface {
+	InterceptServerStream(stream grpc.ServerStream) error
+}
+
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs EnvoyAdminRPCs
 	resManager     manager.ResourceManager
 	instanceID     string
+	filters        []StreamInterceptor
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -38,11 +43,13 @@ func NewGlobalKDSServiceServer(
 	envoyAdminRPCs EnvoyAdminRPCs,
 	resManager manager.ResourceManager,
 	instanceID string,
+	filters []StreamInterceptor,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
 		envoyAdminRPCs: envoyAdminRPCs,
 		resManager:     resManager,
 		instanceID:     instanceID,
+		filters:        filters,
 	}
 }
 
@@ -102,6 +109,16 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 	clientID := ClientID(stream.Context(), zone)
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	for _, filter := range g.filters {
+		if err := filter.InterceptServerStream(stream); err != nil {
+			if status.Code(err) == codes.InvalidArgument {
+				logger.Info("stream interceptor terminating the stream", "cause", err)
+			} else {
+				logger.Error(err, "stream interceptor terminating the stream")
+			}
+			return err
+		}
+	}
 	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(clientID, stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {

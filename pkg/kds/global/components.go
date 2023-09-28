@@ -146,13 +146,22 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 	})
+	var streamInterceptors []service.StreamInterceptor
+	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
+		streamInterceptors = append(streamInterceptors, filter)
+	}
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
 		rt.KDSContext().ServerStreamInterceptors,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
-		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs, rt.ResourceManager(), rt.GetInstanceId()),
+		service.NewGlobalKDSServiceServer(
+			rt.KDSContext().EnvoyAdminRPCs,
+			rt.ResourceManager(),
+			rt.GetInstanceId(),
+			streamInterceptors,
+		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
