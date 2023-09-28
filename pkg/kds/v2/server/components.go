@@ -143,7 +143,7 @@ func newSyncTracker(
 				return err
 			},
 			OnError: func(err error) {
-				kdsMetrics.KdsGenerationsErrors.Inc()
+				kdsMetrics.KdsGenerationErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {

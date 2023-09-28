@@ -76,7 +76,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes)
 			if err != nil {
 				e.Log.Error(err, "reconcile failed", "changedTypes", changedTypes, "reason", reason)
-				e.Metrics.KdsGenerationsErrors.Inc()
+				e.Metrics.KdsGenerationErrors.Inc()
 			} else {
 				result := ResultNoChanges
 				if changed {
