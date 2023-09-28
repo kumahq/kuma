@@ -36,7 +36,7 @@ require (
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.12.1
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
