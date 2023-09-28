@@ -111,8 +111,12 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
-			logger.Info("stream interceptor terminating the stream", "cause", err)
-			return status.Error(codes.InvalidArgument, "invalid stream")
+			if status.Code(err) == codes.InvalidArgument {
+				logger.Info("stream interceptor terminating the stream", "cause", err)
+			} else {
+				logger.Error(err, "stream interceptor terminating the stream")
+			}
+			return err
 		}
 	}
 	logger.Info("Envoy Admin RPC stream started")
