@@ -156,9 +156,13 @@ type PreconditionError struct {
 }
 
 func (a *PreconditionError) Error() string {
-	return "invalid format: " + a.Reason
+	return a.Reason
 }
 
 func (a *PreconditionError) Is(err error) bool {
 	return reflect.TypeOf(a) == reflect.TypeOf(err)
+}
+
+func PreconditionFormatError(reason string) *PreconditionError {
+	return &PreconditionError{Reason: "invalid format: " + reason}
 }
