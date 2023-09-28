@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -154,6 +155,15 @@ func Setup(rt runtime.Runtime) error {
 	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
 		streamInterceptors = append(streamInterceptors, filter)
 	}
+	zwLog := kdsGlobalLog.WithName("zone-watch")
+	if err := rt.Add(component.NewResilientComponent(zwLog, mux.NewZoneWatch(
+		zwLog,
+		rt.EventBus(),
+		rt.ReadOnlyResourceManager(),
+		5*time.Second,
+	))); err != nil {
+		return err
+	}
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
@@ -167,12 +177,14 @@ func Setup(rt runtime.Runtime) error {
 			streamInterceptors,
 			rt.Extensions(),
 			rt.Config().Store.Upsert,
+			rt.EventBus(),
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
 			rt.Extensions(),
+			rt.EventBus(),
 		),
 	)))
 }

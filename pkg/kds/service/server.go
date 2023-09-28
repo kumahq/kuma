@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -34,6 +35,12 @@ type StreamInterceptor interface {
 	InterceptServerStream(stream grpc.ServerStream) error
 }
 
+type ActiveStreams struct {
+	XDSConfig chan struct{}
+	Stats     chan struct{}
+	Clusters  chan struct{}
+}
+
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs EnvoyAdminRPCs
 	resManager     manager.ResourceManager
@@ -41,6 +48,7 @@ type GlobalKDSServiceServer struct {
 	filters        []StreamInterceptor
 	extensions     context.Context
 	upsertCfg      config_store.UpsertConfig
+	eventBus       events.EventBus
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -51,6 +59,7 @@ func NewGlobalKDSServiceServer(
 	filters []StreamInterceptor,
 	extensions context.Context,
 	upsertCfg config_store.UpsertConfig,
+	eventBus events.EventBus,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
 		envoyAdminRPCs: envoyAdminRPCs,
@@ -59,6 +68,7 @@ func NewGlobalKDSServiceServer(
 		filters:        filters,
 		extensions:     extensions,
 		upsertCfg:      upsertCfg,
+		eventBus:       eventBus,
 	}
 }
 
@@ -106,6 +116,15 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 	return &mesh_proto.ZoneHealthCheckResponse{}, nil
 }
 
+type ZoneWentOffline struct {
+	TenantID string
+	Zone     string
+}
+type ZoneOpenedStream struct {
+	TenantID string
+	Zone     string
+}
+
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	rpcName string,
 	rpc util_grpc.ReverseUnaryRPCs,
@@ -117,6 +136,15 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	clientID := ClientID(stream.Context(), zone)
+	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
+
+	shouldDisconnectStream := g.eventBus.Subscribe(func(e events.Event) bool {
+		disconnectEvent, ok := e.(ZoneWentOffline)
+		return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
+	})
+	defer shouldDisconnectStream.Close()
+	g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantID})
+
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
@@ -136,26 +164,46 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
-	for {
-		resp, err := recv()
-		if err == io.EOF {
-			logger.Info("stream stopped")
-			return nil
+	streamResult := make(chan error, 2)
+	streamReadEnded := make(chan struct{})
+	go func() {
+		select {
+		case <-shouldDisconnectStream.Recv():
+			streamResult <- nil
+		case <-streamReadEnded:
+			return
 		}
-		if status.Code(err) == codes.Canceled {
-			logger.Info("stream cancelled")
-			return nil
+	}()
+	go func() {
+		defer func() {
+			close(streamReadEnded)
+		}()
+		for {
+			resp, err := recv()
+			if err == io.EOF {
+				logger.Info("stream stopped")
+				streamResult <- nil
+				return
+			}
+			if status.Code(err) == codes.Canceled {
+				logger.Info("stream cancelled")
+				streamResult <- nil
+				return
+			}
+			if err != nil {
+				logger.Error(err, "could not receive a message")
+				streamResult <- status.Error(codes.Internal, "could not receive a message")
+				return
+			}
+			logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
+			if err := rpc.ResponseReceived(clientID, resp); err != nil {
+				logger.Error(err, "could not mark the response as received")
+				streamResult <- status.Error(codes.InvalidArgument, "could not mark the response as received")
+				return
+			}
 		}
-		if err != nil {
-			logger.Error(err, "could not receive a message")
-			return status.Error(codes.Internal, "could not receive a message")
-		}
-		logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
-		if err := rpc.ResponseReceived(clientID, resp); err != nil {
-			logger.Error(err, "could not mark the response as received")
-			return status.Error(codes.InvalidArgument, "could not mark the response as received")
-		}
-	}
+	}()
+	return <-streamResult
 }
 
 func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, instance string) error {

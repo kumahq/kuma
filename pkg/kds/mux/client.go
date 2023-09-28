@@ -296,23 +296,18 @@ func (c *client) startHealthCheck(
 	log = log.WithValues("rpc", "healthcheck")
 	log.Info("starting")
 
-	ticker := time.NewTicker(5 * time.Second)
-
 	go func() {
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
-
-		_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
-		if err != nil && !errors.Is(err, context.Canceled) {
-			errorCh <- err
-		}
-
 		for {
+			_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+			if err != nil && !errors.Is(err, context.Canceled) {
+				errorCh <- err
+			}
+
 			select {
 			case <-ticker.C:
-				_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
-				if err != nil && !errors.Is(err, context.Canceled) {
-					errorCh <- err
-				}
+				continue
 			case <-stop:
 				log.Info("stopping")
 				return
