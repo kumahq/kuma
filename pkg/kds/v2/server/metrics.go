@@ -14,8 +14,8 @@ const (
 )
 
 type Metrics struct {
-	KdsGenerations       *prometheus.SummaryVec
-	KdsGenerationsErrors prometheus.Counter
+	KdsGenerations      *prometheus.SummaryVec
+	KdsGenerationErrors prometheus.Counter
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
@@ -35,7 +35,7 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	}
 
 	return &Metrics{
-		KdsGenerations:       kdsGenerations,
-		KdsGenerationsErrors: kdsGenerationsErrors,
+		KdsGenerations:      kdsGenerations,
+		KdsGenerationErrors: kdsGenerationsErrors,
 	}, nil
 }
