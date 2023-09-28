@@ -136,6 +136,11 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	for {
 		resp, err := recv()
 		if err == io.EOF {
+			logger.Info("stream stopped")
+			return nil
+		}
+		if status.Code(err) == codes.Canceled {
+			logger.Info("stream cancelled")
 			return nil
 		}
 		if err != nil {
