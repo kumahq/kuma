@@ -8,6 +8,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 
@@ -19,8 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
-
-var log = core.Log.WithName("kds-delta").WithName("reconcile")
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, tenants multitenant.Tenants) Reconciler {
 	return &reconciler{
@@ -65,7 +64,7 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	return nil
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}) (error, bool) {
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
 	id, err := r.hashId(ctx, node)
 	if err != nil {
 		return err, false
@@ -98,7 +97,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 
 	new, changed := r.Version(new, old)
 	if changed {
-		r.logChanges(new, old, node)
+		r.logChanges(logger, new, old, node)
 		r.meterConfigReadyForDelivery(new, old, node.Id)
 		return r.cache.SetSnapshot(ctx, id, new), true
 	}
@@ -151,7 +150,7 @@ func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
 	return true
 }
 
-func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, node *envoy_core.Node) {
+func (r *reconciler) logChanges(logger logr.Logger, new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, node *envoy_core.Node) {
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		if old != nil && old.GetVersion(typ) != new.GetVersion(typ) {
 			client := node.Id
@@ -159,7 +158,7 @@ func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cach
 				// we need to override client name because Zone is always a client to Global (on gRPC level)
 				client = "global"
 			}
-			log.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client)
+			logger.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client) // todo is client needed?
 		}
 	}
 }
