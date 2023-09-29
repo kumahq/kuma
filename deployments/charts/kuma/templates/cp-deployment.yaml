@@ -234,7 +234,7 @@ spec:
               subPath: ca.crt
               readOnly: true
           {{- end }}
-          {{- if eq .Values.controlPlane.environment "universal" }}
+          {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
             {{- if .Values.controlPlane.tls.general.secretName }}
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
@@ -339,7 +339,7 @@ spec:
             secretName: {{ .Values.controlPlane.tls.general.caSecretName }}
         {{- end }}
       {{- end }}
-      {{- if eq .Values.controlPlane.environment "universal" }}
+      {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
         {{- if .Values.controlPlane.tls.general.secretName }}
         - name: general-tls-cert
           secret:

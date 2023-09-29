@@ -305,7 +305,7 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
-{{ if .Values.controlPlane.tls.general.secretName }}
+{{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
 - name: KUMA_GENERAL_TLS_KEY_FILE
