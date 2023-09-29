@@ -100,8 +100,9 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 }
 
 type ConflictRetry struct {
-	BaseBackoff time.Duration
-	MaxTimes    uint
+	BaseBackoff   time.Duration
+	MaxTimes      uint
+	JitterPercent uint
 }
 
 type UpsertOpts struct {
@@ -110,10 +111,11 @@ type UpsertOpts struct {
 
 type UpsertFunc func(opts *UpsertOpts)
 
-func WithConflictRetry(baseBackoff time.Duration, maxTimes uint) UpsertFunc {
+func WithConflictRetry(baseBackoff time.Duration, maxTimes uint, jitterPercent uint) UpsertFunc {
 	return func(opts *UpsertOpts) {
 		opts.ConflictRetry.BaseBackoff = baseBackoff
 		opts.ConflictRetry.MaxTimes = maxTimes
+		opts.ConflictRetry.JitterPercent = jitterPercent
 	}
 }
 
@@ -155,7 +157,9 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
 		return upsert(ctx)
 	}
-	backoff := retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), retry.NewExponential(opts.ConflictRetry.BaseBackoff))
+	backoff := retry.NewExponential(opts.ConflictRetry.BaseBackoff)
+	backoff = retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), backoff)
+	backoff = retry.WithJitterPercent(uint64(opts.ConflictRetry.JitterPercent), backoff)
 	return retry.Do(ctx, backoff, func(ctx context.Context) error {
 		resource.SetMeta(nil)
 		specType := reflect.TypeOf(resource.GetSpec()).Elem()

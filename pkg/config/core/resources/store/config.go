@@ -100,8 +100,9 @@ func DefaultCacheStoreConfig() CacheStoreConfig {
 
 func DefaultUpsertConfig() UpsertConfig {
 	return UpsertConfig{
-		ConflictRetryBaseBackoff: config_types.Duration{Duration: 100 * time.Millisecond},
-		ConflictRetryMaxTimes:    5,
+		ConflictRetryBaseBackoff:   config_types.Duration{Duration: 200 * time.Millisecond},
+		ConflictRetryMaxTimes:      10,
+		ConflictRetryJitterPercent: 30,
 	}
 }
 
@@ -110,6 +111,8 @@ type UpsertConfig struct {
 	ConflictRetryBaseBackoff config_types.Duration `json:"conflictRetryBaseBackoff" envconfig:"kuma_store_upsert_conflict_retry_base_backoff"`
 	// Max retries on upsert (get and update) operation when retry is enabled
 	ConflictRetryMaxTimes uint `json:"conflictRetryMaxTimes" envconfig:"kuma_store_upsert_conflict_retry_max_times"`
+	// Percentage of jitter. For example: if backoff is 20s, and this value 10, the backoff will be between 18s and 22s.
+	ConflictRetryJitterPercent uint `json:"conflictRetryJitterPercent" envconfig:"kuma_store_upsert_conflict_retry_jitter_percent"`
 }
 
 func (u *UpsertConfig) Sanitize() {

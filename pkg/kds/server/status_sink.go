@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -94,14 +95,18 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	}
 }
 
-func NewZonesInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
-	return &zoneInsightStore{resManager}
+func NewZonesInsightStore(resManager manager.ResourceManager, upsertCfg config_store.UpsertConfig) ZoneInsightStore {
+	return &zoneInsightStore{
+		resManager: resManager,
+		upsertCfg:  upsertCfg,
+	}
 }
 
 var _ ZoneInsightStore = &zoneInsightStore{}
 
 type zoneInsightStore struct {
 	resManager manager.ResourceManager
+	upsertCfg  config_store.UpsertConfig
 }
 
 func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
@@ -113,5 +118,5 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		return zoneInsight.Spec.UpdateSubscription(subscription)
-	}, manager.WithConflictRetry(100*time.Millisecond, 10)) // we need retry because Envoy Admin RPC may also update the insight.
+	}, manager.WithConflictRetry(s.upsertCfg.ConflictRetryBaseBackoff.Duration, s.upsertCfg.ConflictRetryMaxTimes, s.upsertCfg.ConflictRetryJitterPercent)) // we need retry because Envoy Admin RPC may also update the insight.
 }
