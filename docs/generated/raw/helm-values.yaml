@@ -45,6 +45,9 @@ controlPlane:
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
+  # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
+  minReadySeconds: 0
+
   # -- Control Plane Pod Annotations
   podAnnotations: {}
 
