@@ -5,9 +5,9 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -60,7 +60,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
-		return nil, errors.Errorf("envoy admin cluster is not allowed to have addresses other than %v", maps.Keys(adminAddressAllowedValues))
+		return nil, errors.Errorf("envoy admin cluster is not allowed to have addresses other than %v", util_maps.SortedKeys(adminAddressAllowedValues))
 	}
 	switch adminAddress {
 	case "", "0.0.0.0":
