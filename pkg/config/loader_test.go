@@ -114,7 +114,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
 			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
-			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
+			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(15)))
+			Expect(cfg.Store.Upsert.ConflictRetryJitterPercent).To(Equal(uint(10)))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
@@ -393,7 +394,8 @@ store:
     expirationTime: 3s
   upsert:
     conflictRetryBaseBackoff: 4s
-    conflictRetryMaxTimes: 10
+    conflictRetryMaxTimes: 15
+    conflictRetryJitterPercent: 10
 bootstrapServer:
   params:
     adminPort: 1234
@@ -732,7 +734,8 @@ eventBus:
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
-				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "15",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT":                                          "10",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",

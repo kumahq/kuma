@@ -166,6 +166,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.GetInstanceId(),
 			streamInterceptors,
 			rt.Extensions(),
+			rt.Config().Store.Upsert,
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
