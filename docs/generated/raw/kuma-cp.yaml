@@ -84,9 +84,11 @@ store:
   # Upsert (get and update) configuration
   upsert:
     # Base time for exponential backoff on upsert operations when retry is enabled
-    conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
+    conflictRetryBaseBackoff: 200ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
     # Max retries on upsert (get and update) operation when retry is enabled
-    conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
+    conflictRetryMaxTimes: 10 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
+    # Percentage of jitter. For example: if backoff is 20s, and this value 10, the backoff will be between 18s and 22s.
+    conflictRetryJitterPercent: 30 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT
 
   # If true, skips validation of resource delete.
   # For example you don't have to delete all Dataplane objects before you delete a Mesh

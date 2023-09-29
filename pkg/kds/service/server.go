@@ -185,6 +185,7 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 	// it might be the case that each Envoy Admin stream will land on separate instance.
 	// In this case, all instances will try to update Zone Insight which will result in conflicts.
 	// Since it's unusual to immediately execute envoy admin rpcs after zone is connected, 0-10s delay should be fine.
+	// #nosec G404 - math rand is enough
 	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
 
 	zoneInsight := system.NewZoneInsightResource()
