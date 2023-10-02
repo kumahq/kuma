@@ -132,7 +132,7 @@ var ErrSkipUpsert = errors.New("don't do upsert")
 func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
 	upsert := func(ctx context.Context) error {
 		create := false
-		err := manager.Get(ctx, resource, store.GetBy(key))
+		err := manager.Get(ctx, resource, store.GetBy(key), store.GetConsistent())
 		if err != nil {
 			if store.IsResourceNotFound(err) {
 				create = true

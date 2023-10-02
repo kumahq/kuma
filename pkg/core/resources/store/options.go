@@ -114,9 +114,10 @@ func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
 }
 
 type GetOptions struct {
-	Name    string
-	Mesh    string
-	Version string
+	Name       string
+	Mesh       string
+	Version    string
+	Consistent bool
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -143,6 +144,13 @@ func GetByKey(name, mesh string) GetOptionsFunc {
 func GetByVersion(version string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Version = version
+	}
+}
+
+// GetConsistent forces consistency if storage provides eventual consistency like read replica for Postgres.
+func GetConsistent() GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Consistent = true
 	}
 }
 
