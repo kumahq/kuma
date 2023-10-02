@@ -82,7 +82,7 @@ dpServer:
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(universal.GetTesting(), universal.GetKuma().GetName()+"test-admin", false)
+		kumactl := NewKumactlOptionsE2E(universal.GetTesting(), universal.GetKuma().GetName()+"test-admin", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-admin",
 			universal.GetKuma().GetAPIServerAddress(),

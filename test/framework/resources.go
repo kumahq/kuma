@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
@@ -24,7 +25,7 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 	return nil
 }
 
-func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
+func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
 	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
 		return err
@@ -38,7 +39,7 @@ func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descripto
 	return nil
 }
 
-func allResourcesOfType(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
+func allResourcesOfType(kumactl kumactl.KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
 	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
 	if err != nil {
 		return nil, err
