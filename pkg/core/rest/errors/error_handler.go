@@ -2,10 +2,10 @@ package errors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"

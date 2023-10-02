@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
-	"github.com/go-logr/logr"
-	"google.golang.org/protobuf/proto"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"google.golang.org/protobuf/proto"
 )
 
 type ZoneInsightSink interface {

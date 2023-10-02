@@ -2,7 +2,8 @@ package metrics
 
 import (
 	"context"
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"

@@ -2,12 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
