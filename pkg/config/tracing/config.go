@@ -14,7 +14,8 @@ func (c Config) Validate() error {
 
 type OpenTelemetry struct {
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_tracing_opentelemetry_enabled"`
-	// Deprecated: Use generic OTEL_EXPORTER_OTLP_ENDPOINT instead.
+	// This field is deprecated. Use generic OTEL_EXPORTER_OTLP_* variables
+	// instead.
 	// Address of OpenTelemetry collector.
 	// E.g. otel-collector:4317
 	Endpoint string `json:"endpoint,omitempty" envconfig:"kuma_tracing_opentelemetry_endpoint"`
