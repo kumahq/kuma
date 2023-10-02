@@ -6386,6 +6386,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 spec:
   replicas: 1
+  minReadySeconds: 0
   strategy:
     rollingUpdate:
       maxSurge: 1

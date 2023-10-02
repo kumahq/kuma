@@ -288,28 +288,6 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-global-zone-sync
-  namespace: kuma-system
-  annotations:
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 5685
-      appProtocol: grpc
-      name: global-zone-sync
-  selector:
-    app: kuma-control-plane
-  
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: Service
-metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels: 
@@ -335,6 +313,12 @@ spec:
       name: https-admission-server
       targetPort: 5443
       appProtocol: https
+    - port: 5676
+      name: mads-server
+      appProtocol: https
+    - port: 5678
+      name: dp-server
+      appProtocol: https
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -351,7 +335,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 spec:
   replicas: 1
-  minReadySeconds: 0
+  minReadySeconds: 10
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -365,7 +349,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 730cead3c8bc13501e969273ea0e1c45e844a81ddd5c8322732a04dd0f7d057e
+        checksum/tls-secrets: 7b6ae860b2e6214ea9bd8283136caf4596a9e217a60e28e709a2e781f9676180
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -424,7 +408,7 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "global"
+              value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -459,6 +443,7 @@ spec:
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443
+            - containerPort: 5678
           livenessProbe:
             timeoutSeconds: 10
             httpGet:
@@ -595,6 +580,69 @@ webhooks:
   
       
     sideEffects: None
+  - name: namespace-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: pods-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    objectSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore 
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -659,6 +707,26 @@ webhooks:
           - meshtrafficpermissions
     
       
+    sideEffects: None
+  - name: service.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
