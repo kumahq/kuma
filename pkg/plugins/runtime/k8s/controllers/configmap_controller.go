@@ -71,7 +71,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(ctx, mesh, viewModificator); err != nil {
-		if store.IsResourceConflict(err) {
+		if errors.Is(err, &store.ResourceConflictError{}) {
 			l.Info("VIPs were updated somewhere else. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil
 		}

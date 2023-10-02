@@ -197,7 +197,7 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(resource.Descriptor().Name, opts.Name, opts.Mesh)
+		return store.ErrorResourceConflict(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
 }

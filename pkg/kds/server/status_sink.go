@@ -2,10 +2,9 @@ package server
 
 import (
 	"context"
-	"time"
-
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/proto"
+	"time"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"

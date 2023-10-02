@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"time"
 
@@ -102,14 +103,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 				sinkLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time",
 					"dataplaneid", dataplaneID,
 					"err", err)
-			case store.IsResourceConflict(err):
+			case errors.Is(err, &store.ResourceConflictError{}):
 				sinkLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick",
 					"dataplaneid", dataplaneID)
-			case store.IsResourcePreconditionFailed(err):
-				sinkLog.V(1).Info("failed to flush DataplaneInsight for unsupported resource",
-					"dataplaneid", dataplaneID,
-					"err", err,
-				)
 			default:
 				sinkLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneID)
 			}
@@ -184,6 +180,6 @@ func (s *dataplaneInsightStore) Upsert(ctx context.Context, dataplaneType core_m
 		})
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.
-		return store.ErrorResourcePreconditionFailed(dataplaneType, dataplaneID.Name, dataplaneID.Mesh)
+		return store.ErrorResourceAssertion("invalid dataplane type", dataplaneType, dataplaneID.Mesh, dataplaneID.Name)
 	}
 }

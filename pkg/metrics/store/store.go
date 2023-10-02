@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -49,7 +49,7 @@ func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, opti
 		m.metric.WithLabelValues("update", string(resource.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
 	err := m.delegate.Update(ctx, resource, optionsFunc...)
-	if store.IsResourceConflict(err) {
+	if errors.Is(err, &store.ResourceConflictError{}) {
 		m.conflicts.WithLabelValues(string(resource.Descriptor().Name)).Inc()
 	}
 	return err
