@@ -693,6 +693,10 @@ proxy:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+tracing:
+  openTelemetry:
+    enabled: true
+    endpoint: collector:4317
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -944,6 +948,7 @@ eventBus:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",
