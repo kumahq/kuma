@@ -1,6 +1,9 @@
 package generator
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
@@ -59,7 +62,11 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
-		return nil, errors.Errorf("envoy admin cluster is not allowed to have addresses other than %v", util_maps.SortedKeys(adminAddressAllowedValues))
+		var allowedAddresses []string
+		for _, address := range util_maps.SortedKeys(adminAddressAllowedValues) {
+			allowedAddresses = append(allowedAddresses, fmt.Sprintf(`"%s"`, address))
+		}
+		return nil, errors.Errorf("envoy admin cluster is not allowed to have addresses other than %s", strings.Join(allowedAddresses, ", "))
 	}
 	switch adminAddress {
 	case "", "0.0.0.0":

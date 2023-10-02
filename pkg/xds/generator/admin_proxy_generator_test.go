@@ -134,6 +134,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 		// when
 		_, err := generator.Generate(ctx, proxy)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`envoy admin cluster is not allowed to have addresses other than [ 0.0.0.0 127.0.0.1 :: ::1]`))
+		Expect(err.Error()).To(Equal(`envoy admin cluster is not allowed to have addresses other than "", "0.0.0.0", "127.0.0.1", "::", "::1"`))
 	})
 })
