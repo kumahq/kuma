@@ -9,6 +9,8 @@ HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
 HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
 HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
 
+GENERATE_OAS_PREREQUISITES ?=
+
 .PHONY: clean/generated
 clean/generated: clean/protos clean/builtin-crds clean/resources clean/policies clean/tools
 
@@ -96,7 +98,7 @@ generate/kumapolicy-gen/%: $(POLICY_GEN) generate/dirs/%
 
 endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
 
-generate/oas:
+generate/oas: $(GENERATE_OAS_PREREQUISITES)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
