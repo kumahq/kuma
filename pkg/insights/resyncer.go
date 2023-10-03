@@ -26,7 +26,7 @@ import (
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
-var log = core.Log.WithName("mesh-insight-resyncer")
+var resyncerLog = core.Log.WithName("mesh-insight-resyncer")
 
 const (
 	ReasonResync    = "resync"
@@ -83,6 +83,7 @@ type resyncer struct {
 	itemProcessingTime *prometheus.SummaryVec
 
 	allPolicyTypes []model.ResourceType
+	extensions     context.Context
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -93,7 +94,7 @@ type resyncer struct {
 // during FullResyncInterval at least one resync will happen. MinResyncInterval is provided
 // by RateLimiter. FullResyncInterval is provided by goroutine with Ticker, it runs
 // resync every t = FullResyncInterval - MinResyncInterval.
-func NewResyncer(config *Config) component.Component {
+func NewResyncer(config *Config, extensions context.Context) component.Component {
 	idleTime := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "insights_resyncer_processor_idle_time",
 		Help:       "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
@@ -132,6 +133,7 @@ func NewResyncer(config *Config) component.Component {
 		itemProcessingTime:    itemProcessingTime,
 		allPolicyTypes:        allPolicyTypes,
 		eventProcessors:       config.EventProcessors,
+		extensions:            extensions,
 	}
 	if config.Now == nil {
 		r.now = time.Now
@@ -257,15 +259,16 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 					r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 					tenantCtx := multitenant.WithTenant(ctx, event.tenantId)
+					logger := kuma_log.AddFieldsFromCtx(resyncerLog, tenantCtx, r.extensions)
 					dpOverviews, err := r.dpOverviews(tenantCtx, event.mesh)
 					if err != nil {
-						log.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
+						logger.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
 						continue
 					}
 
 					externalServices := &core_mesh.ExternalServiceResourceList{}
 					if err := r.rm.List(tenantCtx, externalServices, store.ListByMesh(event.mesh)); err != nil {
-						log.Error(err, "unable to get ExternalServices to recompute insights", "event", event)
+						logger.Error(err, "unable to get ExternalServices to recompute insights", "event", event)
 						continue
 					}
 
@@ -273,7 +276,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					if event.flag&FlagService == FlagService {
 						err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items)
 						if err != nil {
-							log.Error(err, "unable to resync ServiceInsight", "event", event)
+							logger.Error(err, "unable to resync ServiceInsight", "event", event)
 						}
 						if changed {
 							anyChanged = true
@@ -282,7 +285,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					if event.flag&FlagMesh == FlagMesh {
 						err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items, event.types)
 						if err != nil {
-							log.Error(err, "unable to resync MeshInsight", "event", event)
+							logger.Error(err, "unable to resync MeshInsight", "event", event)
 						}
 						if changed {
 							anyChanged = true
@@ -305,7 +308,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
 			desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 			if err != nil {
-				log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+				logger := resyncerLog.WithValues("tenantID", resourceChanged.TenantID)
+				logger.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
 				return false
 			}
 			if desc.Scope == model.ScopeGlobal && desc.Name != core_mesh.MeshType {
@@ -329,7 +333,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				steps = 0
 				tenantIds, err := r.tenantFn.GetIDs(ctx)
 				if err != nil {
-					log.Error(err, "could not get tenants")
+					resyncerLog.Error(err, "could not get tenants")
 				}
 				wg := sync.WaitGroup{}
 				wg.Add(len(tenantIds))
@@ -343,7 +347,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			}
 			// We flush the batch
 			if err := batch.flush(tickCtx, resyncEvents, flushAll); err != nil {
-				log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
+				resyncerLog.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 			}
 			cancelTimeout()
 		case event, ok := <-eventReader.Recv():
@@ -356,13 +360,13 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				if err := batch.flush(ctx, resyncEvents, func(event *resyncEvent) bool {
 					return event.tenantId == triggerEvent.TenantID
 				}); err != nil {
-					log.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
+					resyncerLog.Error(err, "Flush of batch didn't complete, some insights won't be refreshed until next tick")
 				}
 			}
 			if resourceChanged, ok := event.(events.ResourceChangedEvent); ok {
 				supported, err := r.tenantFn.IDSupported(ctx, resourceChanged.TenantID)
 				if err != nil {
-					log.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
+					resyncerLog.Error(err, "could not determine if tenant ID is supported", "tenantID", resourceChanged.TenantID)
 					continue
 				}
 				if !supported {
@@ -386,7 +390,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				}
 			}
 		case <-stop:
-			log.Info("stop")
+			resyncerLog.Info("stop")
 			return nil
 		}
 	}
@@ -409,8 +413,9 @@ func (r *resyncer) dpOverviews(ctx context.Context, mesh string) ([]*core_mesh.D
 func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tenantID string, reason string) {
 	meshList := &core_mesh.MeshResourceList{}
 	tenantCtx := multitenant.WithTenant(ctx, tenantID)
+	logger := kuma_log.AddFieldsFromCtx(resyncerLog, tenantCtx, r.extensions)
 	if err := r.rm.List(tenantCtx, meshList); err != nil {
-		log.Error(err, "failed to get list of meshes", "tenantId", tenantCtx)
+		logger.Error(err, "failed to get list of meshes")
 		return
 	}
 	for _, mesh := range meshList.Items {
@@ -449,7 +454,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
+	logger := kuma_log.AddFieldsFromCtx(resyncerLog, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
@@ -500,7 +505,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	changed := false
 	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		if resource.GetSpec() != nil && proto.Equal(resource.GetSpec().(proto.Message), insight) {
-			log.V(1).Info("no need to update ServiceInsight because the resource is the same")
+			logger.V(1).Info("no need to update ServiceInsight because the resource is the same")
 			return manager.ErrSkipUpsert
 		}
 		changed = true
@@ -508,18 +513,18 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
-			log.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			logger.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then allByType the resources connected with the Mesh allByType deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil, false
 		}
 		if store.IsResourceConflict(err) {
-			log.V(1).Info("ServiceInsight was updated in other place. Retrying")
+			logger.V(1).Info("ServiceInsight was updated in other place. Retrying")
 			return nil, false
 		}
 		return err, false
 	}
-	log.V(1).Info("ServiceInsights updated")
+	logger.V(1).Info("ServiceInsights updated")
 	return nil, changed
 }
 
@@ -530,7 +535,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	externalServices []*core_mesh.ExternalServiceResource,
 	types map[model.ResourceType]struct{},
 ) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
+	logger := kuma_log.AddFieldsFromCtx(resyncerLog, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
@@ -658,7 +663,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		}
 
 		if proto.Equal(resource.GetSpec().(proto.Message), insight) {
-			log.V(1).Info("no need to update MeshInsight because the resource is the same")
+			logger.V(1).Info("no need to update MeshInsight because the resource is the same")
 			return manager.ErrSkipUpsert
 		}
 		changed = true
@@ -666,18 +671,18 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
-			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			logger.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then allByType the resources connected with the Mesh allByType deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil, false
 		}
 		if store.IsResourceConflict(err) {
-			log.V(1).Info("MeshInsight was updated in other place. Retrying")
+			logger.V(1).Info("MeshInsight was updated in other place. Retrying")
 			return nil, false
 		}
 		return err, false
 	}
-	log.V(1).Info("MeshInsight updated")
+	logger.V(1).Info("MeshInsight updated")
 	return nil, changed
 }
 

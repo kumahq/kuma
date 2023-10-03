@@ -69,7 +69,7 @@ var _ = Describe("Counter", func() {
 			EventBufferCapacity: 10,
 			EventProcessors:     1,
 			Metrics:             metrics,
-		})
+		}, context.Background())
 
 		go func() {
 			err := resyncer.Start(stop)

@@ -73,7 +73,7 @@ var _ = Describe("Insight Persistence", func() {
 			EventBufferCapacity: 10,
 			EventProcessors:     10,
 			Metrics:             metric,
-		})
+		}, context.Background())
 		go func() {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())

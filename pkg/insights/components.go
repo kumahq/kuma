@@ -29,6 +29,8 @@ func Setup(rt runtime.Runtime) error {
 		EventBufferCapacity: rt.Config().Metrics.Mesh.BufferSize,
 		EventProcessors:     rt.Config().Metrics.Mesh.EventProcessors,
 		Metrics:             rt.Metrics(),
-	})
-	return rt.Add(component.NewResilientComponent(log, resyncer))
+	},
+		rt.Extensions(),
+	)
+	return rt.Add(component.NewResilientComponent(resyncerLog, resyncer))
 }
