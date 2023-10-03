@@ -105,8 +105,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 	)
 
 	It("should return error when admin address is not allowed", func() {
-		ctx := xds_context.Context{
-			Mesh: xds_context.MeshContext{
+		ctx := context.Context{
+			Mesh: context.MeshContext{
 				Resource: &core_mesh.MeshResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "default",
@@ -132,7 +132,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		}
 
 		// when
-		_, err := generator.Generate(context.Background(), ctx, proxy)
+		_, err := generator.Generate(ctx, proxy)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal(`envoy admin cluster is not allowed to have addresses other than [127.0.0.1 0.0.0.0 ::1 :: ]`))
 	})
