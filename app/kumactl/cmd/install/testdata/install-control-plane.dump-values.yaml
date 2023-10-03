@@ -207,8 +207,8 @@ controlPlane:
       caSecretName: ""
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
-      # -- Allows to disable usage of the secret
-      skipSecret: false
+      # -- Allows to disable usage of the tls on all the endpoints
+      skipTls: false
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""

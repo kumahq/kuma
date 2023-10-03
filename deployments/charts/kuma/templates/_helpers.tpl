@@ -222,10 +222,16 @@ env:
   value: {{ .Release.Namespace | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
   value: {{ include "kuma.controlPlane.serviceName" . }}
+{{- if not .Values.controlPlane.tls.general.skipTls }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
 - name: KUMA_GENERAL_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.key
+{{- end }}
+{{- if .Values.controlPlane.tls.general.skipTls }}
+- name: KUMA_GENERAL_SKIP_TLS
+  value: "true"
+{{- end }}
 {{- if eq .Values.controlPlane.mode "zone" }}
 - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
   value: {{ .Values.controlPlane.kdsGlobalAddress }}

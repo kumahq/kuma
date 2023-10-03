@@ -233,6 +233,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.General.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.General.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
+			Expect(cfg.General.SkipTLS).To(BeFalse())
 			Expect(cfg.General.DNSCacheTTL.Duration).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
@@ -303,6 +304,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Authn.ZoneProxy.ZoneToken.Validator.UseSecrets).To(BeFalse())
 			Expect(cfg.DpServer.Authn.EnableReloadableTokens).To(BeTrue())
 			Expect(cfg.DpServer.Port).To(Equal(9876))
+			Expect(cfg.DpServer.TlsEnabled).To(BeTrue())
 			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
@@ -539,6 +541,7 @@ runtime:
 reports:
   enabled: false
 general:
+  skipTls: false
   tlsKeyFile: /tmp/key
   tlsCertFile: /tmp/cert
   tlsMinVersion: TLSv1_3
@@ -609,6 +612,7 @@ metrics:
   controlPlane:
     reportResourcesCount: true
 dpServer:
+  tlsEnabled: true
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
   tlsMinVersion: TLSv1_3
@@ -829,6 +833,7 @@ eventBus:
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
+				"KUMA_GENERAL_SKIP_TLS":                                                                    "false",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
@@ -888,6 +893,7 @@ eventBus:
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
+				"KUMA_DP_SERVER_TLS_ENABLED":                                                               "true",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",

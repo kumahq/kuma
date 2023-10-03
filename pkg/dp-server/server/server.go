@@ -73,37 +73,49 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 
 func (d *DpServer) Start(stop <-chan struct{}) error {
 	var err error
-	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12} // To make gosec pass this is always set after
-	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
-		return err
-	}
-	if tlsConfig.MaxVersion, err = config_types.TLSVersion(d.config.TlsMaxVersion); err != nil {
-		return err
-	}
-	if tlsConfig.CipherSuites, err = config_types.TLSCiphers(d.config.TlsCipherSuites); err != nil {
-		return err
-	}
+
 	server := &http.Server{
 		ReadHeaderTimeout: d.config.ReadHeaderTimeout.Duration,
 		Addr:              fmt.Sprintf(":%d", d.config.Port),
 		Handler:           http.HandlerFunc(d.handle),
-		TLSConfig:         tlsConfig,
+	}
+	if d.config.TlsEnabled {
+		tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12} // To make gosec pass this is always set after
+		if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
+			return err
+		}
+		if tlsConfig.MaxVersion, err = config_types.TLSVersion(d.config.TlsMaxVersion); err != nil {
+			return err
+		}
+		if tlsConfig.CipherSuites, err = config_types.TLSCiphers(d.config.TlsCipherSuites); err != nil {
+			return err
+		}
+		server.TLSConfig = tlsConfig
 	}
 
 	errChan := make(chan error)
 
 	go func() {
 		defer close(errChan)
-		if err := server.ListenAndServeTLS(d.config.TlsCertFile, d.config.TlsKeyFile); err != nil {
-			if err != http.ErrServerClosed {
+		var err error
+		if d.config.TlsEnabled {
+			err = server.ListenAndServeTLS(d.config.TlsCertFile, d.config.TlsKeyFile)
+		} else {
+			err = server.ListenAndServe()
+		}
+		if err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info("terminated normally")
+			default:
 				log.Error(err, "terminated with an error")
 				errChan <- err
 				return
 			}
+			return
 		}
-		log.Info("terminated normally")
 	}()
-	log.Info("starting", "interface", "0.0.0.0", "port", d.config.Port, "tls", true)
+	log.Info("starting", "interface", "0.0.0.0", "port", d.config.Port, "tls", d.config.TlsEnabled)
 
 	select {
 	case <-stop:

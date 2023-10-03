@@ -332,6 +332,8 @@ func (c *Config) Validate() error {
 type GeneralConfig struct {
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
 	DNSCacheTTL config_types.Duration `json:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
+	// SkipTLS defines if the control-plane should not use certificates
+	SkipTLS bool `json:"skipTls" envconfig:"kuma_general_skip_tls"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
 	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_general_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.

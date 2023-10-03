@@ -85,6 +85,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
 			Port:              port,
+			TlsEnabled:        true,
 			TlsCertFile:       filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
 			TlsKeyFile:        filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
 			ReadHeaderTimeout: config_types.Duration{Duration: 5 * time.Second},

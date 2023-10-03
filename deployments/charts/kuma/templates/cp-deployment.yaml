@@ -52,7 +52,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
-        {{- if not .Values.controlPlane.tls.general.skipSecret }}
+        {{- if not .Values.controlPlane.tls.general.skipTls }}
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
         {{- end }}
         {{- range $key, $value := $.Values.controlPlane.podAnnotations }}
@@ -190,6 +190,7 @@ spec:
               name: serviceaccount-token
               readOnly: true
           {{- end }}
+          {{- if not .Values.controlPlane.tls.general.skipTls }}
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
               subPath: tls.crt
@@ -202,6 +203,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
               subPath: ca.crt
               readOnly: true
+          {{- end }}
           {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
@@ -277,6 +279,7 @@ spec:
                         fieldPath: metadata.namespace
                      path: namespace
         {{- end }}
+        {{- if not .Values.controlPlane.tls.general.skipTls }}
         {{- if .Values.controlPlane.tls.general.secretName }}
         - name: general-tls-cert
           secret:
@@ -290,6 +293,7 @@ spec:
         - name: general-tls-cert-ca
           secret:
             secretName: {{ .Values.controlPlane.tls.general.caSecretName }}
+        {{- end }}
         {{- end }}
       {{- end }}
         {{- if .Values.controlPlane.tls.apiServer.secretName }}

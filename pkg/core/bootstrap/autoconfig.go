@@ -83,6 +83,14 @@ func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
+	if cfg.General.SkipTLS {
+		cfg.Multizone.Global.KDS.TlsEnabled = false
+		cfg.Diagnostics.TlsEnabled = false
+		cfg.DpServer.TlsEnabled = false
+		cfg.ApiServer.HTTPS.Enabled = false
+		cfg.MonitoringAssignmentServer.TlsEnabled = false
+		return
+	}
 	if cfg.Multizone.Global.KDS.TlsCertFile == "" {
 		cfg.Multizone.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
 		cfg.Multizone.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
@@ -130,6 +138,9 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 }
 
 func autoconfigureTLS(cfg *kuma_cp.Config) error {
+	if cfg.General.SkipTLS {
+		autoconfigureLog.Info("server TLS is disabled, be aware that your server doesn't use encryption for network traffic.")
+	}
 	if cfg.General.TlsCertFile != "" {
 		return nil
 	}

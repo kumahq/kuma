@@ -17,6 +17,8 @@ var _ config.Config = &DpServerConfig{}
 type DpServerConfig struct {
 	// Port of the DP Server
 	Port int `json:"port" envconfig:"kuma_dp_server_port"`
+	// TlsEnabled whether tls is enabled or not
+	TlsEnabled bool `json:"tlsEnabled" envconfig:"kuma_dp_server_tls_enabled"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
 	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_dp_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
@@ -244,6 +246,7 @@ func DefaultDpServerConfig() *DpServerConfig {
 			},
 		},
 		Hds:             DefaultHdsConfig(),
+		TlsEnabled:      true,
 		TlsMinVersion:   "TLSv1_2",
 		TlsCipherSuites: []string{},
 		// Pay attention that the default value is set to 5s and not 1s
