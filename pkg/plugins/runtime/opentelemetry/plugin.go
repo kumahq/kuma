@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	datadog "github.com/tonglil/opentelemetry-go-datadog-propagator"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kumahq/kuma/pkg/config/tracing"
 	"github.com/kumahq/kuma/pkg/core"
@@ -38,7 +37,7 @@ type tracer struct {
 var _ component.Component = &tracer{}
 
 func (t *tracer) Start(stop <-chan struct{}) error {
-	shutdown, err := initOtel(context.Background(), t.config)
+	shutdown, err := initOtel(context.Background(), log, t.config)
 	if err != nil {
 		return err
 	}
@@ -58,7 +57,7 @@ func (t *tracer) NeedLeaderElection() bool {
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	otel := rt.Config().Tracing.OpenTelemetry
-	if otel.Endpoint == "" {
+	if !otel.Enabled || otel.Endpoint == "" {
 		return nil
 	}
 
@@ -72,7 +71,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func initOtel(ctx context.Context, otelConfig tracing.OpenTelemetry) (func(context.Context) error, error) {
+func initOtel(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelemetry) (func(context.Context) error, error) {
 	res, err := resource.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
@@ -81,18 +80,13 @@ func initOtel(ctx context.Context, otelConfig tracing.OpenTelemetry) (func(conte
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(
-		ctx,
-		otelConfig.Endpoint,
-		grpc.WithTransportCredentials(
-			insecure.NewCredentials(),
-		),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gRPC connection to collector: %w", err)
+	var opts []otlptracegrpc.Option
+	if otelConfig.Endpoint != "" {
+		log.Info("DEPRECATED: KUMA_TRACING_OPENTELEMETRY_ENDPOINT is deprecated, use OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_INSECURE instead")
+		opts = append(opts, otlptracegrpc.WithEndpoint(otelConfig.Endpoint), otlptracegrpc.WithInsecure())
 	}
 
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+	traceExporter, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
