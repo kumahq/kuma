@@ -31,6 +31,7 @@ import (
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -79,13 +80,14 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
-	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore(), rt.Metrics())
+	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaGlobalLog, rt.ResourceStore(), rt.Metrics(), rt.Extensions())
 	if err != nil {
 		return err
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
+		log = kuma_log.AddFieldsFromCtx(log, session.ClientStream().Context(), rt.Extensions())
 		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
@@ -118,6 +120,7 @@ func Setup(rt runtime.Runtime) error {
 			errChan <- err
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, clientId, rt.ResourceManager()); err != nil {
 			errChan <- errors.Wrap(err, "Global CP could not create a zone")
@@ -135,6 +138,7 @@ func Setup(rt runtime.Runtime) error {
 			errChan <- err
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
 		sink := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream,
 			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace))
@@ -161,11 +165,14 @@ func Setup(rt runtime.Runtime) error {
 			rt.ResourceManager(),
 			rt.GetInstanceId(),
 			streamInterceptors,
+			rt.Extensions(),
+			rt.Config().Store.Upsert,
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
+			rt.Extensions(),
 		),
 	)))
 }

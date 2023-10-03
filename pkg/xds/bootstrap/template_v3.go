@@ -294,6 +294,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 	if parameters.AdminPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneAdminAddress] = util_proto.MustNewValueForStruct(parameters.AdminAddress)
 		res.Admin = &envoy_bootstrap_v3.Admin{
 			Address: &envoy_core_v3.Address{
 				Address: &envoy_core_v3.Address_SocketAddress{

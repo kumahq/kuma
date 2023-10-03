@@ -39,6 +39,7 @@ spec:
   {{- if not .Values.controlPlane.autoscaling.enabled }}
   replicas: {{ .Values.controlPlane.replicas }}
   {{- end }}
+  minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
   strategy:
     rollingUpdate:
       maxSurge: 1

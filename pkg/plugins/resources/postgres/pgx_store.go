@@ -166,7 +166,11 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.pickRoPool().QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
+	pool := r.pickRoPool()
+	if opts.Consistent {
+		pool = r.pool
+	}
+	row := pool.QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"time"
 
 	"github.com/sethvargo/go-retry"
@@ -15,12 +16,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
@@ -36,6 +39,8 @@ type GlobalKDSServiceServer struct {
 	resManager     manager.ResourceManager
 	instanceID     string
 	filters        []StreamInterceptor
+	extensions     context.Context
+	upsertCfg      config_store.UpsertConfig
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -44,12 +49,16 @@ func NewGlobalKDSServiceServer(
 	resManager manager.ResourceManager,
 	instanceID string,
 	filters []StreamInterceptor,
+	extensions context.Context,
+	upsertCfg config_store.UpsertConfig,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
 		envoyAdminRPCs: envoyAdminRPCs,
 		resManager:     resManager,
 		instanceID:     instanceID,
 		filters:        filters,
+		extensions:     extensions,
+		upsertCfg:      upsertCfg,
 	}
 }
 
@@ -90,7 +99,7 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 
 		insight.Spec.HealthCheck.Time = timestamppb.Now()
 		return nil
-	}, manager.WithConflictRetry(100*time.Millisecond, 10)); err != nil {
+	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)); err != nil {
 		log.Error(err, "couldn't update zone insight", "zone", zone)
 	}
 
@@ -109,6 +118,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 	clientID := ClientID(stream.Context(), zone)
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
 			if status.Code(err) == codes.InvalidArgument {
@@ -125,6 +135,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		logger.Error(err, "could not store stream connection")
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
+	logger.Info("stored stream connection")
 	defer func() {
 		rpc.ClientDisconnected(clientID)
 		// stream.Context() is cancelled here, we need to use another ctx
@@ -136,6 +147,11 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	for {
 		resp, err := recv()
 		if err == io.EOF {
+			logger.Info("stream stopped")
+			return nil
+		}
+		if status.Code(err) == codes.Canceled {
+			logger.Info("stream cancelled")
 			return nil
 		}
 		if err != nil {
@@ -165,6 +181,13 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 		return err
 	}
 
+	// Add delay for Upsert. If Global CP is behind an HTTP load balancer,
+	// it might be the case that each Envoy Admin stream will land on separate instance.
+	// In this case, all instances will try to update Zone Insight which will result in conflicts.
+	// Since it's unusual to immediately execute envoy admin rpcs after zone is connected, 0-10s delay should be fine.
+	// #nosec G404 - math rand is enough
+	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
+
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
 		if zoneInsight.Spec.EnvoyAdminStreams == nil {
@@ -179,7 +202,7 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceId = instance
 		}
 		return nil
-	}, manager.WithConflictRetry(100*time.Millisecond, 10)) // we need retry because zone sink or other RPC may also update the insight.
+	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
 }
 
 func ClientID(ctx context.Context, zone string) string {
