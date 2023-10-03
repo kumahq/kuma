@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 )
 
-const globalInsightPath = "/global-insight"
+const GlobalInsightPath = "/global-insight"
 
 type globalInsightEndpoint struct {
 	globalInsightService globalinsight.GlobalInsightService
@@ -15,8 +15,8 @@ type globalInsightEndpoint struct {
 
 func (ge *globalInsightEndpoint) addEndpoint(ws *restful.WebService) {
 	ws.Route(
-		ws.GET(globalInsightPath).To(ge.getGlobalInsight).
-			Doc("Get Global Insights").
+		ws.GET(GlobalInsightPath).To(ge.getGlobalInsight).
+			Doc("Get Global Insight").
 			Returns(200, "OK", nil),
 	)
 }
