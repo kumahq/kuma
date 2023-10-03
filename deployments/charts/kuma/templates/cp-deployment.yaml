@@ -52,7 +52,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
+        {{- if not .Values.controlPlane.tls.general.skipSecret }}
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
+        {{- end }}
         {{- range $key, $value := $.Values.controlPlane.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
