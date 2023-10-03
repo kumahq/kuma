@@ -46,6 +46,7 @@ node:
   cluster: backend
   id: mesh.name.namespace
   metadata:
+    dataplane.admin.address: 192.168.0.1
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     dataplane.resource: |2-

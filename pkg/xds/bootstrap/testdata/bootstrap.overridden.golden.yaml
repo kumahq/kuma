@@ -46,6 +46,7 @@ node:
   cluster: backend
   id: default.dp-1.default
   metadata:
+    dataplane.admin.address: 127.0.0.1
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     features: []

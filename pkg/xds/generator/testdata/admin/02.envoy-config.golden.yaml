@@ -79,10 +79,8 @@ resources:
               privateKey:
                 inlineBytes: a2V5UEVN
             validationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: kuma-cp
-                sanType: DNS
+              matchSubjectAltNames:
+              - exact: kuma-cp
               trustedCa:
                 inlineBytes: Y2FQRU0=
           requireClientCertificate: true
