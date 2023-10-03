@@ -91,7 +91,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 				log.Error(err, "failed to flush zone status", "zone", zone)
 			}
 		} else {
-			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
+			log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
 			lastStoredState = currentState
 		}
 	}
