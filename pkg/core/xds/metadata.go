@@ -20,7 +20,7 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 const (
 	// Supported Envoy node metadata fields.
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
-	FieldDataplaneAdminAddress      = "dataplane.admin.address"
+	fieldDataplaneAdminAddress      = "dataplane.admin.address"
 	fieldDataplaneDNSPort           = "dataplane.dns.port"
 	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
@@ -154,7 +154,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, fieldDataplaneAdminPort)
-	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
+	metadata.AdminAddress = xdsMetadata.Fields[fieldDataplaneAdminAddress].GetStringValue()
 	metadata.DNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSPort)
 	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSEmptyPort)
 	if value := xdsMetadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
