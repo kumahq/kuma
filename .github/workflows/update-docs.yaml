@@ -19,7 +19,7 @@ jobs:
           path: repo
       - uses: actions/setup-go@v4
         with:
-          go-version-file: go.mod
+          go-version-file: repo/go.mod
       - name: "sync docs" # loop over all the branches and generate the docs
         run: |
           cd repo
