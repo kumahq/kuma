@@ -78,8 +78,8 @@ func (d *DataplaneMetrics) Validate() error {
 type ZoneMetrics struct {
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
-	// CompactFinished compacts finished metrics (do not store config and details of KDS exchange).
-	CompactFinished bool `json:"compactFinished" envconfig:"kuma_metrics_zone_compact_finished"`
+	// CompactFinishedSubscriptions compacts finished metrics (do not store config and details of KDS exchange).
+	CompactFinishedSubscriptions bool `json:"compactFinishedSubscriptions" envconfig:"kuma_metrics_zone_compact_finished_subscriptions"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
