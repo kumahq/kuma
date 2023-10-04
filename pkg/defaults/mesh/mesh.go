@@ -94,7 +94,7 @@ func EnsureDefaultMeshResources(
 }
 
 func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
-	err := resManager.Get(ctx, res, store.GetBy(resourceKey))
+	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
 	if err == nil {
 		return nil, false
 	}
