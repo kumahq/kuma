@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
 
 type InstallationMode string
@@ -570,7 +571,7 @@ type Cluster interface {
 	GetKumaCPLogs() (string, error)
 	VerifyKuma() error
 	DeleteKuma() error
-	GetKumactlOptions() *KumactlOptions
+	GetKumactlOptions() *kumactl.KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
 	DeleteDeployment(name string) error

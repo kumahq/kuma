@@ -31,7 +31,7 @@ func (t *k8SDeployment) Name() string {
 }
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.Name(), true)
+	kumactl := framework.NewKumactlOptionsE2E(cluster.GetTesting(), cluster.Name(), true)
 	var strComponents []string
 	for _, component := range t.components {
 		strComponents = append(strComponents, string(component))

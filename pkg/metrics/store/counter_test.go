@@ -69,6 +69,7 @@ var _ = Describe("Counter", func() {
 			EventBufferCapacity: 10,
 			EventProcessors:     1,
 			Metrics:             metrics,
+			Extensions:          context.Background(),
 		})
 
 		go func() {
