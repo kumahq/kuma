@@ -74,6 +74,17 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 	return nil
 }
 
+// CompactFinished removes detailed information about finished subscriptions to trim the object size
+// The last subscription always has details.
+func (x *ZoneInsight) CompactFinished() {
+	for i := 0; i < len(x.GetSubscriptions())-1; i++ {
+		x.Subscriptions[i].Config = ""
+		if status := x.Subscriptions[i].Status; status != nil {
+			status.Stat = map[string]*KDSServiceStats{}
+		}
+	}
+}
+
 // If Global CP was killed ungracefully then we can get a subscription without a DisconnectTime.
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
