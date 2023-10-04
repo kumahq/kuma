@@ -136,14 +136,6 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
-	defer func() {
-		rpc.ClientDisconnected(clientID)
-		// stream.Context() is cancelled here, we need to use another ctx
-		ctx := multitenant.CopyIntoCtx(stream.Context(), context.Background())
-		if err := g.storeStreamConnection(ctx, zone, rpcName, ""); err != nil {
-			logger.Error(err, "could not clear stream connection information in ZoneInsight")
-		}
-	}()
 	for {
 		resp, err := recv()
 		if err == io.EOF {
