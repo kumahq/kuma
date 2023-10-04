@@ -27,7 +27,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
-| controlPlane.podAnnotations | object | `{}` | Control Plane Pod Annotations |
+| controlPlane.deploymentAnnotations | object | `{}` | Annotations applied only to the `Deployment` resource |
+| controlPlane.podAnnotations | object | `{}` | Annotations applied only to the `Pod` resource |
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | controlPlane.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
