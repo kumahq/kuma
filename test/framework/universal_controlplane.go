@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
@@ -20,7 +21,7 @@ type UniversalControlPlane struct {
 	t            testing.TestingT
 	mode         core.CpMode
 	name         string
-	kumactl      *KumactlOptions
+	kumactl      *kumactl.KumactlOptions
 	verbose      bool
 	cpNetworking UniversalNetworking
 	setupKumactl bool
@@ -36,7 +37,7 @@ func NewUniversalControlPlane(
 	setupKumactl bool,
 ) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
-	kumactl := NewKumactlOptions(t, name, verbose)
+	kumactl := NewKumactlOptionsE2E(t, name, verbose)
 	ucp := &UniversalControlPlane{
 		t:            t,
 		mode:         mode,

@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
 
 var _ ControlPlane = &K8sControlPlane{}
@@ -28,7 +29,7 @@ type K8sControlPlane struct {
 	mode       core.CpMode
 	name       string
 	kubeconfig string
-	kumactl    *KumactlOptions
+	kumactl    *kumactl.KumactlOptions
 	cluster    *K8sCluster
 	portFwd    PortFwd
 	verbose    bool
@@ -52,7 +53,7 @@ func NewK8sControlPlane(
 		mode:       mode,
 		name:       name,
 		kubeconfig: kubeconfig,
-		kumactl:    NewKumactlOptions(t, name, verbose),
+		kumactl:    NewKumactlOptionsE2E(t, name, verbose),
 		cluster:    cluster,
 		verbose:    verbose,
 		replicas:   replicas,

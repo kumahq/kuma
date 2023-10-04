@@ -19,7 +19,7 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-admin", false)
+		kumactl := NewKumactlOptionsE2E(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-admin", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-admin",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
@@ -42,7 +42,7 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-user", false)
+		kumactl := NewKumactlOptionsE2E(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-user", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-user",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
