@@ -212,6 +212,18 @@ func Not(filter TypeFilter) TypeFilter {
 	})
 }
 
+func Or(filters ...TypeFilter) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		for _, filter := range filters {
+			if filter.Apply(descriptor) {
+				return true
+			}
+		}
+
+		return false
+	})
+}
+
 type ByMeta []Resource
 
 func (a ByMeta) Len() int { return len(a) }
