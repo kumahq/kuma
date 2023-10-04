@@ -284,6 +284,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
+			Expect(cfg.Metrics.Zone.CompactFinishedSubscriptions).To(BeTrue())
 			Expect(cfg.Metrics.Mesh.MinResyncInterval.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Mesh.FullResyncInterval.Duration).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.BufferSize).To(Equal(23))
@@ -598,6 +599,7 @@ metrics:
   zone:
     subscriptionLimit: 23
     idleTimeout: 2m
+    compactFinishedSubscriptions: true
   mesh:
     fullResyncInterval: 35s
     minResyncInterval: 27s
@@ -883,6 +885,7 @@ tracing:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
+				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",

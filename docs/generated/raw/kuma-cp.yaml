@@ -411,6 +411,8 @@ metrics:
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
     # How long zone can stay Online without active KDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_ZONE_IDLE_TIMEOUT
+    # Compact finished metrics (do not store config and details of KDS exchange).
+    compactFinishedSubscriptions: false # ENV: KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS
   mesh:
     # Minimum time between 2 refresh of insights
     minResyncInterval: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL

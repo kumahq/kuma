@@ -107,18 +107,24 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	}
 }
 
-func NewZonesInsightStore(resManager manager.ResourceManager, upsertCfg config_store.UpsertConfig) ZoneInsightStore {
+func NewZonesInsightStore(
+	resManager manager.ResourceManager,
+	upsertCfg config_store.UpsertConfig,
+	compactFinished bool,
+) ZoneInsightStore {
 	return &zoneInsightStore{
-		resManager: resManager,
-		upsertCfg:  upsertCfg,
+		resManager:      resManager,
+		upsertCfg:       upsertCfg,
+		compactFinished: compactFinished,
 	}
 }
 
 var _ ZoneInsightStore = &zoneInsightStore{}
 
 type zoneInsightStore struct {
-	resManager manager.ResourceManager
-	upsertCfg  config_store.UpsertConfig
+	resManager      manager.ResourceManager
+	upsertCfg       config_store.UpsertConfig
+	compactFinished bool
 }
 
 func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
@@ -129,6 +135,12 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 	}
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
-		return zoneInsight.Spec.UpdateSubscription(subscription)
+		if err := zoneInsight.Spec.UpdateSubscription(subscription); err != nil {
+			return err
+		}
+		if s.compactFinished {
+			zoneInsight.Spec.CompactFinished()
+		}
+		return nil
 	})
 }
