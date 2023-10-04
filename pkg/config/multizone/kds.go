@@ -35,6 +35,8 @@ type KdsServerConfig struct {
 	MsgSendTimeout config_types.Duration `json:"msgSendTimeout" envconfig:"kuma_multizone_global_kds_msg_send_timeout"`
 	// Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane.
 	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_global_kds_nack_backoff"`
+	// DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
+	DisableSOTW bool `json:"disableSOTW" envconfig:"kuma_multizone_global_kds_disable_sotw"`
 }
 
 var _ config.Config = &KdsServerConfig{}

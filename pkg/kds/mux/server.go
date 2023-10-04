@@ -132,7 +132,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services
-	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	if !s.config.DisableSOTW {
+		mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	}
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
