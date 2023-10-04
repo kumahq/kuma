@@ -489,6 +489,8 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
+      # DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
+      disableSOTW: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
