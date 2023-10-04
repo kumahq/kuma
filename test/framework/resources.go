@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,14 +15,18 @@ import (
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
+	var errs []error
+
 	for _, desc := range descriptor {
 		if _, ok := cluster.(*K8sCluster); ok {
-			return deleteMeshResourcesKubernetes(cluster, mesh, desc)
-		} else {
-			return deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc)
+			errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+			continue
 		}
+
+		errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
 	}
-	return nil
+
+	return errors.Join(errs...)
 }
 
 func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
