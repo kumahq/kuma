@@ -20,7 +20,7 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
-# -- Whether to calculate new checksum for a secret
+# -- Whether to restart control-plane by calculating a new checksum for the secret
 restartOnSecretChange: true
 
 controlPlane:

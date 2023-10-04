@@ -17,7 +17,7 @@ A Helm chart for the Kuma Control Plane
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
 | noHelmHooks | bool | `false` | Whether to disable all helm hooks |
-| restartOnSecretChange | bool | `true` | Whether to calculate new checksum for a secret |
+| restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
