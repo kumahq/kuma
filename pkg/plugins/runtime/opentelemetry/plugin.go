@@ -57,7 +57,7 @@ func (t *tracer) NeedLeaderElection() bool {
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	otel := rt.Config().Tracing.OpenTelemetry
-	if !otel.Enabled || otel.Endpoint == "" {
+	if !otel.Enabled && otel.Endpoint == "" {
 		return nil
 	}
 
