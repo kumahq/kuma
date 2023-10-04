@@ -20,6 +20,9 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
+# -- Whether to restart control-plane by calculating a new checksum for the secret
+restartOnSecretChange: true
+
 controlPlane:
   # -- Environment that control plane is run in, useful when running universal global control plane on k8s
   environment: "kubernetes"
