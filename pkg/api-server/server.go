@@ -204,6 +204,7 @@ func NewApiServer(
 		BasedOnKuma: version.Build.BasedOnKuma,
 		Mode:        cfg.Mode,
 		Environment: cfg.Environment,
+		StoreType:   cfg.Store.Type,
 		ReadOnly:    cfg.ApiServer.ReadOnly,
 	})
 	if err != nil {
