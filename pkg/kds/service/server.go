@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -23,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -138,12 +141,20 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	clientID := ClientID(stream.Context(), zone)
 	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
 
-	shouldDisconnectStream := g.eventBus.Subscribe(func(e events.Event) bool {
-		disconnectEvent, ok := e.(ZoneWentOffline)
-		return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
-	})
+	shouldDisconnectStream := events.NewNeverListener()
+
+	md, _ := metadata.FromIncomingContext(stream.Context())
+	features := md.Get(kds.FeaturesMetadataKey)
+
+	if slices.Contains(features, kds.FeatureZonePingHealth) {
+		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
+			disconnectEvent, ok := e.(ZoneWentOffline)
+			return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
+		})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantID})
+	}
+
 	defer shouldDisconnectStream.Close()
-	g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantID})
 
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)

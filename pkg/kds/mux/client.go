@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/version"
@@ -99,6 +100,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	withKDSCtx, cancel := context.WithCancel(metadata.AppendToOutgoingContext(c.ctx,
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
+		kds.FeaturesMetadataKey, kds.FeatureZonePingHealth,
 	))
 	defer cancel()
 
