@@ -176,42 +176,6 @@ returns: formatted image string
 {{- end -}}
 
 {{- define "kuma.defaultEnv" -}}
-{{ if (and (eq .Values.controlPlane.environment "universal") (not (eq .Values.controlPlane.mode "global"))) }}
-  {{ fail "Currently you can only run universal mode on kubernetes in a global mode, this limitation might be lifted in the future" }}
-{{ end }}
-{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
-  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
-  {{ fail $msg }}
-{{ end }}
-{{ if eq .Values.controlPlane.mode "zone" }}
-  {{ if empty .Values.controlPlane.zone }}
-    {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
-  {{ else }}
-    {{ if gt (len .Values.controlPlane.zone) 253 }}
-      {{ fail "controlPlane.zone must be no more than 253 characters" }}
-    {{ else }}
-      {{ if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" .Values.controlPlane.zone) }}
-        {{ fail "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character" }}
-      {{ end }}
-    {{ end }}
-  {{ end }}
-  {{ if empty .Values.controlPlane.kdsGlobalAddress }}
-    {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
-  {{ else }}
-    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
-    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
-      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
-      {{ fail $msg }}
-    {{ end }}
-  {{ end }}
-{{ else }}
-  {{ if not (empty .Values.controlPlane.zone) }}
-    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
-  {{ end }}
-  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
-    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
-  {{ end }}
-{{ end }}
 env:
 {{ include "kuma.parentEnv" . }}
 - name: KUMA_ENVIRONMENT
@@ -321,6 +285,15 @@ env:
 {{- end }}
 
 {{- define "kuma.universal.defaultEnv" -}}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if .Values.ingress.enabled }}
+    {{ fail "Can't have ingress.enabled when running controlPlane.mode=='universal'" }}
+  {{ end }}
+  {{ if .Values.egress.enabled }}
+    {{ fail "Can't have egress.enabled when running controlPlane.mode=='universal'" }}
+  {{ end }}
+{{ end }}
+
 env:
 - name: KUMA_GENERAL_WORK_DIR
   value: "/tmp/kuma"
@@ -332,8 +305,34 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+{{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
+- name: KUMA_GENERAL_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+- name: KUMA_GENERAL_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/tls-cert/tls.key
+{{ end }}
 - name: KUMA_MODE
-  value: "global"
+  value: {{ .Values.controlPlane.mode | quote }}
+{{- if eq .Values.controlPlane.mode "zone" }}
+- name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
+  value: {{ .Values.controlPlane.kdsGlobalAddress }}
+{{- end }}
+{{- if .Values.controlPlane.zone }}
+- name: KUMA_MULTIZONE_ZONE_NAME
+  value: {{ .Values.controlPlane.zone | quote }}
+{{- end }}
+{{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
+- name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
+  value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
+{{- end }}
+{{- if .Values.experimental.deltaKds }}
+- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  value: "true"
+{{- end }}
+{{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
+  value: "true"
+{{- end }}
 {{- if .Values.controlPlane.tls.apiServer.secretName }}
 - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
