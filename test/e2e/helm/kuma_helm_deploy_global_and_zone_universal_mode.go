@@ -68,6 +68,9 @@ stringData:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
+				// it's required because we check if Kuma is ready,
+				// and we use "kubectl get mesh" which is not available in universal mode
+				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithCPReplicas(2),
