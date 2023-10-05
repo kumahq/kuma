@@ -34,7 +34,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
-			Install(postgres.Install(Kuma1,
+			Install(postgres.Install(Kuma2,
 				postgres.WithK8sNamespace(Config.KumaNamespace),
 				postgres.WithUsername("mesh"),
 				postgres.WithPassword("mesh"),
