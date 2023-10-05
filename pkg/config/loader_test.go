@@ -114,7 +114,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
 			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
-			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
+			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(15)))
+			Expect(cfg.Store.Upsert.ConflictRetryJitterPercent).To(Equal(uint(10)))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
@@ -250,6 +251,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.DisableSOTW).To(BeTrue())
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -283,6 +285,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
+			Expect(cfg.Metrics.Zone.CompactFinishedSubscriptions).To(BeTrue())
 			Expect(cfg.Metrics.Mesh.MinResyncInterval.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Mesh.FullResyncInterval.Duration).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.BufferSize).To(Equal(23))
@@ -393,7 +396,8 @@ store:
     expirationTime: 3s
   upsert:
     conflictRetryBaseBackoff: 4s
-    conflictRetryMaxTimes: 10
+    conflictRetryMaxTimes: 15
+    conflictRetryJitterPercent: 10
 bootstrapServer:
   params:
     adminPort: 1234
@@ -560,6 +564,7 @@ multizone:
       maxMsgSize: 1
       msgSendTimeout: 10s
       nackBackoff: 11s
+      disableSOTW: true
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -596,6 +601,7 @@ metrics:
   zone:
     subscriptionLimit: 23
     idleTimeout: 2m
+    compactFinishedSubscriptions: true
   mesh:
     fullResyncInterval: 35s
     minResyncInterval: 27s
@@ -691,6 +697,10 @@ proxy:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+tracing:
+  openTelemetry:
+    enabled: true
+    endpoint: collector:4317
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -732,7 +742,8 @@ eventBus:
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
-				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "15",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT":                                          "10",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",
@@ -850,6 +861,7 @@ eventBus:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW":                                                   "true",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -876,6 +888,7 @@ eventBus:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
+				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
@@ -941,6 +954,7 @@ eventBus:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",

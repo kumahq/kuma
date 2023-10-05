@@ -32,6 +32,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -931,7 +932,7 @@ func (c *K8sCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
+func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 

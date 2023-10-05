@@ -132,7 +132,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services
-	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	if !s.config.DisableSOTW {
+		mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	}
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
@@ -164,6 +166,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 }
 
+// StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
 	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {

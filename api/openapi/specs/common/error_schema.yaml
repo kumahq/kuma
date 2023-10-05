@@ -1,0 +1,57 @@
+components:
+  schemas:
+    InvalidParameters:
+      type: object
+      title: Invalid Parameters
+      properties:
+        field:
+          type: string
+        reason:
+          type: string
+        rule:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+    Error:
+      type: object
+      title: Error
+      description: standard error
+      x-examples:
+        Example 1:
+          status: 404
+          title: Not Found
+          type: https://kongapi.info/konnect/not-found
+          instance: 'portal:trace:2287285207635123011'
+          detail: The requested document was not found
+      required:
+        - status
+        - title
+        - instance
+      properties:
+        status:
+          type: integer
+          description: The HTTP status code.
+          example: 404
+        title:
+          type: string
+          description: The error response code.
+          example: Not Found
+        type:
+          type: string
+          description: The error type.
+          example: Not Found
+        instance:
+          type: string
+          example: 'portal:trace:2287285207635123011'
+          description: The portal traceback code
+        detail:
+          type: string
+          example: The requested team was not found
+          description: Details about the error.
+        invalid_parameters:
+          type: array
+          description: TODO
+          items:
+            $ref: "#/components/schemas/InvalidParameters"

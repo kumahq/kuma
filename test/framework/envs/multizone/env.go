@@ -53,6 +53,14 @@ func SetupAndGetState() []byte {
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1)...,
 	)
+	if Config.IPV6 {
+		// if the underneath clusters support IPv6, we'll configure kuma-1 with waitForDataplaneReady feature and
+		// envoy admin binding to ::1 address
+		kubeZone1Options = append(kubeZone1Options,
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY", "true"),
+			WithEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS", "::1"),
+		)
+	}
 	KubeZone1 = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
 	go func() {
 		defer GinkgoRecover()

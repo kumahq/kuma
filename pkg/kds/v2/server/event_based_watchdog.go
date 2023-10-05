@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -73,10 +74,10 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			reason := strings.Join(util_maps.SortedKeys(reasons), "_and_")
 			e.Log.V(1).Info("reconcile", "changedTypes", changedTypes, "reason", reason)
 			start := core.Now()
-			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes)
-			if err != nil {
+			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes, e.Log)
+			if err != nil && !errors.Is(err, context.Canceled) {
 				e.Log.Error(err, "reconcile failed", "changedTypes", changedTypes, "reason", reason)
-				e.Metrics.KdsGenerationsErrors.Inc()
+				e.Metrics.KdsGenerationErrors.Inc()
 			} else {
 				result := ResultNoChanges
 				if changed {

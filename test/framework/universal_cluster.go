@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
@@ -229,7 +230,7 @@ func (c *UniversalCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *UniversalCluster) GetKumactlOptions() *KumactlOptions {
+func (c *UniversalCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 

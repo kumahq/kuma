@@ -366,6 +366,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 spec:
   replicas: 1
+  minReadySeconds: 0
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -573,6 +574,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-egress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux

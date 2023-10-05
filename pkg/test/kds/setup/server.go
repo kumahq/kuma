@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"context"
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
@@ -54,6 +55,10 @@ func (t *testRuntimeContext) Tenants() multitenant.Tenants {
 
 func (t *testRuntimeContext) EventBus() events.EventBus {
 	return t.eventBus
+}
+
+func (t *testRuntimeContext) Extensions() context.Context {
+	return context.Background()
 }
 
 func (t *testRuntimeContext) APIWebServiceCustomize() func(*restful.WebService) error {

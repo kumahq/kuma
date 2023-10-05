@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -72,12 +73,14 @@ type syncResourceStore struct {
 	log           logr.Logger
 	resourceStore store.ResourceStore
 	metric        prometheus.Histogram
+	extensions    context.Context
 }
 
 func NewResourceSyncer(
 	log logr.Logger,
 	resourceStore store.ResourceStore,
 	metrics core_metrics.Metrics,
+	extensions context.Context,
 ) (ResourceSyncer, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name: "kds_resources_sync",
@@ -90,17 +93,19 @@ func NewResourceSyncer(
 		log:           log,
 		resourceStore: resourceStore,
 		metric:        metric,
+		extensions:    extensions,
 	}, nil
 }
 
 func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
 	now := core.Now()
 	defer func() {
-		s.metric.Observe(float64(time.Since(now)))
+		s.metric.Observe(float64(time.Since(now).Milliseconds()) / 1000)
 	}()
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(syncCtx, user.ControlPlane)
 	log := s.log.WithValues("type", upstreamResponse.Type)
+	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
 	if err != nil {

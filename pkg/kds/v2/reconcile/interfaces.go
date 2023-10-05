@@ -5,6 +5,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
@@ -14,7 +15,7 @@ import (
 type Reconciler interface {
 	// Reconcile reconciles state of node given changed resource types.
 	// Returns error and bool which is true if any resource was changed.
-	Reconcile(context.Context, *envoy_core.Node, map[model.ResourceType]struct{}) (error, bool)
+	Reconcile(context.Context, *envoy_core.Node, map[model.ResourceType]struct{}, logr.Logger) (error, bool)
 	Clear(context.Context, *envoy_core.Node) error
 }
 

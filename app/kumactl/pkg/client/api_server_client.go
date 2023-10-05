@@ -1,10 +1,8 @@
 package client
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
-	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,12 +14,7 @@ import (
 
 func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer, timeout time.Duration) (util_http.Client, error) {
 	headers := map[string]string{
-		"User-Agent": fmt.Sprintf("kumactl/%s (%s; %s; %s/%s)",
-			kuma_version.Build.Version,
-			runtime.GOOS,
-			runtime.GOARCH,
-			kuma_version.Build.Product,
-			kuma_version.Build.GitCommit[:7]),
+		"User-Agent": kuma_version.Build.UserAgent("kumactl"),
 	}
 	baseURL, err := url.Parse(coordinates.Url)
 	if err != nil {

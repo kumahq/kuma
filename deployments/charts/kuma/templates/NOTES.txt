@@ -1,4 +1,6 @@
-The Kuma Control Plane has been installed!
+{{ .Chart.Name }} has been installed!
+
+Your release is named '{{ .Release.Name }}'.
 
 You can access the control-plane via either the GUI, kubectl, the HTTP API, or the kumactl CLI.
 {{- if .Values.noHelmHooks }}

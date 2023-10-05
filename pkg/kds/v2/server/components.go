@@ -19,6 +19,7 @@ import (
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/v2/util"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -43,7 +44,16 @@ func New(
 		return nil, err
 	}
 	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.Config().Mode, statsCallbacks, rt.Tenants())
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics(), providedTypes, rt.EventBus(), rt.Config().Experimental.KDSEventBasedWatchdog)
+	syncTracker, err := newSyncTracker(
+		log,
+		reconciler,
+		refresh,
+		rt.Metrics(),
+		providedTypes,
+		rt.EventBus(),
+		rt.Config().Experimental.KDSEventBasedWatchdog,
+		rt.Extensions(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +79,7 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
 		}, func() *time.Ticker {
 			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(rt.ResourceManager()), l)
+		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(rt.ResourceManager(), rt.Config().Store.Upsert, rt.Config().Metrics.Zone.CompactFinishedSubscriptions), l, rt.Extensions())
 	}, log)
 }
 
@@ -81,6 +91,7 @@ func newSyncTracker(
 	providedTypes []model.ResourceType,
 	eventBus events.EventBus,
 	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
+	extensions context.Context,
 ) (envoy_xds.Callbacks, error) {
 	kdsMetrics, err := NewMetrics(metrics)
 	if err != nil {
@@ -91,7 +102,8 @@ func newSyncTracker(
 		changedTypes[typ] = struct{}{}
 	}
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
-		log := log.WithValues("streamID", streamID, "node", node)
+		log := log.WithValues("streamID", streamID, "nodeID", node.Id)
+		log = kuma_log.AddFieldsFromCtx(log, ctx, extensions)
 		if experimentalWatchdogCfg.Enabled {
 			return &EventBasedWatchdog{
 				Ctx:           ctx,
@@ -131,7 +143,7 @@ func newSyncTracker(
 			OnTick: func(context.Context) error {
 				start := core.Now()
 				log.V(1).Info("on tick")
-				err, changed := reconciler.Reconcile(ctx, node, changedTypes)
+				err, changed := reconciler.Reconcile(ctx, node, changedTypes, log)
 				if err != nil {
 					result := ResultNoChanges
 					if changed {
@@ -143,7 +155,7 @@ func newSyncTracker(
 				return err
 			},
 			OnError: func(err error) {
-				kdsMetrics.KdsGenerationsErrors.Inc()
+				kdsMetrics.KdsGenerationErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {

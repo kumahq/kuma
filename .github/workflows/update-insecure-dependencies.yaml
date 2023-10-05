@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@0914d50df753bbc42180d982a6550f195390069f # v2.0.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -36,7 +36,7 @@ jobs:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20.7"
+          go-version-file: go.mod
       - name: "Install tools"
         run: |
           go install github.com/google/osv-scanner/cmd/osv-scanner@v1

@@ -150,6 +150,9 @@ type GlobalKDSServiceClient interface {
 	// bi-directional streaming to leverage existing connection from Zone CP to
 	// Global CP.
 	StreamClusters(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamClustersClient, error)
+	// HealthCheck allows us to implement a health check that works across
+	// proxies, unlike HTTP/2 PING frames.
+	HealthCheck(ctx context.Context, in *ZoneHealthCheckRequest, opts ...grpc.CallOption) (*ZoneHealthCheckResponse, error)
 }
 
 type globalKDSServiceClient struct {
@@ -253,6 +256,15 @@ func (x *globalKDSServiceStreamClustersClient) Recv() (*ClustersRequest, error) 
 	return m, nil
 }
 
+func (c *globalKDSServiceClient) HealthCheck(ctx context.Context, in *ZoneHealthCheckRequest, opts ...grpc.CallOption) (*ZoneHealthCheckResponse, error) {
+	out := new(ZoneHealthCheckResponse)
+	err := c.cc.Invoke(ctx, "/kuma.mesh.v1alpha1.GlobalKDSService/HealthCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GlobalKDSServiceServer is the server API for GlobalKDSService service.
 // All implementations must embed UnimplementedGlobalKDSServiceServer
 // for forward compatibility
@@ -270,6 +282,9 @@ type GlobalKDSServiceServer interface {
 	// bi-directional streaming to leverage existing connection from Zone CP to
 	// Global CP.
 	StreamClusters(GlobalKDSService_StreamClustersServer) error
+	// HealthCheck allows us to implement a health check that works across
+	// proxies, unlike HTTP/2 PING frames.
+	HealthCheck(context.Context, *ZoneHealthCheckRequest) (*ZoneHealthCheckResponse, error)
 	mustEmbedUnimplementedGlobalKDSServiceServer()
 }
 
@@ -285,6 +300,9 @@ func (UnimplementedGlobalKDSServiceServer) StreamStats(GlobalKDSService_StreamSt
 }
 func (UnimplementedGlobalKDSServiceServer) StreamClusters(GlobalKDSService_StreamClustersServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamClusters not implemented")
+}
+func (UnimplementedGlobalKDSServiceServer) HealthCheck(context.Context, *ZoneHealthCheckRequest) (*ZoneHealthCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HealthCheck not implemented")
 }
 func (UnimplementedGlobalKDSServiceServer) mustEmbedUnimplementedGlobalKDSServiceServer() {}
 
@@ -377,13 +395,36 @@ func (x *globalKDSServiceStreamClustersServer) Recv() (*ClustersResponse, error)
 	return m, nil
 }
 
+func _GlobalKDSService_HealthCheck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ZoneHealthCheckRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GlobalKDSServiceServer).HealthCheck(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kuma.mesh.v1alpha1.GlobalKDSService/HealthCheck",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GlobalKDSServiceServer).HealthCheck(ctx, req.(*ZoneHealthCheckRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GlobalKDSService_ServiceDesc is the grpc.ServiceDesc for GlobalKDSService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var GlobalKDSService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "kuma.mesh.v1alpha1.GlobalKDSService",
 	HandlerType: (*GlobalKDSServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "HealthCheck",
+			Handler:    _GlobalKDSService_HealthCheck_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamXDSConfigs",

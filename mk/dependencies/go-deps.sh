@@ -19,7 +19,9 @@ for i in \
     sigs.k8s.io/controller-tools/cmd/controller-gen@$(go list -f '{{.Version}}' -m sigs.k8s.io/controller-tools) \
     github.com/mikefarah/yq/v4@v4.30.8 \
     github.com/norwoodj/helm-docs/cmd/helm-docs@v1.11.0 \
-    golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20220513142942-846f273ed465; do
+    golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20220513142942-846f273ed465 \
+    github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.15.0 \
+    ; do
   echo "install go dep: ${i}"
   GOBIN=${OUTPUT_BIN_DIR} go install "${i}" &
 done

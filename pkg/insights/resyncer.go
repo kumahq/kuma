@@ -62,6 +62,7 @@ type Config struct {
 	EventProcessors     int
 	Metrics             core_metrics.Metrics
 	Now                 func() time.Time
+	Extensions          context.Context
 }
 
 type resyncer struct {
@@ -83,6 +84,7 @@ type resyncer struct {
 	itemProcessingTime *prometheus.SummaryVec
 
 	allPolicyTypes []model.ResourceType
+	extensions     context.Context
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -132,6 +134,7 @@ func NewResyncer(config *Config) component.Component {
 		itemProcessingTime:    itemProcessingTime,
 		allPolicyTypes:        allPolicyTypes,
 		eventProcessors:       config.EventProcessors,
+		extensions:            config.Extensions,
 	}
 	if config.Now == nil {
 		r.now = time.Now
@@ -244,7 +247,6 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				start := r.now()
 				select {
 				case <-ctx.Done():
-					log.Info("stopped resyncEvents loop")
 					return
 				case event, more := <-resyncEvents:
 					if !more {
@@ -258,9 +260,11 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 					r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 					tenantCtx := multitenant.WithTenant(ctx, event.tenantId)
+					log := kuma_log.AddFieldsFromCtx(log, tenantCtx, r.extensions)
+					log = log.WithValues("event", event)
 					dpOverviews, err := r.dpOverviews(tenantCtx, event.mesh)
 					if err != nil {
-						log.Error(err, "unable to get DataplaneOverviews to recompute insights", "event", event)
+						log.Error(err, "unable to get DataplaneOverviews to recompute insights")
 						continue
 					}
 
@@ -274,7 +278,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					if event.flag&FlagService == FlagService {
 						err, changed := r.createOrUpdateServiceInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items)
 						if err != nil {
-							log.Error(err, "unable to resync ServiceInsight", "event", event)
+							log.Error(err, "unable to resync ServiceInsight")
 						}
 						if changed {
 							anyChanged = true
@@ -283,7 +287,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 					if event.flag&FlagMesh == FlagMesh {
 						err, changed := r.createOrUpdateMeshInsight(tenantCtx, event.mesh, dpOverviews, externalServices.Items, event.types)
 						if err != nil {
-							log.Error(err, "unable to resync MeshInsight", "event", event)
+							log.Error(err, "unable to resync MeshInsight")
 						}
 						if changed {
 							anyChanged = true
@@ -411,7 +415,8 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 	meshList := &core_mesh.MeshResourceList{}
 	tenantCtx := multitenant.WithTenant(ctx, tenantID)
 	if err := r.rm.List(tenantCtx, meshList); err != nil {
-		log.Error(err, "failed to get list of meshes", "tenantId", tenantCtx)
+		log := kuma_log.AddFieldsFromCtx(log, tenantCtx, r.extensions)
+		log.Error(err, "failed to get list of meshes")
 		return
 	}
 	for _, mesh := range meshList.Items {
@@ -450,7 +455,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	dpOverviews []*core_mesh.DataplaneOverviewResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
+	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
@@ -531,12 +536,14 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	externalServices []*core_mesh.ExternalServiceResource,
 	types map[model.ResourceType]struct{},
 ) (error, bool) {
-	log := kuma_log.AddFieldsFromCtx(log, ctx, context.Background()).WithValues("mesh", mesh) // Add info
+	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-			Standard: &mesh_proto.MeshInsight_DataplaneStat{},
-			Gateway:  &mesh_proto.MeshInsight_DataplaneStat{},
+			Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
+			Gateway:          &mesh_proto.MeshInsight_DataplaneStat{},
+			GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
+			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
 		Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
@@ -566,7 +573,12 @@ func (r *resyncer) createOrUpdateMeshInsight(
 
 		statByType := insight.GetDataplanesByType().GetStandard()
 		if networking.GetGateway() != nil {
-			statByType = insight.GetDataplanesByType().GetGateway()
+			switch networking.GetGateway().GetType() {
+			case mesh_proto.Dataplane_Networking_Gateway_BUILTIN:
+				statByType = insight.GetDataplanesByType().GetGatewayBuiltin()
+			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
+				statByType = insight.GetDataplanesByType().GetGatewayDelegated()
+			}
 		}
 
 		statByType.Total++
@@ -601,6 +613,11 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}
+
+	insight.DataplanesByType.Gateway.Online = insight.GetDataplanesByType().GetGatewayBuiltin().GetOnline() + insight.GetDataplanesByType().GetGatewayDelegated().GetOnline()
+	insight.DataplanesByType.Gateway.Offline = insight.GetDataplanesByType().GetGatewayBuiltin().GetOffline() + insight.GetDataplanesByType().GetGatewayDelegated().GetOffline()
+	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayBuiltin().GetPartiallyDegraded() + insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
+	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayBuiltin().GetTotal() + insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
 	insight.Services = &mesh_proto.MeshInsight_ServiceStat{
 		Total:    uint32(len(internalServices) + len(externalServices)),

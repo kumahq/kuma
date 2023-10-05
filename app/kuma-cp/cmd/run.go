@@ -145,12 +145,12 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
+			runLog.Info("stop signal received. Waiting 3 seconds for components to stop gracefully...")
 			select {
 			case <-ctx.Done():
 			case <-time.After(gracefullyShutdownDuration):
 			}
-			runLog.Info("Stopping Control Plane")
+			runLog.Info("stopping Control Plane")
 			return nil
 		},
 	}

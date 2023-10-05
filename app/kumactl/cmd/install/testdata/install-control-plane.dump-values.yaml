@@ -20,6 +20,9 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
+# -- Whether to restart control-plane by calculating a new checksum for the secret
+restartOnSecretChange: true
+
 controlPlane:
   # -- Environment that control plane is run in, useful when running universal global control plane on k8s
   environment: "kubernetes"
@@ -44,6 +47,9 @@ controlPlane:
 
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
+
+  # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
+  minReadySeconds: 0
 
   # -- Control Plane Pod Annotations
   podAnnotations: {}
@@ -498,7 +504,12 @@ ingress:
 
   # -- Security context at the container level for ingress
   containerSecurityContext:
-   readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
+
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
@@ -602,7 +613,12 @@ egress:
 
   # -- Security context at the container level for egress
   containerSecurityContext:
-   readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: true
+
+  # -- Annotations to add for Control Plane's Service Account
+  serviceAccountAnnotations: { }
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
 
 kumactl:
   image:

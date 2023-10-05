@@ -55,7 +55,8 @@ message ExternalService {
       // The default value is set to "address" specified in "networking".
       google.protobuf.StringValue server_name = 6;
 
-      // If true then hostname verification will be skipped during certificate verification.
+      // If true then hostname verification will be skipped during certificate
+      // verification.
       google.protobuf.BoolValue skipHostnameVerification = 7;
     }
 

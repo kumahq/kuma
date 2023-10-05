@@ -69,6 +69,23 @@ var _ = Describe("Lb", func() {
             name: backend
             type: EDS`,
 		}),
+		Entry("least request with default", testCase{
+			clusterName: "backend",
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{},
+			},
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            lbPolicy: LEAST_REQUEST
+            leastRequestLbConfig:
+              choiceCount: 2
+            name: backend
+            type: EDS`,
+		}),
 		Entry("ring hash", testCase{
 			clusterName: "backend",
 			lb: &mesh_proto.TrafficRoute_LoadBalancer{
