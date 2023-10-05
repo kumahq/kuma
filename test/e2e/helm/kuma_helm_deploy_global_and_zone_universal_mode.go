@@ -55,9 +55,6 @@ stringData:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "app.kubernetes.io/name", "postgresql")(zoneCluster)).To(Succeed())
 
-		global = globalCluster.GetKuma()
-		Expect(global).ToNot(BeNil())
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
@@ -65,6 +62,9 @@ stringData:
 			)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		global = globalCluster.GetKuma()
+		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
