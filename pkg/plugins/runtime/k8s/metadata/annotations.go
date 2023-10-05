@@ -77,6 +77,7 @@ const (
 
 	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
 	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 
