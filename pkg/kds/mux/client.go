@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -103,6 +104,8 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
+
+	c.startHealthCheck(withKDSCtx, log, conn, stop, errorCh)
 
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
@@ -280,6 +283,42 @@ func (c *client) startClusters(
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
 	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+}
+
+func (c *client) startHealthCheck(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	stop <-chan struct{},
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "healthcheck")
+	log.Info("starting")
+
+	ticker := time.NewTicker(5 * time.Second)
+
+	go func() {
+		defer ticker.Stop()
+
+		_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			errorCh <- err
+		}
+
+		for {
+			select {
+			case <-ticker.C:
+				_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+				if err != nil && !errors.Is(err, context.Canceled) {
+					errorCh <- err
+				}
+			case <-stop:
+				log.Info("stopping")
+				return
+			}
+		}
+	}()
 }
 
 func (c *client) handleProcessingErrors(
