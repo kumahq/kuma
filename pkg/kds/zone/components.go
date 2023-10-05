@@ -72,7 +72,10 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
-	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore())
+	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Metrics(), rt.Extensions())
+	if err != nil {
+		return err
+	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
 	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
@@ -88,7 +91,9 @@ func Setup(rt core_runtime.Runtime) error {
 		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
-				log.Error(err, "StreamKumaResources finished with an error")
+				session.SetError(errors.Wrap(err, "StreamKumaResources finished with an error"))
+			} else {
+				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
@@ -103,13 +108,15 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				log.Error(err, "KDSSink finished with an error")
+				session.SetError(errors.Wrap(err, "KDSSink finished with an error"))
+			} else {
+				log.V(1).Info("KDSSink finished gracefully")
 			}
 		}()
 		return nil
 	})
 
-	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error {
+	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
 		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
@@ -124,22 +131,24 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := syncClient.Receive(); err != nil {
-				log.Error(err, "KDSSyncClient finished with an error")
+				errChan <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+			} else {
+				log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
 			}
 		}()
-		return nil
 	})
 
-	onZoneToGlobalSyncStarted := mux.OnZoneToGlobalSyncStartedFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error {
+	onZoneToGlobalSyncStarted := mux.OnZoneToGlobalSyncStartedFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errChan chan error) {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2", "peer-id", "global")
 		log.Info("ZoneToGlobalSync new session created")
 		session := kds_server_v2.NewServerStream(stream)
 		go func() {
 			if err := kdsServerV2.ZoneToGlobal(session); err != nil {
-				log.Error(err, "ZoneToGlobalSync finished with an error", err)
+				errChan <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+			} else {
+				log.V(1).Info("ZoneToGlobalSync finished gracefully")
 			}
 		}()
-		return nil
 	})
 
 	muxClient := mux.NewClient(

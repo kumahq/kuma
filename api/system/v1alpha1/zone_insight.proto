@@ -23,6 +23,8 @@ message ZoneInsight {
 
   // Statistics about Envoy Admin Streams
   EnvoyAdminStreams envoy_admin_streams = 2;
+
+  HealthCheck health_check = 3;
 }
 
 message EnvoyAdminStreams {
@@ -71,6 +73,9 @@ message KDSSubscription {
 
   // Config of Zone Kuma CP
   string config = 8;
+
+  // Indicates if subscription provided auth token
+  bool auth_token_provided = 9;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.
@@ -122,4 +127,10 @@ message KumaCpVersion {
 
   // True iff this Zone CP version is compatible with Global CP
   bool kumaCpGlobalCompatible = 5;
+}
+
+// HealthCheck holds information about the received zone health check
+message HealthCheck {
+  // Time last health check received
+  google.protobuf.Timestamp time = 1;
 }

@@ -251,7 +251,11 @@ func (d *TrafficRouteResource) validateLb() validators.ValidationError {
 
 	switch lb.LbType.(type) {
 	case *mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_:
-
+		lbConfig := lb.GetLeastRequest()
+		if lbConfig != nil && lbConfig.ChoiceCount == 1 {
+			root := validators.RootedAt("conf.loadBalancer.leastRequest.choiceCount")
+			err.AddViolationAt(root, "value must be greater than or equal to 2")
+		}
 	case *mesh_proto.TrafficRoute_LoadBalancer_RingHash_:
 		lbConfig := lb.GetRingHash()
 		switch lbConfig.HashFunction {

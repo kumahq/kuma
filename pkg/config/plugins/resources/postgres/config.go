@@ -75,6 +75,26 @@ type PostgresStoreConfig struct {
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	// MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+	MaxListQueryElements uint32 `json:"maxListQueryElements" envconfig:"kuma_store_postgres_max_list_query_elements"`
+	// ReadReplica is a setting for a DB replica used only for read queries
+	ReadReplica ReadReplica `json:"readReplica"`
+}
+
+type ReadReplica struct {
+	// Host of the Postgres DB read replica. If not set, read replica is not used.
+	Host string `json:"host" envconfig:"kuma_store_postgres_read_replica_host"`
+	// Port of the Postgres DB read replica
+	Port uint `json:"port" envconfig:"kuma_store_postgres_read_replica_port"`
+	// Ratio in [0-100] range. How many SELECT queries (out of 100) will use read replica.
+	Ratio uint `json:"ratio" envconfig:"kuma_store_postgres_read_replica_ratio"`
+}
+
+func (cfg ReadReplica) Validate() error {
+	if cfg.Ratio > 100 {
+		return errors.New(".Ratio out of [0-100] range")
+	}
+	return nil
 }
 
 func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
@@ -220,6 +240,9 @@ func (p *PostgresStoreConfig) Validate() error {
 	if p.HealthCheckInterval.Duration < 0 {
 		return errors.New("HealthCheckInterval should be greater than 0")
 	}
+	if err := p.ReadReplica.Validate(); err != nil {
+		return errors.Wrapf(err, "ReadReplica validation failed")
+	}
 	warning := "[WARNING] "
 	switch p.DriverName {
 	case DriverNamePgx:
@@ -274,6 +297,11 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
 		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
 		HealthCheckInterval:         DefaultHealthCheckInterval,
+		MaxListQueryElements:        0,
+		ReadReplica: ReadReplica{
+			Port:  5432,
+			Ratio: 100,
+		},
 	}
 }
 

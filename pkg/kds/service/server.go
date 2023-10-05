@@ -3,27 +3,44 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"math/rand"
 	"time"
 
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
+
+var log = core.Log.WithName("kds-service")
+
+type StreamInterceptor interface {
+	InterceptServerStream(stream grpc.ServerStream) error
+}
 
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs EnvoyAdminRPCs
 	resManager     manager.ResourceManager
 	instanceID     string
+	filters        []StreamInterceptor
+	extensions     context.Context
+	upsertCfg      config_store.UpsertConfig
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -31,11 +48,17 @@ func NewGlobalKDSServiceServer(
 	envoyAdminRPCs EnvoyAdminRPCs,
 	resManager manager.ResourceManager,
 	instanceID string,
+	filters []StreamInterceptor,
+	extensions context.Context,
+	upsertCfg config_store.UpsertConfig,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
 		envoyAdminRPCs: envoyAdminRPCs,
 		resManager:     resManager,
 		instanceID:     instanceID,
+		filters:        filters,
+		extensions:     extensions,
+		upsertCfg:      upsertCfg,
 	}
 }
 
@@ -59,6 +82,30 @@ func (g *GlobalKDSServiceServer) StreamClusters(stream mesh_proto.GlobalKDSServi
 	})
 }
 
+func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.ZoneHealthCheckRequest) (*mesh_proto.ZoneHealthCheckResponse, error) {
+	zone, err := util.ClientIDFromIncomingCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	clientID := ClientID(ctx, zone)
+	log := log.WithValues("clientID", clientID)
+
+	insight := system.NewZoneInsightResource()
+	if err := manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone, Mesh: model.NoMesh}, insight, func(resource model.Resource) error {
+		if insight.Spec.HealthCheck == nil {
+			insight.Spec.HealthCheck = &system_proto.HealthCheck{}
+		}
+
+		insight.Spec.HealthCheck.Time = timestamppb.Now()
+		return nil
+	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)); err != nil {
+		log.Error(err, "couldn't update zone insight", "zone", zone)
+	}
+
+	return &mesh_proto.ZoneHealthCheckResponse{}, nil
+}
+
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	rpcName string,
 	rpc util_grpc.ReverseUnaryRPCs,
@@ -67,30 +114,46 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 ) error {
 	zone, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
-		return err
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	clientID := ClientID(stream.Context(), zone)
-	core.Log.Info("Envoy Admin RPC stream started", "rpc", rpcName, "clientID", clientID)
+	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
+	for _, filter := range g.filters {
+		if err := filter.InterceptServerStream(stream); err != nil {
+			if status.Code(err) == codes.InvalidArgument {
+				logger.Info("stream interceptor terminating the stream", "cause", err)
+			} else {
+				logger.Error(err, "stream interceptor terminating the stream")
+			}
+			return err
+		}
+	}
+	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(clientID, stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
-		return err
+		logger.Error(err, "could not store stream connection")
+		return status.Error(codes.Internal, "could not store stream connection")
 	}
-	defer func() {
-		rpc.ClientDisconnected(clientID)
-		// stream.Context() is cancelled here, we need to use another ctx
-		ctx := multitenant.CopyIntoCtx(stream.Context(), context.Background())
-		if err := g.storeStreamConnection(ctx, zone, rpcName, ""); err != nil {
-			core.Log.Error(err, "could not clear stream connection information in ZoneInsight", "rpc", rpcName, "clientID", clientID, "rpc", rpcName)
-		}
-	}()
+	logger.Info("stored stream connection")
 	for {
 		resp, err := recv()
-		if err != nil {
-			return err
+		if err == io.EOF {
+			logger.Info("stream stopped")
+			return nil
 		}
-		core.Log.V(1).Info("Envoy Admin RPC response received", "rpc", rpc, "clientID", clientID, "requestId", resp.GetRequestId())
+		if status.Code(err) == codes.Canceled {
+			logger.Info("stream cancelled")
+			return nil
+		}
+		if err != nil {
+			logger.Error(err, "could not receive a message")
+			return status.Error(codes.Internal, "could not receive a message")
+		}
+		logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
 		if err := rpc.ResponseReceived(clientID, resp); err != nil {
-			return err
+			logger.Error(err, "could not mark the response as received")
+			return status.Error(codes.InvalidArgument, "could not mark the response as received")
 		}
 	}
 }
@@ -110,6 +173,13 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 		return err
 	}
 
+	// Add delay for Upsert. If Global CP is behind an HTTP load balancer,
+	// it might be the case that each Envoy Admin stream will land on separate instance.
+	// In this case, all instances will try to update Zone Insight which will result in conflicts.
+	// Since it's unusual to immediately execute envoy admin rpcs after zone is connected, 0-10s delay should be fine.
+	// #nosec G404 - math rand is enough
+	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
+
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
 		if zoneInsight.Spec.EnvoyAdminStreams == nil {
@@ -124,7 +194,7 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceId = instance
 		}
 		return nil
-	}, manager.WithConflictRetry(100*time.Millisecond, 10)) // we need retry because zone sink or other RPC may also update the insight.
+	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
 }
 
 func ClientID(ctx context.Context, zone string) string {

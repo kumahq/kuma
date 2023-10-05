@@ -62,7 +62,7 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("value %s, is not valid uint16", port)
+		return 0, fmt.Errorf("value '%s', is not valid uint16", port)
 	}
 
 	return uint16(parsedPort), nil
@@ -120,22 +120,12 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 			return "", errors.Wrap(err, "cannot parse inbound ports to exclude")
 		}
 	}
-
-	var excludePortsForUIDs []config.UIDsToPorts
-	if len(tpConfig.ExcludeOutboundTCPPortsForUIDs) > 0 {
-		excludeTCPPortsForUIDs, err := parseExcludePortsForUIDs(tpConfig.ExcludeOutboundTCPPortsForUIDs, "tcp")
+	var excludeOutboundPortsForUids []config.UIDsToPorts
+	if len(tpConfig.ExcludedOutboundsForUIDs) > 0 {
+		excludeOutboundPortsForUids, err = parseExcludePortsForUIDs(tpConfig.ExcludedOutboundsForUIDs)
 		if err != nil {
-			return "", errors.Wrap(err, "parsing excluded outbound TCP ports for UIDs failed")
+			return "", errors.Wrap(err, "parsing excluded outbound ports for uids failed")
 		}
-		excludePortsForUIDs = append(excludePortsForUIDs, excludeTCPPortsForUIDs...)
-	}
-
-	if len(tpConfig.ExcludeOutboundUDPPortsForUIDs) > 0 {
-		excludeUDPPortsForUIDs, err := parseExcludePortsForUIDs(tpConfig.ExcludeOutboundUDPPortsForUIDs, "udp")
-		if err != nil {
-			return "", errors.Wrap(err, "parsing excluded outbound UDP ports for UIDs failed")
-		}
-		excludePortsForUIDs = append(excludePortsForUIDs, excludeUDPPortsForUIDs...)
 	}
 
 	var excludeOutboundPorts []uint16
@@ -167,7 +157,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 				Enabled:             true,
 				Port:                redirectOutboundPort,
 				ExcludePorts:        excludeOutboundPorts,
-				ExcludePortsForUIDs: excludePortsForUIDs,
+				ExcludePortsForUIDs: excludeOutboundPortsForUids,
 			},
 			DNS: config.DNS{
 				Enabled:             tpConfig.RedirectDNS,
@@ -193,45 +183,81 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		IPv6:          ipv6,
 		Verbose:       tpConfig.Verbose,
 		DryRun:        tpConfig.DryRun,
+		Wait:          tpConfig.Wait,
+		WaitInterval:  tpConfig.WaitInterval,
+		Retry: config.RetryConfig{
+			MaxRetries:         tpConfig.MaxRetries,
+			SleepBetweenReties: tpConfig.SleepBetweenRetries,
+		},
 	}
 
 	return Setup(cfg)
 }
 
-func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]config.UIDsToPorts, error) {
+func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {
 	var uidsToPorts []config.UIDsToPorts
 	for _, excludePort := range excludeOutboundPortsForUIDs {
 		parts := strings.Split(excludePort, ":")
-		if len(parts) != 2 {
-			return nil, errors.New("value contains too many \":\" - format for excluding ports by UIDs ports:uids")
+		if len(parts) == 0 || len(parts) > 3 {
+			return nil, fmt.Errorf("value: '%s' is invalid - format for excluding ports by uids <protocol:>?<ports:>?uids", excludePort)
 		}
-		portValuesOrRange := parts[0]
-		uidValuesOrRange := parts[1]
+		var portValuesOrRange string
+		var protocolOpts string
+		var uidValuesOrRange string
+		switch len(parts) {
+		case 1:
+			protocolOpts = "*"
+			portValuesOrRange = "*"
+			uidValuesOrRange = parts[0]
+		case 2:
+			protocolOpts = "*"
+			portValuesOrRange = parts[0]
+			uidValuesOrRange = parts[1]
+		case 3:
+			protocolOpts = parts[0]
+			portValuesOrRange = parts[1]
+			uidValuesOrRange = parts[2]
+		}
+		if uidValuesOrRange == "*" {
+			return nil, errors.New("can't use wildcard '*' for uids")
+		}
+		if portValuesOrRange == "*" || portValuesOrRange == "" {
+			portValuesOrRange = "1-65535"
+		}
 
-		if err := validatePorts(portValuesOrRange); err != nil {
+		if err := validateUintValueOrRange(portValuesOrRange); err != nil {
 			return nil, err
 		}
 
-		if err := validateUids(uidValuesOrRange); err != nil {
+		if strings.Contains(uidValuesOrRange, ",") {
+			return nil, fmt.Errorf("uid entry invalid:'%s', it should either be a single item or a range", uidValuesOrRange)
+		}
+		if err := validateUintValueOrRange(uidValuesOrRange); err != nil {
 			return nil, err
 		}
 
-		uidsToPorts = append(uidsToPorts, config.UIDsToPorts{
-			Ports:    config.ValueOrRangeList(portValuesOrRange),
-			UIDs:     config.ValueOrRangeList(uidValuesOrRange),
-			Protocol: protocol,
-		})
+		var protocols []string
+		if protocolOpts == "" || protocolOpts == "*" {
+			protocols = []string{"tcp", "udp"}
+		} else {
+			for _, p := range strings.Split(protocolOpts, ",") {
+				pCleaned := strings.ToLower(strings.TrimSpace(p))
+				if pCleaned != "tcp" && pCleaned != "udp" {
+					return nil, fmt.Errorf("protocol '%s' is invalid or unsupported", pCleaned)
+				}
+				protocols = append(protocols, pCleaned)
+			}
+		}
+		for _, p := range protocols {
+			uidsToPorts = append(uidsToPorts, config.UIDsToPorts{
+				Ports:    config.ValueOrRangeList(strings.ReplaceAll(portValuesOrRange, "-", ":")),
+				UIDs:     config.ValueOrRangeList(strings.ReplaceAll(uidValuesOrRange, "-", ":")),
+				Protocol: p,
+			})
+		}
 	}
 
 	return uidsToPorts, nil
-}
-
-func validateUids(uidValuesOrRange string) error {
-	return validateUintValueOrRange(uidValuesOrRange)
-}
-
-func validatePorts(portValuesOrRange string) error {
-	return validateUintValueOrRange(portValuesOrRange)
 }
 
 func validateUintValueOrRange(valueOrRange string) error {
@@ -243,7 +269,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 		for _, port := range portRanges {
 			_, err := parseUint16(port)
 			if err != nil {
-				return errors.Wrapf(err, "values or range %s failed validation", valueOrRange)
+				return errors.Wrapf(err, "values or range '%s' failed validation", valueOrRange)
 			}
 		}
 	}

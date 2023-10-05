@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
 
 type InstallationMode string
@@ -115,6 +116,7 @@ type appDeploymentOptions struct {
 	boundToContainerIp    bool
 	serviceAddress        string
 	transparentProxyV1    bool
+	dpEnvs                map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -517,6 +519,12 @@ func WithTransparentProxyV1(transparent bool) AppDeploymentOption {
 	})
 }
 
+func WithDpEnvs(envs map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dpEnvs = envs
+	})
+}
+
 func WithBuiltinDNS(builtindns bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.builtindns = &builtindns
@@ -563,7 +571,7 @@ type Cluster interface {
 	GetKumaCPLogs() (string, error)
 	VerifyKuma() error
 	DeleteKuma() error
-	GetKumactlOptions() *KumactlOptions
+	GetKumactlOptions() *kumactl.KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
 	DeleteDeployment(name string) error

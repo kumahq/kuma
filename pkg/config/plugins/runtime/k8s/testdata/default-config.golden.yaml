@@ -54,6 +54,7 @@ injector:
         cpu: 50m
         memory: 64Mi
     uid: 5678
+    waitForDataplaneReady: false
   sidecarTraffic:
     excludeInboundPorts: []
     excludeOutboundPorts: []

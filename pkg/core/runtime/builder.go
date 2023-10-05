@@ -24,6 +24,7 @@ import (
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -38,7 +39,7 @@ import (
 // BuilderContext provides access to Builder's interim state.
 type BuilderContext interface {
 	ComponentManager() component.Manager
-	ResourceStore() core_store.ResourceStore
+	ResourceStore() core_store.CustomizableResourceStore
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.CustomizableResourceManager
@@ -69,11 +70,12 @@ var _ BuilderContext = &Builder{}
 type Builder struct {
 	cfg            kuma_cp.Config
 	cm             component.Manager
-	rs             core_store.ResourceStore
+	rs             core_store.CustomizableResourceStore
 	ss             store.SecretStore
 	cs             core_store.ResourceStore
 	rm             core_manager.CustomizableResourceManager
 	rom            core_manager.ReadOnlyResourceManager
+	gis            globalinsight.GlobalInsightService
 	cam            core_ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
@@ -125,7 +127,7 @@ func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
+func (b *Builder) WithResourceStore(rs core_store.CustomizableResourceStore) *Builder {
 	b.rs = rs
 	return b
 }
@@ -137,6 +139,11 @@ func (b *Builder) WithSecretStore(ss store.SecretStore) *Builder {
 
 func (b *Builder) WithConfigStore(cs core_store.ResourceStore) *Builder {
 	b.cs = cs
+	return b
+}
+
+func (b *Builder) WithGlobalInsightService(gis globalinsight.GlobalInsightService) *Builder {
+	b.gis = gis
 	return b
 }
 
@@ -362,6 +369,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:                       b.rs,
 			ss:                       b.ss,
 			cam:                      b.cam,
+			gis:                      b.gis,
 			dsl:                      b.dsl,
 			ext:                      b.ext,
 			configm:                  b.configm,
@@ -395,7 +403,7 @@ func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
 
-func (b *Builder) ResourceStore() core_store.ResourceStore {
+func (b *Builder) ResourceStore() core_store.CustomizableResourceStore {
 	return b.rs
 }
 
@@ -405,6 +413,10 @@ func (b *Builder) SecretStore() store.SecretStore {
 
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
+}
+
+func (b *Builder) GlobalInsightService() globalinsight.GlobalInsightService {
+	return b.gis
 }
 
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {

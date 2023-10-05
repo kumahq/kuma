@@ -36,6 +36,7 @@ spec:
       securityContext:
       {{- toYaml .Values.ingress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
+      automountServiceAccountToken: {{ .Values.ingress.automountServiceAccountToken }}
       {{- with .Values.ingress.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -100,12 +101,37 @@ spec:
           lifecycle: {{ . | toYaml | nindent 12 }}
           {{ end }}
           volumeMounts:
+{{- if not .Values.ingress.automountServiceAccountToken }}
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: serviceaccount-token
+              readOnly: true
+{{- end }}
             - name: control-plane-ca
               mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
+{{- if not .Values.ingress.automountServiceAccountToken }}
+        - name: serviceaccount-token
+          projected:
+            defaultMode: 420
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3600
+                  path: token
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
+{{- end }}
         - name: control-plane-ca
           secret:
             secretName: {{ include "kuma.controlPlane.tls.general.caSecretName" . }}

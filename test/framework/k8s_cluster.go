@@ -32,6 +32,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -931,7 +932,7 @@ func (c *K8sCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
+func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 
@@ -994,11 +995,22 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
-	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		return err
+	}
+	// speed up namespace termination by terminating pods without grace period.
+	// Namespace is then deleted in ~6s instead of ~43s.
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+	now := time.Now()
+	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
+		func() (string, error) {
+			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
+	return err
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {

@@ -29,18 +29,19 @@ var ensureMux = sync.Mutex{}
 func EnsureDefaultMeshResources(
 	ctx context.Context,
 	resManager manager.ResourceManager,
-	meshName string,
+	mesh model.Resource,
 	skippedPolicies []string,
 	extensions context.Context,
 ) error {
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 
+	meshName := mesh.GetMeta().GetName()
 	logger := kuma_log.AddFieldsFromCtx(log, ctx, extensions).WithValues("mesh", meshName)
 
 	logger.Info("ensuring default resources for Mesh exist")
 
-	created, err := ensureDataplaneTokenSigningKey(ctx, resManager, meshName)
+	created, err := ensureDataplaneTokenSigningKey(ctx, resManager, mesh)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
@@ -93,7 +94,7 @@ func EnsureDefaultMeshResources(
 }
 
 func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
-	err := resManager.Get(ctx, res, store.GetBy(resourceKey))
+	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
 	if err == nil {
 		return nil, false
 	}

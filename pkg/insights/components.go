@@ -27,7 +27,9 @@ func Setup(rt runtime.Runtime) error {
 		Registry:            registry.Global(),
 		TenantFn:            rt.Tenants(),
 		EventBufferCapacity: rt.Config().Metrics.Mesh.BufferSize,
+		EventProcessors:     rt.Config().Metrics.Mesh.EventProcessors,
 		Metrics:             rt.Metrics(),
+		Extensions:          rt.Extensions(),
 	})
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }

@@ -19,6 +19,7 @@ import (
 type dataplaneOverviewEndpoints struct {
 	resManager     manager.ResourceManager
 	resourceAccess access.ResourceAccess
+	filter         func(request *restful.Request) (store.ListFilterFunc, error)
 }
 
 func (r *dataplaneOverviewEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -106,7 +107,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		return
 	}
 
-	filter, err := genFilter(request)
+	filter, err := r.filter(request)
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve dataplane overviews")
 		return
@@ -119,8 +120,6 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		return
 	}
 
-	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
-	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
 	restList := rest.From.ResourceList(&overviews)
 	restList.Next = nextLink(request, overviews.GetPagination().NextOffset)
 	if err := response.WriteAsJson(restList); err != nil {

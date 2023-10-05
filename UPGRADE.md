@@ -13,6 +13,12 @@ does not have any particular instructions.
 The configuration: `Metrics.Mesh.MinResyncTimeout` and `Metrics.Mesh.MaxResyncTimeout` are replaced by `Metrics.Mesh.MinResyncInterval` and `Metrics.Mesh.FullResyncInterval`.
 You can still use the current configs but it will be removed in the future.
 
+### Deprecated argument
+
+Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
+We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+The previous versions will still work but will be removed in the future.
+
 ### **Breaking changes**
 
 #### Removal of service field in Dataplane outbound

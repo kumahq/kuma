@@ -28,13 +28,18 @@
         
             If true then TLS session will allow renegotiation.
             It's not recommended to set this to true because of security reasons.
-            However, some servers requires this setting, especially when using
+            However, some servers require this setting, especially when using
             mTLS.    
         
         - `serverName` (optional)
         
             ServerName overrides the default Server Name Indicator set by Kuma.
             The default value is set to "address" specified in "networking".    
+        
+        - `skipHostnameVerification` (optional)
+        
+            If true then hostname verification will be skipped during certificate
+            verification.    
     
     - `disableHostDNSEntry` (optional)
     

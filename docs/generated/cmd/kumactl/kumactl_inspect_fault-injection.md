@@ -13,7 +13,8 @@ kumactl inspect fault-injection NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for fault-injection
+  -h, --help          help for fault-injection
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

@@ -14,6 +14,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
 
 type ExternalServicesGenerator struct{}
@@ -30,7 +31,10 @@ func (g *ExternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
-	destinations := buildDestinations(meshResources.TrafficRoutes)
+	destinations := zoneproxy.BuildMeshDestinations(
+		nil,
+		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+	)
 	services := g.buildServices(endpointMap, zone, meshResources)
 
 	g.addFilterChains(

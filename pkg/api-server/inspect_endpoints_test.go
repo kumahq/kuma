@@ -898,6 +898,15 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: "text/plain",
 		}),
+		Entry("inspect rules empty", testCase{
+			path:    "/meshes/default/dataplanes/web-01/rules",
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules_empty.golden.json")),
+			resources: []core_model.Resource{
+				samples2.MeshDefault(),
+				samples2.DataplaneWeb(),
+			},
+			contentType: restful.MIME_JSON,
+		}),
 		Entry("inspect rules basic", testCase{
 			path:    "/meshes/default/dataplanes/web-01/rules",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.golden.json")),

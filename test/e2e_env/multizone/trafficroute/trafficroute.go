@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -90,7 +91,8 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.SyncedNameInZone(meshName, "three-way-route")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
@@ -121,7 +123,8 @@ conf:
     kuma.io/service: another-test-server
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.SyncedNameInZone(meshName, "route-echo-to-backend")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
@@ -160,7 +163,8 @@ conf:
         version: v2
 `, v1Weight, v2Weight)
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.SyncedNameInZone(meshName, "route-20-80-split")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
@@ -211,7 +215,8 @@ conf:
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.SyncedNameInZone(meshName, "route-by-path")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
@@ -265,7 +270,8 @@ conf:
       version: v2
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.SyncedNameInZone(meshName, "two-splits")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
@@ -306,7 +312,8 @@ conf:
     kuma.io/service: '*'
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.SyncedNameInZone(meshName, "route-all-tr-test")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 		})
 
 		It("should loadbalance all requests equally by default", func() {

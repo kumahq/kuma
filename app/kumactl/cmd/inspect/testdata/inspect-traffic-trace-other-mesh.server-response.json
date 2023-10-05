@@ -1,0 +1,47 @@
+{
+  "total": 1,
+  "items": [
+    {
+      "kind": "SidecarDataplane",
+      "dataplane": {
+        "mesh": "other-mesh",
+        "name": "backend-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    },
+    {
+      "kind": "SidecarDataplane",
+      "dataplane": {
+        "mesh": "other-mesh",
+        "name": "web-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    },
+    {
+      "kind": "SidecarDataplane",
+      "dataplane": {
+        "mesh": "other-mesh",
+        "name": "redis-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    }
+  ]
+}

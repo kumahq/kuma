@@ -43,7 +43,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	if err := defaults_mesh.EnsureDefaultMeshResources(
 		ctx,
 		r.ResourceManager,
-		req.Name,
+		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		r.Extensions,
 	); err != nil {

@@ -5,36 +5,41 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type TransparentProxyConfig struct {
-	DryRun                         bool
-	Verbose                        bool
-	RedirectPortOutBound           string
-	RedirectInBound                bool
-	RedirectPortInBound            string
-	RedirectPortInBoundV6          string
-	ExcludeInboundPorts            string
-	ExcludeOutboundPorts           string
-	ExcludeOutboundTCPPortsForUIDs []string
-	ExcludeOutboundUDPPortsForUIDs []string
-	UID                            string
-	GID                            string
-	RedirectDNS                    bool
-	RedirectAllDNSTraffic          bool
-	AgentDNSListenerPort           string
-	DNSUpstreamTargetChain         string
-	SkipDNSConntrackZoneSplit      bool
-	ExperimentalEngine             bool
-	EbpfEnabled                    bool
-	EbpfInstanceIP                 string
-	EbpfBPFFSPath                  string
-	EbpfCgroupPath                 string
-	EbpfTCAttachIface              string
-	EbpfProgramsSourcePath         string
-	VnetNetworks                   []string
-	Stdout                         io.Writer
-	Stderr                         io.Writer
+	DryRun                    bool
+	Verbose                   bool
+	RedirectPortOutBound      string
+	RedirectInBound           bool
+	RedirectPortInBound       string
+	RedirectPortInBoundV6     string
+	ExcludeInboundPorts       string
+	ExcludeOutboundPorts      string
+	ExcludedOutboundsForUIDs  []string
+	UID                       string
+	GID                       string
+	RedirectDNS               bool
+	RedirectAllDNSTraffic     bool
+	AgentDNSListenerPort      string
+	DNSUpstreamTargetChain    string
+	SkipDNSConntrackZoneSplit bool
+	ExperimentalEngine        bool
+	EbpfEnabled               bool
+	EbpfInstanceIP            string
+	EbpfBPFFSPath             string
+	EbpfCgroupPath            string
+	EbpfTCAttachIface         string
+	EbpfProgramsSourcePath    string
+	VnetNetworks              []string
+	Stdout                    io.Writer
+	Stderr                    io.Writer
+	RestoreLegacy             bool
+	Wait                      uint
+	WaitInterval              uint
+	MaxRetries                int
+	SleepBetweenRetries       time.Duration
 }
 
 const DebugLogLevel uint16 = 7
@@ -116,6 +121,11 @@ type LogConfig struct {
 	Level   uint16
 }
 
+type RetryConfig struct {
+	MaxRetries         int
+	SleepBetweenReties time.Duration
+}
+
 type Config struct {
 	Owner    Owner
 	Redirect Redirect
@@ -140,6 +150,22 @@ type Config struct {
 	// Log is the place where configuration for logging iptables rules will
 	// be placed
 	Log LogConfig
+	// Wait is the amount of time, in seconds, that the application should wait
+	// for the xtables exclusive lock before exiting. If the lock is not
+	// available within the specified time, the application will exit with
+	// an error. Default value *(0) means wait forever. To disable this behavior
+	// and exit immediately if the xtables lock is not available, set this to
+	// nil
+	Wait uint
+	// WaitInterval is the amount of time, in microseconds, that iptables should
+	// wait between each iteration of the lock acquisition loop. This can be
+	// useful if the xtables lock is being held by another application for
+	// a long time, and you want to reduce the amount of CPU that iptables uses
+	// while waiting for the lock
+	WaitInterval uint
+	// Retry allows you to configure the number of times that the system should
+	// retry an installation if it fails
+	Retry RetryConfig
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
@@ -183,8 +209,8 @@ func (c Config) ShouldConntrackZoneSplit() bool {
 	// instead of failing the whole iptables application, we can log the warning,
 	// skip conntrack related rules and move forward
 	if err := exec.Command("iptables", "-m", "conntrack", "--help").Run(); err != nil {
-		_, _ = fmt.Fprintf(c.RuntimeStdout,
-			"[WARNING] error occurred when validating if 'conntrack' iptables "+
+		_, _ = fmt.Fprintf(c.RuntimeStderr,
+			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
 				"module is present. Rules for DNS conntrack zone "+
 				"splitting won't be applied: %s\n", err,
 		)
@@ -242,6 +268,12 @@ func defaultConfig() Config {
 		Log: LogConfig{
 			Enabled: false,
 			Level:   DebugLogLevel,
+		},
+		Wait:         5,
+		WaitInterval: 0,
+		Retry: RetryConfig{
+			MaxRetries:         4,
+			SleepBetweenReties: 2 * time.Second,
 		},
 	}
 }
@@ -372,6 +404,21 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	result.Log.Enabled = cfg.Log.Enabled
 	if cfg.Log.Level != DebugLogLevel {
 		result.Log.Level = cfg.Log.Level
+	}
+
+	// .Wait
+	result.Wait = cfg.Wait
+
+	// .WaitInterval
+	result.WaitInterval = cfg.WaitInterval
+
+	// .Retry
+	if cfg.Retry.MaxRetries > 0 {
+		result.Retry.MaxRetries = cfg.Retry.MaxRetries
+	}
+
+	if cfg.Retry.SleepBetweenReties != 0 {
+		result.Retry.SleepBetweenReties = cfg.Retry.SleepBetweenReties
 	}
 
 	return result

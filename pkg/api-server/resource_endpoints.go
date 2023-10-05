@@ -40,6 +40,7 @@ type resourceEndpoints struct {
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
 	k8sMapper      k8s.ResourceMapperFunc
+	filter         func(request *restful.Request) (store.ListFilterFunc, error)
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -115,9 +116,14 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 		return
 	}
+	filter, err := r.filter(request)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+		return
+	}
 
 	list := r.descriptor.NewList()
-	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(page.size, page.offset)); err != nil {
+	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByFilterFunc(filter), store.ListByPage(page.size, page.offset)); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
@@ -154,7 +160,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	resourceRest, err := rest.JSON.Unmarshal(bodyBytes)
+	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return

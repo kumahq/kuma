@@ -100,12 +100,16 @@ endif
 
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=90s --for=condition=Ready -n metallb-system --all pods
-	SUBNET=$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}'); if [ $${SUBNET} != "172.18.0.0/16" ]; then \
-		   echo "Unexpected docker network, expecting 172.18.0.0/16"; exit 1; \
-	fi
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml
+	@# Construct a valid address space from the docker network and the template IPAddressPool
+	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
+		IFS=/ read -r _byte prefix <<< "$${NETWORK_ADDR_SPACE[3]}"; \
+		    if [[ "$${prefix}" -gt 16 ]]; then echo "Unexpected docker network, expecting a prefix of at most 16 bits"; exit 1; fi; \
+		IFS=. read -ra BASE_ADDR_SPACE <<< "$$(yq 'select(.kind == "IPAddressPool") | .spec.addresses[0]' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml)"; \
+		ADDR_SPACE="$${NETWORK_ADDR_SPACE[0]}.$${NETWORK_ADDR_SPACE[1]}.$${BASE_ADDR_SPACE[2]}.$${BASE_ADDR_SPACE[3]}" \
+	      yq '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(ADDR_SPACE)' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml | \
+		KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
 
 .PHONY: k3d/wait
 k3d/wait:
@@ -143,11 +147,11 @@ k3d/deploy/kuma: build/kumactl k3d/load
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) | true
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
-	@KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) --wait | true
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
+	KUBECONFIG=$(KIND_KUBECONFIG) helm upgrade --install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
-                --set global.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
+                --set global.image.tag="$(BUILD_INFO_VERSION)" \
                 --set cni.enabled=true \
                 --set cni.chained=true \
                 --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \

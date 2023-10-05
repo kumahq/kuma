@@ -22,7 +22,6 @@ func SetupAndGetState() []byte {
 	)).To(Succeed())
 
 	kumaOptions := append([]framework.KumaDeploymentOption{
-		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		framework.WithCtlOpts(map[string]string{
 			"--experimental-gatewayapi": "true",
 		}),

@@ -106,6 +106,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -113,13 +114,18 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
 			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
-			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
+			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(15)))
+			Expect(cfg.Store.Upsert.ConflictRetryJitterPercent).To(Equal(uint(10)))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
+
+			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
+			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
+			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -202,6 +208,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV1).To(BeTrue())
@@ -244,6 +251,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.DisableSOTW).To(BeTrue())
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -277,9 +285,11 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
+			Expect(cfg.Metrics.Zone.CompactFinishedSubscriptions).To(BeTrue())
 			Expect(cfg.Metrics.Mesh.MinResyncInterval.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Mesh.FullResyncInterval.Duration).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.BufferSize).To(Equal(23))
+			Expect(cfg.Metrics.Mesh.EventProcessors).To(Equal(2))
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
 			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
 			Expect(cfg.Metrics.ControlPlane.ReportResourcesCount).To(BeTrue())
@@ -337,8 +347,13 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
+			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -363,12 +378,17 @@ store:
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
+    maxListQueryElements: 111
     tls:
       mode: verifyFull
       certPath: /path/to/cert
       keyPath: /path/to/key
       caPath: /path/to/rootCert
       disableSSLSNI: true
+    readReplica:
+      host: ro.host
+      port: 35432
+      ratio: 80
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -376,7 +396,8 @@ store:
     expirationTime: 3s
   upsert:
     conflictRetryBaseBackoff: 4s
-    conflictRetryMaxTimes: 10
+    conflictRetryMaxTimes: 15
+    conflictRetryJitterPercent: 10
 bootstrapServer:
   params:
     adminPort: 1234
@@ -461,6 +482,7 @@ runtime:
       initContainer:
         image: test-image:test
       sidecarContainer:
+        waitForDataplaneReady: true
         image: image:test
         redirectPortInbound: 2020
         redirectPortInboundV6: 2021
@@ -542,6 +564,7 @@ multizone:
       maxMsgSize: 1
       msgSendTimeout: 10s
       nackBackoff: 11s
+      disableSOTW: true
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -578,10 +601,12 @@ metrics:
   zone:
     subscriptionLimit: 23
     idleTimeout: 2m
+    compactFinishedSubscriptions: true
   mesh:
     fullResyncInterval: 35s
     minResyncInterval: 27s
     bufferSize: 23
+    eventProcessors: 2
   dataplane:
     subscriptionLimit: 47
     idleTimeout: 1m
@@ -662,9 +687,20 @@ experimental:
   kdsDeltaEnabled: true
   useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
+  kdsEventBasedWatchdog:
+    enabled: true
+    flushInterval: 10s
+    fullResyncInterval: 15s
+    delayFullResync: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
+eventBus:
+  bufferSize: 30
+tracing:
+  openTelemetry:
+    enabled: true
+    endpoint: collector:4317
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -698,11 +734,16 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
+				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
-				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "15",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT":                                          "10",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",
@@ -777,6 +818,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1":                                    "true",
@@ -819,6 +861,7 @@ proxy:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW":                                                   "true",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -845,11 +888,13 @@ proxy:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
+				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
 				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
 				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",
+				"KUMA_METRICS_MESH_EVENT_PROCESSORS":                                                       "2",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
@@ -903,8 +948,14 @@ proxy:
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED":                                       "true",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
+				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 			},
 			yamlFileConfig: "",
 		}),

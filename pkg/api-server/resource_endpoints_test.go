@@ -295,6 +295,108 @@ var _ = Describe("Resource Endpoints", func() {
 			))
 		})
 
+		It("should list external services with filters", func() {
+			esWithTags := func(svc string, kv ...string) *core_mesh.ExternalServiceResource {
+				tags := map[string]string{
+					"kuma.io/service": svc,
+				}
+				for i := 0; i < len(kv); i += 2 {
+					tags[kv[i]] = kv[i+1]
+				}
+				return &core_mesh.ExternalServiceResource{
+					Spec: &mesh_proto.ExternalService{
+						Tags: tags,
+					},
+				}
+			}
+			// given three resources
+			for i := 0; i < 3; i++ {
+				err := resourceStore.Create(context.Background(), esWithTags("my-svc"), store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
+				Expect(err).NotTo(HaveOccurred())
+			}
+			err := resourceStore.Create(context.Background(), esWithTags("other-svc"), store.CreateByKey("dp-not-good", mesh))
+			Expect(err).NotTo(HaveOccurred())
+
+			// when ask for dataplanes with "my-svc" filter
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/external-services?tag=kuma.io/service:my-svc",
+			}
+			response := client.list()
+			Expect(response).To(MatchListResponse(TestListResponse{
+				Total: 3,
+				Next:  "",
+				Items: []TestMeta{
+					{
+						Mesh: "default",
+						Name: "dp-00",
+						Type: "ExternalService",
+					},
+					{
+						Mesh: "default",
+						Name: "dp-01",
+						Type: "ExternalService",
+					},
+					{
+						Mesh: "default",
+						Name: "dp-02",
+						Type: "ExternalService",
+					},
+				},
+			}))
+		})
+
+		It("should list dp with tag filters", func() {
+			dpWithService := func(n string) *core_mesh.DataplaneResource {
+				return &core_mesh.DataplaneResource{
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Tags: map[string]string{"kuma.io/service": n},
+								},
+							},
+						},
+					},
+				}
+			}
+			// given three resources
+			for i := 0; i < 3; i++ {
+				err := resourceStore.Create(context.Background(), dpWithService("my-svc"), store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
+				Expect(err).NotTo(HaveOccurred())
+			}
+			err := resourceStore.Create(context.Background(), dpWithService("other-svc"), store.CreateByKey("dp-not-good", mesh))
+			Expect(err).NotTo(HaveOccurred())
+
+			// when ask for dataplanes with "my-svc" filter
+			client = resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/dataplanes?tag=kuma.io/service:my-svc",
+			}
+			response := client.list()
+			Expect(response).To(MatchListResponse(TestListResponse{
+				Total: 3,
+				Next:  "",
+				Items: []TestMeta{
+					{
+						Mesh: "default",
+						Name: "dp-00",
+						Type: "Dataplane",
+					},
+					{
+						Mesh: "default",
+						Name: "dp-01",
+						Type: "Dataplane",
+					},
+					{
+						Mesh: "default",
+						Name: "dp-02",
+						Type: "Dataplane",
+					},
+				},
+			}))
+		})
+
 		It("should list resources using pagination", func() {
 			// given three resources
 			putSampleResourceIntoStore(resourceStore, "tr-1", "mesh-1")
@@ -738,6 +840,135 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_mesh-not-found.golden.json")))
+		})
+
+		It("should return 400 when json is invalid", func() {
+			// given
+			json := `{"foo": }`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidJson.golden.json")))
+		})
+
+		It("should return 400 when resourceType is empty", func() {
+			// given
+			json := `{"type": "", "name": "foo"}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onEmptyResourceType.golden.json")))
+		})
+
+		It("should return 400 when meta is invalid", func() {
+			// given
+			json := `{"type": "TrafficRoute", "name": 4}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaSchema.golden.json")))
+		})
+
+		It("should return 400 when spec is invalid", func() {
+			// given
+			json := `{"type": "TrafficRoute", "sample": "foo", "sources": [
+					{
+						"match": {
+							"kuma.io/service": 4
+						}
+					}
+				]}`
+
+			// when
+			response := client.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidSpecSchema.golden.json")))
+		})
+
+		It("should return 400 when spec is invalid on new policies", func() {
+			// given
+			json := `{
+				"type": "MeshTrafficPermission",
+				"name": "sample",
+				"spec": {
+					"targetRef": {
+						"kind": "MeshService",
+						"name": 2
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidSpecNewSchema.golden.json")))
+		})
+
+		It("should return 400 when meta type doesn't match on new policies", func() {
+			// given
+			json := `{
+				"type": "TrafficPermission",
+				"name": "sample",
+				"spec": {
+					"targetRef": {
+						"kind": "Mesh"
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaTypeWithNewSchema.golden.json")))
 		})
 	})
 

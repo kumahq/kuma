@@ -18,22 +18,22 @@ func CreateMeshIfNotExist(
 	ctx context.Context,
 	resManager core_manager.ResourceManager,
 	extensions context.Context,
-) error {
+) (*core_mesh.MeshResource, error) {
 	logger := kuma_log.AddFieldsFromCtx(log, ctx, extensions)
 	mesh := core_mesh.NewMeshResource()
 	err := resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {
 		logger.V(1).Info("default Mesh already exists. Skip creating default Mesh.")
-		return nil
+		return mesh, nil
 	}
 	if !core_store.IsResourceNotFound(err) {
-		return err
+		return nil, err
 	}
 	logger.Info("trying to create default Mesh")
 	if err := resManager.Create(ctx, mesh, core_store.CreateBy(defaultMeshKey)); err != nil {
 		logger.V(1).Info("could not create default mesh", "err", err)
-		return err
+		return nil, err
 	}
 	logger.Info("default Mesh created")
-	return nil
+	return mesh, nil
 }

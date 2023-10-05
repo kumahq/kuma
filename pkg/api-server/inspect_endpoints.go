@@ -575,7 +575,9 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			return
 		}
 		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
-		resp := api_server_types.RuleInspectResponse{}
+		resp := api_server_types.RuleInspectResponse{
+			Items: []api_server_types.RuleInspectEntry{},
+		}
 		for _, ruleAttachment := range rulesAttachments {
 			subset := map[string]string{}
 			for _, tag := range ruleAttachment.Rule.Subset {

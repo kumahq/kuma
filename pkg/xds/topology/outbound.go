@@ -43,7 +43,7 @@ func BuildEgressEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil)
+	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false)
 
 	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, mesh, loader, localZone)
 
@@ -71,7 +71,7 @@ func BuildEdsEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled())
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -188,6 +188,7 @@ func BuildCrossMeshEndpointMap(
 		localZone,
 		mesh,
 		otherMesh,
+		mesh.ZoneEgressEnabled(),
 	)
 
 	endpointWeight := uint32(1)
@@ -244,6 +245,7 @@ func fillIngressOutbounds(
 	localZone string,
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
+	routeThroughZoneEgress bool,
 ) uint32 {
 	ziInstances := map[string]struct{}{}
 
@@ -319,7 +321,7 @@ func fillIngressOutbounds(
 			//  ignore
 			// If zone egresses present, we want to pass the traffic:
 			// dp -> zone egress -> zone ingress -> dp
-			if mesh.ZoneEgressEnabled() && len(zoneEgresses) > 0 {
+			if routeThroughZoneEgress {
 				for _, ze := range zoneEgresses {
 					zeNetworking := ze.Spec.GetNetworking()
 					zeAddress := zeNetworking.GetAddress()
@@ -347,9 +349,6 @@ func fillIngressOutbounds(
 					Tags:     serviceTags,
 					Weight:   serviceInstances,
 					Locality: locality,
-				}
-				if mesh.ZoneEgressEnabled() && service.ExternalService {
-					endpoint.ExternalService = &core_xds.ExternalService{}
 				}
 
 				outbound[serviceName] = append(outbound[serviceName], endpoint)
@@ -467,12 +466,13 @@ func NewExternalServiceEndpoint(
 	}
 
 	es := &core_xds.ExternalService{
-		TLSEnabled:         tls.GetEnabled(),
-		CaCert:             caCert,
-		ClientCert:         clientCert,
-		ClientKey:          clientKey,
-		AllowRenegotiation: tls.GetAllowRenegotiation().GetValue(),
-		ServerName:         tls.GetServerName().GetValue(),
+		TLSEnabled:               tls.GetEnabled(),
+		CaCert:                   caCert,
+		ClientCert:               clientCert,
+		ClientKey:                clientKey,
+		AllowRenegotiation:       tls.GetAllowRenegotiation().GetValue(),
+		SkipHostnameVerification: tls.GetSkipHostnameVerification().GetValue(),
+		ServerName:               tls.GetServerName().GetValue(),
 	}
 
 	if es.TLSEnabled {

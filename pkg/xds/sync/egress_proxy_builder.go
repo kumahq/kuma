@@ -62,14 +62,12 @@ func (p *EgressProxyBuilder) Build(
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
-		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
 
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
-			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
 			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
@@ -91,7 +89,8 @@ func (p *EgressProxyBuilder) Build(
 				externalServices,
 				rateLimits,
 			),
-			Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
+			Resources: meshCtx.Resources.MeshLocalResources,
 		}
 
 		for _, es := range externalServices {

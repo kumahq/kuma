@@ -8,7 +8,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -19,6 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -68,26 +72,54 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 type syncResourceStore struct {
 	log           logr.Logger
 	resourceStore store.ResourceStore
+	metric        prometheus.Histogram
+	extensions    context.Context
 }
 
-func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) ResourceSyncer {
+func NewResourceSyncer(
+	log logr.Logger,
+	resourceStore store.ResourceStore,
+	metrics core_metrics.Metrics,
+	extensions context.Context,
+) (ResourceSyncer, error) {
+	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name: "kds_resources_sync",
+		Help: "Time it took to sync resources from the upstream over KDS",
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
 	return &syncResourceStore{
 		log:           log,
 		resourceStore: resourceStore,
-	}
+		metric:        metric,
+		extensions:    extensions,
+	}, nil
 }
 
 func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
+	now := core.Now()
+	defer func() {
+		s.metric.Observe(float64(time.Since(now).Milliseconds()) / 1000)
+	}()
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(syncCtx, user.ControlPlane)
 	log := s.log.WithValues("type", upstreamResponse.Type)
+	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
 	if err != nil {
 		return err
 	}
-	if err := s.resourceStore.List(ctx, downstream); err != nil {
-		return err
+	if upstreamResponse.IsInitialRequest {
+		if err := s.resourceStore.List(ctx, downstream); err != nil {
+			return err
+		}
+	} else {
+		upstreamChangeKeys := append(core_model.ResourceListToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
+		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
+			return err
+		}
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
@@ -186,7 +218,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 
 	for _, r := range onUpdate {
-		log.Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+		log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime

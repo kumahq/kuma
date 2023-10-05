@@ -1,0 +1,22 @@
+global:
+  imagePullSecrets: [image-secret]
+controlPlane:
+  kdsGlobalAddress: "grpcs://foo.com:3456"
+  mode: zone
+  zone: zone-1
+  automountServiceAccountToken: false
+  serviceAccountAnnotations:
+    foo: '{"bar": "cp"}'
+    ping: "cp"
+egress:
+  enabled: true
+  automountServiceAccountToken: false
+  serviceAccountAnnotations:
+    foo: '{"baz": "egress"}'
+    ping: "egress"
+ingress:
+  enabled: true
+  automountServiceAccountToken: false
+  serviceAccountAnnotations:
+    foo: '{"baz": "ingress"}'
+    ping: "ingress"

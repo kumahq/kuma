@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/service"
@@ -65,6 +66,7 @@ func DefaultContext(
 			cfg.Store.Type,
 			cfg.Store.Kubernetes.SystemNamespace,
 		),
+		AddHashSuffix,
 	)
 
 	return &Context{
@@ -185,6 +187,23 @@ func RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
 
 		return r, nil
 	}
+}
+
+func AddHashSuffix(r model.Resource) (model.Resource, error) {
+	if r.Descriptor().Scope == model.ScopeGlobal {
+		return r, nil
+	}
+	if r.Descriptor().Name == system.SecretType {
+		// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
+		// particular format to be able to reference them
+		return r, nil
+	}
+
+	newObj := r.Descriptor().NewObject()
+	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
+	_ = newObj.SetSpec(r.GetSpec())
+
+	return newObj, nil
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically

@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtcproute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
@@ -66,4 +67,6 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
 	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
+	_ = Describe("MeshTimeout", meshtimeout.MeshTimeout, Ordered)
+	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 )

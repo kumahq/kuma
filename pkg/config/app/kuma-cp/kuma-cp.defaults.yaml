@@ -44,6 +44,8 @@ store:
     # MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+    maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
@@ -63,6 +65,14 @@ store:
     # MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
     # to re-establish the database connection after connection loss.
     maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
+    # ReadReplica is a setting for a DB replica used only for read queries
+    readReplica:
+      # Host of the Postgres DB read replica. If not set, read replica is not used.
+      host: "" # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_HOST
+      # Port of the Postgres DB read replica
+      port: 5432 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_PORT
+      # Ratio in [0-100] range. How many SELECT queries (out of 100) will use read replica.
+      ratio: 100 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_RATIO
 
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
@@ -74,9 +84,11 @@ store:
   # Upsert (get and update) configuration
   upsert:
     # Base time for exponential backoff on upsert operations when retry is enabled
-    conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
+    conflictRetryBaseBackoff: 200ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
     # Max retries on upsert (get and update) operation when retry is enabled
-    conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
+    conflictRetryMaxTimes: 10 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
+    # Percentage of jitter. For example: if backoff is 20s, and this value 10, the backoff will be between 18s and 22s.
+    conflictRetryJitterPercent: 30 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT
 
   # If true, skips validation of resource delete.
   # For example you don't have to delete all Dataplane objects before you delete a Mesh
@@ -313,6 +325,9 @@ runtime:
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
         # Additional environment variables that can be placed on Kuma DP sidecar
         envVars: {} # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
+        # If true, it enables a postStart script that waits until Envoy is ready.
+        # With the current Kubernetes behavior, any other container in the Pod will wait until the script is complete.
+        waitForDataplaneReady: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.
@@ -396,6 +411,8 @@ metrics:
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
     # How long zone can stay Online without active KDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_ZONE_IDLE_TIMEOUT
+    # Compact finished metrics (do not store config and details of KDS exchange).
+    compactFinishedSubscriptions: false # ENV: KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS
   mesh:
     # Minimum time between 2 refresh of insights
     minResyncInterval: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL
@@ -403,6 +420,8 @@ metrics:
     fullResyncInterval: 20s # ENV: KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL
     # the size of the buffer between event creation and processing
     bufferSize: 1000 # ENV: KUMA_METRICS_MESH_BUFFER_SIZE
+    # the number of workers that process metrics events
+    eventProcessors: 1 # ENV: KUMA_METRICS_MESH_EVENT_PROCESSORS
   controlPlane:
     # If true metrics show number of resources in the system should be reported
     reportResourcesCount: true # ENV: KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT
@@ -472,6 +491,8 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
+      # DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
+      disableSOTW: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -704,6 +725,16 @@ experimental:
   # The drawback is that you cannot use filtered out tags for traffic routing.
   # If empty, no filter is applied.
   ingressTagFilters: [] # ENV: KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS
+  # KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+  kdsEventBasedWatchdog:
+    # If true, then experimental event based watchdog to generate KDS snapshot is used.
+    enabled: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED
+    # How often we flush changes when experimental event based watchdog is used.
+    flushInterval: 5s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL
+    # How often we schedule full KDS resync when experimental event based watchdog is used.
+    fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
+    # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
+    delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
 
 proxy:
   gateway:
@@ -714,3 +745,9 @@ proxy:
 tracing:
   openTelemetry:
     endpoint: "" # e.g. otel-collector:4317
+
+# Configuration of the event bus which is local to one instance of CP
+eventBus:
+  # BufferSize controls the buffer for every single event listener.
+  # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
+  bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE

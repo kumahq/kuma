@@ -61,6 +61,14 @@ func (m *MeshBuilder) WithBuiltinMTLSBackend(name string) *MeshBuilder {
 	return m.AddBuiltinMTLSBackend(name)
 }
 
+func (m *MeshBuilder) WithoutBackendValidation() *MeshBuilder {
+	if m.res.Spec.Mtls == nil {
+		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	}
+	m.res.Spec.Mtls.SkipValidation = true
+	return m
+}
+
 func (m *MeshBuilder) WithoutMTLSBackends() *MeshBuilder {
 	m.res.Spec.Mtls.Backends = nil
 	return m
@@ -74,6 +82,14 @@ func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
 		Name: name,
 		Type: "builtin",
 	})
+	return m
+}
+
+func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.ZoneEgress = true
 	return m
 }
 

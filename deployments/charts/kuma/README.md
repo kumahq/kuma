@@ -16,6 +16,8 @@ A Helm chart for the Kuma Control Plane
 | patchSystemNamespace | bool | `true` | Whether to patch the target namespace with the system label |
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
+| noHelmHooks | bool | `false` | Whether to disable all helm hooks |
+| restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
@@ -24,6 +26,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
+| controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
 | controlPlane.podAnnotations | object | `{}` | Control Plane Pod Annotations |
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
@@ -74,6 +77,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
 | controlPlane.tls.kdsZoneClient.skipVerify | bool | `false` | If true, TLS cert of the server is not verified. |
+| controlPlane.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
@@ -143,6 +147,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
 | ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
+| ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
+| ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
@@ -172,11 +178,13 @@ A Helm chart for the Kuma Control Plane
 | egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
+| egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
+| egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
-| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
+| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |

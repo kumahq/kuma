@@ -53,12 +53,13 @@ type TagSelectorSet []mesh_proto.TagSelector
 type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
-	TLSEnabled         bool
-	CaCert             []byte
-	ClientCert         []byte
-	ClientKey          []byte
-	AllowRenegotiation bool
-	ServerName         string
+	TLSEnabled               bool
+	CaCert                   []byte
+	ClientCert               []byte
+	ClientKey                []byte
+	AllowRenegotiation       bool
+	SkipHostnameVerification bool
+	ServerName               string
 }
 
 type Locality struct {
@@ -75,6 +76,10 @@ type Endpoint struct {
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService
+}
+
+func (e Endpoint) Address() string {
+	return fmt.Sprintf("%s:%d", e.Target, e.Port)
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -152,6 +157,11 @@ type ServerSideMTLSCerts struct {
 	ServerPair util_tls.KeyPair
 }
 
+type ServerSideTLSCertPaths struct {
+	CertPath string
+	KeyPath  string
+}
+
 type IdentityCertRequest interface {
 	Name() string
 }
@@ -177,7 +187,6 @@ type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
 	Mesh                           *core_mesh.MeshResource
-	TrafficRoutes                  []*core_mesh.TrafficRouteResource
 	ExternalServices               []*core_mesh.ExternalServiceResource
 	ExternalServicePermissionMap   ExternalServicePermissionMap
 	EndpointMap                    EndpointMap
@@ -185,7 +194,8 @@ type MeshResources struct {
 	ExternalServiceRateLimits      ExternalServiceRateLimitMap
 
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
-	Dynamic ExternalServiceDynamicPolicies
+	Dynamic   ExternalServiceDynamicPolicies
+	Resources map[core_model.ResourceType]core_model.ResourceList
 }
 
 type ZoneEgressProxy struct {

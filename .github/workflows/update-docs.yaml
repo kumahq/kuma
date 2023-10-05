@@ -12,14 +12,14 @@ jobs:
   generate-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: master
           path: repo
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20.7"
+          go-version-file: repo/go.mod
       - name: "sync docs" # loop over all the branches and generate the docs
         run: |
           cd repo
@@ -38,7 +38,7 @@ jobs:
               cp versions.yml ../docs-build/raw/
             fi
           done
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{ env.DOCS_REPO }}
           path: docs
@@ -50,7 +50,7 @@ jobs:
           rm ${{ env.OUTPUT_PATH }}/raw/versions.yml
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}

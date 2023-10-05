@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -31,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -48,6 +51,35 @@ func TestWs(t *testing.T) {
 type resourceApiClient struct {
 	address string
 	path    string
+}
+
+type TestMeta struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Mesh string `json:"mesh"`
+}
+
+type TestListResponse struct {
+	Total int        `json:"total"`
+	Next  string     `json:"next"`
+	Items []TestMeta `json:"items"`
+}
+
+func MatchListResponse(r TestListResponse) types.GomegaMatcher {
+	return And(
+		HaveHTTPStatus(http.StatusOK),
+		WithTransform(func(response *http.Response) (TestListResponse, error) {
+			res := TestListResponse{}
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				return res, nil
+			}
+			if err := json.Unmarshal(body, &res); err != nil {
+				return res, err
+			}
+			return res, nil
+		}, Equal(r)),
+	)
 }
 
 func (r *resourceApiClient) fullAddress() string {
@@ -215,7 +247,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	}
 
 	resManager := manager.NewResourceManager(t.store)
-	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
+	apiServer, err := api_server.NewApiServer(
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
@@ -249,6 +281,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
 		func(*restful.WebService) error { return nil },
+		globalinsight.NewDefaultGlobalInsightService(t.store),
 	)
 	if err != nil {
 		return nil, cfg, stop, err

@@ -8,11 +8,13 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -24,7 +26,15 @@ type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
 }
 
-func NewZoneInsightSink(accessor StatusAccessor, flushTicker func() *time.Ticker, generationTicker func() *time.Ticker, flushBackoff time.Duration, store ZoneInsightStore, log logr.Logger) ZoneInsightSink {
+func NewZoneInsightSink(
+	accessor StatusAccessor,
+	flushTicker func() *time.Ticker,
+	generationTicker func() *time.Ticker,
+	flushBackoff time.Duration,
+	store ZoneInsightStore,
+	log logr.Logger,
+	extensions context.Context,
+) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,
@@ -44,6 +54,7 @@ type zoneInsightSink struct {
 	accessor         StatusAccessor
 	store            ZoneInsightStore
 	log              logr.Logger
+	extensions       context.Context
 }
 
 func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
@@ -59,6 +70,8 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	gracefulCtx, cancel := context.WithCancel(multitenant.CopyIntoCtx(ctx, context.Background()))
 	defer cancel()
 
+	log := kuma_log.AddFieldsFromCtx(s.log, ctx, s.extensions)
+
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
 		select {
@@ -72,13 +85,13 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 		}
 
 		if err := s.store.Upsert(gracefulCtx, zone, currentState); err != nil {
-			if store.IsResourceConflict(err) {
-				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
+			if store.IsResourceConflict(err) || store.IsResourceAlreadyExists(err) {
+				log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
 			} else {
-				s.log.Error(err, "failed to flush zone status", "zone", zone)
+				log.Error(err, "failed to flush zone status", "zone", zone)
 			}
 		} else {
-			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
+			log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
 			lastStoredState = currentState
 		}
 	}
@@ -94,14 +107,24 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	}
 }
 
-func NewZonesInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
-	return &zoneInsightStore{resManager}
+func NewZonesInsightStore(
+	resManager manager.ResourceManager,
+	upsertCfg config_store.UpsertConfig,
+	compactFinished bool,
+) ZoneInsightStore {
+	return &zoneInsightStore{
+		resManager:      resManager,
+		upsertCfg:       upsertCfg,
+		compactFinished: compactFinished,
+	}
 }
 
 var _ ZoneInsightStore = &zoneInsightStore{}
 
 type zoneInsightStore struct {
-	resManager manager.ResourceManager
+	resManager      manager.ResourceManager
+	upsertCfg       config_store.UpsertConfig
+	compactFinished bool
 }
 
 func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
@@ -112,6 +135,12 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 	}
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
-		return zoneInsight.Spec.UpdateSubscription(subscription)
-	}, manager.WithConflictRetry(100*time.Millisecond, 10)) // we need retry because Envoy Admin RPC may also update the insight.
+		if err := zoneInsight.Spec.UpdateSubscription(subscription); err != nil {
+			return err
+		}
+		if s.compactFinished {
+			zoneInsight.Spec.CompactFinished()
+		}
+		return nil
+	})
 }

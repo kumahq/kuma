@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/config/eventbus"
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
@@ -77,6 +78,8 @@ func (d *DataplaneMetrics) Validate() error {
 type ZoneMetrics struct {
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
+	// CompactFinishedSubscriptions compacts finished metrics (do not store config and details of KDS exchange).
+	CompactFinishedSubscriptions bool `json:"compactFinishedSubscriptions" envconfig:"kuma_metrics_zone_compact_finished_subscriptions"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
@@ -100,6 +103,8 @@ type MeshMetrics struct {
 	MinResyncInterval config_types.Duration `json:"minResyncInterval" envconfig:"kuma_metrics_mesh_min_resync_interval"`
 	// FullResyncInterval time between triggering a full refresh of all the insights
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_metrics_mesh_full_resync_interval"`
+	// EventProcessors is a number of workers that process metrics events.
+	EventProcessors int `json:"eventProcessors" envconfig:"kuma_metrics_mesh_event_processors"`
 }
 
 type ControlPlaneMetrics struct {
@@ -169,6 +174,8 @@ type Config struct {
 	InterCp intercp.InterCpConfig `json:"interCp"`
 	// Tracing
 	Tracing tracing.Config `json:"tracing"`
+	// EventBus is a configuration of the event bus which is local to one instance of CP.
+	EventBus eventbus.Config `json:"eventBus"`
 }
 
 func (c *Config) Sanitize() {
@@ -212,6 +219,7 @@ var DefaultConfig = func() Config {
 				MinResyncInterval:  config_types.Duration{Duration: 1 * time.Second},
 				FullResyncInterval: config_types.Duration{Duration: 20 * time.Second},
 				BufferSize:         1000,
+				EventProcessors:    1,
 			},
 			ControlPlane: &ControlPlaneMetrics{
 				ReportResourcesCount: true,
@@ -232,9 +240,16 @@ var DefaultConfig = func() Config {
 			KDSDeltaEnabled:                 false,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
+			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
+				Enabled:            false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    false,
+			},
 		},
-		Proxy:   xds.DefaultProxyConfig(),
-		InterCp: intercp.DefaultInterCpConfig(),
+		Proxy:    xds.DefaultProxyConfig(),
+		InterCp:  intercp.DefaultInterCpConfig(),
+		EventBus: eventbus.Default(),
 	}
 }
 
@@ -388,6 +403,19 @@ type ExperimentalConfig struct {
 	// The drawback is that you cannot use filtered out tags for traffic routing.
 	// If empty, no filter is applied.
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
+	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
+}
+
+type ExperimentalKDSEventBasedWatchdog struct {
+	// If true, then experimental event based watchdog to generate KDS snapshot is used.
+	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
+	// How often we flush changes when experimental event based watchdog is used.
+	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
+	// How often we schedule full KDS resync when experimental event based watchdog is used.
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
+	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
+	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
 func (e ExperimentalConfig) Validate() error {

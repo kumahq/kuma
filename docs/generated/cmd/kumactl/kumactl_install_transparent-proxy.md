@@ -69,11 +69,13 @@ kumactl install transparent-proxy [flags]
       --ebpf-tc-attach-iface string                                                     name of the interface which TC eBPF programs should be attached to
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
-      --exclude-outbound-tcp-ports-for-uids stringArray                                 tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
-      --exclude-outbound-udp-ports-for-uids stringArray                                 udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
+      --exclude-outbound-ports-for-uids stringArray                                     outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108
+      --exclude-outbound-tcp-ports-for-uids stringArray                                 [DEPRECATED (use --exclude-outbound-ports-for-uids)] tcp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108
+      --exclude-outbound-udp-ports-for-uids stringArray                                 [DEPRECATED (use --exclude-outbound-ports-for-uids)] udp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53, 3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108
   -h, --help                                                                            help for transparent-proxy
-      --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
+      --kuma-dp-uid string                                                              the uid of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
+      --max-retries int                                                                 flag can be used to specify the maximum number of times to retry an installation before giving up (default 5)
       --redirect-all-dns-traffic                                                        redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf
       --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")
@@ -83,10 +85,13 @@ kumactl install transparent-proxy [flags]
       --redirect-inbound-port-v6 networking.transparentProxying.redirectPortInboundV6   IPv6 inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInboundV6 (default "15010")
       --redirect-outbound-port networking.transparentProxying.redirectPortOutbound      outbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortOutbound (default "15001")
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
+      --sleep-between-retries duration                                                  flag can be used to specify the amount of time to sleep between retries (default 2s)
       --store-firewalld                                                                 store the iptables changes with firewalld
       --use-transparent-proxy-engine-v1                                                 use legacy transparent proxy engine v1
       --verbose                                                                         verbose
       --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
+      --wait uint                                                                       specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error (default 5)
+      --wait-interval uint                                                              flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock
 ```
 
 ### Options inherited from parent commands

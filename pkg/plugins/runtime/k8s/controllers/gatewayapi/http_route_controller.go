@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -136,14 +137,14 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
 
+	notAcceptedConditions := map[gatewayapi.ParentReference]string{}
+
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
 		if err != nil {
 			return nil, nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}
-
-		refConditions := slices.Clone(routeConditions)
 
 		switch refAttachment {
 		case attachment.Unknown:
@@ -183,22 +184,33 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NoMatchingParent:
 				reason = string(gatewayapi.RouteReasonNoMatchingParent)
 			}
+			notAcceptedConditions[ref] = reason
+		}
+	}
 
-			if !kube_apimeta.IsStatusConditionFalse(refConditions, string(gatewayapi.RouteConditionAccepted)) {
-				kube_apimeta.SetStatusCondition(&refConditions, kube_meta.Condition{
-					Type:   string(gatewayapi.RouteConditionAccepted),
-					Status: kube_meta.ConditionFalse,
-					Reason: reason,
-				})
-			}
+	meshRoutes, meshRouteConditions, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	for _, ref := range route.Spec.ParentRefs {
+		var refConditions []kube_meta.Condition
+		switch {
+		case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
+			refConditions = slices.Clone(routeConditions)
+		case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
+			refConditions = slices.Clone(meshRouteConditions)
+		}
+
+		if reason, notAccepted := notAcceptedConditions[ref]; notAccepted && !kube_apimeta.IsStatusConditionFalse(refConditions, string(gatewayapi.RouteConditionAccepted)) {
+			kube_apimeta.SetStatusCondition(&refConditions, kube_meta.Condition{
+				Type:   string(gatewayapi.RouteConditionAccepted),
+				Status: kube_meta.ConditionFalse,
+				Reason: reason,
+			})
 		}
 
 		conditions[ref] = refConditions
-	}
-
-	meshRoutes, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
-	if err != nil {
-		return nil, nil, nil, err
 	}
 
 	var kumaRoute *mesh_proto.MeshGatewayRoute
@@ -237,7 +249,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway, ok := obj.(*gatewayapi.Gateway)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to Gateway", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to Gateway", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 
@@ -271,7 +283,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		grant, ok := obj.(*gatewayapi.ReferenceGrant)
 		if !ok {
-			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
+			l.Error(nil, "unexpected error converting to be mapped object to GatewayGrant", "typ", reflect.TypeOf(obj))
 			return nil
 		}
 

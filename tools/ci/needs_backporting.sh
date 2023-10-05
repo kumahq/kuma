@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -Ee -o pipefail
 
 REPO=$1
 PR_NUMBER=$2

@@ -31,7 +31,7 @@ var _ = Describe("Events", func() {
 		cfg = *c
 		ver, err := MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
+		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
 	})
 
 	DescribeTable("should receive a notification from pq listener",
@@ -124,7 +124,10 @@ func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) stor
 
 func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
 	cfg.DriverName = driverName
-	eventsBus := kuma_events.NewEventBus()
+	metrics, err := core_metrics.NewMetrics("")
+	Expect(err).ToNot(HaveOccurred())
+	eventsBus, err := kuma_events.NewEventBus(20, metrics)
+	Expect(err).ToNot(HaveOccurred())
 	listener := eventsBus.Subscribe()
 	l := postgres_events.NewListener(cfg, eventsBus)
 	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)

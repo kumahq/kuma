@@ -53,7 +53,7 @@ spec:
       tls:
         mode: TERMINATE
         certificates:
-        - secret: example-kuma-io-certificate
+        - secret: kuma-io-certificate-k8s-mtls
       tags:
         name: tls-terminate
 `
@@ -67,7 +67,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: example-kuma-io-certificate
+  name: kuma-io-certificate-k8s-mtls
   namespace: %s
   labels:
     kuma.io/mesh: gateway-mtls

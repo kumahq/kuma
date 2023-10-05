@@ -13,7 +13,8 @@ kumactl inspect meshfaultinjection NAME [flags]
 ### Options
 
 ```
-  -h, --help   help for meshfaultinjection
+  -h, --help          help for meshfaultinjection
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands

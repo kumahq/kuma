@@ -71,7 +71,9 @@ var _ = Describe("Insight Persistence", func() {
 			Registry:            registry.Global(),
 			TenantFn:            multitenant.SingleTenant,
 			EventBufferCapacity: 10,
+			EventProcessors:     10,
 			Metrics:             metric,
+			Extensions:          context.Background(),
 		})
 		go func() {
 			err := resyncer.Start(stopCh)
@@ -256,6 +258,11 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
 			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
 			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+
+			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
+			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
+			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
+			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -1111,7 +1118,7 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
-			g.Expect(*test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing").Summary.SampleCount).To(Equal(uint64(1)))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "changed").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		}).Should(Succeed())
 
 		eventCh <- events.ResourceChangedEvent{
@@ -1128,7 +1135,7 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
-			g.Expect(*test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing").Summary.SampleCount).To(Equal(uint64(2)))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "no_changes").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		}).Should(Succeed())
 	})
 })

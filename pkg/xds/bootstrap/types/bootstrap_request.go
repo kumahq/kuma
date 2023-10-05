@@ -18,12 +18,18 @@ type BootstrapRequest struct {
 	Features            []string          `json:"features"`
 	Resources           ProxyResources    `json:"resources"`
 	AccessLogSocketPath string            `json:"accessLogSocketPath"`
-	MetricsSocketPath   string            `json:"metricsSocketPath"`
+	MetricsResources    MetricsResources  `json:"metricsResources"`
 }
 
 type Version struct {
 	KumaDp KumaDpVersion `json:"kumaDp"`
 	Envoy  EnvoyVersion  `json:"envoy"`
+}
+
+type MetricsResources struct {
+	SocketPath string `json:"socketPath"`
+	CertPath   string `json:"certPath"`
+	KeyPath    string `json:"keyPath"`
 }
 
 type KumaDpVersion struct {

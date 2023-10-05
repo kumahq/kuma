@@ -114,9 +114,10 @@ func NewDeleteAllOptions(fs ...DeleteAllOptionsFunc) *DeleteAllOptions {
 }
 
 type GetOptions struct {
-	Name    string
-	Mesh    string
-	Version string
+	Name       string
+	Mesh       string
+	Version    string
+	Consistent bool
 }
 
 type GetOptionsFunc func(*GetOptions)
@@ -146,6 +147,13 @@ func GetByVersion(version string) GetOptionsFunc {
 	}
 }
 
+// GetConsistent forces consistency if storage provides eventual consistency like read replica for Postgres.
+func GetConsistent() GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Consistent = true
+	}
+}
+
 func (g *GetOptions) HashCode() string {
 	return fmt.Sprintf("%s:%s", g.Name, g.Mesh)
 }
@@ -161,6 +169,7 @@ type ListOptions struct {
 	FilterFunc   ListFilterFunc
 	NameContains string
 	Ordered      bool
+	ResourceKeys map[core_model.ResourceKey]struct{}
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -210,6 +219,16 @@ func ListByFilterFunc(filterFunc ListFilterFunc) ListOptionsFunc {
 func ListOrdered() ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.Ordered = true
+	}
+}
+
+func ListByResourceKeys(rk []core_model.ResourceKey) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		resourcesKeys := map[core_model.ResourceKey]struct{}{}
+		for _, val := range rk {
+			resourcesKeys[val] = struct{}{}
+		}
+		opts.ResourceKeys = resourcesKeys
 	}
 }
 

@@ -18,7 +18,6 @@ func Gateway() {
 	meshName := "simple-gateway"
 	namespace := "simple-gateway"
 	clientNamespace := "client-simple-gateway"
-
 	meshGateway := `
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
@@ -41,7 +40,14 @@ spec:
       tls:
         mode: TERMINATE
         certificates:
-        - secret: example-kuma-io-certificate
+        - secret: kuma-io-certificate-k8s` +
+		// secret names have to be unique because
+		// we're removing secrets using owner reference, and we're relying on async namespace deletion,
+		// so we could have a situation where the secrets are not yet deleted,
+		// and we're trying to create a new mesh with the same secret name which k8s treats as changing the mesh of the secret
+		// and results in "cannot change mesh of the Secret. Delete the Secret first and apply it again."
+		// https://app.circleci.com/pipelines/github/kumahq/kuma/24848/workflows/f33edb5a-74cb-45ae-b0c2-4b14bf289585/jobs/497239
+		`
       tags:
         hostname: example.kuma.io
     - port: 8082
@@ -56,7 +62,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: example-kuma-io-certificate
+  name: kuma-io-certificate-k8s
   namespace: %s
   labels:
     kuma.io/mesh: simple-gateway 

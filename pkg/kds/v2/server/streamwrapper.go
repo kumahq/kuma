@@ -18,6 +18,7 @@ type serverStream struct {
 	stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient
 }
 
+// NewServerStream converts client stream to a server's DeltaStream, so it can be used in DeltaStreamHandler
 func NewServerStream(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) ServerStream {
 	s := &serverStream{
 		stream: stream,

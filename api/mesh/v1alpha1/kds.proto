@@ -22,6 +22,12 @@ message KumaResource {
   google.protobuf.Any spec = 2;
 }
 
+message ZoneHealthCheckRequest {
+}
+
+message ZoneHealthCheckResponse {
+}
+
 service GlobalKDSService {
   // StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can
   // execute Config Dumps. It is however represented by bi-directional streaming
@@ -37,6 +43,9 @@ service GlobalKDSService {
   // bi-directional streaming to leverage existing connection from Zone CP to
   // Global CP.
   rpc StreamClusters(stream ClustersResponse) returns (stream ClustersRequest);
+  // HealthCheck allows us to implement a health check that works across
+  // proxies, unlike HTTP/2 PING frames.
+  rpc HealthCheck(ZoneHealthCheckRequest) returns (ZoneHealthCheckResponse);
 }
 
 // KDSSyncService is a service exposed by the control-plane for the

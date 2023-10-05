@@ -40,6 +40,7 @@ type GuiConfig struct {
 	Product     string `json:"product"`
 	Mode        string `json:"mode"`
 	Environment string `json:"environment"`
+	StoreType   string `json:"storeType"`
 	ReadOnly    bool   `json:"apiReadOnly"`
 }
 

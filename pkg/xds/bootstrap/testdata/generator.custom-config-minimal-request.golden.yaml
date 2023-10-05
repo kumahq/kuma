@@ -41,9 +41,12 @@ node:
   id: mesh.name.namespace
   metadata:
     accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
+    dataplane.admin.address: 192.168.0.1
     dataplane.admin.port: "9902"
     dataplane.proxyType: dataplane
     features: []
+    metricsCertPath: ""
+    metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
       envoy:

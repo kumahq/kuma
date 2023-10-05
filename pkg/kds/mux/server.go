@@ -43,16 +43,16 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
 
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient) error {
-	return f(session)
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error) {
+	f(session, errorCh)
 }
 
-type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error
+type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error)
 
-func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient) error {
-	return f(session)
+func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error) {
+	f(session, errorCh)
 }
 
 type server struct {
@@ -132,7 +132,9 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services
-	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	if !s.config.DisableSOTW {
+		mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	}
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
@@ -164,6 +166,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 }
 
+// StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
 	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {

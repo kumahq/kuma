@@ -33,6 +33,8 @@ node:
     accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
     dataplane.proxyType: dataplane
     features: []
+    metricsCertPath: ""
+    metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
       envoy:

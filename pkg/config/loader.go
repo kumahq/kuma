@@ -16,7 +16,7 @@ func Load(file string, cfg Config) error {
 
 func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool) error {
 	if file == "" {
-		core.Log.Info("Skipping reading config from file")
+		core.Log.WithName("config").Info("skipping reading config from file")
 	} else if err := loadFromFile(file, cfg, strict); err != nil {
 		return err
 	}

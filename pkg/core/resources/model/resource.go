@@ -114,6 +114,12 @@ type ResourceTypeDescriptor struct {
 	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
+	// IsTargetRefBased indicates if a policy uses targetRef or not
+	IsTargetRefBased bool
+	// HasToTargetRef indicates that the policy can be applied to outbound traffic
+	HasToTargetRef bool
+	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
+	HasFromTargetRef bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 }
@@ -206,6 +212,18 @@ func Not(filter TypeFilter) TypeFilter {
 	})
 }
 
+func Or(filters ...TypeFilter) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		for _, filter := range filters {
+			if filter.Apply(descriptor) {
+				return true
+			}
+		}
+
+		return false
+	})
+}
+
 type ByMeta []Resource
 
 func (a ByMeta) Len() int { return len(a) }
@@ -259,6 +277,14 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 		Mesh: meta.GetMesh(),
 		Name: meta.GetName(),
 	}
+}
+
+func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
+	rkey := []ResourceKey{}
+	for _, r := range rl.GetItems() {
+		rkey = append(rkey, MetaToResourceKey(r.GetMeta()))
+	}
+	return rkey
 }
 
 type ResourceList interface {

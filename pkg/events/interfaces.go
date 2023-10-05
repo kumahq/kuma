@@ -34,12 +34,14 @@ type Listener interface {
 	Close()
 }
 
+type Predicate = func(event Event) bool
+
 type Emitter interface {
 	Send(Event)
 }
 
 type ListenerFactory interface {
-	Subscribe() Listener
+	Subscribe(...Predicate) Listener
 }
 
 type EventBus interface {

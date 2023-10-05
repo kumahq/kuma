@@ -29,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -42,6 +41,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
@@ -91,12 +91,13 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeConfigStore(cfg, builder); err != nil {
 		return nil, err
 	}
+
+	initializeGlobalInsightService(cfg, builder)
+
 	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
-	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType:       builder.SecretStore(),
-		system.GlobalSecretType: builder.SecretStore(),
-		system.ConfigType:       builder.ConfigStore(),
-	}))
+	builder.ResourceStore().Customize(system.SecretType, builder.SecretStore())
+	builder.ResourceStore().Customize(system.GlobalSecretType, builder.SecretStore())
+	builder.ResourceStore().Customize(system.ConfigType, builder.ConfigStore())
 
 	initializeConfigManager(builder)
 
@@ -280,8 +281,11 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return err
 	}
-	builder.WithResourceStore(rs)
-	eventBus := events.NewEventBus()
+	builder.WithResourceStore(core_store.NewCustomizableResourceStore(rs))
+	eventBus, err := events.NewEventBus(cfg.EventBus.BufferSize, builder.Metrics())
+	if err != nil {
+		return err
+	}
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}
@@ -293,7 +297,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return err
 	}
 
-	builder.WithResourceStore(meteredStore)
+	builder.WithResourceStore(core_store.NewCustomizableResourceStore(meteredStore))
 	return nil
 }
 
@@ -341,6 +345,19 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
+}
+
+func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Builder) {
+	globalInsightService := globalinsight.NewDefaultGlobalInsightService(builder.ResourceStore())
+	if cfg.Store.Cache.Enabled {
+		globalInsightService = globalinsight.NewCachedGlobalInsightService(
+			globalInsightService,
+			builder.Tenants(),
+			cfg.Store.Cache.ExpirationTime.Duration,
+		)
+	}
+
+	builder.WithGlobalInsightService(globalInsightService)
 }
 
 func initializeCaManagers(builder *core_runtime.Builder) error {

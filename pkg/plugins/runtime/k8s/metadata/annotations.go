@@ -77,6 +77,7 @@ const (
 
 	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
 	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 
@@ -110,6 +111,8 @@ const (
 	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
 	// list of init containers
 	KumaInitFirst = "kuma.io/init-first"
+	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
+	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

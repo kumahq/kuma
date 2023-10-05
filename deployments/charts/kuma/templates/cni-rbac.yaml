@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-cni
-  namespace: kube-system
+  namespace: {{ .Values.cni.namespace }}
   labels: {{ include "kuma.cniLabels" . | nindent 4 }}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
