@@ -270,7 +270,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 
 					externalServices := &core_mesh.ExternalServiceResourceList{}
 					if err := r.rm.List(tenantCtx, externalServices, store.ListByMesh(event.mesh)); err != nil {
-						log.Error(err, "unable to get ExternalServices to recompute insights", "event", event)
+						log.Error(err, "unable to get ExternalServices to recompute insights")
 						continue
 					}
 
