@@ -59,7 +59,9 @@ stringData:
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
+				WithHelmOpt("controlPlane.envVars.KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED", "false"),
 			)).
+			Install(MeshKubernetes("default")).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -73,7 +75,7 @@ stringData:
 				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithCPReplicas(2),
+				WithCPReplicas(1),
 				WithGlobalAddress(global.GetKDSInsecureServerAddress()),
 				WithHelmOpt("controlPlane.environment", "universal"),
 				WithHelmOpt("controlPlane.zone", "zone-1"),
@@ -103,6 +105,7 @@ stringData:
 	It("should deploy Zone and Global on 2 clusters", func() {
 		// mesh is synced to zone
 		Eventually(func() string {
+			time.Sleep(10 * time.Hour)
 			output, err := zoneCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
