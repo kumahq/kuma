@@ -87,7 +87,7 @@ stringData:
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Env", "KUMA_STORE_POSTGRES_PASSWORD"),
 			)).
 			Install(MeshUniversal("default")).
-			Setup(globalCluster)
+			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		zone = zoneCluster.GetKuma()
