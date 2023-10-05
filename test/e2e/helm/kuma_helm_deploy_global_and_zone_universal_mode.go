@@ -105,7 +105,6 @@ stringData:
 	It("should deploy Zone and Global on 2 clusters", func() {
 		// mesh is synced to zone
 		Eventually(func() string {
-			time.Sleep(10 * time.Hour)
 			output, err := zoneCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
