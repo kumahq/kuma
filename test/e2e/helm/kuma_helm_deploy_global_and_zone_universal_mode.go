@@ -68,9 +68,6 @@ stringData:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
-				// it's required because we check if Kuma is ready,
-				// and we use "kubectl get mesh" which is not available in universal mode
-				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithCPReplicas(2),
@@ -86,7 +83,6 @@ stringData:
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Key", "password"),
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Env", "KUMA_STORE_POSTGRES_PASSWORD"),
 			)).
-			Install(MeshUniversal("default")).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -95,7 +91,6 @@ stringData:
 	})
 
 	E2EAfterAll(func() {
-		Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
