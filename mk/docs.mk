@@ -63,6 +63,5 @@ ifdef BASE_API
 	cp $(BASE_API) $(OAPI_TMP_DIR)/
 	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml' > $@
 else
-	docker run --rm alpine echo '/specs/**/*.yaml'
-	#docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml' > $@
+	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml'
 endif
