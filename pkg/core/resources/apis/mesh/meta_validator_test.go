@@ -18,7 +18,6 @@ var _ = Describe("Meta", func() {
 	}
 
 	Describe("ValidateMeta", func() {
-
 		DescribeTable("should pass validation",
 			func(given testCase) {
 				Expect(mesh.ValidateMeta(given.meta, given.scope).Violations).To(BeEmpty())
@@ -43,7 +42,6 @@ var _ = Describe("Meta", func() {
 
 		DescribeTable("should validate fields",
 			func(given testCase) {
-
 				verr := mesh.ValidateMeta(given.meta, given.scope)
 				// and
 				actual, err := yaml.Marshal(verr)
@@ -89,7 +87,6 @@ violations:
 	})
 
 	Describe("ValidateMetaBackwardsCompatible", func() {
-
 		DescribeTable("should pass validation",
 			func(given testCase) {
 				Expect(mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope).Violations).To(BeEmpty())
@@ -114,7 +111,6 @@ violations:
 
 		DescribeTable("should validate fields",
 			func(given testCase) {
-
 				verr := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
 				// and
 				actual, err := yaml.Marshal(verr)
@@ -142,5 +138,4 @@ violations:
 			}),
 		)
 	})
-
 })

@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	backwardCompatRegexp = regexp.MustCompile("^[0-9a-z-_.]*$")
+	backwardCompatRegexp = regexp.MustCompile(`^[0-9a-z-_.]*$`)
 	backwardCompatErrMsg = "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
 )
 
 var (
-	identifierRegexp = regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$")
+	identifierRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	identifierErrMsg = "invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric " +
 		"characters, '-' or '.', and must start and end with an alphanumeric character"
 )
