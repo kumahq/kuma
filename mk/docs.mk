@@ -62,5 +62,5 @@ endif
 	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -r $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
 	mkdir -p $(OAPI_TMP_DIR)/policies
 	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
-	tree $(OAPI_TMP_DIR)
+	ls -R $(OAPI_TMP_DIR)
 	docker run -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml' > $@
