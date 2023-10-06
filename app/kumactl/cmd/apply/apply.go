@@ -116,7 +116,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
+				if err := mesh.ValidateMetaBackwardsCompatible(res.GetMeta(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()
 				}
 				resources = append(resources, res)

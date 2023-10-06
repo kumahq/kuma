@@ -166,18 +166,21 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if err := r.validateResourceRequest(request, resourceRest.GetMeta()); err != nil {
+	create := false
+	resource := r.descriptor.NewObject()
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsResourceNotFound(err) {
+		create = true
+	} else if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
+	}
+
+	if err := r.validateResourceRequest(request, resourceRest.GetMeta(), create); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
-	resource := r.descriptor.NewObject()
-	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-		if store.IsResourceNotFound(err) {
-			r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
-		} else {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
-		}
+	if create {
+		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
 	} else {
 		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
 	}
@@ -272,7 +275,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta) error {
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta, create bool) error {
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
@@ -288,7 +291,11 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
+	if create {
+		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
+	} else {
+		err.AddError("", mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope))
+	}
 	return err.OrNil()
 }
 
