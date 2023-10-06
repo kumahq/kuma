@@ -34,54 +34,40 @@ func NewDataplaneInsightSink(
 	accessor SubscriptionStatusAccessor,
 	secrets secrets.Secrets,
 	newTicker func() *time.Ticker,
-	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store DataplaneInsightStore,
 ) DataplaneInsightSink {
 	return &dataplaneInsightSink{
-		flushTicker:      newTicker,
-		generationTicker: generationTicker,
-		dataplaneType:    dataplaneType,
-		accessor:         accessor,
-		secrets:          secrets,
-		flushBackoff:     flushBackoff,
-		store:            store,
+		flushTicker:   newTicker,
+		dataplaneType: dataplaneType,
+		accessor:      accessor,
+		secrets:       secrets,
+		flushBackoff:  flushBackoff,
+		store:         store,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
 type dataplaneInsightSink struct {
-	flushTicker      func() *time.Ticker
-	generationTicker func() *time.Ticker
-	dataplaneType    core_model.ResourceType
-	accessor         SubscriptionStatusAccessor
-	secrets          secrets.Secrets
-	store            DataplaneInsightStore
-	flushBackoff     time.Duration
+	flushTicker   func() *time.Ticker
+	dataplaneType core_model.ResourceType
+	accessor      SubscriptionStatusAccessor
+	secrets       secrets.Secrets
+	store         DataplaneInsightStore
+	flushBackoff  time.Duration
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
 
-	generationTicker := s.generationTicker()
-	defer generationTicker.Stop()
-
 	var lastStoredState *mesh_proto.DiscoverySubscription
 	var lastStoredSecretsInfo *secrets.Info
-	var generation uint32
 
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
 		secretsInfo := s.secrets.Info(dataplaneID)
-
-		select {
-		case <-generationTicker.C:
-			generation++
-		default:
-		}
-		currentState.Generation = generation
 
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
 			return

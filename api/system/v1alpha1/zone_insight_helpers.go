@@ -48,6 +48,10 @@ func (x *KDSSubscription) SetDisconnectTime(time time.Time) {
 	x.DisconnectTime = timestamppb.New(time)
 }
 
+func (x *KDSSubscription) GetInstanceId() string {
+	return x.GlobalInstanceId
+}
+
 func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
 	var result uint64 = 0
 	for _, s := range x.GetSubscriptions() {

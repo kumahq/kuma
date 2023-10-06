@@ -2,16 +2,11 @@ package context
 
 import (
 	"context"
-	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -75,7 +70,7 @@ func DefaultContext(
 		ZoneProvidedFilter:   ZoneProvidedFilter(cfg.Multizone.Zone.Name),
 		Configs:              configs,
 		GlobalResourceMapper: globalResourceMappers,
-		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
+		ZoneResourceMapper:   reconcile.NoopResourceMapper,
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
 }
@@ -98,36 +93,6 @@ func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.Reso
 		}
 		return r, nil
 	}
-}
-
-type specWithDiscoverySubscriptions interface {
-	GetSubscriptions() []*mesh_proto.DiscoverySubscription
-	ProtoReflect() protoreflect.Message
-}
-
-// MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
-// the field has only local relevance. This prevents reconciliation from unnecessarily
-// deeming the object to have changed.
-func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error) {
-	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
-		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
-		for _, sub := range spec.GetSubscriptions() {
-			sub.Generation = 0
-		}
-
-		meta := r.GetMeta()
-		resType := reflect.TypeOf(r).Elem()
-
-		newR := reflect.New(resType).Interface().(model.Resource)
-		newR.SetMeta(meta)
-		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
-			panic(any(errors.Wrap(err, "error setting spec on resource")))
-		}
-
-		return newR, nil
-	}
-
-	return r, nil
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(

@@ -126,6 +126,10 @@ func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
 	x.DisconnectTime = util_proto.MustTimestampProto(t)
 }
 
+func (x *DiscoverySubscription) GetInstanceId() string {
+	return x.ControlPlaneInstanceId
+}
+
 func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
 	var result uint64 = 0
 	for _, s := range x.GetSubscriptions() {

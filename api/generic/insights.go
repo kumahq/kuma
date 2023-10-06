@@ -16,6 +16,6 @@ type Insight interface {
 type Subscription interface {
 	proto.Message
 	GetId() string
-	GetGeneration() uint32
+	GetInstanceId() string
 	SetDisconnectTime(time time.Time)
 }

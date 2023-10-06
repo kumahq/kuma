@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -35,8 +36,7 @@ var finalizerLog = core.Log.WithName("finalizer")
 // 4. DPP status is Online whereas it should be Offline
 
 type descriptor struct {
-	id         string
-	generation uint32
+	id string
 }
 
 type tenantID string
@@ -54,6 +54,7 @@ type subscriptionFinalizer struct {
 	insights  tenantInsights
 	tenants   multitenant.Tenants
 	metric    prometheus.Summary
+	catalog   catalog.Reader
 }
 
 func NewSubscriptionFinalizer(
@@ -85,6 +86,7 @@ func NewSubscriptionFinalizer(
 		insights:  tenantInsights{},
 		tenants:   tenants,
 		metric:    metric,
+		catalog:   catalog.NewConfigCatalogReader(rm),
 	}, nil
 }
 
@@ -111,8 +113,8 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 						f.insights[tenantID(tenantId)][typ] = insightMap{}
 					}
 					ctx := multitenant.WithTenant(context.TODO(), tenantId)
-					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
-						finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
+					if err := f.tryFinalize(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
+						finalizerLog.Error(err, "unable to check if subscription has to be finalized", "type", typ)
 					}
 				}
 			}
@@ -124,7 +126,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
+func (f *subscriptionFinalizer) tryFinalize(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
 	// get all the insights for provided type
 	insights, _ := registry.Global().NewList(typ)
 	if err := f.rm.List(ctx, insights); err != nil {
@@ -150,30 +152,46 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		}
 
 		old, ok := f.insights[tenantID(tenantId)][typ][key]
-		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
+		if !ok || old.id != insight.GetLastSubscription().GetId() {
 			// something changed since the last check, either subscriptionId or generation were updated
 			// don't finalize the subscription, update map with fresh data
 			f.insights[tenantID(tenantId)][typ][key] = &descriptor{
-				id:         insight.GetLastSubscription().GetId(),
-				generation: insight.GetLastSubscription().GetGeneration(),
+				id: insight.GetLastSubscription().GetId(),
 			}
 			continue
 		}
 
-		log.V(1).Info("mark subscription as disconnected")
-		insight.GetLastSubscription().SetDisconnectTime(now)
-
-		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
-			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
-		})
-		if err != nil {
-			log.Error(err, "unable to finalize subscription")
+		if exist, err := f.instanceExists(ctx, insight.GetLastSubscription().GetInstanceId()); err != nil {
 			return err
+		} else if !exist {
+			log.V(1).Info("mark subscription as disconnected")
+			insight.GetLastSubscription().SetDisconnectTime(now)
+
+			upsertInsight, _ := registry.Global().NewObject(typ)
+			err = manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
+				return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
+			})
+			if err != nil {
+				log.Error(err, "unable to finalize subscription")
+				return err
+			}
+			delete(f.insights[tenantID(tenantId)][typ], key)
 		}
-		delete(f.insights[tenantID(tenantId)][typ], key)
 	}
 	return nil
+}
+
+func (f *subscriptionFinalizer) instanceExists(ctx context.Context, id string) (bool, error) {
+	instances, err := f.catalog.Instances(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, instance := range instances {
+		if instance.Id == id {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.ResourceList, tenantId string) {

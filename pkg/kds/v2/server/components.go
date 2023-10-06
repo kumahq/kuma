@@ -75,11 +75,15 @@ func New(
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
 	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
-		return kds_server.NewZoneInsightSink(accessor, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-		}, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(rt.ResourceManager(), rt.Config().Store.Upsert, rt.Config().Metrics.Zone.CompactFinishedSubscriptions), l, rt.Extensions())
+		return kds_server.NewZoneInsightSink(
+			accessor,
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
+			},
+			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
+			kds_server.NewZonesInsightStore(rt.ResourceManager(), rt.Config().Store.Upsert, rt.Config().Metrics.Zone.CompactFinishedSubscriptions),
+			l,
+			rt.Extensions())
 	}, log)
 }
 

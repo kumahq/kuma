@@ -29,43 +29,36 @@ type ZoneInsightStore interface {
 func NewZoneInsightSink(
 	accessor StatusAccessor,
 	flushTicker func() *time.Ticker,
-	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store ZoneInsightStore,
 	log logr.Logger,
 	extensions context.Context,
 ) ZoneInsightSink {
 	return &zoneInsightSink{
-		flushTicker:      flushTicker,
-		generationTicker: generationTicker,
-		flushBackoff:     flushBackoff,
-		accessor:         accessor,
-		store:            store,
-		log:              log,
+		flushTicker:  flushTicker,
+		flushBackoff: flushBackoff,
+		accessor:     accessor,
+		store:        store,
+		log:          log,
 	}
 }
 
 var _ ZoneInsightSink = &zoneInsightSink{}
 
 type zoneInsightSink struct {
-	flushTicker      func() *time.Ticker
-	generationTicker func() *time.Ticker
-	flushBackoff     time.Duration
-	accessor         StatusAccessor
-	store            ZoneInsightStore
-	log              logr.Logger
-	extensions       context.Context
+	flushTicker  func() *time.Ticker
+	flushBackoff time.Duration
+	accessor     StatusAccessor
+	store        ZoneInsightStore
+	log          logr.Logger
+	extensions   context.Context
 }
 
 func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
 
-	generationTicker := s.generationTicker()
-	defer generationTicker.Stop()
-
 	var lastStoredState *system_proto.KDSSubscription
-	var generation uint32
 
 	gracefulCtx, cancel := context.WithCancel(multitenant.CopyIntoCtx(ctx, context.Background()))
 	defer cancel()
@@ -74,12 +67,6 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
-		select {
-		case <-generationTicker.C:
-			generation++
-		default:
-		}
-		currentState.Generation = generation
 		if proto.Equal(currentState, lastStoredState) {
 			return
 		}
