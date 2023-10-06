@@ -48,6 +48,7 @@ kind: Mesh
 kind: MeshSubset
 tags:
   kuma.io/zone: us-east
+  validTagName: "*"
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -73,6 +74,28 @@ name: backend
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
+				},
+			},
+		}),
+		Entry("MeshGateway", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+		}),
+		Entry("MeshHTTPRoute", testCase{
+			inputYaml: `
+kind: MeshHTTPRoute
+name: http-route1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshHTTPRoute,
 				},
 			},
 		}),
@@ -226,6 +249,70 @@ violations:
   - field: targetRef.name
     message: cannot be set with kind MeshSubset`,
 		}),
+		Entry("MeshSubset with empty tag name", testCase{
+			inputYaml: `
+kind: MeshSubset
+tags: 
+  "": value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: tag name must be non-empty`,
+		}),
+		Entry("MeshSubset with invalid tag name", testCase{
+			inputYaml: `
+kind: MeshSubset
+tags: 
+  invalidTag*: value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
+		}),
+		Entry("MeshSubset with empty tag value", testCase{
+			inputYaml: `
+kind: MeshSubset
+tags: 
+  tag1: ""
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: tag value must be non-empty`,
+		}),
+		Entry("MeshSubset with invalid tag value", testCase{
+			inputYaml: `
+kind: MeshSubset
+tags: 
+  tag1: invalidValue?
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`,
+		}),
 		Entry("MeshService when it's not supported", testCase{
 			inputYaml: `
 kind: MeshService
@@ -276,6 +363,88 @@ violations:
     message: cannot be set with kind MeshService
 `,
 		}),
+		Entry("MeshService with invalid name", testCase{
+			inputYaml: `
+kind: MeshService
+name: "*"
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+`,
+		}),
+		Entry("MeshGateway when it's not supported", testCase{
+			inputYaml: `
+kind: MeshGateway
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported`,
+		}),
+		Entry("MeshGateway with mesh", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway1
+mesh: mesh-1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.mesh
+    message: cannot be set with kind MeshGateway
+`,
+		}),
+		Entry("MeshGateway without name with tags", testCase{
+			inputYaml: `
+kind: MeshGateway
+tags:
+  tag1: value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: must be set with kind MeshGateway 
+  - field: targetRef.tags
+    message: cannot be set with kind MeshGateway
+`,
+		}),
+		Entry("MeshGateway with invalid name", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: "*"
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+`,
+		}),
 		Entry("MeshServiceSubset when it's not supported", testCase{
 			inputYaml: `
 kind: MeshServiceSubset
@@ -305,6 +474,23 @@ tags: {}
 violations:
   - field: targetRef.name
     message: must be set with kind MeshServiceSubset
+`,
+		}),
+		Entry("MeshServiceSubset with invalid name with empty tags", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+name: "*"
+tags: {}
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+ - field: targetRef.name
+   message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
 `,
 		}),
 		Entry("MeshServiceSubset with mesh", testCase{

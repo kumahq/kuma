@@ -2,9 +2,16 @@ package validators
 
 import (
 	"fmt"
+	"regexp"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+)
+
+var (
+	nameCharacterSet     = regexp.MustCompile("^[0-9a-z-_]*$")
+	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
+	tagValueCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
 )
 
 type ValidateTargetRefOpts struct {
@@ -34,16 +41,60 @@ func ValidateTargetRef(
 		case common_api.MeshSubset:
 			verr.Add(disallowedField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		case common_api.MeshService:
+			verr.Add(validTags(ref.Tags))
+		case common_api.MeshService, common_api.MeshGateway, common_api.MeshHTTPRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
+			verr.Add(validName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(disallowedField("tags", ref.Tags, refKind))
 		case common_api.MeshServiceSubset:
 			verr.Add(requiredField("name", ref.Name, refKind))
+			verr.Add(validName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
+			verr.Add(validTags(ref.Tags))
 		}
 	}
 	return verr
+}
+
+func validTags(tags map[string]string) validators.ValidationError {
+	res := validators.ValidationError{}
+	for key, value := range tags {
+		if key == "" {
+			res.Violations = append(res.Violations, validators.Violation{
+				Field: "tags", Message: "tag name must be non-empty",
+			})
+		}
+		if !tagNameCharacterSet.MatchString(key) {
+			res.Violations = append(res.Violations, validators.Violation{
+				Field:   "tags",
+				Message: "tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores",
+			})
+		}
+		if value == "" {
+			res.Violations = append(res.Violations, validators.Violation{
+				Field: "tags", Message: "tag value must be non-empty",
+			})
+		}
+		if !tagValueCharacterSet.MatchString(value) {
+			res.Violations = append(res.Violations, validators.Violation{
+				Field:   "tags",
+				Message: `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`,
+			})
+		}
+	}
+	return res
+}
+
+func validName(value string) validators.ValidationError {
+	res := validators.ValidationError{}
+	if !nameCharacterSet.MatchString(value) {
+		res.Violations = append(res.Violations, validators.Violation{
+			Field:   "name",
+			Message: "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.",
+		})
+	}
+	return res
 }
 
 func contains(array []common_api.TargetRefKind, item common_api.TargetRefKind) bool {
