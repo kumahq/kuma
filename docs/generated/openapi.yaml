@@ -19,176 +19,6 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       operationId: get-global-insight
       description: Returns a Global Insight object
-  /meshes/{mesh}/meshfaultinjections/{name}:
-    get:
-      summary: Returns MeshFaultInjection entity
-      tags:
-        - MeshFaultInjection
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshFaultInjection
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshFaultInjectionItem'
-    put:
-      summary: Creates or Updates MeshFaultInjection entity
-      tags:
-        - MeshFaultInjection
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshFaultInjection
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshFaultInjectionItem'
-      responses:
-        '200':
-          description: Updated
-        '201':
-          description: Created
-    delete:
-      summary: Deletes MeshFaultInjection entity
-      tags:
-        - MeshFaultInjection
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshFaultInjection
-      responses:
-        '200':
-          description: Successful response
-  /meshes/{mesh}/meshfaultinjections:
-    get:
-      summary: Returns a list of MeshFaultInjection in the mesh.
-      tags:
-        - MeshFaultInjection
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshFaultInjectionList'
-  /meshes/{mesh}/meshcircuitbreakers/{name}:
-    get:
-      summary: Returns MeshCircuitBreaker entity
-      tags:
-        - MeshCircuitBreaker
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshCircuitBreaker
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshCircuitBreakerItem'
-    put:
-      summary: Creates or Updates MeshCircuitBreaker entity
-      tags:
-        - MeshCircuitBreaker
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshCircuitBreaker
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshCircuitBreakerItem'
-      responses:
-        '200':
-          description: Updated
-        '201':
-          description: Created
-    delete:
-      summary: Deletes MeshCircuitBreaker entity
-      tags:
-        - MeshCircuitBreaker
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshCircuitBreaker
-      responses:
-        '200':
-          description: Successful response
-  /meshes/{mesh}/meshcircuitbreakers:
-    get:
-      summary: Returns a list of MeshCircuitBreaker in the mesh.
-      tags:
-        - MeshCircuitBreaker
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshCircuitBreakerList'
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       summary: Returns MeshAccessLog entity
@@ -274,6 +104,176 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshAccessLogList'
+  /meshes/{mesh}/meshcircuitbreakers/{name}:
+    get:
+      summary: Returns MeshCircuitBreaker entity
+      tags:
+        - MeshCircuitBreaker
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshCircuitBreaker
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshCircuitBreakerItem'
+    put:
+      summary: Creates or Updates MeshCircuitBreaker entity
+      tags:
+        - MeshCircuitBreaker
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshCircuitBreaker
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshCircuitBreakerItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+    delete:
+      summary: Deletes MeshCircuitBreaker entity
+      tags:
+        - MeshCircuitBreaker
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshCircuitBreaker
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshcircuitbreakers:
+    get:
+      summary: Returns a list of MeshCircuitBreaker in the mesh.
+      tags:
+        - MeshCircuitBreaker
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshCircuitBreakerList'
+  /meshes/{mesh}/meshfaultinjections/{name}:
+    get:
+      summary: Returns MeshFaultInjection entity
+      tags:
+        - MeshFaultInjection
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshFaultInjection
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshFaultInjectionItem'
+    put:
+      summary: Creates or Updates MeshFaultInjection entity
+      tags:
+        - MeshFaultInjection
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshFaultInjection
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshFaultInjectionItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+    delete:
+      summary: Deletes MeshFaultInjection entity
+      tags:
+        - MeshFaultInjection
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshFaultInjection
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshfaultinjections:
+    get:
+      summary: Returns a list of MeshFaultInjection in the mesh.
+      tags:
+        - MeshFaultInjection
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshFaultInjectionList'
   /meshes/{mesh}/meshhealthchecks/{name}:
     get:
       summary: Returns MeshHealthCheck entity
@@ -784,91 +784,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshRetryList'
-  /meshes/{mesh}/meshtimeouts/{name}:
-    get:
-      summary: Returns MeshTimeout entity
-      tags:
-        - MeshTimeout
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshTimeout
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTimeoutItem'
-    put:
-      summary: Creates or Updates MeshTimeout entity
-      tags:
-        - MeshTimeout
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshTimeout
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshTimeoutItem'
-      responses:
-        '200':
-          description: Updated
-        '201':
-          description: Created
-    delete:
-      summary: Deletes MeshTimeout entity
-      tags:
-        - MeshTimeout
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshTimeout
-      responses:
-        '200':
-          description: Successful response
-  /meshes/{mesh}/meshtimeouts:
-    get:
-      summary: Returns a list of MeshTimeout in the mesh.
-      tags:
-        - MeshTimeout
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTimeoutList'
   /meshes/{mesh}/meshtcproutes/{name}:
     get:
       summary: Returns MeshTCPRoute entity
@@ -954,6 +869,91 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTCPRouteList'
+  /meshes/{mesh}/meshtimeouts/{name}:
+    get:
+      summary: Returns MeshTimeout entity
+      tags:
+        - MeshTimeout
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTimeout
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTimeoutItem'
+    put:
+      summary: Creates or Updates MeshTimeout entity
+      tags:
+        - MeshTimeout
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTimeout
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTimeoutItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+    delete:
+      summary: Deletes MeshTimeout entity
+      tags:
+        - MeshTimeout
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTimeout
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshtimeouts:
+    get:
+      summary: Returns a list of MeshTimeout in the mesh.
+      tags:
+        - MeshTimeout
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTimeoutList'
   /meshes/{mesh}/meshtraces/{name}:
     get:
       summary: Returns MeshTrace entity
@@ -1341,14 +1341,14 @@ components:
           description: TODO
           items:
             $ref: '#/components/schemas/InvalidParameters'
-    MeshFaultInjectionItem:
+    MeshAccessLogItem:
       type: object
       properties:
         type:
           description: the type of the resource
           type: string
           enum:
-            - MeshFaultInjection
+            - MeshAccessLog
         mesh:
           description: >-
             Mesh is the name of the Kuma mesh this resource belongs to. It may
@@ -1359,7 +1359,7 @@ components:
           description: Name of the Kuma resource
           type: string
         spec:
-          description: Spec is the specification of the Kuma MeshFaultInjection resource.
+          description: Spec is the specification of the Kuma MeshAccessLog resource.
           properties:
             from:
               description: >-
@@ -1370,96 +1370,134 @@ components:
                   default:
                     description: >-
                       Default is a configuration specific to the group of
-                      destinations referenced in 'targetRef'
+                      clients referenced in 'targetRef'
                     properties:
-                      http:
-                        description: >-
-                          Http allows to define list of Http faults between
-                          dataplanes.
+                      backends:
                         items:
-                          description: >-
-                            FaultInjection defines the configuration of faults
-                            between dataplanes.
                           properties:
-                            abort:
+                            file:
                               description: >-
-                                Abort defines a configuration of not delivering
-                                requests to destination service and replacing
-                                the responses from destination dataplane by
-                                predefined status code
+                                FileBackend defines configuration for file based
+                                access logs
                               properties:
-                                httpStatus:
+                                format:
                                   description: >-
-                                    HTTP status code which will be returned to
-                                    source side
-                                  format: int32
-                                  type: integer
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which abort will
-                                    be injected, has to be either int or decimal
-                                    represented as string.
-                                  x-kubernetes-int-or-string: true
-                              required:
-                                - httpStatus
-                                - percentage
-                              type: object
-                            delay:
-                              description: >-
-                                Delay defines configuration of delaying a
-                                response from a destination
-                              properties:
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which delay will
-                                    be injected, has to be either int or decimal
-                                    represented as string.
-                                  x-kubernetes-int-or-string: true
-                                value:
-                                  description: >-
-                                    The duration during which the response will
-                                    be delayed
+                                    Format of access logs. Placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      type: boolean
+                                    plain:
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                path:
+                                  description: Path to a file that logs will be written to
                                   type: string
                               required:
-                                - percentage
-                                - value
+                                - path
                               type: object
-                            responseBandwidth:
-                              description: >-
-                                ResponseBandwidth defines a configuration to
-                                limit the speed of responding to the requests
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
                               properties:
-                                limit:
+                                attributes:
                                   description: >-
-                                    Limit is represented by value measure in
-                                    gbps, mbps, kbps or bps, e.g. 10kbps
+                                    Attributes can contain placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    type: object
+                                  type: array
+                                body:
+                                  description: >-
+                                    Body is a raw string or an OTLP any value as
+                                    described at
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                    It can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  x-kubernetes-preserve-unknown-fields: true
+                                endpoint:
+                                  description: >-
+                                    Endpoint of OpenTelemetry collector. An
+                                    empty port defaults to 4317.
+                                  example: otel-collector:4317
+                                  minLength: 1
                                   type: string
-                                percentage:
-                                  anyOf:
-                                    - type: integer
-                                    - type: string
-                                  description: >-
-                                    Percentage of requests on which response
-                                    bandwidth limit will be either int or
-                                    decimal represented as string.
-                                  x-kubernetes-int-or-string: true
                               required:
-                                - limit
-                                - percentage
+                                - endpoint
                               type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  type: string
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      type: boolean
+                                    plain:
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
                           type: object
                         type: array
                     type: object
                   targetRef:
                     description: >-
                       TargetRef is a reference to the resource that represents a
-                      group of destinations.
+                      group of clients.
                     properties:
                       kind:
                         description: Kind of the referenced resource
@@ -1530,6 +1568,178 @@ components:
                     used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
+            to:
+              description: >-
+                To list makes a match between the consumed services and
+                corresponding configurations
+              items:
+                properties:
+                  default:
+                    description: >-
+                      Default is a configuration specific to the group of
+                      destinations referenced in 'targetRef'
+                    properties:
+                      backends:
+                        items:
+                          properties:
+                            file:
+                              description: >-
+                                FileBackend defines configuration for file based
+                                access logs
+                              properties:
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      type: boolean
+                                    plain:
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                path:
+                                  description: Path to a file that logs will be written to
+                                  type: string
+                              required:
+                                - path
+                              type: object
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
+                              properties:
+                                attributes:
+                                  description: >-
+                                    Attributes can contain placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    type: object
+                                  type: array
+                                body:
+                                  description: >-
+                                    Body is a raw string or an OTLP any value as
+                                    described at
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                    It can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  x-kubernetes-preserve-unknown-fields: true
+                                endpoint:
+                                  description: >-
+                                    Endpoint of OpenTelemetry collector. An
+                                    empty port defaults to 4317.
+                                  example: otel-collector:4317
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - endpoint
+                              type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  type: string
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      type: boolean
+                                    plain:
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
+                          type: object
+                        type: array
+                    type: object
+                  targetRef:
+                    description: >-
+                      TargetRef is a reference to the resource that represents a
+                      group of destinations.
+                    properties:
+                      kind:
+                        description: Kind of the referenced resource
+                        enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                        type: string
+                      mesh:
+                        description: >-
+                          Mesh is reserved for future use to identify cross mesh
+                          resources.
+                        type: string
+                      name:
+                        description: >-
+                          Name of the referenced resource. Can only be used with
+                          kinds: `MeshService`, `MeshServiceSubset` and
+                          `MeshGatewayRoute`
+                        type: string
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags used to select a subset of proxies by tags. Can
+                          only be used with kinds `MeshSubset` and
+                          `MeshServiceSubset`
+                        type: object
+                    type: object
+                required:
+                  - targetRef
+                type: object
+              type: array
           required:
             - targetRef
           type: object
@@ -2287,14 +2497,14 @@ components:
           required:
             - targetRef
           type: object
-    MeshAccessLogItem:
+    MeshFaultInjectionItem:
       type: object
       properties:
         type:
           description: the type of the resource
           type: string
           enum:
-            - MeshAccessLog
+            - MeshFaultInjection
         mesh:
           description: >-
             Mesh is the name of the Kuma mesh this resource belongs to. It may
@@ -2305,7 +2515,7 @@ components:
           description: Name of the Kuma resource
           type: string
         spec:
-          description: Spec is the specification of the Kuma MeshAccessLog resource.
+          description: Spec is the specification of the Kuma MeshFaultInjection resource.
           properties:
             from:
               description: >-
@@ -2316,134 +2526,96 @@ components:
                   default:
                     description: >-
                       Default is a configuration specific to the group of
-                      clients referenced in 'targetRef'
+                      destinations referenced in 'targetRef'
                     properties:
-                      backends:
+                      http:
+                        description: >-
+                          Http allows to define list of Http faults between
+                          dataplanes.
                         items:
+                          description: >-
+                            FaultInjection defines the configuration of faults
+                            between dataplanes.
                           properties:
-                            file:
+                            abort:
                               description: >-
-                                FileBackend defines configuration for file based
-                                access logs
+                                Abort defines a configuration of not delivering
+                                requests to destination service and replacing
+                                the responses from destination dataplane by
+                                predefined status code
                               properties:
-                                format:
+                                httpStatus:
                                   description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      type: boolean
-                                    plain:
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                path:
-                                  description: Path to a file that logs will be written to
+                                    HTTP status code which will be returned to
+                                    source side
+                                  format: int32
+                                  type: integer
+                                percentage:
+                                  anyOf:
+                                    - type: integer
+                                    - type: string
+                                  description: >-
+                                    Percentage of requests on which abort will
+                                    be injected, has to be either int or decimal
+                                    represented as string.
+                                  x-kubernetes-int-or-string: true
+                              required:
+                                - httpStatus
+                                - percentage
+                              type: object
+                            delay:
+                              description: >-
+                                Delay defines configuration of delaying a
+                                response from a destination
+                              properties:
+                                percentage:
+                                  anyOf:
+                                    - type: integer
+                                    - type: string
+                                  description: >-
+                                    Percentage of requests on which delay will
+                                    be injected, has to be either int or decimal
+                                    represented as string.
+                                  x-kubernetes-int-or-string: true
+                                value:
+                                  description: >-
+                                    The duration during which the response will
+                                    be delayed
                                   type: string
                               required:
-                                - path
+                                - percentage
+                                - value
                               type: object
-                            openTelemetry:
-                              description: Defines an OpenTelemetry logging backend.
+                            responseBandwidth:
+                              description: >-
+                                ResponseBandwidth defines a configuration to
+                                limit the speed of responding to the requests
                               properties:
-                                attributes:
+                                limit:
                                   description: >-
-                                    Attributes can contain placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      value:
-                                        type: string
-                                    type: object
-                                  type: array
-                                body:
-                                  description: >-
-                                    Body is a raw string or an OTLP any value as
-                                    described at
-                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                                    It can contain placeholders available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-                                  example: otel-collector:4317
-                                  minLength: 1
+                                    Limit is represented by value measure in
+                                    gbps, mbps, kbps or bps, e.g. 10kbps
                                   type: string
-                              required:
-                                - endpoint
-                              type: object
-                            tcp:
-                              description: TCPBackend defines a TCP logging backend.
-                              properties:
-                                address:
-                                  description: Address of the TCP logging backend
-                                  type: string
-                                format:
+                                percentage:
+                                  anyOf:
+                                    - type: integer
+                                    - type: string
                                   description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      type: boolean
-                                    plain:
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
+                                    Percentage of requests on which response
+                                    bandwidth limit will be either int or
+                                    decimal represented as string.
+                                  x-kubernetes-int-or-string: true
                               required:
-                                - address
+                                - limit
+                                - percentage
                               type: object
-                            type:
-                              enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                              type: string
-                          required:
-                            - type
                           type: object
                         type: array
                     type: object
                   targetRef:
                     description: >-
                       TargetRef is a reference to the resource that represents a
-                      group of clients.
+                      group of destinations.
                     properties:
                       kind:
                         description: Kind of the referenced resource
@@ -2514,178 +2686,6 @@ components:
                     used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-            to:
-              description: >-
-                To list makes a match between the consumed services and
-                corresponding configurations
-              items:
-                properties:
-                  default:
-                    description: >-
-                      Default is a configuration specific to the group of
-                      destinations referenced in 'targetRef'
-                    properties:
-                      backends:
-                        items:
-                          properties:
-                            file:
-                              description: >-
-                                FileBackend defines configuration for file based
-                                access logs
-                              properties:
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      type: boolean
-                                    plain:
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                path:
-                                  description: Path to a file that logs will be written to
-                                  type: string
-                              required:
-                                - path
-                              type: object
-                            openTelemetry:
-                              description: Defines an OpenTelemetry logging backend.
-                              properties:
-                                attributes:
-                                  description: >-
-                                    Attributes can contain placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      value:
-                                        type: string
-                                    type: object
-                                  type: array
-                                body:
-                                  description: >-
-                                    Body is a raw string or an OTLP any value as
-                                    described at
-                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                                    It can contain placeholders available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  x-kubernetes-preserve-unknown-fields: true
-                                endpoint:
-                                  description: >-
-                                    Endpoint of OpenTelemetry collector. An
-                                    empty port defaults to 4317.
-                                  example: otel-collector:4317
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - endpoint
-                              type: object
-                            tcp:
-                              description: TCPBackend defines a TCP logging backend.
-                              properties:
-                                address:
-                                  description: Address of the TCP logging backend
-                                  type: string
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      type: boolean
-                                    plain:
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                              required:
-                                - address
-                              type: object
-                            type:
-                              enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                              type: string
-                          required:
-                            - type
-                          type: object
-                        type: array
-                    type: object
-                  targetRef:
-                    description: >-
-                      TargetRef is a reference to the resource that represents a
-                      group of destinations.
-                    properties:
-                      kind:
-                        description: Kind of the referenced resource
-                        enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshGateway
-                          - MeshService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                        type: string
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`, `MeshServiceSubset` and
-                          `MeshGatewayRoute`
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds `MeshSubset` and
-                          `MeshServiceSubset`
-                        type: object
-                    type: object
-                required:
-                  - targetRef
-                type: object
-              type: array
           required:
             - targetRef
           type: object
@@ -5112,6 +5112,169 @@ components:
           required:
             - targetRef
           type: object
+    MeshTCPRouteItem:
+      type: object
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshTCPRoute
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        spec:
+          description: Spec is the specification of the Kuma MeshTCPRoute resource.
+          properties:
+            targetRef:
+              description: >-
+                TargetRef is a reference to the resource the policy takes an
+                effect on. The resource could be either a real store object or
+                virtual resource defined in-place.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                  type: string
+                mesh:
+                  description: >-
+                    Mesh is reserved for future use to identify cross mesh
+                    resources.
+                  type: string
+                name:
+                  description: >-
+                    Name of the referenced resource. Can only be used with
+                    kinds: `MeshService`, `MeshServiceSubset` and
+                    `MeshGatewayRoute`
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Tags used to select a subset of proxies by tags. Can only be
+                    used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+            to:
+              description: >-
+                To list makes a match between the consumed services and
+                corresponding configurations
+              items:
+                properties:
+                  rules:
+                    description: >-
+                      Rules contains the routing rules applies to a combination
+                      of top-level targetRef and the targetRef in this entry.
+                    items:
+                      properties:
+                        default:
+                          description: >-
+                            Default holds routing rules that can be merged with
+                            rules from other policies.
+                          properties:
+                            backendRefs:
+                              items:
+                                description: BackendRef defines where to forward traffic.
+                                properties:
+                                  kind:
+                                    description: Kind of the referenced resource
+                                    enum:
+                                      - Mesh
+                                      - MeshSubset
+                                      - MeshGateway
+                                      - MeshService
+                                      - MeshServiceSubset
+                                      - MeshHTTPRoute
+                                    type: string
+                                  mesh:
+                                    description: >-
+                                      Mesh is reserved for future use to
+                                      identify cross mesh resources.
+                                    type: string
+                                  name:
+                                    description: >-
+                                      Name of the referenced resource. Can only
+                                      be used with kinds: `MeshService`,
+                                      `MeshServiceSubset` and `MeshGatewayRoute`
+                                    type: string
+                                  tags:
+                                    additionalProperties:
+                                      type: string
+                                    description: >-
+                                      Tags used to select a subset of proxies by
+                                      tags. Can only be used with kinds
+                                      `MeshSubset` and `MeshServiceSubset`
+                                    type: object
+                                  weight:
+                                    default: 1
+                                    minimum: 0
+                                    type: integer
+                                type: object
+                              minItems: 1
+                              type: array
+                          required:
+                            - backendRefs
+                          type: object
+                      required:
+                        - default
+                      type: object
+                    maxItems: 1
+                    type: array
+                  targetRef:
+                    description: >-
+                      TargetRef is a reference to the resource that represents a
+                      group of destinations.
+                    properties:
+                      kind:
+                        description: Kind of the referenced resource
+                        enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                        type: string
+                      mesh:
+                        description: >-
+                          Mesh is reserved for future use to identify cross mesh
+                          resources.
+                        type: string
+                      name:
+                        description: >-
+                          Name of the referenced resource. Can only be used with
+                          kinds: `MeshService`, `MeshServiceSubset` and
+                          `MeshGatewayRoute`
+                        type: string
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags used to select a subset of proxies by tags. Can
+                          only be used with kinds `MeshSubset` and
+                          `MeshServiceSubset`
+                        type: object
+                    type: object
+                required:
+                  - targetRef
+                type: object
+              minItems: 1
+              type: array
+          required:
+            - targetRef
+          type: object
     MeshTimeoutItem:
       type: object
       properties:
@@ -5364,169 +5527,6 @@ components:
                 required:
                   - targetRef
                 type: object
-              type: array
-          required:
-            - targetRef
-          type: object
-    MeshTCPRouteItem:
-      type: object
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - MeshTCPRoute
-        mesh:
-          description: >-
-            Mesh is the name of the Kuma mesh this resource belongs to. It may
-            be omitted for cluster-scoped resources.
-          type: string
-          default: default
-        name:
-          description: Name of the Kuma resource
-          type: string
-        spec:
-          description: Spec is the specification of the Kuma MeshTCPRoute resource.
-          properties:
-            targetRef:
-              description: >-
-                TargetRef is a reference to the resource the policy takes an
-                effect on. The resource could be either a real store object or
-                virtual resource defined in-place.
-              properties:
-                kind:
-                  description: Kind of the referenced resource
-                  enum:
-                    - Mesh
-                    - MeshSubset
-                    - MeshGateway
-                    - MeshService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
-                  type: string
-                mesh:
-                  description: >-
-                    Mesh is reserved for future use to identify cross mesh
-                    resources.
-                  type: string
-                name:
-                  description: >-
-                    Name of the referenced resource. Can only be used with
-                    kinds: `MeshService`, `MeshServiceSubset` and
-                    `MeshGatewayRoute`
-                  type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds `MeshSubset` and `MeshServiceSubset`
-                  type: object
-              type: object
-            to:
-              description: >-
-                To list makes a match between the consumed services and
-                corresponding configurations
-              items:
-                properties:
-                  rules:
-                    description: >-
-                      Rules contains the routing rules applies to a combination
-                      of top-level targetRef and the targetRef in this entry.
-                    items:
-                      properties:
-                        default:
-                          description: >-
-                            Default holds routing rules that can be merged with
-                            rules from other policies.
-                          properties:
-                            backendRefs:
-                              items:
-                                description: BackendRef defines where to forward traffic.
-                                properties:
-                                  kind:
-                                    description: Kind of the referenced resource
-                                    enum:
-                                      - Mesh
-                                      - MeshSubset
-                                      - MeshGateway
-                                      - MeshService
-                                      - MeshServiceSubset
-                                      - MeshHTTPRoute
-                                    type: string
-                                  mesh:
-                                    description: >-
-                                      Mesh is reserved for future use to
-                                      identify cross mesh resources.
-                                    type: string
-                                  name:
-                                    description: >-
-                                      Name of the referenced resource. Can only
-                                      be used with kinds: `MeshService`,
-                                      `MeshServiceSubset` and `MeshGatewayRoute`
-                                    type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
-                                      `MeshSubset` and `MeshServiceSubset`
-                                    type: object
-                                  weight:
-                                    default: 1
-                                    minimum: 0
-                                    type: integer
-                                type: object
-                              minItems: 1
-                              type: array
-                          required:
-                            - backendRefs
-                          type: object
-                      required:
-                        - default
-                      type: object
-                    maxItems: 1
-                    type: array
-                  targetRef:
-                    description: >-
-                      TargetRef is a reference to the resource that represents a
-                      group of destinations.
-                    properties:
-                      kind:
-                        description: Kind of the referenced resource
-                        enum:
-                          - Mesh
-                          - MeshSubset
-                          - MeshGateway
-                          - MeshService
-                          - MeshServiceSubset
-                          - MeshHTTPRoute
-                        type: string
-                      mesh:
-                        description: >-
-                          Mesh is reserved for future use to identify cross mesh
-                          resources.
-                        type: string
-                      name:
-                        description: >-
-                          Name of the referenced resource. Can only be used with
-                          kinds: `MeshService`, `MeshServiceSubset` and
-                          `MeshGatewayRoute`
-                        type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds `MeshSubset` and
-                          `MeshServiceSubset`
-                        type: object
-                    type: object
-                required:
-                  - targetRef
-                type: object
-              minItems: 1
               type: array
           required:
             - targetRef
@@ -5895,13 +5895,13 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Error'
-    MeshFaultInjectionItem:
+    MeshAccessLogItem:
       description: Successful response
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/MeshFaultInjectionItem'
-    MeshFaultInjectionList:
+            $ref: '#/components/schemas/MeshAccessLogItem'
+    MeshAccessLogList:
       description: List
       content:
         application/json:
@@ -5911,7 +5911,7 @@ components:
               items:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MeshFaultInjectionItem'
+                  $ref: '#/components/schemas/MeshAccessLogItem'
               total:
                 type: number
                 description: The total number of entities
@@ -5941,13 +5941,13 @@ components:
               next:
                 type: string
                 description: URL to the next page
-    MeshAccessLogItem:
+    MeshFaultInjectionItem:
       description: Successful response
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/MeshAccessLogItem'
-    MeshAccessLogList:
+            $ref: '#/components/schemas/MeshFaultInjectionItem'
+    MeshFaultInjectionList:
       description: List
       content:
         application/json:
@@ -5957,7 +5957,7 @@ components:
               items:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MeshAccessLogItem'
+                  $ref: '#/components/schemas/MeshFaultInjectionItem'
               total:
                 type: number
                 description: The total number of entities
@@ -6102,29 +6102,6 @@ components:
               next:
                 type: string
                 description: URL to the next page
-    MeshTimeoutItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshTimeoutItem'
-    MeshTimeoutList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MeshTimeoutItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     MeshTCPRouteItem:
       description: Successful response
       content:
@@ -6142,6 +6119,29 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshTCPRouteItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshTimeoutItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTimeoutItem'
+    MeshTimeoutList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshTimeoutItem'
               total:
                 type: number
                 description: The total number of entities
