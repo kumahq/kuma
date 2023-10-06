@@ -22,11 +22,9 @@ message KumaResource {
   google.protobuf.Any spec = 2;
 }
 
-message ZoneHealthCheckRequest {
-}
+message ZoneHealthCheckRequest {}
 
-message ZoneHealthCheckResponse {
-}
+message ZoneHealthCheckResponse {}
 
 service GlobalKDSService {
   // StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can
