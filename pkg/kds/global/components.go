@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -158,9 +157,9 @@ func Setup(rt runtime.Runtime) error {
 	zwLog := kdsGlobalLog.WithName("zone-watch")
 	if err := rt.Add(component.NewResilientComponent(zwLog, mux.NewZoneWatch(
 		zwLog,
+		*rt.Config().Multizone.Global.KDS,
 		rt.EventBus(),
 		rt.ReadOnlyResourceManager(),
-		5*time.Second,
 	))); err != nil {
 		return err
 	}
@@ -178,6 +177,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.Extensions(),
 			rt.Config().Store.Upsert,
 			rt.EventBus(),
+			rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,

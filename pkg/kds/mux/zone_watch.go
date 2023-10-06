@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,25 +22,27 @@ type zoneTenant struct {
 }
 
 type ZoneWatch struct {
-	log   logr.Logger
-	bus   events.EventBus
-	rm    manager.ReadOnlyResourceManager
-	poll  time.Duration
-	zones map[zoneTenant]time.Time
+	log     logr.Logger
+	poll    time.Duration
+	timeout time.Duration
+	bus     events.EventBus
+	rm      manager.ReadOnlyResourceManager
+	zones   map[zoneTenant]time.Time
 }
 
 func NewZoneWatch(
 	log logr.Logger,
+	cfg multizone.KdsServerConfig,
 	bus events.EventBus,
 	rm manager.ReadOnlyResourceManager,
-	poll time.Duration,
 ) *ZoneWatch {
 	return &ZoneWatch{
-		log:   log,
-		bus:   bus,
-		rm:    rm,
-		poll:  poll,
-		zones: map[zoneTenant]time.Time{},
+		log:     log,
+		poll:    cfg.ZoneHealthCheck.PollInterval.Duration,
+		timeout: cfg.ZoneHealthCheck.Timeout.Duration,
+		bus:     bus,
+		rm:      rm,
+		zones:   map[zoneTenant]time.Time{},
 	}
 }
 
@@ -64,7 +66,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					zw.log.Info("error getting ZoneInsight", "zone", zone.zone)
 				}
 				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
-				if lastHealthCheck.After(firstSeen) && time.Since(lastHealthCheck) > 20*time.Second {
+				if lastHealthCheck.After(firstSeen) && time.Since(lastHealthCheck) > zw.timeout {
 					zw.bus.Send(service.ZoneWentOffline{
 						Zone:     zone.zone,
 						TenantID: zone.tenantID,

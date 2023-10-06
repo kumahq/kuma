@@ -37,6 +37,17 @@ type KdsServerConfig struct {
 	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_global_kds_nack_backoff"`
 	// DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
 	DisableSOTW bool `json:"disableSOTW" envconfig:"kuma_multizone_global_kds_disable_sotw"`
+	// ZoneHealthCheck holds config for ensuring zones are online
+	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
+}
+
+type ZoneHealthCheckConfig struct {
+	// PollInterval is the interval between the CP checking ZoneInsight for
+	// health check pings
+	PollInterval config_types.Duration `json:"pollInterval"`
+	// Timeout is the time after the last health check that a zone counts as
+	// no longer online
+	Timeout config_types.Duration `json:"timeout"`
 }
 
 var _ config.Config = &KdsServerConfig{}
