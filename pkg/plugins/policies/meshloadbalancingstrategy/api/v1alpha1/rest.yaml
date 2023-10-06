@@ -3,6 +3,7 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
+  x-ref-schema-name: "MeshLoadBalancingStrategy"
 
 paths:
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
