@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -45,13 +46,14 @@ type ActiveStreams struct {
 }
 
 type GlobalKDSServiceServer struct {
-	envoyAdminRPCs EnvoyAdminRPCs
-	resManager     manager.ResourceManager
-	instanceID     string
-	filters        []StreamInterceptor
-	extensions     context.Context
-	upsertCfg      config_store.UpsertConfig
-	eventBus       events.EventBus
+	envoyAdminRPCs          EnvoyAdminRPCs
+	resManager              manager.ResourceManager
+	instanceID              string
+	filters                 []StreamInterceptor
+	extensions              context.Context
+	upsertCfg               config_store.UpsertConfig
+	eventBus                events.EventBus
+	zoneHealthCheckInterval time.Duration
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
@@ -63,15 +65,17 @@ func NewGlobalKDSServiceServer(
 	extensions context.Context,
 	upsertCfg config_store.UpsertConfig,
 	eventBus events.EventBus,
+	zoneHealthCheckInterval time.Duration,
 ) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
-		envoyAdminRPCs: envoyAdminRPCs,
-		resManager:     resManager,
-		instanceID:     instanceID,
-		filters:        filters,
-		extensions:     extensions,
-		upsertCfg:      upsertCfg,
-		eventBus:       eventBus,
+		envoyAdminRPCs:          envoyAdminRPCs,
+		resManager:              resManager,
+		instanceID:              instanceID,
+		filters:                 filters,
+		extensions:              extensions,
+		upsertCfg:               upsertCfg,
+		eventBus:                eventBus,
+		zoneHealthCheckInterval: zoneHealthCheckInterval,
 	}
 }
 
@@ -116,7 +120,9 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 		log.Error(err, "couldn't update zone insight", "zone", zone)
 	}
 
-	return &mesh_proto.ZoneHealthCheckResponse{}, nil
+	return &mesh_proto.ZoneHealthCheckResponse{
+		Interval: durationpb.New(g.zoneHealthCheckInterval),
+	}, nil
 }
 
 type ZoneWentOffline struct {

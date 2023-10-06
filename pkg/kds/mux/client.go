@@ -299,12 +299,14 @@ func (c *client) startHealthCheck(
 	log.Info("starting")
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for {
-			_, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
 			if err != nil && !errors.Is(err, context.Canceled) {
 				errorCh <- err
+			} else if resp.Interval.AsDuration() > 0 {
+				ticker.Reset(resp.Interval.AsDuration())
 			}
 
 			select {

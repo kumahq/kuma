@@ -177,7 +177,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.Extensions(),
 			rt.Config().Store.Upsert,
 			rt.EventBus(),
-			rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
+			rt.Config().Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration,
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
