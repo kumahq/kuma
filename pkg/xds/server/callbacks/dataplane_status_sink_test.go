@@ -67,7 +67,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 				accessor,
 				&xds.TestSecrets{},
 				func() *time.Ticker { return ticker },
-				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
 				1*time.Millisecond,
 				store,
 			)
