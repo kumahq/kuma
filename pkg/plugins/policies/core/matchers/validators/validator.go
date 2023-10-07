@@ -42,12 +42,12 @@ func ValidateTargetRef(
 			verr.Add(disallowedField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(validTags(ref.Tags))
-		case common_api.MeshService, common_api.MeshGateway, common_api.MeshHTTPRoute:
+		case common_api.MeshService, common_api.MeshHTTPRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(validName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(disallowedField("tags", ref.Tags, refKind))
-		case common_api.MeshServiceSubset:
+		case common_api.MeshServiceSubset, common_api.MeshGateway:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(validName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))

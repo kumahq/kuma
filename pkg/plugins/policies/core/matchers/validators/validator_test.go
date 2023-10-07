@@ -81,6 +81,8 @@ name: backend
 			inputYaml: `
 kind: MeshGateway
 name: gateway1
+tags:
+  listener: one
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -410,11 +412,10 @@ violations:
     message: cannot be set with kind MeshGateway
 `,
 		}),
-		Entry("MeshGateway without name with tags", testCase{
+		Entry("MeshGateway without name with empty tags", testCase{
 			inputYaml: `
 kind: MeshGateway
-tags:
-  tag1: value1
+tags: {}
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -425,8 +426,6 @@ tags:
 violations:
   - field: targetRef.name
     message: must be set with kind MeshGateway 
-  - field: targetRef.tags
-    message: cannot be set with kind MeshGateway
 `,
 		}),
 		Entry("MeshGateway with invalid name", testCase{
