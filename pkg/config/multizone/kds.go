@@ -41,15 +41,6 @@ type KdsServerConfig struct {
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 }
 
-type ZoneHealthCheckConfig struct {
-	// PollInterval is the interval between the CP checking ZoneInsight for
-	// health check pings
-	PollInterval config_types.Duration `json:"pollInterval"`
-	// Timeout is the time after the last health check that a zone counts as
-	// no longer online
-	Timeout config_types.Duration `json:"timeout"`
-}
-
 var _ config.Config = &KdsServerConfig{}
 
 func (c *KdsServerConfig) Sanitize() {
@@ -81,6 +72,9 @@ func (c *KdsServerConfig) Validate() error {
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
+	if err := c.ZoneHealthCheck.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, "invalid zoneHealthCheck config"))
+	}
 	return errs
 }
 
@@ -107,5 +101,24 @@ func (k KdsClientConfig) Sanitize() {
 }
 
 func (k KdsClientConfig) Validate() error {
+	return nil
+}
+
+type ZoneHealthCheckConfig struct {
+	// PollInterval is the interval between the CP checking ZoneInsight for
+	// health check pings
+	PollInterval config_types.Duration `json:"pollInterval" envconfig:"kuma_multizone_global_kds_zone_health_check_poll_interval"`
+	// Timeout is the time after the last health check that a zone counts as
+	// no longer online
+	Timeout config_types.Duration `json:"timeout" envconfig:"kuma_multizone_global_kds_zone_health_check_timeout"`
+}
+
+func (c ZoneHealthCheckConfig) Sanitize() {
+}
+
+func (c ZoneHealthCheckConfig) Validate() error {
+	if (c.Timeout.Duration > 0) != (c.PollInterval.Duration > 0) {
+		return errors.New("timeout and pollInterval must both be either set or unset")
+	}
 	return nil
 }
