@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/go-logr/logr"
+	"google.golang.org/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -15,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
-	"google.golang.org/protobuf/proto"
 )
 
 type ZoneInsightSink interface {
@@ -85,7 +86,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 		}
 
 		if err := s.store.Upsert(gracefulCtx, zone, currentState); err != nil {
-			if store.IsResourceConflict(err) || store.IsResourceAlreadyExists(err) {
+			if errors.Is(err, &store.ResourceConflictError{}) {
 				log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
 			} else {
 				log.Error(err, "failed to flush zone status", "zone", zone)
