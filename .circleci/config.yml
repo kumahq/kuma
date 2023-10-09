@@ -357,9 +357,6 @@ jobs:
       name: golang
     steps:
       - checkout
-      - setup_remote_docker
-      - run:
-          command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
       - setenv_depending_on_priority:
           label: "ci/run-full-matrix"
           env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
@@ -376,6 +373,9 @@ jobs:
           command: make build
       - run:
           command: make -j build/distributions
+      - setup_remote_docker
+      - run:
+          command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
       - run:
           command: make -j images
       - run:
