@@ -9,7 +9,7 @@ paths:
     get:
       summary: Get Global Insight
       tags:
-        - GlobalInsights
+        - GlobalInsight
       responses:
         '200':
           $ref: '#/components/responses/GlobalInsightResponse'

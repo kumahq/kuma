@@ -7,7 +7,7 @@ paths:
   /global-insight:
     get:
       summary: Get Global Insight
-      tags: ["GlobalInsights"]
+      tags: ["GlobalInsight"]
       responses:
         '200':
           $ref: '#/components/responses/GlobalInsightResponse'

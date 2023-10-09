@@ -59,10 +59,14 @@ docs/generated/openapi.yaml:
 	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -r $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
 	mkdir -p $(OAPI_TMP_DIR)/policies
 	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
+
 ifdef BASE_API
+#    docker create -v /cfg --name configs alpine:3.4 /bin/true
+#    # copying config file into this volume
+#    docker cp path/in/your/source/code/app_config.yml configs:/cfg
+#    # starting application container using this volume
+#    docker run --volumes-from configs app-image:1.2.3
 	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
 else
-	ls -R $(OAPI_TMP_DIR)
-	docker run --rm -v $(OAPI_TMP_DIR):/var/specs alpine ls -R '/var/specs/'
-#	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml' > $@
+	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml' > $@
 endif
