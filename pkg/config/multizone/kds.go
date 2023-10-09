@@ -105,8 +105,8 @@ func (k KdsClientConfig) Validate() error {
 }
 
 type ZoneHealthCheckConfig struct {
-	// PollInterval is the interval between the CP checking ZoneInsight for
-	// health check pings
+	// PollInterval is the interval between the global CP checking ZoneInsight for
+	// health check pings and interval between zone CP sending health check pings
 	PollInterval config_types.Duration `json:"pollInterval" envconfig:"kuma_multizone_global_kds_zone_health_check_poll_interval"`
 	// Timeout is the time after the last health check that a zone counts as
 	// no longer online
