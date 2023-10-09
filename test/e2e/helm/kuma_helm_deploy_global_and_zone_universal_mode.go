@@ -34,7 +34,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
-			Install(postgres.Install(Kuma1,
+			Install(postgres.Install(Kuma2,
 				postgres.WithK8sNamespace(Config.KumaNamespace),
 				postgres.WithUsername("mesh"),
 				postgres.WithPassword("mesh"),
@@ -55,16 +55,18 @@ stringData:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "app.kubernetes.io/name", "postgresql")(zoneCluster)).To(Succeed())
 
-		global = globalCluster.GetKuma()
-		Expect(global).ToNot(BeNil())
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
+				WithHelmOpt("controlPlane.envVars.KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED", "false"),
 			)).
+			Install(MeshKubernetes("default")).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		global = globalCluster.GetKuma()
+		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
@@ -73,7 +75,7 @@ stringData:
 				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithCPReplicas(2),
+				WithCPReplicas(1),
 				WithGlobalAddress(global.GetKDSInsecureServerAddress()),
 				WithHelmOpt("controlPlane.environment", "universal"),
 				WithHelmOpt("controlPlane.zone", "zone-1"),
@@ -86,8 +88,7 @@ stringData:
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Key", "password"),
 				WithHelmOpt("controlPlane.secrets.postgresPassword.Env", "KUMA_STORE_POSTGRES_PASSWORD"),
 			)).
-			Install(MeshUniversal("default")).
-			Setup(globalCluster)
+			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		zone = zoneCluster.GetKuma()
@@ -95,7 +96,6 @@ stringData:
 	})
 
 	E2EAfterAll(func() {
-		Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
