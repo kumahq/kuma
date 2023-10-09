@@ -165,6 +165,8 @@ controlPlane:
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
     loadBalancerIP:
+    # -- Optionally specify allowed source ranges that can access the load balancer
+    loadBalancerSourceRanges: []
     # -- Additional annotations to put on the Global Zone Sync Service
     annotations: { }
     # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort

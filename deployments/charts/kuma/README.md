@@ -55,6 +55,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
+| controlPlane.globalZoneSyncService.loadBalancerSourceRanges | list | `[]` | Optionally specify allowed source ranges that can access the load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.nodePort | int | `30685` | Port on which Global Zone Sync Service is exposed on Node for service of type NodePort |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
