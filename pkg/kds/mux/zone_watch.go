@@ -94,6 +94,17 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				continue
 			}
 
+			// We keep a record of the time we see in the ZoneInsight when the
+			// stream is opened.
+			// This is to prevent the zone from timing out on a poll
+			// where the last health check is still from a previous connect, so:
+			// a long time ago: zone CP disconnects, no more health checks are sent
+			// now:
+			//  zone CP opens streams
+			//  global CP gets ZoneOpenedStream
+			//  global CP runs poll and see the last health check from "a long time ago"
+			//  BAD: global CP kills streams
+			//  zone CP health check arrives
 			zw.zones[zoneTenant{
 				tenantID: newStream.TenantID,
 				zone:     newStream.Zone,
