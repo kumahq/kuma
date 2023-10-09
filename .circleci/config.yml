@@ -93,7 +93,7 @@ executors:
       GO_VERSION: *go_version
 
   darwin:
-    resource_class: medium
+    resource_class: macos.x86.medium.gen2
     macos:
       xcode: "12.5.1"
     environment:
