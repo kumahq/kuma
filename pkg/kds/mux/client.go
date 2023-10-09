@@ -299,14 +299,19 @@ func (c *client) startHealthCheck(
 	log.Info("starting")
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
+		prevInterval := 5 * time.Minute
+		ticker := time.NewTicker(prevInterval)
 		defer ticker.Stop()
 		for {
 			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
 			if err != nil && !errors.Is(err, context.Canceled) {
 				errorCh <- errors.Wrap(err, "zone health check request failed")
-			} else if resp.Interval.AsDuration() > 0 {
-				ticker.Reset(resp.Interval.AsDuration())
+			} else if interval := resp.Interval.AsDuration(); interval > 0 {
+				if prevInterval != interval {
+					prevInterval = interval
+					log.Info("Global CP requested new healthcheck interval", "interval", interval)
+				}
+				ticker.Reset(interval)
 			}
 
 			select {
