@@ -181,7 +181,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
-	streamResult := make(chan error, 2)
+	streamResult := make(chan error, 1)
 	go func() {
 		for {
 			resp, err := recv()
