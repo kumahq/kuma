@@ -61,11 +61,6 @@ docs/generated/openapi.yaml:
 	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 
 ifdef BASE_API
-#    docker create -v /cfg --name configs alpine:3.4 /bin/true
-#    # copying config file into this volume
-#    docker cp path/in/your/source/code/app_config.yml configs:/cfg
-#    # starting application container using this volume
-#    docker run --volumes-from configs app-image:1.2.3
 	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
 else
 	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:pr-31 generate '/specs/**/*.yaml' > $@
