@@ -158,13 +158,18 @@ func Setup(rt runtime.Runtime) error {
 
 	if rt.Config().Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration > time.Duration(0) {
 		zwLog := kdsGlobalLog.WithName("zone-watch")
-		if err := rt.Add(component.NewResilientComponent(zwLog, mux.NewZoneWatch(
+		zw, err := mux.NewZoneWatch(
 			zwLog,
 			*rt.Config().Multizone.Global.KDS,
+			rt.Metrics(),
 			rt.EventBus(),
 			rt.ReadOnlyResourceManager(),
 			rt.Extensions(),
-		))); err != nil {
+		)
+		if err != nil {
+			return errors.Wrap(err, "couldn't create ZoneWatch")
+		}
+		if err := rt.Add(component.NewResilientComponent(zwLog, zw)); err != nil {
 			return err
 		}
 	}

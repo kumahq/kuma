@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/config/multizone"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -29,16 +32,27 @@ type ZoneWatch struct {
 	bus        events.EventBus
 	extensions context.Context
 	rm         manager.ReadOnlyResourceManager
+	summary    prometheus.Summary
 	zones      map[zoneTenant]time.Time
 }
 
 func NewZoneWatch(
 	log logr.Logger,
 	cfg multizone.KdsServerConfig,
+	metrics prometheus.Registerer,
 	bus events.EventBus,
 	rm manager.ReadOnlyResourceManager,
 	extensions context.Context,
-) *ZoneWatch {
+) (*ZoneWatch, error) {
+	summary := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_zone_watch",
+		Help:       "Summary of ZoneWatch component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(summary); err != nil {
+		return nil, err
+	}
+
 	return &ZoneWatch{
 		log:        log,
 		poll:       cfg.ZoneHealthCheck.PollInterval.Duration,
@@ -46,8 +60,9 @@ func NewZoneWatch(
 		bus:        bus,
 		extensions: extensions,
 		rm:         rm,
+		summary:    summary,
 		zones:      map[zoneTenant]time.Time{},
-	}
+	}, nil
 }
 
 func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
@@ -63,6 +78,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-timer.C:
+			start := core.Now()
 			for zone, firstSeen := range zw.zones {
 				ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 				zoneInsight := system.NewZoneInsightResource()
@@ -82,6 +98,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					delete(zw.zones, zone)
 				}
 			}
+			zw.summary.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case e := <-connectionWatch.Recv():
 			newStream := e.(service.ZoneOpenedStream)
 
