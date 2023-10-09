@@ -182,19 +182,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 	logger.Info("stored stream connection")
 	streamResult := make(chan error, 2)
-	streamReadEnded := make(chan struct{})
 	go func() {
-		select {
-		case <-shouldDisconnectStream.Recv():
-			streamResult <- nil
-		case <-streamReadEnded:
-			return
-		}
-	}()
-	go func() {
-		defer func() {
-			close(streamReadEnded)
-		}()
 		for {
 			resp, err := recv()
 			if err == io.EOF {
@@ -220,7 +208,12 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 			}
 		}
 	}()
-	return <-streamResult
+	select {
+	case <-shouldDisconnectStream.Recv():
+		return nil
+	case res := <-streamResult:
+		return res
+	}
 }
 
 func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, instance string) error {
