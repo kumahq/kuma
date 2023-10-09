@@ -84,6 +84,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
 	select {
 	case <-shouldDisconnectStream.Recv():
+		logger.Info("ending stream, zone health check failed")
 		return nil
 	case <-stream.Context().Done():
 		logger.Info("GlobalToZoneSync rpc stream stopped")
@@ -118,6 +119,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	go g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
 	select {
 	case <-shouldDisconnectStream.Recv():
+		logger.Info("ending stream, zone health check failed")
 		return nil
 	case <-stream.Context().Done():
 		logger.Info("ZoneToGlobalSync rpc stream stopped")

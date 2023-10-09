@@ -210,6 +210,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}()
 	select {
 	case <-shouldDisconnectStream.Recv():
+		logger.Info("ending stream, zone health check failed")
 		return nil
 	case res := <-streamResult:
 		return res
