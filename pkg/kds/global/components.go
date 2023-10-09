@@ -163,6 +163,7 @@ func Setup(rt runtime.Runtime) error {
 			*rt.Config().Multizone.Global.KDS,
 			rt.EventBus(),
 			rt.ReadOnlyResourceManager(),
+			rt.Extensions(),
 		))); err != nil {
 			return err
 		}

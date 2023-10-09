@@ -304,7 +304,7 @@ func (c *client) startHealthCheck(
 		for {
 			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
 			if err != nil && !errors.Is(err, context.Canceled) {
-				errorCh <- err
+				errorCh <- errors.Wrap(err, "zone health check request failed")
 			} else if resp.Interval.AsDuration() > 0 {
 				ticker.Reset(resp.Interval.AsDuration())
 			}

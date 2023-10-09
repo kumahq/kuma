@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -22,12 +23,13 @@ type zoneTenant struct {
 }
 
 type ZoneWatch struct {
-	log     logr.Logger
-	poll    time.Duration
-	timeout time.Duration
-	bus     events.EventBus
-	rm      manager.ReadOnlyResourceManager
-	zones   map[zoneTenant]time.Time
+	log        logr.Logger
+	poll       time.Duration
+	timeout    time.Duration
+	bus        events.EventBus
+	extensions context.Context
+	rm         manager.ReadOnlyResourceManager
+	zones      map[zoneTenant]time.Time
 }
 
 func NewZoneWatch(
@@ -35,14 +37,16 @@ func NewZoneWatch(
 	cfg multizone.KdsServerConfig,
 	bus events.EventBus,
 	rm manager.ReadOnlyResourceManager,
+	extensions context.Context,
 ) *ZoneWatch {
 	return &ZoneWatch{
-		log:     log,
-		poll:    cfg.ZoneHealthCheck.PollInterval.Duration,
-		timeout: cfg.ZoneHealthCheck.Timeout.Duration,
-		bus:     bus,
-		rm:      rm,
-		zones:   map[zoneTenant]time.Time{},
+		log:        log,
+		poll:       cfg.ZoneHealthCheck.PollInterval.Duration,
+		timeout:    cfg.ZoneHealthCheck.Timeout.Duration,
+		bus:        bus,
+		extensions: extensions,
+		rm:         rm,
+		zones:      map[zoneTenant]time.Time{},
 	}
 }
 
@@ -62,9 +66,13 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			for zone, firstSeen := range zw.zones {
 				ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 				zoneInsight := system.NewZoneInsightResource()
+
+				log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 				if err := zw.rm.Get(ctx, zoneInsight, store.GetByKey(zone.zone, model.NoMesh)); err != nil {
-					zw.log.Info("error getting ZoneInsight", "zone", zone.zone)
+					log.Info("error getting ZoneInsight", "zone", zone.zone, "error", err)
+					continue
 				}
+
 				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
 				if lastHealthCheck.After(firstSeen) && time.Since(lastHealthCheck) > zw.timeout {
 					zw.bus.Send(service.ZoneWentOffline{
@@ -80,8 +88,10 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			ctx := multitenant.WithTenant(context.TODO(), newStream.TenantID)
 			zoneInsight := system.NewZoneInsightResource()
 
+			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 			if err := zw.rm.Get(ctx, zoneInsight, store.GetByKey(newStream.Zone, model.NoMesh)); err != nil {
-				zw.log.Info("error getting ZoneInsight", "zone", newStream.Zone)
+				log.Info("error getting ZoneInsight", "zone", newStream.Zone)
+				continue
 			}
 
 			zw.zones[zoneTenant{
