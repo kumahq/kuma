@@ -140,7 +140,7 @@ executors:
       KUMA_DIR: .
       GO_VERSION: << pipeline.parameters.go_version >>
   vm-xlarge-amd64:
-    resource_class: large
+    resource_class: xlarge
     machine:
       image: << pipeline.parameters.ubuntu_image >>
     environment:
@@ -169,8 +169,6 @@ jobs:
         type: string
         default: golang
     steps:
-      - install_build_tools:
-          go_arch: << parameters.arch >>
       - checkout
       - restore_cache:
           key: vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
@@ -196,7 +194,7 @@ jobs:
         type: string
         default: amd64
     executor:
-      name: golang-<< parameters.arch >>
+      name: vm-<< parameters.arch >>
     steps:
       - checkout
       - when:
@@ -205,6 +203,8 @@ jobs:
             - halt_non_priority_job
       - halt_job_if_labeled:
           label: "ci/skip-test"
+      - install_build_tools:
+          go_arch: << parameters.arch >>
       - restore_cache:
           keys:
             - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
