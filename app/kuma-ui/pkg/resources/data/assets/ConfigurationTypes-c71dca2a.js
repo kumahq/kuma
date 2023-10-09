@@ -1,9 +1,0 @@
-import{O as x,a as G,b as w}from"./OnboardingPage-76d1352e.js";import{d as N,L as R,M as T,N as K,t as M,f as P,r,o as u,g as p,w as e,h as o,l as n,j as B,m as i,n as O,F as D,k as U,q as z}from"./index-47bd6918.js";const A={class:"graph-list mb-6"},F={class:"radio-button-group"},L=N({__name:"ConfigurationTypes",setup(S){const m=R(),c=T(),_={postgres:K(),memory:c,kubernetes:m},t=M("kubernetes"),g=d=>{t.value=d.store.type},f=P(()=>_[t.value]);return(d,a)=>{const v=r("RouteTitle"),l=r("KRadio"),y=r("DataSource"),b=r("AppView"),V=r("RouteView");return u(),p(V,{name:"onboarding-configuration-types"},{default:e(({can:h,t:C})=>[o(v,{title:C("onboarding.routes.configuration-types.title")},null,8,["title"]),n(),o(b,null,{default:e(()=>[o(x,{"with-image":""},{header:e(()=>[o(G,null,{title:e(()=>[n(`
-              Learn about configuration storage
-            `)]),_:1})]),content:e(()=>[o(y,{src:"/config",onChange:g},{default:e(({data:k})=>[typeof k<"u"?(u(),B(D,{key:0},[i("div",A,[(u(),p(O(f.value)))]),n(),i("div",F,[o(l,{modelValue:t.value,"onUpdate:modelValue":a[0]||(a[0]=s=>t.value=s),name:"deployment","selected-value":"kubernetes"},{default:e(()=>[n(`
-                  Kubernetes
-                `)]),_:1},8,["modelValue"]),n(),o(l,{modelValue:t.value,"onUpdate:modelValue":a[1]||(a[1]=s=>t.value=s),name:"deployment","selected-value":"postgres"},{default:e(()=>[n(`
-                  Postgres
-                `)]),_:1},8,["modelValue"]),n(),o(l,{modelValue:t.value,"onUpdate:modelValue":a[2]||(a[2]=s=>t.value=s),name:"deployment","selected-value":"memory"},{default:e(()=>[n(`
-                  Memory
-                `)]),_:1},8,["modelValue"])])],64)):U("",!0)]),_:1})]),navigation:e(()=>[o(w,{"next-step":h("use zones")?"onboarding-multi-zone":"onboarding-create-mesh","previous-step":"onboarding-deployment-types"},null,8,["next-step"])]),_:2},1024)]),_:2},1024)]),_:1})}}});const H=z(L,[["__scopeId","data-v-6c5fdc82"]]);export{H as default};
