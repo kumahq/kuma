@@ -250,7 +250,7 @@ var _ = Describe("Global Sync", func() {
 			globalStore = memory.NewStore()
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
-			globalSyncer, err = sync_store_v2.NewResourceSyncer(core.Log, globalStore, metrics, context.Background())
+			globalSyncer, err = sync_store_v2.NewResourceSyncer(core.Log, globalStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 			stopCh := make(chan struct{})
 			clientStreams := []*grpc.MockDeltaClientStream{}

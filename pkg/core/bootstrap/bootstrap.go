@@ -277,11 +277,12 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
 
-	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	rs, transactions, err := plugin.NewResourceStore(builder, pluginConfig)
 	if err != nil {
 		return err
 	}
 	builder.WithResourceStore(core_store.NewCustomizableResourceStore(rs))
+	builder.WithTransactions(transactions)
 	eventBus, err := events.NewEventBus(cfg.EventBus.BufferSize, builder.Metrics())
 	if err != nil {
 		return err
