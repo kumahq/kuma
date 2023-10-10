@@ -147,6 +147,12 @@ var _ = Describe("ZoneWatch", func() {
 				Zone:     zone,
 			})
 
+			// wait for opened stream to be registered
+			// in real conditions the interval will be large enough
+			// that these events will almost certainly be handled
+			// by the ZoneWatch loop between polls and before the timeout
+			time.Sleep(pollInterval)
+
 			Consistently(timeouts.Recv(), zoneWentOfflineCheckTimeout).ShouldNot(Receive())
 		})
 	})
