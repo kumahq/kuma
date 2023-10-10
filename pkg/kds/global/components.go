@@ -160,7 +160,7 @@ func Setup(rt runtime.Runtime) error {
 		zwLog := kdsGlobalLog.WithName("zone-watch")
 		zw, err := mux.NewZoneWatch(
 			zwLog,
-			*rt.Config().Multizone.Global.KDS,
+			rt.Config().Multizone.Global.KDS.ZoneHealthCheck,
 			rt.Metrics(),
 			rt.EventBus(),
 			rt.ReadOnlyResourceManager(),

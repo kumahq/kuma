@@ -38,7 +38,7 @@ type ZoneWatch struct {
 
 func NewZoneWatch(
 	log logr.Logger,
-	cfg multizone.KdsServerConfig,
+	cfg multizone.ZoneHealthCheckConfig,
 	metrics prometheus.Registerer,
 	bus events.EventBus,
 	rm manager.ReadOnlyResourceManager,
@@ -55,8 +55,8 @@ func NewZoneWatch(
 
 	return &ZoneWatch{
 		log:        log,
-		poll:       cfg.ZoneHealthCheck.PollInterval.Duration,
-		timeout:    cfg.ZoneHealthCheck.Timeout.Duration,
+		poll:       cfg.PollInterval.Duration,
+		timeout:    cfg.Timeout.Duration,
 		bus:        bus,
 		extensions: extensions,
 		rm:         rm,
