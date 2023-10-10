@@ -27,6 +27,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 					Prefix: p.Path,
 				},
 			},
+			Name: envoy_common.AnonymousResource,
 			Action: &envoy_route.Route_Route{
 				Route: &envoy_route.RouteAction{
 					ClusterSpecifier: &envoy_route.RouteAction_Cluster{

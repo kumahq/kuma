@@ -1,4 +1,4 @@
-package v3
+package routes
 
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
