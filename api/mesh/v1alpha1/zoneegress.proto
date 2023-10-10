@@ -26,6 +26,7 @@ message ZoneEgress {
   option (kuma.mesh.resource).ws.name = "zoneegress";
   option (kuma.mesh.resource).ws.plural = "zoneegresses";
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).has_insights = true;
 
   // Zone field contains Zone name where egress is serving, field will be
   // automatically set by Global Kuma CP

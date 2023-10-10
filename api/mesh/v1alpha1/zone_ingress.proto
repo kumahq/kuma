@@ -28,6 +28,7 @@ message ZoneIngress {
   option (kuma.mesh.resource).ws.name = "zone-ingress";
   option (kuma.mesh.resource).ws.plural = "zone-ingresses";
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).has_insights = true;
 
   // Zone field contains Zone name where ingress is serving, field will be
   // automatically set by Global Kuma CP

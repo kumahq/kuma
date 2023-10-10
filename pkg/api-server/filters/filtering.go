@@ -27,7 +27,10 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 			tags := parseTags(request.QueryParameters("tag"))
 
 			return func(rs core_model.Resource) bool {
-				dataplane := rs.(*mesh.DataplaneResource)
+				dataplane, ok := rs.(*mesh.DataplaneResource)
+				if !ok { // Sometimes this is going to return insights for example which will not match
+					return true
+				}
 				if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
 					return false
 				}

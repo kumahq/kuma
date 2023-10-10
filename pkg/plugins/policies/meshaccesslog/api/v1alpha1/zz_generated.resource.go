@@ -117,6 +117,10 @@ func (l *MeshAccessLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshAccessLogResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshAccessLogType,
 	Resource:            NewMeshAccessLogResource(),

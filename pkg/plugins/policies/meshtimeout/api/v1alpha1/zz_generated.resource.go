@@ -117,6 +117,10 @@ func (l *MeshTimeoutResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshTimeoutResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshTimeoutType,
 	Resource:            NewMeshTimeoutResource(),

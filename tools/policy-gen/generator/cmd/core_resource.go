@@ -157,6 +157,10 @@ func (l *{{.Name}}ResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *{{.Name}}ResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,
 		Resource: New{{.Name}}Resource(),

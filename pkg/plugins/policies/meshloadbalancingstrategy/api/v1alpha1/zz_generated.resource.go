@@ -117,6 +117,10 @@ func (l *MeshLoadBalancingStrategyResourceList) GetPagination() *model.Paginatio
 	return &l.Pagination
 }
 
+func (l *MeshLoadBalancingStrategyResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshLoadBalancingStrategyType,
 	Resource:            NewMeshLoadBalancingStrategyResource(),
