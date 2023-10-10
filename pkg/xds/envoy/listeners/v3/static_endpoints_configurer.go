@@ -1,14 +1,14 @@
 package v3
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
 type StaticEndpointsConfigurer struct {
@@ -18,40 +18,29 @@ type StaticEndpointsConfigurer struct {
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
 
-func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	routes := []*envoy_route.Route{}
+func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_config_listener.FilterChain) error {
+	routes := []*envoy_config_route.Route{}
 	for _, p := range c.Paths {
-		route := &envoy_route.Route{
-			Match: &envoy_route.RouteMatch{
-				PathSpecifier: &envoy_route.RouteMatch_Prefix{
-					Prefix: p.Path,
-				},
-			},
-			Name: envoy_common.AnonymousResource,
-			Action: &envoy_route.Route_Route{
-				Route: &envoy_route.RouteAction{
-					ClusterSpecifier: &envoy_route.RouteAction_Cluster{
-						Cluster: p.ClusterName,
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+			Configure(envoy_routes.RouteMatchPrefixPath(p.Path)).
+			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_config_route.Route) {
+				envoyRoute.Action = &envoy_config_route.Route_Route{
+					Route: &envoy_config_route.RouteAction{
+						ClusterSpecifier: &envoy_config_route.RouteAction_Cluster{
+							Cluster: p.ClusterName,
+						},
+						PrefixRewrite: p.RewritePath,
 					},
-					PrefixRewrite: p.RewritePath,
-				},
-			},
-		}
+				}
+			}))
 
 		if p.HeaderExactMatch != "" {
-			matcher := envoy_type_matcher.StringMatcher{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: p.HeaderExactMatch,
-				},
-			}
-			route.Match.Headers = []*envoy_route.HeaderMatcher{{
-				Name: p.Header,
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
-					StringMatch: &matcher,
-				},
-			}}
+			rb.Configure(envoy_routes.RouteMatchExactHeader(p.Header, p.HeaderExactMatch))
 		}
-
+		route, err := rb.Build()
+		if err != nil {
+			return err
+		}
 		routes = append(routes, route)
 	}
 
@@ -60,8 +49,8 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		CodecType:   envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoy_route.RouteConfiguration{
-				VirtualHosts: []*envoy_route.VirtualHost{{
+			RouteConfig: &envoy_config_route.RouteConfiguration{
+				VirtualHosts: []*envoy_config_route.VirtualHost{{
 					Name:    c.VirtualHostName,
 					Domains: []string{"*"},
 					Routes:  routes,
@@ -75,9 +64,9 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		return err
 	}
 
-	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+	filterChain.Filters = append(filterChain.Filters, &envoy_config_listener.Filter{
 		Name: "envoy.filters.network.http_connection_manager",
-		ConfigType: &envoy_listener.Filter_TypedConfig{
+		ConfigType: &envoy_config_listener.Filter_TypedConfig{
 			TypedConfig: pbst,
 		},
 	})

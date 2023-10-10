@@ -1,10 +1,11 @@
 package virtualhosts
 
 import (
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
 type VirtualHostRouteConfigurer struct {
@@ -14,47 +15,34 @@ type VirtualHostRouteConfigurer struct {
 	AllowGetOnly bool
 }
 
-func (c VirtualHostRouteConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
-	var headersMatcher []*envoy_config_route_v3.HeaderMatcher
-	if c.AllowGetOnly {
-		matcher := envoy_type_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
-				Exact: "GET",
-			},
-		}
-		headersMatcher = []*envoy_config_route_v3.HeaderMatcher{
-			{
-				Name: ":method",
-				HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_StringMatch{
-					StringMatch: &matcher,
-				},
-			},
-		}
-	}
-	virtualHost.Routes = append(virtualHost.Routes, &envoy_config_route_v3.Route{
-		Match: &envoy_config_route_v3.RouteMatch{
-			PathSpecifier: &envoy_config_route_v3.RouteMatch_Path{
-				Path: c.MatchPath,
-			},
-			Headers: headersMatcher,
-		},
-		Name: envoy_common.AnonymousResource,
-		Action: &envoy_config_route_v3.Route_Route{
-			Route: &envoy_config_route_v3.RouteAction{
-				RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
-					Pattern: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
+func (c VirtualHostRouteConfigurer) Configure(virtualHost *envoy_config_route.VirtualHost) error {
+	rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+		Configure(envoy_routes.RouteMatchExactPath(c.MatchPath)).
+		Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_config_route.Route) {
+			envoyRoute.Action = &envoy_config_route.Route_Route{
+				Route: &envoy_config_route.RouteAction{
+					RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
+						Pattern: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+								GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+							},
+							Regex: `.*`,
 						},
-						Regex: `.*`,
+						Substitution: c.NewPath,
 					},
-					Substitution: c.NewPath,
+					ClusterSpecifier: &envoy_config_route.RouteAction_Cluster{
+						Cluster: c.Cluster,
+					},
 				},
-				ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
-					Cluster: c.Cluster,
-				},
-			},
-		},
-	})
+			}
+		}))
+	if c.AllowGetOnly {
+		rb.Configure(envoy_routes.RouteMatchExactMethod("GET"))
+	}
+	route, err := rb.Build()
+	if err != nil {
+		return err
+	}
+	virtualHost.Routes = append(virtualHost.Routes, route)
 	return nil
 }

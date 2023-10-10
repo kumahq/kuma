@@ -64,7 +64,7 @@ func GenerateVirtualHost(
 				envoy_routes.RouteMatchExactPath(e.Match.ExactPath),
 				envoy_routes.RouteMatchPrefixPath(e.Match.PrefixPath),
 				envoy_routes.RouteMatchRegexPath(e.Match.RegexPath),
-				envoy_routes.RouteMatchExactHeader(":method", e.Match.Method),
+				envoy_routes.RouteMatchExactMethod(e.Match.Method),
 
 				route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
 				route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),

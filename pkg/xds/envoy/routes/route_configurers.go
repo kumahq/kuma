@@ -83,6 +83,11 @@ func RouteMatchExactHeader(name string, value string) RouteConfigurer {
 	})
 }
 
+// RouteMatchExactMethod appends an exact match for the value of the HTTP request method.
+func RouteMatchExactMethod(value string) RouteConfigurer {
+	return RouteMatchExactHeader(":method", value)
+}
+
 // RouteMatchRegexHeader appends a regex match for the value of the named HTTP request header.
 func RouteMatchRegexHeader(name string, regex string) RouteConfigurer {
 	if name == "" || regex == "" {
