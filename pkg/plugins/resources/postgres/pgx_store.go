@@ -107,8 +107,8 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		ownerType,
 	}
 	tx, exist := store.TxFromCtx(ctx)
-	if exist {
-		_, err = tx.(pgx.Tx).Exec(ctx, statement, args...)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		_, err = pgxTx.Exec(ctx, statement, args...)
 	} else {
 		_, err = r.pool.Exec(ctx, statement, args...)
 	}
@@ -154,8 +154,8 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 	}
 	tx, exist := store.TxFromCtx(ctx)
 	var result pgconn.CommandTag
-	if exist {
-		result, err = tx.(pgx.Tx).Exec(ctx, statement, args...)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		result, err = pgxTx.Exec(ctx, statement, args...)
 	} else {
 		result, err = r.pool.Exec(ctx, statement, args...)
 	}
@@ -185,8 +185,8 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 	tx, exist := store.TxFromCtx(ctx)
 	var result pgconn.CommandTag
 	var err error
-	if exist {
-		result, err = tx.(pgx.Tx).Exec(ctx, statement, args...)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		result, err = pgxTx.Exec(ctx, statement, args...)
 	} else {
 		result, err = r.pool.Exec(ctx, statement, args...)
 	}
@@ -207,8 +207,8 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	args := []any{opts.Name, opts.Mesh, resource.Descriptor().Name}
 	tx, exist := store.TxFromCtx(ctx)
 	var row pgx.Row
-	if exist {
-		row = tx.(pgx.Tx).QueryRow(ctx, statement, args...)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		row = pgxTx.QueryRow(ctx, statement, args...)
 	} else {
 		pool := r.pickRoPool()
 		if opts.Consistent {
@@ -306,8 +306,8 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	tx, exist := store.TxFromCtx(ctx)
 	var rows pgx.Rows
 	var err error
-	if exist {
-		rows, err = tx.(pgx.Tx).Query(ctx, statement, statementArgs...)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		rows, err = pgxTx.Query(ctx, statement, statementArgs...)
 	} else {
 		rows, err = r.pickRoPool().Query(ctx, statement, statementArgs...)
 	}
