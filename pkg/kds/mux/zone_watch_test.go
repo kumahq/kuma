@@ -119,7 +119,7 @@ var _ = Describe("ZoneWatch", func() {
 	// in timeout + pollInterval
 	zoneWentOfflineCheckTimeout := timeout + 2*pollInterval
 
-	Describe("basic", FlakeAttempts(3), func() {
+	Describe("basic", func() {
 		It("should timeout zones that stop sending a health check", func() {
 			sendHealthCheckPing(rm, zone)
 			eventBus.Send(service.ZoneOpenedStream{
