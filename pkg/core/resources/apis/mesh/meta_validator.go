@@ -29,11 +29,17 @@ func ValidateMeta(m core_model.ResourceMeta, scope core_model.ResourceScope) val
 // resources or on the clients (like 'kumactl' or 'kuma-dp') when it's not clear if it's create or update operation.
 //
 // We're going to remove this function in Kuma 2.7.x
-func ValidateMetaBackwardsCompatible(m core_model.ResourceMeta, scope core_model.ResourceScope) validators.ValidationError {
+func ValidateMetaBackwardsCompatible(m core_model.ResourceMeta, scope core_model.ResourceScope) (validators.ValidationError, string) {
+	// trying to validate meta against the new (more strict) rules
+	if verr := ValidateMeta(m, scope); !verr.HasViolations() {
+		return validators.ValidationError{}, ""
+	}
 	var err validators.ValidationError
 	err.AddError("name", validateIdentifier(m.GetName(), backwardCompatRegexp, backwardCompatErrMsg))
 	err.Add(ValidateMesh(m.GetMesh(), scope))
-	return err
+	return err, "[WARNING] Kuma 2.5.x introduces more strict validation rules for resource name, it must consist of " +
+		"lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character. You can't " +
+		"CREATE resources with invalid names anymore, but it's possible to UPDATE such resources until Kuma 2.7.x is released."
 }
 
 // ValidateMesh checks that resource's mesh matches the old regex (with '_'). Even if user creates entirely new resource,
