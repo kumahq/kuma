@@ -119,41 +119,49 @@ var _ = Describe("ZoneWatch", func() {
 	// in timeout + pollInterval
 	zoneWentOfflineCheckTimeout := timeout + 2*pollInterval
 
-	Describe("basic", func() {
-		It("should timeout zones that stop sending a health check", func() {
-			sendHealthCheckPing(rm, zone)
-			eventBus.Send(service.ZoneOpenedStream{
-				TenantID: "",
-				Zone:     zone,
-			})
-
-			// wait for opened stream to be registered
-			// in real conditions the interval will be large enough
-			// that these events will almost certainly be handled
-			// by the ZoneWatch loop between polls and before the timeout
-			time.Sleep(pollInterval)
-
-			sendHealthCheckPing(rm, zone)
-
-			Eventually(timeouts.Recv(), zoneWentOfflineCheckTimeout).Should(Receive(Equal(service.ZoneWentOffline{
-				TenantID: "",
-				Zone:     zone,
-			})))
+	It("should timeout zones that stop sending a health check", func() {
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
 		})
-		It("should not timeout zones that haven't sent a health check yet", func() {
-			sendHealthCheckPing(rm, zone)
-			eventBus.Send(service.ZoneOpenedStream{
-				TenantID: "",
-				Zone:     zone,
-			})
 
-			// wait for opened stream to be registered
-			// in real conditions the interval will be large enough
-			// that these events will almost certainly be handled
-			// by the ZoneWatch loop between polls and before the timeout
-			time.Sleep(pollInterval)
+		// wait for opened stream to be registered
+		// in real conditions the interval will be large enough
+		// that these events will almost certainly be handled
+		// by the ZoneWatch loop between polls and before the timeout
+		time.Sleep(pollInterval)
 
-			Consistently(timeouts.Recv(), zoneWentOfflineCheckTimeout).ShouldNot(Receive())
+		Eventually(timeouts.Recv(), zoneWentOfflineCheckTimeout).Should(Receive(Equal(service.ZoneWentOffline{
+			TenantID: "",
+			Zone:     zone,
+		})))
+
+		Consistently(timeouts.Recv(), zoneWentOfflineCheckTimeout).ShouldNot(Receive())
+	})
+	It("shouldn't timeout as long as ZoneInsight is updated", func() {
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
 		})
+
+		// wait for opened stream to be registered
+		// in real conditions the interval will be large enough
+		// that these events will almost certainly be handled
+		// by the ZoneWatch loop between polls and before the timeout
+		time.Sleep(pollInterval)
+
+		// Send a health check and block for a poll interval and make sure
+		// nothing has been received
+		// do this until we know the timeout would have come if weren't sending
+		// health checks
+		Consistently(func(g Gomega) {
+			sendHealthCheckPing(rm, zone)
+			g.Consistently(timeouts.Recv(), pollInterval).ShouldNot(Receive())
+		}, 3*timeout).Should(Succeed())
+
+		Eventually(timeouts.Recv(), zoneWentOfflineCheckTimeout).Should(Receive(Equal(service.ZoneWentOffline{
+			TenantID: "",
+			Zone:     zone,
+		})))
 	})
 })
