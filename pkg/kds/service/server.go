@@ -39,12 +39,6 @@ type StreamInterceptor interface {
 	InterceptServerStream(stream grpc.ServerStream) error
 }
 
-type ActiveStreams struct {
-	XDSConfig chan struct{}
-	Stats     chan struct{}
-	Clusters  chan struct{}
-}
-
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs          EnvoyAdminRPCs
 	resManager              manager.ResourceManager
