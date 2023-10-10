@@ -55,9 +55,8 @@ API_DIRS="$(TOP)/api/openapi/specs:base"
 docs/generated/openapi.yaml:
 	rm -rf $(OAPI_TMP_DIR)
 	mkdir -p $(dir $@)
-	mkdir -p $(OAPI_TMP_DIR)
-	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -r $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
 	mkdir -p $(OAPI_TMP_DIR)/policies
+	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -r $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
 	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 
 ifdef BASE_API
