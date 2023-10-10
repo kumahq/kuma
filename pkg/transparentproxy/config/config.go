@@ -9,38 +9,37 @@ import (
 )
 
 type TransparentProxyConfig struct {
-	DryRun                         bool
-	Verbose                        bool
-	RedirectPortOutBound           string
-	RedirectInBound                bool
-	RedirectPortInBound            string
-	RedirectPortInBoundV6          string
-	ExcludeInboundPorts            string
-	ExcludeOutboundPorts           string
-	ExcludeOutboundTCPPortsForUIDs []string
-	ExcludeOutboundUDPPortsForUIDs []string
-	UID                            string
-	GID                            string
-	RedirectDNS                    bool
-	RedirectAllDNSTraffic          bool
-	AgentDNSListenerPort           string
-	DNSUpstreamTargetChain         string
-	SkipDNSConntrackZoneSplit      bool
-	ExperimentalEngine             bool
-	EbpfEnabled                    bool
-	EbpfInstanceIP                 string
-	EbpfBPFFSPath                  string
-	EbpfCgroupPath                 string
-	EbpfTCAttachIface              string
-	EbpfProgramsSourcePath         string
-	VnetNetworks                   []string
-	Stdout                         io.Writer
-	Stderr                         io.Writer
-	RestoreLegacy                  bool
-	Wait                           uint
-	WaitInterval                   uint
-	MaxRetries                     int
-	SleepBetweenRetries            time.Duration
+	DryRun                    bool
+	Verbose                   bool
+	RedirectPortOutBound      string
+	RedirectInBound           bool
+	RedirectPortInBound       string
+	RedirectPortInBoundV6     string
+	ExcludeInboundPorts       string
+	ExcludeOutboundPorts      string
+	ExcludedOutboundsForUIDs  []string
+	UID                       string
+	GID                       string
+	RedirectDNS               bool
+	RedirectAllDNSTraffic     bool
+	AgentDNSListenerPort      string
+	DNSUpstreamTargetChain    string
+	SkipDNSConntrackZoneSplit bool
+	ExperimentalEngine        bool
+	EbpfEnabled               bool
+	EbpfInstanceIP            string
+	EbpfBPFFSPath             string
+	EbpfCgroupPath            string
+	EbpfTCAttachIface         string
+	EbpfProgramsSourcePath    string
+	VnetNetworks              []string
+	Stdout                    io.Writer
+	Stderr                    io.Writer
+	RestoreLegacy             bool
+	Wait                      uint
+	WaitInterval              uint
+	MaxRetries                int
+	SleepBetweenRetries       time.Duration
 }
 
 const DebugLogLevel uint16 = 7
@@ -210,7 +209,7 @@ func (c Config) ShouldConntrackZoneSplit() bool {
 	// instead of failing the whole iptables application, we can log the warning,
 	// skip conntrack related rules and move forward
 	if err := exec.Command("iptables", "-m", "conntrack", "--help").Run(); err != nil {
-		_, _ = fmt.Fprintf(c.RuntimeStdout,
+		_, _ = fmt.Fprintf(c.RuntimeStderr,
 			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
 				"module is present. Rules for DNS conntrack zone "+
 				"splitting won't be applied: %s\n", err,

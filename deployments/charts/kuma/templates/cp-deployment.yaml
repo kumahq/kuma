@@ -14,6 +14,40 @@
   {{ end }}
 {{ end }}
 
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
+  {{ fail $msg }}
+{{ end }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if empty .Values.controlPlane.zone }}
+    {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
+  {{ else }}
+    {{ if gt (len .Values.controlPlane.zone) 253 }}
+      {{ fail "controlPlane.zone must be no more than 253 characters" }}
+    {{ else }}
+      {{ if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" .Values.controlPlane.zone) }}
+        {{ fail "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character" }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+  {{ if empty .Values.controlPlane.kdsGlobalAddress }}
+    {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
+  {{ else }}
+    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
+    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+      {{ fail $msg }}
+    {{ end }}
+  {{ end }}
+{{ else }}
+  {{ if not (empty .Values.controlPlane.zone) }}
+    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
+  {{ end }}
+  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
+    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
+  {{ end }}
+{{ end }}
+
 {{- $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
 {{- if eq .Values.controlPlane.environment "universal" }}
 {{- $defaultEnv = include "kuma.universal.defaultEnv" . | fromYaml | pluck "env" | first }}
@@ -203,6 +237,22 @@ spec:
               subPath: ca.crt
               readOnly: true
           {{- end }}
+          {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
+            {{- if .Values.controlPlane.tls.general.secretName }}
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: general-tls-cert{{- if .Values.controlPlane.tls.general.caSecretName }}-ca{{- end }}
+              mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            {{- end }}
+          {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
@@ -285,6 +335,18 @@ spec:
         - name: general-tls-cert
           secret:
             secretName: {{ include "kuma.name" . }}-tls-cert
+        {{- end }}
+        {{- if .Values.controlPlane.tls.general.caSecretName }}
+        - name: general-tls-cert-ca
+          secret:
+            secretName: {{ .Values.controlPlane.tls.general.caSecretName }}
+        {{- end }}
+      {{- end }}
+      {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
+        {{- if .Values.controlPlane.tls.general.secretName }}
+        - name: general-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.general.secretName }}
         {{- end }}
         {{- if .Values.controlPlane.tls.general.caSecretName }}
         - name: general-tls-cert-ca

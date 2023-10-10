@@ -222,6 +222,7 @@ func addOutputRules(
 
 		nat.Output().Insert(
 			rulePosition,
+			Match(Multiport()),
 			protocol,
 			Match(Owner(UidRangeOrValue(uIDsToPorts))),
 			Jump(Return()),

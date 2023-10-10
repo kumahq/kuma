@@ -493,6 +493,9 @@ multizone:
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
       # DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
       disableSOTW: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW
+      # Response backoff is a time Global CP waits before sending ACK/NACK.
+      # This is a way to slow down Zone CP from sending resources too often.
+      responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -513,6 +516,9 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF
+      # Response backoff is a time Zone CP waits before sending ACK/NACK.
+      # This is a way to slow down Global CP from sending resources too often.
+      responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
 
 # Diagnostics configuration
 diagnostics:
