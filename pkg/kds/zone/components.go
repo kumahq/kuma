@@ -118,7 +118,10 @@ func Setup(rt core_runtime.Runtime) error {
 
 	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
-		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
+		syncClient := kds_client_v2.NewKDSSyncClient(
+			log,
+			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
+			kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
 				stream.Context(),
 				rt.KDSContext().Configs,
@@ -128,6 +131,7 @@ func Setup(rt core_runtime.Runtime) error {
 				kubeFactory,
 				rt.Config().Store.Kubernetes.SystemNamespace,
 			),
+			rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
 			if err := syncClient.Receive(); err != nil {
