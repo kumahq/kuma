@@ -299,7 +299,6 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		} else if msg != "" {
 			core.Log.Info(msg)
 		}
-
 	}
 	return err.OrNil()
 }

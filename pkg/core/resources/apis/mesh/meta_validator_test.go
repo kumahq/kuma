@@ -12,9 +12,10 @@ import (
 
 var _ = Describe("Meta", func() {
 	type testCase struct {
-		meta     core_model.ResourceMeta
-		scope    core_model.ResourceScope
-		expected string
+		meta           core_model.ResourceMeta
+		scope          core_model.ResourceScope
+		expected       string
+		printedWarning bool
 	}
 
 	Describe("ValidateMeta", func() {
@@ -89,7 +90,11 @@ violations:
 	Describe("ValidateMetaBackwardsCompatible", func() {
 		DescribeTable("should pass validation",
 			func(given testCase) {
-				Expect(mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope).Violations).To(BeEmpty())
+				verr, msg := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
+				Expect(verr.Violations).To(BeEmpty())
+				if given.printedWarning {
+					Expect(msg).ToNot(BeEmpty())
+				}
 			},
 			Entry("mesh-scoped valid name and mesh", testCase{
 				meta:  &test_model.ResourceMeta{Mesh: "mesh-1", Name: "name-1"},
@@ -104,14 +109,15 @@ violations:
 				scope: core_model.ScopeGlobal,
 			}),
 			Entry("name with underscore", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "mesh-1", Name: "name-1_2"},
-				scope: core_model.ScopeMesh,
+				meta:           &test_model.ResourceMeta{Mesh: "mesh-1", Name: "name-1_2"},
+				scope:          core_model.ScopeMesh,
+				printedWarning: true,
 			}),
 		)
 
 		DescribeTable("should validate fields",
 			func(given testCase) {
-				verr := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
+				verr, warning := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
 				// and
 				actual, err := yaml.Marshal(verr)
 
@@ -119,6 +125,7 @@ violations:
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				Expect(actual).To(MatchYAML(given.expected))
+				Expect(warning).To(BeEmpty())
 			},
 			Entry("empty name", testCase{
 				meta:  &test_model.ResourceMeta{Mesh: "mesh-1", Name: ""},
