@@ -2,15 +2,18 @@ package mux
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/log"
@@ -76,8 +79,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 		}
 	}
 
-	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
-	shouldDisconnectStream := g.watchZoneHealthCheck(tenantID, zone)
+	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone)
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error)
@@ -111,8 +113,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 		}
 	}
 
-	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
-	shouldDisconnectStream := g.watchZoneHealthCheck(tenantID, zone)
+	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone)
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error)
@@ -133,12 +134,20 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	}
 }
 
-func (g *KDSSyncServiceServer) watchZoneHealthCheck(tenantID, zone string) events.Listener {
-	shouldDisconnectStream := g.eventBus.Subscribe(func(e events.Event) bool {
-		disconnectEvent, ok := e.(service.ZoneWentOffline)
-		return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
-	})
-	g.eventBus.Send(service.ZoneOpenedStream{Zone: zone, TenantID: tenantID})
+func (g *KDSSyncServiceServer) watchZoneHealthCheck(streamContext context.Context, zone string) events.Listener {
+	tenantID, _ := multitenant.TenantFromCtx(streamContext)
+	md, _ := metadata.FromIncomingContext(streamContext)
+
+	shouldDisconnectStream := events.NewNeverListener()
+
+	features := md.Get(kds.FeaturesMetadataKey)
+	if slices.Contains(features, kds.FeatureZonePingHealth) {
+		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
+			disconnectEvent, ok := e.(service.ZoneWentOffline)
+			return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
+		})
+		g.eventBus.Send(service.ZoneOpenedStream{Zone: zone, TenantID: tenantID})
+	}
 
 	return shouldDisconnectStream
 }
