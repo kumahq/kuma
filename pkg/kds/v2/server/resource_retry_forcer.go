@@ -79,7 +79,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 		r.nodeIDs[streamID] = nodeID
 	}
 	r.Unlock()
-	r.log.V(1).Info("received NACK", "nodeID", nodeID, "type", request.TypeUrl)
+	r.log.Info("received NACK", "nodeID", nodeID, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage())
 	snapshot, err := r.cache.GetSnapshot(nodeID)
 	if err != nil {
 		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot
