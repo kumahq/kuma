@@ -89,8 +89,14 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					continue
 				}
 
+				// It may be that we don't have a health check yet so we use the
+				// lastSeen time because we know the zone was connected at that
+				// point at least
 				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
-				if lastHealthCheck.After(firstSeen) && time.Since(lastHealthCheck) > zw.timeout {
+				if firstSeen.After(lastHealthCheck) {
+					lastHealthCheck = firstSeen
+				}
+				if time.Since(lastHealthCheck) > zw.timeout {
 					zw.bus.Send(service.ZoneWentOffline{
 						Zone:     zone.zone,
 						TenantID: zone.tenantID,
