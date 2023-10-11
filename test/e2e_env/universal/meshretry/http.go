@@ -78,7 +78,7 @@ spec:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
@@ -107,14 +107,6 @@ spec:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// --max-time 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 }

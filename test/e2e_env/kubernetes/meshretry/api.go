@@ -34,7 +34,7 @@ func API() {
 		// given no MeshRetry
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -70,7 +70,7 @@ spec:
 		// given no MeshRetry
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		err = k8s.KubectlApplyFromStringE(

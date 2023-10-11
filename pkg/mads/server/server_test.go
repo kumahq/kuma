@@ -104,7 +104,7 @@ var _ = Describe("MADS Server", func() {
 
 		assignments, err := stream.WaitForAssignments()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(assignments).To(HaveLen(0))
+		Expect(assignments).To(BeEmpty())
 	})
 
 	It("should serve HTTP/1.1 requests", func() {
