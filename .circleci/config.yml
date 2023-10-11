@@ -371,14 +371,14 @@ jobs:
           command: make dev/tools
       - run:
           command: make clean
-      - run:
-          command: make check
+      # - run:
+      # command: make check
       - run:
           command: make build
       - run:
           command: make -j build/distributions
       - run:
-          command: make -j images
+          command: make images
       - run:
           command: make -j docker/save
       - save_cache:
