@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -160,24 +159,6 @@ func Setup(rt runtime.Runtime) error {
 	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {
 		streamInterceptors = append(streamInterceptors, filter)
 	}
-
-	if rt.Config().Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration > time.Duration(0) {
-		zwLog := kdsGlobalLog.WithName("zone-watch")
-		zw, err := mux.NewZoneWatch(
-			zwLog,
-			rt.Config().Multizone.Global.KDS.ZoneHealthCheck,
-			rt.Metrics(),
-			rt.EventBus(),
-			rt.ReadOnlyResourceManager(),
-			rt.Extensions(),
-		)
-		if err != nil {
-			return errors.Wrap(err, "couldn't create ZoneWatch")
-		}
-		if err := rt.Add(component.NewResilientComponent(zwLog, zw)); err != nil {
-			return err
-		}
-	}
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
@@ -191,15 +172,12 @@ func Setup(rt runtime.Runtime) error {
 			streamInterceptors,
 			rt.Extensions(),
 			rt.Config().Store.Upsert,
-			rt.EventBus(),
-			rt.Config().Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration,
 		),
 		mux.NewKDSSyncServiceServer(
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
 			rt.Extensions(),
-			rt.EventBus(),
 		),
 	)))
 }

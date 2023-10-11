@@ -9,11 +9,5 @@ func (f Features) HasFeature(feature string) bool {
 	return f[feature]
 }
 
-const FeaturesMetadataKey string = "features"
-
 // FeatureZoneToken means that the zone control plane can handle incoming Zone Token from global control plane.
 const FeatureZoneToken string = "zone-token"
-
-// FeatureZonePingHealth means that the zone control plane sends pings to the
-// global control plane to indicate it's still running.
-const FeatureZonePingHealth string = "zone-ping-health"
