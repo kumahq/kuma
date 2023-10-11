@@ -34,6 +34,19 @@ type Listener interface {
 	Close()
 }
 
+func NewNeverListener() Listener {
+	return &neverRecvListener{}
+}
+
+type neverRecvListener struct{}
+
+func (*neverRecvListener) Recv() <-chan Event {
+	return nil
+}
+
+func (*neverRecvListener) Close() {
+}
+
 type Predicate = func(event Event) bool
 
 type Emitter interface {
