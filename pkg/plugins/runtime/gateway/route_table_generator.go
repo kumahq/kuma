@@ -10,8 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
@@ -41,12 +39,11 @@ func GenerateVirtualHost(
 	}
 
 	if len(routes) == 0 {
-		routeBuilder := envoy_routes.NewRouteBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(
-				envoy_routes.RouteMatchPrefixPath("/"),
-				envoy_routes.RouteActionDirectResponse(http.StatusNotFound, emptyGatewayMsg),
-			)
-		vh.Configure(envoy_routes.VirtualHostRoute(routeBuilder))
+		routeBuilder := route.RouteBuilder{}
+
+		routeBuilder.Configure(route.RouteMatchPrefixPath("/"))
+		routeBuilder.Configure(route.RouteActionDirectResponse(http.StatusNotFound, emptyGatewayMsg))
+		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 
 		return vh, nil
 	}
@@ -59,18 +56,18 @@ func GenerateVirtualHost(
 	sort.Sort(route.Sorter(routes))
 
 	for _, e := range routes {
-		routeBuilder := envoy_routes.NewRouteBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(
-				envoy_routes.RouteMatchExactPath(e.Match.ExactPath),
-				envoy_routes.RouteMatchPrefixPath(e.Match.PrefixPath),
-				envoy_routes.RouteMatchRegexPath(e.Match.RegexPath),
-				envoy_routes.RouteMatchExactHeader(":method", e.Match.Method),
+		routeBuilder := route.RouteBuilder{}
+		routeBuilder.Configure(
+			route.RouteMatchExactPath(e.Match.ExactPath),
+			route.RouteMatchPrefixPath(e.Match.PrefixPath),
+			route.RouteMatchRegexPath(e.Match.RegexPath),
+			route.RouteMatchExactHeader(":method", e.Match.Method),
 
-				route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
-				route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
-				envoy_routes.RouteSetRewriteHostToBackendHostname(e.Rewrite != nil && e.Rewrite.HostToBackendHostname),
-				envoy_routes.RouteActionIdleTimeout(DefaultStreamIdleTimeout),
-			)
+			route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
+			route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
+			route.RouteSetRewriteHostToBackendHostname(e.Rewrite != nil && e.Rewrite.HostToBackendHostname),
+			route.RouteActionIdleTimeout(DefaultStreamIdleTimeout),
+		)
 
 		// Generate a retry policy for this route, if there is one.
 		routeBuilder.Configure(
@@ -83,7 +80,7 @@ func GenerateVirtualHost(
 		if t := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.TimeoutType); t != nil {
 			timeout := t.(*core_mesh.TimeoutResource)
 			routeBuilder.Configure(
-				envoy_routes.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
+				route.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
 			)
 		}
 
@@ -95,63 +92,63 @@ func GenerateVirtualHost(
 			}
 
 			routeBuilder.Configure(
-				envoy_routes.RoutePerFilterConfig("envoy.filters.http.local_ratelimit", conf),
+				route.RoutePerFilterConfig("envoy.filters.http.local_ratelimit", conf),
 			)
 		}
 
 		for _, m := range e.Match.ExactHeader {
-			routeBuilder.Configure(envoy_routes.RouteMatchExactHeader(m.Key, m.Value))
+			routeBuilder.Configure(route.RouteMatchExactHeader(m.Key, m.Value))
 		}
 
 		for _, m := range e.Match.RegexHeader {
-			routeBuilder.Configure(envoy_routes.RouteMatchRegexHeader(m.Key, m.Value))
+			routeBuilder.Configure(route.RouteMatchRegexHeader(m.Key, m.Value))
 		}
 
 		for _, m := range e.Match.PresentHeader {
-			routeBuilder.Configure(envoy_routes.RouteMatchPresentHeader(m, true))
+			routeBuilder.Configure(route.RouteMatchPresentHeader(m, true))
 		}
 
 		for _, m := range e.Match.AbsentHeader {
-			routeBuilder.Configure(envoy_routes.RouteMatchPresentHeader(m, false))
+			routeBuilder.Configure(route.RouteMatchPresentHeader(m, false))
 		}
 
 		for _, m := range e.Match.ExactQuery {
-			routeBuilder.Configure(envoy_routes.RouteMatchExactQuery(m.Key, m.Value))
+			routeBuilder.Configure(route.RouteMatchExactQuery(m.Key, m.Value))
 		}
 
 		for _, m := range e.Match.RegexQuery {
-			routeBuilder.Configure(envoy_routes.RouteMatchRegexQuery(m.Key, m.Value))
+			routeBuilder.Configure(route.RouteMatchRegexQuery(m.Key, m.Value))
 		}
 
 		if rq := e.RequestHeaders; rq != nil {
 			for _, h := range e.RequestHeaders.Replace {
 				switch h.Key {
 				case ":authority", "Host", "host":
-					routeBuilder.Configure(envoy_routes.RouteReplaceHostHeader(h.Value))
+					routeBuilder.Configure(route.RouteReplaceHostHeader(h.Value))
 				default:
-					routeBuilder.Configure(envoy_routes.RouteAddRequestHeader(envoy_routes.RouteReplaceHeader(h.Key, h.Value)))
+					routeBuilder.Configure(route.RouteAddRequestHeader(route.RouteReplaceHeader(h.Key, h.Value)))
 				}
 			}
 
 			for _, h := range e.RequestHeaders.Append {
-				routeBuilder.Configure(envoy_routes.RouteAddRequestHeader(envoy_routes.RouteAppendHeader(h.Key, h.Value)))
+				routeBuilder.Configure(route.RouteAddRequestHeader(route.RouteAppendHeader(h.Key, h.Value)))
 			}
 
 			for _, name := range e.RequestHeaders.Delete {
-				routeBuilder.Configure(envoy_routes.RouteDeleteRequestHeader(name))
+				routeBuilder.Configure(route.RouteDeleteRequestHeader(name))
 			}
 		}
 		if rq := e.ResponseHeaders; rq != nil {
 			for _, h := range e.ResponseHeaders.Replace {
-				routeBuilder.Configure(envoy_routes.RouteAddResponseHeader(envoy_routes.RouteReplaceHeader(h.Key, h.Value)))
+				routeBuilder.Configure(route.RouteAddResponseHeader(route.RouteReplaceHeader(h.Key, h.Value)))
 			}
 
 			for _, h := range e.ResponseHeaders.Append {
-				routeBuilder.Configure(envoy_routes.RouteAddResponseHeader(envoy_routes.RouteAppendHeader(h.Key, h.Value)))
+				routeBuilder.Configure(route.RouteAddResponseHeader(route.RouteAppendHeader(h.Key, h.Value)))
 			}
 
 			for _, name := range e.ResponseHeaders.Delete {
-				routeBuilder.Configure(envoy_routes.RouteDeleteResponseHeader(name))
+				routeBuilder.Configure(route.RouteDeleteResponseHeader(name))
 			}
 		}
 
@@ -163,21 +160,21 @@ func GenerateVirtualHost(
 
 		routeBuilder.Configure(route.RouteRewrite(e.Rewrite))
 
-		vh.Configure(envoy_routes.VirtualHostRoute(routeBuilder))
+		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 	}
 
 	return vh, nil
 }
 
 // retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
-func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) []envoy_routes.RouteConfigurer {
+func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) []route.RouteConfigurer {
 	retry, _ := policy.(*core_mesh.RetryResource)
 	if retry == nil {
 		return nil
 	}
 
-	return []envoy_routes.RouteConfigurer{
-		envoy_routes.RouteActionRetryDefault(protocol),
-		envoy_routes.RouteActionRetry(retry, protocol),
+	return []route.RouteConfigurer{
+		route.RouteActionRetryDefault(protocol),
+		route.RouteActionRetry(retry, protocol),
 	}
 }

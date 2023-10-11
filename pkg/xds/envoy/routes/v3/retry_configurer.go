@@ -3,8 +3,8 @@ package v3
 import (
 	"strings"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -21,12 +21,12 @@ const (
 
 func genGrpcRetryPolicy(
 	conf *mesh_proto.Retry_Conf_Grpc,
-) *envoy_config_route_v3.RetryPolicy {
+) *envoy_route.RetryPolicy {
 	if conf == nil {
 		return nil
 	}
 
-	policy := envoy_config_route_v3.RetryPolicy{
+	policy := envoy_route.RetryPolicy{
 		RetryOn:       GrpcRetryOnDefault,
 		PerTryTimeout: conf.PerTryTimeout,
 	}
@@ -41,7 +41,7 @@ func genGrpcRetryPolicy(
 	}
 
 	if conf.BackOff != nil {
-		policy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+		policy.RetryBackOff = &envoy_route.RetryPolicy_RetryBackOff{
 			BaseInterval: conf.BackOff.BaseInterval,
 			MaxInterval:  conf.BackOff.MaxInterval,
 		}
@@ -52,12 +52,12 @@ func genGrpcRetryPolicy(
 
 func genHttpRetryPolicy(
 	conf *mesh_proto.Retry_Conf_Http,
-) *envoy_config_route_v3.RetryPolicy {
+) *envoy_route.RetryPolicy {
 	if conf == nil {
 		return nil
 	}
 
-	policy := envoy_config_route_v3.RetryPolicy{
+	policy := envoy_route.RetryPolicy{
 		RetryOn:       HttpRetryOnDefault,
 		PerTryTimeout: conf.PerTryTimeout,
 	}
@@ -67,7 +67,7 @@ func genHttpRetryPolicy(
 	}
 
 	if conf.BackOff != nil {
-		policy.RetryBackOff = &envoy_config_route_v3.RetryPolicy_RetryBackOff{
+		policy.RetryBackOff = &envoy_route.RetryPolicy_RetryBackOff{
 			BaseInterval: conf.BackOff.BaseInterval,
 			MaxInterval:  conf.BackOff.MaxInterval,
 		}
@@ -88,15 +88,15 @@ func genHttpRetryPolicy(
 			continue
 		}
 
-		matcher := envoy_type_matcher_v3.StringMatcher{
-			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+		matcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 				Exact: method.String(),
 			},
 		}
 		policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
-			&envoy_config_route_v3.HeaderMatcher{
+			&envoy_route.HeaderMatcher{
 				Name: ":method",
-				HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_StringMatch{
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
 					StringMatch: &matcher,
 				},
 				InvertMatch: false,
@@ -143,7 +143,7 @@ func GrpcRetryOn(conf []mesh_proto.Retry_Conf_Grpc_RetryOn) string {
 	return strings.Join(retryOn, ",")
 }
 
-func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *envoy_config_route_v3.RetryPolicy {
+func RetryConfig(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) *envoy_route.RetryPolicy {
 	if retry == nil {
 		return nil
 	}
