@@ -98,7 +98,7 @@ spec:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
+			_, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
