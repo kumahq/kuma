@@ -40,6 +40,7 @@ import (
 type BuilderContext interface {
 	ComponentManager() component.Manager
 	ResourceStore() core_store.CustomizableResourceStore
+	Transactions() core_store.Transactions
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.CustomizableResourceManager
@@ -73,6 +74,7 @@ type Builder struct {
 	rs             core_store.CustomizableResourceStore
 	ss             store.SecretStore
 	cs             core_store.ResourceStore
+	txs            core_store.Transactions
 	rm             core_manager.CustomizableResourceManager
 	rom            core_manager.ReadOnlyResourceManager
 	gis            globalinsight.GlobalInsightService
@@ -129,6 +131,11 @@ func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
 
 func (b *Builder) WithResourceStore(rs core_store.CustomizableResourceStore) *Builder {
 	b.rs = rs
+	return b
+}
+
+func (b *Builder) WithTransactions(txs core_store.Transactions) *Builder {
+	b.txs = txs
 	return b
 }
 
@@ -294,6 +301,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rs == nil {
 		return nil, errors.Errorf("ResourceStore has not been configured")
 	}
+	if b.txs == nil {
+		return nil, errors.Errorf("Transactions has not been configured")
+	}
 	if b.rm == nil {
 		return nil, errors.Errorf("ResourceManager has not been configured")
 	}
@@ -367,6 +377,7 @@ func (b *Builder) Build() (Runtime, error) {
 			rm:                       b.rm,
 			rom:                      b.rom,
 			rs:                       b.rs,
+			txs:                      b.txs,
 			ss:                       b.ss,
 			cam:                      b.cam,
 			gis:                      b.gis,
@@ -405,6 +416,10 @@ func (b *Builder) ComponentManager() component.Manager {
 
 func (b *Builder) ResourceStore() core_store.CustomizableResourceStore {
 	return b.rs
+}
+
+func (b *Builder) Transactions() core_store.Transactions {
+	return b.txs
 }
 
 func (b *Builder) SecretStore() store.SecretStore {

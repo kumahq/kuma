@@ -72,6 +72,7 @@ func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 type syncResourceStore struct {
 	log           logr.Logger
 	resourceStore store.ResourceStore
+	transactions  store.Transactions
 	metric        prometheus.Histogram
 	extensions    context.Context
 }
@@ -79,6 +80,7 @@ type syncResourceStore struct {
 func NewResourceSyncer(
 	log logr.Logger,
 	resourceStore store.ResourceStore,
+	transactions store.Transactions,
 	metrics core_metrics.Metrics,
 	extensions context.Context,
 ) (ResourceSyncer, error) {
@@ -92,6 +94,7 @@ func NewResourceSyncer(
 	return &syncResourceStore{
 		log:           log,
 		resourceStore: resourceStore,
+		transactions:  transactions,
 		metric:        metric,
 		extensions:    extensions,
 	}, nil
@@ -183,14 +186,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 	}
 
-	for _, r := range onDelete {
-		rk := core_model.MetaToResourceKey(r.GetMeta())
-		log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-		if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
-			return err
-		}
-	}
-
 	zone := system.NewZoneResource()
 	if opts.Zone != "" && len(onCreate) > 0 {
 		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, core_model.NoMesh)); err != nil {
@@ -198,37 +193,46 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 	}
 
-	for _, r := range onCreate {
-		rk := core_model.MetaToResourceKey(r.GetMeta())
-		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-		creationTime := r.GetMeta().GetCreationTime()
-		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
-		r.SetMeta(nil)
+	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
+		for _, r := range onDelete {
+			rk := core_model.MetaToResourceKey(r.GetMeta())
+			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
+				return err
+			}
+		}
 
-		createOpts := []store.CreateOptionsFunc{
-			store.CreateBy(rk),
-			store.CreatedAt(creationTime),
-		}
-		if opts.Zone != "" {
-			createOpts = append(createOpts, store.CreateWithOwner(zone))
-		}
-		if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
-			return err
-		}
-	}
+		for _, r := range onCreate {
+			rk := core_model.MetaToResourceKey(r.GetMeta())
+			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+			creationTime := r.GetMeta().GetCreationTime()
+			// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
+			r.SetMeta(nil)
 
-	for _, r := range onUpdate {
-		log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-		now := time.Now()
-		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
-		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
-		// from upstream store, because we update downstream only when resource have changed in upstream
-		if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
-			return err
+			createOpts := []store.CreateOptionsFunc{
+				store.CreateBy(rk),
+				store.CreatedAt(creationTime),
+			}
+			if opts.Zone != "" {
+				createOpts = append(createOpts, store.CreateWithOwner(zone))
+			}
+			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
+				return err
+			}
 		}
-	}
 
-	return nil
+		for _, r := range onUpdate {
+			log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+			now := time.Now()
+			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
+			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
+			// from upstream store, because we update downstream only when resource have changed in upstream
+			if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
