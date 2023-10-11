@@ -98,17 +98,9 @@ spec:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
+			_, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		}).Should(Succeed())
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 }
