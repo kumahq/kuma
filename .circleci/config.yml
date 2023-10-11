@@ -1,33 +1,16 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
-<<<<<<< HEAD
 
 reusable:
 
   constants:
-    - &go_version "1.21.1"
+    - &go_version "1.21.3"
 
   docker_images:
-    - &golang_image "cimg/go:1.21.1"
+    - &golang_image "cimg/go:1.21.3"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
-=======
-parameters:
-  # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
-  go_version:
-    type: string
-    default: "1.21.3"
-  first_k8s_version:
-    type: string
-    default: "v1.23.17-k3s1"
-  last_k8s_version:
-    type: string
-    default: "v1.28.1-k3s1"
-  ubuntu_image:
-    type: string
-    default: "ubuntu-2204:2022.10.2"
->>>>>>> a1d088d41 (chore(deps): bump go version to 1.21.3 (#8001))
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
