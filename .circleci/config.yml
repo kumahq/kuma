@@ -359,6 +359,10 @@ jobs:
   build:
     executor: vm-xlarge-amd64
     steps:
+      - run: # required to build arm64 images
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static binfmt-support
       - install_build_tools
       - checkout
       - setenv_depending_on_priority:
@@ -371,14 +375,14 @@ jobs:
           command: make dev/tools
       - run:
           command: make clean
-      # - run:
-      # command: make check
+      - run:
+          command: make check
       - run:
           command: make build
       - run:
           command: make -j build/distributions
       - run:
-          command: make images
+          command: make -j images
       - run:
           command: make -j docker/save
       - save_cache:
