@@ -30,9 +30,6 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if pconfig.SkipRegistration {
-				return nil
-			}
 
 			tmpl, err := template.ParseFiles(localArgs.openAPITemplate)
 			if err != nil {

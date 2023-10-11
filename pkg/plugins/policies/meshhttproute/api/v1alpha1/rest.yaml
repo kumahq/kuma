@@ -1,9 +1,8 @@
-openapi: 3.0.3
+openapi: 3.0.1
 info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "MeshHTTPRoute"
 
 paths:
   /meshes/{mesh}/meshhttproutes/{name}:
@@ -25,7 +24,11 @@ paths:
           description: name of the MeshHTTPRoute
       responses:
         '200':
-          $ref: "#/components/responses/MeshHTTPRouteItem"
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: 'schema.yaml'
 
     put:
       summary: Creates or Updates MeshHTTPRoute entity
@@ -44,12 +47,12 @@ paths:
           required: true
           description: name of the MeshHTTPRoute
       requestBody:
-        description: Put request
+        description: MeshHTTPRoute entity
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MeshHTTPRouteItem'
+              $ref: 'schema.yaml'
       responses:
         '200':
           description: Updated
@@ -90,33 +93,37 @@ paths:
           description: name of the mesh
       responses:
         '200':
-          $ref: "#/components/responses/MeshHTTPRouteList"
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page
 
-components:
-  schemas:
-    MeshHTTPRouteItem:
-      $ref: 'schema.yaml'
-  responses:
-    MeshHTTPRouteItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshHTTPRouteItem'
-    MeshHTTPRouteList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: "#/components/schemas/MeshHTTPRouteItem"
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
+
+  /meshhttproutes:
+    get:
+      summary: Returns a list of MeshHTTPRoute from all meshes
+      tags: [ "MeshHTTPRoute" ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page
