@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -23,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/version"
@@ -98,11 +100,14 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	withKDSCtx, cancel := context.WithCancel(metadata.AppendToOutgoingContext(c.ctx,
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
+		kds.FeaturesMetadataKey, kds.FeatureZonePingHealth,
 	))
 	defer cancel()
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
+
+	c.startHealthCheck(withKDSCtx, log, conn, stop, errorCh)
 
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
 	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
@@ -280,6 +285,46 @@ func (c *client) startClusters(
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
 	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+}
+
+func (c *client) startHealthCheck(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	stop <-chan struct{},
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "healthcheck")
+	log.Info("starting")
+
+	go func() {
+		prevInterval := 5 * time.Minute
+		ticker := time.NewTicker(prevInterval)
+		defer ticker.Stop()
+		for {
+			log.Info("sending health check")
+			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+			if err != nil && !errors.Is(err, context.Canceled) {
+				log.Error(err, "health check failed")
+				errorCh <- errors.Wrap(err, "zone health check request failed")
+			} else if interval := resp.Interval.AsDuration(); interval > 0 {
+				if prevInterval != interval {
+					prevInterval = interval
+					log.Info("Global CP requested new healthcheck interval", "interval", interval)
+				}
+				ticker.Reset(interval)
+			}
+
+			select {
+			case <-ticker.C:
+				continue
+			case <-stop:
+				log.Info("stopping")
+				return
+			}
+		}
+	}()
 }
 
 func (c *client) handleProcessingErrors(
