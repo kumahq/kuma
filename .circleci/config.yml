@@ -3,15 +3,15 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.21.1"
+    - &go_version "1.21.3"
 
   docker_images:
-    - &golang_image "cimg/go:1.21.1"
+    - &golang_image "cimg/go:1.21.3"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
-# See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
+
 commands:
   install_build_tools:
     description: "Install an upstream Go release to $HOME/go"
