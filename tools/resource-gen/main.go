@@ -256,15 +256,14 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 	return {{.ResourceName}}TypeDescriptor 
 }
-
 {{- if and (hasSuffix .ResourceType "Overview") (ne $baseType "Service") }}
+
 func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
 	return t.SetSpec(&{{$pkg}}.{{.ProtoType}}{
 		{{$baseType}}: resource.GetSpec().(*{{$pkg}}.{{$baseType}}),
 		{{$baseType}}Insight: insight.GetSpec().(*{{$pkg}}.{{$baseType}}Insight),
 	})
-
 }
 {{- end }}
 
