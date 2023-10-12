@@ -127,7 +127,7 @@ to:
       inZone: []
     crossZone:
       - groups:
-        - ["zone-1", "zone-2"]
+        - ["zone-1", "zone-3"]
 ```
 
 #### When leaving zone, target specific zones first
