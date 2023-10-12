@@ -93,7 +93,7 @@ to:
       inZone: ["k8s.io/node", "k8s.io/az"]
 ```
 
-#### Prefer traffic in single zone with fallback to other zones
+#### Prefer traffic in same zone with fallback to any other zone
 
 ![Use case 3](assets/031/use_case_3.png)
 
