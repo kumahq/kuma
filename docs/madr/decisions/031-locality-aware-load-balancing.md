@@ -57,7 +57,7 @@ to:
 
 (4) In `groups` section, you configure logical zone groups. Let's assume `zone-1` and `zone-2` are located in the same datacenter, so you want to load balance equally between them. `Zone-5` is located in another datacenter so it should have lower priority, that is why it is in the second groups entry.
 
-(5) At last we should apply some feedback if no dataplanes from previous configuration are available, at this moment we allow `fail` and `any` fallback
+(5) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `fail` and `any` fallback
 
 ### API examples based on use cases
 
