@@ -61,7 +61,7 @@ to:
 
 ### API examples based on use cases
 
-#### Keeping traffic in single zone
+#### Keeping traffic in same zone (disable cross zone traffic)
 
 ![Use case 1](assets/031/use_case_1.png)
 
