@@ -266,7 +266,8 @@ Pseudo algorithm:
 Dataplanes in the specific location are going to receive only endpoints in the specific locality. For cross zone traffic without egress the control-plane delivers only ingresses of specific zones.
 
 Question:
-Do we want to populate node, az tags from K8s resources to the dataplane object or the user should be resposible for providing them explicitly?
+* Should we populate the 'node' and 'az' tags from Kubernetes resources to the dataplane object, or should users be responsible for providing them explicitly? 
+  * Some of these informations are available in the 'node' object, and we could retrieve node-related information from Kubernetes and use it to populate tags for the pod. To achieve this, we could implement a Kubernetes controller. To get node info there should be no problem because it's included in Pod object, it's more difficult to retrieve node labels/annotation without doing K8s call for Node object.
 
 ##### Egress
 Egress is not as simple as ingress. Currently, we support Locality Aware when atleast one client requires it, so we cannot distinguish between clients. Control-plane needs to send all dataplanes to the egress because there might be services sending requests to all zones. There are 2 options:
@@ -277,7 +278,7 @@ Egress is not as simple as ingress. Currently, we support Locality Aware when at
 Load balancing based on the metadata seems to be able to solve an issue but it has limitations. Because, egress knows all endpoints and does routing based on matching metadata the request might not obey the priority of zones. In this case we cannot configure different priorities for different clients.
 
 Separate cluster seems to be the only option that could solve this problem. When there is a different configuration of Load Balancing for the one of dataplane, control-plane sends to egress new a cluster `mesh-name:service-name:hash(tag + value)` with the routing based on the SNI: `service-name{mesh=mesh-name,hash=hash}`
-This cluster has a different configuration of priorities and only subset of zones. Dataplanes interested in this Load Balancing are going to have the same configuration of the cluster which sets SNI: `service-name{mesh=mesh-name,hash=hash}` and based in this SNI egress can make a routing decision to route to the specific cluster.
+This cluster has a different configuration of priorities and only subset of zones. Dataplanes interested in this Load Balancing are going to have the same configuration of the cluster which sets SNI: `service-name{mesh=mesh-name,hash=hash}` and based in this SNI egress can make a routing decision to route to the specific cluster. That also requries each ingress to create a filter chain match for SNIs, to match an incoming request with the cluster.
 
 The last option doesn't create separate configuration for each client, but uses just Mesh scoped `MeshLoadBalancingStrategy` to configure egress. That reduces possibilites of configuring Egress but can be changed in the future.
 
