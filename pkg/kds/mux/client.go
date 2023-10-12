@@ -306,6 +306,10 @@ func (c *client) startHealthCheck(
 			log.Info("sending health check")
 			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
 			if err != nil && !errors.Is(err, context.Canceled) {
+				if status.Code(err) == codes.Unimplemented {
+					log.Info("health check unimplemented in server, stopping")
+					return
+				}
 				log.Error(err, "health check failed")
 				errorCh <- errors.Wrap(err, "zone health check request failed")
 			} else if interval := resp.Interval.AsDuration(); interval > 0 {
