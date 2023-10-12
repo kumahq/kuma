@@ -37,7 +37,7 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: ["k8s.io/node", "k8s.io/az"] # (1)
       crossZone: # (2)
         rules: # (3)
@@ -46,7 +46,7 @@ to:
             - zones: ["zone-3", "zone-4"]
           - groups:
             - zones: ["zone-5"]
-        fallback: any # (5)
+        fallback: Any # (5)
 ```
 
 
@@ -58,7 +58,7 @@ to:
 
 (4) In `groups` section, you configure logical zone groups. Let's assume `zone-1` and `zone-2` are located in the same datacenter, so you want to load balance equally between them. `Zone-5` is located in another datacenter so it should have lower priority, that is why it is in the second groups entry.
 
-(5) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `fail` and `any` fallback. Default value `any`'
+(5) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `Fail` and `Any` fallback. Default value `Any`'
 
 ### API examples based on use cases
 
@@ -72,7 +72,7 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: []
 ```
 
@@ -88,7 +88,7 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: ["k8s.io/node", "k8s.io/az"]
 ```
 
@@ -106,10 +106,10 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
-        inZone: []
-    crossZone:
-      fallback: any
+    localityAwareness:
+      inZone: []
+      crossZone:
+        fallback: Any
 ```
 
 ![Use case 3](assets/031/use_case_3_1.png)
@@ -125,12 +125,12 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: []
-    crossZone:
-      - groups:
-        - zones: ["zone-1", "zone-3"]
-    fallback: fail
+      crossZone:
+        - groups:
+          - zones: ["zone-1", "zone-3"]
+        fallback: Fail
 ```
 
 ![Use case 4](assets/031/use_case_4_1.png)
@@ -147,13 +147,13 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: []
-    crossZone:
-      - groups:
-        - zones: ["zone-1"]
-      - groups:
-        - zones: ["zone-3"]
+      crossZone:
+        - groups:
+          - zones: ["zone-1"]
+        - groups:
+          - zones: ["zone-3"]
 ```
 
 ![Use case 5](assets/031/use_case_5_1.png)
@@ -170,12 +170,12 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: []
-    crossZone:
-      - groups:
-        - zones: ["zone-1"]
-      fallback: fail
+      crossZone:
+        - groups:
+          - zones: ["zone-1"]
+        fallback: Fail
 ```
 
 ![Use case 6](assets/031/use_case_6_1.png)
@@ -192,11 +192,11 @@ to:
     kind: MeshService
     name: backend
   defaults:
-    localityAware:
+    localityAwareness:
       inZone: []
-    crossZone:
-      - exclude:
-          zones: ["zone-3"]
+      crossZone:
+        - exclude:
+            zones: ["zone-3"]
 ```
 
 #### Load balance equally to local and zone
@@ -283,7 +283,7 @@ On kubernetes you can create a deployment without the service, in this case cont
 On universal you cannot create a dataplane without inbound or gateway definition.
 
 #### ClusterLoadBalancing cache
-Currently, while retrieving endpoints in the plugin, we are getting a pointer to the object in the cache that is shared between dataplanes. This won't work with LocalityAware load balancing because each dataplane might have a different subset of endpoints with different priorities. In the first iteration, we would like to try using it without CLA cache and measure the impact of the policy in the bigger cluster with many nodes. If the impact of not using the cache is significant, we might have to keep this configuration in the cache if there are more services on the same node. The cache might not improve the performance if there are instances of the same service in different localities (nodes, availability zones).
+Currently, while retrieving endpoints in the plugin, we are getting a pointer to the object in the cache that is shared between dataplanes. This won't work with localityAwareness load balancing because each dataplane might have a different subset of endpoints with different priorities. In the first iteration, we would like to try using it without CLA cache and measure the impact of the policy in the bigger cluster with many nodes. If the impact of not using the cache is significant, we might have to keep this configuration in the cache if there are more services on the same node. The cache might not improve the performance if there are instances of the same service in different localities (nodes, availability zones).
 
 
 ### Other
