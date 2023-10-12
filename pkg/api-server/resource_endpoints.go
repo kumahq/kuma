@@ -297,7 +297,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		if verr, msg := mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
 			err.AddError("", verr)
 		} else if msg != "" {
-			core.Log.Info(msg)
+			core.Log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
 		}
 	}
 	return err.OrNil()
