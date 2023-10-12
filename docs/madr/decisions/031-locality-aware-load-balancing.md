@@ -41,15 +41,15 @@ to:
       crossZone: # (2)
         rules: # (3)
           - groups: # (4)
-            - ["zone-1", "zone-2"]
-            - ["zone-3", "zone-4"]
+            - zones: ["zone-1", "zone-2"]
+            - zones: ["zone-3", "zone-4"]
           - groups:
-            - ["zone-5"]
+            - zones: ["zone-5"]
         fallback: any # (5)
 ```
 
 
-(1) In `inZone` section, you configure the priorities of tags used for load balancing.
+(1) In `inZone` section, you configure the priorities of tags used for load balancing. If list is empty or inZone is not specified, load balancing works normally, without taking any priorities into account. 
 
 (2) In `crossZone` section, you configure zones priority.
 
@@ -57,13 +57,11 @@ to:
 
 (4) In `groups` section, you configure logical zone groups. Let's assume `zone-1` and `zone-2` are located in the same datacenter, so you want to load balance equally between them. `Zone-5` is located in another datacenter so it should have lower priority, that is why it is in the second groups entry.
 
-(5) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `fail` and `any` fallback
+(5) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `fail` and `any` fallback. Default value `any`'
 
 ### API examples based on use cases
 
 #### Keeping traffic in same zone (disable cross zone traffic)
-
-![Use case 1](assets/031/use_case_1.png)
 
 ```yaml
 targetRef:
@@ -77,9 +75,9 @@ to:
       inZone: []
 ```
 
-#### Load balancing based on priorities within a zone. Example: node → AZ → region
+![Use case 1](assets/031/use_case_1.png)
 
-![Use case 2](assets/031/use_case_2.png)
+#### Load balancing based on priorities within a zone. Example: node → AZ → region
 
 ```yaml
 targetRef:
@@ -93,9 +91,11 @@ to:
       inZone: ["k8s.io/node", "k8s.io/az"]
 ```
 
-#### Prefer traffic in same zone with fallback to any other zone
+![Use case 2](assets/031/use_case_2.png)
+![Use case 2](assets/031/use_case_2.png)
+![Use case 2](assets/031/use_case_2.png)
 
-![Use case 3](assets/031/use_case_3.png)
+#### Prefer traffic in same zone with fallback to any other zone
 
 ```yaml
 targetRef:
@@ -111,9 +111,10 @@ to:
       fallback: any
 ```
 
-#### Load balance equally to list of zones
+![Use case 3](assets/031/use_case_3_1.png)
+![Use case 3](assets/031/use_case_3_2.png)
 
-![Use case 4](assets/031/use_case_4.png)
+#### Load balance equally to list of zones
 
 ```yaml
 targetRef:
@@ -127,13 +128,16 @@ to:
       inZone: []
     crossZone:
       - groups:
-        - ["zone-1", "zone-3"]
+        - zones: ["zone-1", "zone-3"]
+    fallback: fail
 ```
+
+![Use case 4](assets/031/use_case_4_1.png)
+![Use case 4](assets/031/use_case_4_2.png)
+![Use case 4](assets/031/use_case_4_3.png)
 
 #### When leaving zone, target specific zones first
 
-![Use case 5](assets/031/use_case_5.png)
-
 ```yaml
 targetRef:
   kind: Mesh
@@ -146,15 +150,17 @@ to:
       inZone: []
     crossZone:
       - groups:
-        - ["zone-1"]
+        - zones: ["zone-1"]
       - groups:
-        - ["zone-3"]
+        - zones: ["zone-3"]
 ```
+
+![Use case 5](assets/031/use_case_5_1.png)
+![Use case 5](assets/031/use_case_5_2.png)
+![Use case 5](assets/031/use_case_5_3.png)
 
 #### Exclude single zone from load balancing
 
-![Use case 6](assets/031/use_case_6.png)
-
 ```yaml
 targetRef:
   kind: Mesh
@@ -167,9 +173,13 @@ to:
       inZone: []
     crossZone:
       - groups:
-        - ["zone-1"]
+        - zones: ["zone-1"]
       fallback: fail
 ```
+
+![Use case 6](assets/031/use_case_6_1.png)
+![Use case 6](assets/031/use_case_6_2.png)
+![Use case 6](assets/031/use_case_6_3.png)
 
 TODO What if i have lots of zones and don’t want to write all of them during the incident. I would like to just exclude single zone, do we want to add something like:
 
@@ -184,7 +194,8 @@ to:
     localityAware:
       inZone: []
     crossZone:
-      - exclude: ["zone-3"]
+      - exclude:
+          zones: ["zone-3"]
 ```
 
 #### Load balance equally to local and zone
