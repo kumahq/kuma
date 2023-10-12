@@ -110,9 +110,9 @@ func (k *KumaPqLockLogger) keyValues(args []interface{}) []interface{} {
 }
 
 func (k *KumaPqLockLogger) Error(msg string, args ...interface{}) {
-	log.Error(nil, msg, k.keyValues(args)...)
+	log.Error(nil, fmt.Sprintf(msg, args))
 }
 
 func (k *KumaPqLockLogger) Debug(msg string, args ...interface{}) {
-	log.V(1).Info(msg, k.keyValues(args)...)
+	log.V(1).Info(fmt.Sprintf(msg, args))
 }
