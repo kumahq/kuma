@@ -112,11 +112,13 @@ func NewZonesInsightStore(
 	resManager manager.ResourceManager,
 	upsertCfg config_store.UpsertConfig,
 	compactFinished bool,
+	transactions store.Transactions,
 ) ZoneInsightStore {
 	return &zoneInsightStore{
 		resManager:      resManager,
 		upsertCfg:       upsertCfg,
 		compactFinished: compactFinished,
+		transactions:    transactions,
 	}
 }
 
@@ -126,6 +128,7 @@ type zoneInsightStore struct {
 	resManager      manager.ResourceManager
 	upsertCfg       config_store.UpsertConfig
 	compactFinished bool
+	transactions    store.Transactions
 }
 
 func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
@@ -143,5 +146,5 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 			zoneInsight.Spec.CompactFinished()
 		}
 		return nil
-	})
+	}, manager.WithTransactions(s.transactions))
 }

@@ -20,25 +20,30 @@ func init() {
 	core_plugins.Register(core_plugins.Postgres, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
 	cfg, ok := config.(*postgres.PostgresStoreConfig)
 	if !ok {
-		return nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
+		return nil, nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
 	migrated, err := isDbMigrated(*cfg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !migrated {
-		return nil, errors.New(`database is not migrated. Run "kuma-cp migrate up" to update database to the newest schema`)
+		return nil, nil, errors.New(`database is not migrated. Run "kuma-cp migrate up" to update database to the newest schema`)
 	}
 	switch cfg.DriverName {
 	case postgres.DriverNamePgx:
-		return NewPgxStore(pc.Metrics(), *cfg, pc.PgxConfigCustomizationFn())
+		store, err := NewPgxStore(pc.Metrics(), *cfg, pc.PgxConfigCustomizationFn())
+		if err != nil {
+			return nil, nil, err
+		}
+		return store, store, err
 	case postgres.DriverNamePq:
-		return NewPqStore(pc.Metrics(), *cfg)
+		store, err := NewPqStore(pc.Metrics(), *cfg)
+		return store, core_store.NoTransactions{}, err
 	default:
-		return nil, errors.New("unknown driver name " + cfg.DriverName)
+		return nil, nil, errors.New("unknown driver name " + cfg.DriverName)
 	}
 }
 
