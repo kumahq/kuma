@@ -26,16 +26,16 @@ func NewTypeRegistry() TypeRegistry {
 	}
 }
 
-type InvalidResourceType struct {
+type InvalidResourceTypeError struct {
 	ResType model.ResourceType
 }
 
-func (e *InvalidResourceType) Error() string {
+func (e *InvalidResourceTypeError) Error() string {
 	return fmt.Sprintf("invalid resource type %q", e.ResType)
 }
 
-func (e *InvalidResourceType) Is(target error) bool {
-	t, ok := target.(*InvalidResourceType)
+func (e *InvalidResourceTypeError) Is(target error) bool {
+	t, ok := target.(*InvalidResourceTypeError)
 	if !ok {
 		return false
 	}
@@ -49,7 +49,7 @@ type typeRegistry struct {
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return model.ResourceTypeDescriptor{}, &InvalidResourceType{ResType: resType}
+		return model.ResourceTypeDescriptor{}, &InvalidResourceTypeError{ResType: resType}
 	}
 	return typDesc, nil
 }
