@@ -65,6 +65,8 @@ func validateIdentifier(identifier string, r *regexp.Regexp, errMsg string) vali
 	var err validators.ValidationError
 	if identifier == "" {
 		err.AddViolation("", "cannot be empty")
+	} else if len(identifier) > 253 {
+		err.AddViolation("", "value length must less or equal 253")
 	} else if !r.MatchString(identifier) {
 		err.AddViolation("", errMsg)
 	}

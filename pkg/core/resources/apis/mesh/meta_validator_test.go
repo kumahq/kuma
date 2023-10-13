@@ -84,6 +84,19 @@ violations:
  - field: name
    message: invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character`,
 			}),
+			Entry("name longer than 253 character", testCase{
+				meta: &test_model.ResourceMeta{
+					Mesh: "mesh-1",
+					Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+						"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+						"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				},
+				scope: core_model.ScopeMesh,
+				expected: `
+violations:
+ - field: name
+   message: value length must less or equal 253`,
+			}),
 		)
 	})
 
