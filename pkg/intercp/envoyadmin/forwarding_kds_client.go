@@ -3,6 +3,7 @@ package envoyadmin
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -171,7 +172,7 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 		return "", errors.Errorf("invalid operation %s", rpcName)
 	}
 	if globalInstanceID == "" {
-		return "", StreamNotConnectedError{rpcName: rpcName}
+		return "", &StreamNotConnectedError{rpcName: rpcName}
 	}
 	return globalInstanceID, nil
 }
@@ -188,6 +189,10 @@ type StreamNotConnectedError struct {
 	rpcName string
 }
 
-func (e StreamNotConnectedError) Error() string {
+func (e *StreamNotConnectedError) Error() string {
 	return fmt.Sprintf("stream to execute %s operations is not yet connected", e.rpcName)
+}
+
+func (e *StreamNotConnectedError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }
