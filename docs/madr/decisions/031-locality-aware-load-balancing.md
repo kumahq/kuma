@@ -308,13 +308,54 @@ Egress is not as simple as ingress. Currently, we support Locality Aware when at
 - LoadBalacing based on metadata
 - Separate clusters
 - Support only Mesh scope for Egress
+- **Client defines which zone wants to communicate to**
 
 Load balancing based on the metadata seems to be able to solve an issue but it has limitations. Because, egress knows all endpoints and does routing based on matching metadata the request might not obey the priority of zones. In this case we cannot configure different priorities for different clients.
 
 Separate cluster seems to be the only option that could solve this problem. When there is a different configuration of Load Balancing for the one of dataplane, control-plane sends to egress new a cluster `mesh-name:service-name:hash(tag + value)` with the routing based on the SNI: `service-name{mesh=mesh-name,hash=hash}`
 This cluster has a different configuration of priorities and only subset of zones. Dataplanes interested in this Load Balancing are going to have the same configuration of the cluster which sets SNI: `service-name{mesh=mesh-name,hash=hash}` and based in this SNI egress can make a routing decision to route to the specific cluster. That also requries each ingress to create a filter chain match for SNIs, to match an incoming request with the cluster.
 
-The last option doesn't create separate configuration for each client, but uses just Mesh scoped `MeshLoadBalancingStrategy` to configure egress. That reduces possibilites of configuring Egress but can be changed in the future.
+Another option doesn't create separate configuration for each client, but uses just Mesh scoped `MeshLoadBalancingStrategy` to configure egress. That reduces possibilites of configuring Egress but can be changed in the future.
+
+The most favorable approach appears to be defining routing on the client side. Instead of creating separate cluster sets for each client on the Egress, we create an 'aggregate_cluster' for the client:
+
+Aggregate_cluster:
+
+- backend_in_zone
+- backend_zone1
+- backend_zone2
+
+Each entry represents the Envoy cluster name that the client is interested in communicating with, in order of priority. This arrangement enables each cluster to set a separate 'SNI' for each zone, facilitating matching and routing on the Egress side.
+
+For example:
+
+```yaml
+backend_zone1 = SNI backend{mesh=default,kuma.io/zone=zone1}
+backend_zone2 = SNI backend{mesh=default,kuma.io/zone=zone2}
+```
+
+In addition, it is important to configure the Egress correctly. For each `SNI`, we need to create a filter chain match that sets the required metadata for selecting endpoints:
+
+```yaml
+- filterChainMatch:
+    serverNames:
+    - backend{mesh=default,kuma.io/zone=zone1}
+    transportProtocol: tls
+  filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      cluster: default:backend
+      metadataMatch:
+        filterMetadata:
+          envoy.lb:
+            kuma.io/zone: zone1
+      statPrefix: default:backend_zone1
+```
+Each dataplane has metadata, and it's important to ensure that `kuma.io/zone` is available. If it's not present, add it to the endpoints.
+
+On the ingress side, you only need to adjust the `SNI` to include its corresponding `kuma.io/zone`.
+
 
 ##### Ingress
 We don't configure ingresses.
