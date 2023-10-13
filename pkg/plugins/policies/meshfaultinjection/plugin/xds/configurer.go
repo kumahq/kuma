@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
@@ -78,7 +79,7 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 	return nil
 }
 
-func regexHeaderMatcher(regex string, invert bool) *envoy_route.HeaderMatcher {
+func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy_route.HeaderMatcher {
 	return &envoy_route.HeaderMatcher{
 		Name: tags.TagsHeaderName,
 		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
@@ -86,7 +87,7 @@ func regexHeaderMatcher(regex string, invert bool) *envoy_route.HeaderMatcher {
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
 						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
-						Regex:      regex,
+						Regex:      tags.MatchingRegex(tagSet),
 					},
 				},
 			},
@@ -105,12 +106,12 @@ func (c *Configurer) createHeaders(from core_xds.Subset) []*envoy_route.HeaderMa
 
 	notNegated := tagsMap[false]
 	if len(notNegated) > 0 {
-		matchers = append(matchers, regexHeaderMatcher(tags.MatchingRegex(notNegated), false))
+		matchers = append(matchers, regexHeaderMatcher(notNegated, false))
 	}
 
 	negated := tagsMap[true]
 	if len(negated) > 0 {
-		matchers = append(matchers, regexHeaderMatcher(tags.MatchingRegex(negated), true))
+		matchers = append(matchers, regexHeaderMatcher(negated, true))
 	}
 
 	return matchers
