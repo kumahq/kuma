@@ -15,7 +15,7 @@ As stated earlier, we would like to improve our current locality aware load bala
 ### Use cases
 After gathering client's expectations and a couple of brainstorming sessions, we ended up with multiple use cases for locality aware load balancing:
 
-1. Keeping traffic in single zone
+1. Keeping traffic in single zone (disable all cross-zone traffic)
 2. Load balancing based on priorities within a zone. Example: node → AZ → region
 3. Prefer traffic in single zone with fallback to other zones
 4. Load balance equally to list of zones
