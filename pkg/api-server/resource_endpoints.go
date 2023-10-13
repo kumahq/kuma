@@ -9,7 +9,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -85,7 +84,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
-			core.Log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the response")
 		}
 	}
 }
@@ -297,7 +296,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		if verr, msg := mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
 			err.AddError("", verr)
 		} else if msg != "" {
-			core.Log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
+			log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
 		}
 	}
 	return err.OrNil()
