@@ -170,7 +170,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resou
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(resource.Descriptor().Name, opts.Name, opts.Mesh)
+		return store.ErrorResourceConflict(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
 }

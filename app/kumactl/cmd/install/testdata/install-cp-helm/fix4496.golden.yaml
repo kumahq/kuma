@@ -374,6 +374,8 @@ metadata:
     "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
+  annotations: 
+    
 spec:
   replicas: 1
   minReadySeconds: 0

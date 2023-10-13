@@ -87,7 +87,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 }
 
 func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
-	if err == DpTokenRequired || store.IsResourcePreconditionFailed(err) || validators.IsValidationError(err) {
+	if err == DpTokenRequired || validators.IsValidationError(err) {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {

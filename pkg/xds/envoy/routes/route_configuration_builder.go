@@ -1,7 +1,7 @@
 package routes
 
 import (
-	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -44,7 +44,7 @@ func (b *RouteConfigurationBuilder) Configure(opts ...RouteConfigurationBuilderO
 func (b *RouteConfigurationBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		routeConfiguration := envoy_route_v3.RouteConfiguration{
+		routeConfiguration := envoy_config_route_v3.RouteConfiguration{
 			Name: b.name,
 		}
 		for _, configurer := range b.configurers {

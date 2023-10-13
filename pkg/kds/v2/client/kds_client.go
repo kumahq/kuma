@@ -2,6 +2,7 @@ package client
 
 import (
 	"io"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -35,18 +36,26 @@ type KDSSyncClient interface {
 }
 
 type kdsSyncClient struct {
-	log           logr.Logger
-	resourceTypes []core_model.ResourceType
-	callbacks     *Callbacks
-	kdsStream     DeltaKDSStream
+	log             logr.Logger
+	resourceTypes   []core_model.ResourceType
+	callbacks       *Callbacks
+	kdsStream       DeltaKDSStream
+	responseBackoff time.Duration
 }
 
-func NewKDSSyncClient(log logr.Logger, rt []core_model.ResourceType, kdsStream DeltaKDSStream, cb *Callbacks) KDSSyncClient {
+func NewKDSSyncClient(
+	log logr.Logger,
+	rt []core_model.ResourceType,
+	kdsStream DeltaKDSStream,
+	cb *Callbacks,
+	responseBackoff time.Duration,
+) KDSSyncClient {
 	return &kdsSyncClient{
-		log:           log,
-		resourceTypes: rt,
-		kdsStream:     kdsStream,
-		callbacks:     cb,
+		log:             log,
+		resourceTypes:   rt,
+		kdsStream:       kdsStream,
+		callbacks:       cb,
+		responseBackoff: responseBackoff,
 	}
 }
 
@@ -78,7 +87,13 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			continue
 		}
-		if err := s.callbacks.OnResourcesReceived(received); err != nil {
+		err = s.callbacks.OnResourcesReceived(received)
+		if !received.IsInitialRequest {
+			// Execute backoff only on subsequent request.
+			// When client first connects, the server sends empty DeltaDiscoveryResponse for every resource type.
+			time.Sleep(s.responseBackoff)
+		}
+		if err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
 			if err := s.kdsStream.NACK(received.Type, err); err != nil {
 				if err == io.EOF {
