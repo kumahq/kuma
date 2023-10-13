@@ -256,6 +256,45 @@ default:
   - httpFilter:
       operation: Remove
     `),
+			Entry("modifications for MeshGateway", `
+targetRef:
+  kind: MeshGateway
+  name: gateway
+default:
+  appendModifications:
+  - cluster:
+      operation: Patch
+      jsonPatches:
+        - op: replace
+          path: /foo/bar
+          value: baz
+        - op: replace
+          path: /foo
+          value:
+            bar: baz
+  - listener:
+      operation: Add
+      value: |
+        name: xyz
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+  - networkFilter:
+      operation: AddFirst
+      value: |
+        name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: backend
+  - httpFilter:
+      operation: AddFirst
+      value: |
+        name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          dynamicStats: false
+    `),
 		)
 
 		type testCase struct {
