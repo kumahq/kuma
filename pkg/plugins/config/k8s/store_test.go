@@ -184,8 +184,7 @@ var _ = Describe("KubernetesStore", func() {
 			err = s.Update(context.Background(), config)
 
 			// then
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(`Resource conflict: type="Config" name="kuma-internal-config" mesh=""`))
+			Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
 		})
 	})
 

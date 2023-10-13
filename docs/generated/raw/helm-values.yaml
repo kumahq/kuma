@@ -51,7 +51,10 @@ controlPlane:
   # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
   minReadySeconds: 0
 
-  # -- Control Plane Pod Annotations
+  # -- Annotations applied only to the `Deployment` resource
+  deploymentAnnotations: {}
+
+  # -- Annotations applied only to the `Pod` resource
   podAnnotations: {}
 
   # Horizontal Pod Autoscaling configuration

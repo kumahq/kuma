@@ -116,32 +116,61 @@ var _ = Describe("MeshFaultInjection", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{
-							{
-								Key:   "kuma.io/service",
-								Value: "demo-client",
-							},
-						},
-						Conf: api.Conf{
-							Http: &[]api.FaultInjectionConf{
+					{Address: "127.0.0.1", Port: 17777}: {
+						{
+							Subset: core_rules.Subset{
 								{
-									Abort: &api.AbortConf{
-										HttpStatus: int32(444),
-										Percentage: intstr.FromString("12"),
-									},
-									Delay: &api.DelayConf{
-										Value:      *test.ParseDuration("55s"),
-										Percentage: intstr.FromString("55"),
-									},
-									ResponseBandwidth: &api.ResponseBandwidthConf{
-										Limit:      "111mbps",
-										Percentage: intstr.FromString("62.9"),
+									Key:   "kuma.io/service",
+									Value: "demo-client",
+								},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromString("12"),
+										},
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111mbps",
+											Percentage: intstr.FromString("62.9"),
+										},
 									},
 								},
 							},
 						},
-					}},
+						{
+							Subset: core_rules.Subset{
+								{
+									Key:   "kuma.io/service",
+									Value: "demo-client",
+									Not:   true,
+								},
+							},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: 111,
+											Percentage: intstr.FromInt32(11),
+										},
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("22s"),
+											Percentage: intstr.FromInt32(22),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "333mbps",
+											Percentage: intstr.FromString("33.3"),
+										},
+									},
+								},
+							},
+						},
+					},
 					{Address: "127.0.0.1", Port: 17778}: {{
 						Subset: core_rules.Subset{},
 						Conf: api.Conf{
