@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -125,6 +126,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Status: 401,
 			Title:  title,
 			Detail: unauthenticated.Error(),
+		}
+	case errors.Is(err, &envoyadmin.StreamNotConnectedError{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
 		}
 	case err == tokens.IssuerDisabled:
 		kumaErr = &types.Error{
