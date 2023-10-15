@@ -30,7 +30,7 @@ import (
 
 var runLog = controlPlaneLog.WithName("run")
 
-const gracefullyShutdownDuration = 3 * time.Second
+const gracefullyShutdownDuration = 5 * time.Second
 
 // This is the open file limit below which the control plane may not
 // reasonably have enough descriptors to accept all its clients.

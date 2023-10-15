@@ -158,9 +158,15 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
+		timer := time.AfterFunc(3 * time.Second, func() {
+			muxServerLog.Info("stopping forcefully")
+			grpcServer.Stop()
+			muxServerLog.Info("stopped forcefully")
+		})
+		defer timer.Stop()
 		muxServerLog.Info("stopping gracefully")
 		grpcServer.GracefulStop()
-		muxServerLog.Info("stopped")
+		muxServerLog.Info("stopped gracefully")
 		return nil
 	case err := <-errChan:
 		return err
