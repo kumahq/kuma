@@ -112,6 +112,15 @@ app: {{ include "kuma.name" . }}-control-plane
 {{- end }}
 
 {{/*
+control plane deployment annotations
+*/}}
+{{- define "kuma.cpDeploymentAnnotations" -}}
+{{- range $key, $value := $.Values.controlPlane.deploymentAnnotations }}
+{{ $key | quote }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
 ingress labels
 */}}
 {{- define "kuma.ingressLabels" -}}

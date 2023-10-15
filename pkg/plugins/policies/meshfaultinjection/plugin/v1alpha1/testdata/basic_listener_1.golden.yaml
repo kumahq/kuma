@@ -22,15 +22,40 @@ filterChains:
               numerator: 55
           headers:
           - name: x-kuma-tags
-            safeRegexMatch:
-              googleRe2: {}
-              regex: .*&kuma.io/service=[^&]*demo-client[,&].*
+            stringMatch:
+              safeRegex:
+                googleRe2: {}
+                regex: .*&kuma.io/service=[^&]*demo-client[,&].*
           responseRateLimit:
             fixedLimit:
               limitKbps: "111000"
             percentage:
               denominator: TEN_THOUSAND
               numerator: 6290
+      - name: envoy.filters.http.fault
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+          abort:
+            httpStatus: 111
+            percentage:
+              numerator: 11
+          delay:
+            fixedDelay: 22s
+            percentage:
+              numerator: 22
+          headers:
+          - invertMatch: true
+            name: x-kuma-tags
+            stringMatch:
+              safeRegex:
+                googleRe2: {}
+                regex: .*&kuma.io/service=[^&]*demo-client[,&].*
+          responseRateLimit:
+            fixedLimit:
+              limitKbps: "333000"
+            percentage:
+              denominator: MILLION
+              numerator: 333000
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

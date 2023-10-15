@@ -230,17 +230,20 @@ func listenersSelectedByMeshGatewayRef(
 	dpp *core_mesh.DataplaneResource,
 	gateway *core_mesh.MeshGatewayResource,
 ) []core_rules.InboundListener {
-	result := []core_rules.InboundListener{}
-	if name == gateway.GetMeta().GetName() {
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			if mesh_proto.TagSelector(tags).Matches(listener.GetTags()) {
-				result = append(result, core_rules.InboundListener{
-					Address: dpp.Spec.GetNetworking().GetAddress(),
-					Port:    listener.Port,
-				})
-			}
+	if gateway == nil || name != gateway.GetMeta().GetName() {
+		return nil
+	}
+
+	var result []core_rules.InboundListener
+	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+		if mesh_proto.TagSelector(tags).Matches(listener.GetTags()) {
+			result = append(result, core_rules.InboundListener{
+				Address: dpp.Spec.GetNetworking().GetAddress(),
+				Port:    listener.Port,
+			})
 		}
 	}
+
 	return result
 }
 

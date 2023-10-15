@@ -251,7 +251,7 @@ func (c *memoryStore) Get(_ context.Context, r core_model.Resource, fs ...store.
 		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if opts.Version != "" && opts.Version != record.Version.String() {
-		return store.ErrorResourcePreconditionFailed(r.Descriptor().Name, opts.Name, opts.Mesh)
+		return store.ErrorResourceConflict(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return c.unmarshalRecord(record, r)
 }

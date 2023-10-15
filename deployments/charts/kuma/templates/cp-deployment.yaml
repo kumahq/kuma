@@ -69,6 +69,7 @@ metadata:
   name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  annotations: {{ include "kuma.cpDeploymentAnnotations" . | nindent 4 }}
 spec:
   {{- if not .Values.controlPlane.autoscaling.enabled }}
   replicas: {{ .Values.controlPlane.replicas }}

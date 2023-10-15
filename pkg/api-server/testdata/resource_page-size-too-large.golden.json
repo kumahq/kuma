@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "size",
-   "reason": "Invalid page size of 2000. Maximum page size is 1000"
+   "reason": "invalid page size of 2000. Maximum page size is 1000"
   }
  ],
  "details": "Invalid page size",
  "causes": [
   {
    "field": "size",
-   "message": "Invalid page size of 2000. Maximum page size is 1000"
+   "message": "invalid page size of 2000. Maximum page size is 1000"
   }
  ]
 }
