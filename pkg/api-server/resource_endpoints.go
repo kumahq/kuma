@@ -108,6 +108,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			insight := r.descriptor.NewInsight()
 			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsResourceNotFound(err) {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				return
 			}
 			overview, ok := r.descriptor.NewOverview().(model.OverviewResource)
 			if !ok {

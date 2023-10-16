@@ -131,9 +131,9 @@ type ResourceTypeDescriptor struct {
 	HasFromTargetRef bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
-	// Insight the insights type attached to this resourceType
+	// Insight contains the insight type attached to this resourceType
 	Insight Resource
-	// Overview the overview type attached to this resourceType
+	// Overview contains the overview type attached to this resourceType
 	Overview Resource
 }
 
