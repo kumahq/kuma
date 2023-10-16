@@ -117,6 +117,10 @@ func (l *MeshCircuitBreakerResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshCircuitBreakerResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshCircuitBreakerType,
 	Resource:            NewMeshCircuitBreakerResource(),

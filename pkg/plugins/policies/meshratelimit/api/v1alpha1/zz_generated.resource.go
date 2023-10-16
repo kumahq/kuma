@@ -117,6 +117,10 @@ func (l *MeshRateLimitResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshRateLimitResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshRateLimitType,
 	Resource:            NewMeshRateLimitResource(),

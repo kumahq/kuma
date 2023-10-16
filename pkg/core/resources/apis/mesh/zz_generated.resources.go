@@ -103,6 +103,10 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *CircuitBreakerResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                CircuitBreakerType,
 	Resource:            NewCircuitBreakerResource(),
@@ -208,6 +212,10 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *DataplaneResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                DataplaneType,
 	Resource:            NewDataplaneResource(),
@@ -224,6 +232,8 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane",
 	PluralDisplayName:   "Dataplanes",
 	IsExperimental:      false,
+	Insight:             NewDataplaneInsightResource(),
+	Overview:            NewDataplaneOverviewResource(),
 }
 
 func init() {
@@ -313,6 +323,10 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *DataplaneInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                DataplaneInsightType,
 	Resource:            NewDataplaneInsightResource(),
@@ -382,6 +396,14 @@ func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneOverviewResourceTypeDescriptor
 }
 
+func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	return t.SetSpec(&mesh_proto.DataplaneOverview{
+		Dataplane:        resource.GetSpec().(*mesh_proto.Dataplane),
+		DataplaneInsight: insight.GetSpec().(*mesh_proto.DataplaneInsight),
+	})
+}
+
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
@@ -416,6 +438,10 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *DataplaneOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -516,6 +542,10 @@ func (l *ExternalServiceResourceList) AddItem(r model.Resource) error {
 
 func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ExternalServiceResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -631,6 +661,10 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *FaultInjectionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                FaultInjectionType,
 	Resource:            NewFaultInjectionResource(),
@@ -744,6 +778,10 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *HealthCheckResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                HealthCheckType,
 	Resource:            NewHealthCheckResource(),
@@ -847,6 +885,10 @@ func (l *MeshResourceList) AddItem(r model.Resource) error {
 
 func (l *MeshResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *MeshResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -958,6 +1000,10 @@ func (l *MeshGatewayResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshGatewayResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshGatewayType,
 	Resource:            NewMeshGatewayResource(),
@@ -1067,6 +1113,10 @@ func (l *MeshGatewayRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshGatewayRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshGatewayRouteType,
 	Resource:            NewMeshGatewayRouteResource(),
@@ -1170,6 +1220,10 @@ func (l *MeshInsightResourceList) AddItem(r model.Resource) error {
 
 func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *MeshInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1278,6 +1332,10 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 
 func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ProxyTemplateResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1393,6 +1451,10 @@ func (l *RateLimitResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *RateLimitResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                RateLimitType,
 	Resource:            NewRateLimitResource(),
@@ -1506,6 +1568,10 @@ func (l *RetryResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *RetryResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                RetryType,
 	Resource:            NewRetryResource(),
@@ -1611,6 +1677,10 @@ func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ServiceInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ServiceInsightType,
 	Resource:            NewServiceInsightResource(),
@@ -1714,6 +1784,10 @@ func (l *ServiceOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ServiceOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ServiceOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1822,6 +1896,10 @@ func (l *TimeoutResourceList) AddItem(r model.Resource) error {
 
 func (l *TimeoutResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *TimeoutResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1937,6 +2015,10 @@ func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficLogResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficLogType,
 	Resource:            NewTrafficLogResource(),
@@ -2048,6 +2130,10 @@ func (l *TrafficPermissionResourceList) AddItem(r model.Resource) error {
 
 func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *TrafficPermissionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -2163,6 +2249,10 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficRouteType,
 	Resource:            NewTrafficRouteResource(),
@@ -2270,6 +2360,10 @@ func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 
 func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *TrafficTraceResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -2381,6 +2475,10 @@ func (l *VirtualOutboundResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *VirtualOutboundResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                VirtualOutboundType,
 	Resource:            NewVirtualOutboundResource(),
@@ -2486,6 +2584,10 @@ func (l *ZoneEgressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneEgressResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneEgressType,
 	Resource:            NewZoneEgressResource(),
@@ -2502,6 +2604,8 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress",
 	PluralDisplayName:   "Zone Egresses",
 	IsExperimental:      false,
+	Insight:             NewZoneEgressInsightResource(),
+	Overview:            NewZoneEgressOverviewResource(),
 }
 
 func init() {
@@ -2591,6 +2695,10 @@ func (l *ZoneEgressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneEgressInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneEgressInsightType,
 	Resource:            NewZoneEgressInsightResource(),
@@ -2660,6 +2768,14 @@ func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	return t.SetSpec(&mesh_proto.ZoneEgressOverview{
+		ZoneEgress:        resource.GetSpec().(*mesh_proto.ZoneEgress),
+		ZoneEgressInsight: insight.GetSpec().(*mesh_proto.ZoneEgressInsight),
+	})
+}
+
 var _ model.ResourceList = &ZoneEgressOverviewResourceList{}
 
 type ZoneEgressOverviewResourceList struct {
@@ -2694,6 +2810,10 @@ func (l *ZoneEgressOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneEgressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneEgressOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -2796,6 +2916,10 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneIngressResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneIngressType,
 	Resource:            NewZoneIngressResource(),
@@ -2812,6 +2936,8 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress",
 	PluralDisplayName:   "Zone Ingresses",
 	IsExperimental:      false,
+	Insight:             NewZoneIngressInsightResource(),
+	Overview:            NewZoneIngressOverviewResource(),
 }
 
 func init() {
@@ -2901,6 +3027,10 @@ func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneIngressInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneIngressInsightType,
 	Resource:            NewZoneIngressInsightResource(),
@@ -2970,6 +3100,14 @@ func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor 
 	return ZoneIngressOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	return t.SetSpec(&mesh_proto.ZoneIngressOverview{
+		ZoneIngress:        resource.GetSpec().(*mesh_proto.ZoneIngress),
+		ZoneIngressInsight: insight.GetSpec().(*mesh_proto.ZoneIngressInsight),
+	})
+}
+
 var _ model.ResourceList = &ZoneIngressOverviewResourceList{}
 
 type ZoneIngressOverviewResourceList struct {
@@ -3004,6 +3142,10 @@ func (l *ZoneIngressOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneIngressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneIngressOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{

@@ -117,6 +117,10 @@ func (l *DoNothingPolicyResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *DoNothingPolicyResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                DoNothingPolicyType,
 	Resource:            NewDoNothingPolicyResource(),

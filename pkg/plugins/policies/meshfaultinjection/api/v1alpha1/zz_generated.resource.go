@@ -117,6 +117,10 @@ func (l *MeshFaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshFaultInjectionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshFaultInjectionType,
 	Resource:            NewMeshFaultInjectionResource(),

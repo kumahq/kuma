@@ -95,6 +95,10 @@ func (l *ConfigResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ConfigResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ConfigType,
 	Resource:            NewConfigResource(),
@@ -198,6 +202,10 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 
 func (l *SecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *SecretResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -305,6 +313,10 @@ func (l *ZoneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneType,
 	Resource:            NewZoneResource(),
@@ -320,6 +332,8 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone",
 	PluralDisplayName:   "Zones",
 	IsExperimental:      false,
+	Insight:             NewZoneInsightResource(),
+	Overview:            NewZoneOverviewResource(),
 }
 
 func init() {
@@ -409,6 +423,10 @@ func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneInsightType,
 	Resource:            NewZoneInsightResource(),
@@ -477,6 +495,14 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	return t.SetSpec(&system_proto.ZoneOverview{
+		Zone:        resource.GetSpec().(*system_proto.Zone),
+		ZoneInsight: insight.GetSpec().(*system_proto.ZoneInsight),
+	})
+}
+
 var _ model.ResourceList = &ZoneOverviewResourceList{}
 
 type ZoneOverviewResourceList struct {
@@ -511,6 +537,10 @@ func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{

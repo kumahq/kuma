@@ -117,6 +117,10 @@ func (l *MeshHealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshHealthCheckResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshHealthCheckType,
 	Resource:            NewMeshHealthCheckResource(),

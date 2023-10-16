@@ -117,6 +117,10 @@ func (l *MeshTrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshTrafficPermissionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshTrafficPermissionType,
 	Resource:            NewMeshTrafficPermissionResource(),
