@@ -49,19 +49,12 @@ type GlobalKDSServiceServer struct {
 	eventBus                events.EventBus
 	zoneHealthCheckInterval time.Duration
 	mesh_proto.UnimplementedGlobalKDSServiceServer
+	context context.Context
 }
 
-func NewGlobalKDSServiceServer(
-	envoyAdminRPCs EnvoyAdminRPCs,
-	resManager manager.ResourceManager,
-	instanceID string,
-	filters []StreamInterceptor,
-	extensions context.Context,
-	upsertCfg config_store.UpsertConfig,
-	eventBus events.EventBus,
-	zoneHealthCheckInterval time.Duration,
-) *GlobalKDSServiceServer {
+func NewGlobalKDSServiceServer(ctx context.Context, envoyAdminRPCs EnvoyAdminRPCs, resManager manager.ResourceManager, instanceID string, filters []StreamInterceptor, extensions context.Context, upsertCfg config_store.UpsertConfig, eventBus events.EventBus, zoneHealthCheckInterval time.Duration) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
+		context:                 ctx,
 		envoyAdminRPCs:          envoyAdminRPCs,
 		resManager:              resManager,
 		instanceID:              instanceID,
@@ -203,9 +196,12 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		}
 	}()
 	select {
+	case <-g.context.Done():
+		logger.Info("app context done")
+		return status.Error(codes.Unavailable, "stream unavailable")
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
-		return nil
+		return status.Error(codes.Canceled, "stream canceled")
 	case res := <-streamResult:
 		return res
 	}

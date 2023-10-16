@@ -185,6 +185,7 @@ func Setup(rt runtime.Runtime) error {
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(
+			rt.AppContext(),
 			rt.KDSContext().EnvoyAdminRPCs,
 			rt.ResourceManager(),
 			rt.GetInstanceId(),
@@ -195,6 +196,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration,
 		),
 		mux.NewKDSSyncServiceServer(
+			rt.AppContext(),
 			onGlobalToZoneSyncConnect,
 			onZoneToGlobalSyncConnect,
 			rt.KDSContext().GlobalServerFiltersV2,
