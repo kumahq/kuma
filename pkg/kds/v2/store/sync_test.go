@@ -49,7 +49,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		resourceStore = memory.NewStore()
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, metrics, context.Background())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 	})
 

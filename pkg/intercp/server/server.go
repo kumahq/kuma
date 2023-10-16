@@ -102,8 +102,9 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
-		log.Info("stopping")
+		log.Info("stopping gracefully")
 		d.grpcServer.GracefulStop()
+		log.Info("stopped")
 		return nil
 	case err := <-errChan:
 		return err
