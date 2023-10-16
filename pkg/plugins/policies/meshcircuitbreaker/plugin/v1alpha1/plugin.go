@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -14,7 +12,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -54,7 +52,7 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToGateways(ctx, policies.ToRules, clusters.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.ToRules, clusters.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -110,22 +108,13 @@ func applyToOutbounds(
 }
 
 func applyToGateways(
-	ctx xds_context.Context,
 	rules core_rules.ToRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	proxy *core_xds.Proxy,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
-
-	for _, listenerInfo := range gatewayListenerInfos {
+	for _, listenerInfo := range gateway.ExtractGatewayListener(proxy) {
 		for _, hostInfo := range listenerInfo.HostInfos {
-			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
+			destinations := gateway.RouteDestinationsMutable(hostInfo.Entries)
 			for _, dest := range destinations {
 				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
 				if err != nil {

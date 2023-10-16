@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
@@ -44,7 +42,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateway(ctx, policies.ToRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
+	if err := applyToGateway(policies.ToRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -80,22 +78,12 @@ func applyToOutbounds(
 }
 
 func applyToGateway(
-	ctx xds_context.Context,
 	rules core_rules.ToRules,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
-
-	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
-
-	for _, listenerInfo := range gatewayListerInfos {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
 		configurer := plugin_xds.Configurer{
 			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset()),
 			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),

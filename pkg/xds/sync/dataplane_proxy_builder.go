@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -56,13 +56,21 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	secretsTracker := envoy.NewSecretsTracker(meshName, allMeshNames)
 
 	proxy := &core_xds.Proxy{
-		Id:             core_xds.FromResourceKey(key),
-		APIVersion:     p.APIVersion,
-		Dataplane:      dp,
-		Routing:        *routing,
-		Policies:       *matchedPolicies,
-		SecretsTracker: secretsTracker,
-		Metadata:       &core_xds.DataplaneMetadata{},
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.APIVersion,
+		Dataplane:         dp,
+		Routing:           *routing,
+		Policies:          *matchedPolicies,
+		SecretsTracker:    secretsTracker,
+		Metadata:          &core_xds.DataplaneMetadata{},
+		Zone:              p.Zone,
+		RuntimeExtensions: map[string]interface{}{},
+	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, meshContext, proxy)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed applying proxy plugin: %s", k)
+		}
 	}
 	return proxy, nil
 }
@@ -159,7 +167,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
-	for name, p := range plugins.Plugins().PolicyPlugins() {
+	for name, p := range core_plugins.Plugins().PolicyPlugins() {
 		res, err := p.MatchedPolicies(dataplane, resources)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)

@@ -460,6 +460,10 @@ var _ = Describe("MeshTimeout", func() {
 					}},
 				},
 			},
+			RuntimeExtensions: map[string]interface{}{},
+		}
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
 		}
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)

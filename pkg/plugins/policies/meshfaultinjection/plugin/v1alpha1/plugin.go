@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -47,7 +45,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateways(ctx, policies.FromRules, listeners.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.FromRules, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -86,7 +84,6 @@ func applyToInbounds(
 }
 
 func applyToGateways(
-	ctx xds_context.Context,
 	fromRules core_rules.FromRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
@@ -94,11 +91,7 @@ func applyToGateways(
 	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
-	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
-	for _, listenerInfo := range gatewayListerInfos {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
 		protocol := core_mesh.ParseProtocol(mesh_proto.MeshGateway_Listener_Protocol_name[int32(listenerInfo.Listener.Protocol)])

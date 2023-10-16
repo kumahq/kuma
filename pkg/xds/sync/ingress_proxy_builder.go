@@ -3,8 +3,11 @@ package sync
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -42,7 +45,14 @@ func (p *IngressProxyBuilder) Build(
 	proxy := &core_xds.Proxy{
 		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
+		Zone:             p.zone,
 		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
+	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed applying proxy plugin: %s", k)
+		}
 	}
 	return proxy, nil
 }
