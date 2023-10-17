@@ -108,15 +108,6 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 		case e := <-connectionWatch.Recv():
 			newStream := e.(service.ZoneOpenedStream)
 
-			ctx := multitenant.WithTenant(context.TODO(), newStream.TenantID)
-			zoneInsight := system.NewZoneInsightResource()
-
-			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
-			if err := zw.rm.Get(ctx, zoneInsight, store.GetByKey(newStream.Zone, model.NoMesh)); err != nil {
-				log.Info("error getting ZoneInsight", "zone", newStream.Zone)
-				continue
-			}
-
 			// We keep a record of the time we open a stream.
 			// This is to prevent the zone from timing out on a poll
 			// where the last health check is still from a previous connect, so:
