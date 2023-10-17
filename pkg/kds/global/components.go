@@ -182,6 +182,7 @@ func Setup(rt runtime.Runtime) error {
 		onSessionStarted,
 		rt.KDSContext().GlobalServerFilters,
 		rt.KDSContext().ServerStreamInterceptors,
+		rt.KDSContext().ServerUnaryInterceptor,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
 		service.NewGlobalKDSServiceServer(
