@@ -65,6 +65,7 @@ type server struct {
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
 	streamInterceptors   []grpc.StreamServerInterceptor
+	unaryInterceptors    []grpc.UnaryServerInterceptor
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -74,6 +75,7 @@ func NewServer(
 	callbacks Callbacks,
 	filters []Filter,
 	streamInterceptors []grpc.StreamServerInterceptor,
+	unaryInterceptors []grpc.UnaryServerInterceptor,
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
@@ -87,6 +89,7 @@ func NewServer(
 		serviceServer:        serviceServer,
 		kdsSyncServiceServer: kdsSyncServiceServer,
 		streamInterceptors:   streamInterceptors,
+		unaryInterceptors:    unaryInterceptors,
 	}
 }
 
@@ -127,6 +130,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(
 		grpcOptions,
+		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
 		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
