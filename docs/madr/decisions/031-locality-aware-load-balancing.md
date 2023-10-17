@@ -39,41 +39,43 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: ["k8s.io/node", "k8s.io/az"] # (1)
-      crossZone: # (2)
-        rules: # (3)
-          - groups: # (4)
-            - name: "group1" # (5)
+      localZone:
+        affinityTags: ["k8s.io/node", "k8s.io/az"]          # (1)
+      crossZone:                                            # (2)
+        failover:                                           # (3)
+          - from:                                           # (4)
               zones: ["zone-1", "zone-2"]
-            - name: "group2"
-              zones: ["zone-3", "zone-4"]
-          - groups:
-            - zones: ["zone-5"]
-        fallback: # (6)
-          type: Any # (7)
-          exclude: # (8)
-            zones: ["zone-6"]
-      overprovisioningFactor: 120% # (9)
+            to:                                             # (5)
+              type: Only                                    # (6)
+              zones: ["zone-1", "zone-2"]
+          - from:
+              zones: ["zone-3"]
+            to:
+              type: AnyExcept
+              zones: ["zone-1"]
+          - to:
+              type: Any
+      overprovisioningFactor: 120%                          # (7)
 ```
 
 
-(1) In `inZone` section, you configure the priorities of tags used for load balancing. If list is empty or inZone is not specified, load balancing works normally, without taking any priorities into account. 
+(1) In `localZone` section, you configure the affinity of tags used for load balancing. If list is empty or localZone is not specified, load balancing works normally, without taking any priorities into account. 
 
 (2) In `crossZone` section, you configure zones priority.
 
-(3) In `rules` section, you configure list of zone groups priorities, first groups will have the highest load balancing priority and last in order will have the lowest priority.
+(3) In `failover` section, you configure list of zone priorities, first rules will have the highest load balancing priority and last in order will have the lowest priority.
 
-(4) In `groups` section, you configure logical zone groups. Let's assume `zone-1` and `zone-2` are located in the same datacenter, so you want to load balance equally between them. `Zone-5` is located in another datacenter so it should have lower priority, that is why it is in the second groups entry.
+(4) In `from` section, you configure to which zones this rule applies. This rule will apply to all DPPs in `zone-1` and `zone-2`
 
-(5) In the `name` section, you can assign a name to the group, which is later used for matching when there are multiple groups. If no group name is provided, the values from the group will apply to all entries in previous groups.
+(5) In `to` section, you configure to which zones traffic should be redirected.
 
-(6) In `fallback` section, you can configure the default behaviour in case of other zones fail, or exclude specific zones.
+(6) `type` field lets you control how fallback zones are picked. Allowed values: 
+- `Only` - will load balance traffic only to zones listed in `zones` field 
+- `None` - will not load balance traffic any further
+- `Any` - will load balance traffic to all zones
+- `AnyExcept` - will load balance traffic to all zones except ones specified in `zones` field
 
-(7) At last we should apply some fallback if no dataplanes from previous configuration are available, at this moment we allow `Fail` and `Any` fallback. Default value `Fail`'
-
-(8) In `exclude` section, you can configure which zones shouldn't take part in the routing
-
-(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early [Envoy] should consider other priorities.
+(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities.
 
 
 ### API examples based on use cases
@@ -89,7 +91,8 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone: 
+        affinityTags: []
 ```
 
 ![Use case 1](assets/031/use_case_1.png)
@@ -105,7 +108,8 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: ["k8s.io/node", "k8s.io/az"]
+      localZone:
+        affinityTags: ["k8s.io/node", "k8s.io/az"]
 ```
 
 ![Use case 2](assets/031/use_case_2_1.png)
@@ -123,10 +127,12 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone:
+        affinityTags: []
       crossZone:
-        fallback:
-          type: Any
+        failover:
+          - to: 
+              type: Any
 ```
 
 ![Use case 3](assets/031/use_case_3_1.png)
@@ -144,13 +150,13 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone:
+        affinityTags: []
       crossZone:
-        - groups:
-          - name: "group1"
-            zones: ["zone-1", "zone-3"]
-        fallback:
-          type: Fail
+        failover:
+          - to:
+              type: Only
+              zones: ["zone-1", "zone-3"]
 ```
 
 ![Use case 4](assets/031/use_case_4_1.png)
@@ -168,14 +174,16 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone:
+        affinityTags: []
       crossZone:
-        - groups:
-          - zones: ["zone-1"]
-            name: "group1"
-        - groups:
-          - zones: ["zone-3"]
-            name: "group1"
+        failover:
+          - to:
+              type: Only
+              zones: ["zone-1"]
+          - to:
+              type: Only
+              zones: ["zone-3"]
 ```
 
 ![Use case 5](assets/031/use_case_5_1.png)
@@ -193,12 +201,13 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone:
+        affinityTags: []
       crossZone:
-        fallback:
-          type: Any
-          exclude:
-            zones: ["zone-3"]
+        failover:
+          - to:
+              type: AnyExcept
+              zones: ["zone-3"]
 ```
 
 
@@ -221,18 +230,20 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      inZone: []
+      localZone:
+        affinityTags: []
       crossZone:
-        - groups:
-          - name: "us"
-            zones: ["us-east", "us-west"]
-          - name: "eu"
-            zones: ["eu-east"]
-        - groups:
-          - name: "eu"
-            zones: ["eu-east2"]
-        fallback:
-          type: Fail
+        failover:
+          - from: 
+              zones: ["us-1", "us-2", "us-3"]
+            to:
+              type: Only
+              zones: ["us-1", "us-2", "us-3"]
+          - from:
+              zones: ["eu-1", "eu-2", "eu-2"]
+            to:
+              type: Only
+              zones: ["eu-1", "eu-2", "eu-2"]
 ```
 
 #### Load balance equally to local and zone
