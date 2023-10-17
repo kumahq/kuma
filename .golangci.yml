@@ -34,7 +34,6 @@ run:
   modules-download-mode: readonly
   skip-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
   skip-dirs:
-    - pkg/transparentproxy/istio/tools
     - (^|/)vendored($|/)
   timeout: 30m
 

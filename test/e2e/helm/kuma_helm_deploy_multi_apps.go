@@ -38,16 +38,6 @@ func AppDeploymentWithHelmChart() {
 				WithRetries(60)
 
 			annotations := map[string]string{}
-			if cniVersion == CNIVersion1 {
-				if c, msg := cluster.(*K8sCluster).K8sVersionCompare("1.22.0", "k8s cluster doesn't support legacy CNI"); c >= 0 {
-					// k3s from version 1.22 comes with flannel CNI plugin in version 1,
-					// which is not supported with our default/legacy kuma-cni plugin
-					// (max supported version is 0.4)
-					Skip(msg)
-				}
-				annotations["kuma.io/builtindns"] = "enabled"
-				annotations["kuma.io/builtindnsport"] = "15053"
-			}
 
 			minReplicas := 3
 			err := NewClusterSetup().
@@ -57,7 +47,7 @@ func AppDeploymentWithHelmChart() {
 					WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 					WithHelmOpt("controlPlane.autoscaling.enabled", "true"),
 					WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
-					WithCNI(cniVersion),
+					WithCNI(),
 				)).
 				Install(MeshKubernetes("default")).
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -92,7 +82,6 @@ func AppDeploymentWithHelmChart() {
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
 		},
-		Entry("with cni v1 (legacy)", CNIVersion1),
 		Entry("with cni v2 (default)", CNIVersion2),
 	)
 }

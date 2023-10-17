@@ -55,9 +55,9 @@ spec:
       {{- toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: install-cni
-          {{- if not .Values.legacy.cni.enabled }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
+          {{- if not  .Values.experimental.ebpf.enabled  }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
             exec:
@@ -66,11 +66,10 @@ spec:
                 - /tmp/ready
           command: [ "sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
-          {{- else if .Values.experimental.ebpf.enabled }}
+          {{- else }}
           {{- with .Values.cni.experimental.imageEbpf }}
           image: {{ printf "%s/%s:%s" .registry .repository .tag | quote }}
           {{- end }}
-          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           args:
           - /app/mbctl
           - --mode=kuma
@@ -86,11 +85,6 @@ spec:
                 - make
                 - --keep-going
                 - clean
-          {{- else }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.legacy.cni.image "root" $) | quote }}
-          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
-          command: [ "/bin/sh", "-c", "--" ]
-          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
           {{- end }}
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}

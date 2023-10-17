@@ -82,7 +82,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				Enabled: true,
 				Port:    15053,
 			},
-			TransparentProxyV1: false,
 			EBPF: EBPF{
 				Enabled:              false,
 				InstanceIPEnvVarName: "INSTANCE_IP",
@@ -200,8 +199,6 @@ type Injector struct {
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
 	CaCertFile string     `json:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
 	BuiltinDNS BuiltinDNS `json:"builtinDNS"`
-	// TransparentProxyV1 enables the legacy transparent proxy engine for all workloads
-	TransparentProxyV1 bool `json:"transparentProxyV1" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_v1"`
 	// EBPF is a configuration for ebpf if transparent proxy should be installed
 	// using ebpf instead of iptables
 	EBPF EBPF `json:"ebpf"`
