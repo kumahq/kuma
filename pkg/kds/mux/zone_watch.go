@@ -121,7 +121,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			zw.zones[zoneTenant{
 				tenantID: newStream.TenantID,
 				zone:     newStream.Zone,
-			}] = time.Now()
+			}] = core.Now()
 		case <-stop:
 			return nil
 		}
