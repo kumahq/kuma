@@ -230,36 +230,6 @@ func addResourcesEndpoints(
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
 ) {
-	dpOverviewEndpoints := dataplaneOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-		filter:         filters.Resource(mesh.DataplaneResourceTypeDescriptor),
-	}
-	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
-	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
-	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
-
-	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneOverviewEndpoints.addFindEndpoint(ws)
-	zoneOverviewEndpoints.addListEndpoint(ws)
-
-	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
-	zoneIngressOverviewEndpoints.addListEndpoint(ws)
-
-	zoneEgressOverviewEndpoints := zoneEgressOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneEgressOverviewEndpoints.addFindEndpoint(ws)
-	zoneEgressOverviewEndpoints.addListEndpoint(ws)
-
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,

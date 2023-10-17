@@ -117,6 +117,10 @@ func (l *MeshRetryResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshRetryResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshRetryType,
 	Resource:            NewMeshRetryResource(),

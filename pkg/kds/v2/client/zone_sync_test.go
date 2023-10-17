@@ -37,7 +37,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			core.Log.WithName("kds-sink"),
 			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
 			client_v2.NewDeltaKDSStream(cs, zoneName, ""),
-			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"), 0,
 		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
@@ -89,7 +89,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		zoneStore = memory.NewStore()
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, metrics, context.Background())
+		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		wg.Add(1)

@@ -47,7 +47,7 @@ type (
 	DbVersion           = uint
 	ResourceStorePlugin interface {
 		Plugin
-		NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
+		NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, core_store.Transactions, error)
 		Migrate(PluginContext, PluginConfig) (DbVersion, error)
 		EventListener(PluginContext, events.Emitter) error
 	}

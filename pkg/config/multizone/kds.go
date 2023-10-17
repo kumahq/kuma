@@ -37,6 +37,11 @@ type KdsServerConfig struct {
 	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_global_kds_nack_backoff"`
 	// DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
 	DisableSOTW bool `json:"disableSOTW" envconfig:"kuma_multizone_global_kds_disable_sotw"`
+	// ResponseBackoff is a time Global CP waits before sending ACK/NACK.
+	// This is a way to slow down Zone CP from sending resources too often.
+	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_global_kds_response_backoff"`
+	// ZoneHealthCheck holds config for ensuring zones are online
+	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -70,6 +75,9 @@ func (c *KdsServerConfig) Validate() error {
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
+	if err := c.ZoneHealthCheck.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, "invalid zoneHealthCheck config"))
+	}
 	return errs
 }
 
@@ -88,6 +96,9 @@ type KdsClientConfig struct {
 	MsgSendTimeout config_types.Duration `json:"msgSendTimeout" envconfig:"kuma_multizone_zone_kds_msg_send_timeout"`
 	// Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane.
 	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_zone_kds_nack_backoff"`
+	// ResponseBackoff is a time Zone CP waits before sending ACK/NACK.
+	// This is a way to slow down Global CP from sending resources too often.
+	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_zone_kds_response_backoff"`
 }
 
 var _ config.Config = &KdsClientConfig{}
@@ -96,5 +107,24 @@ func (k KdsClientConfig) Sanitize() {
 }
 
 func (k KdsClientConfig) Validate() error {
+	return nil
+}
+
+type ZoneHealthCheckConfig struct {
+	// PollInterval is the interval between the global CP checking ZoneInsight for
+	// health check pings and interval between zone CP sending health check pings
+	PollInterval config_types.Duration `json:"pollInterval" envconfig:"kuma_multizone_global_kds_zone_health_check_poll_interval"`
+	// Timeout is the time after the last health check that a zone counts as
+	// no longer online
+	Timeout config_types.Duration `json:"timeout" envconfig:"kuma_multizone_global_kds_zone_health_check_timeout"`
+}
+
+func (c ZoneHealthCheckConfig) Sanitize() {
+}
+
+func (c ZoneHealthCheckConfig) Validate() error {
+	if (c.Timeout.Duration > 0) != (c.PollInterval.Duration > 0) {
+		return errors.New("timeout and pollInterval must both be either set or unset")
+	}
 	return nil
 }

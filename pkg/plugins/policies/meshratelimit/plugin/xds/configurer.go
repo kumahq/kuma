@@ -17,18 +17,18 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	rate_limit "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
-func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitConfiguration {
+func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLimitConfiguration {
 	if pointer.Deref(rl.Disabled) || rl.RequestRate == nil {
 		return nil
 	}
 
-	onRateLimit := &rate_limit.OnRateLimit{}
+	onRateLimit := &envoy_routes_v3.OnRateLimit{}
 	if rl.OnRateLimit != nil {
 		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
-			onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+			onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 				Key:    string(h.Name),
 				Value:  string(h.Value),
 				Append: true,
@@ -36,7 +36,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 		}
 		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
 			for _, val := range strings.Split(string(header.Value), ",") {
-				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+				onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 					Key:    string(header.Name),
 					Value:  val,
 					Append: false,
@@ -46,7 +46,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 		onRateLimit.Status = pointer.Deref(rl.OnRateLimit.Status)
 	}
 
-	return &rate_limit.RateLimitConfiguration{
+	return &envoy_routes_v3.RateLimitConfiguration{
 		Interval:    rl.RequestRate.Interval.Duration,
 		Requests:    rl.RequestRate.Num,
 		OnRateLimit: onRateLimit,
@@ -82,7 +82,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 		return nil
 	}
 
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(rlConf)
+	rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(rlConf)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 		return nil
 	}
 
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(rlConf)
+	rateLimit, err := envoy_routes_v3.NewRateLimitConfiguration(rlConf)
 	if err != nil {
 		return err
 	}

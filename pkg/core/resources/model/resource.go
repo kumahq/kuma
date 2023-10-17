@@ -81,6 +81,15 @@ func Validate(resource Resource) error {
 	return nil
 }
 
+type OverviewResource interface {
+	SetOverviewSpec(resource Resource, insight Resource) error
+}
+
+type ResourceWithInsights interface {
+	NewInsightList() ResourceList
+	NewOverviewList() ResourceList
+}
+
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -122,13 +131,17 @@ type ResourceTypeDescriptor struct {
 	HasFromTargetRef bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
+	// Insight contains the insight type attached to this resourceType
+	Insight Resource
+	// Overview contains the overview type attached to this resourceType
+	Overview Resource
 }
 
-func (d ResourceTypeDescriptor) NewObject() Resource {
-	specType := reflect.TypeOf(d.Resource.GetSpec()).Elem()
+func newObject(baseResource Resource) Resource {
+	specType := reflect.TypeOf(baseResource.GetSpec()).Elem()
 	newSpec := reflect.New(specType).Interface().(ResourceSpec)
 
-	resType := reflect.TypeOf(d.Resource).Elem()
+	resType := reflect.TypeOf(baseResource).Elem()
 	resource := reflect.New(resType).Interface().(Resource)
 
 	if err := resource.SetSpec(newSpec); err != nil {
@@ -138,9 +151,45 @@ func (d ResourceTypeDescriptor) NewObject() Resource {
 	return resource
 }
 
+func (d ResourceTypeDescriptor) NewObject() Resource {
+	return newObject(d.Resource)
+}
+
 func (d ResourceTypeDescriptor) NewList() ResourceList {
 	listType := reflect.TypeOf(d.ResourceList).Elem()
 	return reflect.New(listType).Interface().(ResourceList)
+}
+
+func (d ResourceTypeDescriptor) HasInsights() bool {
+	return d.Insight != nil
+}
+
+func (d ResourceTypeDescriptor) NewInsight() Resource {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return newObject(d.Insight)
+}
+
+func (d ResourceTypeDescriptor) NewInsightList() ResourceList {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return d.Insight.Descriptor().NewList()
+}
+
+func (d ResourceTypeDescriptor) NewOverview() Resource {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return newObject(d.Overview)
+}
+
+func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return d.Overview.Descriptor().NewList()
 }
 
 type TypeFilter interface {
@@ -293,6 +342,7 @@ type ResourceList interface {
 	NewItem() Resource
 	AddItem(Resource) error
 	GetPagination() *Pagination
+	SetPagination(pagination Pagination)
 }
 
 type Pagination struct {

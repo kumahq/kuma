@@ -279,7 +279,7 @@ func ExecuteStoreTests(
 				err = s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 				// then resource precondition failed error occurred
-				Expect(store.IsResourcePreconditionFailed(err)).To(BeTrue())
+				Expect(err).Should(MatchError(&store.ResourceConflictError{}))
 			})
 		})
 

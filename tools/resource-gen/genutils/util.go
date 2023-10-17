@@ -64,6 +64,7 @@ type ResourceInfo struct {
 	PluralDisplayName        string
 	IsExperimental           bool
 	AdditionalPrinterColumns []string
+	HasInsights              bool
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -84,6 +85,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		PluralDisplayName:        r.PluralDisplayName,
 		IsExperimental:           r.IsExperimental,
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
+		HasInsights:              r.HasInsights,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

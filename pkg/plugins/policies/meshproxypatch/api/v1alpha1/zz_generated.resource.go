@@ -117,6 +117,10 @@ func (l *MeshProxyPatchResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshProxyPatchResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshProxyPatchType,
 	Resource:            NewMeshProxyPatchResource(),

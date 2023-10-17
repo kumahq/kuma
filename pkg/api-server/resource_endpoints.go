@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -43,36 +44,86 @@ type resourceEndpoints struct {
 	filter         func(request *restful.Request) (store.ListFilterFunc, error)
 }
 
+func typeToLegacyOverviewPath(resourceType model.ResourceType) string {
+	switch resourceType {
+	case mesh.ZoneEgressType:
+		return "zoneegressoverviews"
+	case mesh.ZoneIngressType:
+		return "zoneingresses+insights"
+	case mesh.DataplaneType:
+		return "dataplanes+insights"
+	case system.ZoneType:
+		return "zones+insights"
+	default:
+		return ""
+	}
+}
+
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
+	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource(false)).
 		Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
+	if r.descriptor.HasInsights() {
+		route := r.findResource(true)
+		ws.Route(ws.GET(pathPrefix+"/{name}/-overview").To(route).
+			Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.WsPath)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(404, "Not found", nil))
+		// Backward compatibility with previous path for overviews
+		if legacyPath := typeToLegacyOverviewPath(r.descriptor.Name); legacyPath != "" {
+			ws.Route(ws.GET(strings.Replace(pathPrefix, r.descriptor.WsPath, legacyPath, 1)+"/{name}").To(route).
+				Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.WsPath)).
+				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+				Returns(200, "OK", nil).
+				Returns(404, "Not found", nil))
+		}
+	}
 }
 
-func (r *resourceEndpoints) findResource(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	meshName := r.meshFromRequest(request)
+func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful.Request, response *restful.Response) {
+	return func(request *restful.Request, response *restful.Response) {
+		name := request.PathParameter("name")
+		meshName := r.meshFromRequest(request)
 
-	if err := r.resourceAccess.ValidateGet(
-		request.Request.Context(),
-		model.ResourceKey{Mesh: meshName, Name: name},
-		r.descriptor,
-		user.FromCtx(request.Request.Context()),
-	); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-		return
-	}
+		if err := r.resourceAccess.ValidateGet(
+			request.Request.Context(),
+			model.ResourceKey{Mesh: meshName, Name: name},
+			r.descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
+		}
 
-	resource := r.descriptor.NewObject()
-	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
-	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-	} else {
+		resource := r.descriptor.NewObject()
+		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			return
+		}
+		if withInsight {
+			insight := r.descriptor.NewInsight()
+			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsResourceNotFound(err) {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				return
+			}
+			overview, ok := r.descriptor.NewOverview().(model.OverviewResource)
+			if !ok {
+				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
+				return
+			}
+			if err := overview.SetOverviewSpec(resource, insight); err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				return
+			}
+			resource = overview.(model.Resource)
+		}
 		var res interface{}
 		switch request.QueryParameter("format") {
 		case "k8s", "kubernetes":
+			var err error
 			res, err = r.k8sMapper(resource, request.QueryParameter("namespace"))
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "k8s mapping failed")
@@ -85,53 +136,111 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
-			core.Log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the response")
 		}
 	}
 }
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.GET(pathPrefix).To(r.listResources).
+	ws.Route(ws.GET(pathPrefix).To(r.listResources(false)).
 		Doc(fmt.Sprintf("List of %s", r.descriptor.Name)).
-		Param(ws.PathParameter("size", "size of page").DataType("int")).
-		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
+		Param(ws.QueryParameter("size", "size of page").DataType("int")).
+		Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
+		Param(ws.QueryParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
 		Returns(200, "OK", nil))
+	if r.descriptor.HasInsights() {
+		route := r.listResources(true)
+		ws.Route(ws.GET(pathPrefix+"/-overview").To(route).
+			Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
+			Param(ws.QueryParameter("size", "size of page").DataType("int")).
+			Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
+			Param(ws.PathParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(404, "Not found", nil))
+		// Backward compatibility with previous path for overviews
+		if legacyPath := typeToLegacyOverviewPath(r.descriptor.Name); legacyPath != "" {
+			ws.Route(ws.GET(strings.Replace(pathPrefix, r.descriptor.WsPath, legacyPath, 1)).To(route).
+				Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
+				Param(ws.QueryParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
+				Returns(200, "OK", nil).
+				Returns(404, "Not found", nil))
+		}
+	}
 }
 
-func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
-	meshName := r.meshFromRequest(request)
+func (r *resourceEndpoints) listResources(withInsight bool) func(request *restful.Request, response *restful.Response) {
+	return func(request *restful.Request, response *restful.Response) {
+		meshName := r.meshFromRequest(request)
 
-	if err := r.resourceAccess.ValidateList(
-		request.Request.Context(),
-		meshName,
-		r.descriptor,
-		user.FromCtx(request.Request.Context()),
-	); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-		return
-	}
+		if err := r.resourceAccess.ValidateList(
+			request.Request.Context(),
+			meshName,
+			r.descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
+		}
 
-	page, err := pagination(request)
-	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-		return
-	}
-	filter, err := r.filter(request)
-	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-		return
-	}
-
-	list := r.descriptor.NewList()
-	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByFilterFunc(filter), store.ListByPage(page.size, page.offset)); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-	} else {
+		page, err := pagination(request)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			return
+		}
+		filter, err := r.filter(request)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			return
+		}
+		nameContains := request.QueryParameter("name")
+		list := r.descriptor.NewList()
+		if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter), store.ListByPage(page.size, page.offset)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			return
+		}
+		if withInsight {
+			// we cannot paginate insights since there is no guarantee that the insights elements will be the same as regular entities
+			insights := r.descriptor.NewInsightList()
+			if err := r.resManager.List(request.Request.Context(), insights, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter)); err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+				return
+			}
+			list, err = r.MergeInOverview(list, insights)
+			if err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Failed merging overview and insights")
+				return
+			}
+		}
 		restList := rest.From.ResourceList(list)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
 		}
 	}
+}
+
+func (r *resourceEndpoints) MergeInOverview(resources model.ResourceList, insights model.ResourceList) (model.ResourceList, error) {
+	insightsByKey := map[model.ResourceKey]model.Resource{}
+	for _, insight := range insights.GetItems() {
+		insightsByKey[model.MetaToResourceKey(insight.GetMeta())] = insight
+	}
+
+	items := r.descriptor.NewOverviewList()
+	for _, resource := range resources.GetItems() {
+		overview, ok := items.NewItem().(model.OverviewResource)
+		if !ok {
+			return nil, fmt.Errorf("type overview for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name)
+		}
+		if err := overview.SetOverviewSpec(resource, insightsByKey[model.MetaToResourceKey(resource.GetMeta())]); err != nil {
+			return nil, err
+		}
+
+		if err := items.AddItem(overview.(model.Resource)); err != nil {
+			return nil, err
+		}
+	}
+	items.SetPagination(*resources.GetPagination())
+	return items, nil
 }
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -166,18 +275,21 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if err := r.validateResourceRequest(request, resourceRest.GetMeta()); err != nil {
+	create := false
+	resource := r.descriptor.NewObject()
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsResourceNotFound(err) {
+		create = true
+	} else if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
+	}
+
+	if err := r.validateResourceRequest(request, resourceRest.GetMeta(), create); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
 
-	resource := r.descriptor.NewObject()
-	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-		if store.IsResourceNotFound(err) {
-			r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
-		} else {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
-		}
+	if create {
+		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
 	} else {
 		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
 	}
@@ -272,7 +384,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta) error {
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta, create bool) error {
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
@@ -288,7 +400,15 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
+	if create {
+		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
+	} else {
+		if verr, msg := mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
+			err.AddError("", verr)
+		} else if msg != "" {
+			log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
+		}
+	}
 	return err.OrNil()
 }
 

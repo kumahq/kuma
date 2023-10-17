@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "size",
-   "reason": "Invalid format"
+   "reason": "invalid format"
   }
  ],
  "details": "Invalid page size",
  "causes": [
   {
    "field": "size",
-   "message": "Invalid format"
+   "message": "invalid format"
   }
  ]
 }

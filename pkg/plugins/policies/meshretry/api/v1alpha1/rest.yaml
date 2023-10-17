@@ -1,8 +1,9 @@
-openapi: 3.0.1
+openapi: 3.0.3
 info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
+  x-ref-schema-name: "MeshRetry"
 
 paths:
   /meshes/{mesh}/meshretries/{name}:
@@ -24,11 +25,7 @@ paths:
           description: name of the MeshRetry
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: 'schema.yaml'
+          $ref: "#/components/responses/MeshRetryItem"
 
     put:
       summary: Creates or Updates MeshRetry entity
@@ -47,12 +44,12 @@ paths:
           required: true
           description: name of the MeshRetry
       requestBody:
-        description: MeshRetry entity
+        description: Put request
         required: true
         content:
           application/json:
             schema:
-              $ref: 'schema.yaml'
+              $ref: '#/components/schemas/MeshRetryItem'
       responses:
         '200':
           description: Updated
@@ -93,37 +90,33 @@ paths:
           description: name of the mesh
       responses:
         '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+          $ref: "#/components/responses/MeshRetryList"
 
-
-  /meshretries:
-    get:
-      summary: Returns a list of MeshRetry from all meshes
-      tags: [ "MeshRetry" ]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: 'schema.yaml'
-                  next:
-                    type: string
-                    description: URL to the next page
+components:
+  schemas:
+    MeshRetryItem:
+      $ref: 'schema.yaml'
+  responses:
+    MeshRetryItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshRetryItem'
+    MeshRetryList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshRetryItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

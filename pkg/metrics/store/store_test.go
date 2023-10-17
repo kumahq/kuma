@@ -89,8 +89,7 @@ var _ = Describe("Metered Store", func() {
 		err = store.Update(context.Background(), anotherMesh)
 
 		// then
-		Expect(err).To(HaveOccurred())
-		Expect(core_store.IsResourceConflict(err)).To(BeTrue())
+		Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
 		Expect(test_metrics.FindMetric(metrics, "store_conflicts", "resource_type", "Mesh").GetCounter().GetValue()).To(Equal(1.0))
 	})
 })

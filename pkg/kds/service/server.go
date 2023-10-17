@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -22,6 +25,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -35,30 +40,29 @@ type StreamInterceptor interface {
 }
 
 type GlobalKDSServiceServer struct {
-	envoyAdminRPCs EnvoyAdminRPCs
-	resManager     manager.ResourceManager
-	instanceID     string
-	filters        []StreamInterceptor
-	extensions     context.Context
-	upsertCfg      config_store.UpsertConfig
+	envoyAdminRPCs          EnvoyAdminRPCs
+	resManager              manager.ResourceManager
+	instanceID              string
+	filters                 []StreamInterceptor
+	extensions              context.Context
+	upsertCfg               config_store.UpsertConfig
+	eventBus                events.EventBus
+	zoneHealthCheckInterval time.Duration
 	mesh_proto.UnimplementedGlobalKDSServiceServer
+	context context.Context
 }
 
-func NewGlobalKDSServiceServer(
-	envoyAdminRPCs EnvoyAdminRPCs,
-	resManager manager.ResourceManager,
-	instanceID string,
-	filters []StreamInterceptor,
-	extensions context.Context,
-	upsertCfg config_store.UpsertConfig,
-) *GlobalKDSServiceServer {
+func NewGlobalKDSServiceServer(ctx context.Context, envoyAdminRPCs EnvoyAdminRPCs, resManager manager.ResourceManager, instanceID string, filters []StreamInterceptor, extensions context.Context, upsertCfg config_store.UpsertConfig, eventBus events.EventBus, zoneHealthCheckInterval time.Duration) *GlobalKDSServiceServer {
 	return &GlobalKDSServiceServer{
-		envoyAdminRPCs: envoyAdminRPCs,
-		resManager:     resManager,
-		instanceID:     instanceID,
-		filters:        filters,
-		extensions:     extensions,
-		upsertCfg:      upsertCfg,
+		context:                 ctx,
+		envoyAdminRPCs:          envoyAdminRPCs,
+		resManager:              resManager,
+		instanceID:              instanceID,
+		filters:                 filters,
+		extensions:              extensions,
+		upsertCfg:               upsertCfg,
+		eventBus:                eventBus,
+		zoneHealthCheckInterval: zoneHealthCheckInterval,
 	}
 }
 
@@ -103,7 +107,18 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 		log.Error(err, "couldn't update zone insight", "zone", zone)
 	}
 
-	return &mesh_proto.ZoneHealthCheckResponse{}, nil
+	return &mesh_proto.ZoneHealthCheckResponse{
+		Interval: durationpb.New(g.zoneHealthCheckInterval),
+	}, nil
+}
+
+type ZoneWentOffline struct {
+	TenantID string
+	Zone     string
+}
+type ZoneOpenedStream struct {
+	TenantID string
+	Zone     string
 }
 
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
@@ -117,6 +132,23 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	clientID := ClientID(stream.Context(), zone)
+	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
+
+	shouldDisconnectStream := events.NewNeverListener()
+
+	md, _ := metadata.FromIncomingContext(stream.Context())
+	features := md.Get(kds.FeaturesMetadataKey)
+
+	if slices.Contains(features, kds.FeatureZonePingHealth) {
+		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
+			disconnectEvent, ok := e.(ZoneWentOffline)
+			return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
+		})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantID})
+	}
+
+	defer shouldDisconnectStream.Close()
+
 	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
@@ -136,25 +168,42 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 		return status.Error(codes.Internal, "could not store stream connection")
 	}
 	logger.Info("stored stream connection")
-	for {
-		resp, err := recv()
-		if err == io.EOF {
-			logger.Info("stream stopped")
-			return nil
+	streamResult := make(chan error, 1)
+	go func() {
+		for {
+			resp, err := recv()
+			if err == io.EOF {
+				logger.Info("stream stopped")
+				streamResult <- nil
+				return
+			}
+			if status.Code(err) == codes.Canceled {
+				logger.Info("stream cancelled")
+				streamResult <- nil
+				return
+			}
+			if err != nil {
+				logger.Error(err, "could not receive a message")
+				streamResult <- status.Error(codes.Internal, "could not receive a message")
+				return
+			}
+			logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
+			if err := rpc.ResponseReceived(clientID, resp); err != nil {
+				logger.Error(err, "could not mark the response as received")
+				streamResult <- status.Error(codes.InvalidArgument, "could not mark the response as received")
+				return
+			}
 		}
-		if status.Code(err) == codes.Canceled {
-			logger.Info("stream cancelled")
-			return nil
-		}
-		if err != nil {
-			logger.Error(err, "could not receive a message")
-			return status.Error(codes.Internal, "could not receive a message")
-		}
-		logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
-		if err := rpc.ResponseReceived(clientID, resp); err != nil {
-			logger.Error(err, "could not mark the response as received")
-			return status.Error(codes.InvalidArgument, "could not mark the response as received")
-		}
+	}()
+	select {
+	case <-g.context.Done():
+		logger.Info("app context done")
+		return status.Error(codes.Unavailable, "stream unavailable")
+	case <-shouldDisconnectStream.Recv():
+		logger.Info("ending stream, zone health check failed")
+		return status.Error(codes.Canceled, "stream canceled")
+	case res := <-streamResult:
+		return res
 	}
 }
 

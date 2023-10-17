@@ -3,7 +3,7 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.21.1"
+    default: "1.21.3"
   first_k8s_version:
     type: string
     default: "v1.23.17-k3s1"
@@ -125,10 +125,24 @@ commands:
             echo "PR doesn't have label <<parameters.label>> keep running job"
             exit 0
 executors:
-  golang:
+  golang-amd64:
     resource_class: xlarge
     docker:
       - image: "cimg/go:<< pipeline.parameters.go_version >>"
+    environment:
+      KUMA_DIR: .
+      GO_VERSION: << pipeline.parameters.go_version >>
+  golang-arm64:
+    resource_class: arm.xlarge
+    docker:
+      - image: "cimg/go:<< pipeline.parameters.go_version >>"
+    environment:
+      KUMA_DIR: .
+      GO_VERSION: << pipeline.parameters.go_version >>
+  vm-xlarge-amd64:
+    resource_class: xlarge
+    machine:
+      image: << pipeline.parameters.ubuntu_image >>
     environment:
       KUMA_DIR: .
       GO_VERSION: << pipeline.parameters.go_version >>
@@ -148,26 +162,16 @@ executors:
       GO_VERSION: << pipeline.parameters.go_version >>
 jobs:
   go_cache:
-    executor: << parameters.executor >>
+    executor: golang-<< parameters.arch >>
     parameters:
-      executor:
+      arch:
         description: the executor to run on
         type: string
         default: golang
     steps:
-      - when:
-          condition: {equal: [vm-amd64, << parameters.executor >>]}
-          steps:
-            - install_build_tools:
-                go_arch: amd64
-      - when:
-          condition: {equal: [vm-arm64, << parameters.executor >>]}
-          steps:
-            - install_build_tools:
-                go_arch: arm64
       - checkout
       - restore_cache:
-          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          key: vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
       - run:
           command: make dev/tools
       - run:
@@ -175,7 +179,7 @@ jobs:
           command: |
             go mod download -x
       - save_cache:
-          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          key: vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
           paths:
             - "/home/circleci/go/pkg/mod"
             - "/home/circleci/.kuma-dev"
@@ -353,19 +357,20 @@ jobs:
           name: "Store logs"
           path: /tmp/e2e
   build:
-    executor:
-      name: golang
+    executor: vm-xlarge-amd64
     steps:
+      - run: # required to build arm64 images
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y qemu-user-static binfmt-support
+      - install_build_tools
       - checkout
-      - setup_remote_docker
-      - run:
-          command: ssh remote-docker "sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support"
       - setenv_depending_on_priority:
           label: "ci/run-full-matrix"
           env: ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"
       - restore_cache:
           keys:
-            - docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+            - build_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
       - run:
           command: make dev/tools
       - run:
@@ -381,7 +386,7 @@ jobs:
       - run:
           command: make -j docker/save
       - save_cache:
-          key: docker_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          key: build_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
           paths:
             - "/home/circleci/go/pkg/mod"
             - "/home/circleci/.kuma-dev"
@@ -455,11 +460,11 @@ workflows:
   kuma-commit:
     jobs:
       - go_cache:
-          name: go_cache-<< matrix.executor >>
+          name: go_cache-<< matrix.arch >>
           matrix:
             alias: go_cache
             parameters:
-              executor: [vm-amd64, vm-arm64]
+              arch: [amd64, arm64]
       - build:
           name: build
       - test:
@@ -468,7 +473,7 @@ workflows:
             alias: test
             parameters:
               arch: [amd64, arm64]
-          requires: [build, go_cache-vm-<< matrix.arch >>]
+          requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
           name: legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -478,7 +483,7 @@ workflows:
               arch: [amd64, arm64]
           parallelism: 3
           target: ""
-          requires: [build, go_cache-vm-<< matrix.arch >>]
+          requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -487,7 +492,7 @@ workflows:
               k8sVersion: [<< pipeline.parameters.first_k8s_version >>, << pipeline.parameters.last_k8s_version >>, kind, kindIpv6]
               target: [kubernetes, universal, multizone]
               arch: [amd64, arm64]
-          requires: [build, go_cache-vm-<< matrix.arch >>]
+          requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-delta-kds
           matrix:
@@ -497,7 +502,7 @@ workflows:
               target: [multizone]
               arch: [amd64]
               deltaKDS: [true]
-          requires: [build, go_cache-vm-amd64]
+          requires: [build, go_cache-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
@@ -507,7 +512,7 @@ workflows:
               target: [multizone]
               arch: [amd64]
               cniNetworkPlugin: [calico]
-          requires: [build, go_cache-vm-amd64]
+          requires: [build, go_cache-amd64]
       - container-structure:
           name: container-structure
           requires: [build]

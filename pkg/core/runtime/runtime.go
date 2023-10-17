@@ -58,6 +58,7 @@ type RuntimeContext interface {
 	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
+	Transactions() core_store.Transactions
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
@@ -147,6 +148,7 @@ type runtimeContext struct {
 	cfg                      kuma_cp.Config
 	rm                       core_manager.ResourceManager
 	rs                       core_store.ResourceStore
+	txs                      core_store.Transactions
 	ss                       store.SecretStore
 	cs                       core_store.ResourceStore
 	gis                      globalinsight.GlobalInsightService
@@ -204,6 +206,10 @@ func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
+}
+
+func (rc *runtimeContext) Transactions() core_store.Transactions {
+	return rc.txs
 }
 
 func (rc *runtimeContext) SecretStore() store.SecretStore {

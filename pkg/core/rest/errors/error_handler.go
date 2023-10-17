@@ -2,10 +2,10 @@ package errors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -32,43 +33,11 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}):
+	case errors.Is(err, &rest.InvalidResourceError{}) || errors.Is(err, &registry.InvalidResourceTypeError{}) || errors.Is(err, &store.PreconditionError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
 			Detail: err.Error(),
-		}
-	case errors.Is(err, &registry.InvalidResourceType{}):
-		kumaErr = &types.Error{
-			Status: 400,
-			Title:  "Bad Request",
-			Detail: err.Error(),
-		}
-	case store.IsResourcePreconditionFailed(err):
-		kumaErr = &types.Error{
-			Status: 412,
-			Title:  title,
-			Detail: "Precondition Failed",
-		}
-	case errors.Is(err, &store.PreconditionError{}):
-		var err2 *store.PreconditionError
-		errors.As(err, &err2)
-		kumaErr = &types.Error{
-			Status: 400,
-			Title:  "Bad Request",
-			Detail: err2.Reason,
-		}
-	case err == store.ErrorInvalidOffset:
-		kumaErr = &types.Error{
-			Status: 400,
-			Title:  title,
-			Detail: "Invalid offset",
-			InvalidParameters: []types.InvalidParameter{
-				{
-					Field:  "offset",
-					Reason: "Invalid format",
-				},
-			},
 		}
 	case manager.IsMeshNotFound(err):
 		kumaErr = &types.Error{
@@ -94,7 +63,19 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 				Reason: violation.Message,
 			})
 		}
-	case api_server_types.IsMaxPageSizeExceeded(err):
+	case err == store.ErrorInvalidOffset:
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: "Invalid offset",
+			InvalidParameters: []types.InvalidParameter{
+				{
+					Field:  "offset",
+					Reason: "Invalid format",
+				},
+			},
+		}
+	case errors.Is(err, &api_server_types.InvalidPageSizeError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
@@ -103,18 +84,6 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 				{
 					Field:  "size",
 					Reason: err.Error(),
-				},
-			},
-		}
-	case err == api_server_types.InvalidPageSize:
-		kumaErr = &types.Error{
-			Status: 400,
-			Title:  title,
-			Detail: "Invalid page size",
-			InvalidParameters: []types.InvalidParameter{
-				{
-					Field:  "size",
-					Reason: "Invalid format",
 				},
 			},
 		}
@@ -130,7 +99,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Method not Allowed",
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &Conflict{}):
+	case errors.Is(err, &Conflict{}) || errors.Is(err, &store.ResourceConflictError{}):
 		kumaErr = &types.Error{
 			Status: 409,
 			Title:  "Conflict",
@@ -157,6 +126,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Status: 401,
 			Title:  title,
 			Detail: unauthenticated.Error(),
+		}
+	case errors.Is(err, &envoyadmin.StreamNotConnectedError{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
 		}
 	case err == tokens.IssuerDisabled:
 		kumaErr = &types.Error{

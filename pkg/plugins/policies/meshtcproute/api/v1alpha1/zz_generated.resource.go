@@ -117,6 +117,10 @@ func (l *MeshTCPRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshTCPRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshTCPRouteType,
 	Resource:            NewMeshTCPRouteResource(),

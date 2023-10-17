@@ -7,14 +7,14 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-type RouteConfigurer struct {
+type VirtualHostRouteConfigurer struct {
 	MatchPath    string
 	NewPath      string
 	Cluster      string
 	AllowGetOnly bool
 }
 
-func (c RouteConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
+func (c VirtualHostRouteConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
 	var headersMatcher []*envoy_config_route_v3.HeaderMatcher
 	if c.AllowGetOnly {
 		matcher := envoy_type_matcher_v3.StringMatcher{

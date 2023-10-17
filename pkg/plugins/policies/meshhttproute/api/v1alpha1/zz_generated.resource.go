@@ -117,6 +117,10 @@ func (l *MeshHTTPRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshHTTPRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshHTTPRouteType,
 	Resource:            NewMeshHTTPRouteResource(),

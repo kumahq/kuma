@@ -107,6 +107,7 @@ type ConflictRetry struct {
 
 type UpsertOpts struct {
 	ConflictRetry ConflictRetry
+	Transactions  store.Transactions
 }
 
 type UpsertFunc func(opts *UpsertOpts)
@@ -119,8 +120,16 @@ func WithConflictRetry(baseBackoff time.Duration, maxTimes uint, jitterPercent u
 	}
 }
 
+func WithTransactions(transactions store.Transactions) UpsertFunc {
+	return func(opts *UpsertOpts) {
+		opts.Transactions = transactions
+	}
+}
+
 func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
-	opts := UpsertOpts{}
+	opts := UpsertOpts{
+		Transactions: store.NoTransactions{},
+	}
 	for _, f := range fs {
 		f(&opts)
 	}
@@ -130,30 +139,32 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 var ErrSkipUpsert = errors.New("don't do upsert")
 
 func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
+	opts := NewUpsertOpts(fs...)
 	upsert := func(ctx context.Context) error {
-		create := false
-		err := manager.Get(ctx, resource, store.GetBy(key), store.GetConsistent())
-		if err != nil {
-			if store.IsResourceNotFound(err) {
-				create = true
-			} else {
+		return store.InTx(ctx, opts.Transactions, func(ctx context.Context) error {
+			create := false
+			err := manager.Get(ctx, resource, store.GetBy(key), store.GetConsistent())
+			if err != nil {
+				if store.IsResourceNotFound(err) {
+					create = true
+				} else {
+					return err
+				}
+			}
+			if err := fn(resource); err != nil {
+				if err == ErrSkipUpsert { // Way to skip inserts when there are no change
+					return nil
+				}
 				return err
 			}
-		}
-		if err := fn(resource); err != nil {
-			if err == ErrSkipUpsert { // Way to skip inserts when there are no change
-				return nil
+			if create {
+				return manager.Create(ctx, resource, store.CreateBy(key))
+			} else {
+				return manager.Update(ctx, resource)
 			}
-			return err
-		}
-		if create {
-			return manager.Create(ctx, resource, store.CreateBy(key))
-		} else {
-			return manager.Update(ctx, resource)
-		}
+		})
 	}
 
-	opts := NewUpsertOpts(fs...)
 	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
 		return upsert(ctx)
 	}
@@ -168,7 +179,7 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 			return err
 		}
 		err := upsert(ctx)
-		if store.IsResourceConflict(err) || store.IsResourceAlreadyExists(err) {
+		if errors.Is(err, &store.ResourceConflictError{}) {
 			return retry.RetryableError(err)
 		}
 		return err

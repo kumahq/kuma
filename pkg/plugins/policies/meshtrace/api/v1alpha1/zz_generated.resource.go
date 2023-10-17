@@ -117,6 +117,10 @@ func (l *MeshTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshTraceResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshTraceType,
 	Resource:            NewMeshTraceResource(),

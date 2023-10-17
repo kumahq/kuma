@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
@@ -31,9 +32,17 @@ type pgxResourceStore struct {
 
 type ResourceNamesByMesh map[string][]string
 
-var _ store.ResourceStore = &pgxResourceStore{}
+var (
+	_ store.ResourceStore = &pgxResourceStore{}
+	_ store.Transactions  = &pgxResourceStore{}
+)
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (store.ResourceStore, error) {
+type TransactionableResourceStore interface {
+	store.ResourceStore
+	store.Transactions
+}
+
+func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (TransactionableResourceStore, error) {
 	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
 		return nil, err
@@ -85,8 +94,24 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
-	_, err = r.pool.Exec(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
-		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType)
+	args := []any{
+		opts.Name,
+		opts.Mesh,
+		resource.Descriptor().Name,
+		version,
+		string(bytes),
+		opts.CreationTime.UTC(),
+		opts.CreationTime.UTC(),
+		ownerName,
+		ownerMesh,
+		ownerType,
+	}
+	tx, exist := store.TxFromCtx(ctx)
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		_, err = pgxTx.Exec(ctx, statement, args...)
+	} else {
+		_, err = r.pool.Exec(ctx, statement, args...)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.Descriptor().Name, opts.Name, opts.Mesh)
@@ -118,9 +143,7 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
-	result, err := r.pool.Exec(
-		ctx,
-		statement,
+	args := []any{
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
@@ -128,7 +151,14 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
 		version,
-	)
+	}
+	tx, exist := store.TxFromCtx(ctx)
+	var result pgconn.CommandTag
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		result, err = pgxTx.Exec(ctx, statement, args...)
+	} else {
+		result, err = r.pool.Exec(ctx, statement, args...)
+	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
@@ -151,7 +181,15 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
-	result, err := r.pool.Exec(ctx, statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
+	args := []any{opts.Name, resource.Descriptor().Name, opts.Mesh}
+	tx, exist := store.TxFromCtx(ctx)
+	var result pgconn.CommandTag
+	var err error
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		result, err = pgxTx.Exec(ctx, statement, args...)
+	} else {
+		result, err = r.pool.Exec(ctx, statement, args...)
+	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -166,11 +204,18 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	pool := r.pickRoPool()
-	if opts.Consistent {
-		pool = r.pool
+	args := []any{opts.Name, opts.Mesh, resource.Descriptor().Name}
+	tx, exist := store.TxFromCtx(ctx)
+	var row pgx.Row
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		row = pgxTx.QueryRow(ctx, statement, args...)
+	} else {
+		pool := r.pickRoPool()
+		if opts.Consistent {
+			pool = r.pool
+		}
+		row = pool.QueryRow(ctx, statement, args...)
 	}
-	row := pool.QueryRow(ctx, statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
@@ -197,7 +242,7 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(resource.Descriptor().Name, opts.Name, opts.Mesh)
+		return store.ErrorResourceConflict(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
 }
@@ -258,7 +303,15 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 	}
 	statement += " ORDER BY name, mesh"
 
-	rows, err := r.pickRoPool().Query(ctx, statement, statementArgs...)
+	tx, exist := store.TxFromCtx(ctx)
+	var rows pgx.Rows
+	var err error
+	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
+		rows, err = pgxTx.Query(ctx, statement, statementArgs...)
+	} else {
+		rows, err = r.pickRoPool().Query(ctx, statement, statementArgs...)
+	}
+
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -464,4 +517,8 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool, poolName 
 		return err
 	}
 	return nil
+}
+
+func (r *pgxResourceStore) Begin(ctx context.Context) (store.Transaction, error) {
+	return r.pool.Begin(ctx)
 }

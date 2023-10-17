@@ -91,6 +91,10 @@ func (l *GlobalSecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *GlobalSecretResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var GlobalSecretResourceTypeDescriptor model.ResourceTypeDescriptor
 
 func init() {

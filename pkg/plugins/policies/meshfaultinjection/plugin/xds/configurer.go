@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
@@ -56,9 +57,7 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 			config.ResponseRateLimit = rrl
 
 			if len(c.From) > 0 {
-				config.Headers = []*envoy_route.HeaderMatcher{
-					c.createHeaders(c.From),
-				}
+				config.Headers = c.createHeaders(c.From)
 			}
 
 			pbst, err := util_proto.MarshalAnyDeterministic(config)
@@ -80,27 +79,42 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 	return nil
 }
 
-func (c *Configurer) createHeaders(from core_xds.Subset) *envoy_route.HeaderMatcher {
-	tagsMap := map[string]string{}
-	for _, tag := range from {
-		tagsMap[tag.Key] = tag.Value
-	}
-
-	var selectorRegexs []string
-	selectorRegexs = append(selectorRegexs, tags.MatchingRegex(tagsMap))
-	regexOR := tags.RegexOR(selectorRegexs...)
-
+func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy_route.HeaderMatcher {
 	return &envoy_route.HeaderMatcher{
 		Name: tags.TagsHeaderName,
-		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
-			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+			StringMatch: &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+					SafeRegex: &envoy_type_matcher.RegexMatcher{
+						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
+						Regex:      tags.MatchingRegex(tagSet),
+					},
 				},
-				Regex: regexOR,
 			},
 		},
+		InvertMatch: invert,
 	}
+}
+
+func (c *Configurer) createHeaders(from core_xds.Subset) []*envoy_route.HeaderMatcher {
+	tagsMap := map[bool]map[string]string{false: {}, true: {}}
+	for _, tag := range from {
+		tagsMap[tag.Not][tag.Key] = tag.Value
+	}
+
+	var matchers []*envoy_route.HeaderMatcher
+
+	notNegated := tagsMap[false]
+	if len(notNegated) > 0 {
+		matchers = append(matchers, regexHeaderMatcher(notNegated, false))
+	}
+
+	negated := tagsMap[true]
+	if len(negated) > 0 {
+		matchers = append(matchers, regexHeaderMatcher(negated, true))
+	}
+
+	return matchers
 }
 
 func (c *Configurer) convertDelay(delay *api.DelayConf) (*envoy_filter_fault.FaultDelay, error) {
