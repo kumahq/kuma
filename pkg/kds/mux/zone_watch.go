@@ -79,7 +79,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 		select {
 		case <-timer.C:
 			start := core.Now()
-			for zone, firstSeen := range zw.zones {
+			for zone, lastStreamOpened := range zw.zones {
 				ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 				zoneInsight := system.NewZoneInsightResource()
 
@@ -93,8 +93,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				// lastSeen time because we know the zone was connected at that
 				// point at least
 				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
-				if firstSeen.After(lastHealthCheck) {
-					lastHealthCheck = firstSeen
+				if lastStreamOpened.After(lastHealthCheck) {
+					lastHealthCheck = lastStreamOpened
 				}
 				if time.Since(lastHealthCheck) > zw.timeout {
 					zw.bus.Send(service.ZoneWentOffline{
@@ -117,21 +117,20 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				continue
 			}
 
-			// We keep a record of the time we see in the ZoneInsight when the
-			// stream is opened.
+			// We keep a record of the time we open a stream.
 			// This is to prevent the zone from timing out on a poll
 			// where the last health check is still from a previous connect, so:
 			// a long time ago: zone CP disconnects, no more health checks are sent
 			// now:
 			//  zone CP opens streams
-			//  global CP gets ZoneOpenedStream
+			//  global CP gets ZoneOpenedStream (but we don't stash the time as below)
 			//  global CP runs poll and see the last health check from "a long time ago"
 			//  BAD: global CP kills streams
 			//  zone CP health check arrives
 			zw.zones[zoneTenant{
 				tenantID: newStream.TenantID,
 				zone:     newStream.Zone,
-			}] = zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
+			}] = time.Now()
 		case <-stop:
 			return nil
 		}
