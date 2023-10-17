@@ -55,7 +55,8 @@ to:
               zones: ["zone-1"]
           - to:
               type: Any
-      overprovisioningFactor: 120%                          # (7)
+      overprovisioningFactor: 
+        percentage: 120                                     # (7)
 ```
 
 
