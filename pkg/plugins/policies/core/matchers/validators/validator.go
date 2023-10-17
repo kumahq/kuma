@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	nameCharacterSet     = regexp.MustCompile("^[0-9a-z-_]*$")
-	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
-	tagValueCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
+	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z-_]*$`)
+	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
+	tagValueCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
 )
 
 type ValidateTargetRefOpts struct {
@@ -41,23 +41,23 @@ func ValidateTargetRef(
 		case common_api.MeshSubset:
 			verr.Add(disallowedField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-			verr.Add(validTags(ref.Tags))
+			verr.Add(validateTags(ref.Tags))
 		case common_api.MeshService, common_api.MeshHTTPRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
-			verr.Add(validName(ref.Name))
+			verr.Add(validateName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(disallowedField("tags", ref.Tags, refKind))
 		case common_api.MeshServiceSubset, common_api.MeshGateway:
 			verr.Add(requiredField("name", ref.Name, refKind))
-			verr.Add(validName(ref.Name))
+			verr.Add(validateName(ref.Name))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-			verr.Add(validTags(ref.Tags))
+			verr.Add(validateTags(ref.Tags))
 		}
 	}
 	return verr
 }
 
-func validTags(tags map[string]string) validators.ValidationError {
+func validateTags(tags map[string]string) validators.ValidationError {
 	res := validators.ValidationError{}
 	for key, value := range tags {
 		if key == "" {
@@ -86,7 +86,7 @@ func validTags(tags map[string]string) validators.ValidationError {
 	return res
 }
 
-func validName(value string) validators.ValidationError {
+func validateName(value string) validators.ValidationError {
 	res := validators.ValidationError{}
 	if !nameCharacterSet.MatchString(value) {
 		res.Violations = append(res.Violations, validators.Violation{
