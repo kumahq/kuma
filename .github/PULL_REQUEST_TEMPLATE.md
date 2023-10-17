@@ -13,4 +13,10 @@ If something doesn't apply please check the box and add a justification after th
 - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label) --
 - [ ] Do you need to explicitly set a [`> Changelog:` entry here](../blob/master/CONTRIBUTING.md#submitting-a-patch) or add a `ci/` label to run fewer/more tests?
 
+<!--
+Uncomment this section to include a changelog entry
+
+> Changelog: skip
+-->
+
 [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
