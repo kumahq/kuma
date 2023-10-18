@@ -39,7 +39,7 @@ to:
     name: backend
   defaults:
     localityAwareness:
-      disabled: false                                       # DEPRECATED
+      disabled: false
       localZone:
         affinityTags: ["k8s.io/node", "k8s.io/az"]          # (1)
       crossZone:                                            # (2)
@@ -67,9 +67,9 @@ to:
 
 (3) In `failover` section, you configure list of zone priorities, first rules will have the highest load balancing priority and last in order will have the lowest priority.
 
-(4) In `from` section, you configure to which zones this rule applies. This rule will apply to all DPPs in `zone-1` and `zone-2`
+(4) In `from` section, you configure to which zones this rule applies. This rule will apply to all DPPs in `zone-1` and `zone-2`. If not defined is for all zones.
 
-(5) In `to` section, you configure to which zones traffic should be redirected.
+(5) In `to` section, you configure to which zones traffic should be redirected. This field is required.
 
 (6) `type` field lets you control how fallback zones are picked. Allowed values: 
 - `Only` - will load balance traffic only to zones listed in `zones` field 
@@ -77,13 +77,24 @@ to:
 - `Any` - will load balance traffic to all zones
 - `AnyExcept` - will load balance traffic to all zones except ones specified in `zones` field
 
-(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities.
+(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities. Default: 140%
 
 
 ### API examples based on use cases
 
 #### Keeping traffic in same zone (disable cross zone traffic)
 
+This:
+```yaml
+targetRef:
+  kind: Mesh
+to:
+  targetRef:
+    kind: MeshService
+    name: backend
+  defaults: {}
+```
+and this:
 ```yaml
 targetRef:
   kind: Mesh
@@ -96,6 +107,8 @@ to:
       localZone: 
         affinityTags: []
 ```
+
+are the same configuration.
 
 ![Use case 1](assets/031/use_case_1.png)
 
@@ -266,7 +279,7 @@ Each instance of the service might be in a different locality: zone, node. Users
 
 Example:
 
-On Kubernetes, all tags from the pod are populated automatically, while on Universal, users need to populate tags themselves:
+On Kubernetes, all tags from the node could be populated automatically (see details later), while on Universal, users need to populate tags themselves:
 
 ```yaml
 type: Dataplane
@@ -307,7 +320,11 @@ Pseudo algorithm:
 1. Get all inbound tags.
 2. Take the matched rules.
 3. Check if inbound has the tag defined in the rule. 
-4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then  crossZone). If no, get all the endpoints in the zone.
+4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then  crossZone). If no, get all the endpoints in the zone. 
+   1. Move matching endpoints by first tag to priority 0
+   2. Move matching endpoints by n tag to priority  n-1
+   3. All not matching endpoint in the local zone move to priority n
+   4. Iterate over zone endpoints and based on matching put them in priority N+ iteration
 5. Create `LocalityLbEndpoints` with selected endpoints. 
 6. Override `ClusterLoadAssignment` for the dataplane in the `ResourceSet`.
 
@@ -331,9 +348,14 @@ Problems:
 3. Locality Weighted Load Balancing: This strategy can help distribute traffic and may be suitable for local zone traffic, but it's not a perfect solution due to the following concerns:
 * We need to deliver weights to the sidecar, which can cause traffic to not stay within the node. Traffic is routed based on these weights, so even if we specify that a node has a higher weight than an availability zone, some traffic might still be routed elsewhere.
 
+I think we should implement the following:
+
+* Priority: for cross-zone traffic.
+* Locality-Weighted Load Balancing: This will help ensure that local zone traffic does not overload instances within the highest priority group when there are more instances available in other groups.
+  * The problem with this approach is that it relies on the health status of hosts, so we need to configure outlier detection and the overprovisioning factor correctly. Ideally, if there are a sufficient number of healthy hosts, the traffic should primarily remain within the local zone and only route outside when there aren't enough healthy hosts. This behavior is largely determined by the overprovisioning factor, which can be set as a default value while allowing users to define it as needed.
 
 ##### Adding node labels to the Pod
-Valuable routing information can be accessed through the 'node' object in Kubernetes. We have the ability to extract node-related details from Kubernetes and use them as tags for pods. One possible method involves creating a Kubernetes controller to retrieve node labels and incorporate them into the Pod object. However, it's important to note that this step may not be within the scope of the initial implementation.
+Valuable routing information can be accessed through the 'node' object in Kubernetes. We have the ability to extract node-related details from Kubernetes and use them as tags for pods. One possible method involves extending a Pod Kubernetes controller to retrieve node labels and incorporate them into the Pod object. However, it's important to note that this step may not be within the scope of the initial implementation.
 
 ##### Egress
 Egress is not as simple as ingress. Currently, we support Locality Aware when atleast one client requires it, so we cannot distinguish between clients. Control-plane needs to send all dataplanes to the egress because there might be services sending requests to all zones. There are 2 options:
@@ -388,6 +410,7 @@ Each dataplane has metadata, and it's important to ensure that `kuma.io/zone` is
 
 On the ingress side, you only need to adjust the `SNI` to include its corresponding `kuma.io/zone`.
 
+However, it's important to note that this step may not be within the scope of the initial implementation. We are going to support initially: **Support only Mesh scope for Egress**.
 
 ##### Ingress
 We don't configure ingresses.
@@ -412,7 +435,7 @@ We have ran a test of 1000 services with 2 instances each in standalone mode. Ea
 We can observe that p90 and p99 are much higher without using the cache. We should keep records in the cache but we have to ensure that generated key is reusable so we don't create to many same CLA entries. Also, we could move CLA cache into MeshContext to keep related things together.
 
 #### MeshHTTPRoute and MeshTCPRoute
-`MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and Load Balancing should be applied to them. It's essential to apply Load Balancing before creating the splits. To ensure this order, we must specify that the plugin comes before `Mesh*Route`. Additionally, when generating endpoints for splits, we usually utilize CLA Cache. However, in this scenario, we should retrieve endpoints from the `ResourceSet`.
+`MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and load balancing should be applied to them. It appears that the easiest approach would be to retrieve CLAs for the splits from the `ResourceSet` and then make necessary modifications within the `MeshLoadBalancingStrategy` after their creation. It's important to note that these splits are currently being aggregated during the `GatherEndpoints` function call, but they should not be aggregated in this specific case. Additionally, when working with objects in the `EndpointMap` it's important to avoid manipulating pointers directly and instead make use of copies, or create CLAs cache logic that would support Priorites.
 
 ### Other
 #### Cross mesh
