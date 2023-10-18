@@ -306,11 +306,30 @@ Pseudo algorithm:
 1. Get all inbound tags.
 2. Take the matched rules.
 3. Check if inbound has the tag defined in the rule. 
-4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first inZone, then  cross Zone). If no, get all the endpoints in the zone.
+4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then  crossZone). If no, get all the endpoints in the zone.
 5. Create `LocalityLbEndpoints` with selected endpoints. 
 6. Override `ClusterLoadAssignment` for the dataplane in the `ResourceSet`.
 
 Dataplanes in the specific location are going to receive only endpoints in the specific locality. For cross zone traffic without egress the control-plane delivers only ingresses of specific zones.
+
+How to configure Clusters traffic?
+
+Envoy allows different forms of load balancing:
+* [Priority load balancing](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/priority.html#priority-levels)
+* [Locality weighted load balancing](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#arch-overview-load-balancing-locality-weighted-lb)
+* [Load Balancer Subsets](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/subsets.html)
+
+1. Priority: Ideal for managing cross-zone traffic and prioritizing the acceptance of specific zones. You can also use it to prioritize local zone endpoints based on these settings.
+
+2. Load Balancer Subsets: Initially considered a good choice for managing localZone traffic. It organizes endpoints into subsets based on provided keys, albeit with a slight increase in Envoy's memory usage. However, I encountered some issues during testing that led me to reconsider this option:
+
+Problems:
+* When an endpoint with a matching tag becomes unhealthy, Envoy still attempts to send requests to it and doesn't fall back. This behavior is unacceptable.
+* Priorities do not work seamlessly with subsets, even when using aggregated clusters.
+
+3. Locality Weighted Load Balancing: This strategy can help distribute traffic and may be suitable for local zone traffic, but it's not a perfect solution due to the following concerns:
+* We need to deliver weights to the sidecar, which can cause traffic to not stay within the node. Traffic is routed based on these weights, so even if we specify that a node has a higher weight than an availability zone, some traffic might still be routed elsewhere.
+
 
 ##### Adding node labels to the Pod
 Valuable routing information can be accessed through the 'node' object in Kubernetes. We have the ability to extract node-related details from Kubernetes and use them as tags for pods. One possible method involves creating a Kubernetes controller to retrieve node labels and incorporate them into the Pod object. However, it's important to note that this step may not be within the scope of the initial implementation.
@@ -381,6 +400,15 @@ Steps:
 * Run `mesh-perf` test to measure impact of not using CLA cache
 * If results are good we'll remove the CLA cache
 * Otherwise rewrite CLA cache to keep the different clusters depending on the dataplane tags
+
+##### Test result
+We have ran a test of 1000 services with 2 instances each in standalone mode. Each service had reachable services to 3 services defined.
+
+![With CLA Cache](assets/031/xds_generation_with_cache.png)
+
+![Without CLA Cache](assets/031/xds_generation_without_cache.png)
+
+We can observe that p90 and p99 are much higher without using the cache. We should keep records in the cache but we have to ensure that generated key is reusable so we don't create to many same CLA entries. Also, we could move CLA cache into MeshContext to keep related things together.
 
 #### MeshHTTPRoute and MeshTCPRoute
 `MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and Load Balancing should be applied to them. It's essential to apply Load Balancing before creating the splits. To ensure this order, we must specify that the plugin comes before `Mesh*Route`. Additionally, when generating endpoints for splits, we usually utilize CLA Cache. However, in this scenario, we should retrieve endpoints from the `ResourceSet`.
