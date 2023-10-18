@@ -140,6 +140,10 @@ controlPlane:
     # -- Service type of the Kuma Control Plane
     type: ClusterIP
 
+    # -- Whether to put the default prometheus.io/scrape and prometheus.io/port
+    # annotations on the Kuma Control Plane service
+    includePrometheusAnnotations: true
+
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 

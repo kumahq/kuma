@@ -6,8 +6,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
   annotations:
+    {{- if .Values.controlPlane.service.includePrometheusAnnotations }}
     prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    {{- end }}
     {{- range $key, $value := .Values.controlPlane.service.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}

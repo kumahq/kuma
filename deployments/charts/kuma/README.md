@@ -46,6 +46,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
+| controlPlane.service.includePrometheusAnnotations | bool | `true` | Whether to put the default prometheus.io/scrape and prometheus.io/port annotations on the Kuma Control Plane service |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
 | controlPlane.ingress.enabled | bool | `false` | Install K8s Ingress resource that exposes GUI and API |
 | controlPlane.ingress.ingressClassName | string | `nil` | IngressClass defines which controller will implement the resource |
