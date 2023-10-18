@@ -39,6 +39,7 @@ to:
     name: backend
   defaults:
     localityAwareness:
+      disabled: false                                       # DEPRECATED
       localZone:
         affinityTags: ["k8s.io/node", "k8s.io/az"]          # (1)
       crossZone:                                            # (2)
@@ -139,7 +140,7 @@ to:
 ![Use case 3](assets/031/use_case_3_1.png)
 ![Use case 3](assets/031/use_case_3_2.png)
 
-#### Load balance equally to list of zones
+#### Load balance equally to list of zones when local is not available
 In this case, traffic from outside to the `backend` service in `zone-2` is completely excluded.
 
 ```yaml
