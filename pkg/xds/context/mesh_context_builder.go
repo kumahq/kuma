@@ -125,6 +125,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			zoneEgresses,
 		)
 	}
+	// we should probably compute the inverted graph here
 
 	return &MeshContext{
 		Hash:                newHash,

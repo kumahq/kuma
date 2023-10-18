@@ -159,6 +159,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
+	// match plugin policies
 	for name, p := range plugins.Plugins().PolicyPlugins() {
 		res, err := p.MatchedPolicies(dataplane, resources)
 		if err != nil {

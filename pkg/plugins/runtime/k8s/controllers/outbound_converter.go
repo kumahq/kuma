@@ -22,6 +22,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 
+	// wire in the graph here
 	reachableServicesMap := map[string]bool{}
 	for _, service := range reachableServices {
 		reachableServicesMap[service] = true
