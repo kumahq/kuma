@@ -42,7 +42,7 @@ func NewCache(
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
-		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(cleanupTime)*0.9))),
 	}, nil
 }
 
