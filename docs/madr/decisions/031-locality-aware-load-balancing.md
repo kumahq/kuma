@@ -26,7 +26,7 @@ After gathering client's expectations and a couple of brainstorming sessions, we
 
 ### API design
 Looking at use cases, it is clear that we have two types of load balancing strategies, inside zone and cross zone. We can easily route to services with proper tags inside the zone, but immediately after we cross zone border and hit Zone Ingress we lose the ability to control locality.
-Because of this we have decided that we will split our API in two sections: `inZone` and `crossZone`.
+Because of this we have decided that we will split our API in two sections: `localZone ` and `crossZone`.
 
 Here is the full example of policy:
 
