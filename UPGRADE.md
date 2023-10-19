@@ -8,7 +8,7 @@ does not have any particular instructions.
 
 ## Upgrade to `2.5.x`
 
-#### More strict validation rules for resource names
+### More strict validation rules for resource names
 
 In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
 
@@ -19,6 +19,19 @@ New rule:
 > A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
 
 New rule is applied for CREATE operations. The old rule is still applied for UPDATE, but this is going to change in Kuma 2.7.x or later.
+
+### API
+
+#### overview API coherency
+
+These endpoints are getting replaced to achieve more coherency on the API:
+
+- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/-overview`
+- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/-overview`
+- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/-overview`
+- `/zones+insights` moves to `/zones/-overview`
+
+While you can use the old API they will be removed in a future version
 
 ## Upgrade to `2.4.x`
 

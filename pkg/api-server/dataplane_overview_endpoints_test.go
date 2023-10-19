@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,8 +15,10 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -101,6 +104,26 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		})
+
+		dpResource := core_mesh.DataplaneResource{
+			Spec: &v1alpha1.Dataplane{
+				Networking: &v1alpha1.Dataplane_Networking{
+					Address: "127.0.0.1",
+					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+						{
+							Port: 1234,
+							Tags: map[string]string{
+								"service":   "backend",
+								"version":   "v1",
+								"tagcolumn": "tag:v",
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp-no-insights", "mesh1"), store.CreatedAt(t1))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	gatewayDelegatedJson := `
@@ -242,8 +265,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				Expect(response.StatusCode).To(Equal(200))
 				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
-
-				Expect(string(body)).To(MatchJSON(tc.expectedJson))
+				Expect(body).To(matchers.MatchGoldenJSON("testdata", strings.ReplaceAll(tc.url, "/", "_")+".json"))
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
@@ -300,7 +322,13 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).To(MatchJSON(fmt.Sprintf(`{"total": 3, "items": [%s], "next": "http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1"}`, dp1Json, apiServer.Address())))
+			overviewList := rest.ResourceListReceiver{
+				NewResource: func() model.Resource {
+					return core_mesh.NewDataplaneOverviewResource()
+				},
+			}
+			Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
+			Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1`, apiServer.Address())))
 		})
 	})
 })
