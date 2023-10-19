@@ -49,6 +49,7 @@ type Context struct {
 
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
+	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
 }
 
 func DefaultContext(

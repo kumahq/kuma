@@ -5,6 +5,7 @@
 package mesh
 
 import (
+	"errors"
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -398,10 +399,17 @@ func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 
 func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	return t.SetSpec(&mesh_proto.DataplaneOverview{
-		Dataplane:        resource.GetSpec().(*mesh_proto.Dataplane),
-		DataplaneInsight: insight.GetSpec().(*mesh_proto.DataplaneInsight),
-	})
+	overview := &mesh_proto.DataplaneOverview{
+		Dataplane: resource.GetSpec().(*mesh_proto.Dataplane),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.DataplaneInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'DataplaneInsight'")
+		}
+		overview.DataplaneInsight = ins
+	}
+	return t.SetSpec(overview)
 }
 
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
@@ -2770,10 +2778,17 @@ func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 
 func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	return t.SetSpec(&mesh_proto.ZoneEgressOverview{
-		ZoneEgress:        resource.GetSpec().(*mesh_proto.ZoneEgress),
-		ZoneEgressInsight: insight.GetSpec().(*mesh_proto.ZoneEgressInsight),
-	})
+	overview := &mesh_proto.ZoneEgressOverview{
+		ZoneEgress: resource.GetSpec().(*mesh_proto.ZoneEgress),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.ZoneEgressInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneEgressInsight'")
+		}
+		overview.ZoneEgressInsight = ins
+	}
+	return t.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneEgressOverviewResourceList{}
@@ -3102,10 +3117,17 @@ func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor 
 
 func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	return t.SetSpec(&mesh_proto.ZoneIngressOverview{
-		ZoneIngress:        resource.GetSpec().(*mesh_proto.ZoneIngress),
-		ZoneIngressInsight: insight.GetSpec().(*mesh_proto.ZoneIngressInsight),
-	})
+	overview := &mesh_proto.ZoneIngressOverview{
+		ZoneIngress: resource.GetSpec().(*mesh_proto.ZoneIngress),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.ZoneIngressInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneIngressInsight'")
+		}
+		overview.ZoneIngressInsight = ins
+	}
+	return t.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneIngressOverviewResourceList{}
