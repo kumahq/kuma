@@ -250,7 +250,7 @@ to:
 		ErrorCases("invalid backendRefs",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.backendRefs[0].name`,
-				Message: "must be set with kind MeshServiceSubset",
+				Message: "must be defined with kind MeshServiceSubset",
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
@@ -277,7 +277,7 @@ to:
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
-				Message: "must be set with kind MeshServiceSubset",
+				Message: "must be defined with kind MeshServiceSubset",
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
