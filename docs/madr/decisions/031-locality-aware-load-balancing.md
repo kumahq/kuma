@@ -41,13 +41,16 @@ to:
     localityAwareness:
       disabled: false
       localZone:
-        affinityTags: ["k8s.io/node", "k8s.io/az"]          # (1)
-      crossZone:                                            # (2)
-        failover:                                           # (3)
-          - from:                                           # (4)
+        affinityTags:                                       # (1)
+        - key: "k8s.io/node"                                # (2)
+          weight: 90                                        # (3)
+        - key: k8s.io/az"
+      crossZone:                                            # (4)
+        failover:                                           # (5)
+          - from:                                           # (6)
               zones: ["zone-1", "zone-2"]
-            to:                                             # (5)
-              type: Only                                    # (6)
+            to:                                             # (7)
+              type: Only                                    # (8)
               zones: ["zone-1", "zone-2"]
           - from:
               zones: ["zone-3"]
@@ -57,27 +60,53 @@ to:
           - to:
               type: Any
       overprovisioningFactor: 
-        percentage: 120                                     # (7)
+        percentage: 120                                     # (9)
 ```
 
 
 (1) In `localZone` section, you configure the affinity of tags used for load balancing. If list is empty or localZone is not specified, load balancing works normally, without taking any priorities into account. 
 
-(2) In `crossZone` section, you configure zones priority.
+(2) In `key` field, you define the name of the tag.
 
-(3) In `failover` section, you configure list of zone priorities, first rules will have the highest load balancing priority and last in order will have the lowest priority.
+(3) In `weight` field, you define proportional load that the group should take. Default is calculated based on the order and might and first in the list is going to have the highest weight while the last the lowest.
 
-(4) In `from` section, you configure to which zones this rule applies. This rule will apply to all DPPs in `zone-1` and `zone-2`. If not defined is for all zones.
+Example:
+```yaml
+affinityTags:
+  - key: "k8s.io/node"
+  - key: k8s.io/az"
+  - key: k8s.io/region"
+```
 
-(5) In `to` section, you configure to which zones traffic should be redirected. This field is required.
+Would create weights:
 
-(6) `type` field lets you control how fallback zones are picked. Allowed values: 
+```yaml
+affinityTags:
+  - key: "k8s.io/node"
+    weight: 1000
+  - key: k8s.io/az"
+    weight: 100
+  - key: k8s.io/region"
+    weight: 10
+```
+
+and all other endpoints are going to have the weight of 1.
+
+(4) In `crossZone` section, you configure zones priority.
+
+(5) In `failover` section, you configure list of zone priorities, first rules will have the highest load balancing priority and last in order will have the lowest priority.
+
+(6) In `from` section, you configure to which zones this rule applies. This rule will apply to all DPPs in `zone-1` and `zone-2`. If not defined is for all zones.
+
+(7) In `to` section, you configure to which zones traffic should be redirected. This field is required.
+
+(8) `type` field lets you control how fallback zones are picked. Allowed values:
 - `Only` - will load balance traffic only to zones listed in `zones` field 
 - `None` - will not load balance traffic any further
 - `Any` - will load balance traffic to all zones
 - `AnyExcept` - will load balance traffic to all zones except ones specified in `zones` field
 
-(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities. Default: 140%
+(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities. Default: 200%, which means the traffic goes out of the zone when there is less then 50% of healthy endpoints in the local zone.
 
 
 ### API examples based on use cases
@@ -124,7 +153,9 @@ to:
   defaults:
     localityAwareness:
       localZone:
-        affinityTags: ["k8s.io/node", "k8s.io/az"]
+        affinityTags:
+        - key: "k8s.io/node"
+        - key: "k8s.io/az"
 ```
 
 ![Use case 2](assets/031/use_case_2_1.png)
@@ -353,6 +384,7 @@ I think we should implement the following:
 * Priority: for cross-zone traffic.
 * Locality-Weighted Load Balancing: This will help ensure that local zone traffic does not overload instances within the highest priority group when there are more instances available in other groups.
   * The problem with this approach is that it relies on the health status of hosts, so we need to configure outlier detection and the overprovisioning factor correctly. Ideally, if there are a sufficient number of healthy hosts, the traffic should primarily remain within the local zone and only route outside when there aren't enough healthy hosts. This behavior is largely determined by the overprovisioning factor, which can be set as a default value while allowing users to define it as needed.
+  * We will be using default high weights that prioritize specific tags within the local zone. This configuration ensures that a significant portion of the traffic is directed mostly to endpoints in specific locations.
 
 ##### Adding node labels to the Pod
 Valuable routing information can be accessed through the 'node' object in Kubernetes. We have the ability to extract node-related details from Kubernetes and use them as tags for pods. One possible method involves extending a Pod Kubernetes controller to retrieve node labels and incorporate them into the Pod object. However, it's important to note that this step may not be within the scope of the initial implementation.
