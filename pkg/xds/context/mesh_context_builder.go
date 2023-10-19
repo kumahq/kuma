@@ -126,6 +126,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 	// we should probably compute the inverted graph here
+	// using resources.MeshLocalResources[v1alpha1.MeshTrafficPermissionType]
+	// and endpoint map / dataplanes
 
 	return &MeshContext{
 		Hash:                newHash,
