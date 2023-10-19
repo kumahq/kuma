@@ -56,8 +56,8 @@ to:
               zones: ["zone-1"]
           - to:
               type: Any
-      overprovisioningFactor: 
-        percentage: 120                                     # (7)
+      failoverThreshold: 
+        percentage: 70                                      # (7)
 ```
 
 
@@ -77,7 +77,9 @@ to:
 - `Any` - will load balance traffic to all zones
 - `AnyExcept` - will load balance traffic to all zones except ones specified in `zones` field
 
-(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities. Default: 140%
+(7) In `failoverThreshold` you configure the percentage of live endpoints below which we will start load balancing to the 
+next priority. This is the inverse of [Envoy overprovisioning factor](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor). 
+Default: 70%
 
 
 ### API examples based on use cases
