@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"regexp"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -257,58 +257,65 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 		DescribeTable("Listing resources filtering by tag",
 			func(tc testCase) {
+				// given
+				url := fmt.Sprintf("http://%s/%s", apiServer.Address(), tc.url)
+				goldenFileName := fmt.Sprintf(
+					"%s.json",
+					regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(tc.url, "_"),
+				)
+
 				// when
-				response, err := http.Get("http://" + apiServer.Address() + tc.url)
+				response, err := http.Get(url)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				Expect(response.StatusCode).To(Equal(200))
 				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(body).To(matchers.MatchGoldenJSON("testdata", strings.ReplaceAll(tc.url, "/", "_")+".json"))
+				Expect(body).To(matchers.MatchGoldenJSON("testdata", goldenFileName))
 			},
 			Entry("should list all when no tag is provided", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights",
+				url:          "meshes/mesh1/dataplanes+insights",
 				expectedJson: fmt.Sprintf(`{"total": 3, "items": [%s, %s, %s], "next": null}`, dp1Json, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 			Entry("should list with only one matching tag", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
+				url:          "meshes/mesh1/dataplanes+insights?tag=service:backend",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should list with only subset tag", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:ck",
+				url:          "meshes/mesh1/dataplanes+insights?tag=service:ck",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should list all with all matching tags", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
+				url:          "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should list all with all matching tags with value with a column", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
+				url:          "meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should not list when any tag is not matching", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
+				url:          "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
 				expectedJson: `{"total": 0, "items": [], "next": null}`,
 			}),
 			Entry("should list only gateway dataplanes", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
+				url:          "meshes/mesh1/dataplanes+insights?gateway=true",
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 			Entry("should list only gateway builtin", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?gateway=builtin",
+				url:          "meshes/mesh1/dataplanes+insights?gateway=builtin",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayBuiltinJson),
 			}),
 			Entry("should list only gateway delegated", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?gateway=delegated",
+				url:          "meshes/mesh1/dataplanes+insights?gateway=delegated",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayDelegatedJson),
 			}),
 			Entry("should list only dataplanes that starts with gateway", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?name=gateway",
+				url:          "meshes/mesh1/dataplanes+insights?name=gateway",
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 			Entry("should list only dataplanes that contains with tew", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?name=tew",
+				url:          "meshes/mesh1/dataplanes+insights?name=tew",
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 		)
