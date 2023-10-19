@@ -258,7 +258,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		DescribeTable("Listing resources filtering by tag",
 			func(tc testCase) {
 				// given
-				url := fmt.Sprintf("http://%s/%s", apiServer.Address(), tc.url)
+				url := fmt.Sprintf("http://%s/%s", apiServer.Address(), tc.url) // #nosec G107 -- these are just for tests
 				goldenFileName := fmt.Sprintf(
 					"%s.json",
 					regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(tc.url, "_"),
