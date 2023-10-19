@@ -288,9 +288,9 @@ tags:
 			expected: `
 violations:
   - field: targetRef.mesh
-    message: must not be defined with kind Mesh
+    message: must not be set with kind Mesh
   - field: targetRef.tags
-    message: must not be defined with kind Mesh
+    message: must not be set with kind Mesh
 `,
 		}),
 		Entry("Mesh with name", testCase{
@@ -336,7 +336,7 @@ name: mesh-1
 			expected: `
 violations:
   - field: targetRef.name
-    message: must not be defined with kind MeshSubset`,
+    message: must not be set with kind MeshSubset`,
 		}),
 		Entry("MeshSubset with empty tag name", testCase{
 			inputYaml: `
@@ -430,7 +430,7 @@ mesh: mesh-1
 			expected: `
 violations:
   - field: targetRef.mesh
-    message: must not be defined with kind MeshService
+    message: must not be set with kind MeshService
 `,
 		}),
 		Entry("MeshService without name with tags", testCase{
@@ -447,9 +447,9 @@ tags:
 			expected: `
 violations:
   - field: targetRef.name
-    message: must be defined with kind MeshService 
+    message: must be set with kind MeshService 
   - field: targetRef.tags
-    message: must not be defined with kind MeshService
+    message: must not be set with kind MeshService
 `,
 		}),
 		Entry("MeshService with invalid name", testCase{
@@ -496,7 +496,7 @@ mesh: mesh-1
 			expected: `
 violations:
   - field: targetRef.mesh
-    message: must not be defined with kind MeshGateway
+    message: must not be set with kind MeshGateway
 `,
 		}),
 		Entry("MeshGateway without name with empty tags", testCase{
@@ -512,7 +512,7 @@ tags: {}
 			expected: `
 violations:
   - field: targetRef.name
-    message: must be defined with kind MeshGateway 
+    message: must be set with kind MeshGateway 
 `,
 		}),
 		Entry("MeshGateway with invalid name", testCase{
@@ -559,7 +559,7 @@ tags: {}
 			expected: `
 violations:
   - field: targetRef.name
-    message: must be defined with kind MeshServiceSubset
+    message: must be set with kind MeshServiceSubset
 `,
 		}),
 		Entry("MeshServiceSubset with invalid name with empty tags", testCase{
@@ -595,7 +595,7 @@ tags:
 			expected: `
 violations:
   - field: targetRef.mesh
-    message: must not be defined with kind MeshServiceSubset 
+    message: must not be set with kind MeshServiceSubset 
 `,
 		}),
 		Entry("MeshGatewayRoute when it's not supported", testCase{

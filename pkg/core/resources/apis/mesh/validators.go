@@ -387,7 +387,7 @@ func disallowedField[T ~string | ~map[string]string](
 	var err validators.ValidationError
 
 	if isSet(value) {
-		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustNotBeDefined, kind))
+		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustNotBeSet, kind))
 	}
 
 	return err
@@ -401,7 +401,7 @@ func requiredField[T ~string | ~map[string]string](
 	var err validators.ValidationError
 
 	if !isSet(value) {
-		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustBeDefined, kind))
+		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustBeSet, kind))
 	}
 
 	return err
