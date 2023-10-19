@@ -178,16 +178,34 @@ If the system is too big to do this we need to do extra work in the iterations (
 3. We enable MeshTrafficPermission for services brought into the mesh (the performance improves because we trimmed the configs)
 4. We repeat point 2-3 until all services are in the Mesh
 
-How to ensure in the 3rd point that we defined the right services?
-Remember, once MeshTrafficPermission with deny is added we're going to start rejecting all traffic that is not allowed.
+Let's take the following service graph as an example:
 
-Even if we get the right services on the first try when do we trim the config of the outbounds?
-And when do we actually start blocking traffic?
+```mermaid
+flowchart LR
+ingress --> a --> b & c 
+c --> d & e
+b --> f
+```
 
-If we decide to do this on `MeshTrafficPermission` with `deny` then
-it only works with mTLS enabled and if there are services that aren't in the mesh they would simply be denied access.
-So for us to use `MeshTrafficPermission/deny` we already have to have the whole graph structure figured out,
-turn on Mesh for them 
+If we enable MTP on `d` that allows `c` to contact it,
+and we only use this information
+then suddenly traffic between `c -> e` does not work <sup>1</sup>.
+
+We can't enable MTP on `b` until we bring `a` into the mesh.
+
+How this only could work is that we start at the `ingress` and we bring the services level by level and
+at each level we define MTP. We have to bring services at each level at the same time to not disturb the flow of traffic (<sup>1</sup>).
+
+It seems to me that this approach requires a lot of up front knowledge (the entire service graph) and
+leaves not too much room for error.
+
+There are other small concerns that also need addressing:
+- wrong errors on the client side, instead of 403 client will get 404/"no upstream"
+  - in public facing APIs this is quote common to get a 404 to a resource that you don't have permissions to
+  - we could have a flag to distinguish between a regular 404 and this 404 caused by no upstream resulting from config trimming and return a 403
+- wrong RBAC stats on the server side
+  - we would have correct stats on the client side - if we can translate that and surface it to the user I don't think anyone would mind
+  - 
 
 
 ### {option 2}
