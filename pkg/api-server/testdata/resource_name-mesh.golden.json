@@ -6,22 +6,22 @@
  "invalid_parameters": [
   {
    "field": "name",
-   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+   "reason": "invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
   },
   {
    "field": "mesh",
-   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "name",
-   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+   "message": "invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
   },
   {
    "field": "mesh",
-   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols."
+   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
   }
  ]
 }
