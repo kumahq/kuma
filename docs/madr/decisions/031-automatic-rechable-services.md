@@ -12,7 +12,11 @@ Reachable services is a step in the right direction but defining the whole servi
 
 How do we ensure a smooth Mesh migration (keeping in mind the performance and minimising manual labour) for large systems?
 
-## Decision Drivers <!-- optional -->
+## Glossary
+
+- MTP - [MeshTrafficPermission](https://kuma.io/docs/2.4.x/policies/meshtrafficpermission/#meshtrafficpermission-(beta))
+
+## Decision Drivers 
 
 * feasibility of implementation for 2.5 release
 * minimize the manual labour needed
@@ -87,9 +91,6 @@ graph TD
     C-->D
 ```
 
-Warning: this is only the case when you enable mTLS and remove default TrafficPermission and MeshTrafficPermission.
-For visibility, you could have a default "deny all" policy.
-
 Let's consider other `targetRef` with allow types in combination with `top`/`from` level:
 1. `Mesh/Mesh` - this won't help us because that's the default, anyone can talk to anyone and we can't
 
@@ -148,23 +149,24 @@ graph TD
     A-->D
 ```
 
-This is simply A can talk to anyone, this could be either adding and outgoing edge from this service to every other service or having it on a list called allOutgoing and
-not bothering to trim the configuration.
+This is simply `A` can talk to anyone, this could be either adding and outgoing edge from this service to every other service or having it on a list called allOutgoing and not bothering to trim the configuration.
 
 3. `MeshService/MeshService` - already talked about, this is the easy case
 
 4. `MeshServiceSubset` 
 
-There are two options here:
-1. We could treat it as just `MeshService` and include everything, it will probably be just a small overhead in Endpoints
-2. We could trim the endpoints based on the tags
-
-For 2. we would probably need to reuse the policy matching mechanism while doing the graph computation.
+Unfortunately there is one option here,
+we need to treat `MeshServiceSubset` just like `MeshService`.
+This is because we can't trim individual endpoints because the data is not available at that point, and
+we have to accept the fact that we will miss out on (small) parts of the config that could be trimmed.
 
 5. `MeshSubset`
 
-This one is a bit more tricky because the potential radious is a bit bigger. The approaches are the same as in `MeshServiceSubset`.
-Do people really use `MeshSubset` for MeshTrafficPermission?
+This one is a bit more tricky because the potential radious is a bit bigger.
+The approach has to be the same as in `MeshServiceSubset`, meaning: treat `MeshSubset` as just `Mesh`.
+
+There is a case that makes sense using `k8s.kuma.io/namespace: xyz` to allow only traffic from a specific namespace,
+so this needs to be documented that it won't improve the performance.
 
 #### Migration
 
@@ -174,9 +176,13 @@ If the system is small enough, after several iterations, it will be enabled for 
 If the system is too big to do this we need to do extra work in the iterations (defining MeshTrafficPermissions along the way).
 
 1. 0 services are in the Mesh
-2. We bring in X services into the Mesh (where X is small enough, so the Mesh can handle it)
-3. We enable MeshTrafficPermission for services brought into the mesh (the performance improves because we trimmed the configs)
-4. We repeat point 2-3 until all services are in the Mesh
+2. Bring X services into the Mesh (where X is small enough, so the Mesh can handle it)
+3. Enable MeshTrafficPermission for services brought into the mesh (the performance improves because we trimmed the configs)
+4. Repeat point 2-3 until all services are in the Mesh
+
+The good thing about how this migration is set up is that we can gradually do it without any interruption to the system.
+The downside of it is that **a service owner needs to know EXACTLY which services consume their service** to avoid any disruptions.
+The migration assumes using Kubernetes DNS.
 
 Let's take the following service graph as an example:
 
@@ -187,30 +193,39 @@ c --> d & e
 b --> f
 ```
 
-If we enable MTP on `d` that allows `c` to contact it,
-and we only use this information
-then suddenly traffic between `c -> e` does not work <sup>1</sup>.
+We want to bring services into the mesh one by one and trim their config, let's start with service `c` (it's a good example because it has both inbound and outbound traffic):
+0. We have a default MTP `Mesh/Mesh` with `allow`
+1. We enable sidecar injection on `c`
+2. The traffic flows through like normal
+3. We define MTP with `allow` from service `a`, for now this has no consequences because there is no service `a` in the Mesh.
+4. We bring service `a` into the mesh
+5. We switch MTP for `c` to have `allow` from `a` and `deny` for any other service (`Mesh`)
+6. This has no consequences on the config size because `a` and `c` are the only services in the mesh
+7. Now let's bring service `d` into the mesh
+8. When we do that we will observe the first consequence of config trimming,
+   service `d` will have only `a` cluster but won't have `c` cluster because we defined that `c` can only be contacted by `a`
+9. We repeat this until we have all services in the mesh, all new services that join already have a smaller config because we trimmed it along the way
 
-We can't enable MTP on `b` until we bring `a` into the mesh.
+It's critical to remember to only switch to `deny` when **ALL** consumers are **defined in MTP** and are in the Mesh.
 
-How this only could work is that we start at the `ingress` and we bring the services level by level and
-at each level we define MTP. We have to bring services at each level at the same time to not disturb the flow of traffic (<sup>1</sup>).
-
-It seems to me that this approach requires a lot of up front knowledge (the entire service graph) and
-leaves not too much room for error.
-
-There are other small concerns that also need addressing:
+There are other concerns that also need addressing:
+- breaking "top-level targetRef selects proxy to configure" rule
+  - I don't think we can do anything about this, it's at the core of this feature working, what we can (and should) do
+    is to have this feature behind a flag and if there is too much negative feedback about this point we can revert it
 - wrong errors on the client side, instead of 403 client will get 404/"no upstream"
   - in public facing APIs this is quote common to get a 404 to a resource that you don't have permissions to
-  - we could have a flag to distinguish between a regular 404 and this 404 caused by no upstream resulting from config trimming and return a 403
+  - I imagine we could have a flag to distinguish between a regular 404 and this 404 caused by no upstream resulting from config trimming and return a 403, but
+    I think this is out of scope for this, probably a future improvement
 - wrong RBAC stats on the server side
-  - we would have correct stats on the client side - if we can translate that and surface it to the user I don't think anyone would mind
-  - 
+  - we would have correct stats on the client side - if we can translate that and surface it to the user I don't think anyone would mind, but
+    I think its is for future improvement
+- assuming that every service owner knows which services consume their API
+  - as a future improvement we will come up with tooling to assist the users with this problem
+    - have metrics / logs and a dashboard when `allow_with_shadow_deny` is used (this is not a silver bullet - it assumes that during "discovery" period all possible communication will happen, if you gather data for a week and there is a job that runs every quarter it probably won't be recorded)
+
+### Dynamically load clusters using ODCDS
 
 
-### {option 2}
-
-{example | description | pointer to more information | …} <!-- optional -->
 
 * Good, because {argument a}
 * Good, because {argument b}
