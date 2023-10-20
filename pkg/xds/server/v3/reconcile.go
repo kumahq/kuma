@@ -183,6 +183,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
 		}
 	}
+	core.Log.Info("Not  NOT FINAL RESOURCESET", "resources", rs)
 	for _, hook := range s.ResourceSetHooks {
 		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
@@ -194,10 +195,11 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 
 	version := "" // empty value is a sign to other components to generate the version automatically
 	resources := map[envoy_resource.Type][]envoy_types.Resource{}
-
 	for _, resourceType := range rs.ResourceTypes() {
 		resources[resourceType] = append(resources[resourceType], rs.ListOf(resourceType).Payloads()...)
 	}
+
+	core.Log.Info("FINAL RESOURCESET", "resources", resources[envoy_resource.EndpointType])
 
 	return envoy_cache.NewSnapshot(version, resources)
 }

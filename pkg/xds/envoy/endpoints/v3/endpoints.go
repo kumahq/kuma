@@ -74,7 +74,7 @@ func (l LocalityLbEndpointsMap) append(ep core_xds.Endpoint, endpoint *envoy_end
 		lbWeight := uint32(0)
 		if ep.HasLocality() {
 			locality = &envoy_core.Locality{
-				Zone: ep.Locality.Zone,
+				Zone:    ep.Locality.Zone,
 				SubZone: ep.Locality.SubZone,
 			}
 			priority = ep.Locality.Priority

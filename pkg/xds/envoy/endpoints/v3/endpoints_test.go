@@ -244,9 +244,9 @@ endpoints:
 						Port:   8081,
 						Weight: 2,
 						Locality: &core_xds.Locality{
-							Zone: "west",
+							Zone:     "west",
 							Priority: 1,
-							Weight: 1,
+							Weight:   1,
 						},
 					},
 					{
@@ -254,9 +254,9 @@ endpoints:
 						Port:   8082,
 						Weight: 1,
 						Locality: &core_xds.Locality{
-							Zone: "east",
+							Zone:    "east",
 							SubZone: "node1",
-							Weight: 20,
+							Weight:  20,
 						},
 					},
 					{
@@ -264,9 +264,9 @@ endpoints:
 						Port:   8082,
 						Weight: 1,
 						Locality: &core_xds.Locality{
-							Zone: "east",
+							Zone:    "east",
 							SubZone: "node2",
-							Weight: 1,
+							Weight:  1,
 						},
 					},
 					{
@@ -274,9 +274,9 @@ endpoints:
 						Port:   8082,
 						Weight: 1,
 						Locality: &core_xds.Locality{
-							Zone: "east",
+							Zone:    "east",
 							SubZone: "node2",
-							Weight: 1,
+							Weight:  1,
 						},
 					},
 				},

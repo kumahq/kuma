@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -10,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -21,6 +23,7 @@ import (
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -56,13 +59,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := policies_xds.GatherClusters(rs)
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
-	endpointsCopy = policies_xds.GatherEndpointsCopy(rs)
+	endpointsCopy := policies_xds.GatherEndpointsCopy(rs)
 
-	if err := p.configureGateway(ctx, proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints); err != nil {
+	if err := p.configureGateway(ctx, proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpointsCopy)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpointsCopy, ctx, rs)
 }
 
 func (p plugin) configureDPP(
@@ -71,6 +74,8 @@ func (p plugin) configureDPP(
 	listeners policies_xds.Listeners,
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
+	ctx xds_context.Context,
+	rs *core_xds.ResourceSet,
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
@@ -98,124 +103,242 @@ func (p plugin) configureDPP(
 	// we configure clusters in a separate loop to avoid configuring the same cluster twice
 	for serviceName, conf := range serviceConfs {
 		if cluster, ok := clusters.Outbound[serviceName]; ok {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, &conf); err != nil {
 				return err
 			}
 		}
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, &conf); err != nil {
 				return err
 			}
 		}
-		configureEndpoints(proxy.Dataplane, endpoints, serviceName, conf)
+		if err:= configureEndpoints(proxy, endpoints, serviceName, conf, ctx, rs); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-type TestTags struct {
+type LocalityLbGroups struct {
 	Key string
+	Value string
 	Weight uint32
 }
 
+type CrossZoneLocalityLbGroups struct {
+	Disabled bool
+	AllZones bool
+	Zones map[string]bool
+	ExceptZones map[string]bool
+	Priority uint32
+}
+
 func configureEndpoints(
-	dataplane *core_mesh.DataplaneResource,
+	proxy *core_xds.Proxy,
 	endpoints policies_xds.EndpointMap,
 	serviceName string,
 	conf api.Conf,
-) {
-	var zone string
+	ctx xds_context.Context,
+	rs *core_xds.ResourceSet,
+) error {
+	var localZone string
+	dataplane := proxy.Dataplane
 	if inbounds := dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
-		zone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+		localZone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
 	}
 
-	testTags := []TestTags{
-		{
-			Key: "k8s.io/node"
-		},
-		{
-			Key: "k8s.io/az"
-		},
-		{
-			Key: "k8s.io/test"
-		},
-	}
+	// matchingTags := map[string]string{}
 
-	matchingTags := map[string]string{}
-	// Locality is based on infrastrucater infromation and the same dataplane shouldnt have different values
-	tagsSet := dataplane.Spec.TagSet()
-	for _, tags := range testTags {
-		for key, _ := range tagsSet[tags.Key] {
-			matchingTags[tags.Key] = key
-			
-		}
-	}
+	localZonePriority := []LocalityLbGroups{}
 
-	//
-	//
-	// LocalZone
-	// k8s.io/node: value, weight
-	// k8s.io/az: value, weight
-	// k8s.io/test: value, weight
-	//
-	//
-	// endpointMap := core_xds.EndpointMap{}
-	endpoints := []core_xds.Endpoint{}
-	for _, endpoint := range endpoints[serviceName]{
-		for _, localityLbEndpoint := range endpoint.Endpoints {
-			ed := core_xds.Endpoint{}
-			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints{
-				ed.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
-				// check if has first tag, if yes set value as subzone and weight
-				// if no go to another
-				// if has no tag set default weight 1
-				// if is cross zone set 
-				tags := envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
-				for key, val := range matchingTags {
-					if tags[key] == val {
-						ed.Locality = &core_xds.Locality{
-
-						}
-
-						// check zone 
-						// add locality and priority
-					}
-				}
-				ed.Tags = tags
-				address := lbEndpoint.GetEndpoint().GetAddress()
-				if address.GetSocketAddress() != nil {
-					ed.Target = address.GetSocketAddress().GetAddress()
-					ed.Port = address.GetSocketAddress().GetPortValue()
-				}
-				if address.GetPipe() != nil {
-					ed.UnixDomainPath = address.GetPipe().GetPath()
-				}
-
-
-				
+	// each endpoint iterate
+	crossZonePriority := []CrossZoneLocalityLbGroups{}
+	if conf.LocalityAwareness != nil && conf.LocalityAwareness.LocalZone != nil {
+		tagsSet := dataplane.Spec.TagSet()
+		for _, tag := range conf.LocalityAwareness.LocalZone.AffinityTags {
+			values := tagsSet.Values(tag.Key)
+			if len(tagsSet.Values(tag.Key)) != 0 {
+				localZonePriority = append(localZonePriority, LocalityLbGroups{
+					Key: tag.Key,
+					Value: values[0],
+					Weight: uint32(tag.Weight.IntVal),
+					// Zone: zone,
+				})
 			}
 		}
+		if conf.LocalityAwareness.CrossZone != nil && len(conf.LocalityAwareness.CrossZone.Failover) > 0 {
+			for priority, rule := range conf.LocalityAwareness.CrossZone.Failover{
+				lb := CrossZoneLocalityLbGroups{}
+				if rule.From != nil {
+					doesRuleApply := false
+					for _, zone := range rule.From.Zones{
+						if zone == localZone {
+							doesRuleApply = true
+						}
+					}
+					if !doesRuleApply {
+						continue
+					}
+				}
+				switch rule.To.Type{
+				case api.Any:
+					lb.Disabled = false
+					lb.AllZones = true
+					lb.Priority = uint32(priority + 1)
+				case api.AnyExcept:
+					lb.Disabled = false
+					lb.AllZones = false
+					exceptZones := map[string]bool{}
+					for _, zone := range rule.To.Zones {
+						exceptZones[zone] = true
+					}
+					lb.ExceptZones = exceptZones
+					lb.Priority = uint32(priority + 1)
+				case api.Only:
+					lb.Disabled = false
+					lb.AllZones = false
+					onlyZones := map[string]bool{}
+					for _, zone := range rule.To.Zones {
+						onlyZones[zone] = true
+					}
+					lb.Zones = onlyZones
+					lb.Priority = uint32(priority + 1)
+				default: 
+					lb.Disabled = true
+				}
+				crossZonePriority = append(crossZonePriority, lb)
+			}	
+		}
+		
 	}
 
-	// check if tag is inside
-	// if yes take the endpoints from these group
-	// take another
-	// take zones priorities
-
 	
+	// if is nil keep in the zone
+	if conf.LocalityAwareness != nil {
+		endpointsList := []core_xds.Endpoint{}
+		for _, endpoint := range endpoints[serviceName]{
+			for _, localityLbEndpoint := range endpoint.Endpoints {
+				for _, lbEndpoint := range localityLbEndpoint.LbEndpoints{
+					ed := core_xds.Endpoint{}
+					ed.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
+					// check if has first tag, if yes set value as subzone and weight
+					// if no go to another
+					// if has no tag set default weight 1
+					// if is cross zone set 
+					tags := envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+					//iterate over local and if empty put all in the same locality
+					skipEndpoint := false
+					if localityLbEndpoint.Locality == nil || localityLbEndpoint.Locality.Zone == localZone {
+						for _, localRule := range localZonePriority {
+							val, ok := tags[localRule.Key]
+							if ok && val == localRule.Value {
+								ed.Locality = &core_xds.Locality{
+									Zone: localZone,
+									SubZone: fmt.Sprintf("%s=%s", localRule.Key, val),
+									Weight: localRule.Weight,
+									Priority: 0,
+								}
+								break
+							}
+							
+						}
+						if ed.Locality == nil {
+							ed.Locality = &core_xds.Locality{
+								Zone: localZone,
+								Weight: 1,
+								Priority: 0,
+							}
+						}
+					} else {
+						for _, zoneRule := range crossZonePriority {
+							if zoneRule.Disabled {
+								skipEndpoint = true
+								break
+							}
+							if zoneRule.AllZones {
+								ed.Locality = &core_xds.Locality{
+									Zone: localityLbEndpoint.Locality.Zone,
+									Priority: zoneRule.Priority,
+								}
+								break
+							}
+							if len(zoneRule.ExceptZones) > 0{
+								_, ok := zoneRule.ExceptZones[tags[mesh_proto.ZoneTag]]
+								if ok {
+									continue
+								} else {
+									ed.Locality = &core_xds.Locality{
+										Zone: localityLbEndpoint.Locality.Zone,
+										Priority: zoneRule.Priority,
+									}
+									break
+								}
+							}
+							if len(zoneRule.Zones) > 0{
+								_, ok := zoneRule.Zones[tags[mesh_proto.ZoneTag]]
+								if ok {
+									ed.Locality = &core_xds.Locality{
+										Zone: localityLbEndpoint.Locality.Zone,
+										Priority: zoneRule.Priority,
+									}
+									break
+								}
+							}
+						}
+						if ed.Locality == nil {
+							skipEndpoint = true
+						}
+					}
+					if skipEndpoint {
+						continue
+					}
+					
+					//iterate over crosszone
+					
+					ed.Tags = tags
+					address := lbEndpoint.GetEndpoint().GetAddress()
+					if address.GetSocketAddress() != nil {
+						ed.Target = address.GetSocketAddress().GetAddress()
+						ed.Port = address.GetSocketAddress().GetPortValue()
+					}
+					if address.GetPipe() != nil {
+						ed.UnixDomainPath = address.GetPipe().GetPath()
+					}
+					if localityLbEndpoint.Locality != nil && localityLbEndpoint.Locality.Zone != localZone && ed.Locality == nil{
+						ed.Locality = &core_xds.Locality{
+							Zone: localityLbEndpoint.Locality.Zone,
+							Priority: 1,
+						}
+					}
+					endpointsList = append(endpointsList, ed)
+				}
+			}
+		}
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
+		if err != nil {
+			return err
+		}
+		core.Log.Info("test print of endpoints list", "list", endpointsList)
+		rs.Add(&core_xds.Resource{
+			Name:     serviceName,
+			Resource: cla,
+		})
 
+		core.Log.Info("MLBS resources set", "rs", rs)
+	}
 
-
-
+	// ctx.ControlPlane.CLACache.GetCLA
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
 		for _, cla := range endpoints[serviceName] {
 			for _, localityLbEndpoints := range cla.Endpoints {
-				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
 					localityLbEndpoints.Priority = 1
 				}
 			}
 		}
 	}
+	return nil
 }
 
 func (p plugin) configureGateway(
@@ -226,6 +349,7 @@ func (p plugin) configureGateway(
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
 ) error {
 	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
@@ -266,12 +390,14 @@ func (p plugin) configureGateway(
 					continue
 				}
 
-				if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+				if err := p.configureCluster(cluster, conf); err != nil {
 					return err
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				configureEndpoints(proxy.Dataplane, endpoints, serviceName, *conf)
+				if err := configureEndpoints(proxy, endpoints, serviceName, *conf, ctx, rs); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -387,12 +513,23 @@ func (p plugin) configureListener(
 	})
 }
 
-func (p plugin) configureCluster(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
-	if lbConf == nil {
+func (p plugin) configureCluster(c *envoy_cluster.Cluster, config *api.Conf) error {
+	if config == nil {
 		return nil
 	}
-	if err := (&xds.LocalityWeightedLbConfigurer{}).Configure(c); err != nil {
-		return err
+	if shouldUseLocalityWeightedLb(config) {
+		if err := (&xds.LocalityWeightedLbConfigurer{}).Configure(c); err != nil {
+			return err
+		}
 	}
-	return (&xds.LoadBalancerConfigurer{LoadBalancer: *lbConf}).Configure(c)
+	if config.LoadBalancer != nil {
+		if err := (&xds.LoadBalancerConfigurer{LoadBalancer: *config.LoadBalancer}).Configure(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func shouldUseLocalityWeightedLb(config *api.Conf) bool {
+	return config.LocalityAwareness != nil && config.LocalityAwareness.LocalZone != nil && len(config.LocalityAwareness.LocalZone.AffinityTags) > 0
 }

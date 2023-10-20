@@ -3915,12 +3915,131 @@ components:
                           LocalityAwareness contains configuration for locality
                           aware load balancing.
                         properties:
+                          crossZone:
+                            description: >-
+                              CrossZone defines locality aware load balancing
+                              priorities when dataplane proxies inside local
+                              zone are unavailable
+                            properties:
+                              failover:
+                                description: >-
+                                  Failover defines list of load balancing rules
+                                  in order of priority
+                                items:
+                                  properties:
+                                    from:
+                                      description: >-
+                                        From defines the list of zones to which
+                                        the rule applies
+                                      properties:
+                                        zones:
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                        - zones
+                                      type: object
+                                    to:
+                                      description: >-
+                                        Defines to which zones the traffic
+                                        should be load balanced
+                                      properties:
+                                        type:
+                                          description: >-
+                                            Type defines how target zones will be
+                                            picked from available zones
+                                          enum:
+                                            - None
+                                            - Only
+                                            - Any
+                                            - AnyExcept
+                                          type: string
+                                        zones:
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                        - type
+                                        - zones
+                                      type: object
+                                  required:
+                                    - to
+                                  type: object
+                                type: array
+                            type: object
                           disabled:
                             description: >-
                               Disabled allows to disable locality-aware load
                               balancing. When disabled requests are distributed
                               across all endpoints regardless of locality.
                             type: boolean
+                          localZone:
+                            description: >-
+                              LocalZone defines locality aware load balancing
+                              priorities between dataplane proxies inside a zone
+                            properties:
+                              affinityTags:
+                                description: >-
+                                  AffinityTags list of tags for local zone load
+                                  balancing with weights.
+                                items:
+                                  properties:
+                                    key:
+                                      description: >-
+                                        Key defines tag for which affinity is
+                                        configured
+                                      type: string
+                                    weight:
+                                      anyOf:
+                                        - type: integer
+                                        - type: string
+                                      description: >-
+                                        Weight of the tag used for load
+                                        balancing. The bigger the weight the
+                                        bigger the priority. Percentage of local
+                                        traffic load balanced to tag is computed
+                                        by dividing weight by sum of weights
+                                        from all tags. For example two affinity
+                                        tags first with weight 80 and second
+                                        with weight 20, then 80% of traffic will
+                                        be redirected to the first tag, and 20%
+                                        of traffic will be redirected to second
+                                        one. Setting weights is not mandatory.
+                                        When weights are not set control plane
+                                        will compute default weight based on
+                                        list order.
+                                      x-kubernetes-int-or-string: true
+                                  required:
+                                    - key
+                                    - weight
+                                  type: object
+                                type: array
+                            required:
+                              - affinityTags
+                            type: object
+                          overprovisioningFactor:
+                            description: >-
+                              OverprovisioningFactor defines when traffic should
+                              be load balanced to destinations with lower
+                              priorities, based on number of available
+                              destination dataplane proxies.
+                              OverprovisioningFactor indicates how much Example:
+                              If you configure overprovisioningFactor to 200,
+                              and you have deployed 10 destination dataplane
+                              proxies. It means that you have twice as mach
+                              dataplane proxies deployed than needed to handle
+                              expected traffic Then traffic will be load
+                              balanced to failover zones after 5 of destination
+                              dataplane proxies goes down. Default 140
+                            properties:
+                              percentage:
+                                anyOf:
+                                  - type: integer
+                                  - type: string
+                                x-kubernetes-int-or-string: true
+                            required:
+                              - percentage
+                            type: object
                         type: object
                     type: object
                   targetRef:

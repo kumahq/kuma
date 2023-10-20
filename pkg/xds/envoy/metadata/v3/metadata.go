@@ -53,8 +53,10 @@ func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 	return fields
 }
 
-const TagsKey = "io.kuma.tags"
-const LbTagsKey = "envoy.lb"
+const (
+	TagsKey   = "io.kuma.tags"
+	LbTagsKey = "envoy.lb"
+)
 
 func ExtractTags(metadata *envoy_core.Metadata) tags.Tags {
 	tags := tags.Tags{}

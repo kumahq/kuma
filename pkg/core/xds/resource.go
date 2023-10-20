@@ -6,6 +6,7 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	protov1 "github.com/golang/protobuf/proto"
+	"github.com/kumahq/kuma/pkg/core"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -115,8 +116,10 @@ func (s *ResourceSet) Empty() bool {
 func (s *ResourceSet) Add(resources ...*Resource) *ResourceSet {
 	for _, resource := range resources {
 		if s.typeToNamesIndex[s.typeName(resource.Resource)] == nil {
+			core.Log.Info("resource doesnt exists, adding")
 			s.typeToNamesIndex[s.typeName(resource.Resource)] = map[string]*Resource{}
 		}
+		core.Log.Info("resource exists, override")
 		s.typeToNamesIndex[s.typeName(resource.Resource)][resource.Name] = resource
 	}
 	return s

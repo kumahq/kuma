@@ -20,7 +20,7 @@ type Cluster interface {
 	Mesh() string
 	Tags() tags.Tags
 	Hash() string
-	IsExternalService() bool	
+	IsExternalService() bool
 	Priority() map[int]map[string][]string
 }
 
@@ -55,6 +55,7 @@ func (c *ClusterImpl) IsExternalService() bool                   { return c.isEx
 func (c *ClusterImpl) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
 func (c *ClusterImpl) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
 func (c *ClusterImpl) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+func (c *ClusterImpl) Priority() map[int]map[string][]string     { return map[int]map[string][]string{} }
 
 func (c *ClusterImpl) SetName(name string) {
 	c.name = name
