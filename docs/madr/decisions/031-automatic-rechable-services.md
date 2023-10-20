@@ -245,6 +245,8 @@ inlineDnsTable:
 
 And that I would have a special listener in Envoy that would have an HTTP filter that would use `odcds`.
 
+You can see a demo of this in https://github.com/slonka/test-odcds.
+
 Pros/cons:
 * This is a very clean solution that would require minimal effort from the users, just marking services with `kuma.io/protocol: http`
 * It requires implementing `odcds` in `go-control-plane` and changes in Kuma
