@@ -91,7 +91,7 @@ func applyToGateways(
 	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
 		protocol := core_mesh.ParseProtocol(mesh_proto.MeshGateway_Listener_Protocol_name[int32(listenerInfo.Listener.Protocol)])

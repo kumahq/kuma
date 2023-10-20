@@ -207,7 +207,7 @@ func inspectGatewayRouteDataplanes(
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not generate listener info")
 				return
 			}
-			for _, listener := range gateway.ExtractGatewayListener(proxy) {
+			for _, listener := range gateway.ExtractGatewayListeners(proxy) {
 				for _, host := range listener.HostInfos {
 					for _, entry := range host.Entries {
 						if entry.Route != gatewayRoute.GetMeta().GetName() {
@@ -349,7 +349,7 @@ func newGatewayDataplaneInspectResponse(
 	proxy *core_xds.Proxy,
 ) api_server_types.GatewayDataplaneInspectResult {
 	result := api_server_types.NewGatewayDataplaneInspectResult()
-	gwListeners := gateway.ExtractGatewayListener(proxy)
+	gwListeners := gateway.ExtractGatewayListeners(proxy)
 	if len(gwListeners) > 0 {
 		result.Gateway = api_server_types.ResourceKeyEntry{
 			Mesh: gwListeners[0].Gateway.GetMeta().GetMesh(),
@@ -442,7 +442,7 @@ func gatewayEntriesByPolicy(
 	proxy *core_xds.Proxy,
 ) map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry {
 	policyMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry{}
-	gwListeners := gateway.ExtractGatewayListener(proxy)
+	gwListeners := gateway.ExtractGatewayListeners(proxy)
 
 	dpKey := core_model.MetaToResourceKey(proxy.Dataplane.GetMeta())
 	resourceKey := api_server_types.ResourceKeyEntry{

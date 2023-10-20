@@ -18,14 +18,21 @@ import (
 )
 
 func init() {
-	core_plugins.Register(metadata.PluginName, &plugin{})
+	core_plugins.Register(metadata.PluginName, NewPlugin())
 }
 
 var log = core.Log.WithName("plugin").WithName("runtime").WithName("gateway")
 
 type plugin struct{}
 
-var _ core_plugins.BootstrapPlugin = &plugin{}
+var (
+	_ core_plugins.BootstrapPlugin = &plugin{}
+	_ core_plugins.ProxyPlugin     = &plugin{}
+)
+
+func NewPlugin() core_plugins.Plugin {
+	return &plugin{}
+}
 
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	if context.Config().Environment == config_core.KubernetesEnvironment {
@@ -52,7 +59,7 @@ func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext,
 	return nil
 }
 
-func ExtractGatewayListener(proxy *core_xds.Proxy) []GatewayListenerInfo {
+func ExtractGatewayListeners(proxy *core_xds.Proxy) []GatewayListenerInfo {
 	ext := proxy.RuntimeExtensions[metadata.PluginName]
 	if ext == nil {
 		return nil

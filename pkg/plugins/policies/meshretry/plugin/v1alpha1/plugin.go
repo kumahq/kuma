@@ -83,7 +83,7 @@ func applyToGateway(
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		configurer := plugin_xds.Configurer{
 			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset()),
 			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),

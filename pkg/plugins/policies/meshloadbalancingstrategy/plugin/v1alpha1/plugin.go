@@ -138,7 +138,7 @@ func (p plugin) configureGateway(
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
 ) error {
-	gatewayListenerInfos := gateway_plugin.ExtractGatewayListener(proxy)
+	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
 	if len(gatewayListenerInfos) == 0 {
 		return nil
 	}

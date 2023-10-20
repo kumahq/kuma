@@ -112,7 +112,7 @@ func applyToGateways(
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, listenerInfo := range gateway.ExtractGatewayListener(proxy) {
+	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway.RouteDestinationsMutable(hostInfo.Entries)
 			for _, dest := range destinations {

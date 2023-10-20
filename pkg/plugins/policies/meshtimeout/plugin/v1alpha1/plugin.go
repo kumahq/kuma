@@ -168,7 +168,7 @@ func applyToGateway(
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		conf := getConf(toRules.Rules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 

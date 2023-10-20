@@ -56,7 +56,7 @@ func applyToGateways(
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 ) error {
-	for _, listenerInfo := range gateway_plugin.ExtractGatewayListener(proxy) {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
 		listenerKey := core_rules.InboundListener{

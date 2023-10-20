@@ -205,7 +205,7 @@ func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, pro
 
 	var limits []RuntimeResoureLimitListener
 
-	for _, info := range ExtractGatewayListener(proxy) {
+	for _, info := range ExtractGatewayListeners(proxy) {
 		cdsResources, err := g.generateCDS(ctx, xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
