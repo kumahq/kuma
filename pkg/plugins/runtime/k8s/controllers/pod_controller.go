@@ -179,7 +179,7 @@ func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, po
 func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		zi := &mesh_k8s.ZoneIngress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name},
+			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
 		}
 		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}
@@ -201,7 +201,7 @@ func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core
 func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		zi := &mesh_k8s.ZoneEgress{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name},
+			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
 		}
 		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}

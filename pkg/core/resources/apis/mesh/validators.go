@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -10,9 +11,20 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"sigs.k8s.io/yaml"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+)
+
+const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
+
+var (
+	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z-_]*$`)
+	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
+	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
+	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
+	domainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 )
 
 type (
@@ -35,11 +47,9 @@ type ValidateSelectorsOpts struct {
 	RequireAtLeastOneSelector bool
 }
 
-var (
-	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
-	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
-	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
-)
+type ValidateTargetRefOpts struct {
+	SupportedKinds []common_api.TargetRefKind
+}
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
 	var err validators.ValidationError
@@ -75,7 +85,7 @@ func ValidateTags(path validators.PathBuilder, tags map[string]string, opts Vali
 		func(path validators.PathBuilder, key, value string) validators.ValidationError {
 			var err validators.ValidationError
 			if !tagValueCharacterSet.MatchString(value) {
-				err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)
+				err.AddViolationAt(path.Key(key), "tag value must consist of alphanumeric characters, dots, dashes and underscores")
 			}
 			return err
 		},
@@ -97,7 +107,7 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 			err.AddViolationAt(path, "tag name must be non-empty")
 		}
 		if !tagNameCharacterSet.MatchString(key) {
-			err.AddViolationAt(path.Key(key), `tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`)
+			err.AddViolationAt(path.Key(key), "tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores")
 		}
 		for _, validate := range opts.ExtraTagKeyValidators {
 			err.Add(validate(path, key))
@@ -188,10 +198,6 @@ func ValidatePort(path validators.PathBuilder, port uint32) validators.Validatio
 
 	return err
 }
-
-const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
-
-var domainRegexp = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 
 // ValidateHostname validates a gateway hostname field. A hostname may be one of
 //   - '*'
@@ -317,4 +323,97 @@ func SelectorKeyNotInSet(keyName ...string) TagKeyValidatorFunc {
 
 			return err
 		})
+}
+
+func ValidateTargetRef(
+	ref common_api.TargetRef,
+	opts *ValidateTargetRefOpts,
+) validators.ValidationError {
+	var err validators.ValidationError
+
+	if ref.Kind == "" {
+		err.AddViolation("kind", validators.MustBeDefined)
+		return err
+	}
+	if !slices.Contains(opts.SupportedKinds, ref.Kind) {
+		err.AddViolation("kind", "value is not supported")
+		return err
+	}
+
+	switch ref.Kind {
+	case common_api.Mesh:
+		if ref.Name != "" {
+			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
+		}
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+	case common_api.MeshSubset:
+		err.Add(disallowedField("name", ref.Name, ref.Kind))
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+	case common_api.MeshService, common_api.MeshHTTPRoute:
+		err.Add(requiredField("name", ref.Name, ref.Kind))
+		err.Add(validateName(ref.Name))
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+	case common_api.MeshServiceSubset, common_api.MeshGateway:
+		err.Add(requiredField("name", ref.Name, ref.Kind))
+		err.Add(validateName(ref.Name))
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+	}
+
+	return err
+}
+
+func validateName(value string) validators.ValidationError {
+	var err validators.ValidationError
+
+	if !nameCharacterSet.MatchString(value) {
+		err.AddViolation(
+			"name",
+			"invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.",
+		)
+	}
+
+	return err
+}
+
+func disallowedField[T ~string | ~map[string]string](
+	name string,
+	value T,
+	kind common_api.TargetRefKind,
+) validators.ValidationError {
+	var err validators.ValidationError
+
+	if isSet(value) {
+		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustNotBeSet, kind))
+	}
+
+	return err
+}
+
+func requiredField[T ~string | ~map[string]string](
+	name string,
+	value T,
+	kind common_api.TargetRefKind,
+) validators.ValidationError {
+	var err validators.ValidationError
+
+	if !isSet(value) {
+		err.AddViolation(name, fmt.Sprintf("%s with kind %v", validators.MustBeSet, kind))
+	}
+
+	return err
+}
+
+func isSet[T ~string | ~map[string]string](value T) bool {
+	switch v := any(value).(type) {
+	case string:
+		return v != ""
+	case map[string]string:
+		return len(v) > 0
+	default:
+		return false
+	}
 }

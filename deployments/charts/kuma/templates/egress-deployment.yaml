@@ -74,7 +74,7 @@ spec:
               value: "egress"
           args:
             - run
-            - --log-level=info
+            - --log-level={{ .Values.egress.logLevel | default "info" }}
           ports:
             - containerPort: 10002
           livenessProbe:

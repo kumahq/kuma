@@ -138,6 +138,34 @@ var _ = Describe("ZoneWatch", func() {
 
 		Consistently(timeouts.Recv(), zoneWentOfflineCheckTimeout).ShouldNot(Receive())
 	})
+	It("shouldn't timeout immediately if zoneinsight time is old", func() {
+		zoneInsight := system.NewZoneInsightResource()
+		Expect(rm.Get(
+			context.Background(),
+			zoneInsight,
+			store.GetByKey(zone, core_model.NoMesh),
+		)).To(Succeed())
+		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
+			Time: timestamppb.New(time.Now().AddDate(0, 0, -1)),
+		}
+		Expect(rm.Update(
+			context.Background(),
+			zoneInsight,
+		)).To(Succeed())
+
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
+		})
+
+		// wait for opened stream to be registered
+		// in real conditions the interval will be large enough
+		// that these events will almost certainly be handled
+		// by the ZoneWatch loop between polls and before the timeout
+		time.Sleep(1 * pollInterval)
+
+		Expect(timeouts.Recv()).NotTo(Receive())
+	})
 	It("shouldn't timeout as long as ZoneInsight is updated", func() {
 		eventBus.Send(service.ZoneOpenedStream{
 			TenantID: "",
