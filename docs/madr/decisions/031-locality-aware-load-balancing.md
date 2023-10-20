@@ -108,7 +108,7 @@ and all other endpoints are going to have the weight of 1.
 
 (9) In `failoverThreshold` you configure the percentage of live endpoints below which we will start load balancing to the 
 next priority. This is the inverse of [Envoy overprovisioning factor](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor). 
-Default: 70%
+Default: 50%
 
 
 ### API examples based on use cases
