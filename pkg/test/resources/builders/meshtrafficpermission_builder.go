@@ -48,6 +48,16 @@ func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_api.TargetRef, a
 	return m
 }
 
+func (m *MeshTrafficPermissionBuilder) AddFromX(targetRef common_api.TargetRef, action mtp_proto.Action) *MeshTrafficPermissionBuilder {
+	m.res.Spec.From = append(m.res.Spec.From, mtp_proto.From{
+		TargetRef: targetRef,
+		Default: mtp_proto.Conf{
+			Action: action,
+		},
+	})
+	return m
+}
+
 func (m *MeshTrafficPermissionBuilder) Build() *mtp_proto.MeshTrafficPermissionResource {
 	if err := m.res.Validate(); err != nil {
 		panic(err)

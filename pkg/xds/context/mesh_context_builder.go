@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -19,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/kumahq/kuma/pkg/xds/topology/graph"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -126,17 +129,32 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
+	var rsGraph *graph.ReachableServicesGraph
+	if len(resources.MeshTrafficPermissions().Items) > 0 {
+		var services []string
+		for _, dp := range dataplanes {
+			for _, svc := range dp.Spec.TagSet().Values(mesh_proto.ServiceTag) {
+				services = append(services, svc)
+			}
+		}
+		rsGraph, err = graph.BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not build reachable services graph")
+		}
+	}
+
 	return &MeshContext{
-		Hash:                newHash,
-		Resource:            mesh,
-		Resources:           resources,
-		DataplanesByName:    dataplanesByName,
-		EndpointMap:         endpointMap,
-		CrossMeshEndpoints:  crossMeshEndpointMap,
-		VIPDomains:          domains,
-		VIPOutbounds:        outbounds,
-		ServiceTLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
-		DataSourceLoader:    datasource.NewStaticLoader(resources.Secrets().Items),
+		Hash:                   newHash,
+		Resource:               mesh,
+		Resources:              resources,
+		DataplanesByName:       dataplanesByName,
+		EndpointMap:            endpointMap,
+		CrossMeshEndpoints:     crossMeshEndpointMap,
+		VIPDomains:             domains,
+		VIPOutbounds:           outbounds,
+		ServiceTLSReadiness:    m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
+		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
+		ReachableServicesGraph: rsGraph,
 	}, nil
 }
 

@@ -10,6 +10,13 @@ func TargetRefMesh() common_api.TargetRef {
 	}
 }
 
+func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: "MeshSubset",
+		Tags: tagsKVToMap(kv),
+	}
+}
+
 func TargetRefService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: "MeshService",
