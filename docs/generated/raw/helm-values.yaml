@@ -406,6 +406,9 @@ ingress:
   # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
   replicas: 1
 
+  # -- Log level for ingress (available values: off|info|debug)
+  logLevel: info
+
   # -- Define the resources to allocate to mesh ingress
   resources:
     requests:
@@ -525,6 +528,9 @@ egress:
   drainTime: 30s
   # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # -- Log level for egress (available values: off|info|debug)
+  logLevel: info
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:
