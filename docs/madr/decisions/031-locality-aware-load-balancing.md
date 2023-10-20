@@ -90,7 +90,8 @@ affinityTags:
     weight: 9
 ```
 
-and all other endpoints are going to have the weight of 1.
+and all other endpoints are going to have the weight of 1. When configuring weight you need to either specify weights 
+for all tags or don't specify weights at all.
 
 (4) In `crossZone` section, you configure zones priority.
 
