@@ -59,8 +59,8 @@ to:
               zones: ["zone-1"]
           - to:
               type: Any
-      overprovisioningFactor: 
-        percentage: 120                                     # (9)
+      failoverThreshold: 
+        percentage: 70                                      # (7)
 ```
 
 
@@ -83,11 +83,11 @@ Would create weights:
 ```yaml
 affinityTags:
   - key: "k8s.io/node"
-    weight: 1000
+    weight: 900
   - key: k8s.io/az"
-    weight: 100
+    weight: 90
   - key: k8s.io/region"
-    weight: 10
+    weight: 9
 ```
 
 and all other endpoints are going to have the weight of 1.
@@ -106,7 +106,9 @@ and all other endpoints are going to have the weight of 1.
 - `Any` - will load balance traffic to all zones
 - `AnyExcept` - will load balance traffic to all zones except ones specified in `zones` field
 
-(9) In [`overprovisioningFactor`](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor) section, you configure how early `Envoy` should consider other priorities. Default: 200%, which means the traffic goes out of the zone when there is less then 50% of healthy endpoints in the local zone.
+(9) In `failoverThreshold` you configure the percentage of live endpoints below which we will start load balancing to the 
+next priority. This is the inverse of [Envoy overprovisioning factor](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor). 
+Default: 70%
 
 
 ### API examples based on use cases
