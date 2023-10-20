@@ -73,7 +73,7 @@ func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) Validatio
 		return err
 	}
 	if *value <= 0 {
-		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
+		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThanZero)
 	}
 	return err
 }

@@ -44,19 +44,17 @@ type LocalityAwareness struct {
 	// CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
 	// are unavailable
 	CrossZone *CrossZone `json:"crossZone,omitempty"`
-	// OverprovisioningFactor defines when traffic should be load balanced to destinations with lower priorities,
-	// based on number of available destination dataplane proxies.
-	// OverprovisioningFactor indicates how much
-	// Example: If you configure overprovisioningFactor to 200, and you have deployed 10 destination dataplane proxies.
-	// It means that you have twice as mach dataplane proxies deployed than needed to handle expected traffic
-	// Then traffic will be load balanced to failover zones after 5 of destination dataplane proxies goes down.
-	// Default 140
-	OverprovisioningFactor *OverProvisioningFactor `json:"overprovisioningFactor,omitempty"`
+	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
+	// next priority starts.
+	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
+	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
+	// Default 70
+	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
 type LocalZone struct {
-	// AffinityTags list of tags for local zone load balancing with weights.
-	AffinityTags []string `json:"affinityTags"`
+	// AffinityTags list of tags for local zone load balancing.
+	AffinityTags []AffinityTag `json:"affinityTags"`
 }
 
 type AffinityTag struct {
@@ -64,10 +62,10 @@ type AffinityTag struct {
 	Key string `json:"key"`
 	// Weight of the tag used for load balancing. The bigger the weight the bigger the priority.
 	// Percentage of local traffic load balanced to tag is computed by dividing weight by sum of weights from all tags.
-	// For example two affinity tags first with weight 80 and second with weight 20,
+	// For example with two affinity tags first with weight 80 and second with weight 20,
 	// then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
 	// Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
-	Weight *intstr.IntOrString `json:"weight"`
+	Weight *int32 `json:"weight"`
 }
 
 type CrossZone struct {
@@ -78,7 +76,7 @@ type CrossZone struct {
 type Failover struct {
 	// From defines the list of zones to which the rule applies
 	From *FromZone `json:"from,omitempty"`
-	// Defines to which zones the traffic should be load balanced
+	// To defines to which zones the traffic should be load balanced
 	To ToZone `json:"to"`
 }
 
@@ -92,7 +90,7 @@ type ToZone struct {
 	Zones []string   `json:"zones"`
 }
 
-type OverProvisioningFactor struct {
+type FailoverThreshold struct {
 	Percentage intstr.IntOrString `json:"percentage"`
 }
 
