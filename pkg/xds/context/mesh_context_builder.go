@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	"github.com/kumahq/kuma/pkg/xds/topology/graph"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -129,7 +128,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
-	var rsGraph *graph.ReachableServicesGraph
+	var rsGraph *ReachableServicesGraph
 	if len(resources.MeshTrafficPermissions().Items) > 0 {
 		var services []string
 		for _, dp := range dataplanes {
@@ -137,7 +136,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 				services = append(services, svc)
 			}
 		}
-		rsGraph, err = graph.BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)
+		rsGraph, err = BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not build reachable services graph")
 		}

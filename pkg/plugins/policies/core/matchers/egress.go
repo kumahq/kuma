@@ -11,10 +11,9 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.ExternalServiceResource, resources Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
 
 	if len(policies.GetItems()) == 0 {

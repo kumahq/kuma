@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
-	"github.com/kumahq/kuma/pkg/xds/topology/graph"
 )
 
 type Context struct {
@@ -44,7 +43,7 @@ type MeshContext struct {
 	VIPOutbounds           []*mesh_proto.Dataplane_Networking_Outbound
 	ServiceTLSReadiness    map[string]bool
 	DataSourceLoader       datasource.Loader
-	ReachableServicesGraph *graph.ReachableServicesGraph
+	ReachableServicesGraph *ReachableServicesGraph
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

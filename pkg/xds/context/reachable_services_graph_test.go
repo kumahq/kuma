@@ -1,4 +1,4 @@
-package graph_test
+package context_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -7,18 +7,18 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/xds/topology/graph"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ = Describe("Reachable Services Graph", func() {
 
 	type testCase struct {
 		mtps     []*v1alpha1.MeshTrafficPermissionResource
-		expected graph.ReachableServicesGraph
+		expected xds_context.ReachableServicesGraph
 	}
 
 	services := []string{"a", "b", "c", "d", "e"}
-	fromAllToAllGraph := graph.ReachableServicesGraph{
+	fromAllToAllGraph := xds_context.ReachableServicesGraph{
 		FromAll: map[string]struct{}{
 			"a": {},
 			"b": {},
@@ -31,7 +31,7 @@ var _ = Describe("Reachable Services Graph", func() {
 
 	DescribeTable("should generate graph",
 		func(given testCase) {
-			g, err := graph.BuildReachableServicesGraph(services, given.mtps)
+			g, err := xds_context.BuildReachableServicesGraph(services, given.mtps)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(*g).To(Equal(given.expected))
 		},
@@ -51,14 +51,14 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll:     map[string]struct{}{},
 				Connections: map[string]map[string]struct{}{},
 			},
 		}),
 		Entry("no MeshTrafficPermissions", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll:     map[string]struct{}{},
 				Connections: map[string]map[string]struct{}{},
 			},
@@ -70,7 +70,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{},
 				Connections: map[string]map[string]struct{}{
 					"a": {"b": {}},
@@ -84,7 +84,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.AllowWithShadowDeny).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{},
 				Connections: map[string]map[string]struct{}{
 					"a": {"b": {}},
@@ -106,7 +106,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{
 					"d": {},
 				},
@@ -127,7 +127,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Deny).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{
 					"a": {},
 					"c": {},
@@ -154,7 +154,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefServiceSubset("a", "version", "v2"), v1alpha1.Deny).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{},
 				Connections: map[string]map[string]struct{}{
 					"a": {"b": {}},
@@ -201,7 +201,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{
 					"e": {},
 					"a": {},
@@ -249,7 +249,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: graph.ReachableServicesGraph{
+			expected: xds_context.ReachableServicesGraph{
 				FromAll: map[string]struct{}{
 					"a": {},
 				},
@@ -278,7 +278,7 @@ var _ = Describe("Reachable Services Graph", func() {
 				Build(),
 		}
 
-		_, err := graph.BuildReachableServicesGraph(services, mtps)
+		_, err := xds_context.BuildReachableServicesGraph(services, mtps)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps[0].Spec.TargetRef.Kind).To(Equal(common_api.MeshSubset))

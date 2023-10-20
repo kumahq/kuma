@@ -1,4 +1,4 @@
-package graph
+package context
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type ReachableServicesGraph struct {
@@ -58,7 +57,7 @@ func (r *ReachableServicesGraph) CanReachFromAny(fromSvcs []string, to string) b
 }
 
 func BuildReachableServicesGraph(services []string, mtps []*v1alpha1.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
-	resources := xds_context.Resources{
+	resources := Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			v1alpha1.MeshTrafficPermissionType: &v1alpha1.MeshTrafficPermissionResourceList{
 				Items: replaceSubsets(mtps),

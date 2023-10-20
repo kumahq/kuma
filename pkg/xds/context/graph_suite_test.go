@@ -1,4 +1,4 @@
-package graph_test
+package context_test
 
 import (
 	"testing"
