@@ -34,7 +34,7 @@ resources:
                 route:
                   cluster: backend
                   requestMirrorPolicies:
-                  - cluster: payments-_0_
+                  - cluster: payments-9f43ffb3c22f8c19
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND
@@ -47,7 +47,7 @@ resources:
                 route:
                   cluster: backend
                   requestMirrorPolicies:
-                  - cluster: payments-_0_
+                  - cluster: payments-9f43ffb3c22f8c19
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND
