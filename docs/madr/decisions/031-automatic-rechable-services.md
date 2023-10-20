@@ -25,23 +25,26 @@ How do we ensure a smooth Mesh migration (keeping in mind the performance and mi
 ## Considered Options
 
 * Using MeshTrafficPermission to generate reverse graph that would feed into reachable services
-* {option 2}
-* {option 3}
-* … <!-- numbers of options can vary -->
+* Dynamically load clusters using ODCDS
+* Using MeshHTTPRoute / MeshTCPRoute to populate the clusters
 
 ## Decision Outcome
 
-Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
+Chosen option: "Using MeshTrafficPermission to generate reverse graph that would feed into reachable services"
 
-### Positive Consequences <!-- optional -->
+### Positive Consequences
 
-* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
-* …
+* not invasive, plug and play, can be removed if proven not efficient enough
+* possible to implement in the given time frame
 
-### Negative Consequences <!-- optional -->
+### Negative Consequences
 
-* {e.g., compromising quality attribute, follow-up decisions required, …}
-* …
+* requires a lot of manual work, in ideal situation I think we could try to do a PoC of ODCDS
+* everything in the option section
+  * requires knowledge of all services that consume API of the service being migrated
+  * breaking "top-level targetRef selects proxy to configure" rule
+  * wrong RBAC stats on the server side
+  * wrong errors on the client side, instead of 403 client will get 404/"no upstream"
 
 ## Pros and Cons of the Options
 
@@ -225,23 +228,36 @@ There are other concerns that also need addressing:
 
 ### Dynamically load clusters using ODCDS
 
+ODCDS only works with `host` header, so it would only work for HTTP traffic.
 
+Based on that limitation we could have in our DNS component a special IP for services with `kuma.io/protocol: http`
 
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
+```yaml
+inlineDnsTable:
+  virtualDomains:
+  - answerTtl: 30s
+    endpoint:
+      addressList:
+        address:
+        - 241.0.0.0 # normally it's 240.0.0.0
+    name: some-service.svc
+```
 
-### {option 3}
+And that I would have a special listener in Envoy that would have an HTTP filter that would use `odcds`.
 
-{example | description | pointer to more information | …} <!-- optional -->
+Pros/cons:
+* This is a very clean solution that would require minimal effort from the users, just marking services with `kuma.io/protocol: http`
+* It requires implementing `odcds` in `go-control-plane` and changes in Kuma
+* No solution for TCP traffic
+* Not possible in the required timeframe
 
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
+### Using MeshHTTPRoute / MeshTCPRoute to populate the clusters
 
-## Links <!-- optional -->
+This solution does not seem any different to me than just using reachable services, and it has the following downsides:
+* Requires work but does not give additional security benefits
+* Requires defining empty routes that do not do anything
 
-* {Link type} {Link to ADR} <!-- example: Refined by [ADR-0005](0005-example.md) -->
-* … <!-- numbers of links can vary -->
+## Links
+
+* https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/on_demand/v3/on_demand.proto
+* https://github.com/slonka/test-odcds
