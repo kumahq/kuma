@@ -37,6 +37,39 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 	return em
 }
 
+func GatherEndpointsCopy(rs *xds.ResourceSet) map[string][]*endpointv3.ClusterLoadAssignment {
+	em := make(map[string][]*endpointv3.ClusterLoadAssignment)
+	for _, res := range rs.Resources(envoy_resource.EndpointType) {
+		if res.Origin != generator.OriginOutbound {
+			continue
+		}
+
+		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
+		serviceName := ServiceFromClusterName(cla.ClusterName)
+
+		// Create a copy of the ClusterLoadAssignment object
+		copyCla := *cla
+
+		em[serviceName] = append(em[serviceName], &copyCla)
+	}
+	for _, res := range rs.Resources(envoy_resource.ClusterType) {
+		if res.Origin != generator.OriginOutbound {
+			continue
+		}
+
+		cluster := res.Resource.(*clusterv3.Cluster)
+		serviceName := ServiceFromClusterName(cluster.Name)
+
+		// Check if there is a LoadAssignment to copy
+		if cluster.LoadAssignment != nil {
+			// Create a copy of the LoadAssignment object
+			copyLoadAssignment := *cluster.LoadAssignment
+			em[serviceName] = append(em[serviceName], &copyLoadAssignment)
+		}
+	}
+	return em
+}
+
 func GatherEgressEndpoints(rs *xds.ResourceSet) map[string]*endpointv3.ClusterLoadAssignment {
 	em := map[string]*endpointv3.ClusterLoadAssignment{}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {

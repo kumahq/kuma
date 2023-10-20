@@ -71,18 +71,25 @@ func (l LocalityLbEndpointsMap) append(ep core_xds.Endpoint, endpoint *envoy_end
 	if _, ok := l[key]; !ok {
 		var locality *envoy_core.Locality
 		priority := uint32(0)
+		lbWeight := uint32(0)
 		if ep.HasLocality() {
 			locality = &envoy_core.Locality{
 				Zone: ep.Locality.Zone,
+				SubZone: ep.Locality.SubZone,
 			}
 			priority = ep.Locality.Priority
+			lbWeight = ep.Locality.Weight
 		}
 
-		l[key] = &envoy_endpoint.LocalityLbEndpoints{
+		localityLbEndpoint := &envoy_endpoint.LocalityLbEndpoints{
 			LbEndpoints: make([]*envoy_endpoint.LbEndpoint, 0),
 			Locality:    locality,
 			Priority:    priority,
 		}
+		if lbWeight > 0 {
+			localityLbEndpoint.LoadBalancingWeight = &proto_wrappers.UInt32Value{Value: lbWeight}
+		}
+		l[key] = localityLbEndpoint
 	}
 	l[key].LbEndpoints = append(l[key].LbEndpoints, endpoint)
 }

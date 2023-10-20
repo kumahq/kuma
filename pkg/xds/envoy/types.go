@@ -20,7 +20,8 @@ type Cluster interface {
 	Mesh() string
 	Tags() tags.Tags
 	Hash() string
-	IsExternalService() bool
+	IsExternalService() bool	
+	Priority() map[int]map[string][]string
 }
 
 type Split interface {

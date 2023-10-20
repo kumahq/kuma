@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
@@ -55,12 +56,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := policies_xds.GatherClusters(rs)
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
+	endpointsCopy = policies_xds.GatherEndpointsCopy(rs)
 
 	if err := p.configureGateway(ctx, proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpointsCopy)
 }
 
 func (p plugin) configureDPP(
@@ -111,6 +113,11 @@ func (p plugin) configureDPP(
 	return nil
 }
 
+type TestTags struct {
+	Key string
+	Weight uint32
+}
+
 func configureEndpoints(
 	dataplane *core_mesh.DataplaneResource,
 	endpoints policies_xds.EndpointMap,
@@ -121,6 +128,85 @@ func configureEndpoints(
 	if inbounds := dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
 		zone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
 	}
+
+	testTags := []TestTags{
+		{
+			Key: "k8s.io/node"
+		},
+		{
+			Key: "k8s.io/az"
+		},
+		{
+			Key: "k8s.io/test"
+		},
+	}
+
+	matchingTags := map[string]string{}
+	// Locality is based on infrastrucater infromation and the same dataplane shouldnt have different values
+	tagsSet := dataplane.Spec.TagSet()
+	for _, tags := range testTags {
+		for key, _ := range tagsSet[tags.Key] {
+			matchingTags[tags.Key] = key
+			
+		}
+	}
+
+	//
+	//
+	// LocalZone
+	// k8s.io/node: value, weight
+	// k8s.io/az: value, weight
+	// k8s.io/test: value, weight
+	//
+	//
+	// endpointMap := core_xds.EndpointMap{}
+	endpoints := []core_xds.Endpoint{}
+	for _, endpoint := range endpoints[serviceName]{
+		for _, localityLbEndpoint := range endpoint.Endpoints {
+			ed := core_xds.Endpoint{}
+			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints{
+				ed.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
+				// check if has first tag, if yes set value as subzone and weight
+				// if no go to another
+				// if has no tag set default weight 1
+				// if is cross zone set 
+				tags := envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+				for key, val := range matchingTags {
+					if tags[key] == val {
+						ed.Locality = &core_xds.Locality{
+
+						}
+
+						// check zone 
+						// add locality and priority
+					}
+				}
+				ed.Tags = tags
+				address := lbEndpoint.GetEndpoint().GetAddress()
+				if address.GetSocketAddress() != nil {
+					ed.Target = address.GetSocketAddress().GetAddress()
+					ed.Port = address.GetSocketAddress().GetPortValue()
+				}
+				if address.GetPipe() != nil {
+					ed.UnixDomainPath = address.GetPipe().GetPath()
+				}
+
+
+				
+			}
+		}
+	}
+
+	// check if tag is inside
+	// if yes take the endpoints from these group
+	// take another
+	// take zones priorities
+
+	
+
+
+
+
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
 		for _, cla := range endpoints[serviceName] {
 			for _, localityLbEndpoints := range cla.Endpoints {
@@ -304,6 +390,9 @@ func (p plugin) configureListener(
 func (p plugin) configureCluster(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
 	if lbConf == nil {
 		return nil
+	}
+	if err := (&xds.LocalityWeightedLbConfigurer{}).Configure(c); err != nil {
+		return err
 	}
 	return (&xds.LoadBalancerConfigurer{LoadBalancer: *lbConf}).Configure(c)
 }
