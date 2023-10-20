@@ -128,7 +128,7 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: db-_0_
+- name: db-c182dd9f4bf584d7
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -136,46 +136,7 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: db-_0_
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - kuma
-          combinedValidationContext:
-            defaultValidationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: spiffe://mesh1/db
-                sanType: URI
-            validationContextSdsSecretConfig:
-              name: mesh_ca:secret:mesh1
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert:secret:mesh1
-            sdsConfig:
-              ads: {}
-              resourceApiVersion: V3
-        sni: db{mesh=mesh1,role=master}
-    type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
-- name: db-_1_
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    name: db-_1_
+    name: db-c182dd9f4bf584d7
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -200,6 +161,45 @@ resources:
               ads: {}
               resourceApiVersion: V3
         sni: db{mesh=mesh1,role=replica}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: db-f7d9086d4169338b
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: db-f7d9086d4169338b
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://mesh1/db
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:mesh1
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:mesh1
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: db{mesh=mesh1,role=master}
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -296,28 +296,10 @@ resources:
               address: 192.168.0.2
               portValue: 8082
         loadBalancingWeight: 1
-- name: db-_0_
+- name: db-c182dd9f4bf584d7
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db-_0_
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.3
-              portValue: 5432
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              role: master
-            envoy.transport_socket_match:
-              role: master
-- name: db-_1_
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db-_1_
+    clusterName: db-c182dd9f4bf584d7
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -332,6 +314,24 @@ resources:
               role: replica
             envoy.transport_socket_match:
               role: replica
+- name: db-f7d9086d4169338b
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: db-f7d9086d4169338b
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              role: master
+            envoy.transport_socket_match:
+              role: master
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -455,9 +455,9 @@ resources:
           statPrefix: db
           weightedClusters:
             clusters:
-            - name: db-_0_
+            - name: db-f7d9086d4169338b
               weight: 10
-            - name: db-_1_
+            - name: db-c182dd9f4bf584d7
               weight: 90
     metadata:
       filterMetadata:
