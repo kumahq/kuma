@@ -37,34 +37,24 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 	return em
 }
 
-func GatherEndpointsCopy(rs *xds.ResourceSet) map[string][]*endpointv3.ClusterLoadAssignment {
-	em := make(map[string][]*endpointv3.ClusterLoadAssignment)
+func GatherSplitEndpoints(rs *xds.ResourceSet) EndpointMap {
+	em := EndpointMap{}
 	for _, res := range rs.Resources(envoy_resource.EndpointType) {
-		if res.Origin != generator.OriginOutbound {
+		if !IsSplitClusterName(res.Name) {
 			continue
 		}
 
 		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
-		serviceName := ServiceFromClusterName(cla.ClusterName)
-
-		// Create a copy of the ClusterLoadAssignment object
-		copyCla := *cla
-
-		em[serviceName] = append(em[serviceName], &copyCla)
+		em[cla.ClusterName] = append(em[cla.ClusterName], cla)
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
-		if res.Origin != generator.OriginOutbound {
+		if !IsSplitClusterName(res.Name) {
 			continue
 		}
 
 		cluster := res.Resource.(*clusterv3.Cluster)
-		serviceName := ServiceFromClusterName(cluster.Name)
-
-		// Check if there is a LoadAssignment to copy
 		if cluster.LoadAssignment != nil {
-			// Create a copy of the LoadAssignment object
-			copyLoadAssignment := *cluster.LoadAssignment
-			em[serviceName] = append(em[serviceName], &copyLoadAssignment)
+			em[cluster.Name] = append(em[cluster.Name], cluster.LoadAssignment)
 		}
 	}
 	return em

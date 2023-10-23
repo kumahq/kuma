@@ -8,6 +8,21 @@ resources:
       - endpoint:
           address:
             socketAddress:
+              address: 192.168.1.1
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      - endpoint:
+          address:
+            socketAddress:
               address: 192.168.1.2
               portValue: 8080
         metadata:
@@ -20,10 +35,6 @@ resources:
               k8s.io/node: node2
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-      loadBalancingWeight: 1
-      locality:
-        zone: zone-1
-    - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
@@ -39,31 +50,6 @@ resources:
               k8s.io/az: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-      loadBalancingWeight: 900
-      locality:
-        subZone: k8s.io/az=test
-        zone: zone-1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.1.1
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              k8s.io/node: node1
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-            envoy.transport_socket_match:
-              k8s.io/node: node1
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-      loadBalancingWeight: 9000
-      locality:
-        subZone: k8s.io/node=node1
-        zone: zone-1
-    - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
@@ -79,9 +65,8 @@ resources:
               k8s.io/region: test
               kuma.io/protocol: http
               kuma.io/zone: zone-1
-      loadBalancingWeight: 90
+      loadBalancingWeight: 1
       locality:
-        subZone: k8s.io/region=test
         zone: zone-1
     - lbEndpoints:
       - endpoint:
@@ -134,68 +119,5 @@ resources:
       locality:
         zone: zone-4
       priority: 3
-    policy:
-      overprovisioningFactor: 200
-- name: payment
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: payment
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              k8s.io/node: node2
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-            envoy.transport_socket_match:
-              k8s.io/node: node2
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-      loadBalancingWeight: 1
-      locality:
-        zone: zone-1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.1
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              k8s.io/node: node1
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-            envoy.transport_socket_match:
-              k8s.io/node: node1
-              kuma.io/protocol: http
-              kuma.io/zone: zone-1
-      loadBalancingWeight: 9000
-      locality:
-        subZone: k8s.io/node=node1
-        zone: zone-1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.3
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-2
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-2
-      locality:
-        zone: zone-2
-      priority: 1
     policy:
       overprovisioningFactor: 200

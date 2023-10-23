@@ -14,7 +14,6 @@ type Cluster struct {
 	tags              tags.Tags
 	mesh              string
 	isExternalService bool
-	priority map[int]map[string][]string
 }
 
 func (c *Cluster) Service() string { return c.service }
@@ -26,7 +25,6 @@ func (c *Cluster) Tags() tags.Tags { return c.tags }
 func (c *Cluster) Mesh() string            { return c.mesh }
 func (c *Cluster) IsExternalService() bool { return c.isExternalService }
 func (c *Cluster) Hash() string            { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
-func (c *Cluster) Priority()  map[int]map[string][]string                              { return map[int]map[string][]string{} }
 
 type NewClusterOpt interface {
 	apply(cluster *Cluster)

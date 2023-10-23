@@ -1,5 +1,5 @@
 resources:
-- name: backend
+- name: backend-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonLbConfig:
@@ -9,36 +9,27 @@ resources:
         ads: {}
         resourceApiVersion: V3
     lbPolicy: RANDOM
-    name: backend
+    name: backend-_0_
     type: EDS
-- name: payment
+- name: backend-_1_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonLbConfig:
       localityWeightedLbConfig: {}
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: RANDOM
+    name: backend-_1_
+    type: EDS
+- name: payment
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     lbPolicy: RING_HASH
     loadAssignment:
       clusterName: payment
       endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.0.2
-                portValue: 8080
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                k8s.io/node: node2
-                kuma.io/protocol: http
-                kuma.io/zone: zone-1
-              envoy.transport_socket_match:
-                k8s.io/node: node2
-                kuma.io/protocol: http
-                kuma.io/zone: zone-1
-        loadBalancingWeight: 1
-        locality:
-          zone: zone-1
       - lbEndpoints:
         - endpoint:
             address:
@@ -48,22 +39,18 @@ resources:
           metadata:
             filterMetadata:
               envoy.lb:
-                k8s.io/node: node1
                 kuma.io/protocol: http
                 kuma.io/zone: zone-1
               envoy.transport_socket_match:
-                k8s.io/node: node1
                 kuma.io/protocol: http
                 kuma.io/zone: zone-1
-        loadBalancingWeight: 9000
         locality:
-          subZone: k8s.io/node=node1
           zone: zone-1
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.0.3
+                address: 192.168.0.2
                 portValue: 8080
           metadata:
             filterMetadata:
@@ -76,8 +63,6 @@ resources:
         locality:
           zone: zone-2
         priority: 1
-      policy:
-        overprovisioningFactor: 200
     name: payment
     ringHashLbConfig:
       hashFunction: MURMUR_HASH_2
