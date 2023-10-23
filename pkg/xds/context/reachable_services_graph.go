@@ -13,51 +13,27 @@ import (
 )
 
 type ReachableServicesGraph struct {
-	FromAll     map[string]struct{}
-	Connections map[string]map[string]struct{}
-	rules       map[string]core_rules.Rules
+	rules map[string]core_rules.Rules
 }
 
 func NewReachableServicesGraph() *ReachableServicesGraph {
 	return &ReachableServicesGraph{
-		FromAll:     map[string]struct{}{},
-		Connections: map[string]map[string]struct{}{},
+		rules: map[string]core_rules.Rules{},
 	}
 }
 
 func (r *ReachableServicesGraph) CanReach(fromTags map[string]string, toSvc string) bool {
-	_, fromAllOk := r.FromAll[toSvc]
-	if fromAllOk {
-		return true
+	rule := r.rules[toSvc].Compute(core_rules.SubsetFromTags(fromTags))
+	if rule == nil {
+		return false
 	}
-	connectionsTo, ok := r.Connections[fromTags[mesh_proto.ServiceTag]]
-	if ok {
-		_, canReach := connectionsTo[toSvc]
-		return canReach
-	}
-	return false
-	//rule := r.rules[toSvc].Compute(core_rules.SubsetFromTags(fromTags))
-	//return ruleAllowsTraffic(rule)
+	action := rule.Conf.(v1alpha1.Conf).Action
+	return action == v1alpha1.Allow || action == v1alpha1.AllowWithShadowDeny
 }
 
-func (r *ReachableServicesGraph) MarkReachableFromAll(svc string) {
-	r.FromAll[svc] = struct{}{}
-}
-
-func (r *ReachableServicesGraph) MarkReachable(from, to string) {
-	_, ok := r.Connections[from]
-	if !ok {
-		r.Connections[from] = map[string]struct{}{}
-	}
-	r.Connections[from][to] = struct{}{}
-}
-
-func (r *ReachableServicesGraph) CanReachFromAny(fromSvcs []string, to string) bool {
-	for _, from := range fromSvcs {
-		fromTags := map[string]string{
-			mesh_proto.ServiceTag: from,
-		}
-		if r.CanReach(fromTags, to) {
+func (r *ReachableServicesGraph) CanReachFromAny(fromTagSets []mesh_proto.SingleValueTagSet, to string) bool {
+	for _, from := range fromTagSets {
+		if r.CanReach(from, to) {
 			return true
 		}
 	}
@@ -105,67 +81,16 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 			continue
 		}
 
-		if meshRule := rl.Compute(core_rules.MeshSubset()); ruleAllowsTraffic(meshRule) {
-			graph.MarkReachableFromAll(service)
-		}
-
-		var reachableFrom []string
-		for fromSvc, _ := range services {
-			if meshRule := rl.Compute(core_rules.MeshService(fromSvc)); ruleAllowsTraffic(meshRule) {
-				reachableFrom = append(reachableFrom, fromSvc)
-			}
-		}
-
-		if len(reachableFrom) == len(services) {
-			graph.MarkReachableFromAll(service)
-		} else {
-			for _, fromSvc := range reachableFrom {
-				graph.MarkReachable(fromSvc, service)
-			}
-		}
+		graph.rules[service] = rl
 	}
 
 	return graph, nil
 }
 
-func ruleAllowsTraffic(rule *core_rules.Rule) bool {
-	if rule == nil {
-		return false
-	}
-	return actionAllowsTraffic(rule.Conf.(v1alpha1.Conf).Action)
-}
-
-func actionAllowsTraffic(action v1alpha1.Action) bool {
-	return action == v1alpha1.Allow || action == v1alpha1.AllowWithShadowDeny
-}
-
 func replaceSubsets(mtps []*v1alpha1.MeshTrafficPermissionResource) []*v1alpha1.MeshTrafficPermissionResource {
 	newMtps := make([]*v1alpha1.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
-		var newFroms []v1alpha1.From
-		anyFromModified := false
-		for _, from := range mtp.Spec.From {
-			if from.TargetRef.Kind == common_api.MeshSubset {
-				anyFromModified = true
-				if actionAllowsTraffic(from.Default.Action) {
-					from.TargetRef.Kind = common_api.Mesh
-					from.TargetRef.Tags = nil
-				} else {
-					continue // ignore deny for subsets
-				}
-			}
-			if from.TargetRef.Kind == common_api.MeshServiceSubset {
-				anyFromModified = true
-				if actionAllowsTraffic(from.Default.Action) {
-					from.TargetRef.Kind = common_api.MeshService
-					from.TargetRef.Tags = nil
-				} else {
-					continue // ignore deny for subsets
-				}
-			}
-			newFroms = append(newFroms, from)
-		}
-		if anyFromModified || mtp.Spec.TargetRef.Kind == common_api.MeshSubset || mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
+		if mtp.Spec.TargetRef.Kind == common_api.MeshSubset || mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
 			mtp = &v1alpha1.MeshTrafficPermissionResource{
 				Meta: mtp.Meta,
 				Spec: mtp.Spec.DeepCopy(),
@@ -179,9 +104,6 @@ func replaceSubsets(mtps []*v1alpha1.MeshTrafficPermissionResource) []*v1alpha1.
 		if mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
 			mtp.Spec.TargetRef.Kind = common_api.MeshService
 			mtp.Spec.TargetRef.Tags = nil
-		}
-		if anyFromModified {
-			mtp.Spec.From = newFroms
 		}
 		newMtps[i] = mtp
 	}

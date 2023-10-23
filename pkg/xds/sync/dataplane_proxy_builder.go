@@ -114,7 +114,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, ob := range meshContext.VIPOutbounds {
 		generatedVips[ob.Address] = true
 	}
-	inboundDpServices := dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag)
+	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		service := outbound.GetService()
@@ -127,7 +127,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 			continue
 		}
 		if graph := meshContext.ReachableServicesGraph; graph != nil {
-			if !graph.CanReachFromAny(inboundDpServices, service) {
+			if !graph.CanReachFromAny(dpTagSets, service) {
 				continue
 			}
 		}
