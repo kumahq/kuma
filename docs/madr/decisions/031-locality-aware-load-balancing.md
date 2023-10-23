@@ -144,7 +144,7 @@ are the same configuration.
 
 ![Use case 1](assets/031/use_case_1.png)
 
-#### Load balancing based on priorities within a zone. Example: node → AZ → region
+#### Load balancing based on priorities within a zone and no cross-zone traffic. Example: node → AZ → region
 
 ```yaml
 targetRef:
