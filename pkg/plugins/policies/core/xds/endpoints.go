@@ -6,6 +6,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -20,7 +21,7 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 		}
 
 		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
-		serviceName := ServiceFromClusterName(cla.ClusterName)
+		serviceName := tags.ServiceFromClusterName(cla.ClusterName)
 		em[serviceName] = append(em[serviceName], cla)
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
@@ -29,7 +30,7 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 		}
 
 		cluster := res.Resource.(*clusterv3.Cluster)
-		serviceName := ServiceFromClusterName(cluster.Name)
+		serviceName := tags.ServiceFromClusterName(cluster.Name)
 		if cluster.LoadAssignment != nil {
 			em[serviceName] = append(em[serviceName], cluster.LoadAssignment)
 		}

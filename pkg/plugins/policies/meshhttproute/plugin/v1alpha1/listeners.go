@@ -28,7 +28,6 @@ func generateListeners(
 	servicesAcc envoy_common.ServicesAccumulator,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	splitCounter := &meshroute_xds.SplitCounter{}
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
@@ -52,14 +51,15 @@ func generateListeners(
 		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
+			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs)
 			if split == nil {
 				continue
 			}
 			for _, filter := range route.Filters {
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
-					_ = meshroute_xds.MakeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+					_ = meshroute_xds.MakeHTTPSplit(
+						proxy, clusterCache, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value

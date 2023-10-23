@@ -26,7 +26,6 @@ func generateListeners(
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
 	clusterCache := map[common_api.TargetRefHash]string{}
-	sc := &meshroute_xds.SplitCounter{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	routing := proxy.Routing
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
@@ -42,7 +41,7 @@ func generateListeners(
 			continue
 		}
 
-		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, sc, servicesAccumulator, backendRefs)
+		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs)
 		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)

@@ -1,10 +1,10 @@
 resources:
-- name: es2-_0_
+- name: es2-ff6df687ce12e5f4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 100s
     loadAssignment:
-      clusterName: es2-_0_
+      clusterName: es2-ff6df687ce12e5f4
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -19,7 +19,7 @@ resources:
                 kuma.io/protocol: http2
               envoy.transport_socket_match:
                 kuma.io/protocol: http2
-    name: es2-_0_
+    name: es2-ff6df687ce12e5f4
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -63,7 +63,7 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: es2-_0_
+                  cluster: es2-ff6df687ce12e5f4
                   timeout: 102s
           statPrefix: es2
           streamIdleTimeout: 0s

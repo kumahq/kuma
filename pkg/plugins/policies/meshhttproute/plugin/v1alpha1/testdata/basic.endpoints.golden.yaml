@@ -33,10 +33,10 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               region: us
-- name: backend-_0_
+- name: backend-c72efb5be46fae6b
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend-_0_
+    clusterName: backend-c72efb5be46fae6b
     endpoints:
     - lbEndpoints:
       - endpoint:
