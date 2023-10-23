@@ -6,12 +6,14 @@ Technical Story: https://github.com/kumahq/kuma/issues/2689
 ## Context and Problem Statement
 Right now we have really simple locality aware load balancing, we only care about zones. Dataplane will prefer sending traffic to local zone with fallback to other zones. We would like to add more sophisticated mechanism of locality aware load balancing. We would like to allow user to specify load balancing rules based on tags. For example, big cluster is deployed in multiple AZ’s, and we would like to prefer staying in a single AZ to reduce traffic cost.
 
-## Considered Options
-
 ## Decision Outcome
+
+We will implement locality aware load balancing by extending MeshLoadBalancingStrategy policy. API that we picked as well
+as internals are described in details in next sections of this MADR.
 
 ## Solution
 As stated earlier, we would like to improve our current locality aware load balancing, and make it more flexible for users.
+
 ### Use cases
 After gathering client's expectations and a couple of brainstorming sessions, we ended up with multiple use cases for locality aware load balancing:
 
