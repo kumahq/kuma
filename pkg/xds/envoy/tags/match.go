@@ -16,11 +16,19 @@ import (
 const TagsHeaderName = "x-kuma-tags"
 
 // Format of split cluster name and regex for parsing it, see usages
-const SplitClusterFmtString = "%s-%x"
+const splitClusterFmtString = "%s-%x"
 
-var SplitClusterRegex = regexp.MustCompile("(.*)-[[:xdigit:]]{16}$")
+var splitClusterRegex = regexp.MustCompile("(.*)-[[:xdigit:]]{16}$")
 
 type Tags map[string]string
+
+func ServiceFromClusterName(name string) string {
+	matchedGroups := splitClusterRegex.FindStringSubmatch(name)
+	if len(matchedGroups) == 0 {
+		return name
+	}
+	return matchedGroups[1]
+}
 
 // DestinationClusterName generates a unique cluster name for the
 // destination. identifyingTags are useful for adding extra metadata outside of just tags. Tags must at least contain `kuma.io/service`
@@ -53,7 +61,7 @@ func (t Tags) DestinationClusterName(
 	// The qualifier is 16 hex digits. Unscientifically balancing the length
 	// of the hex against the likelihood of collisions.
 	// Note: policy configuration is sensitive to this format!
-	return fmt.Sprintf(SplitClusterFmtString, serviceName, h.Sum(nil)[:8]), nil
+	return fmt.Sprintf(splitClusterFmtString, serviceName, h.Sum(nil)[:8]), nil
 }
 
 func (t Tags) WithoutTags(tags ...string) Tags {

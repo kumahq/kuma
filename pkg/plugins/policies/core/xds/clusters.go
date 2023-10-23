@@ -33,7 +33,7 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 
 		switch res.Origin {
 		case generator.OriginOutbound:
-			serviceName := ServiceFromClusterName(cluster.Name)
+			serviceName := tags.ServiceFromClusterName(cluster.Name)
 			if serviceName != cluster.Name {
 				// first group is service name and second split number
 				clusters.OutboundSplit[serviceName] = append(clusters.OutboundSplit[serviceName], cluster)
@@ -49,14 +49,6 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 		}
 	}
 	return clusters
-}
-
-func ServiceFromClusterName(name string) string {
-	matchedGroups := tags.SplitClusterRegex.FindStringSubmatch(name)
-	if len(matchedGroups) == 0 {
-		return name
-	}
-	return matchedGroups[1]
 }
 
 func GatherTargetedClusters(
