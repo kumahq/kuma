@@ -1,8 +1,6 @@
 package xds
 
 import (
-	"regexp"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
@@ -11,11 +9,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-var splitClusterRegex = regexp.MustCompile("(.*)(-_[0-9+]_$)")
 
 type Clusters struct {
 	Inbound       map[string]*envoy_cluster.Cluster
@@ -55,12 +52,11 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 }
 
 func ServiceFromClusterName(name string) string {
-	matchedGroups := splitClusterRegex.FindStringSubmatch(name)
-	if len(matchedGroups) == 3 {
-		return matchedGroups[1]
-	} else {
+	matchedGroups := tags.SplitClusterRegex.FindStringSubmatch(name)
+	if len(matchedGroups) == 0 {
 		return name
 	}
+	return matchedGroups[1]
 }
 
 func GatherTargetedClusters(

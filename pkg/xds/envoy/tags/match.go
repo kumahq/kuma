@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -13,6 +14,11 @@ import (
 )
 
 const TagsHeaderName = "x-kuma-tags"
+
+// Format of split cluster name and regex for parsing it, see usages
+const SplitClusterFmtString = "%s-%x"
+
+var SplitClusterRegex = regexp.MustCompile("(.*)-[[:xdigit:]]{16}$")
 
 type Tags map[string]string
 
@@ -46,7 +52,8 @@ func (t Tags) DestinationClusterName(
 
 	// The qualifier is 16 hex digits. Unscientifically balancing the length
 	// of the hex against the likelihood of collisions.
-	return fmt.Sprintf("%s-%x", serviceName, h.Sum(nil)[:8]), nil
+	// Note: policy configuration is sensitive to this format!
+	return fmt.Sprintf(SplitClusterFmtString, serviceName, h.Sum(nil)[:8]), nil
 }
 
 func (t Tags) WithoutTags(tags ...string) Tags {
