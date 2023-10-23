@@ -1467,6 +1467,35 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname
+selectors:
+- match:
+    kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    hostnames:
+    - cross-mesh.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
 `,
 		),
 

@@ -199,6 +199,71 @@ Listeners:
                   ads: {}
                   resourceApiVersion: V3
             requireClientCertificate: true
+      - filterChainMatch:
+          applicationProtocols:
+          - kuma
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                startChildSpan: true
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: edge-gateway:HTTP:8080
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              combinedValidationContext:
+                defaultValidationContext: {}
+                validationContextSdsSecretConfig:
+                  name: mesh_ca:secret:all
+                  sdsConfig:
+                    ads: {}
+                    resourceApiVersion: V3
+              tlsCertificateSdsSecretConfigs:
+              - name: identity_cert:secret:default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            requireClientCertificate: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:
@@ -215,6 +280,92 @@ Routes:
       - x-kuma-tags
       validateClusters: false
       virtualHosts:
+      - domains:
+        - cross-mesh.mesh
+        name: cross-mesh.mesh
+        requireTls: ALL
+        responseHeadersToAdd:
+        - append: false
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - match:
+            path: /hostname-echo
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-bfae5b64a0fe8b74
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            path: /hostname-ext
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: external-httpbin-823fa8131cdd67fa
+                weight: 1
+        - match:
+            prefix: /hostname-echo/
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-bfae5b64a0fe8b74
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            prefix: /hostname-ext/
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: external-httpbin-823fa8131cdd67fa
+                weight: 1
       - domains:
         - '*'
         name: '*'
