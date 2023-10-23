@@ -1502,6 +1502,60 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname-and-hostname-on-listener
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: internal-cross-mesh.mesh
+conf:
+  http:
+    hostnames:
+    - cross-mesh.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-no-match-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-eno-match-cho"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname-and-hostname-on-listener
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: internal-cross-mesh.mesh
+conf:
+  http:
+    hostnames:
+    - internal-cross-mesh.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-match-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-match-echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
 `,
 		),
 
