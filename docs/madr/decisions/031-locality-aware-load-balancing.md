@@ -127,7 +127,8 @@ to:
   targetRef:
     kind: MeshService
     name: backend
-  defaults: {}
+  defaults: 
+    localityAwareness: {}
 ```
 and this:
 ```yaml
@@ -306,8 +307,9 @@ to:
 
 We have the couple of use cases for this, but no config yet:
 - You are migrating from universal to k8s, both zones are in the same AZ and I would like to move traffic gradually from one to another
-- You have have some zone with testing or preview environment and you would like to handle live traffic on it for testing. Is it a use case for locality aware lb? Or should this be done with MeshHTTPRoute?
-The question is if we really need it, or can this be done currently in some other way?
+- You have some zone with testing or preview environment, and you would like to handle live traffic on it for testing.
+
+**This is not the locality aware load balancing responsibility, and should be configured using `MeshHttpRoute`**
 
 ### Implementation
 
@@ -481,4 +483,4 @@ We can observe that p90 and p99 are much higher without using the cache. We shou
 #### Cross mesh
 We cannot configure this policy cross mesh. We are bound to mesh, when you leave mesh you lose all information needed for locality aware load balancing, and you need to specify new policy for each mesh.
 
-Question what if someone is placing each bounded context in a different mesh for isolation and would still like to benefit from locality aware load balancing? Will cross mesh traffic be routed locally? 
+Cross mesh gateway should be handled as simply yet another destination with tags. We can add standard k8s node tags, zone tags, etc to it. This won't be done in the first version of policy, 
