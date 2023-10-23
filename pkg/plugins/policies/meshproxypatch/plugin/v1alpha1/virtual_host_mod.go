@@ -38,7 +38,8 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 					if err != nil {
 						return err
 					}
-					if err := c.applyHCMModification(hcm, virtualHost); err != nil {
+					routeCfg := hcm.GetRouteConfig()
+					if err := c.applyRoutesModification(routeCfg, virtualHost); err != nil {
 						return err
 					}
 					any, err := util_proto.MarshalAnyDeterministic(hcm)
@@ -50,11 +51,21 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 			}
 		}
 	}
+
+	for _, resource := range resources.Resources(envoy_resource.RouteType) {
+		route := resource.Resource.(*envoy_route.RouteConfiguration)
+		if !c.originMatches(resource) {
+			continue
+		}
+		if err := c.applyRoutesModification(route, virtualHost); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnectionManager, virtualHost *envoy_route.VirtualHost) error {
-	routeCfg := hcm.GetRouteConfig()
+func (c *virtualHostModificator) applyRoutesModification(routeCfg *envoy_route.RouteConfiguration, virtualHost *envoy_route.VirtualHost) error {
 	if routeCfg == nil {
 		return nil // ignore HCMs without embedded routes
 	}
@@ -88,7 +99,6 @@ func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration,
 			util_proto.Merge(vHost, vHostPatch)
 		}
 	}
-
 	return nil
 }
 
