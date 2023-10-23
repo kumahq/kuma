@@ -13,6 +13,7 @@ import (
 type ReachableServicesGraph struct {
 	FromAll     map[string]struct{}
 	Connections map[string]map[string]struct{}
+	rules       map[string]core_rules.Rules
 }
 
 func NewReachableServicesGraph() *ReachableServicesGraph {
@@ -22,17 +23,19 @@ func NewReachableServicesGraph() *ReachableServicesGraph {
 	}
 }
 
-func (r *ReachableServicesGraph) CanReach(from, to string) bool {
-	_, fromAllOk := r.FromAll[to]
+func (r *ReachableServicesGraph) CanReach(fromTags map[string]string, toSvc string) bool {
+	_, fromAllOk := r.FromAll[toSvc]
 	if fromAllOk {
 		return true
 	}
-	connectionsTo, ok := r.Connections[from]
+	connectionsTo, ok := r.Connections[fromTags[mesh_proto.ServiceTag]]
 	if ok {
-		_, canReach := connectionsTo[to]
+		_, canReach := connectionsTo[toSvc]
 		return canReach
 	}
 	return false
+	//rule := r.rules[toSvc].Compute(core_rules.SubsetFromTags(fromTags))
+	//return ruleAllowsTraffic(rule)
 }
 
 func (r *ReachableServicesGraph) MarkReachableFromAll(svc string) {
@@ -49,7 +52,10 @@ func (r *ReachableServicesGraph) MarkReachable(from, to string) {
 
 func (r *ReachableServicesGraph) CanReachFromAny(fromSvcs []string, to string) bool {
 	for _, from := range fromSvcs {
-		if r.CanReach(from, to) {
+		fromTags := map[string]string{
+			mesh_proto.ServiceTag: from,
+		}
+		if r.CanReach(fromTags, to) {
 			return true
 		}
 	}

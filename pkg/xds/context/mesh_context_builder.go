@@ -134,6 +134,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		for _, dp := range dataplanes {
 			for _, svc := range dp.Spec.TagSet().Values(mesh_proto.ServiceTag) {
 				services = append(services, svc)
+				// todo distinct
 			}
 		}
 		rsGraph, err = BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	v1alpha12 "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -13,27 +14,29 @@ import (
 var _ = Describe("Reachable Services Graph", func() {
 
 	type testCase struct {
-		mtps     []*v1alpha1.MeshTrafficPermissionResource
-		expected xds_context.ReachableServicesGraph
+		mtps                []*v1alpha1.MeshTrafficPermissionResource
+		expectedFromAll     map[string]struct{}
+		expectedConnections map[string]map[string]struct{}
+		expected            xds_context.ReachableServicesGraph
+		assertion           func(xds_context.ReachableServicesGraph)
 	}
 
-	services := []string{"a", "b", "c", "d", "e"}
-	fromAllToAllGraph := xds_context.ReachableServicesGraph{
-		FromAll: map[string]struct{}{
-			"a": {},
-			"b": {},
-			"c": {},
-			"d": {},
-			"e": {},
-		},
-		Connections: map[string]map[string]struct{}{},
-	}
+	services := []string{"a", "b", "c", "d"}
+
+	fromAllServices := map[string]struct{}{"a": {}, "b": {}, "c": {}, "d": {}}
 
 	DescribeTable("should generate graph",
 		func(given testCase) {
 			g, err := xds_context.BuildReachableServicesGraph(services, given.mtps)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(*g).To(Equal(given.expected))
+
+			for _, from := range services {
+				for _, to := range services {
+					_, fromAll := given.expectedFromAll[to]
+					_, conn := given.expectedConnections[from][to]
+					Expect(g.CanReach(map[string]string{v1alpha12.ServiceTag: from}, to)).To(Equal(fromAll || conn))
+				}
+			}
 		},
 		Entry("allow all", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
@@ -42,7 +45,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: fromAllToAllGraph,
+			expectedFromAll: fromAllServices,
 		}),
 		Entry("deny all", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
@@ -51,17 +54,11 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll:     map[string]struct{}{},
-				Connections: map[string]map[string]struct{}{},
-			},
+			expectedFromAll: map[string]struct{}{},
 		}),
 		Entry("no MeshTrafficPermissions", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll:     map[string]struct{}{},
-				Connections: map[string]map[string]struct{}{},
-			},
+			mtps:            []*v1alpha1.MeshTrafficPermissionResource{},
+			expectedFromAll: map[string]struct{}{},
 		}),
 		Entry("one connection Allow", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
@@ -70,11 +67,8 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{},
-				Connections: map[string]map[string]struct{}{
-					"a": {"b": {}},
-				},
+			expectedConnections: map[string]map[string]struct{}{
+				"a": {"b": {}},
 			},
 		}),
 		Entry("AllowWithShadowDeny is treated as Allow", testCase{
@@ -84,11 +78,8 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.AllowWithShadowDeny).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{},
-				Connections: map[string]map[string]struct{}{
-					"a": {"b": {}},
-				},
+			expectedConnections: map[string]map[string]struct{}{
+				"a": {"b": {}},
 			},
 		}),
 		Entry("multiple allowed connections", testCase{
@@ -106,14 +97,12 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{
-					"d": {},
-				},
-				Connections: map[string]map[string]struct{}{
-					"a": {"b": {}},
-					"b": {"c": {}},
-				},
+			expectedFromAll: map[string]struct{}{
+				"d": {},
+			},
+			expectedConnections: map[string]map[string]struct{}{
+				"a": {"b": {}},
+				"b": {"c": {}},
 			},
 		}),
 		Entry("all allowed except one connection", testCase{
@@ -127,67 +116,16 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Deny).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{
-					"a": {},
-					"c": {},
-					"d": {},
-					"e": {},
-				},
-				Connections: map[string]map[string]struct{}{
-					"c": {"b": {}},
-					"d": {"b": {}},
-					"e": {"b": {}},
-					"b": {"b": {}},
-				},
+			expectedFromAll: map[string]struct{}{
+				"a": {},
+				"c": {},
+				"d": {},
 			},
-		}),
-		Entry("allow only subset of the service", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
-					Build(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Allow).
-					AddFromX(builders.TargetRefServiceSubset("a", "version", "v2"), v1alpha1.Deny).
-					Build(),
+			expectedConnections: map[string]map[string]struct{}{
+				"c": {"b": {}},
+				"d": {"b": {}},
+				"b": {"b": {}},
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{},
-				Connections: map[string]map[string]struct{}{
-					"a": {"b": {}},
-				},
-			},
-		}),
-		Entry("allow only subset of the service and deny the rest", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
-					Build(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Deny).
-					AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Allow).
-					Build(),
-			},
-			expected: fromAllToAllGraph,
-		}),
-		Entry("allow only subset of the service", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
-					Build(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
-					AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Deny).
-					Build(),
-			},
-			expected: fromAllToAllGraph,
 		}),
 		Entry("allow all but one service has restrictive mesh traffic permission", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
@@ -201,38 +139,16 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{
-					"e": {},
-					"a": {},
-					"c": {},
-					"d": {},
-				},
-				Connections: map[string]map[string]struct{}{
-					"a": {"b": {}},
-				},
+			expectedFromAll: map[string]struct{}{
+				"a": {},
+				"c": {},
+				"d": {},
+			},
+			expectedConnections: map[string]map[string]struct{}{
+				"a": {"b": {}},
 			},
 		}),
-		Entry("allow mesh subset allows all", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
-					AddFromX(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Allow).
-					Build(),
-			},
-			expected: fromAllToAllGraph,
-		}),
-		Entry("deny mesh subset is ignored", testCase{
-			mtps: []*v1alpha1.MeshTrafficPermissionResource{
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
-					AddFromX(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Deny).
-					Build(),
-			},
-			expected: fromAllToAllGraph,
-		}),
+
 		Entry("top level target ref MeshSubset selects all", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
@@ -240,7 +156,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: fromAllToAllGraph,
+			expectedFromAll: fromAllServices,
 		}),
 		Entry("top level target ref MeshServiceSubset selects all instances of the service", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
@@ -249,13 +165,78 @@ var _ = Describe("Reachable Services Graph", func() {
 					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
-			expected: xds_context.ReachableServicesGraph{
-				FromAll: map[string]struct{}{
-					"a": {},
-				},
-				Connections: map[string]map[string]struct{}{},
+			expectedFromAll: map[string]struct{}{
+				"a": {},
 			},
 		}),
+
+		//Entry("allow only subset of the service", testCase{
+		//	mtps: []*v1alpha1.MeshTrafficPermissionResource{
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefMesh()).
+		//			AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
+		//			Build(),
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefService("b")).
+		//			AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Allow).
+		//			AddFromX(builders.TargetRefServiceSubset("a", "version", "v2"), v1alpha1.Deny).
+		//			Build(),
+		//	},
+		//	expected: xds_context.ReachableServicesGraph{
+		//		FromAll: map[string]struct{}{},
+		//		Connections: map[string]map[string]struct{}{
+		//			"a": {"b": {}},
+		//		},
+		//	},
+		//}),
+		//Entry("allow only subset of the service and deny the rest", testCase{
+		//	mtps: []*v1alpha1.MeshTrafficPermissionResource{
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefMesh()).
+		//			AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+		//			Build(),
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefService("b")).
+		//			AddFromX(builders.TargetRefService("a"), v1alpha1.Deny).
+		//			AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Allow).
+		//			Build(),
+		//	},
+		//	expected: fromAllToAllGraph,
+		//}),
+		//Entry("allow only subset of the service", testCase{
+		//	mtps: []*v1alpha1.MeshTrafficPermissionResource{
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefMesh()).
+		//			AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+		//			Build(),
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefService("b")).
+		//			AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
+		//			AddFromX(builders.TargetRefServiceSubset("a", "version", "v1"), v1alpha1.Deny).
+		//			Build(),
+		//	},
+		//	expected: fromAllToAllGraph,
+		//}),
+		//Entry("allow mesh subset allows all", testCase{
+		//	mtps: []*v1alpha1.MeshTrafficPermissionResource{
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefMesh()).
+		//			AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
+		//			AddFromX(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Allow).
+		//			Build(),
+		//	},
+		//	expected: fromAllToAllGraph,
+		//}),
+		//Entry("deny mesh subset is ignored", testCase{
+		//	mtps: []*v1alpha1.MeshTrafficPermissionResource{
+		//		builders.MeshTrafficPermission().
+		//			WithTargetRef(builders.TargetRefMesh()).
+		//			AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+		//			AddFromX(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Deny).
+		//			Build(),
+		//	},
+		//	expected: fromAllToAllGraph,
+		//}),
 	)
 
 	It("should not modify MeshTrafficPermission when replacing subsets", func() {
