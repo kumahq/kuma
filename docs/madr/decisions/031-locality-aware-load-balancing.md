@@ -45,6 +45,7 @@ to:
         - key: "k8s.io/node"                                # (2)
           weight: 90                                        # (3)
         - key: k8s.io/az"
+          weight: 9
       crossZone:                                            # (4)
         failover:                                           # (5)
           - from:                                           # (6)
@@ -91,7 +92,7 @@ affinityTags:
 ```
 
 and all other endpoints are going to have the weight of 1. When configuring weight you need to either specify weights 
-for all tags or don't specify weights at all.
+for all tags or don't specify weights at all. When you specify weights the order of the list becomes irrelevant.
 
 (4) In `crossZone` section, you configure zones priority.
 
