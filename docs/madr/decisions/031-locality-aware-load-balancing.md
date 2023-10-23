@@ -359,12 +359,12 @@ We can retrieve them from `ClusterLoadAssignment` and match them with the policy
 Pseudo algorithm:
 
 1. Get all inbound tags.
-2. Take the matched rules.
-3. Check if inbound has the tag defined in the rule. 
-4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then  crossZone). If no, get all the endpoints in the zone. 
+2. Take the matched policy and take the config from it.
+3. Check if inbound has the tag defined in the policy config. 
+4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then crossZone). If no, get all the endpoints in the zone. 
    1. Move matching endpoints by first tag to priority 0
-   2. Move matching endpoints by n tag to priority  n-1
-   3. All not matching endpoint in the local zone move to priority n
+   2. Move matching endpoints by n tag to priority 0 but lower wieght
+   3. All not matching endpoint in the local zone move to priority 0 with weight 1
    4. Iterate over zone endpoints and based on matching put them in priority N+ iteration
 5. Create `LocalityLbEndpoints` with selected endpoints. 
 6. Override `ClusterLoadAssignment` for the dataplane in the `ResourceSet`.
@@ -393,7 +393,7 @@ I think we should implement the following:
 
 * Priority: for cross-zone traffic.
 * Locality-Weighted Load Balancing: This will help ensure that local zone traffic does not overload instances within the highest priority group when there are more instances available in other groups.
-  * The problem with this approach is that it relies on the health status of hosts, so we need to configure outlier detection and the overprovisioning factor correctly. Ideally, if there are a sufficient number of healthy hosts, the traffic should primarily remain within the local zone and only route outside when there aren't enough healthy hosts. This behavior is largely determined by the overprovisioning factor, which can be set as a default value while allowing users to define it as needed.
+  * Ideally, if there are a sufficient number of healthy hosts, the traffic should primarily remain within the local zone and only route outside when there aren't enough healthy hosts. This behavior is largely determined by the overprovisioning factor, which can be set as a default value while allowing users to define it as needed. By default, it's 50% which means if there is less than 50% healthy traffic is routed cross zone.
   * We will be using default high weights that prioritize specific tags within the local zone. This configuration ensures that a significant portion of the traffic is directed mostly to endpoints in specific locations.
 
 ##### Adding node labels to the Pod
