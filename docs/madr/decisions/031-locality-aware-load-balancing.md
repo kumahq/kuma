@@ -239,7 +239,9 @@ to:
 ![Use case 5](assets/031/use_case_5_2.png)
 ![Use case 5](assets/031/use_case_5_3.png)
 
-#### Exclude single zone from load balancing
+#### Route within local zone and then fallback to any zone except 1 (zone-3)
+
+Worth noting that zone-3 would not have any zone failover in this case
 
 ```yaml
 targetRef:
