@@ -1440,6 +1440,12 @@ conf:
   - port: 8080
     protocol: HTTP
     crossMesh: true
+  - port: 8081
+    protocol: HTTP
+    crossMesh: true
+    hostname: internal-cross-mesh.mesh
+    tags:
+      hostname: internal-cross-mesh.mesh
 `, `
 type: MeshGatewayRoute
 mesh: default
