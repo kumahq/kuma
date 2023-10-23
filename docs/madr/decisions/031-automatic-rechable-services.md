@@ -6,15 +6,17 @@ Technical Story: https://github.com/kumahq/kuma/issues/6551
 
 ## Context and Problem Statement
 
-With large enough Mesh (more than 1000 services) processing the whole cluster state for each proxy is not possible due to performance reasons (what is the boundary that we're hitting, is it the CPU of the CP / DP, can we have flame graphs showing hot spots?).
+With large enough Mesh (more than 1000 services) processing the whole cluster state for each proxy is not possible due to performance reasons. 
+The complexity of this computation is O(n^2) (n is the number of services), it also affects Envoy configs size (reaching multiple MB).
 This is why a feature called [reachable services](https://github.com/kumahq/kuma-website/blob/045ff9868acdb4b322759dde3f8053f41948100f/app/_src/production/upgrades-tuning/fine-tuning.md#L8-L7) was introduced.
-Reachable services is a step in the right direction but defining the whole service graph manually by the service owners or the platform team is a big ask.
+Reachable services is a step in the right direction but defining the whole service graph manually by the service owners or the platform team is a big ask (it can be another reason to resist adopting the mesh).
 
-How do we ensure a smooth Mesh migration (keeping in mind the performance and minimising manual labour) for large systems?
+How can we make Kuma easy to use and not have people needing to do systematic performance tuning?
 
 ## Glossary
 
 - MTP - [MeshTrafficPermission](https://kuma.io/docs/2.4.x/policies/meshtrafficpermission/#meshtrafficpermission-(beta))
+- ODCDS - [On-demand CDS Updates](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/on_demand_updates_filter#config-http-filters-on-demand)
 
 ## Decision Drivers 
 
@@ -25,7 +27,7 @@ How do we ensure a smooth Mesh migration (keeping in mind the performance and mi
 ## Considered Options
 
 * Using MeshTrafficPermission to generate reverse graph that would feed into reachable services
-* Dynamically load clusters using ODCDS
+* Dynamically load clusters using [ODCDS](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/on_demand/v3/on_demand.proto)
 * Using MeshHTTPRoute / MeshTCPRoute to populate the clusters
 
 ## Decision Outcome
@@ -36,15 +38,21 @@ Chosen option: "Using MeshTrafficPermission to generate reverse graph that would
 
 * not invasive, plug and play, can be removed if proven not efficient enough
 * possible to implement in the given time frame
+* it still works with reachable services and people can mix and match both options
+* is a performance benefit for users that already have MTPs defined
+* adds an extra layer of security as you can't look at your envoy config to figure out the IP of services you don't have access to
+* a compromised internal service can't be exploited to DOS services it does not have access to
 
 ### Negative Consequences
 
-* requires a lot of manual work, in ideal situation I think we could try to do a PoC of ODCDS
+* requires a lot of manual work
 * everything in the option section
-  * requires knowledge of all services that consume API of the service being migrated
+  * to have performance consequences it requires knowledge of all services that consume API of the service being migrated (you can always do `from: Mesh`)
   * breaking "top-level targetRef selects proxy to configure" rule
-  * wrong RBAC stats on the server side
-  * wrong errors on the client side, instead of 403 client will get 404/"no upstream"
+  * no RBAC stats on the server side
+  * different errors on the client side, instead of 403 client will get 404/"no upstream"
+    * this might be desirable in some cases (e.g. github will 404 on repositories you don't have access to if you **are not** part of the organisation)
+    * but it also can be undesirable (e.g. github will 403 on repositories you don't have access to if you **are** part of the organisation)
 
 ## Pros and Cons of the Options
 
@@ -184,7 +192,32 @@ If the system is too big to do this we need to do extra work in the iterations (
 4. Repeat point 2-3 until all services are in the Mesh
 
 The good thing about how this migration is set up is that we can gradually do it without any interruption to the system.
-The downside of it is that **a service owner needs to know EXACTLY which services consume their service** to avoid any disruptions.
+
+It's good to keep in mind that the solution does not have to be perfect from the get-go.
+People can start with:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: kuma-system
+  name: namespace-controlled
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      namespace: my-ns
+  from:
+    - targetRef:
+        kind: MeshService
+        name: a
+      default:
+        action: Allow
+
+```
+
+The downside of it is that  to avoid any disruptions.
+
 The migration assumes using Kubernetes DNS.
 
 Let's take the following service graph as an example:
