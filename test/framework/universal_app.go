@@ -128,6 +128,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -154,6 +155,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -177,6 +179,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s

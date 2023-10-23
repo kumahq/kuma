@@ -117,6 +117,7 @@ type appDeploymentOptions struct {
 	serviceAddress        string
 	transparentProxyV1    bool
 	dpEnvs                map[string]string
+	additionalTags        map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -516,6 +517,12 @@ func WithTransparentProxyV1(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
 		o.transparentProxyV1 = true
+	})
+}
+
+func WithAdditionalTags(tags map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.additionalTags = tags
 	})
 }
 
