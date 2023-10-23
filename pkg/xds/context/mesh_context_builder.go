@@ -130,10 +130,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var rsGraph *ReachableServicesGraph
 	if len(resources.MeshTrafficPermissions().Items) > 0 {
-		var services []string
+		services := map[string]mesh_proto.SingleValueTagSet{}
 		for _, dp := range dataplanes {
 			for _, svc := range dp.Spec.TagSet().Values(mesh_proto.ServiceTag) {
-				services = append(services, svc)
+				if _, ok := services[svc]; ok {
+					continue
+				}
+				services[svc] = map[string]string{} // add tags
+				//services = append(services, svc)
 				// todo distinct
 			}
 		}

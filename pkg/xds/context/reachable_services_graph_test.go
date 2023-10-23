@@ -21,7 +21,12 @@ var _ = Describe("Reachable Services Graph", func() {
 		assertion           func(xds_context.ReachableServicesGraph)
 	}
 
-	services := []string{"a", "b", "c", "d"}
+	services := map[string]v1alpha12.SingleValueTagSet{
+		"a": map[string]string{},
+		"b": map[string]string{},
+		"c": map[string]string{},
+		"d": map[string]string{},
+	}
 
 	fromAllServices := map[string]struct{}{"a": {}, "b": {}, "c": {}, "d": {}}
 
@@ -30,8 +35,8 @@ var _ = Describe("Reachable Services Graph", func() {
 			g, err := xds_context.BuildReachableServicesGraph(services, given.mtps)
 			Expect(err).ToNot(HaveOccurred())
 
-			for _, from := range services {
-				for _, to := range services {
+			for from := range services {
+				for to := range services {
 					_, fromAll := given.expectedFromAll[to]
 					_, conn := given.expectedConnections[from][to]
 					Expect(g.CanReach(map[string]string{v1alpha12.ServiceTag: from}, to)).To(Equal(fromAll || conn))

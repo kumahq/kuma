@@ -1,6 +1,8 @@
 package context
 
 import (
+	"golang.org/x/exp/maps"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -62,7 +64,7 @@ func (r *ReachableServicesGraph) CanReachFromAny(fromSvcs []string, to string) b
 	return false
 }
 
-func BuildReachableServicesGraph(services []string, mtps []*v1alpha1.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
+func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*v1alpha1.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
 	resources := Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			v1alpha1.MeshTrafficPermissionType: &v1alpha1.MeshTrafficPermissionResourceList{
@@ -73,17 +75,17 @@ func BuildReachableServicesGraph(services []string, mtps []*v1alpha1.MeshTraffic
 
 	graph := NewReachableServicesGraph()
 
-	for _, service := range services {
+	for service, tags := range services {
 		// build artificial dpp for matching
 		dp := mesh.NewDataplaneResource()
+		dpTags := maps.Clone(tags)
+		dpTags[mesh_proto.ServiceTag] = service
 		dp.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "1.1.1.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: service,
-						},
+						Tags: dpTags,
 						Port: 1234,
 					},
 				},
@@ -108,7 +110,7 @@ func BuildReachableServicesGraph(services []string, mtps []*v1alpha1.MeshTraffic
 		}
 
 		var reachableFrom []string
-		for _, fromSvc := range services {
+		for fromSvc, _ := range services {
 			if meshRule := rl.Compute(core_rules.MeshService(fromSvc)); ruleAllowsTraffic(meshRule) {
 				reachableFrom = append(reachableFrom, fromSvc)
 			}
