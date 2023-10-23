@@ -400,7 +400,10 @@ func MakeGatewayListener(
 		hosts = append(hosts, host)
 	}
 
-	hosts = RedistributeWildcardRoutes(hosts)
+	// We ignore route hostnames with cross mesh
+	if !listener.CrossMesh {
+		hosts = RedistributeWildcardRoutes(hosts)
+	}
 
 	// Sort by reverse hostname, so that fully qualified hostnames sort
 	// before wildcard domains, and "*" is last.
