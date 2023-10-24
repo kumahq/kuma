@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Reachable Services Graph", func() {
-
 	type testCase struct {
 		mtps                []*v1alpha1.MeshTrafficPermissionResource
 		expectedFromAll     map[string]struct{}
