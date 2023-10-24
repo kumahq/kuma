@@ -9,7 +9,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
 var ReachableServicesSupportedTags = map[string]struct{}{
@@ -33,8 +33,8 @@ func (r *ReachableServicesGraph) CanReach(fromTags map[string]string, toSvc stri
 	if rule == nil {
 		return false
 	}
-	action := rule.Conf.(v1alpha1.Conf).Action
-	return action == v1alpha1.Allow || action == v1alpha1.AllowWithShadowDeny
+	action := rule.Conf.(mtp_api.Conf).Action
+	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 
 func (r *ReachableServicesGraph) CanReachFromAny(fromTagSets []mesh_proto.SingleValueTagSet, to string) bool {
@@ -71,11 +71,11 @@ func BuildReachableServiceCandidates(
 	return services
 }
 
-func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*v1alpha1.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
+func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
 	resources := Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-			v1alpha1.MeshTrafficPermissionType: &v1alpha1.MeshTrafficPermissionResourceList{
-				Items: replaceSubsets(mtps),
+			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
+				Items: replaceTopLevelSubsets(mtps),
 			},
 		},
 	}
@@ -99,7 +99,7 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 			},
 		}
 
-		matched, err := matchers.MatchedPolicies(v1alpha1.MeshTrafficPermissionType, dp, resources)
+		matched, err := matchers.MatchedPolicies(mtp_api.MeshTrafficPermissionType, dp, resources)
 		if err != nil {
 			return nil, err
 		}
@@ -118,8 +118,16 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 	return graph, nil
 }
 
-func replaceSubsets(mtps []*v1alpha1.MeshTrafficPermissionResource) []*v1alpha1.MeshTrafficPermissionResource {
-	newMtps := make([]*v1alpha1.MeshTrafficPermissionResource, len(mtps))
+// replaceTopLevelSubsets replaces subsets present in top-level target ref.
+// Because we need to do policy matching on services instead of individual proxies, we have to handle subsets in a special way.
+// What we do is we only support subsets with predefined tags listed in ReachableServicesSupportedTags.
+// This assumes that tags listed in ReachableServicesSupportedTags are stable between all instances of a given service.
+// Otherwise, we fallback to higher level target ref (MeshSubset -> Mesh, MeshServiceSubset -> MeshService).
+//
+// Alternatively, we could have computed all common tags between instances of a given service and then allow subsets with those common tags.
+// However, this would require calling this function for every service.
+func replaceTopLevelSubsets(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
+	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
 		if len(mtp.Spec.TargetRef.Tags) > 0 {
 			hasOnlySupportedTags := true
@@ -130,7 +138,7 @@ func replaceSubsets(mtps []*v1alpha1.MeshTrafficPermissionResource) []*v1alpha1.
 				}
 			}
 			if !hasOnlySupportedTags {
-				mtp = &v1alpha1.MeshTrafficPermissionResource{
+				mtp = &mtp_api.MeshTrafficPermissionResource{
 					Meta: mtp.Meta,
 					Spec: mtp.Spec.DeepCopy(),
 				}
