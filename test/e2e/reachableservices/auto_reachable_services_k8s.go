@@ -52,9 +52,8 @@ func AutoReachableServices() {
 	}
 
 	It("should not connect to non auto reachable service", func() {
-		// when
+		// given
 		removeDefaultTrafficPermission()
-		// then
 		noDefaultTrafficPermission()
 
 		// when
@@ -82,15 +81,27 @@ spec:
         action: Allow
 `, Config.KumaNamespace))(k8sCluster)).To(Succeed())
 
-		secondServerPod, err := PodNameOfApp(k8sCluster, "second-test-server", TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-		secondServerTunnel := k8s.NewTunnel(k8sCluster.GetKubectlOptions(TestNamespace), k8s.ResourceTypePod, secondServerPod, 0, 9901)
-		secondServerTunnel.ForwardPort(k8sCluster.GetTesting())
-		secondServerAdmin := admintunnel.NewK8sEnvoyAdminTunnel(k8sCluster.GetTesting(), secondServerTunnel.Endpoint())
-
 		// then
-		stat, err := secondServerAdmin.GetStats("first-test-server_kuma-test_svc_80::added_via_api::true")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat.Stats).To(HaveLen(0))
+		Eventually(func() int {
+			return numberOfClusterConfiguration("second-test-server", "first-test-server_kuma-test_svc_80")
+		}).Should(Equal(0))
+
+		Eventually(func() int {
+			return numberOfClusterConfiguration("client-server", "first-test-server_kuma-test_svc_80")
+		}, "30s", "1s").Should(Equal(1))
 	})
+}
+
+func numberOfClusterConfiguration(appName string, targetCluster string) int {
+	pod, err := PodNameOfApp(k8sCluster, appName, TestNamespace)
+	Expect(err).ToNot(HaveOccurred())
+	tunnel := k8s.NewTunnel(k8sCluster.GetKubectlOptions(TestNamespace), k8s.ResourceTypePod, pod, 0, 9901)
+	tunnel.ForwardPort(k8sCluster.GetTesting())
+	admin := admintunnel.NewK8sEnvoyAdminTunnel(k8sCluster.GetTesting(), tunnel.Endpoint())
+
+	// then
+	// first-test-server_kuma-test_svc_80::added_via_api::true
+	stat, err := admin.GetStats(fmt.Sprintf("%s::added_via_api", targetCluster))
+	Expect(err).ToNot(HaveOccurred())
+	return len(stat.Stats)
 }
