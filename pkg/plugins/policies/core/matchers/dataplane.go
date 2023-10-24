@@ -14,17 +14,12 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-// Do not use xds_context.Resources directly to avoid cyclic imports.
-type Resources interface {
-	ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList
-	Gateways() *core_mesh.MeshGatewayResourceList
-}
-
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
-func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources Resources) (core_xds.TypedMatchingPolicies, error) {
+func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
 
 	var gateway *core_mesh.MeshGatewayResource
@@ -130,7 +125,7 @@ func inboundsSelectedByPolicy(
 	}
 }
 
-func resolveTargetRefs(rl []core_model.Resource, resources Resources) []core_model.Resource {
+func resolveTargetRefs(rl []core_model.Resource, resources xds_context.Resources) []core_model.Resource {
 	rv := []core_model.Resource{}
 
 	for _, r := range rl {
@@ -160,7 +155,7 @@ func resolveTargetRefs(rl []core_model.Resource, resources Resources) []core_mod
 	return rv
 }
 
-func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, resources Resources) *meshhttproute_api.MeshHTTPRouteResource {
+func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, resources xds_context.Resources) *meshhttproute_api.MeshHTTPRouteResource {
 	mhrs := resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType)
 	for _, item := range mhrs.GetItems() {
 		if isReferenced(refMeta, refName, item.GetMeta()) {
