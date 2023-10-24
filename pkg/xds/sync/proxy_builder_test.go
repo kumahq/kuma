@@ -90,6 +90,7 @@ var _ = Describe("Proxy Builder", func() {
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
+		builder.Config().Experimental.AutoReachableServices,
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())

@@ -26,13 +26,14 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
+	rm                    manager.ReadOnlyResourceManager
+	typeSet               map[core_model.ResourceType]struct{}
+	ipFunc                lookup.LookupIPFunc
+	zone                  string
+	vipsPersistence       *vips.Persistence
+	topLevelDomain        string
+	vipPort               uint32
+	autoReachableServices bool
 }
 
 type MeshContextBuilder interface {
@@ -53,6 +54,7 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 	vipPort uint32,
+	autoReachableServices bool,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -60,13 +62,14 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
+		rm:                    rm,
+		typeSet:               typeSet,
+		ipFunc:                ipFunc,
+		zone:                  zone,
+		vipsPersistence:       vipsPersistence,
+		topLevelDomain:        topLevelDomain,
+		vipPort:               vipPort,
+		autoReachableServices: autoReachableServices,
 	}
 }
 
@@ -129,18 +132,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	var rsGraph *ReachableServicesGraph
-	if len(resources.MeshTrafficPermissions().Items) > 0 {
-		services := map[string]mesh_proto.SingleValueTagSet{}
-		for _, dp := range dataplanes {
-			for _, svc := range dp.Spec.TagSet().Values(mesh_proto.ServiceTag) {
-				if _, ok := services[svc]; ok {
-					continue
-				}
-				services[svc] = map[string]string{} // add tags
-				//services = append(services, svc)
-				// todo distinct
-			}
-		}
+	if m.autoReachableServices {
+		services := BuildReachableServiceCandidates(dataplanes, resources.ExternalServices().Items)
 		rsGraph, err = BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not build reachable services graph")

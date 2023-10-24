@@ -116,6 +116,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
+			cfg.Experimental.AutoReachableServices,
 		)
 
 		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, envoy_common.APIV3)

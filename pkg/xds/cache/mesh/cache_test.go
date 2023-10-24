@@ -108,6 +108,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s), false),
 			"mesh",
 			80,
+			false,
 		)
 		meshCache, err = mesh.NewCache(
 			expiration,

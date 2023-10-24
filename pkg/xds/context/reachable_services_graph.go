@@ -12,6 +12,12 @@ import (
 	v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
+var ReachableServicesSupportedTags = map[string]struct{}{
+	mesh_proto.KubeNamespaceTag: {},
+	mesh_proto.KubeServiceTag:   {},
+	mesh_proto.KubePortTag:      {},
+}
+
 type ReachableServicesGraph struct {
 	rules map[string]core_rules.Rules
 }
@@ -38,6 +44,31 @@ func (r *ReachableServicesGraph) CanReachFromAny(fromTagSets []mesh_proto.Single
 		}
 	}
 	return false
+}
+
+func BuildReachableServiceCandidates(
+	dataplanes []*mesh.DataplaneResource,
+	externalServices []*mesh.ExternalServiceResource,
+) map[string]mesh_proto.SingleValueTagSet {
+	services := map[string]mesh_proto.SingleValueTagSet{}
+	for _, dp := range dataplanes {
+		set := dp.Spec.TagSet()
+		for _, svc := range set.Values(mesh_proto.ServiceTag) {
+			if _, ok := services[svc]; ok {
+				continue
+			}
+			services[svc] = map[string]string{} // add tags
+			for tag := range ReachableServicesSupportedTags {
+				if values := set.Values(tag); len(values) > 0 {
+					services[svc][tag] = values[0]
+				}
+			}
+		}
+	}
+	for _, es := range externalServices {
+		services[es.Spec.Tags[mesh_proto.ServiceTag]] = map[string]string{}
+	}
+	return services
 }
 
 func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*v1alpha1.MeshTrafficPermissionResource) (*ReachableServicesGraph, error) {
@@ -90,20 +121,28 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 func replaceSubsets(mtps []*v1alpha1.MeshTrafficPermissionResource) []*v1alpha1.MeshTrafficPermissionResource {
 	newMtps := make([]*v1alpha1.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
-		if mtp.Spec.TargetRef.Kind == common_api.MeshSubset || mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
-			mtp = &v1alpha1.MeshTrafficPermissionResource{
-				Meta: mtp.Meta,
-				Spec: mtp.Spec.DeepCopy(),
+		if len(mtp.Spec.TargetRef.Tags) > 0 {
+			hasOnlySupportedTags := true
+			for tag := range mtp.Spec.TargetRef.Tags {
+				_, ok := ReachableServicesSupportedTags[tag]
+				if !ok {
+					hasOnlySupportedTags = false
+				}
 			}
-		}
-
-		if mtp.Spec.TargetRef.Kind == common_api.MeshSubset {
-			mtp.Spec.TargetRef.Kind = common_api.Mesh
-			mtp.Spec.TargetRef.Tags = nil
-		}
-		if mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
-			mtp.Spec.TargetRef.Kind = common_api.MeshService
-			mtp.Spec.TargetRef.Tags = nil
+			if !hasOnlySupportedTags {
+				mtp = &v1alpha1.MeshTrafficPermissionResource{
+					Meta: mtp.Meta,
+					Spec: mtp.Spec.DeepCopy(),
+				}
+				if mtp.Spec.TargetRef.Kind == common_api.MeshSubset {
+					mtp.Spec.TargetRef.Kind = common_api.Mesh
+					mtp.Spec.TargetRef.Tags = nil
+				}
+				if mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
+					mtp.Spec.TargetRef.Kind = common_api.MeshService
+					mtp.Spec.TargetRef.Tags = nil
+				}
+			}
 		}
 		newMtps[i] = mtp
 	}
