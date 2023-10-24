@@ -63,7 +63,7 @@ to:
           - to:
               type: Any
       failoverThreshold: 
-        percentage: 70                                      # (7)
+        percentage: 70                                      # (9)
 ```
 
 
@@ -113,7 +113,8 @@ When configuring weight you need to either specify weights for all tags or don't
 
 (9) In `failoverThreshold` you configure the percentage of live endpoints below which we will start load balancing to the 
 next priority. This is the inverse of [Envoy overprovisioning factor](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/overprovisioning#arch-overview-load-balancing-overprovisioning-factor). 
-Default: 50%
+Default: 50% 
+Example: If you have 2 instances in your local zone and suddenly one of instances is unhealthy, traffic is still in the local zone.
 
 
 ### API examples based on use cases
