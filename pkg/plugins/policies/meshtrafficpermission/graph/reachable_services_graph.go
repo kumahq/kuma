@@ -17,23 +17,23 @@ import (
 
 var log = core.Log.WithName("rs-graph")
 
-var ReachableServicesSupportedTags = map[string]struct{}{
+var SupportedTags = map[string]struct{}{
 	controllers.KubeNamespaceTag: {},
 	controllers.KubeServiceTag:   {},
 	controllers.KubePortTag:      {},
 }
 
-type ReachableServicesGraph struct {
+type Graph struct {
 	rules map[string]core_rules.Rules
 }
 
-func NewReachableServicesGraph() *ReachableServicesGraph {
-	return &ReachableServicesGraph{
+func NewGraph() *Graph {
+	return &Graph{
 		rules: map[string]core_rules.Rules{},
 	}
 }
 
-func (r *ReachableServicesGraph) CanReach(fromTags map[string]string, toSvc string) bool {
+func (r *Graph) CanReach(fromTags map[string]string, toSvc string) bool {
 	rule := r.rules[toSvc].Compute(core_rules.SubsetFromTags(fromTags))
 	if rule == nil {
 		return false
@@ -43,12 +43,12 @@ func (r *ReachableServicesGraph) CanReach(fromTags map[string]string, toSvc stri
 }
 
 func Builder(resources context.Resources) context.ReachableServicesGraph {
-	services := BuildReachableServiceCandidates(resources.Dataplanes().Items, resources.ExternalServices().Items)
+	services := BuildServiceCandidates(resources.Dataplanes().Items, resources.ExternalServices().Items)
 	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
-	return BuildReachableServicesGraph(services, mtps.Items)
+	return BuildGraph(services, mtps.Items)
 }
 
-func BuildReachableServiceCandidates(
+func BuildServiceCandidates(
 	dataplanes []*mesh.DataplaneResource,
 	externalServices []*mesh.ExternalServiceResource,
 ) map[string]mesh_proto.SingleValueTagSet {
@@ -60,7 +60,7 @@ func BuildReachableServiceCandidates(
 				continue
 			}
 			services[svc] = map[string]string{}
-			for tag := range ReachableServicesSupportedTags {
+			for tag := range SupportedTags {
 				if values := set.Values(tag); len(values) > 0 {
 					services[svc][tag] = values[0]
 				}
@@ -73,7 +73,7 @@ func BuildReachableServiceCandidates(
 	return services
 }
 
-func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) *ReachableServicesGraph {
+func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) *Graph {
 	resources := context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
@@ -82,7 +82,7 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 		},
 	}
 
-	graph := NewReachableServicesGraph()
+	graph := NewGraph()
 
 	for service, tags := range services {
 		// build artificial dpp for matching
@@ -123,8 +123,8 @@ func BuildReachableServicesGraph(services map[string]mesh_proto.SingleValueTagSe
 
 // replaceTopLevelSubsets replaces subsets present in top-level target ref.
 // Because we need to do policy matching on services instead of individual proxies, we have to handle subsets in a special way.
-// What we do is we only support subsets with predefined tags listed in ReachableServicesSupportedTags.
-// This assumes that tags listed in ReachableServicesSupportedTags are stable between all instances of a given service.
+// What we do is we only support subsets with predefined tags listed in SupportedTags.
+// This assumes that tags listed in SupportedTags are stable between all instances of a given service.
 // Otherwise, we fallback to higher level target ref (MeshSubset -> Mesh, MeshServiceSubset -> MeshService).
 //
 // Alternatively, we could have computed all common tags between instances of a given service and then allow subsets with those common tags.
@@ -135,7 +135,7 @@ func replaceTopLevelSubsets(mtps []*mtp_api.MeshTrafficPermissionResource) []*mt
 		if len(mtp.Spec.TargetRef.Tags) > 0 {
 			hasOnlySupportedTags := true
 			for tag := range mtp.Spec.TargetRef.Tags {
-				_, ok := ReachableServicesSupportedTags[tag]
+				_, ok := SupportedTags[tag]
 				if !ok {
 					hasOnlySupportedTags = false
 				}

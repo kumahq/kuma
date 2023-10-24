@@ -119,7 +119,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, outbound := range meshContext.VIPOutbounds {
 		service := outbound.GetService()
 		if len(reachableServices) != 0 && !reachableServices[service] {
-			continue // ignore VIP outbound if reachableServices is defined and not specified
+			// ignore VIP outbound if reachableServices is defined and not specified
+			// Reachable services takes precedence over reachable services graph.
+			continue
 		}
 		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
 			// Skip overlapping outbound interface with inbound.

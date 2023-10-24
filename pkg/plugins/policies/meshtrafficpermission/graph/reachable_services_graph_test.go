@@ -6,10 +6,12 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
 var _ = Describe("Reachable Services Graph", func() {
@@ -31,7 +33,7 @@ var _ = Describe("Reachable Services Graph", func() {
 	DescribeTable("should check reachability of the graph",
 		func(given testCase) {
 			// when
-			g := graph.BuildReachableServicesGraph(services, given.mtps)
+			g := graph.BuildGraph(services, given.mtps)
 
 			// then
 			for from := range services {
@@ -187,7 +189,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := graph.BuildReachableServicesGraph(services, mtps)
+		graph := graph.BuildGraph(services, mtps)
 
 		// then
 		Expect(graph.CanReach(map[string]string{
@@ -212,7 +214,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := graph.BuildReachableServicesGraph(services, mtps)
+		graph := graph.BuildGraph(services, mtps)
 
 		// then
 		Expect(graph.CanReach(map[string]string{"kuma.io/zone": "east"}, "a")).To(BeTrue())
@@ -239,7 +241,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			}
 
 			// when
-			graph := graph.BuildReachableServicesGraph(services, mtps)
+			graph := graph.BuildGraph(services, mtps)
 
 			// then
 			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "b"}, "a_kuma-demo_svc_1234")).To(BeTrue())
@@ -254,6 +256,7 @@ var _ = Describe("Reachable Services Graph", func() {
 	)
 
 	It("should not modify MeshTrafficPermission passed to the func when replacing subsets", func() {
+		// given
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMeshSubset("version", "v1")).
@@ -265,11 +268,61 @@ var _ = Describe("Reachable Services Graph", func() {
 				Build(),
 		}
 
-		_ = graph.BuildReachableServicesGraph(services, mtps)
+		// when
+		_ = graph.BuildGraph(services, mtps)
 
+		// then
 		Expect(mtps[0].Spec.TargetRef.Kind).To(Equal(common_api.MeshSubset))
 		Expect(mtps[0].Spec.TargetRef.Tags).NotTo(BeNil())
 		Expect(mtps[1].Spec.TargetRef.Kind).To(Equal(common_api.MeshServiceSubset))
 		Expect(mtps[1].Spec.TargetRef.Tags).NotTo(BeNil())
+	})
+
+	It("should build service candidates adding supported tags and including external services", func() {
+		// given
+		tags := map[string]string{
+			mesh_proto.ServiceTag:        "a_kuma-demo_svc_1234",
+			controllers.KubeNamespaceTag: "kuma-demo",
+			controllers.KubeServiceTag:   "a",
+			controllers.KubePortTag:      "1234",
+		}
+		dpps := []*mesh.DataplaneResource{
+			samples.DataplaneBackendBuilder().
+				WithAddress("1.1.1.1").
+				WithInboundOfTagsMap(tags).
+				Build(),
+			samples.DataplaneBackendBuilder().
+				WithAddress("1.1.1.2").
+				WithInboundOfTagsMap(tags).
+				Build(),
+			samples.DataplaneBackendBuilder().
+				WithAddress("1.1.1.3").
+				WithServices("b", "c").
+				Build(),
+		}
+		es := []*mesh.ExternalServiceResource{
+			{
+				Spec: &mesh_proto.ExternalService{
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "es-1",
+					},
+				},
+			},
+		}
+
+		// when
+		services := graph.BuildServiceCandidates(dpps, es)
+
+		// then
+		Expect(services).To(Equal(map[string]mesh_proto.SingleValueTagSet{
+			"a_kuma-demo_svc_1234": map[string]string{
+				controllers.KubeNamespaceTag: "kuma-demo",
+				controllers.KubeServiceTag:   "a",
+				controllers.KubePortTag:      "1234",
+			},
+			"b":    map[string]string{},
+			"c":    map[string]string{},
+			"es-1": map[string]string{},
+		}))
 	})
 })
