@@ -164,20 +164,11 @@ This is simply `A` can talk to anyone, this could be either adding and outgoing 
 
 3. `MeshService/MeshService` - already talked about, this is the easy case
 
-4. `MeshServiceSubset` 
+4. Subsets 
 
-Unfortunately there is one option here,
-we need to treat `MeshServiceSubset` just like `MeshService`.
-This is because we can't trim individual endpoints because the data is not available at that point, and
-we have to accept the fact that we will miss out on (small) parts of the config that could be trimmed.
+There is a strong case that makes sense using `k8s.kuma.io/namespace: xyz` to allow only traffic from a specific namespace.
 
-5. `MeshSubset`
-
-This one is a bit more tricky because the potential radious is a bit bigger.
-The approach has to be the same as in `MeshServiceSubset`, meaning: treat `MeshSubset` as just `Mesh`.
-
-There is a case that makes sense using `k8s.kuma.io/namespace: xyz` to allow only traffic from a specific namespace,
-so this needs to be documented that it won't improve the performance.
+We will support `MeshSubset` and `MeshServiceSubset` on the `from` level and support `k8s.kuma.io/*` labels on the `top` level.
 
 #### Migration
 
