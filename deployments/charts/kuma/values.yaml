@@ -691,20 +691,6 @@ experimental:
   # -- If true, it uses new API for resource synchronization
   deltaKds: false
 
-legacy:
-  # -- If true, use the legacy transparent proxy engine
-  transparentProxy: false
-  cni:
-    # -- If true, it installs legacy version of the CNI
-    enabled: false
-    image:
-      # -- CNI v1 image registry
-      registry: "docker.io/kumahq"
-      # -- CNI v1 image repository
-      repository: "install-cni"
-      # -- CNI v1 image tag
-      tag: "0.0.10"
-
 # Postgres' settings for universal control plane on k8s
 postgres:
   # -- Postgres port, password should be provided as a secret reference in "controlPlane.secrets"

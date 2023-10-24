@@ -335,7 +335,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 		builtindns := opts.builtindns == nil || *opts.builtindns
 		if transparent {
-			app.setupTransparent(c.controlplane.Networking().IP, builtindns, opts.transparentProxyV1)
+			app.setupTransparent(builtindns)
 		}
 
 		ip := app.ip
