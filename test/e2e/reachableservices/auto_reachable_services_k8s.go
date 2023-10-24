@@ -2,12 +2,14 @@ package reachableservices
 
 import (
 	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var k8sCluster Cluster
@@ -65,7 +67,7 @@ spec:
 		Eventually(func(g Gomega) {
 			pod, err := PodNameOfApp(k8sCluster, "second-test-server", TestNamespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod + "." + TestNamespace, "--type=clusters")
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+TestNamespace, "--type=clusters")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Not(ContainSubstring("first-test-server_kuma-test_svc_80")))
 		}, "30s", "1s").Should(Succeed())
@@ -73,7 +75,7 @@ spec:
 		Eventually(func(g Gomega) {
 			pod, err := PodNameOfApp(k8sCluster, "client-server", TestNamespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod + "." + TestNamespace, "--type=clusters")
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+TestNamespace, "--type=clusters")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("first-test-server_kuma-test_svc_80"))
 		}, "30s", "1s").Should(Succeed())

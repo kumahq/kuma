@@ -1,12 +1,13 @@
 package reachableservices_test
 
 import (
-	"github.com/kumahq/kuma/test/e2e/reachableservices"
 	"testing"
+
 
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e/reachableservices"
 )
 
 func TestE2E(t *testing.T) {
