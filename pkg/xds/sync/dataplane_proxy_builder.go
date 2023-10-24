@@ -126,10 +126,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 			continue
 		}
-		if graph := meshContext.ReachableServicesGraph; graph != nil {
-			if !graph.CanReachFromAny(dpTagSets, service) {
-				continue
-			}
+		if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, service) {
+			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}

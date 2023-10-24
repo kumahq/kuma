@@ -43,7 +43,7 @@ type MeshContext struct {
 	VIPOutbounds           []*mesh_proto.Dataplane_Networking_Outbound
 	ServiceTLSReadiness    map[string]bool
 	DataSourceLoader       datasource.Loader
-	ReachableServicesGraph *ReachableServicesGraph
+	ReachableServicesGraph ReachableServicesGraph
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

@@ -1,4 +1,4 @@
-package context_test
+package graph_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -7,8 +7,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ = Describe("Reachable Services Graph", func() {
@@ -30,10 +30,9 @@ var _ = Describe("Reachable Services Graph", func() {
 	DescribeTable("should check reachability of the graph",
 		func(given testCase) {
 			// when
-			g, err := xds_context.BuildReachableServicesGraph(services, given.mtps)
+			g := graph.BuildReachableServicesGraph(services, given.mtps)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
 			for from := range services {
 				for to := range services {
 					_, fromAll := given.expectedFromAll[to]
@@ -187,10 +186,9 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph, err := xds_context.BuildReachableServicesGraph(services, mtps)
+		graph := graph.BuildReachableServicesGraph(services, mtps)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
 		Expect(graph.CanReach(map[string]string{
 			mesh_proto.ServiceTag: "b",
 			"version":             "v1",
@@ -213,10 +211,9 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph, err := xds_context.BuildReachableServicesGraph(services, mtps)
+		graph := graph.BuildReachableServicesGraph(services, mtps)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
 		Expect(graph.CanReach(map[string]string{"kuma.io/zone": "east"}, "a")).To(BeTrue())
 		Expect(graph.CanReach(map[string]string{"kuma.io/zone": "west"}, "a")).To(BeFalse())
 		Expect(graph.CanReach(map[string]string{"othertag": "other"}, "a")).To(BeFalse())
@@ -241,10 +238,9 @@ var _ = Describe("Reachable Services Graph", func() {
 			}
 
 			// when
-			graph, err := xds_context.BuildReachableServicesGraph(services, mtps)
+			graph := graph.BuildReachableServicesGraph(services, mtps)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
 			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "b"}, "a_kuma-demo_svc_1234")).To(BeTrue())
 			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"}, "b")).To(BeFalse()) // it's not selected by top-level target ref
 		},
@@ -268,9 +264,8 @@ var _ = Describe("Reachable Services Graph", func() {
 				Build(),
 		}
 
-		_, err := xds_context.BuildReachableServicesGraph(services, mtps)
+		_ = graph.BuildReachableServicesGraph(services, mtps)
 
-		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps[0].Spec.TargetRef.Kind).To(Equal(common_api.MeshSubset))
 		Expect(mtps[0].Spec.TargetRef.Tags).NotTo(BeNil())
 		Expect(mtps[1].Spec.TargetRef.Kind).To(Equal(common_api.MeshServiceSubset))

@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -26,14 +24,14 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm                    manager.ReadOnlyResourceManager
-	typeSet               map[core_model.ResourceType]struct{}
-	ipFunc                lookup.LookupIPFunc
-	zone                  string
-	vipsPersistence       *vips.Persistence
-	topLevelDomain        string
-	vipPort               uint32
-	autoReachableServices bool
+	rm              manager.ReadOnlyResourceManager
+	typeSet         map[core_model.ResourceType]struct{}
+	ipFunc          lookup.LookupIPFunc
+	zone            string
+	vipsPersistence *vips.Persistence
+	topLevelDomain  string
+	vipPort         uint32
+	rsGraphBuilder  ReachableServicesGraphBuilder
 }
 
 type MeshContextBuilder interface {
@@ -54,7 +52,7 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 	vipPort uint32,
-	autoReachableServices bool,
+	rsGraphBuilder ReachableServicesGraphBuilder,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -62,14 +60,14 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:                    rm,
-		typeSet:               typeSet,
-		ipFunc:                ipFunc,
-		zone:                  zone,
-		vipsPersistence:       vipsPersistence,
-		topLevelDomain:        topLevelDomain,
-		vipPort:               vipPort,
-		autoReachableServices: autoReachableServices,
+		rm:              rm,
+		typeSet:         typeSet,
+		ipFunc:          ipFunc,
+		zone:            zone,
+		vipsPersistence: vipsPersistence,
+		topLevelDomain:  topLevelDomain,
+		vipPort:         vipPort,
+		rsGraphBuilder:  rsGraphBuilder,
 	}
 }
 
@@ -131,15 +129,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
-	var rsGraph *ReachableServicesGraph
-	if m.autoReachableServices {
-		services := BuildReachableServiceCandidates(dataplanes, resources.ExternalServices().Items)
-		rsGraph, err = BuildReachableServicesGraph(services, resources.MeshTrafficPermissions().Items)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not build reachable services graph")
-		}
-	}
-
 	return &MeshContext{
 		Hash:                   newHash,
 		Resource:               mesh,
@@ -151,7 +140,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPOutbounds:           outbounds,
 		ServiceTLSReadiness:    m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
 		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
-		ReachableServicesGraph: rsGraph,
+		ReachableServicesGraph: m.rsGraphBuilder(resources),
 	}, nil
 }
 

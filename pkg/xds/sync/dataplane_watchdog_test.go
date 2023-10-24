@@ -76,7 +76,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
-			false,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
 		Expect(err).ToNot(HaveOccurred())
