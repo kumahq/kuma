@@ -35,9 +35,7 @@ spec:
           localZone:
             affinityTags:
             - key: k8s.io/node
-              weight: 900
             - key: k8s.io/az
-              weight: 90
           crossZone:
             failover:
               - from:

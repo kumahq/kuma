@@ -25,7 +25,7 @@ func GetPriority(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, localZ
 	if conf.LocalityAwareness == nil {
 		return nil, nil
 	}
-	return getLocalLbGroups(conf, inboundTags), getCrossZoneLbGroup(conf, localZone)
+	return getLocalLbGroups(conf, inboundTags), getCrossZoneLbGroups(conf, localZone)
 }
 
 func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) []LocalLbGroup {
@@ -38,7 +38,7 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) [
 			if len(values) != 0 {
 				localGroups = append(localGroups, LocalLbGroup{
 					Key:    tag.Key,
-					Value:  values[0],
+					Value:  values[0], // we are taking the first value from multiple, because locality tag shouldn't have different values
 					Weight: weight,
 				})
 			}
@@ -47,24 +47,17 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) [
 	return localGroups
 }
 
-func getCrossZoneLbGroup(conf *api.Conf, localZone string) []CrossZoneLbGroup {
+func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 	crossZoneGroups := []CrossZoneLbGroup{}
 	if conf.LocalityAwareness.CrossZone != nil && len(conf.LocalityAwareness.CrossZone.Failover) > 0 {
-		// iterator starts from 0 while for remote zones we always sets priority that favors local zone
+		// iterator starts from 0 while for remote zones we always set priority that favors local zone
+		// we are using priority based on the rule position in the list so we increment it even if it doesn't match
+		// that doesn't affect envoy behavior
 		for priority, rule := range conf.LocalityAwareness.CrossZone.Failover {
-			lb := CrossZoneLbGroup{}
-			if rule.From != nil {
-				doesRuleApply := false
-				for _, zone := range rule.From.Zones {
-					if zone == localZone {
-						doesRuleApply = true
-						break
-					}
-				}
-				if !doesRuleApply {
-					continue
-				}
+			if !doesRuleApply(rule.From, localZone) {
+				continue
 			}
+			lb := CrossZoneLbGroup{}
 			switch rule.To.Type {
 			case api.Any:
 				lb.Type = api.Any
@@ -92,4 +85,16 @@ func getCrossZoneLbGroup(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 		}
 	}
 	return crossZoneGroups
+}
+
+func doesRuleApply(rule *api.FromZone, localZone string) bool {
+	if rule == nil {
+		return true
+	}
+	for _, zone := range rule.Zones {
+		if zone == localZone {
+			return true
+		}
+	}
+	return false
 }

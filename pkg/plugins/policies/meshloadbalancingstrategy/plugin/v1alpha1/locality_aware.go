@@ -16,6 +16,7 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 func ConfigureStaticEndpointsLocalityAware(
@@ -67,17 +68,19 @@ func ConfigureEndpointsLocalityAware(
 		}
 		rs.Add(&core_xds.Resource{
 			Name:     serviceName,
+			Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
 			Resource: cla,
 		})
 
-		for key := range splitEndpoints {
-			if tags.IsSplitCluster(key) && strings.HasPrefix(key, serviceName) {
-				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, key, localZone)
+		for splitName := range splitEndpoints {
+			if tags.IsSplitCluster(splitName) && strings.HasPrefix(splitName, serviceName) {
+				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, splitName, localZone)
 				if err != nil {
 					return err
 				}
 				rs.Add(&core_xds.Resource{
-					Name:     key,
+					Name:     splitName,
+					Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
 					Resource: cla,
 				})
 			}
@@ -102,81 +105,26 @@ func ConfigureEnpointLocalityAwareLb(
 		for _, localityLbEndpoint := range endpoint.Endpoints {
 		endpointLoop:
 			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
-				ed := core_xds.Endpoint{}
-				ed.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
-				tags := envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
-				zoneName := tags[mesh_proto.ZoneTag]
-				ed.Locality = &core_xds.Locality{
-					Zone:     localZone,
-					Weight:   1,
-					Priority: 0,
-				}
+				ed := createEndpoint(lbEndpoint, localZone)
+				zoneName := ed.Tags[mesh_proto.ZoneTag]
+
+				// nolint: gocritic
 				if zoneName == localZone {
-					for _, localRule := range localPriorityGroups {
-						val, ok := tags[localRule.Key]
-						if ok && val == localRule.Value {
-							ed.Locality = &core_xds.Locality{
-								Zone:     localZone,
-								SubZone:  fmt.Sprintf("%s=%s", localRule.Key, val),
-								Weight:   localRule.Weight,
-								Priority: 0,
-							}
-							break
-						}
-					}
-				} else {
-					if len(crossZonePriorityGroups) == 0 {
-						break endpointLoop
-					}
-				ruleLoop:
-					for _, zoneRule := range crossZonePriorityGroups {
-						switch zoneRule.Type {
-						case api.Any:
-							ed.Locality = &core_xds.Locality{
-								Zone:     zoneName,
-								Priority: zoneRule.Priority,
-							}
-							break ruleLoop
-						case api.AnyExcept:
-							if _, ok := zoneRule.Zones[zoneName]; ok {
-								continue
-							} else {
-								ed.Locality = &core_xds.Locality{
-									Zone:     zoneName,
-									Priority: zoneRule.Priority,
-								}
-								break ruleLoop
-							}
-						case api.Only:
-							if _, ok := zoneRule.Zones[zoneName]; ok {
-								ed.Locality = &core_xds.Locality{
-									Zone:     zoneName,
-									Priority: zoneRule.Priority,
-								}
-								break ruleLoop
-							}
-						default:
-							break endpointLoop
-						}
-					}
+					configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
+				} else if len(crossZonePriorityGroups) > 0 {
+					configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName)
+					// when endpoint wasn't matched with any rule
 					if ed.Locality.Zone == localZone {
 						break endpointLoop
 					}
-				}
-				ed.Tags = tags
-				address := lbEndpoint.GetEndpoint().GetAddress()
-				if address.GetSocketAddress() != nil {
-					ed.Target = address.GetSocketAddress().GetAddress()
-					ed.Port = address.GetSocketAddress().GetPortValue()
-				}
-				if address.GetPipe() != nil {
-					ed.UnixDomainPath = address.GetPipe().GetPath()
+				} else {
+					break endpointLoop
 				}
 				endpointsList = append(endpointsList, ed)
 			}
 		}
 	}
-	// TODO(lukidzi): use CLA Cache
+	// TODO(lukidzi): use CLA Cache https://github.com/kumahq/kuma/issues/8121
 	cla, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
 	if err != nil {
 		return nil, err
@@ -195,4 +143,71 @@ func ConfigureEnpointLocalityAwareLb(
 		clusterLb.Policy.OverprovisioningFactor = wrapperspb.UInt32(overprovisingFactor)
 	}
 	return cla, nil
+}
+
+func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) core_xds.Endpoint {
+	endpoint := core_xds.Endpoint{}
+	endpoint.Weight = lbEndpoint.LoadBalancingWeight.GetValue()
+	endpoint.Tags = envoy_metadata.ExtractLbTags(lbEndpoint.Metadata)
+	address := lbEndpoint.GetEndpoint().GetAddress()
+	if address.GetSocketAddress() != nil {
+		endpoint.Target = address.GetSocketAddress().GetAddress()
+		endpoint.Port = address.GetSocketAddress().GetPortValue()
+	}
+	if address.GetPipe() != nil {
+		endpoint.UnixDomainPath = address.GetPipe().GetPath()
+	}
+	endpoint.Locality = &core_xds.Locality{
+		Zone:     localZone,
+		Weight:   1,
+		Priority: 0,
+	}
+	return endpoint
+}
+
+func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGroup, endpoint *core_xds.Endpoint, zoneName string) {
+	for _, zoneRule := range crossZonePriorityGroups {
+		switch zoneRule.Type {
+		case api.Any:
+			endpoint.Locality = &core_xds.Locality{
+				Zone:     zoneName,
+				Priority: zoneRule.Priority,
+			}
+			return
+		case api.AnyExcept:
+			if _, ok := zoneRule.Zones[zoneName]; ok {
+				continue
+			} else {
+				endpoint.Locality = &core_xds.Locality{
+					Zone:     zoneName,
+					Priority: zoneRule.Priority,
+				}
+				return
+			}
+		case api.Only:
+			if _, ok := zoneRule.Zones[zoneName]; ok {
+				endpoint.Locality = &core_xds.Locality{
+					Zone:     zoneName,
+					Priority: zoneRule.Priority,
+				}
+				return
+			}
+		default:
+		}
+	}
+}
+
+func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endpoint *core_xds.Endpoint, localZone string) {
+	for _, localRule := range localPriorityGroups {
+		val, ok := endpoint.Tags[localRule.Key]
+		if ok && val == localRule.Value {
+			endpoint.Locality = &core_xds.Locality{
+				Zone:     localZone,
+				SubZone:  fmt.Sprintf("%s=%s", localRule.Key, val),
+				Weight:   localRule.Weight,
+				Priority: 0,
+			}
+			break
+		}
+	}
 }
