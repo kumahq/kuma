@@ -4,6 +4,7 @@ import (
 	"fmt"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,7 @@ var _ = E2EBeforeSuite(func() {
 			WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(MTLSMeshKubernetes("default")).
 		Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh("default"))).
 		Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh("default"))).
 		Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh("default"))).
@@ -74,6 +76,16 @@ spec:
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod + "." + TestNamespace, "--type=clusters")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("first-test-server_kuma-test_svc_80"))
+		}, "30s", "1s").Should(Succeed())
+
+		Consistently(func(g Gomega) {
+			_, _, err := client.CollectResponse(
+				k8sCluster,
+				"second-test-server",
+				"first-test-server:80",
+				client.FromKubernetesPod(TestNamespace, "second-test-server"),
+			)
+			g.Expect(err).To(MatchError("command terminated with exit code 52"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
