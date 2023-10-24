@@ -482,8 +482,8 @@ spec:
         {}
       containers:
         - name: install-cni
-          image: "docker.io/kumahq/kuma-cni:0.0.1"
           imagePullPolicy: IfNotPresent
+          image: "docker.io/kumahq/kuma-cni:0.0.1"
           readinessProbe:
             initialDelaySeconds: 0
             exec:

@@ -196,7 +196,6 @@ rules:
       - get
       - list
       - watch
-  {{- if not .Values.legacy.cni.enabled }}
   - apiGroups:
       - ""
     resources:
@@ -209,7 +208,6 @@ rules:
       - pods
     verbs:
       - list
-  {{- end }}
   {{- end }}
   # validate k8s token before issuing mTLS cert
   - apiGroups:

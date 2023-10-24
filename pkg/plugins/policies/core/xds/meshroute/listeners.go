@@ -10,50 +10,13 @@ import (
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
-
-// SplitCounter
-// Whenever `split` is specified in the TrafficRoute which has more than
-// kuma.io/service tag we generate a separate Envoy cluster with _X_ suffix.
-// SplitCounter ensures that we have different X for every split in one
-// Dataplane. Each split is distinct for the whole Dataplane so we can avoid
-// accidental cluster overrides.
-type SplitCounter struct {
-	counter int
-}
-
-func (s *SplitCounter) GetAndIncrement() int {
-	counter := s.counter
-	s.counter++
-	return counter
-}
-
-func GetClusterName(
-	name string,
-	tags map[string]string,
-	sc *SplitCounter,
-) string {
-	if len(tags) > 0 {
-		name = envoy_names.GetSplitClusterName(name, sc.GetAndIncrement())
-	}
-
-	// The mesh tag is present here if this destination is generated
-	// from a cross-mesh MeshGateway listener virtual outbound.
-	// It is not part of the service tags.
-	if mesh, ok := tags[mesh_proto.MeshTag]; ok {
-		// The name should be distinct to the service & mesh combination
-		name = fmt.Sprintf("%s_%s", name, mesh)
-	}
-
-	return name
-}
 
 func MakeTCPSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
-	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 ) []envoy_common.Split {
@@ -66,7 +29,6 @@ func MakeTCPSplit(
 			core_mesh.ProtocolHTTP2:   {},
 		},
 		clusterCache,
-		sc,
 		servicesAcc,
 		refs,
 	)
@@ -75,7 +37,6 @@ func MakeTCPSplit(
 func MakeHTTPSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
-	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 ) []envoy_common.Split {
@@ -86,7 +47,6 @@ func MakeHTTPSplit(
 			core_mesh.ProtocolHTTP2: {},
 		},
 		clusterCache,
-		sc,
 		servicesAcc,
 		refs,
 	)
@@ -96,7 +56,6 @@ func makeSplit(
 	proxy *core_xds.Proxy,
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.TargetRefHash]string,
-	sc *SplitCounter,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 ) []envoy_common.Split {
@@ -118,7 +77,18 @@ func makeSplit(
 			return nil
 		}
 
-		clusterName := GetClusterName(ref.Name, ref.Tags, sc)
+		clusterName, _ := tags.Tags(ref.Tags).
+			WithTags(mesh_proto.ServiceTag, ref.Name).
+			DestinationClusterName(nil)
+
+		// The mesh tag is present here if this destination is generated
+		// from a cross-mesh MeshGateway listener virtual outbound.
+		// It is not part of the service tags.
+		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+			// The name should be distinct to the service & mesh combination
+			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
+		}
+
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
 		refHash := ref.TargetRef.Hash()
 

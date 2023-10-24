@@ -1,7 +1,10 @@
 package install
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"log"
 	"reflect"
 	"regexp"
 	"sort"
@@ -38,6 +41,17 @@ metadata:
 `, namespace)
 }
 
+type onlyWriteWarnings struct {
+	writer io.Writer
+}
+
+func (w onlyWriteWarnings) Write(p []byte) (int, error) {
+	if bytes.HasPrefix(p, []byte("Warning:")) {
+		return w.writer.Write(p)
+	}
+	return io.Discard.Write(p)
+}
+
 func renderHelmFiles(
 	templates []data.File,
 	namespace string,
@@ -50,9 +64,14 @@ func renderHelmFiles(
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
+	// This is necessary because ProcessDependencies can output warnings as well
+	// as trash
+	writer := log.Writer()
+	log.SetOutput(onlyWriteWarnings{writer: writer})
 	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
+	log.SetOutput(writer)
 
 	options := generateReleaseOptions(kumaChart.Metadata.Name, namespace)
 

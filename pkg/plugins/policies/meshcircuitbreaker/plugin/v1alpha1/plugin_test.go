@@ -378,9 +378,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Resource: test_xds.ClusterWithName("other-service"),
 				},
 				{
-					Name:     "other-service-_0_",
+					Name:     "other-service-5ab6003f460fabce",
 					Origin:   generator.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service-_0_"),
+					Resource: test_xds.ClusterWithName("other-service-5ab6003f460fabce"),
 				},
 			},
 			toRules: core_rules.ToRules{
@@ -431,6 +431,10 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						},
 					},
 				},
+				RuntimeExtensions: map[string]interface{}{},
+			}
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)

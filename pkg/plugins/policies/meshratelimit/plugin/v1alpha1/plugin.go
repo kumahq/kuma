@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
@@ -46,27 +44,19 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateways(ctx, policies.FromRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.FromRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
 		return err
 	}
 	return nil
 }
 
 func applyToGateways(
-	ctx xds_context.Context,
 	fromRules core_rules.FromRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
-	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
-	for _, listenerInfo := range gatewayListerInfos {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
 		listenerKey := core_rules.InboundListener{

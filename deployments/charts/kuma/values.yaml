@@ -406,6 +406,9 @@ ingress:
   # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
   replicas: 1
 
+  # -- Log level for ingress (available values: off|info|debug)
+  logLevel: info
+
   # -- Define the resources to allocate to mesh ingress
   resources:
     requests:
@@ -525,6 +528,9 @@ egress:
   drainTime: 30s
   # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # -- Log level for egress (available values: off|info|debug)
+  logLevel: info
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:
@@ -684,20 +690,6 @@ experimental:
     programsSourcePath: /kuma/ebpf
   # -- If true, it uses new API for resource synchronization
   deltaKds: false
-
-legacy:
-  # -- If true, use the legacy transparent proxy engine
-  transparentProxy: false
-  cni:
-    # -- If true, it installs legacy version of the CNI
-    enabled: false
-    image:
-      # -- CNI v1 image registry
-      registry: "docker.io/kumahq"
-      # -- CNI v1 image repository
-      repository: "install-cni"
-      # -- CNI v1 image tag
-      tag: "0.0.10"
 
 # Postgres' settings for universal control plane on k8s
 postgres:

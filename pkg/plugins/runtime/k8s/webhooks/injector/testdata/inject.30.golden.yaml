@@ -133,7 +133,6 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
-    - --skip-resolv-conf
     - --ebpf-enabled
     - --ebpf-instance-ip
     - $(INSTANCE_IP)

@@ -27,10 +27,6 @@ func GetLocalClusterName(port uint32) string {
 	return Join("localhost", formatPort(port))
 }
 
-func GetSplitClusterName(service string, idx int) string {
-	return fmt.Sprintf("%s-_%d_", service, idx)
-}
-
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
 	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {

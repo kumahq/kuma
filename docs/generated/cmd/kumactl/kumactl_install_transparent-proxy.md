@@ -87,7 +87,6 @@ kumactl install transparent-proxy [flags]
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
       --sleep-between-retries duration                                                  flag can be used to specify the amount of time to sleep between retries (default 2s)
       --store-firewalld                                                                 store the iptables changes with firewalld
-      --use-transparent-proxy-engine-v1                                                 use legacy transparent proxy engine v1
       --verbose                                                                         verbose
       --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
       --wait uint                                                                       specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error (default 5)

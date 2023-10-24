@@ -37,13 +37,9 @@ type InstallControlPlaneArgs struct {
 	Cni_net_dir                                  string            `helm:"cni.netDir"`
 	Cni_bin_dir                                  string            `helm:"cni.binDir"`
 	Cni_conf_name                                string            `helm:"cni.confName"`
-	Cni_v1                                       bool              `helm:"legacy.cni.enabled"`
-	Cni_v1_image_registry                        string            `helm:"legacy.cni.image.registry,omitempty"`
-	Cni_v1_image_repository                      string            `helm:"legacy.cni.image.repository"`
-	Cni_v1_image_tag                             string            `helm:"legacy.cni.image.tag"`
-	Cni_v2_image_registry                        string            `helm:"cni.image.registry"`
-	Cni_v2_image_repository                      string            `helm:"cni.image.repository"`
-	Cni_v2_image_tag                             string            `helm:"cni.image.tag"`
+	Cni_image_registry                           string            `helm:"cni.image.registry"`
+	Cni_image_repository                         string            `helm:"cni.image.repository"`
+	Cni_image_tag                                string            `helm:"cni.image.tag"`
 	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
@@ -107,13 +103,9 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_net_dir:                             "/etc/cni/multus/net.d",
 			Cni_bin_dir:                             "/var/lib/cni/bin",
 			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_v1:                                  false,
-			Cni_v1_image_registry:                   "",
-			Cni_v1_image_repository:                 "install-cni",
-			Cni_v1_image_tag:                        "0.0.10",
-			Cni_v2_image_registry:                   "",
-			Cni_v2_image_repository:                 "kuma-cni",
-			Cni_v2_image_tag:                        kuma_version.Build.Version,
+			Cni_image_registry:                      "",
+			Cni_image_repository:                    "kuma-cni",
+			Cni_image_tag:                           kuma_version.Build.Version,
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",

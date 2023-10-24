@@ -105,8 +105,8 @@ func (g *FilterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // GatewayListenerInfoFromProxy processes a Dataplane and the corresponding
 // Gateway and returns information about the listeners, routes and applied
 // policies.
-func GatewayListenerInfoFromProxy(
-	ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
+func gatewayListenerInfoFromProxy(
+	ctx context.Context, meshCtx *xds_context.MeshContext, proxy *core_xds.Proxy,
 ) (
 	[]GatewayListenerInfo, error,
 ) {
@@ -164,7 +164,7 @@ func GatewayListenerInfoFromProxy(
 		meshCtx.Resource,
 		matchedExternalServices,
 		meshCtx.DataSourceLoader,
-		zone,
+		proxy.Zone,
 	)
 	for k, v := range esEndpoints {
 		outboundEndpoints[k] = v
@@ -172,7 +172,7 @@ func GatewayListenerInfoFromProxy(
 
 	// We already validate that listeners are collapsible
 	for _, listeners := range collapsed {
-		listener, hosts := MakeGatewayListener(meshCtx, gateway, proxy.Dataplane, listeners)
+		listener, hosts := MakeGatewayListener(meshCtx, gateway, listeners)
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
@@ -203,14 +203,9 @@ func GatewayListenerInfoFromProxy(
 func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	listenerInfos, err := GatewayListenerInfoFromProxy(ctx, xdsCtx.Mesh, proxy, g.Zone)
-	if err != nil {
-		return nil, errors.Wrap(err, "error generating listener info from Proxy")
-	}
-
 	var limits []RuntimeResoureLimitListener
 
-	for _, info := range listenerInfos {
+	for _, info := range ExtractGatewayListeners(proxy) {
 		cdsResources, err := g.generateCDS(ctx, xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
@@ -345,9 +340,8 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 // Listeners must be validated for collapsibility in terms of hostnames and
 // protocols.
 func MakeGatewayListener(
-	meshContext xds_context.MeshContext,
+	meshContext *xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
-	dataplane *core_mesh.DataplaneResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
 ) (GatewayListener, []GatewayHost) {
 	hostsByName := map[string]GatewayHost{}

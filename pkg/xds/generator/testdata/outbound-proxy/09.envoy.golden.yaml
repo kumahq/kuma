@@ -1,5 +1,5 @@
 resources:
-- name: api-http-_0__mesh2
+- name: api-http-5637c619d2781fec_mesh2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -7,7 +7,7 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    name: api-http-_0__mesh2
+    name: api-http-5637c619d2781fec_mesh2
     outlierDetection:
       enforcingConsecutive5xx: 100
       enforcingConsecutiveGatewayFailure: 0
@@ -46,10 +46,10 @@ resources:
           idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: api-http-_0__mesh2
+- name: api-http-5637c619d2781fec_mesh2
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: api-http-_0__mesh2
+    clusterName: api-http-5637c619d2781fec_mesh2
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -108,7 +108,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: api-http-_0__mesh2
+                  cluster: api-http-5637c619d2781fec_mesh2
                   timeout: 0s
           statPrefix: api-http
           streamIdleTimeout: 0s

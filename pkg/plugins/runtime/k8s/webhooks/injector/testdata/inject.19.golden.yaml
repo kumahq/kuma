@@ -153,7 +153,6 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
-    - --skip-resolv-conf
     command:
     - /usr/bin/kumactl
     - install

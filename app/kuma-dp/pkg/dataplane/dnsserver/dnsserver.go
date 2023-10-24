@@ -36,23 +36,6 @@ type Opts struct {
 	Quit   chan struct{}
 }
 
-// DefaultCoreFileTemplate defines the template to use to configure coreDNS to use the envoy dns filter.
-const DefaultCoreFileTemplate = `.:{{ .CoreDNSPort }} {
-    forward . 127.0.0.1:{{ .EnvoyDNSPort }}
-    # We want all requests to be sent to the Envoy DNS Filter, unsuccessful responses should be forwarded to the original DNS server.
-    # For example: requests other than A, AAAA and SRV will return NOTIMP when hitting the envoy filter and should be sent to the original DNS server.
-    # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
-    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
-    prometheus localhost:{{ .PrometheusPort }}
-    errors
-}
-
-.:{{ .CoreDNSEmptyPort }} {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }
-}`
-
 func lookupDNSServerPath(configuredPath string) (string, error) {
 	return files.LookupBinaryPath(
 		files.LookupInPath(configuredPath),
@@ -108,7 +91,11 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 
 		tmpl = t
 	} else {
-		t, err := template.New("Corefile").Parse(DefaultCoreFileTemplate)
+		corefile, err := config.ReadFile("Corefile")
+		if err != nil {
+			return errors.Wrap(err, "couldn't open embedded Corefile")
+		}
+		t, err := template.New("Corefile").Parse(string(corefile))
 		if err != nil {
 			return err
 		}

@@ -132,7 +132,8 @@ var _ = Describe("DNS Server", func() {
     template ANY ANY . {
       rcode NXDOMAIN
     }
-}`))
+}
+`))
 		}))
 
 		It("should return an error if DNS Server crashes", test.Within(10*time.Second, func() {

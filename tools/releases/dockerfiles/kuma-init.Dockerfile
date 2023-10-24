@@ -1,5 +1,5 @@
 # until there is a distroless iptables image we have to use something else
-FROM ubuntu:jammy@sha256:9b8dec3bf938bc80fbe758d856e96fdfab5f56c39d44b0cff351e847bb1b01ea
+FROM ubuntu:jammy@sha256:2b7412e6465c3c7fc5bb21d3e6f1917c167358449fecac8176c6e496e5c1f05f
 ARG ARCH
 
 RUN apt-get update && \
@@ -13,7 +13,7 @@ COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \
     /kuma/
 
-COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+COPY /tools/releases/templates/NOTICE /kuma/NOTICE
 
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
     adduser --system --disabled-password --group kumactl --uid 5678
