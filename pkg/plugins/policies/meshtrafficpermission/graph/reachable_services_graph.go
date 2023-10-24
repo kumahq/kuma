@@ -43,12 +43,12 @@ func (r *Graph) CanReach(fromTags map[string]string, toSvc string) bool {
 }
 
 func Builder(resources context.Resources) context.ReachableServicesGraph {
-	services := BuildServiceCandidates(resources.Dataplanes().Items, resources.ExternalServices().Items)
+	services := BuildServices(resources.Dataplanes().Items, resources.ExternalServices().Items)
 	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
 	return BuildGraph(services, mtps.Items)
 }
 
-func BuildServiceCandidates(
+func BuildServices(
 	dataplanes []*mesh.DataplaneResource,
 	externalServices []*mesh.ExternalServiceResource,
 ) map[string]mesh_proto.SingleValueTagSet {

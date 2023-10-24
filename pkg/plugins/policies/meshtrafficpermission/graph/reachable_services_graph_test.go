@@ -278,7 +278,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		Expect(mtps[1].Spec.TargetRef.Tags).NotTo(BeNil())
 	})
 
-	It("should build service candidates adding supported tags and including external services", func() {
+	It("should build services adding supported tags and including external services", func() {
 		// given
 		tags := map[string]string{
 			mesh_proto.ServiceTag:        "a_kuma-demo_svc_1234",
@@ -311,7 +311,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		services := graph.BuildServiceCandidates(dpps, es)
+		services := graph.BuildServices(dpps, es)
 
 		// then
 		Expect(services).To(Equal(map[string]mesh_proto.SingleValueTagSet{
