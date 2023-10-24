@@ -8,7 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -95,8 +95,8 @@ func (p *EgressProxyBuilder) Build(
 
 		for _, es := range externalServices {
 			policies := core_xds.PluginOriginatedPolicies{}
-			for name, plugin := range plugins.Plugins().PolicyPlugins() {
-				egressPlugin, ok := plugin.(plugins.EgressPolicyPlugin)
+			for name, plugin := range core_plugins.Plugins().PolicyPlugins() {
+				egressPlugin, ok := plugin.(core_plugins.EgressPolicyPlugin)
 				if !ok {
 					continue
 				}
@@ -118,11 +118,18 @@ func (p *EgressProxyBuilder) Build(
 	proxy := &core_xds.Proxy{
 		Id:         core_xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
+		Zone:       p.zone,
 		ZoneEgressProxy: &core_xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
 			ZoneIngresses:      zoneIngresses,
 			MeshResourcesList:  meshResourcesList,
 		},
+	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed applying proxy plugin: %s", k)
+		}
 	}
 
 	return proxy, nil
