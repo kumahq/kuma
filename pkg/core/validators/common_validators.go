@@ -72,15 +72,9 @@ func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) Validatio
 	if value == nil {
 		return err
 	}
-	return ValidateValueGreaterThan(path, *value, 0)
-}
-
-func ValidateValueGreaterThan(path PathBuilder, value int32, minValue int32) ValidationError {
-	var err ValidationError
-	if value <= minValue {
-		err.AddViolationAt(path, fmt.Sprintf("%s %d", HasToBeGreaterThan, minValue))
+	if *value <= 0 {
+		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThanZero)
 	}
-
 	return err
 }
 

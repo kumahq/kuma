@@ -2126,7 +2126,7 @@ spec:
                                 have deployed 10 destination dataplane proxies. Load
                                 balancing to next priority will start when number
                                 of live destination dataplane proxies drops below
-                                7. Default 70'
+                                7. Default 50'
                               properties:
                                 percentage:
                                   anyOf:
@@ -2150,7 +2150,7 @@ spec:
                                           is configured
                                         type: string
                                       weight:
-                                        description: Weight of the tag used for load
+                                        description: 'Weight of the tag used for load
                                           balancing. The bigger the weight the bigger
                                           the priority. Percentage of local traffic
                                           load balanced to tag is computed by dividing
@@ -2162,7 +2162,10 @@ spec:
                                           redirected to second one. Setting weights
                                           is not mandatory. When weights are not set
                                           control plane will compute default weight
-                                          based on list order.
+                                          based on list order. Default: If you don''t
+                                          specify weight we will adjust them so that
+                                          90% traffic goes to first tag, 9% to next,
+                                          and 1% to third and so on.'
                                         format: int32
                                         type: integer
                                     required:
