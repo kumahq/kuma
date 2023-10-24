@@ -79,13 +79,14 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		Consistently(func(g Gomega) {
-			_, _, err := client.CollectResponse(
+			failures, err := client.CollectFailure(
 				k8sCluster,
 				"second-test-server",
 				"first-test-server:80",
 				client.FromKubernetesPod(TestNamespace, "second-test-server"),
 			)
-			g.Expect(err).To(MatchError("command terminated with exit code 52"))
+			g.Expect(err).To(Not(HaveOccurred()))
+			g.Expect(failures.Exitcode).To(Equal(52))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
