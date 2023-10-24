@@ -2,14 +2,11 @@ package reachableservices
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	admintunnel "github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"strings"
 )
 
 var k8sCluster Cluster
@@ -36,26 +33,7 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func AutoReachableServices() {
-	removeDefaultTrafficPermission := func() {
-		err := k8s.RunKubectlE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
-		Expect(err).ToNot(HaveOccurred())
-	}
-
-	noDefaultTrafficPermission := func() {
-		Eventually(func() bool {
-			out, err := k8s.RunKubectlAndGetOutputE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "get", "trafficpermissions")
-			if err != nil {
-				return false
-			}
-			return !strings.Contains(out, "allow-all-default")
-		}, "30s", "1s").Should(BeTrue())
-	}
-
 	It("should not connect to non auto reachable service", func() {
-		// given
-		removeDefaultTrafficPermission()
-		noDefaultTrafficPermission()
-
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -82,26 +60,20 @@ spec:
 `, Config.KumaNamespace))(k8sCluster)).To(Succeed())
 
 		// then
-		Eventually(func() int {
-			return numberOfClusterConfiguration("second-test-server", "first-test-server_kuma-test_svc_80")
-		}).Should(Equal(0))
+		Eventually(func(g Gomega) {
+			pod, err := PodNameOfApp(k8sCluster, "second-test-server", TestNamespace)
+			g.Expect(err).ToNot(HaveOccurred())
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod + "." + TestNamespace, "--type=clusters")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(Not(ContainSubstring("first-test-server_kuma-test_svc_80")))
+		}, "30s", "1s").Should(Succeed())
 
-		Eventually(func() int {
-			return numberOfClusterConfiguration("client-server", "first-test-server_kuma-test_svc_80")
-		}, "30s", "1s").Should(Equal(1))
+		Eventually(func(g Gomega) {
+			pod, err := PodNameOfApp(k8sCluster, "client-server", TestNamespace)
+			g.Expect(err).ToNot(HaveOccurred())
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod + "." + TestNamespace, "--type=clusters")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("first-test-server_kuma-test_svc_80"))
+		}, "30s", "1s").Should(Succeed())
 	})
-}
-
-func numberOfClusterConfiguration(appName string, targetCluster string) int {
-	pod, err := PodNameOfApp(k8sCluster, appName, TestNamespace)
-	Expect(err).ToNot(HaveOccurred())
-	tunnel := k8s.NewTunnel(k8sCluster.GetKubectlOptions(TestNamespace), k8s.ResourceTypePod, pod, 0, 9901)
-	tunnel.ForwardPort(k8sCluster.GetTesting())
-	admin := admintunnel.NewK8sEnvoyAdminTunnel(k8sCluster.GetTesting(), tunnel.Endpoint())
-
-	// then
-	// first-test-server_kuma-test_svc_80::added_via_api::true
-	stat, err := admin.GetStats(fmt.Sprintf("%s::added_via_api", targetCluster))
-	Expect(err).ToNot(HaveOccurred())
-	return len(stat.Stats)
 }
