@@ -22,6 +22,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -180,7 +181,7 @@ var _ = Describe("Inspect WS", func() {
 				},
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFrom(builders.TargetRefMesh(), "ALLOW").
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -799,7 +800,7 @@ var _ = Describe("Inspect WS", func() {
 				builders.MeshTrafficPermission().
 					WithMesh("mesh-1").
 					WithTargetRef(builders.TargetRefService("backend")).
-					AddFrom(builders.TargetRefMesh(), "ALLOW").
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			contentType: restful.MIME_JSON,
@@ -915,7 +916,7 @@ var _ = Describe("Inspect WS", func() {
 				samples2.DataplaneWeb(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("web")).
-					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), "DENY").
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
 					Build(),
 				builders.MeshAccessLog().
 					WithTargetRef(builders.TargetRefService("web")).
@@ -943,12 +944,12 @@ var _ = Describe("Inspect WS", func() {
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("web")).
-					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), "DENY").
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithName("mtp-2").
 					WithTargetRef(builders.TargetRefService("web")).
-					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east", "version", "2"), "ALLOW").
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east", "version", "2"), v1alpha1.Allow).
 					Build(),
 				builders.MeshAccessLog().
 					WithTargetRef(builders.TargetRefService("web")).

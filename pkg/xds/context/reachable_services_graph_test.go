@@ -46,7 +46,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			expectedFromAll: fromAllServices,
@@ -55,7 +55,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Deny).
 					Build(),
 			},
 			expectedFromAll: map[string]struct{}{},
@@ -68,7 +68,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
+					AddFrom(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
 			expectedConnections: map[string]map[string]struct{}{
@@ -79,7 +79,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.AllowWithShadowDeny).
+					AddFrom(builders.TargetRefService("a"), v1alpha1.AllowWithShadowDeny).
 					Build(),
 			},
 			expectedConnections: map[string]map[string]struct{}{
@@ -90,15 +90,15 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
+					AddFrom(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("c")).
-					AddFromX(builders.TargetRefService("b"), v1alpha1.AllowWithShadowDeny).
+					AddFrom(builders.TargetRefService("b"), v1alpha1.AllowWithShadowDeny).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("d")).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			expectedFromAll: map[string]struct{}{
@@ -113,11 +113,11 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Deny).
+					AddFrom(builders.TargetRefService("a"), v1alpha1.Deny).
 					Build(),
 			},
 			expectedFromAll: map[string]struct{}{
@@ -135,12 +135,12 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefService("b")).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Deny).
-					AddFromX(builders.TargetRefService("a"), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Deny).
+					AddFrom(builders.TargetRefService("a"), v1alpha1.Allow).
 					Build(),
 			},
 			expectedFromAll: map[string]struct{}{
@@ -157,7 +157,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMeshSubset("kuma.io/zone", "east")).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			expectedFromAll: fromAllServices,
@@ -166,7 +166,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefServiceSubset("a", "kuma.io/zone", "east")).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			},
 			expectedFromAll: map[string]struct{}{
@@ -183,7 +183,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFromX(builders.TargetRefServiceSubset("b", "version", "v1"), v1alpha1.Allow).
+				AddFrom(builders.TargetRefServiceSubset("b", "version", "v1"), v1alpha1.Allow).
 				Build(),
 		}
 
@@ -209,7 +209,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
-				AddFromX(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Allow).
+				AddFrom(builders.TargetRefMeshSubset("kuma.io/zone", "east"), v1alpha1.Allow).
 				Build(),
 		}
 
@@ -237,7 +237,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			mtps := []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(targetRef).
-					AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),
 			}
 
@@ -261,11 +261,11 @@ var _ = Describe("Reachable Services Graph", func() {
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMeshSubset("version", "v1")).
-				AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 				Build(),
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefServiceSubset("a", "version", "v1")).
-				AddFromX(builders.TargetRefMesh(), v1alpha1.Allow).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 				Build(),
 		}
 
