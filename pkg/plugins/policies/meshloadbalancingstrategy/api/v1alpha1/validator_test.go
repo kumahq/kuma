@@ -220,7 +220,7 @@ to:
 `),
 		resources.ErrorCases("", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
-			Message: "must be greater than zero when defined",
+			Message: "must be greater than 1",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
