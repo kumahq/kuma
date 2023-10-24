@@ -71,8 +71,7 @@ to:
 
 (2) In `key` field, you define the name of the tag.
 
-(3) In `weight` field, you define proportional load that the group should take. Default is calculated based on the order and might and first in the list is going to have the highest weight while the last the lowest.
-
+(3) In `weight` field, you define proportional load that the group should take. Default values are calculated based on the order of the list.
 Example:
 ```yaml
 affinityTags:
@@ -87,14 +86,16 @@ Would create weights:
 affinityTags:
   - key: "k8s.io/node"
     weight: 900
-  - key: k8s.io/az"
+  - key: "k8s.io/az"
     weight: 90
-  - key: k8s.io/region"
+  - key: "k8s.io/region"
     weight: 9
 ```
 
-and all other endpoints are going to have the weight of 1. When configuring weight you need to either specify weights 
-for all tags or don't specify weights at all. When you specify weights the order of the list becomes irrelevant.
+and all other endpoints are going to have the weight of 1. To compute the percentage of traffic that will stay inside a tag
+you need to sum all the weight and then divide weights by it. In this example sum of weights is 999. If you divide weights by it, you 
+get 90% of traffic for `k8s.io/node` 9% for `k8s.io/az` and 1% for `k8s.io/region`. 
+When configuring weight you need to either specify weights for all tags or don't specify weights at all. When you specify weights the order of the list becomes irrelevant.
 
 (4) In `crossZone` section, you configure zones priority.
 
