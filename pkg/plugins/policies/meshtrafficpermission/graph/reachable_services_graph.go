@@ -11,15 +11,16 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var log = core.Log.WithName("rs-graph")
 
 var ReachableServicesSupportedTags = map[string]struct{}{
-	mesh_proto.KubeNamespaceTag: {},
-	mesh_proto.KubeServiceTag:   {},
-	mesh_proto.KubePortTag:      {},
+	controllers.KubeNamespaceTag: {},
+	controllers.KubeServiceTag:   {},
+	controllers.KubePortTag:      {},
 }
 
 type ReachableServicesGraph struct {

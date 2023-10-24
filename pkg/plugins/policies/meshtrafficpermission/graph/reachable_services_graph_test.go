@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
 
@@ -224,9 +225,9 @@ var _ = Describe("Reachable Services Graph", func() {
 			// given
 			services := map[string]mesh_proto.SingleValueTagSet{
 				"a_kuma-demo_svc_1234": map[string]string{
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-					mesh_proto.KubeServiceTag:   "a",
-					mesh_proto.KubePortTag:      "1234",
+					controllers.KubeNamespaceTag: "kuma-demo",
+					controllers.KubeServiceTag:   "a",
+					controllers.KubePortTag:      "1234",
 				},
 				"b": map[string]string{},
 			}
@@ -244,12 +245,12 @@ var _ = Describe("Reachable Services Graph", func() {
 			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "b"}, "a_kuma-demo_svc_1234")).To(BeTrue())
 			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"}, "b")).To(BeFalse()) // it's not selected by top-level target ref
 		},
-		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(mesh_proto.KubeNamespaceTag, "kuma-demo")),
-		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(mesh_proto.KubeServiceTag, "a")),
-		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(mesh_proto.KubePortTag, "1234")),
-		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeNamespaceTag, "kuma-demo")),
-		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeServiceTag, "a")),
-		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubePortTag, "1234")),
+		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(controllers.KubeNamespaceTag, "kuma-demo")),
+		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(controllers.KubeServiceTag, "a")),
+		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(controllers.KubePortTag, "1234")),
+		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubeNamespaceTag, "kuma-demo")),
+		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubeServiceTag, "a")),
+		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubePortTag, "1234")),
 	)
 
 	It("should not modify MeshTrafficPermission passed to the func when replacing subsets", func() {

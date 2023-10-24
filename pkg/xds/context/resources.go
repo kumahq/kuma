@@ -6,7 +6,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
 type ResourceMap map[core_model.ResourceType]core_model.ResourceList
@@ -121,10 +120,6 @@ func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
 
 func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
 	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
-}
-
-func (r Resources) MeshTrafficPermissions() *v1alpha1.MeshTrafficPermissionResourceList {
-	return r.ListOrEmpty(v1alpha1.MeshTrafficPermissionType).(*v1alpha1.MeshTrafficPermissionResourceList)
 }
 
 func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {

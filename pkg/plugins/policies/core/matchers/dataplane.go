@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -170,7 +171,7 @@ func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta 
 		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
 	}
 
-	if ns := refMeta.GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ns != "" {
+	if ns := refMeta.GetNameExtensions()[controllers.KubeNamespaceTag]; ns != "" {
 		return equalNames(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns), resourceMeta.GetName())
 	}
 
