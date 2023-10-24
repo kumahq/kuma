@@ -236,7 +236,7 @@ to:
         localZone:
           affinityTags:
             - key: k8s/node
-              weight: -10
+              weight: 0
 `),
 		resources.ErrorCases("", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",

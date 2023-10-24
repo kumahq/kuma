@@ -48,7 +48,7 @@ type LocalityAwareness struct {
 	// next priority starts.
 	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
 	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
-	// Default 70
+	// Default 50
 	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
@@ -65,7 +65,8 @@ type AffinityTag struct {
 	// For example with two affinity tags first with weight 80 and second with weight 20,
 	// then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
 	// Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
-	Weight *int32 `json:"weight"`
+	// Default: If you don't specify weight we will set 900, 90, 9 and then 1 for rest of the tags
+	Weight *uint32 `json:"weight"`
 }
 
 type CrossZone struct {

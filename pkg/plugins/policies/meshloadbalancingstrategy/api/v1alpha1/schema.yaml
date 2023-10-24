@@ -290,7 +290,7 @@ properties:
                       description: Disabled allows to disable locality-aware load balancing. When disabled requests are distributed across all endpoints regardless of locality.
                       type: boolean
                     failoverThreshold:
-                      description: 'FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the next priority starts. Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies. Load balancing to next priority will start when number of live destination dataplane proxies drops below 7. Default 70'
+                      description: 'FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the next priority starts. Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies. Load balancing to next priority will start when number of live destination dataplane proxies drops below 7. Default 50'
                       properties:
                         percentage:
                           anyOf:
@@ -311,7 +311,7 @@ properties:
                                 description: Key defines tag for which affinity is configured
                                 type: string
                               weight:
-                                description: Weight of the tag used for load balancing. The bigger the weight the bigger the priority. Percentage of local traffic load balanced to tag is computed by dividing weight by sum of weights from all tags. For example with two affinity tags first with weight 80 and second with weight 20, then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one. Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
+                                description: 'Weight of the tag used for load balancing. The bigger the weight the bigger the priority. Percentage of local traffic load balanced to tag is computed by dividing weight by sum of weights from all tags. For example with two affinity tags first with weight 80 and second with weight 20, then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one. Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order. Default: If you don''t specify weight we will set 900, 90, 9 and then 1 for rest of the tags'
                                 format: int32
                                 type: integer
                             required:

@@ -13,7 +13,7 @@ func (in *AffinityTag) DeepCopyInto(out *AffinityTag) {
 	*out = *in
 	if in.Weight != nil {
 		in, out := &in.Weight, &out.Weight
-		*out = new(int32)
+		*out = new(uint32)
 		**out = **in
 	}
 }

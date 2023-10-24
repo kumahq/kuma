@@ -75,7 +75,7 @@ func validateLocalZone(localZone *LocalZone) validators.ValidationError {
 	for idx, affinityTag := range localZone.AffinityTags {
 		path := validators.RootedAt("affinityTags").Index(idx)
 		if affinityTag.Weight != nil {
-			verr.Add(validators.ValidateValueGreaterThan(path.Field("weight"), *affinityTag.Weight, 1))
+			verr.Add(validators.ValidateIntegerGreaterThan(path.Field("weight"), *affinityTag.Weight, 1))
 			weightSpecified++
 		}
 	}

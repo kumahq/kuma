@@ -3982,7 +3982,7 @@ components:
                               have deployed 10 destination dataplane proxies.
                               Load balancing to next priority will start when
                               number of live destination dataplane proxies drops
-                              below 7. Default 70
+                              below 7. Default 50
                             properties:
                               percentage:
                                 anyOf:
@@ -4024,6 +4024,9 @@ components:
                                         weights is not mandatory. When weights
                                         are not set control plane will compute
                                         default weight based on list order.
+                                        Default: If you don't specify weight we
+                                        will set 900, 90, 9 and then 1 for rest
+                                        of the tags
                                       format: int32
                                       type: integer
                                   required:
