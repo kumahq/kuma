@@ -15,6 +15,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func ConfigureStaticEndpointsLocalityAware(
@@ -38,7 +39,7 @@ func ConfigureStaticEndpointsLocalityAware(
 		cluster.LoadAssignment = cla.(*envoy_endpoint.ClusterLoadAssignment)
 
 		for key := range splitEndpoints {
-			if policies_xds.IsSplitClusterName(key) && strings.HasPrefix(key, serviceName) {
+			if tags.IsSplitCluster(key) && strings.HasPrefix(key, serviceName) {
 				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, key, localZone)
 				if err != nil {
 					return err
@@ -70,7 +71,7 @@ func ConfigureEndpointsLocalityAware(
 		})
 
 		for key := range splitEndpoints {
-			if policies_xds.IsSplitClusterName(key) && strings.HasPrefix(key, serviceName) {
+			if tags.IsSplitCluster(key) && strings.HasPrefix(key, serviceName) {
 				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, key, localZone)
 				if err != nil {
 					return err

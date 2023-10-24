@@ -1,10 +1,10 @@
 resources:
-- name: es2-_0_
+- name: es2-b5516780eaf1ed13
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     loadAssignment:
-      clusterName: es2-_0_
+      clusterName: es2-b5516780eaf1ed13
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -19,7 +19,7 @@ resources:
                 kuma.io/protocol: http2
               envoy.transport_socket_match:
                 kuma.io/protocol: http2
-    name: es2-_0_
+    name: es2-b5516780eaf1ed13
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -28,12 +28,12 @@ resources:
           idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: es2-_1_
+- name: es2-d79214c8b3a5805b
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     loadAssignment:
-      clusterName: es2-_1_
+      clusterName: es2-d79214c8b3a5805b
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -48,7 +48,7 @@ resources:
                 kuma.io/protocol: http2
               envoy.transport_socket_match:
                 kuma.io/protocol: http2
-    name: es2-_1_
+    name: es2-d79214c8b3a5805b
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -95,9 +95,9 @@ resources:
                   timeout: 0s
                   weightedClusters:
                     clusters:
-                    - name: es2-_0_
+                    - name: es2-b5516780eaf1ed13
                       weight: 10
-                    - name: es2-_1_
+                    - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
           streamIdleTimeout: 0s
@@ -145,9 +145,9 @@ resources:
                   timeout: 0s
                   weightedClusters:
                     clusters:
-                    - name: es2-_0_
+                    - name: es2-b5516780eaf1ed13
                       weight: 10
-                    - name: es2-_1_
+                    - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
           streamIdleTimeout: 0s
@@ -195,9 +195,9 @@ resources:
                   timeout: 0s
                   weightedClusters:
                     clusters:
-                    - name: es2-_0_
+                    - name: es2-b5516780eaf1ed13
                       weight: 10
-                    - name: es2-_1_
+                    - name: es2-d79214c8b3a5805b
                       weight: 90
           statPrefix: es2
           streamIdleTimeout: 0s

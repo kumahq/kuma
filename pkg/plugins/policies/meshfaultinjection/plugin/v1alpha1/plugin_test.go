@@ -246,6 +246,10 @@ var _ = Describe("MeshFaultInjection", func() {
 					},
 				},
 			},
+			RuntimeExtensions: map[string]interface{}{},
+		}
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
 		}
 		gatewayGenerator := gatewayGenerator()
 		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)

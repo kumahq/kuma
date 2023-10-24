@@ -8,7 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `2.5.x`
 
-#### More strict validation rules for resource names
+### Transparent-proxy and CNI v1 removal
+
+v2 has been default since 2.2.x. We are therefore removing v1.
+
+### Deprecated argument to transparent-proxy
+
+Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
+We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+The previous versions will still work but will be removed in the future.
+
+### More strict validation rules for resource names
 
 In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
 
@@ -20,18 +30,25 @@ New rule:
 
 New rule is applied for CREATE operations. The old rule is still applied for UPDATE, but this is going to change in Kuma 2.7.x or later.
 
+### API
+
+#### overview API coherency
+
+These endpoints are getting replaced to achieve more coherency on the API:
+
+- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/-overview`
+- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/-overview`
+- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/-overview`
+- `/zones+insights` moves to `/zones/-overview`
+
+While you can use the old API they will be removed in a future version
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change
 
 The configuration: `Metrics.Mesh.MinResyncTimeout` and `Metrics.Mesh.MaxResyncTimeout` are replaced by `Metrics.Mesh.MinResyncInterval` and `Metrics.Mesh.FullResyncInterval`.
 You can still use the current configs but it will be removed in the future.
-
-### Deprecated argument
-
-Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
-We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
-The previous versions will still work but will be removed in the future.
 
 ### **Breaking changes**
 

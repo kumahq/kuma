@@ -2,9 +2,6 @@ package uninstall_test
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
-	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,20 +34,11 @@ var _ = Describe("kumactl install tracing", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 			// and
-			Expect(stderr.String()).To(BeEmpty())
+			Expect(stderr.String()).To(Equal("Error: transparent proxy cleanup failed: cleanup is not supported\n"))
 
-			// when
-			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			r, err := regexp.Compile(string(regex))
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty())
+			// TODO once delete works again to something similar to what we do for `install_transparent_proxy_test.go` with Transform.
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs:  nil,

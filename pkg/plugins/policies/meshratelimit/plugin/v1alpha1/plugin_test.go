@@ -466,8 +466,12 @@ var _ = Describe("MeshRateLimit", func() {
 					},
 				},
 			},
+			RuntimeExtensions: map[string]interface{}{},
 		}
-		gatewayGenerator := gatewayGenerator()
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+		}
+		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -480,19 +484,3 @@ var _ = Describe("MeshRateLimit", func() {
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})
 })
-
-func gatewayGenerator() gateway_plugin.Generator {
-	return gateway_plugin.Generator{
-		FilterChainGenerators: gateway_plugin.FilterChainGenerators{
-			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]gateway_plugin.FilterChainGenerator{
-				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
-			},
-		},
-		ClusterGenerator: gateway_plugin.ClusterGenerator{
-			Zone: "test-zone",
-		},
-		Zone: "test-zone",
-	}
-}

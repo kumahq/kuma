@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -59,7 +57,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	routes := policies_xds.GatherRoutes(rs)
 	splitEndpoints := policies_xds.GatherSplitEndpoints(rs)
 
-	if err := p.configureGateway(ctx, proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, splitEndpoints, rs); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, splitEndpoints, rs); err != nil {
 		return err
 	}
 
@@ -159,7 +157,6 @@ func configureEndpoints(
 }
 
 func (p plugin) configureGateway(
-	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	rules core_rules.ToRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
@@ -169,13 +166,9 @@ func (p plugin) configureGateway(
 	splitEndpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
+	if len(gatewayListenerInfos) == 0 {
 		return nil
-	}
-
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
 	}
 
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())

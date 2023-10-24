@@ -152,6 +152,10 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
+	RuntimeExtensions map[string]interface{}
+	// Zone the zone the proxy is in
+	Zone string
 }
 
 type ServerSideMTLSCerts struct {

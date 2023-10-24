@@ -220,16 +220,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources with CNI plugin v1", testCase{
-			extraArgs: []string{
-				"--cni-enabled",
-				"--set",
-				"legacy.cni.enabled=true",
-			},
-			goldenFile: "install-control-plane.cni-legacy-enabled.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources with transparent v2 "+
-			"using ebpf (experimental)", testCase{
+		Entry("should generate Kubernetes resources using ebpf (experimental)", testCase{
 			extraArgs: []string{
 				"--set", "experimental.ebpf.enabled=true",
 			},

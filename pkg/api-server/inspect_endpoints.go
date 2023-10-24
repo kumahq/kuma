@@ -33,24 +33,14 @@ import (
 func getMatchedPolicies(
 	ctx context.Context, cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
-	*core_xds.MatchedPolicies, []gateway.GatewayListenerInfo, core_xds.Proxy, error,
+	*core_xds.Proxy, error,
 ) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3)
-	if proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext); err != nil {
-		return nil, nil, core_xds.Proxy{}, err
-	} else {
-		if proxy.Dataplane.Spec.IsBuiltinGateway() {
-			entries, err := gateway.GatewayListenerInfoFromProxy(
-				ctx, meshContext, proxy, proxyBuilder.Zone,
-			)
-			if err != nil {
-				return nil, nil, core_xds.Proxy{}, err
-			}
-
-			return nil, entries, *proxy, nil
-		}
-		return &proxy.Policies, nil, *proxy, nil
+	proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext)
+	if err != nil {
+		return nil, err
 	}
+	return proxy, nil
 }
 
 func addInspectEndpoints(
@@ -113,7 +103,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(
+		proxy, err := getMatchedPolicies(
 			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
@@ -122,13 +112,13 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		}
 
 		var result api_server_types.DataplaneInspectResponse
-		if matchedPolicies != nil {
+		if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 			inner := api_server_types.NewDataplaneInspectEntryList()
-			inner.Items = append(inner.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
+			inner.Items = append(inner.Items, newDataplaneInspectResponse(&proxy.Policies, proxy.Dataplane)...)
 			inner.Total = uint32(len(inner.Items))
 			result = api_server_types.NewDataplaneInspectResponse(inner)
 		} else {
-			inner := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
+			inner := newGatewayDataplaneInspectResponse(proxy)
 			result = api_server_types.NewDataplaneInspectResponse(&inner)
 		}
 		if err := response.WriteAsJson(result); err != nil {
@@ -212,12 +202,12 @@ func inspectGatewayRouteDataplanes(
 				continue
 			}
 			key := core_model.MetaToResourceKey(dp.GetMeta())
-			_, listeners, _, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
+			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not generate listener info")
 				return
 			}
-			for _, listener := range listeners {
+			for _, listener := range gateway.ExtractGatewayListeners(proxy) {
 				for _, host := range listener.HostInfos {
 					for _, entry := range host.Entries {
 						if entry.Route != gatewayRoute.GetMeta().GetName() {
@@ -272,13 +262,19 @@ func inspectPolicies(
 				Mesh: dpKey.Mesh,
 				Name: dpKey.Name,
 			}
-			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
+			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			if matchedPolicies != nil {
-				for policy, attachments := range inspect.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
+			if proxy.Dataplane.Spec.IsBuiltinGateway() {
+				for policy, attachments := range gatewayEntriesByPolicy(proxy) {
+					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
+						result.Items = append(result.Items, attachments...)
+					}
+				}
+			} else {
+				for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
 					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
 						attachmentList := []api_server_types.AttachmentEntry{}
 						for _, attachment := range attachments {
@@ -291,12 +287,6 @@ func inspectPolicies(
 						entry := api_server_types.NewPolicyInspectSidecarEntry(resourceKey)
 						entry.Attachments = attachmentList
 						result.Items = append(result.Items, api_server_types.NewPolicyInspectEntry(&entry))
-					}
-				}
-			} else {
-				for policy, attachments := range gatewayEntriesByPolicy(proxy, gatewayEntries) {
-					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
-						result.Items = append(result.Items, attachments...)
 					}
 				}
 			}
@@ -356,12 +346,18 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *
 }
 
 func newGatewayDataplaneInspectResponse(
-	proxy core_xds.Proxy,
-	listenerInfos []gateway.GatewayListenerInfo,
+	proxy *core_xds.Proxy,
 ) api_server_types.GatewayDataplaneInspectResult {
-	var listeners []api_server_types.GatewayListenerInspectEntry
+	result := api_server_types.NewGatewayDataplaneInspectResult()
+	gwListeners := gateway.ExtractGatewayListeners(proxy)
+	if len(gwListeners) > 0 {
+		result.Gateway = api_server_types.ResourceKeyEntry{
+			Mesh: gwListeners[0].Gateway.GetMeta().GetMesh(),
+			Name: gwListeners[0].Gateway.GetMeta().GetName(),
+		}
+	}
 
-	for _, info := range listenerInfos {
+	for _, info := range gwListeners {
 		var hosts []api_server_types.HostInspectEntry
 		for _, info := range info.HostInfos {
 			var routes []api_server_types.RouteInspectEntry
@@ -399,22 +395,11 @@ func newGatewayDataplaneInspectResponse(
 		sort.SliceStable(hosts, func(i, j int) bool {
 			return hosts[i].HostName < hosts[j].HostName
 		})
-		listeners = append(listeners, api_server_types.GatewayListenerInspectEntry{
+		result.Listeners = append(result.Listeners, api_server_types.GatewayListenerInspectEntry{
 			Port:     info.Listener.Port,
 			Protocol: info.Listener.Protocol.String(),
 			Hosts:    hosts,
 		})
-	}
-
-	result := api_server_types.NewGatewayDataplaneInspectResult()
-	result.Listeners = listeners
-
-	if len(listeners) > 0 {
-		gatewayKey := core_model.MetaToResourceKey(listenerInfos[0].Gateway.GetMeta())
-		result.Gateway = api_server_types.ResourceKeyEntry{
-			Mesh: gatewayKey.Mesh,
-			Name: gatewayKey.Name,
-		}
 	}
 
 	gatewayPolicies := api_server_types.PolicyMap{}
@@ -454,10 +439,10 @@ func routeToPolicyInspect(
 }
 
 func gatewayEntriesByPolicy(
-	proxy core_xds.Proxy,
-	listenerInfos []gateway.GatewayListenerInfo,
+	proxy *core_xds.Proxy,
 ) map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry {
 	policyMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry{}
+	gwListeners := gateway.ExtractGatewayListeners(proxy)
 
 	dpKey := core_model.MetaToResourceKey(proxy.Dataplane.GetMeta())
 	resourceKey := api_server_types.ResourceKeyEntry{
@@ -466,7 +451,7 @@ func gatewayEntriesByPolicy(
 	}
 
 	listenersMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
-	for _, info := range listenerInfos {
+	for _, info := range gwListeners {
 		hostMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
 		for _, info := range info.HostInfos {
 			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
@@ -513,8 +498,8 @@ func gatewayEntriesByPolicy(
 	}
 
 	var gatewayKey api_server_types.ResourceKeyEntry
-	if len(listenerInfos) > 0 {
-		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(listenerInfos[0].Gateway.GetMeta()))
+	if len(gwListeners) > 0 {
+		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(gwListeners[0].Gateway.GetMeta()))
 	}
 	for policy, listeners := range listenersMap {
 		result := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
@@ -567,14 +552,14 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			return
 		}
 
-		matchedPolicies, _, proxy, err := getMatchedPolicies(
+		proxy, err := getMatchedPolicies(
 			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
 			return
 		}
-		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
+		rulesAttachments := inspect.BuildRulesAttachments(proxy.Policies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
 		resp := api_server_types.RuleInspectResponse{
 			Items: []api_server_types.RuleInspectEntry{},
 		}

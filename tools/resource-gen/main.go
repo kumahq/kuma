@@ -193,6 +193,7 @@ var ResourceTemplate = template.Must(template.New("resource").Funcs(map[string]a
 package {{.Package}}
 
 import (
+	"errors"
 	"fmt"
 
 	{{$pkg}} "github.com/kumahq/kuma/api/{{.Package}}/v1alpha1"
@@ -260,10 +261,17 @@ func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 
 func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	return t.SetSpec(&{{$pkg}}.{{.ProtoType}}{
+	overview := &{{$pkg}}.{{.ProtoType}}{
 		{{$baseType}}: resource.GetSpec().(*{{$pkg}}.{{$baseType}}),
-		{{$baseType}}Insight: insight.GetSpec().(*{{$pkg}}.{{$baseType}}Insight),
-	})
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*{{$pkg}}.{{$baseType}}Insight)
+		if !ok {
+			return errors.New("failed to convert to insight type '{{$baseType}}Insight'")
+		}
+		overview.{{$baseType}}Insight = ins
+	}
+	return t.SetSpec(overview)
 }
 {{- end }}
 

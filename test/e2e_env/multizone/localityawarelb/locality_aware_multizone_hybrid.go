@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
+
 func LocalityAwareLB() {
 	const mesh = "locality-aware-lb"
 	const namespace = "locality-aware-lb"
@@ -149,7 +150,6 @@ spec:
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
-
 	})
 
 	It("should route based on defined strategy", func() {
@@ -240,5 +240,17 @@ enabled: false
 			)
 			g.Expect(err).To(HaveOccurred())
 		}).Should(Succeed())
+
+		// enable zones
+		Expect(YamlUniversal(`
+name: kuma-1-zone
+type: Zone
+enabled: true
+`)(multizone.Global)).To(Succeed())
+		Expect(YamlUniversal(`
+name: kuma-5
+type: Zone
+enabled: true
+`)(multizone.Global)).To(Succeed())
 	})
 }

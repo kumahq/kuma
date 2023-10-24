@@ -51,7 +51,7 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
-			context := xds_context.Context{
+			xdsCtx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -107,7 +107,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, xdsCtx, &proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
@@ -1014,6 +1014,10 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 				},
+				RuntimeExtensions: map[string]interface{}{},
+			}
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
 			}
 
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")

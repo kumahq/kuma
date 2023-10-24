@@ -2,8 +2,8 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 )
 
 func (r *MeshTCPRouteResource) validate() error {
@@ -18,9 +18,9 @@ func (r *MeshTCPRouteResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(
+	return mesh.ValidateTargetRef(
 		targetRef,
-		&matcher_validators.ValidateTargetRefOpts{
+		&mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -39,8 +39,8 @@ func validateTo(to []To) validators.ValidationError {
 
 		verr.AddErrorAt(
 			path.Field("targetRef"),
-			matcher_validators.ValidateTargetRef(toItem.TargetRef,
-				&matcher_validators.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(toItem.TargetRef,
+				&mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 					},
@@ -77,9 +77,9 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 	for i, backendRef := range backendRefs {
 		verr.AddErrorAt(
 			validators.Root().Index(i),
-			matcher_validators.ValidateTargetRef(
+			mesh.ValidateTargetRef(
 				backendRef.TargetRef,
-				&matcher_validators.ValidateTargetRefOpts{
+				&mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,

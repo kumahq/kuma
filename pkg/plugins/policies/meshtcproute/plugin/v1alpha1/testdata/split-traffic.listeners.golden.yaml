@@ -14,9 +14,9 @@ resources:
           statPrefix: backend
           weightedClusters:
             clusters:
-            - name: backend-_0_
+            - name: backend-bb38a94289f18fb9
               weight: 40
-            - name: backend-_1_
+            - name: backend-c72efb5be46fae6b
               weight: 15
             - name: other-backend
               weight: 15

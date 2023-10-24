@@ -1255,23 +1255,23 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Entry("locality_aware_split", testCase{
 			resources: []core_xds.Resource{
 				{
-					Name:   "backend-_0_",
+					Name:   "backend-bb38a94289f18fb9",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-_0_").
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-bb38a94289f18fb9").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
-					Name:   "backend-_1_",
+					Name:   "backend-c72efb5be46fae6b",
 					Origin: generator.OriginOutbound,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-_1_").
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "backend-c72efb5be46fae6b").
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 				},
 				{
-					Name:   "backend-_0_",
+					Name:   "backend-bb38a94289f18fb9",
 					Origin: generator.OriginOutbound,
-					Resource: endpoints.CreateClusterLoadAssignment("backend-_0_", []core_xds.Endpoint{
+					Resource: endpoints.CreateClusterLoadAssignment("backend-bb38a94289f18fb9", []core_xds.Endpoint{
 						{
 							Target: "192.168.1.1",
 							Port:   8080,
@@ -1352,9 +1352,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					}),
 				},
 				{
-					Name:   "backend-_1_",
+					Name:   "backend-c72efb5be46fae6b",
 					Origin: generator.OriginOutbound,
-					Resource: endpoints.CreateClusterLoadAssignment("backend-_1_", []core_xds.Endpoint{
+					Resource: endpoints.CreateClusterLoadAssignment("backend-c72efb5be46fae6b", []core_xds.Endpoint{
 						{
 							Target: "192.168.1.1",
 							Port:   8080,
@@ -1443,11 +1443,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									envoy_common.Routes{{
 										Clusters: []envoy_common.Cluster{
 											envoy_common.NewCluster(
-												envoy_common.WithService("backend-_0_"),
+												envoy_common.WithService("backend-bb38a94289f18fb9"),
 												envoy_common.WithWeight(90),
 											),
 											envoy_common.NewCluster(
-												envoy_common.WithService("backend-_1_"),
+												envoy_common.WithService("backend-c72efb5be46fae6b"),
 												envoy_common.WithWeight(10),
 											),
 										},
@@ -1641,6 +1641,10 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					},
 				},
+				RuntimeExtensions: map[string]interface{}{},
+			}
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)

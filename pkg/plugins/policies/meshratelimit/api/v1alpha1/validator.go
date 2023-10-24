@@ -4,8 +4,8 @@ import (
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 )
 
 func (r *MeshRateLimitResource) validate() error {
@@ -26,7 +26,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		common_api.MeshService,
 		common_api.MeshServiceSubset,
 	}
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: supportedKinds,
 	})
 	return targetRefErr
@@ -37,7 +37,7 @@ func validateFrom(from []From) validators.ValidationError {
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		defaultField := path.Field("default")
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 			},
