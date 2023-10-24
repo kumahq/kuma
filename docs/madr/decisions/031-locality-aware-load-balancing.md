@@ -93,7 +93,7 @@ affinityTags:
 ```
 
 and all other endpoints are going to have the weight of 1. To compute the percentage of traffic that will stay inside a tag
-you need to sum all the weight and then divide weights by it. In this example sum of weights is 999. If you divide weights by it, you 
+you need to sum all the weight within localZone and then divide weights by it. These weights don't apply for cross zone traffic, and the traffic is routed cross zone only when number of healthy instances within the local zone is lower than `failoverThreshold`. In this example sum of weights is 999. If you divide weights by it, you
 get 90% of traffic for `k8s.io/node` 9% for `k8s.io/az` and 1% for `k8s.io/region`. 
 When configuring weight you need to either specify weights for all tags or don't specify weights at all. When you specify weights the order of the list becomes irrelevant.
 
