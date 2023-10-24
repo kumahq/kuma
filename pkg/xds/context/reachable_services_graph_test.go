@@ -152,8 +152,7 @@ var _ = Describe("Reachable Services Graph", func() {
 				"a": {"b": {}},
 			},
 		}),
-
-		Entry("top level target ref MeshSubset selects all", testCase{
+		Entry("top level target ref MeshSubset with unsupported predefined tags selects all", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMeshSubset("kuma.io/zone", "east")).
@@ -257,7 +256,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubePortTag, "1234")),
 	)
 
-	It("should not modify MeshTrafficPermission when replacing subsets", func() {
+	It("should not modify MeshTrafficPermission passed to the func when replacing subsets", func() {
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMeshSubset("version", "v1")).

@@ -17,6 +17,7 @@ import (
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
+// Do not use xds_context.Resources directly to avoid cyclic imports.
 type Resources interface {
 	ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList
 	Gateways() *core_mesh.MeshGatewayResourceList
@@ -174,7 +175,7 @@ func isReferenced(refMeta core_model.ResourceMeta, refName string, resourceMeta 
 		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
 	}
 
-	if ns := refMeta.GetNameExtensions()["k8s.kuma.io/namespace"]; ns != "" {
+	if ns := refMeta.GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ns != "" {
 		return equalNames(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns), resourceMeta.GetName())
 	}
 

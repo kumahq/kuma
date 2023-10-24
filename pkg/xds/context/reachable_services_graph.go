@@ -57,7 +57,7 @@ func BuildReachableServiceCandidates(
 			if _, ok := services[svc]; ok {
 				continue
 			}
-			services[svc] = map[string]string{} // add tags
+			services[svc] = map[string]string{}
 			for tag := range ReachableServicesSupportedTags {
 				if values := set.Values(tag); len(values) > 0 {
 					services[svc][tag] = values[0]
