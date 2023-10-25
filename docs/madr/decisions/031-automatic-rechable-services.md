@@ -51,7 +51,7 @@ Chosen option: "Using MeshTrafficPermission to generate reverse graph that would
   * to have performance consequences it requires knowledge of all services that consume API of the service being migrated (you can always do `from: Mesh`)
   * breaking "top-level targetRef selects proxy to configure" rule
   * no RBAC stats on the server side
-  * different errors on the client side, instead of 403 client will get 404/"no upstream"
+  * different errors on the client side, instead of 403 client will get connection close / connection reset (more info in mTLS section)
     * this might be desirable in some cases (e.g. github will 404 on repositories you don't have access to if you **are not** part of the organisation)
     * but it also can be undesirable (e.g. github will 403 on repositories you don't have access to if you **are** part of the organisation)
 
