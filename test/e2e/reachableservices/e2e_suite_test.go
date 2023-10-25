@@ -2,6 +2,7 @@ package reachableservices_test
 
 import (
 	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
