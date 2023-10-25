@@ -13,6 +13,12 @@ import (
 )
 
 const (
+	KubeNamespaceTag = "k8s.kuma.io/namespace"
+	KubeServiceTag   = "k8s.kuma.io/service-name"
+	KubePortTag      = "k8s.kuma.io/service-port"
+)
+
+const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"

@@ -22,12 +22,6 @@ import (
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
 
-type ResolvedResource struct {
-	core_model.Resource
-
-	ResolvedTargetRefs map[common_api.TargetRefHash]core_model.Resource
-}
-
 type InboundListener struct {
 	Address string
 	Port    uint32
@@ -241,10 +235,10 @@ func BuildFromRules(
 	return FromRules{Rules: rulesByInbound}, nil
 }
 
-func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
+func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		tl, err := buildToList(mp)
+		tl, err := buildToList(mp, httpRoutes)
 		if err != nil {
 			return ToRules{}, err
 		}
@@ -259,28 +253,24 @@ func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
 	return ToRules{Rules: rules}, nil
 }
 
-func buildToList(p core_model.Resource) ([]core_model.PolicyItem, error) {
+func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
 	policyWithTo, ok := p.GetSpec().(core_model.PolicyWithToList)
 	if !ok {
 		return nil, nil
 	}
 
-	if policyWithTo.GetTargetRef().Kind != common_api.MeshHTTPRoute {
-		return policyWithTo.GetToList(), nil
-	}
-
-	resolvedMap := p.(*ResolvedResource).ResolvedTargetRefs
 	var mhr *v1alpha1.MeshHTTPRouteResource
-
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
-		resolved, ok := resolvedMap[policyWithTo.GetTargetRef().Hash()]
-		if !ok {
-			return nil, errors.New("can't resolve MeshHTTPRoute policy")
+		for _, route := range httpRoutes {
+			if core_model.IsReferenced(p.GetMeta(), policyWithTo.GetTargetRef().Name, route.GetMeta()) {
+				if r, ok := route.(*v1alpha1.MeshHTTPRouteResource); ok {
+					mhr = r
+				}
+			}
 		}
-		mhr, ok = resolved.(*v1alpha1.MeshHTTPRouteResource)
-		if !ok {
-			return nil, errors.New("resolved MeshHTTPRoute policy has wrong type")
+		if mhr == nil {
+			return nil, errors.New("can't resolve MeshHTTPRoute policy")
 		}
 	default:
 		return policyWithTo.GetToList(), nil

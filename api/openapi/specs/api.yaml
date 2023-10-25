@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Kuma API
-  description: Kuma API Global Insight endpoint
+  description: Kuma API
   version: '1.0.0'
 paths:
   /global-insight:
@@ -17,9 +17,76 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       operationId: get-global-insight
       description: Returns a Global Insight object
-
+  /meshes/{mesh}/{policyType}/{policyName}/-resources/dataplanes:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: policyType
+          example: meshretries
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: path
+          name: policyName
+          example: retry-all
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      summary: Returns resources matched by this policy
+      description: Returns resources matched by this policy. In the case of `targetRef` policies we'll match using the top level `targetRef`
+      tags: ["Inspect"]
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      operationId: inspect-resources
 components:
   schemas:
+    InspectDataplanesForPolicy:
+      type: object
+      title: InspectPolicy
+      description: A list of proxies
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        next:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/Meta'
     BaseStatus:
       type: object
       title: Status
@@ -190,6 +257,15 @@ components:
           examples:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'
+    InspectDataplanesForPolicyResponse:
+      description: A response containing global insight.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesForPolicy'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
       content:
@@ -234,3 +310,14 @@ components:
             total: 100
           meshes:
             total: 3
+    InspectDataplanesForPolicyExample:
+      value:
+        total: 100
+        next: http://localhost:5681/meshes/default/meshretries/-resources/dataplanes?offset=100
+        items:
+          - type: Dataplane
+            mesh: default
+            name: dp-1
+          - type: Dataplane
+            mesh: default
+            name: dp-2

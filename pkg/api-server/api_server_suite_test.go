@@ -5,10 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,8 +42,10 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -315,4 +321,43 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			}
 		}
 	}
+}
+
+// apiTest takes an `<testName>.input.yaml` which contains as first line a comment #<urlToRun> <statusCode> and then a set of yaml to preload in the resourceStore.
+// It will then run against the apiServer check that the status code matches and that the output matches `<testName>.golden.json`
+// Combined with `test.EntriesForFolder` and `ginkgo.DescribeTable` is a way to create a lot of api tests by only creating the input files.
+func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resourceStore store.ResourceStore) {
+	inputs, err := os.ReadFile(inputResourceFile)
+	Expect(err).NotTo(HaveOccurred())
+	parts := strings.SplitN(string(inputs), "\n", 2)
+	Expect(parts[0]).To(HavePrefix("#"), "the first line of the input is not a comment with the url path")
+	actions := strings.Split(strings.Trim(parts[0], "# "), " ")
+	Expect(actions).To(HaveLen(2), "the first line of the input should be: # <path> <statusCode>")
+	url := fmt.Sprintf("http://%s%s", apiServer.Address(), actions[0])
+	Expect(url).ToNot(BeEmpty())
+	status, err := strconv.Atoi(actions[1])
+	Expect(err).NotTo(HaveOccurred(), "status is not an int")
+
+	rawResources := util_yaml.SplitYAML(string(inputs))
+	Expect(rawResources).ToNot(BeEmpty())
+	for i, rawResource := range rawResources {
+		resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
+		Expect(err).ToNot(HaveOccurred())
+		err = resourceStore.Create(context.Background(), resource, store.CreateByKey(resource.GetMeta().GetName(), resource.GetMeta().GetMesh()))
+		Expect(err).NotTo(HaveOccurred(), "failed with resource %d %v", i, resource.GetMeta())
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	response, err := http.DefaultClient.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+	defer response.Body.Close()
+	Expect(response).To(HaveHTTPStatus(status))
+
+	// then
+	b, err := io.ReadAll(response.Body)
+	Expect(err).ToNot(HaveOccurred())
+	goldenFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".golden.json")
+	Expect(b).To(matchers.MatchGoldenJSON(goldenFile))
 }
