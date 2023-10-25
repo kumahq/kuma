@@ -221,7 +221,11 @@ to:
 		resources.ErrorCases("incorrect weight", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
 			Message: "must be greater than 0",
-		}}, `
+		},
+			{
+				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[1].key",
+				Message: "must not be empty",
+			}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
@@ -237,6 +241,8 @@ to:
           affinityTags:
             - key: k8s/node
               weight: 0
+            - key: ""
+              weight: 10
 `),
 		resources.ErrorCases("mixing affinity tags with and without weights", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",
