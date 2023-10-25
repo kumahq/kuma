@@ -328,19 +328,19 @@ func (m *meshContextBuilder) hash(mesh *core_mesh.MeshResource, resources Resour
 			allResources = append(allResources, rl.GetItems()...)
 		}
 	}
-	return sha256.Hash(m.hashResources(allResources...))
+	return sha256.Hash(hashResources(allResources...))
 }
 
-func (m *meshContextBuilder) hashResources(rs ...core_model.Resource) string {
-	hashes := []string{}
+func hashResources(rs ...core_model.Resource) string {
+	var hashes []string
 	for _, r := range rs {
-		hashes = append(hashes, m.hashResource(r))
+		hashes = append(hashes, hashResource(r))
 	}
 	sort.Strings(hashes)
 	return strings.Join(hashes, ",")
 }
 
-func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
+func hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
 	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' and `.Spec.Networking.Ingress.PublicAddress` into hash.
 	// The address could be a domain name and right now we resolve it right after fetching

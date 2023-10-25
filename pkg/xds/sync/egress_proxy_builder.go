@@ -34,6 +34,7 @@ func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
 ) (*core_xds.Proxy, error) {
+<<<<<<< HEAD
 	zoneEgress := core_mesh.NewZoneEgressResource()
 
 	if err := p.ReadOnlyResManager.Get(
@@ -47,6 +48,11 @@ func (p *EgressProxyBuilder) Build(
 	var meshList core_mesh.MeshResourceList
 	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
 		return nil, err
+=======
+	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
+	if !ok {
+		return nil, core_store.ErrorResourceNotFound(core_mesh.ZoneEgressType, key.Name, key.Mesh)
+>>>>>>> 1912999c9 (fix(kuma-cp): fix Zone{In|E}gress sync when no mesh (#8129))
 	}
 
 	// As egress is using SNI to identify the services, we need to filter out
