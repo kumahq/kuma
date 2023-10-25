@@ -66,6 +66,10 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 	}
 	i, old := x.GetSubscription(kdsSubscription.Id)
 	if old != nil {
+		// We don't want to unset DisconnectTime
+		if old.DisconnectTime != nil {
+			kdsSubscription.DisconnectTime = old.DisconnectTime
+		}
 		x.Subscriptions[i] = kdsSubscription
 	} else {
 		x.finalizeSubscriptions()
