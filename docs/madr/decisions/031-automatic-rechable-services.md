@@ -46,7 +46,7 @@ Chosen option: "Using MeshTrafficPermission to generate reverse graph that would
 
 ### Negative Consequences
 
-* requires a lot of manual work
+* requires some manual work to define MTPs
 * everything in the option section
   * to have performance consequences it requires knowledge of all services that consume API of the service being migrated (you can always do `from: Mesh`)
   * breaking "top-level targetRef selects proxy to configure" rule
