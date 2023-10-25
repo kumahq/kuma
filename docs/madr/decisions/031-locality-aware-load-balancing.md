@@ -467,12 +467,16 @@ We are going to implement this without the cache and verify performance.
 Steps:
 * Run `mesh-perf` test to measure impact of not using CLA cache
 * If results are good we'll remove the CLA cache
-* Otherwise rewrite CLA cache to keep the different clusters depending on the dataplane tags
+* Otherwise, rewrite CLA cache to keep the different clusters depending on the dataplane tags
 
 ##### Test result
-We have ran a test of 1000 services with 2 instances each in standalone mode. Each service had reachable services to 3 services defined.
+We have run a test of 1000 services with 2 instances each in standalone mode. Each service had reachable services to 3 services defined.
+
+With CLA cache:
 
 ![With CLA Cache](assets/031/xds_generation_with_cache.png)
+
+Without CLA cache:
 
 ![Without CLA Cache](assets/031/xds_generation_without_cache.png)
 
