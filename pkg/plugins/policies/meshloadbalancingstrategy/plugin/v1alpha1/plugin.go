@@ -145,10 +145,7 @@ func (p plugin) configureGateway(
 		return nil
 	}
 
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
+	gatewayListenerInfos := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
 
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 	if conf == nil {

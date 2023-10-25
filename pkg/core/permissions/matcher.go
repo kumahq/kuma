@@ -54,7 +54,7 @@ func MatchExternalServicesTrafficPermissions(
 	dataplane *core_mesh.DataplaneResource,
 	externalServices *core_mesh.ExternalServiceResourceList,
 	permissions *core_mesh.TrafficPermissionResourceList,
-) ([]*core_mesh.ExternalServiceResource, error) {
+) []*core_mesh.ExternalServiceResource {
 	var matchedExternalServices []*core_mesh.ExternalServiceResource
 
 	externalServicePermissions := BuildExternalServicesPermissionsMap(externalServices, permissions.Items)
@@ -73,7 +73,7 @@ func MatchExternalServicesTrafficPermissions(
 			matchedExternalServices = append(matchedExternalServices, externalService)
 		}
 	}
-	return matchedExternalServices, nil
+	return matchedExternalServices
 }
 
 type ExternalServicePermissions map[string]*core_mesh.TrafficPermissionResource

@@ -72,10 +72,7 @@ func applyToGateways(
 	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
+	gatewayListenerInfos := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
 
 	for _, listenerInfo := range gatewayListenerInfos {
 		for _, hostInfo := range listenerInfo.HostInfos {

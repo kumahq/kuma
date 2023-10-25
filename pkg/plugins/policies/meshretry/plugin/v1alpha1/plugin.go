@@ -90,10 +90,7 @@ func applyToGateway(
 		return nil
 	}
 
-	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
+	gatewayListerInfos := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
 
 	for _, listenerInfo := range gatewayListerInfos {
 		configurer := plugin_xds.Configurer{
