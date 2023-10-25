@@ -207,8 +207,6 @@ spec:
 
 ```
 
-The downside of it is that  to avoid any disruptions.
-
 The migration assumes using Kubernetes DNS.
 
 Let's take the following service graph as an example:
@@ -216,22 +214,24 @@ Let's take the following service graph as an example:
 ```mermaid
 flowchart LR
 ingress --> a --> b & c 
+job --> c
 c --> d & e
 b --> f
 ```
 
 We want to bring services into the mesh one by one and trim their config, let's start with service `c` (it's a good example because it has both inbound and outbound traffic):
-0. We have a default MTP `Mesh/Mesh` with `allow`
+
 1. We enable sidecar injection on `c`
 2. The traffic flows through like normal
 3. We define MTP with `allow` from service `a`, for now this has no consequences because there is no service `a` in the Mesh.
 4. We bring service `a` into the mesh
-5. We switch MTP for `c` to have `allow` from `a` and `deny` for any other service (`Mesh`)
-6. This has no consequences on the config size because `a` and `c` are the only services in the mesh
-7. Now let's bring service `d` into the mesh
-8. When we do that we will observe the first consequence of config trimming,
-   service `d` will have only `a` cluster but won't have `c` cluster because we defined that `c` can only be contacted by `a`
-9. We repeat this until we have all services in the mesh, all new services that join already have a smaller config because we trimmed it along the way
+5. We bring service `job` into the mesh
+6. We switch MTP for `c` to have `allow` from `a` and `job`, then `deny` for any other service (`Mesh`)
+7. This has no consequences on the config size because `a`, `job` and `c` are the only services in the mesh
+8. Now let's bring service `d` into the mesh
+9. When we do that we will observe the first consequence of config trimming,
+   service `d` will have only `a` cluster but won't have `c` cluster because we defined that `c` can only be contacted by `a` and `job`
+10. We repeat this until we have all services in the mesh, all new services that join already have a smaller config because we trimmed it along the way
 
 It's critical to remember to only switch to `deny` when **ALL** consumers are **defined in MTP** and are in the Mesh.
 
@@ -249,6 +249,10 @@ There are other concerns that also need addressing:
 - assuming that every service owner knows which services consume their API
   - as a future improvement we will come up with tooling to assist the users with this problem
     - have metrics / logs and a dashboard when `allow_with_shadow_deny` is used (this is not a silver bullet - it assumes that during "discovery" period all possible communication will happen, if you gather data for a week and there is a job that runs every quarter it probably won't be recorded)
+
+##### mTLS
+
+TBA
 
 ### Dynamically load clusters using ODCDS
 
