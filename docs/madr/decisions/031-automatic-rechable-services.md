@@ -334,6 +334,8 @@ Pros/cons:
 * It requires implementing `odcds` in `go-control-plane` and changes in Kuma
 * No solution for TCP traffic
 * Not possible in the required timeframe
+* Delay on the first request 
+* Unable to make a request to new service when CP is down 
 
 ### Using MeshHTTPRoute / MeshTCPRoute to populate the clusters
 
