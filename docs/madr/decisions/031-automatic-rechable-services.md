@@ -178,6 +178,10 @@ If the system is small enough, after several iterations, it will be enabled for 
 
 If the system is too big to do this we need to do extra work in the iterations (defining MeshTrafficPermissions along the way).
 
+The example below is small (deals with individual services), so it's easier to illustrate and understand.
+Having an MTP for the mesh should be a recommended way to go about a migration.
+Even if you use a very wide MTP (from: Mesh or from: Namespace).
+
 1. 0 services are in the Mesh
 2. Bring X services into the Mesh (where X is small enough, so the Mesh can handle it)
 3. Enable MeshTrafficPermission for services brought into the mesh (the performance improves because we trimmed the configs)
