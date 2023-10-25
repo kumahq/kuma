@@ -30,7 +30,7 @@ func (p *EgressProxyBuilder) Build(
 ) (*core_xds.Proxy, error) {
 	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
 	if !ok {
-		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
+		return nil, core_store.ErrorResourceNotFound(core_mesh.ZoneEgressType, key.Name, key.Mesh)
 	}
 
 	// As egress is using SNI to identify the services, we need to filter out
