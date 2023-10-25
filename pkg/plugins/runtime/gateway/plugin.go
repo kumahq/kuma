@@ -49,13 +49,7 @@ func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext,
 	if proxy.Dataplane == nil || !proxy.Dataplane.Spec.IsBuiltinGateway() {
 		return nil
 	}
-	l, err := gatewayListenerInfoFromProxy(
-		ctx, &meshContext, proxy,
-	)
-	if err != nil {
-		return err
-	}
-	proxy.RuntimeExtensions[metadata.PluginName] = l
+	proxy.RuntimeExtensions[metadata.PluginName] = gatewayListenerInfoFromProxy(ctx, &meshContext, proxy)
 	return nil
 }
 

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -82,12 +84,12 @@ func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshCo
 func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "could not fetch mesh %s", meshName)
 	}
 
 	resources, err := m.fetchResources(ctx, mesh)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not fetch resources")
 	}
 	m.resolveAddresses(resources)
 
@@ -106,7 +108,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, mesh.GetMeta().GetName())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not fetch vips")
 	}
 	// resolve all the domains
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
@@ -214,7 +216,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 		case core_mesh.MeshType:
 			meshes := &core_mesh.MeshResourceList{}
 			if err := m.rm.List(ctx, meshes, core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrap(err, "could not list meshes")
 			}
 			otherMeshes := &core_mesh.MeshResourceList{}
 			for _, someMesh := range meshes.Items {
@@ -228,20 +230,20 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 		case core_mesh.ZoneIngressType:
 			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
 			if err := m.rm.List(ctx, zoneIngresses, core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrap(err, "could not list zone ingresses")
 			}
 			resources.MeshLocalResources[typ] = zoneIngresses
 		case core_mesh.ZoneEgressType:
 			zoneEgresses := &core_mesh.ZoneEgressResourceList{}
 			if err := m.rm.List(ctx, zoneEgresses, core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrap(err, "could not list zone egresses")
 			}
 			resources.MeshLocalResources[typ] = zoneEgresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
 			if err := m.rm.List(ctx, configs, core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrap(err, "could not list configs")
 			}
 			for _, config := range configs.Items {
 				if configInHash(config.Meta.GetName(), mesh.Meta.GetName()) {
@@ -260,7 +262,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 
 			insights := &core_mesh.ServiceInsightResourceList{}
 			if err := m.rm.List(ctx, insights, core_store.ListByMesh(mesh.Meta.GetName()), core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrap(err, "could not list service insights")
 			}
 
 			resources.MeshLocalResources[typ] = insights
@@ -270,7 +272,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 				return Resources{}, err
 			}
 			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(mesh.Meta.GetName()), core_store.ListOrdered()); err != nil {
-				return Resources{}, err
+				return Resources{}, errors.Wrapf(err, "could not list %s", typ)
 			}
 			resources.MeshLocalResources[typ] = rlist
 		}
@@ -290,7 +292,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 				return gateway.(*core_mesh.MeshGatewayResource).Spec.IsCrossMesh()
 			},
 		); err != nil {
-			return Resources{}, err
+			return Resources{}, errors.Wrap(err, "could not fetch cross mesh resources")
 		}
 	}
 	if _, ok := m.typeSet[core_mesh.DataplaneType]; ok {
@@ -306,7 +308,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 				return dataplane.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
 			},
 		); err != nil {
-			return Resources{}, err
+			return Resources{}, errors.Wrap(err, "could not fetch cross mesh resources")
 		}
 	}
 
@@ -333,19 +335,19 @@ func (m *meshContextBuilder) hash(mesh *core_mesh.MeshResource, resources Resour
 			allResources = append(allResources, rl.GetItems()...)
 		}
 	}
-	return sha256.Hash(m.hashResources(allResources...))
+	return sha256.Hash(hashResources(allResources...))
 }
 
-func (m *meshContextBuilder) hashResources(rs ...core_model.Resource) string {
-	hashes := []string{}
+func hashResources(rs ...core_model.Resource) string {
+	var hashes []string
 	for _, r := range rs {
-		hashes = append(hashes, m.hashResource(r))
+		hashes = append(hashes, hashResource(r))
 	}
 	sort.Strings(hashes)
 	return strings.Join(hashes, ",")
 }
 
-func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
+func hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
 	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' and `.Spec.Networking.Ingress.PublicAddress` into hash.
 	// The address could be a domain name and right now we resolve it right after fetching
