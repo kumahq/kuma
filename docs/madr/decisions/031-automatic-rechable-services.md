@@ -252,7 +252,22 @@ There are other concerns that also need addressing:
 
 ##### mTLS
 
-TBA
+When mTLS is disabled, the traffic will go through the `passthrough` cluster and reach the destination.
+When either permissive or strict mTLS is enabled the requests will fail with a closed connection like this:
+
+```bash
+root@second-test-server:/# curl -v first-test-server:80
+*   Trying [IP]:80...
+* Connected to first-test-server ([IP]) port 80 (#0)
+> GET / HTTP/1.1
+> Host: first-test-server
+> User-Agent: curl/7.81.0
+> Accept: */*
+>
+* Empty reply from server
+* Closing connection 0
+curl: (52) Empty reply from server
+```
 
 ### Dynamically load clusters using ODCDS
 
