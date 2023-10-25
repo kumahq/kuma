@@ -169,7 +169,7 @@ This is simply `A` can talk to anyone, this could be either adding and outgoing 
 
 There is a strong case that makes sense using `k8s.kuma.io/namespace: xyz` to allow only traffic from a specific namespace.
 
-We will support `MeshSubset` and `MeshServiceSubset` on the `from` level and support `k8s.kuma.io/*` labels on the `top` level.
+We will support `MeshSubset` and `MeshServiceSubset` on the `from` level and support `k8s.kuma.io/namespace`, `k8s.kuma.io/service`, `k8s.kuma.io/port` labels on the `top` level.
 
 #### Migration
 
