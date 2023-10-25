@@ -478,7 +478,6 @@ spec:
                                         type: integer
                                     required:
                                     - key
-                                    - weight
                                     type: object
                                   type: array
                               required:

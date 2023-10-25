@@ -66,7 +66,7 @@ type AffinityTag struct {
 	// then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
 	// Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
 	// Default: If you do not specify weight we will adjust them so that 90% traffic goes to first tag, 9% to next, and 1% to third and so on.
-	Weight *uint32 `json:"weight"`
+	Weight *uint32 `json:"weight,omitempty"`
 }
 
 type CrossZone struct {

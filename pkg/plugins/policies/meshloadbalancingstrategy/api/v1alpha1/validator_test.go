@@ -218,14 +218,16 @@ to:
               to: 
                 type: None
 `),
-		resources.ErrorCases("incorrect weight", []validators.Violation{{
-			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
-			Message: "must be greater than 0",
-		},
+		resources.ErrorCases("incorrect weight", []validators.Violation{
+			{
+				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
+				Message: "must be greater than 0",
+			},
 			{
 				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[1].key",
 				Message: "must not be empty",
-			}}, `
+			},
+		}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
 name: route-1
