@@ -75,13 +75,13 @@ func validateLocalZone(localZone *LocalZone) validators.ValidationError {
 	for idx, affinityTag := range localZone.AffinityTags {
 		path := validators.RootedAt("affinityTags").Index(idx)
 		if affinityTag.Weight != nil {
-			verr.Add(validators.ValidateIntegerGreaterThan(path.Field("weight"), *affinityTag.Weight, 1))
+			verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("weight"), affinityTag.Weight))
 			weightSpecified++
 		}
 	}
 
 	if weightSpecified > 0 && weightSpecified != len(localZone.AffinityTags) {
-		verr.AddViolation("affinityTags", "each or none affinity tags should have weight")
+		verr.AddViolation("affinityTags", "all or none affinity tags should have weight")
 	}
 	return verr
 }
@@ -96,25 +96,23 @@ func validateCrossZone(crossZone *CrossZone) validators.ValidationError {
 		path := validators.RootedAt("failover").Index(idx)
 		if failover.From != nil {
 			if len(failover.From.Zones) == 0 {
-				verr.AddViolationAt(path.Field("from").Field("zones"), "must not be empty")
+				verr.AddViolationAt(path.Field("from").Field("zones"), validators.MustNotBeEmpty)
+			}
+
+			for zoneIdx, from := range failover.From.Zones {
+				if from == "" {
+					verr.AddViolationAt(path.Field("from").Field("zones").Index(zoneIdx), validators.MustNotBeEmpty)
+				}
 			}
 		}
 
 		toZonesPath := path.Field("to").Field("zones")
 		switch failover.To.Type {
-		case None:
+		case Any, None:
 			if len(failover.To.Zones) > 0 {
 				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must be empty when type is %s", failover.To.Type))
 			}
-		case Any:
-			if len(failover.To.Zones) > 0 {
-				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must be empty when type is %s", failover.To.Type))
-			}
-		case AnyExcept:
-			if len(failover.To.Zones) == 0 {
-				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must not be empty when type is %s", failover.To.Type))
-			}
-		case Only:
+		case AnyExcept, Only:
 			if len(failover.To.Zones) == 0 {
 				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must not be empty when type is %s", failover.To.Type))
 			}
@@ -131,7 +129,8 @@ func validateFailoverThreshold(failoverThreshold *FailoverThreshold) validators.
 	if failoverThreshold == nil {
 		return verr
 	}
-	verr.Add(validators.ValidatePercentageOrNil(validators.RootedAt("percentage"), &failoverThreshold.Percentage))
+	verr.Add(validators.ValidateIntOrStringGreaterThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 0))
+	verr.Add(validators.ValidateIntOrStringLessThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 100))
 	return verr
 }
 

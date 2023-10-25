@@ -126,6 +126,40 @@ func ValidatePercentageOrNil(path PathBuilder, percentage *intstr.IntOrString) V
 	return verr
 }
 
+func ValidateIntOrStringGreaterThan(path PathBuilder, number *intstr.IntOrString, minValue int) ValidationError {
+	var verr ValidationError
+	if number == nil {
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*number)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+	if dec.LessThanOrEqual(decimal.NewFromInt(int64(minValue))) {
+		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeGreaterThan, minValue))
+	}
+
+	return verr
+}
+
+func ValidateIntOrStringLessThan(path PathBuilder, number *intstr.IntOrString, maxValue int) ValidationError {
+	var verr ValidationError
+	if number == nil {
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*number)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+	if dec.GreaterThanOrEqual(decimal.NewFromInt(int64(maxValue))) {
+		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeLessThan, maxValue))
+	}
+
+	return verr
+}
+
 func ValidateUInt32PercentageOrNil(path PathBuilder, percentage *uint32) ValidationError {
 	var err ValidationError
 	if percentage == nil {

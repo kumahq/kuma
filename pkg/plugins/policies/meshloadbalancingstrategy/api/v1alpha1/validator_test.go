@@ -196,7 +196,7 @@ to:
                 ttl: 1s
                 path: relative-path
 `),
-		resources.ErrorCases("", []validators.Violation{{
+		resources.ErrorCases("empty from in failover", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].from.zones",
 			Message: "must not be empty",
 		}}, `
@@ -218,9 +218,9 @@ to:
               to: 
                 type: None
 `),
-		resources.ErrorCases("", []validators.Violation{{
+		resources.ErrorCases("incorrect weight", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
-			Message: "must be greater than 1",
+			Message: "must be greater than 0",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -238,9 +238,9 @@ to:
             - key: k8s/node
               weight: 0
 `),
-		resources.ErrorCases("", []validators.Violation{{
+		resources.ErrorCases("mixing affinity tags with and without weights", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",
-			Message: "each or none affinity tags should have weight",
+			Message: "all or none affinity tags should have weight",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -259,9 +259,9 @@ to:
               weight: 10
             - key: k8s/az
 `),
-		resources.ErrorCases("", []validators.Violation{{
+		resources.ErrorCases("percentage can't be zero", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.failoverThreshold.percentage",
-			Message: "has to be in [0.0 - 100.0] range",
+			Message: "must be greater than: 0",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -275,23 +275,45 @@ to:
     default:
       localityAwareness:
         failoverThreshold:
-          percentage: 200
+          percentage: 0
 `),
-		resources.ErrorCases("", []validators.Violation{
+		resources.ErrorCases("percentage can't be set to 100", []validators.Violation{{
+			Field:   "spec.to[0].default.localityAwareness.failoverThreshold.percentage",
+			Message: "must be less than: 100",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        failoverThreshold:
+          percentage: 100
+`),
+		resources.ErrorCases("broken failover rules", []validators.Violation{
 			{
 				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].to.zones",
 				Message: "must be empty when type is None",
 			},
 			{
-				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[1].to.zones",
-				Message: "must be empty when type is Any",
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[1].from.zones[1]",
+				Message: "must not be empty",
 			},
 			{
 				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[2].to.zones",
-				Message: "must not be empty when type is Only",
+				Message: "must be empty when type is Any",
 			},
 			{
 				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[3].to.zones",
+				Message: "must not be empty when type is Only",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[4].to.zones",
 				Message: "must not be empty when type is AnyExcept",
 			},
 		}, `
@@ -313,6 +335,10 @@ to:
               to: 
                 type: None
                 zones: ["zone-1"]
+            - from:
+                zones: ["zone-1", ""]
+              to: 
+                type: Any
             - to:
                 type: Any
                 zones: ["zone-1"]

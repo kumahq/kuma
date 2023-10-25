@@ -4024,7 +4024,7 @@ components:
                                         weights is not mandatory. When weights
                                         are not set control plane will compute
                                         default weight based on list order.
-                                        Default: If you don't specify weight we
+                                        Default: If you do not specify weight we
                                         will adjust them so that 90% traffic
                                         goes to first tag, 9% to next, and 1% to
                                         third and so on.
