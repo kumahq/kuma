@@ -270,6 +270,22 @@ root@second-test-server:/# curl -v first-test-server:80
 curl: (52) Empty reply from server
 ```
 
+When `passthrough` is disabled and mTLS enabled we get a connection reset:
+
+```bash
+root@second-test-server:/# curl -v first-test-server:80
+*   Trying [IP]:80...
+* Connected to first-test-server ([IP]) port 80 (#0)
+> GET / HTTP/1.1
+> Host: first-test-server
+> User-Agent: curl/7.81.0
+> Accept: */*
+>
+* Recv failure: Connection reset by peer
+* Closing connection 0
+curl: (56) Recv failure: Connection reset by peer
+```
+
 ### Dynamically load clusters using ODCDS
 
 ODCDS only works with `host` header, so it would only work for HTTP traffic.
