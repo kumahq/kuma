@@ -36,6 +36,25 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error {
+	if proxy.Dataplane == nil || !proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
+	proxy.RuntimeExtensions[metadata.PluginName] = gatewayListenerInfoFromProxy(ctx, &meshContext, proxy)
+	return nil
+}
+
+func ExtractGatewayListeners(proxy *core_xds.Proxy) []GatewayListenerInfo {
+	ext := proxy.RuntimeExtensions[metadata.PluginName]
+	if ext == nil {
+		return nil
+	}
+	return ext.([]GatewayListenerInfo)
+}
+
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.

@@ -37,14 +37,11 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, meshContext, dp)
-	if err != nil {
-		return nil, err
-	}
+	routing, destinations := p.resolveRouting(ctx, meshContext, dp)
 
 	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not match policies")
 	}
 
 	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
@@ -59,12 +56,30 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	secretsTracker := envoy.NewSecretsTracker(meshName, allMeshNames)
 
 	proxy := &core_xds.Proxy{
+<<<<<<< HEAD
 		Id:             core_xds.FromResourceKey(key),
 		APIVersion:     p.APIVersion,
 		Dataplane:      dp,
 		Routing:        *routing,
 		Policies:       *matchedPolicies,
 		SecretsTracker: secretsTracker,
+=======
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.APIVersion,
+		Dataplane:         dp,
+		Routing:           *routing,
+		Policies:          *matchedPolicies,
+		SecretsTracker:    secretsTracker,
+		Metadata:          &core_xds.DataplaneMetadata{},
+		Zone:              p.Zone,
+		RuntimeExtensions: map[string]interface{}{},
+	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, meshContext, proxy)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed applying proxy plugin: %s", k)
+		}
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 	return proxy, nil
 }
@@ -73,11 +88,8 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
-) (*core_xds.Routing, core_xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
-	if err != nil {
-		return nil, nil, err
-	}
+) (*core_xds.Routing, core_xds.DestinationMap) {
+	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
 	p.resolveVIPOutbounds(meshContext, dataplane)
 
@@ -99,7 +111,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}
-	return routing, destinations, nil
+	return routing, destinations
 }
 
 func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) {
