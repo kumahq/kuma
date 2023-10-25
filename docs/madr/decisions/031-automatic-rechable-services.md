@@ -209,10 +209,28 @@ spec:
         name: a
       default:
         action: Allow
-
 ```
 
-The migration assumes using Kubernetes DNS.
+And then for each of namespaces and then selectively allow services with:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: kuma-system
+  name: ns-allow
+spec:
+  targetRef:
+    kind: MeshService
+    name: my-public
+  from:
+    - targetRef:
+        kind: Mesh
+      action: Allow
+```
+
+Scale this to 10 namespaces with 10 services per namespace with 2 services per ns accessible outside their own service.
+Then you have per instance 10 + (9 * 2) = 28 services to know about vs 100 services in our current naive case this is a massive improvement and without much sacrifice.
 
 Let's take the following service graph as an example:
 
