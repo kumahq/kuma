@@ -144,7 +144,24 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, proxy.ZoneIngress.Spec.Networking.Address)
+=======
+
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
+
+	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+>>>>>>> 1912999c9 (fix(kuma-cp): fix Zone{In|E}gress sync when no mesh (#8129))
 	if err != nil {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
@@ -165,7 +182,24 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking.Address)
+=======
+
+	result := SyncResult{
+		ProxyType: mesh_proto.EgressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
+
+	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+>>>>>>> 1912999c9 (fix(kuma-cp): fix Zone{In|E}gress sync when no mesh (#8129))
 	if err != nil {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
