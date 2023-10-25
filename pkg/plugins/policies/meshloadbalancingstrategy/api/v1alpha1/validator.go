@@ -61,7 +61,6 @@ func validateLocalityAwareness(localityAwareness *LocalityAwareness) validators.
 	}
 	verr.AddError("localZone", validateLocalZone(localityAwareness.LocalZone))
 	verr.AddError("crossZone", validateCrossZone(localityAwareness.CrossZone))
-	verr.AddError("failoverThreshold", validateFailoverThreshold(localityAwareness.FailoverThreshold))
 	return verr
 }
 
@@ -123,6 +122,8 @@ func validateCrossZone(crossZone *CrossZone) validators.ValidationError {
 			verr.AddViolationAt(path.Field("to").Field("type"), "unrecognized type")
 		}
 	}
+
+	verr.AddError("failoverThreshold", validateFailoverThreshold(crossZone.FailoverThreshold))
 
 	return verr
 }

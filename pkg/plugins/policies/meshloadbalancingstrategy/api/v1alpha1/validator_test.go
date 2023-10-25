@@ -268,7 +268,7 @@ to:
             - key: k8s/az
 `),
 		resources.ErrorCases("percentage can't be zero", []validators.Violation{{
-			Field:   "spec.to[0].default.localityAwareness.failoverThreshold.percentage",
+			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
 			Message: "must be greater than: 0",
 		}}, `
 type: MeshLoadBalancingStrategy
@@ -282,11 +282,12 @@ to:
       name: svc-1
     default:
       localityAwareness:
-        failoverThreshold:
-          percentage: 0
+        crossZone:
+          failoverThreshold:
+            percentage: 0
 `),
 		resources.ErrorCases("percentage can't be set to 100", []validators.Violation{{
-			Field:   "spec.to[0].default.localityAwareness.failoverThreshold.percentage",
+			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
 			Message: "must be less than: 100",
 		}}, `
 type: MeshLoadBalancingStrategy
@@ -300,8 +301,9 @@ to:
       name: svc-1
     default:
       localityAwareness:
-        failoverThreshold:
-          percentage: 100
+        crossZone:
+          failoverThreshold:
+            percentage: 100
 `),
 		resources.ErrorCases("broken failover rules", []validators.Violation{
 			{
@@ -424,8 +426,8 @@ to:
                 zones: ["zone-1"]
             - to:
                 type: None
-        failoverThreshold:
-          percentage: 70
+          failoverThreshold:
+            percentage: 70
 `),
 	)
 })
