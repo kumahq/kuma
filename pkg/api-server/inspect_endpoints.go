@@ -40,13 +40,9 @@ func getMatchedPolicies(
 		return nil, nil, core_xds.Proxy{}, err
 	} else {
 		if proxy.Dataplane.Spec.IsBuiltinGateway() {
-			entries, err := gateway.GatewayListenerInfoFromProxy(
+			entries := gateway.GatewayListenerInfoFromProxy(
 				ctx, meshContext, proxy, proxyBuilder.Zone,
 			)
-			if err != nil {
-				return nil, nil, core_xds.Proxy{}, err
-			}
-
 			return nil, entries, *proxy, nil
 		}
 		return &proxy.Policies, nil, *proxy, nil
