@@ -94,7 +94,11 @@ func (d *DataplaneWatchdog) Cleanup() error {
 func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) error {
 	meshCtx, err := d.MeshCache.GetMeshContext(ctx, d.key.Mesh)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not get mesh context")
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 
 	certInfo := d.EnvoyCpCtx.Secrets.Info(d.key)
@@ -116,7 +120,11 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	}
 	proxy, err := d.DataplaneProxyBuilder.Build(ctx, d.key, meshCtx)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not build dataplane proxy")
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 	networking := proxy.Dataplane.Spec.Networking
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, networking.AdvertisedAddress)
@@ -130,7 +138,11 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	proxy.Metadata = metadata
 	err = d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not reconcile")
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 	d.lastHash = meshCtx.Hash
 	return nil
@@ -144,7 +156,28 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	}
 	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not aggregate mesh contexts")
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
+
+	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not build ingress proxy")
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 	networking := proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking()
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.GetAddress(), networking.GetAdvertisedAddress())
@@ -153,7 +186,20 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
+<<<<<<< HEAD
 	return d.IngressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+=======
+	changed, err := d.IngressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not reconcile")
+	}
+	if changed {
+		result.Status = ChangedStatus
+	} else {
+		result.Status = GeneratedStatus
+	}
+	return result, nil
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 }
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
@@ -166,7 +212,28 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 
 	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not aggregate mesh contexts")
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.EgressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	if !syncForConfig {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
+
+	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not build egress proxy")
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 	}
 	networking := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, "")
@@ -175,7 +242,20 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	proxy.Metadata = metadata
+<<<<<<< HEAD
 	return d.EgressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+=======
+	changed, err := d.EgressReconciler.Reconcile(ctx, *envoyCtx, proxy)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not reconcile")
+	}
+	if changed {
+		result.Status = ChangedStatus
+	} else {
+		result.Status = GeneratedStatus
+	}
+	return result, nil
+>>>>>>> 152408bf7 (chore(xds): improve error logging (#8136))
 }
 
 func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address string, advertisedAddress string) (core_xds.ServerSideMTLSCerts, error) {
