@@ -180,9 +180,9 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 		result.Status = SkipStatus
 		return result, nil
 	}
-	if syncForConfig {
-		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
-	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
 
 	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
@@ -228,9 +228,9 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 		result.Status = SkipStatus
 		return result, nil
 	}
-	if syncForConfig {
-		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
-	}
+
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	d.lastHash = aggregatedMeshCtxs.Hash
 
 	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
 	if err != nil {
