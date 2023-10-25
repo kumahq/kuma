@@ -62,8 +62,8 @@ to:
               zones: ["zone-1"]
           - to:
               type: Any
-      failoverThreshold: 
-        percentage: 70                                      # (9)
+        failoverThreshold: 
+          percentage: 70                                    # (9)
 ```
 
 
