@@ -485,6 +485,68 @@ We can observe that p90 and p99 are much higher without using the cache. We shou
 #### MeshHTTPRoute and MeshTCPRoute
 `MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and load balancing should be applied to them. It appears that the easiest approach would be to retrieve CLAs for the splits from the `ResourceSet` and then make necessary modifications within the `MeshLoadBalancingStrategy` after their creation. It's important to note that these splits are currently being aggregated during the `GatherEndpoints` function call, but they should not be aggregated in this specific case. Additionally, when working with objects in the `EndpointMap` it's important to avoid manipulating pointers directly and instead make use of copies, or create CLAs cache logic that would support Priorites.
 
+Example:
+
+Let's say we have a MeshHTTPRoute policy:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: route-all-zones
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: frontend
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    rules:
+      default:
+        backendRef:
+        - kind: MeshServiceSubset
+          name: backend
+          tags:
+            kuma.io/zone: zone-1
+        - kind: MeshServiceSubset
+          name: backend
+          tags:
+            kuma.io/zone: zone-3
+```
+
+and `MeshLoadBalancingStrategy`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshLoadBalancingStrategy
+metadata:
+  name: mlbs-only-zone-1
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    targetRef:
+      kind: MeshService
+      name: backend
+    defaults:
+      localityAwareness:
+        disabled: false
+        crossZone:
+          failover:
+            - to:
+                type: Only
+                zones: ["zone-1"]
+```
+
+In this case, `MeshLoadBalancingStrategy` modifies the endpoints of clusters created by `MeshHTTPRoute` because the strategy allows routing only to `zone-1`. As a result, your split is limited to communicating exclusively with `zone-1`. Policies are managed at a different level, and `MeshLoadBalancingStrategy` is the component with the authority to override the cluster's behavior.
+
 ### Other
 #### Cross mesh
 We cannot configure this policy cross mesh. We are bound to mesh, when you leave mesh you lose all information needed for locality aware load balancing, and you need to specify new policy for each mesh.
