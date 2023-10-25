@@ -107,9 +107,7 @@ func (g *FilterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // policies.
 func gatewayListenerInfoFromProxy(
 	ctx context.Context, meshCtx *xds_context.MeshContext, proxy *core_xds.Proxy,
-) (
-	[]GatewayListenerInfo, error,
-) {
+) []GatewayListenerInfo {
 	gateway := xds_topology.SelectGateway(meshCtx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
@@ -119,7 +117,7 @@ func gatewayListenerInfoFromProxy(
 			"service", proxy.Dataplane.Spec.GetIdentifyingService(),
 		)
 
-		return nil, nil
+		return nil
 	}
 
 	log.V(1).Info(fmt.Sprintf("matched gateway %q to dataplane %q",
@@ -147,12 +145,9 @@ func gatewayListenerInfoFromProxy(
 
 	var listenerInfos []GatewayListenerInfo
 
-	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
+	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
 		proxy.Dataplane, externalServices, meshCtx.Resources.TrafficPermissions(),
 	)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
-	}
 
 	outboundEndpoints := core_xds.EndpointMap{}
 	for k, v := range meshCtx.EndpointMap {
@@ -197,7 +192,7 @@ func gatewayListenerInfoFromProxy(
 		})
 	}
 
-	return listenerInfos, nil
+	return listenerInfos
 }
 
 func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
