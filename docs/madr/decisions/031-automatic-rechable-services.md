@@ -36,12 +36,13 @@ Chosen option: "Using MeshTrafficPermission to generate reverse graph that would
 
 ### Positive Consequences
 
-* not invasive, plug and play, can be removed if proven not efficient enough
+* not invasive, composable, plug and play, can be removed if proven not efficient enough
+  * composable means you can have both trimming by MTP and add reachable services annotation, they are combined
 * possible to implement in the given time frame
 * it still works with reachable services and people can mix and match both options
 * is a performance benefit for users that already have MTPs defined
 * adds an extra layer of security as you can't look at your envoy config to figure out the IP of services you don't have access to
-* a compromised internal service can't be exploited to DOS services it does not have access to
+* if passthrough is disabled then a compromised internal service can't be exploited to DOS services it does not have access to
 
 ### Negative Consequences
 
