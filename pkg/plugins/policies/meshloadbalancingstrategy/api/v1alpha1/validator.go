@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -49,6 +50,91 @@ func validateTo(to []To) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
+	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness))
+	return verr
+}
+
+func validateLocalityAwareness(localityAwareness *LocalityAwareness) validators.ValidationError {
+	var verr validators.ValidationError
+	if localityAwareness == nil {
+		return verr
+	}
+	verr.AddError("localZone", validateLocalZone(localityAwareness.LocalZone))
+	verr.AddError("crossZone", validateCrossZone(localityAwareness.CrossZone))
+	return verr
+}
+
+func validateLocalZone(localZone *LocalZone) validators.ValidationError {
+	var verr validators.ValidationError
+	if localZone == nil {
+		return verr
+	}
+
+	var weightSpecified int
+	for idx, affinityTag := range localZone.AffinityTags {
+		path := validators.RootedAt("affinityTags").Index(idx)
+		if affinityTag.Key == "" {
+			verr.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
+		}
+		if affinityTag.Weight != nil {
+			verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("weight"), affinityTag.Weight))
+			weightSpecified++
+		}
+	}
+
+	if weightSpecified > 0 && weightSpecified != len(localZone.AffinityTags) {
+		verr.AddViolation("affinityTags", "all or none affinity tags should have weight")
+	}
+	return verr
+}
+
+func validateCrossZone(crossZone *CrossZone) validators.ValidationError {
+	var verr validators.ValidationError
+	if crossZone == nil {
+		return verr
+	}
+
+	for idx, failover := range crossZone.Failover {
+		path := validators.RootedAt("failover").Index(idx)
+		if failover.From != nil {
+			if len(failover.From.Zones) == 0 {
+				verr.AddViolationAt(path.Field("from").Field("zones"), validators.MustNotBeEmpty)
+			}
+
+			for zoneIdx, from := range failover.From.Zones {
+				if from == "" {
+					verr.AddViolationAt(path.Field("from").Field("zones").Index(zoneIdx), validators.MustNotBeEmpty)
+				}
+			}
+		}
+
+		toZonesPath := path.Field("to").Field("zones")
+		switch failover.To.Type {
+		case Any, None:
+			if len(failover.To.Zones) > 0 {
+				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must be empty when type is %s", failover.To.Type))
+			}
+		case AnyExcept, Only:
+			if len(failover.To.Zones) == 0 {
+				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must not be empty when type is %s", failover.To.Type))
+			}
+		default:
+			verr.AddViolationAt(path.Field("to").Field("type"), "unrecognized type")
+		}
+	}
+
+	verr.AddError("failoverThreshold", validateFailoverThreshold(crossZone.FailoverThreshold))
+
+	return verr
+}
+
+func validateFailoverThreshold(failoverThreshold *FailoverThreshold) validators.ValidationError {
+	var verr validators.ValidationError
+	if failoverThreshold == nil {
+		return verr
+	}
+	verr.Add(validators.ValidateIntOrStringGreaterThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 0))
+	verr.Add(validators.ValidateIntOrStringLessThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 100))
 	return verr
 }
 
