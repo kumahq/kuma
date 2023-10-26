@@ -9,7 +9,10 @@ import (
 type Insight interface {
 	proto.Message
 	IsOnline() bool
+	// TODO Deprecated: bad
 	GetLastSubscription() Subscription
+	GetSubscription(id string) Subscription
+	GetOnlineSubscriptions() []Subscription
 	UpdateSubscription(Subscription) error
 }
 

@@ -56,13 +56,23 @@ func (x *DataplaneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
-	for i, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return i, s
+func (x *DataplaneInsight) GetOnlineSubscriptions() []generic.Subscription {
+	var subs []generic.Subscription
+	for _, s := range x.GetSubscriptions() {
+		if s.ConnectTime != nil && s.DisconnectTime == nil {
+			subs = append(subs, s)
 		}
 	}
-	return -1, nil
+	return subs
+}
+
+func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {
+	for _, s := range x.GetSubscriptions() {
+		if s.Id == id {
+			return s
+		}
+	}
+	return nil
 }
 
 func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {
@@ -93,13 +103,14 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 	if !ok {
 		return errors.Errorf("invalid type %T for DataplaneInsight", s)
 	}
-	i, old := x.GetSubscription(discoverySubscription.Id)
-	if old != nil {
-		x.Subscriptions[i] = discoverySubscription
-	} else {
-		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
+	for i, sub := range x.GetSubscriptions() {
+		if sub.GetId() == discoverySubscription.Id {
+			x.Subscriptions[i] = discoverySubscription
+			return nil
+		}
 	}
+	x.finalizeSubscriptions()
+	x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	return nil
 }
 

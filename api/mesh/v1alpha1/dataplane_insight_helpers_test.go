@@ -120,8 +120,8 @@ var _ = Describe("DataplaneHelpers", func() {
 				})).To(Succeed())
 
 				// then
-				_, subscription := dataplaneInsight.GetSubscription("2")
-				Expect(subscription.DisconnectTime).ToNot(BeNil())
+				subscription := dataplaneInsight.GetSubscription("2")
+				Expect(subscription.(*DiscoverySubscription).DisconnectTime).ToNot(BeNil())
 			})
 
 			It("should return error for wrong subscription type", func() {
