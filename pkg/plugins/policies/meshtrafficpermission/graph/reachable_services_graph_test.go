@@ -309,9 +309,15 @@ var _ = Describe("Reachable Services Graph", func() {
 				},
 			},
 		}
+		zis := []*mesh.ZoneIngressResource{
+			builders.ZoneIngress().
+				AddSimpleAvailableService("d").
+				AddSimpleAvailableService("e").
+				Build(),
+		}
 
 		// when
-		services := graph.BuildServices(dpps, es)
+		services := graph.BuildServices("default", dpps, es, zis)
 
 		// then
 		Expect(services).To(Equal(map[string]mesh_proto.SingleValueTagSet{
@@ -322,6 +328,8 @@ var _ = Describe("Reachable Services Graph", func() {
 			},
 			"b":    map[string]string{},
 			"c":    map[string]string{},
+			"d":    map[string]string{},
+			"e":    map[string]string{},
 			"es-1": map[string]string{},
 		}))
 	})

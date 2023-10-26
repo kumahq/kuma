@@ -42,33 +42,53 @@ func (r *Graph) CanReach(fromTags map[string]string, toSvc string) bool {
 	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 
-func Builder(resources context.Resources) context.ReachableServicesGraph {
-	services := BuildServices(resources.Dataplanes().Items, resources.ExternalServices().Items)
+func Builder(meshName string, resources context.Resources) context.ReachableServicesGraph {
+	services := BuildServices(
+		meshName,
+		resources.Dataplanes().Items,
+		resources.ExternalServices().Items,
+		resources.ZoneIngresses().Items,
+	)
 	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
 	return BuildGraph(services, mtps.Items)
 }
 
+// BuildServices we could just take result of xds_topology.VIPOutbounds, however it does not have a context of additional tags
 func BuildServices(
+	meshName string,
 	dataplanes []*mesh.DataplaneResource,
 	externalServices []*mesh.ExternalServiceResource,
+	zoneIngresses []*mesh.ZoneIngressResource,
 ) map[string]mesh_proto.SingleValueTagSet {
 	services := map[string]mesh_proto.SingleValueTagSet{}
-	for _, dp := range dataplanes {
-		set := dp.Spec.TagSet()
-		for _, svc := range set.Values(mesh_proto.ServiceTag) {
-			if _, ok := services[svc]; ok {
-				continue
-			}
-			services[svc] = map[string]string{}
-			for tag := range SupportedTags {
-				if values := set.Values(tag); len(values) > 0 {
-					services[svc][tag] = values[0]
-				}
+	addSvc := func(tags map[string]string) {
+		svc := tags[mesh_proto.ServiceTag]
+		if _, ok := services[svc]; ok {
+			return
+		}
+		services[svc] = map[string]string{}
+		for tag := range SupportedTags {
+			if value := tags[tag]; value != "" {
+				services[svc][tag] = value
 			}
 		}
 	}
+
+	for _, dp := range dataplanes {
+		for _, tagSet := range dp.Spec.SingleValueTagSets() {
+			addSvc(tagSet)
+		}
+	}
+	for _, zi := range zoneIngresses {
+		for _, availableSvc := range zi.Spec.GetAvailableServices() {
+			if meshName != availableSvc.Mesh {
+				continue
+			}
+			addSvc(availableSvc.Tags)
+		}
+	}
 	for _, es := range externalServices {
-		services[es.Spec.Tags[mesh_proto.ServiceTag]] = map[string]string{}
+		addSvc(es.Spec.Tags)
 	}
 	return services
 }

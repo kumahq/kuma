@@ -18,7 +18,7 @@ func CanReachFromAny(graph ReachableServicesGraph, fromTagSets []mesh_proto.Sing
 	return false
 }
 
-type ReachableServicesGraphBuilder func(Resources) ReachableServicesGraph
+type ReachableServicesGraphBuilder func(meshName string, resources Resources) ReachableServicesGraph
 
 type AnyToAnyReachableServicesGraph struct{}
 
@@ -26,6 +26,6 @@ func (a AnyToAnyReachableServicesGraph) CanReach(map[string]string, string) bool
 	return true
 }
 
-func AnyToAnyReachableServicesGraphBuilder(Resources) ReachableServicesGraph {
+func AnyToAnyReachableServicesGraphBuilder(string, Resources) ReachableServicesGraph {
 	return AnyToAnyReachableServicesGraph{}
 }

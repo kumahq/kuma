@@ -142,7 +142,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPOutbounds:           outbounds,
 		ServiceTLSReadiness:    m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
 		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
-		ReachableServicesGraph: m.rsGraphBuilder(resources),
+		ReachableServicesGraph: m.rsGraphBuilder(meshName, resources),
 	}, nil
 }
 
