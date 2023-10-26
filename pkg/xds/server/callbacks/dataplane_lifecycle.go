@@ -251,8 +251,12 @@ func (d *DataplaneLifecycle) proxyConnectedToAnotherCP(
 		return false, errors.Wrap(err, "could not get insight to determine if we can delete proxy object")
 	}
 
-	sub := insight.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription)
-	if sub != nil && sub.ControlPlaneInstanceId != d.cpInstanceID {
+	subs := insight.GetSpec().(generic.Insight).AllSubscriptions()
+	if len(subs) == 0 {
+		return false, nil
+	}
+
+	if sub := subs[len(subs)-1].(*mesh_proto.DiscoverySubscription); sub.ControlPlaneInstanceId != d.cpInstanceID {
 		log.Info("no need to deregister proxy. It has already connected to another instance", "newCPInstanceID", sub.ControlPlaneInstanceId)
 		return true, nil
 	}

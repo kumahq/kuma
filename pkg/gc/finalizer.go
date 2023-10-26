@@ -151,7 +151,10 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		subsToFinalize := map[string]struct{}{}
 		newWatchedSubs := subscriptionGenerationMap{}
 
-		for _, sub := range insight.GetOnlineSubscriptions() {
+		for _, sub := range insight.AllSubscriptions() {
+			if !sub.IsOnline() {
+				continue
+			}
 			id := sub.GetId()
 			if gen, ok := lastGens[id]; !ok || gen != sub.GetGeneration() {
 				newWatchedSubs[id] = sub.GetGeneration()

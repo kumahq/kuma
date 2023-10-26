@@ -44,18 +44,20 @@ func (x *ZoneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *ZoneInsight) GetOnlineSubscriptions() []generic.Subscription {
+func (x *ZoneInsight) AllSubscriptions() []generic.Subscription {
 	var subs []generic.Subscription
 	for _, s := range x.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			subs = append(subs, s)
-		}
+		subs = append(subs, s)
 	}
 	return subs
 }
 
 func (x *KDSSubscription) SetDisconnectTime(time time.Time) {
 	x.DisconnectTime = timestamppb.New(time)
+}
+
+func (x *KDSSubscription) IsOnline() bool {
+	return x.GetConnectTime() != nil && x.GetDisconnectTime() == nil
 }
 
 func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {

@@ -58,12 +58,10 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 	return false
 }
 
-func (x *ZoneIngressInsight) GetOnlineSubscriptions() []generic.Subscription {
+func (x *ZoneIngressInsight) AllSubscriptions() []generic.Subscription {
 	var subs []generic.Subscription
 	for _, s := range x.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			subs = append(subs, s)
-		}
+		subs = append(subs, s)
 	}
 	return subs
 }

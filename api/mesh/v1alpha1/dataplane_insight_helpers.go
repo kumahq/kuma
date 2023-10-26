@@ -56,12 +56,10 @@ func (x *DataplaneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *DataplaneInsight) GetOnlineSubscriptions() []generic.Subscription {
+func (x *DataplaneInsight) AllSubscriptions() []generic.Subscription {
 	var subs []generic.Subscription
 	for _, s := range x.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			subs = append(subs, s)
-		}
+		subs = append(subs, s)
 	}
 	return subs
 }
@@ -135,6 +133,10 @@ func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 
 func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
 	x.DisconnectTime = util_proto.MustTimestampProto(t)
+}
+
+func (x *DiscoverySubscription) IsOnline() bool {
+	return x.GetConnectTime() != nil && x.GetDisconnectTime() == nil
 }
 
 func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
