@@ -1,19 +1,23 @@
 [![][kuma-logo]][kuma-url]
 
 **Builds**
+
 [![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
 
 **Code quality**
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5576/badge)](https://bestpractices.coreinfrastructure.org/projects/5576)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma})
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
 
 **Releases**
+
 [![Docker hub](https://img.shields.io/docker/pulls/kumahq/kuma-cp)](https://hub.docker.com/u/kumahq)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
 
 **Social**
+
 [![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack)](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1rcll3y6t-DkV_CAItZUoy0IvCwQ~jlQ)
 [![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 

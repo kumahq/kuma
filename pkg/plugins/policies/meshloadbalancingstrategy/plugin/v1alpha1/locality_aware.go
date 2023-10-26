@@ -132,8 +132,8 @@ func ConfigureEnpointLocalityAwareLb(
 
 	clusterLb := cla.(*envoy_endpoint.ClusterLoadAssignment)
 	overprovisingFactor := defaultOverprovisingFactor
-	if conf.LocalityAwareness.FailoverThreshold != nil {
-		overprovisingFactor = uint32(100/conf.LocalityAwareness.FailoverThreshold.Percentage.IntVal) * 100
+	if conf.LocalityAwareness.CrossZone != nil && conf.LocalityAwareness.CrossZone.FailoverThreshold != nil {
+		overprovisingFactor = uint32(100/conf.LocalityAwareness.CrossZone.FailoverThreshold.Percentage.IntVal) * 100
 	}
 	if clusterLb.Policy == nil {
 		clusterLb.Policy = &envoy_endpoint.ClusterLoadAssignment_Policy{

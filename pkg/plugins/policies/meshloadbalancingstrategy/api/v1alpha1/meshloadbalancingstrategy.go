@@ -44,12 +44,6 @@ type LocalityAwareness struct {
 	// CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
 	// are unavailable
 	CrossZone *CrossZone `json:"crossZone,omitempty"`
-	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
-	// next priority starts.
-	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
-	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
-	// Default 70
-	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
 type LocalZone struct {
@@ -65,12 +59,19 @@ type AffinityTag struct {
 	// For example with two affinity tags first with weight 80 and second with weight 20,
 	// then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
 	// Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
-	Weight *uint32 `json:"weight"`
+	// Default: If you do not specify weight we will adjust them so that 90% traffic goes to first tag, 9% to next, and 1% to third and so on.
+	Weight *uint32 `json:"weight,omitempty"`
 }
 
 type CrossZone struct {
 	// Failover defines list of load balancing rules in order of priority
 	Failover []Failover `json:"failover,omitempty"`
+	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
+	// next priority starts.
+	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
+	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
+	// Default 50
+	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
 type Failover struct {
@@ -98,7 +99,7 @@ type FailoverThreshold struct {
 type ToZoneType string
 
 const (
-	// Traffic won't be load balanced to any zone
+	// Traffic will not be load balanced to any zone
 	None ToZoneType = "None"
 	// Traffic will be load balanced only to zones specified in zones list
 	Only ToZoneType = "Only"
