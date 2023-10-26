@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -61,6 +62,7 @@ func (s *serviceInsightEndpoints) addListEndpoint(ws *restful.WebService, pathPr
 		Doc(fmt.Sprintf("List of %s", s.descriptor.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
+		Param(ws.QueryParameter("name", "a pattern to select only services that contain these characters").DataType("string")).
 		Returns(200, "OK", nil))
 }
 
@@ -74,7 +76,8 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 		return
 	}
 
-	items := s.expandInsights(serviceInsightList)
+	nameContains := request.QueryParameter("name")
+	items := s.expandInsights(serviceInsightList, nameContains)
 	restList := rest.ResourceList{
 		Total: uint32(len(items)),
 		Items: items,
@@ -104,16 +107,18 @@ func (s *serviceInsightEndpoints) fillStaticInfo(name string, stat *v1alpha1.Ser
 // 2) Mesh+Name is a key on Universal, but not on Kubernetes, so if there are two services of the same name in different Meshes we would have problems with naming.
 // From the API perspective it's better to provide ServiceInsight per Service, not per Mesh.
 // For this reason, this method expand the one ServiceInsight resource for the mesh to resource per service
-func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList) []rest.Resource {
+func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList, nameContains string) []rest.Resource {
 	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, stat := range insight.Spec.Services {
-			s.fillStaticInfo(serviceName, stat)
-			out := rest.From.Resource(insight)
-			res := out.(*rest_unversioned.Resource)
-			res.Meta.Name = serviceName
-			res.Spec = stat
-			restItems = append(restItems, out)
+			if strings.Contains(serviceName, nameContains) {
+				s.fillStaticInfo(serviceName, stat)
+				out := rest.From.Resource(insight)
+				res := out.(*rest_unversioned.Resource)
+				res.Meta.Name = serviceName
+				res.Spec = stat
+				restItems = append(restItems, out)
+			}
 		}
 	}
 
