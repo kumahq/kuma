@@ -92,7 +92,7 @@ func TestConformance(t *testing.T) {
 			suite.SupportGateway,
 			suite.SupportGatewayPort8080,
 			suite.SupportReferenceGrant,
-			suite.SupportHTTPResponseHeaderModification,
+			suite.SupportHTTPRouteResponseHeaderModification,
 			suite.SupportHTTPRoute,
 			suite.SupportHTTPRouteHostRewrite,
 			suite.SupportHTTPRouteMethodMatching,
