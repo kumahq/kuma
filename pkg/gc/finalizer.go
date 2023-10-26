@@ -34,14 +34,11 @@ var finalizerLog = core.Log.WithName("finalizer")
 // 3. Kuma CP is up
 // 4. DPP status is Online whereas it should be Offline
 
-type descriptor struct {
-	id         string
-	generation uint32
-}
-
 type tenantID string
 
-type insightMap map[core_model.ResourceKey]*descriptor
+type subscriptionGenerationMap map[string]uint32
+
+type insightMap map[core_model.ResourceKey]subscriptionGenerationMap
 
 type insightsByType map[core_model.ResourceType]insightMap
 
@@ -149,29 +146,38 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			continue
 		}
 
-		old, ok := f.insights[tenantID(tenantId)][typ][key]
-		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
-			// something changed since the last check, either subscriptionId or generation were updated
-			// don't finalize the subscription, update map with fresh data
-			f.insights[tenantID(tenantId)][typ][key] = &descriptor{
-				id:         insight.GetLastSubscription().GetId(),
-				generation: insight.GetLastSubscription().GetGeneration(),
-			}
-			continue
-		}
+		lastGens := f.insights[tenantID(tenantId)][typ][key]
 
-		log.V(1).Info("mark subscription as disconnected")
-		insight.GetLastSubscription().SetDisconnectTime(now)
+		subsToFinalize := map[string]struct{}{}
+		newWatchedSubs := subscriptionGenerationMap{}
+
+		for _, sub := range insight.GetOnlineSubscriptions() {
+			id := sub.GetId()
+			if gen, ok := lastGens[id]; !ok || gen != sub.GetGeneration() {
+				newWatchedSubs[id] = sub.GetGeneration()
+			} else {
+				subsToFinalize[id] = struct{}{}
+			}
+		}
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
-			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
-		})
-		if err != nil {
-			log.Error(err, "unable to finalize subscription")
+		if err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
+			insight := upsertInsight.GetSpec().(generic.Insight)
+			for id := range subsToFinalize {
+				log.V(1).Info("mark subscription as disconnected", "id", id)
+				sub := insight.GetSubscription(id)
+				sub.SetDisconnectTime(now)
+				if err := insight.UpdateSubscription(sub); err != nil {
+					return errors.Wrapf(err, "unable to update subscription %s", id)
+				}
+			}
+			return nil
+		}); err != nil {
+			log.Error(err, "unable to upsert insight")
 			return err
 		}
-		delete(f.insights[tenantID(tenantId)][typ], key)
+
+		f.insights[tenantID(tenantId)][typ][key] = newWatchedSubs
 	}
 	return nil
 }
