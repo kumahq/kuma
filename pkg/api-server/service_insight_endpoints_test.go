@@ -350,7 +350,7 @@ var _ = Describe("Service Insight Endpoints", func() {
 }
 `,
 		}),
-	Entry("with pagination and name filter", testCase{
+		Entry("with pagination and name filter", testCase{
 			params: "?size=1&name=end",
 			expected: `
 {
