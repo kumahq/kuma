@@ -33,8 +33,12 @@ func NewGraph() *Graph {
 	}
 }
 
-func (r *Graph) CanReach(fromTags map[string]string, toSvc string) bool {
-	rule := r.rules[toSvc].Compute(core_rules.SubsetFromTags(fromTags))
+func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) bool {
+	if _, crossMeshTagExist := toTags[mesh_proto.MeshTag]; crossMeshTagExist {
+		// we cannot compute graph for cross mesh, so it's better to allow the traffic
+		return true
+	}
+	rule := r.rules[toTags[mesh_proto.ServiceTag]].Compute(core_rules.SubsetFromTags(fromTags))
 	if rule == nil {
 		return false
 	}
@@ -144,7 +148,7 @@ func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 // replaceTopLevelSubsets replaces subsets present in top-level target ref.
 // Because we need to do policy matching on services instead of individual proxies, we have to handle subsets in a special way.
 // What we do is we only support subsets with predefined tags listed in SupportedTags.
-// This assumes that tags listed in SupportedTags are stable between all instances of a given service.
+// This assumes that tags listed in SupportedTags have the same value between all instances of a given service.
 // Otherwise, we fallback to higher level target ref (MeshSubset -> Mesh, MeshServiceSubset -> MeshService).
 //
 // Alternatively, we could have computed all common tags between instances of a given service and then allow subsets with those common tags.

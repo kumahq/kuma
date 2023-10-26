@@ -40,7 +40,10 @@ var _ = Describe("Reachable Services Graph", func() {
 				for to := range services {
 					_, fromAll := given.expectedFromAll[to]
 					_, conn := given.expectedConnections[from][to]
-					Expect(g.CanReach(map[string]string{mesh_proto.ServiceTag: from}, to)).To(Equal(fromAll || conn))
+					Expect(g.CanReach(
+						map[string]string{mesh_proto.ServiceTag: from},
+						map[string]string{mesh_proto.ServiceTag: to},
+					)).To(Equal(fromAll || conn))
 				}
 			}
 		},
@@ -192,14 +195,14 @@ var _ = Describe("Reachable Services Graph", func() {
 		graph := graph.BuildGraph(services, mtps)
 
 		// then
-		Expect(graph.CanReach(map[string]string{
-			mesh_proto.ServiceTag: "b",
-			"version":             "v1",
-		}, "a")).To(BeTrue())
-		Expect(graph.CanReach(map[string]string{
-			mesh_proto.ServiceTag: "b",
-			"version":             "v2",
-		}, "a")).To(BeFalse())
+		Expect(graph.CanReach(
+			map[string]string{mesh_proto.ServiceTag: "b", "version": "v1"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
+		)).To(BeTrue())
+		Expect(graph.CanReach(
+			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
+		)).To(BeFalse())
 	})
 
 	It("should work with mesh subset in from", func() {
@@ -217,9 +220,29 @@ var _ = Describe("Reachable Services Graph", func() {
 		graph := graph.BuildGraph(services, mtps)
 
 		// then
-		Expect(graph.CanReach(map[string]string{"kuma.io/zone": "east"}, "a")).To(BeTrue())
-		Expect(graph.CanReach(map[string]string{"kuma.io/zone": "west"}, "a")).To(BeFalse())
-		Expect(graph.CanReach(map[string]string{"othertag": "other"}, "a")).To(BeFalse())
+		Expect(graph.CanReach(
+			map[string]string{"kuma.io/zone": "east"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
+		)).To(BeTrue())
+		Expect(graph.CanReach(
+			map[string]string{"kuma.io/zone": "west"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
+		)).To(BeFalse())
+		Expect(graph.CanReach(
+			map[string]string{"othertag": "other"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
+		)).To(BeFalse())
+	})
+
+	It("should always allow cross mesh", func() {
+		// when
+		graph := graph.BuildGraph(nil, nil)
+
+		// then
+		Expect(graph.CanReach(
+			map[string]string{mesh_proto.ServiceTag: "b"},
+			map[string]string{mesh_proto.ServiceTag: "a", mesh_proto.MeshTag: "other"},
+		)).To(BeTrue())
 	})
 
 	DescribeTable("top level subset should work with predefined tags",
@@ -244,8 +267,14 @@ var _ = Describe("Reachable Services Graph", func() {
 			graph := graph.BuildGraph(services, mtps)
 
 			// then
-			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "b"}, "a_kuma-demo_svc_1234")).To(BeTrue())
-			Expect(graph.CanReach(map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"}, "b")).To(BeFalse()) // it's not selected by top-level target ref
+			Expect(graph.CanReach(
+				map[string]string{mesh_proto.ServiceTag: "b"},
+				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
+			)).To(BeTrue())
+			Expect(graph.CanReach(
+				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
+				map[string]string{mesh_proto.ServiceTag: "b"},
+			)).To(BeFalse()) // it's not selected by top-level target ref
 		},
 		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(controllers.KubeNamespaceTag, "kuma-demo")),
 		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(controllers.KubeServiceTag, "a")),
