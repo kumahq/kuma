@@ -350,5 +350,55 @@ var _ = Describe("Service Insight Endpoints", func() {
 }
 `,
 		}),
+	Entry("with pagination and name filter", testCase{
+			params: "?size=1&name=end",
+			expected: `
+{
+  "total": 2,
+  "items": [
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "backend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 100,
+	    "online": 70,
+	    "offline": 30
+      },
+      "addressPort": "backend.mesh:80"
+	}
+  ],
+  "next": "http://{{address}}/service-insights?name=end&offset=1&size=1"
+}
+`,
+		}),
+		Entry("with second page and name filter", testCase{
+			params: "?size=1&offset=1&name=end",
+			expected: `
+{
+  "total": 2,
+  "items": [
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "frontend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 20,
+	    "online": 19,
+	    "offline": 1
+      },
+      "addressPort": "frontend.mesh:80"
+	}
+  ],
+  "next": null
+}
+`,
+		}),
 	)
 })
