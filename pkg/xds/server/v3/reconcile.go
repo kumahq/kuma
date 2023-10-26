@@ -194,6 +194,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 
 	version := "" // empty value is a sign to other components to generate the version automatically
 	resources := map[envoy_resource.Type][]envoy_types.Resource{}
+
 	for _, resourceType := range rs.ResourceTypes() {
 		resources[resourceType] = append(resources[resourceType], rs.ListOf(resourceType).Payloads()...)
 	}
