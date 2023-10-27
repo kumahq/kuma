@@ -35,8 +35,5 @@ func (m MeshedPublicKey) Validate() error {
 	if err := m.PublicKey.Validate(); err != nil {
 		return err
 	}
-	if m.Mesh == "" {
-		return errors.New(".Mesh is required")
-	}
 	return nil
 }
