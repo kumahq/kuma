@@ -284,7 +284,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubePortTag, "1234")),
 	)
 
-	It("should not modify MeshTrafficPermission passed to the func when replacing subsets", func() {
+	It("should not modify MeshTrafficPermission passed to the func when replacing tags in subsets", func() {
 		// given
 		mtps := []*v1alpha1.MeshTrafficPermissionResource{
 			builders.MeshTrafficPermission().
@@ -301,9 +301,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		_ = graph.BuildGraph(services, mtps)
 
 		// then
-		Expect(mtps[0].Spec.TargetRef.Kind).To(Equal(common_api.MeshSubset))
 		Expect(mtps[0].Spec.TargetRef.Tags).NotTo(BeNil())
-		Expect(mtps[1].Spec.TargetRef.Kind).To(Equal(common_api.MeshServiceSubset))
 		Expect(mtps[1].Spec.TargetRef.Tags).NotTo(BeNil())
 	})
 

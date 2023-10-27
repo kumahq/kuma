@@ -3,7 +3,6 @@ package graph
 import (
 	"golang.org/x/exp/maps"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -101,7 +100,7 @@ func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 	resources := context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
-				Items: replaceTopLevelSubsets(mtps),
+				Items: replaceTagsInTopLevelSubsets(mtps),
 			},
 		},
 	}
@@ -145,38 +144,30 @@ func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 	return graph
 }
 
-// replaceTopLevelSubsets replaces subsets present in top-level target ref.
+// replaceTagsInTopLevelSubsets replaces tags present in subsets of top-level target ref.
 // Because we need to do policy matching on services instead of individual proxies, we have to handle subsets in a special way.
 // What we do is we only support subsets with predefined tags listed in SupportedTags.
 // This assumes that tags listed in SupportedTags have the same value between all instances of a given service.
-// Otherwise, we fallback to higher level target ref (MeshSubset -> Mesh, MeshServiceSubset -> MeshService).
+// Otherwise, we trim the tags makeing the target ref subset wider.
 //
 // Alternatively, we could have computed all common tags between instances of a given service and then allow subsets with those common tags.
 // However, this would require calling this function for every service.
-func replaceTopLevelSubsets(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
+func replaceTagsInTopLevelSubsets(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
 	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
 		if len(mtp.Spec.TargetRef.Tags) > 0 {
-			hasOnlySupportedTags := true
-			for tag := range mtp.Spec.TargetRef.Tags {
-				_, ok := SupportedTags[tag]
-				if !ok {
-					hasOnlySupportedTags = false
+			filteredTags := map[string]string{}
+			for tag, val := range mtp.Spec.TargetRef.Tags {
+				if _, ok := SupportedTags[tag]; ok {
+					filteredTags[tag] = val
 				}
 			}
-			if !hasOnlySupportedTags {
+			if len(filteredTags) != len(mtp.Spec.TargetRef.Tags) {
 				mtp = &mtp_api.MeshTrafficPermissionResource{
 					Meta: mtp.Meta,
 					Spec: mtp.Spec.DeepCopy(),
 				}
-				if mtp.Spec.TargetRef.Kind == common_api.MeshSubset {
-					mtp.Spec.TargetRef.Kind = common_api.Mesh
-					mtp.Spec.TargetRef.Tags = nil
-				}
-				if mtp.Spec.TargetRef.Kind == common_api.MeshServiceSubset {
-					mtp.Spec.TargetRef.Kind = common_api.MeshService
-					mtp.Spec.TargetRef.Tags = nil
-				}
+				mtp.Spec.TargetRef.Tags = filteredTags
 			}
 		}
 		newMtps[i] = mtp
