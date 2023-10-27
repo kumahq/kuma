@@ -7,7 +7,6 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ generic.Insight = &ZoneInsight{}
@@ -78,7 +77,6 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 			return nil
 		}
 	}
-	x.finalizeSubscriptions()
 	x.Subscriptions = append(x.Subscriptions, kdsSubscription)
 	return nil
 }
@@ -90,18 +88,6 @@ func (x *ZoneInsight) CompactFinished() {
 		x.Subscriptions[i].Config = ""
 		if status := x.Subscriptions[i].Status; status != nil {
 			status.Stat = map[string]*KDSServiceStats{}
-		}
-	}
-}
-
-// If Global CP was killed ungracefully then we can get a subscription without a DisconnectTime.
-// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
-// will cause wrong status.
-func (x *ZoneInsight) finalizeSubscriptions() {
-	now := util_proto.Now()
-	for _, subscription := range x.GetSubscriptions() {
-		if subscription.DisconnectTime == nil {
-			subscription.DisconnectTime = now
 		}
 	}
 }
