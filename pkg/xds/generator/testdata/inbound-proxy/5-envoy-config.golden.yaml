@@ -50,11 +50,6 @@ resources:
     - filterChainMatch:
         transportProtocol: raw_buffer
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -64,11 +59,6 @@ resources:
     - filterChainMatch:
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -135,24 +125,6 @@ resources:
     - filterChainMatch:
         transportProtocol: raw_buffer
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp-1:
-                permissions:
-                - any: true
-                principals:
-                - andIds:
-                    ids:
-                    - authenticated:
-                        principalName:
-                          exact: kuma://version/1.0
-                    - authenticated:
-                        principalName:
-                          exact: spiffe://default/web1
-          statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -260,24 +232,6 @@ resources:
     - filterChainMatch:
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp-1:
-                permissions:
-                - any: true
-                principals:
-                - andIds:
-                    ids:
-                    - authenticated:
-                        principalName:
-                          exact: kuma://version/1.0
-                    - authenticated:
-                        principalName:
-                          exact: spiffe://default/web1
-          statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -554,11 +508,6 @@ resources:
     - filterChainMatch:
         transportProtocol: raw_buffer
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_2_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -568,11 +517,6 @@ resources:
     - filterChainMatch:
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_2_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -639,11 +583,6 @@ resources:
     - filterChainMatch:
         transportProtocol: raw_buffer
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_2_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -676,11 +615,6 @@ resources:
     - filterChainMatch:
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_2_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
