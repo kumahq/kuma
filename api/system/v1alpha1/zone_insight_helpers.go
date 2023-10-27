@@ -45,11 +45,7 @@ func (x *ZoneInsight) IsOnline() bool {
 }
 
 func (x *ZoneInsight) AllSubscriptions() []generic.Subscription {
-	var subs []generic.Subscription
-	for _, s := range x.GetSubscriptions() {
-		subs = append(subs, s)
-	}
-	return subs
+	return generic.AllSubscriptions[*KDSSubscription](x)
 }
 
 func (x *KDSSubscription) SetDisconnectTime(time time.Time) {

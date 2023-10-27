@@ -6,6 +6,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func AllSubscriptions[S Subscription, T interface{ GetSubscriptions() []S }](t T) []Subscription {
+	var subs []Subscription
+	for _, s := range t.GetSubscriptions() {
+		subs = append(subs, s)
+	}
+	return subs
+}
+
 type Insight interface {
 	proto.Message
 	IsOnline() bool

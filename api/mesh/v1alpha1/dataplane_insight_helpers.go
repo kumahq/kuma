@@ -57,11 +57,7 @@ func (x *DataplaneInsight) IsOnline() bool {
 }
 
 func (x *DataplaneInsight) AllSubscriptions() []generic.Subscription {
-	var subs []generic.Subscription
-	for _, s := range x.GetSubscriptions() {
-		subs = append(subs, s)
-	}
-	return subs
+	return generic.AllSubscriptions[*DiscoverySubscription](x)
 }
 
 func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {

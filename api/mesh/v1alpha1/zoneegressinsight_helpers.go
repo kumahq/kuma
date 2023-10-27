@@ -59,13 +59,7 @@ func (x *ZoneEgressInsight) IsOnline() bool {
 }
 
 func (x *ZoneEgressInsight) AllSubscriptions() []generic.Subscription {
-	var subs []generic.Subscription
-	for _, s := range x.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			subs = append(subs, s)
-		}
-	}
-	return subs
+	return generic.AllSubscriptions[*DiscoverySubscription](x)
 }
 
 func (x *ZoneEgressInsight) GetLastSubscription() generic.Subscription {
