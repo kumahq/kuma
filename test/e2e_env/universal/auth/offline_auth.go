@@ -57,7 +57,7 @@ dpServer:
               FvX0KmBtADEJ4n9Jo4ja3hDmp83Q4KjJq0xKbhh9Fp3AjwjDb0fVFwbt+8SdVgyV
               5PE+7HdigwlJ/cOVb9IY/UKVgCzlW5inCQIDAQAB
               -----END RSA PUBLIC KEY-----
-          - kid: static-nomesh-1
+          - kid: offline-auth-nomesh-1
             key: |
               -----BEGIN RSA PUBLIC KEY-----
               MIIBCgKCAQEAsGQSfwmBU/DMDLnKCbg7cKUrBEAxDinCPaQ5foF87H8aul4EAzym
@@ -91,7 +91,7 @@ dpServer:
 			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
 			"--kid", "static-1",
-			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-1.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "keys", "samplekey.pem"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -115,7 +115,7 @@ dpServer:
 			"--mesh", meshes[0],
 			"--kid", "static-1",
 			"--valid-for", "24h",
-			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-1.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "keys", "samplekey.pem"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -134,9 +134,9 @@ dpServer:
 		// given
 		token, err := universal.GetKumactlOptions().RunKumactlAndGetOutput("generate", "dataplane-token",
 			"--mesh", meshes[1],
-			"--kid", "static-nomesh-1",
+			"--kid", "offline-auth-nomesh-1",
 			"--valid-for", "24h",
-			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-nomesh-1.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "keys", "samplekey-2.pem"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
