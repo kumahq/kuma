@@ -405,6 +405,9 @@ type ExperimentalConfig struct {
 	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
 	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
 	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
+	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
+	// Lack of MeshTrafficPermission is treated as Deny the traffic.
+	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
