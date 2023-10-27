@@ -177,6 +177,21 @@ var _ = Describe("Reachable Services Graph", func() {
 				"a": {},
 			},
 		}),
+		Entry("equal subsets matching is preserved because of the names", testCase{
+			mtps: []*v1alpha1.MeshTrafficPermissionResource{
+				builders.MeshTrafficPermission().
+					WithName("aaa").
+					WithTargetRef(builders.TargetRefMeshSubset("kuma.io/zone", "east")).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Deny).
+					Build(),
+				builders.MeshTrafficPermission().
+					WithName("bbb").
+					WithTargetRef(builders.TargetRefMeshSubset("version", "v1")).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					Build(),
+			},
+			expectedFromAll: fromAllServices,
+		}),
 	)
 
 	It("should work with service subsets in from", func() {
