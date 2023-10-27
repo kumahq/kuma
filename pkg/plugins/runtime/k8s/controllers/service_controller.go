@@ -58,6 +58,15 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
+	if svc.Spec.Type == kube_core.ServiceTypeExternalName {
+		log.V(1).Info(fmt.Sprintf(
+			"ignoring %s because it is of an unsupported type (%s)",
+			req.NamespacedName.String(),
+			kube_core.ServiceTypeExternalName,
+		))
+		return kube_ctrl.Result{}, nil
+	}
+
 	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
 	annotations := metadata.Annotations(svc.Annotations)
 	if annotations == nil {
