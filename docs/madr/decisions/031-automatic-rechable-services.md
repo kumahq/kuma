@@ -36,8 +36,10 @@ Chosen option: "Using MeshTrafficPermission to generate reverse graph that would
 
 ### Positive Consequences
 
-* not invasive, composable, plug and play, can be removed if proven not efficient enough
-  * composable means you can have both trimming by MTP and add reachable services annotation, they are combined
+* not invasive, plug and play, can be removed if proven not efficient enough
+  * reachable services should take precedence because:
+    * we can change it back if we need to
+    * we have escape path if there is an edge case that would incorrectly generate the graph
 * possible to implement in the given time frame
 * it still works with reachable services and people can mix and match both options
 * is a performance benefit for users that already have MTPs defined
