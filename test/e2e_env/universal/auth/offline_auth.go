@@ -11,7 +11,10 @@ import (
 )
 
 func OfflineAuth() {
-	meshName := "offline-auth"
+	meshes := []string{
+		"offline-auth-1",
+		"offline-auth-2",
+	}
 
 	var universal Cluster
 
@@ -44,7 +47,7 @@ dpServer:
           useSecrets: false
           publicKeys:
           - kid: static-1
-            mesh: offline-auth
+            mesh: offline-auth-1
             key: |
               -----BEGIN RSA PUBLIC KEY-----
               MIIBCgKCAQEAqwbFZ7LSuRGEkFPsZOLYuimsjDeie4sdtqIVW9bLDrTSql+o2sBL
@@ -54,6 +57,16 @@ dpServer:
               FvX0KmBtADEJ4n9Jo4ja3hDmp83Q4KjJq0xKbhh9Fp3AjwjDb0fVFwbt+8SdVgyV
               5PE+7HdigwlJ/cOVb9IY/UKVgCzlW5inCQIDAQAB
               -----END RSA PUBLIC KEY-----
+          - kid: static-nomesh-1
+            key: |
+              -----BEGIN RSA PUBLIC KEY-----
+              MIIBCgKCAQEAsGQSfwmBU/DMDLnKCbg7cKUrBEAxDinCPaQ5foF87H8aul4EAzym
+              KswoSpwXyyhAqVf2pHJYqkIX0HwL5xkgGy3lvNekgJPLeQaGMg0qVol+tU0/go6i
+              50LUzSvPo6kBHCBOiFTNxZ+HRiCdTJd655ALBn1a4LbVPGDqPnHikSWsZg69gkV7
+              T+jdPz4rBqfhNahREinVRe1DsLVJ0trjc91+2dRYj1e+tKVQDwCNj5cP2GzYUkAb
+              XaMpe1ZGQSC9/gTlJIEU7Lyz7fyOJcCZbGASy8nBixM6E5l8QPrFVIDVkeNJNVQj
+              35gOQBJWtsCEiBx3spsKLeoim62wun05HwIDAQAB
+              -----END RSA PUBLIC KEY-----
 `
 
 	BeforeAll(func() {
@@ -62,7 +75,8 @@ dpServer:
 			Install(Kuma(core.Standalone,
 				WithYamlConfig(cpCfg),
 			)).
-			Install(MeshUniversal(meshName)).
+			Install(MeshUniversal(meshes[0])).
+			Install(MeshUniversal(meshes[1])).
 			Setup(universal)).To(Succeed())
 	})
 
@@ -77,7 +91,7 @@ dpServer:
 			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
 			"--kid", "static-1",
-			"--signing-key-path", filepath.Join("..", "..", "keys", "samplekey.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-1.pem"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -98,19 +112,40 @@ dpServer:
 	It("should use dp-token generated offline", func() {
 		// given
 		token, err := universal.GetKumactlOptions().RunKumactlAndGetOutput("generate", "dataplane-token",
-			"--mesh", meshName,
+			"--mesh", meshes[0],
 			"--kid", "static-1",
 			"--valid-for", "24h",
-			"--signing-key-path", filepath.Join("..", "..", "keys", "samplekey.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-1.pem"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		Expect(universal.Install(DemoClientUniversal("test-server", meshName, WithToken(token)))).To(Succeed())
+		Expect(universal.Install(DemoClientUniversal("test-server-1", meshes[0], WithToken(token)))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
-			online, _, err := IsDataplaneOnline(universal, meshName, "test-server")
+			online, _, err := IsDataplaneOnline(universal, meshes[0], "test-server-1")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(online).To(BeTrue())
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should use a dp-token generated offline, validated with a non-mesh scoped key", func() {
+		// given
+		token, err := universal.GetKumactlOptions().RunKumactlAndGetOutput("generate", "dataplane-token",
+			"--mesh", meshes[1],
+			"--kid", "static-nomesh-1",
+			"--valid-for", "24h",
+			"--signing-key-path", filepath.Join("..", "..", "keys", "sample-key-static-nomesh-1.pem"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		Expect(universal.Install(DemoClientUniversal("test-server-2", meshes[1], WithToken(token)))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			online, _, err := IsDataplaneOnline(universal, meshes[1], "test-server-2")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(online).To(BeTrue())
 		}, "30s", "1s").Should(Succeed())
