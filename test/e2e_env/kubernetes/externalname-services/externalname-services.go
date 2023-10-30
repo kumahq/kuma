@@ -13,7 +13,6 @@ import (
 
 func ExternalNameServices() {
 	meshName := "externalname-services"
-	systemNamespace := "externalname-services-system"
 	namespace := "externalname-services"
 
 	externalNameService := fmt.Sprintf(`
@@ -37,7 +36,6 @@ spec:
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Install(Namespace(systemNamespace)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
@@ -49,16 +47,15 @@ spec:
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(systemNamespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should route to external-service", func() {
+	It("should ignore ExternalName Service", func() {
 		// when
 		Expect(kubernetes.Cluster.Install(YamlK8s(externalNameService))).To(Succeed())
 
 		// then
-		Consistently(kubernetes.Cluster.GetKumaCPLogs, "15s", "1s").
+		Consistently(kubernetes.Cluster.GetKumaCPLogs, "10s", "1s").
 			ShouldNot(ContainSubstring("could not parse hostname entry"))
 	})
 }
