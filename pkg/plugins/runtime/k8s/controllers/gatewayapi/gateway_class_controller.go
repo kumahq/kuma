@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -59,9 +60,9 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	if len(gateways.Items) > 0 {
-		controllerutil.AddFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist)
+		controllerutil.AddFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
 	} else {
-		controllerutil.RemoveFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist)
+		controllerutil.RemoveFinalizer(class, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
 	}
 
 	if err := r.Update(ctx, class); err != nil {
@@ -78,9 +79,9 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 
 	if condition == nil {
 		condition = &kube_meta.Condition{
-			Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+			Type:   string(gatewayapi_v1.GatewayClassConditionStatusAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.GatewayClassReasonAccepted),
+			Reason: string(gatewayapi_v1.GatewayClassReasonAccepted),
 		}
 	}
 
@@ -111,9 +112,9 @@ func getParametersRef(
 	}
 
 	condition := kube_meta.Condition{
-		Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+		Type:   string(gatewayapi_v1.GatewayClassConditionStatusAccepted),
 		Status: kube_meta.ConditionFalse,
-		Reason: string(gatewayapi.GatewayClassReasonInvalidParameters),
+		Reason: string(gatewayapi_v1.GatewayClassReasonInvalidParameters),
 	}
 
 	if parametersRef.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) || parametersRef.Kind != "MeshGatewayConfig" {

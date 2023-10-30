@@ -11,6 +11,7 @@ import (
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -67,7 +68,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 		}
 
 		switch filter.Type {
-		case gatewayapi.HTTPRouteFilterRequestRedirect:
+		case gatewayapi_v1.HTTPRouteFilterRequestRedirect:
 			foundBackendlessFilter = true
 		}
 
@@ -275,11 +276,11 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 		}
 
 		switch *p.Type {
-		case gatewayapi.PathMatchExact:
+		case gatewayapi_v1.PathMatchExact:
 			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT
-		case gatewayapi.PathMatchPathPrefix:
+		case gatewayapi_v1.PathMatchPathPrefix:
 			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX
-		case gatewayapi.PathMatchRegularExpression:
+		case gatewayapi_v1.PathMatchRegularExpression:
 			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_REGEX
 		}
 
@@ -294,9 +295,9 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 		}
 
 		switch *header.Type {
-		case gatewayapi.HeaderMatchExact:
+		case gatewayapi_v1.HeaderMatchExact:
 			kumaHeader.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_EXACT
-		case gatewayapi.HeaderMatchRegularExpression:
+		case gatewayapi_v1.HeaderMatchRegularExpression:
 			kumaHeader.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_REGEX
 		}
 
@@ -310,9 +311,9 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 		}
 
 		switch *query.Type {
-		case gatewayapi.QueryParamMatchExact:
+		case gatewayapi_v1.QueryParamMatchExact:
 			kumaQuery.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query_EXACT
-		case gatewayapi.QueryParamMatchRegularExpression:
+		case gatewayapi_v1.QueryParamMatchRegularExpression:
 			kumaQuery.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query_REGEX
 		}
 
@@ -326,11 +327,11 @@ func pathRewriteToKuma(modifier gatewayapi.HTTPPathModifier) *mesh_proto.MeshGat
 	rewrite := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite{}
 
 	switch modifier.Type {
-	case gatewayapi.FullPathHTTPPathModifier:
+	case gatewayapi_v1.FullPathHTTPPathModifier:
 		rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull{
 			ReplaceFull: *modifier.ReplaceFullPath,
 		}
-	case gatewayapi.PrefixMatchHTTPPathModifier:
+	case gatewayapi_v1.PrefixMatchHTTPPathModifier:
 		rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch{
 			ReplacePrefixMatch: *modifier.ReplacePrefixMatch,
 		}
@@ -347,7 +348,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 	var conditions []kube_meta.Condition
 
 	switch filter.Type {
-	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
+	case gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier:
 		filter := filter.RequestHeaderModifier
 
 		var headerFilter mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter
@@ -367,7 +368,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 				RequestHeader: &headerFilter,
 			},
 		})
-	case gatewayapi.HTTPRouteFilterRequestMirror:
+	case gatewayapi_v1.HTTPRouteFilterRequestMirror:
 		filter := filter.RequestMirror
 
 		// For mirrors we skip unresolved refs
@@ -390,7 +391,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 				Mirror: &mirror,
 			},
 		})
-	case gatewayapi.HTTPRouteFilterRequestRedirect:
+	case gatewayapi_v1.HTTPRouteFilterRequestRedirect:
 		filter := filter.RequestRedirect
 
 		redirect := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Redirect{}
@@ -432,7 +433,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 				Redirect: &redirect,
 			},
 		})
-	case gatewayapi.HTTPRouteFilterURLRewrite:
+	case gatewayapi_v1.HTTPRouteFilterURLRewrite:
 		filter := filter.URLRewrite
 
 		if filter.Hostname != nil {
@@ -456,7 +457,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 			}
 			kumaFilters = append(kumaFilters, &filter)
 		}
-	case gatewayapi.HTTPRouteFilterResponseHeaderModifier:
+	case gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier:
 		filter := filter.ResponseHeaderModifier
 
 		var headerFilter mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter

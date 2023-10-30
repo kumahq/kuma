@@ -11,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -205,12 +206,12 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 	for _, gapiParam := range gapiMatch.QueryParams {
 		var param v1alpha1.QueryParamsMatch
 		switch *gapiParam.Type {
-		case gatewayapi.QueryParamMatchExact:
+		case gatewayapi_v1.QueryParamMatchExact:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.ExactQueryMatch,
 				Value: gapiParam.Value,
 			}
-		case gatewayapi.QueryParamMatchRegularExpression:
+		case gatewayapi_v1.QueryParamMatchRegularExpression:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.RegularExpressionQueryMatch,
 				Value: gapiParam.Value,
@@ -242,12 +243,12 @@ func fromGAPIHeaders(gapiHeaders []gatewayapi.HTTPHeader) []v1alpha1.HeaderKeyVa
 
 func fromGAPIPath(gapiPath gatewayapi.HTTPPathModifier) (v1alpha1.PathRewrite, bool) {
 	switch gapiPath.Type {
-	case gatewayapi.FullPathHTTPPathModifier:
+	case gatewayapi_v1.FullPathHTTPPathModifier:
 		return v1alpha1.PathRewrite{
 			Type:            v1alpha1.ReplaceFullPathType,
 			ReplaceFullPath: gapiPath.ReplaceFullPath,
 		}, true
-	case gatewayapi.PrefixMatchHTTPPathModifier:
+	case gatewayapi_v1.PrefixMatchHTTPPathModifier:
 		return v1alpha1.PathRewrite{
 			Type:               v1alpha1.ReplacePrefixMatchType,
 			ReplacePrefixMatch: gapiPath.ReplacePrefixMatch,
@@ -264,7 +265,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	gapiFilter gatewayapi.HTTPRouteFilter,
 ) (v1alpha1.Filter, []kube_meta.Condition, bool) {
 	switch gapiFilter.Type {
-	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
+	case gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier:
 		modifier := gapiFilter.RequestHeaderModifier
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestHeaderModifierType,
@@ -274,7 +275,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				Remove: modifier.Remove,
 			},
 		}, nil, true
-	case gatewayapi.HTTPRouteFilterResponseHeaderModifier:
+	case gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier:
 		modifier := gapiFilter.ResponseHeaderModifier
 		return v1alpha1.Filter{
 			Type: v1alpha1.ResponseHeaderModifierType,
@@ -284,7 +285,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				Remove: modifier.Remove,
 			},
 		}, nil, true
-	case gatewayapi.HTTPRouteFilterRequestRedirect:
+	case gatewayapi_v1.HTTPRouteFilterRequestRedirect:
 		redirect := gapiFilter.RequestRedirect
 
 		var path *v1alpha1.PathRewrite
@@ -306,7 +307,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				StatusCode: redirect.StatusCode,
 			},
 		}, nil, true
-	case gatewayapi.HTTPRouteFilterURLRewrite:
+	case gatewayapi_v1.HTTPRouteFilterURLRewrite:
 		rewrite := gapiFilter.URLRewrite
 
 		var path *v1alpha1.PathRewrite
@@ -325,7 +326,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				Path:     path,
 			},
 		}, nil, true
-	case gatewayapi.HTTPRouteFilterRequestMirror:
+	case gatewayapi_v1.HTTPRouteFilterRequestMirror:
 		mirror := gapiFilter.RequestMirror
 
 		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, mesh, routeNamespace, mirror.BackendRef)
