@@ -14,6 +14,15 @@ func AllSubscriptions[S Subscription, T interface{ GetSubscriptions() []S }](t T
 	return subs
 }
 
+func GetSubscription[S Subscription, T interface{ GetSubscriptions() []S }](t T, id string) Subscription {
+	for _, s := range t.GetSubscriptions() {
+		if s.GetId() == id {
+			return s
+		}
+	}
+	return nil
+}
+
 type Insight interface {
 	proto.Message
 	IsOnline() bool

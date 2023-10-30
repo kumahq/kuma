@@ -61,12 +61,7 @@ func (x *DataplaneInsight) AllSubscriptions() []generic.Subscription {
 }
 
 func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {
-	for _, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return s
-		}
-	}
-	return nil
+	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
 func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {

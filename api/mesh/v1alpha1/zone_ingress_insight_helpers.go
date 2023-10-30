@@ -10,12 +10,7 @@ import (
 var _ generic.Insight = &ZoneIngressInsight{}
 
 func (x *ZoneIngressInsight) GetSubscription(id string) generic.Subscription {
-	for _, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return s
-		}
-	}
-	return nil
+	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
 func (x *ZoneIngressInsight) UpdateSubscription(s generic.Subscription) error {

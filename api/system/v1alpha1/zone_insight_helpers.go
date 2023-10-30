@@ -19,12 +19,7 @@ func NewSubscriptionStatus() *KDSSubscriptionStatus {
 }
 
 func (x *ZoneInsight) GetSubscription(id string) generic.Subscription {
-	for _, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return s
-		}
-	}
-	return nil
+	return generic.GetSubscription[*KDSSubscription](x, id)
 }
 
 func (x *ZoneInsight) GetLastSubscription() generic.Subscription {
