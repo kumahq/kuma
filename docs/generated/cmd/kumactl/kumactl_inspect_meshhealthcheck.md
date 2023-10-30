@@ -15,6 +15,8 @@ kumactl inspect meshhealthcheck NAME [flags]
 ```
   -h, --help          help for meshhealthcheck
   -m, --mesh string   mesh to use (default "default")
+      --new-api       use the newer version of the inspect api
+      --offset int    the offset for pagination
 ```
 
 ### Options inherited from parent commands

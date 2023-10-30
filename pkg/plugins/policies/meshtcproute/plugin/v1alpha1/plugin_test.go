@@ -53,6 +53,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 	DescribeTable("MatchedPolicies",
 		func(given policiesTestCase) {
+			_ = xds.CreateSampleMeshContext()
 			routes, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).
 				MatchedPolicies(given.dataplane, given.resources)
 			Expect(err).ToNot(HaveOccurred())

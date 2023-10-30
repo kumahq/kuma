@@ -16,13 +16,14 @@ func Setup(rt runtime.Runtime) error {
 		Name: "cp_info",
 		Help: "Static information about the CP instance",
 		ConstLabels: map[string]string{
-			"instance_id": rt.GetInstanceId(),
-			"cluster_id":  rt.GetClusterId(),
-			"product":     version.Product,
-			"version":     version.Build.Version,
-			"build_date":  version.Build.BuildDate,
-			"git_commit":  version.Build.GitCommit,
-			"git_tag":     version.Build.GitTag,
+			"instance_id":   rt.GetInstanceId(),
+			"cluster_id":    rt.GetClusterId(),
+			"product":       version.Product,
+			"version":       version.Build.Version,
+			"build_date":    version.Build.BuildDate,
+			"git_commit":    version.Build.GitCommit,
+			"git_tag":       version.Build.GitTag,
+			"based_on_kuma": version.Build.BasedOnKuma,
 		},
 	}, func() float64 {
 		return 1.0

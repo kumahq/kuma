@@ -12,25 +12,22 @@ import (
 )
 
 var _ = Describe("printer", func() {
-	var printer table.Printer
 	var buf *bytes.Buffer
 
 	BeforeEach(func() {
-		printer = table.NewPrinter()
 		buf = &bytes.Buffer{}
 	})
 
 	type testCase struct {
 		data       table.Table
+		items      interface{}
 		goldenFile string
 	}
 
 	DescribeTable("should produce formatted output",
 		func(given testCase) {
 			// when
-			err := printer.Print(given.data, buf)
-			// then
-			Expect(err).ToNot(HaveOccurred())
+			Expect(given.data.Print(given.items, buf)).To(Succeed())
 
 			// when
 			expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
@@ -51,40 +48,35 @@ var _ = Describe("printer", func() {
 			goldenFile: "header.golden.txt",
 		}),
 		Entry("Table with a header and 1 row", testCase{
+			items: [][]string{
+				{"default", "example"},
+			},
 			data: table.Table{
 				Headers: []string{"MESH", "NAME"},
-				NextRow: func() func() []string {
-					i := 0
-					return func() []string {
-						defer func() { i++ }()
-						switch i {
-						case 0:
-							return []string{"default", "example"}
-						default:
-							return nil
-						}
+				RowForItem: func(i int, container interface{}) ([]string, error) {
+					items := container.([][]string)
+					if i >= len(items) {
+						return nil, nil
 					}
-				}(),
+					return items[i], nil
+				},
 			},
 			goldenFile: "header-and-1-row.golden.txt",
 		}),
 		Entry("Table with a header and 2 rows", testCase{
+			items: [][]string{
+				{"default", "example"},
+				{"playground", "demo"},
+			},
 			data: table.Table{
 				Headers: []string{"MESH", "NAME"},
-				NextRow: func() func() []string {
-					i := 0
-					return func() []string {
-						defer func() { i++ }()
-						switch i {
-						case 0:
-							return []string{"default", "example"}
-						case 1:
-							return []string{"playground", "demo"}
-						default:
-							return nil
-						}
+				RowForItem: func(i int, container interface{}) ([]string, error) {
+					items := container.([][]string)
+					if i >= len(items) {
+						return nil, nil
 					}
-				}(),
+					return items[i], nil
+				},
 			},
 			goldenFile: "header-and-2-rows.golden.txt",
 		}),

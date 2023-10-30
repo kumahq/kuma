@@ -67,6 +67,8 @@ linters-settings:
       alias: core_model
     - pkg: github.com/kumahq/kuma/api/common/v1alpha1
       alias: common_api
+    - pkg: github.com/kumahq/kuma/api/openapi/types
+      alias: api_types
   gomodguard:
     blocked:
       modules:

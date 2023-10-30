@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
@@ -23,6 +24,14 @@ import (
 type testPolicyInspectClient struct {
 	ensureMesh string
 	response   *api_server_types.PolicyInspectEntryList
+	dpResponse api_types.InspectDataplanesForPolicyResponse
+}
+
+func (t *testPolicyInspectClient) DataplanesForPolicy(ctx context.Context, desc model.ResourceTypeDescriptor, mesh string, name string) (api_types.InspectDataplanesForPolicyResponse, error) {
+	if t.ensureMesh != "" {
+		Expect(mesh).To(Equal(t.ensureMesh))
+	}
+	return t.dpResponse, nil
 }
 
 func (t *testPolicyInspectClient) Inspect(ctx context.Context, policyDesc model.ResourceTypeDescriptor, mesh, name string) (*api_server_types.PolicyInspectEntryList, error) {
@@ -47,15 +56,34 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverResponseFile))
 			Expect(err).ToNot(HaveOccurred())
 
-			entryList := &api_server_types.PolicyInspectEntryList{}
-			Expect(json.Unmarshal(rawResponse, entryList)).To(Succeed())
+			newApi := false
+			for _, arg := range given.cmdArgs {
+				if arg == "--new-api" {
+					newApi = true
+					break
+				}
+			}
+			var client *testPolicyInspectClient
+			if newApi {
+				entryList := api_types.InspectDataplanesForPolicyResponse{}
+				Expect(json.Unmarshal(rawResponse, &entryList)).To(Succeed())
+				client = &testPolicyInspectClient{
+					ensureMesh: given.mesh,
+					dpResponse: entryList,
+				}
+
+			} else {
+				entryList := &api_server_types.PolicyInspectEntryList{}
+				Expect(json.Unmarshal(rawResponse, entryList)).To(Succeed())
+				client = &testPolicyInspectClient{
+					ensureMesh: given.mesh,
+					response:   entryList,
+				}
+			}
 
 			rootCtx := test_kumactl.MakeMinimalRootContext()
-			rootCtx.Runtime.NewPolicyInspectClient = func(client util_http.Client) resources.PolicyInspectClient {
-				return &testPolicyInspectClient{
-					response:   entryList,
-					ensureMesh: given.mesh,
-				}
+			rootCtx.Runtime.NewPolicyInspectClient = func(_ util_http.Client) resources.PolicyInspectClient {
+				return client
 			}
 
 			rootCmd := cmd.NewRootCmd(rootCtx)
@@ -97,6 +125,11 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			goldenFile:         "inspect-traffic-trace.golden.txt",
 			serverResponseFile: "inspect-traffic-trace.server-response.json",
 			cmdArgs:            []string{"inspect", "traffic-trace", "tt1"},
+		}),
+		Entry("new-api mtp", testCase{
+			goldenFile:         "inspect-mtp-dp.golden.txt",
+			serverResponseFile: "inspect-mtp-dp.server-response.json",
+			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--new-api"},
 		}),
 		Entry("other-mesh", testCase{
 			goldenFile:         "inspect-traffic-trace-other-mesh.golden.txt",
