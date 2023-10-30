@@ -43,6 +43,12 @@ These endpoints are getting replaced to achieve more coherency on the API:
 
 While you can use the old API they will be removed in a future version
 
+### Prometheus inbound listener is not secured by TrafficPermission anymore
+
+Due to the shadowing [issue](https://github.com/kumahq/kuma/issues/2417) with old TrafficPermission it was quite impossible to protect Prometheus inbound listener as expected.
+RBAC rules on the Prometheus inbound listener were blocking users from fully migrate to the new MeshTrafficPermission policy. 
+That's why we decided to discontinue TrafficPermission support on the Prometheus inbound listener starting 2.5.x.
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change
