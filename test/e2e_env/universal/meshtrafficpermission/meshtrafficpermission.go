@@ -43,14 +43,8 @@ func MeshTrafficPermissionUniversal() {
 
 	trafficAllowed := func(addr string) {
 		Eventually(func(g Gomega) {
-<<<<<<< HEAD
 			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "test-server.mesh")
-=======
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", addr,
-			)
->>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
+				"curl", "-v", "--fail", addr)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
