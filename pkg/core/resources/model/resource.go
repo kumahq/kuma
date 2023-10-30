@@ -10,6 +10,9 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds/hash"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 const (
@@ -316,6 +319,25 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+}
+
+// IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`
+// This is required because in multi-zone policies may have names different from the name they are defined with.
+func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMeta) bool {
+	if len(refMeta.GetNameExtensions()) == 0 {
+		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
+	}
+
+	if ns := refMeta.GetNameExtensions()[v1alpha1.KubeNamespaceTag]; ns != "" {
+		return equalNames(refMeta.GetMesh(), util_k8s.K8sNamespacedNameToCoreName(refName, ns), resourceMeta.GetName())
+	}
+
+	return false
+}
+
+func equalNames(mesh, n1, n2 string) bool {
+	// instead of dragging the info if it's Zone or Standalone we can simply check 3 possible combinations
+	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {

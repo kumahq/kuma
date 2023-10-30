@@ -9,7 +9,10 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
+	api_types "github.com/kumahq/kuma/api/openapi/types"
+	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -17,11 +20,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 const (
@@ -68,18 +75,26 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	if r.descriptor.HasInsights() {
 		route := r.findResource(true)
 		ws.Route(ws.GET(pathPrefix+"/{name}/_overview").To(route).
-			Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.WsPath)).
+			Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		// Backward compatibility with previous path for overviews
 		if legacyPath := typeToLegacyOverviewPath(r.descriptor.Name); legacyPath != "" {
 			ws.Route(ws.GET(strings.Replace(pathPrefix, r.descriptor.WsPath, legacyPath, 1)+"/{name}").To(route).
-				Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.WsPath)).
+				Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.Name)).
 				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+				Param(ws.QueryParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 				Returns(200, "OK", nil).
 				Returns(404, "Not found", nil))
 		}
+	}
+	if r.descriptor.IsPolicy {
+		ws.Route(ws.GET(pathPrefix+"/{name}/_resources/dataplanes").To(r.matchingDataplanesForPolicy()).
+			Doc(fmt.Sprintf("Get matching dataplanes of a %s", r.descriptor.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(404, "Not found", nil))
 	}
 }
 
@@ -436,5 +451,105 @@ func (r *resourceEndpoints) readOnlyMessage() string {
 		return zoneReadOnlyMessage
 	default:
 		return k8sReadOnlyMessage
+	}
+}
+
+func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		policyName := request.PathParameter("name")
+		meshName := r.meshFromRequest(request)
+
+		if err := r.resourceAccess.ValidateGet(
+			request.Request.Context(),
+			model.ResourceKey{Mesh: meshName, Name: policyName},
+			r.descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
+		}
+		page, err := pagination(request)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+			return
+		}
+		nameContains := request.QueryParameter("name")
+
+		policyResource := r.descriptor.NewObject()
+		if err := r.resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+			return
+		}
+
+		var dependentTypes []model.ResourceType
+		if r.descriptor.IsTargetRefBased {
+			dependentTypes = []model.ResourceType{v1alpha1.MeshHTTPRouteType, mesh.MeshGatewayType}
+		} else if r.descriptor.Name == mesh.MeshGatewayRouteType {
+			dependentTypes = []model.ResourceType{mesh.MeshGatewayType}
+		}
+		dependentResources := xds_context.NewResources()
+		for _, dependentType := range dependentTypes {
+			hl, err := registry.Global().NewList(dependentType)
+			if err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+				return
+			}
+			if err := r.resManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+				return
+			}
+			dependentResources.MeshLocalResources[dependentType] = hl
+		}
+		filter := func(rs model.Resource) bool {
+			dpp := rs.(*mesh.DataplaneResource)
+			if r.descriptor.IsTargetRefBased {
+				res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
+				return res
+			} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
+				for _, s := range dpPolicy.Selectors() {
+					if dpp.Spec.Matches(s.GetMatch()) {
+						return true
+					}
+				}
+			} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
+				for _, s := range connPolicy.Sources() {
+					if dpp.Spec.Matches(s.GetMatch()) {
+						return true
+					}
+				}
+				for _, s := range connPolicy.Destinations() {
+					if dpp.Spec.Matches(s.GetMatch()) {
+						return true
+					}
+				}
+			}
+			return false
+		}
+		dppList, _ := registry.Global().NewList(mesh.DataplaneType)
+		err = r.resManager.List(request.Request.Context(), dppList,
+			store.ListByMesh(meshName),
+			store.ListByNameContains(nameContains),
+			store.ListByFilterFunc(filter),
+			store.ListByPage(page.size, page.offset),
+		)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+			return
+		}
+		items := make([]api_common.Meta, len(dppList.GetItems()))
+		for i, elt := range dppList.GetItems() {
+			meta := elt.GetMeta()
+			items[i].Type = string(mesh.DataplaneType)
+			items[i].Name = meta.GetName()
+			items[i].Mesh = meta.GetMesh()
+		}
+		out := api_types.InspectDataplanesForPolicyResponse{
+			Total: int(dppList.GetPagination().Total),
+			Items: items,
+			Next:  nextLink(request, dppList.GetPagination().NextOffset),
+		}
+		if err := response.WriteAsJson(out); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+		}
 	}
 }

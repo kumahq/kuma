@@ -19,6 +19,7 @@ type TypedMatchingPolicies struct {
 	FromRules         rules.FromRules
 	ToRules           rules.ToRules
 	SingleItemRules   rules.SingleItemRules
+	Warnings          []string
 }
 
 type PluginOriginatedPolicies map[core_model.ResourceType]TypedMatchingPolicies
