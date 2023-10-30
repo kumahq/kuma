@@ -45,12 +45,12 @@ type insightsByType map[core_model.ResourceType]insightMap
 type tenantInsights map[tenantID]insightsByType
 
 type subscriptionFinalizer struct {
-	rm        manager.ResourceManager
-	newTicker func() *time.Ticker
-	types     []core_model.ResourceType
-	insights  tenantInsights
-	tenants   multitenant.Tenants
-	metric    prometheus.Summary
+	rm             manager.ResourceManager
+	newTicker      func() *time.Ticker
+	types          []core_model.ResourceType
+	onlineInsights tenantInsights
+	tenants        multitenant.Tenants
+	metric         prometheus.Summary
 }
 
 func NewSubscriptionFinalizer(
@@ -76,12 +76,12 @@ func NewSubscriptionFinalizer(
 	}
 
 	return &subscriptionFinalizer{
-		rm:        rm,
-		types:     types,
-		newTicker: newTicker,
-		insights:  tenantInsights{},
-		tenants:   tenants,
-		metric:    metric,
+		rm:             rm,
+		types:          types,
+		newTicker:      newTicker,
+		onlineInsights: tenantInsights{},
+		tenants:        tenants,
+		metric:         metric,
 	}, nil
 }
 
@@ -101,11 +101,11 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 			}
 			for _, typ := range f.types {
 				for _, tenantId := range tenantIds {
-					if _, found := f.insights[tenantID(tenantId)]; !found {
-						f.insights[tenantID(tenantId)] = insightsByType{}
+					if _, found := f.onlineInsights[tenantID(tenantId)]; !found {
+						f.onlineInsights[tenantID(tenantId)] = insightsByType{}
 					}
-					if _, found := f.insights[tenantID(tenantId)][typ]; !found {
-						f.insights[tenantID(tenantId)][typ] = insightMap{}
+					if _, found := f.onlineInsights[tenantID(tenantId)][typ]; !found {
+						f.onlineInsights[tenantID(tenantId)][typ] = insightMap{}
 					}
 					ctx := multitenant.WithTenant(context.TODO(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
@@ -142,11 +142,11 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		insight := item.GetSpec().(generic.Insight)
 
 		if !insight.IsOnline() {
-			delete(f.insights[tenantID(tenantId)][typ], key)
+			delete(f.onlineInsights[tenantID(tenantId)][typ], key)
 			continue
 		}
 
-		lastGens := f.insights[tenantID(tenantId)][typ][key]
+		lastGens := f.onlineInsights[tenantID(tenantId)][typ][key]
 
 		subsToFinalize := map[string]struct{}{}
 		newWatchedSubs := subscriptionGenerationMap{}
@@ -180,7 +180,11 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			return err
 		}
 
-		f.insights[tenantID(tenantId)][typ][key] = newWatchedSubs
+		if len(newWatchedSubs) > 0 {
+			f.onlineInsights[tenantID(tenantId)][typ][key] = newWatchedSubs
+		} else {
+			delete(f.onlineInsights[tenantID(tenantId)][typ], key)
+		}
 	}
 	return nil
 }
@@ -190,9 +194,9 @@ func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.Resour
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
 	}
-	for rk := range f.insights[tenantID(tenantId)][insights.GetItemType()] {
+	for rk := range f.onlineInsights[tenantID(tenantId)][insights.GetItemType()] {
 		if !byResourceKey[rk] {
-			delete(f.insights[tenantID(tenantId)][insights.GetItemType()], rk)
+			delete(f.onlineInsights[tenantID(tenantId)][insights.GetItemType()], rk)
 		}
 	}
 }
