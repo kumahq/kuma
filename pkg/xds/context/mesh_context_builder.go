@@ -396,6 +396,10 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	otherMeshesByName := map[string]*core_mesh.MeshResource{}
 	for _, m := range resources.OtherMeshes().GetItems() {
 		otherMeshesByName[m.GetMeta().GetName()] = m.(*core_mesh.MeshResource)
+		resources.CrossMeshResources[m.GetMeta().GetName()] = map[core_model.ResourceType]core_model.ResourceList{
+			core_mesh.DataplaneType:   &core_mesh.DataplaneOverviewResourceList{},
+			core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{},
+		}
 	}
 	var gatewaysByMesh map[string]core_model.ResourceList
 	if _, ok := m.typeSet[core_mesh.MeshGatewayType]; ok {
@@ -413,19 +417,19 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 		}
 	}
 	if _, ok := m.typeSet[core_mesh.DataplaneType]; ok {
-		for otherMeshName := range gatewaysByMesh { // Only iterate over meshes that have crossMesh gateways
+		for otherMeshName := range otherMeshesByName { // Only iterate over meshes that have crossMesh gateways
 			otherMesh := otherMeshesByName[otherMeshName]
-			if otherMesh == nil {
-				continue
+			gw := gatewaysByMesh[otherMeshName]
+			if gw != nil {
+				rl, err := m.fetchResourceList(ctx, core_mesh.DataplaneType, otherMesh, func(rs core_model.Resource) bool {
+					return rs.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
+				})
+				if err != nil {
+					return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
+				}
+				resources.CrossMeshResources[otherMeshName][core_mesh.DataplaneType] = rl
+				resources.CrossMeshResources[otherMeshName][core_mesh.MeshGatewayType] = gatewaysByMesh[otherMeshName]
 			}
-			rl, err := m.fetchResourceList(ctx, core_mesh.DataplaneType, otherMesh, func(rs core_model.Resource) bool {
-				return rs.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
-			})
-			if err != nil {
-				return errors.Wrap(err, "could not fetch cross mesh meshGateway resources")
-			}
-			resources.CrossMeshResources[otherMeshName][core_mesh.DataplaneType] = rl
-			resources.CrossMeshResources[otherMeshName][core_mesh.MeshGatewayType] = gatewaysByMesh[otherMeshName]
 		}
 	}
 	return nil
