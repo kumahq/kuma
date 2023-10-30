@@ -64,6 +64,13 @@ func (m *MeshBuilder) WithoutMTLSBackends() *MeshBuilder {
 	return m
 }
 
+func (m *MeshBuilder) WithPermissiveMTLSBackends() *MeshBuilder {
+	for _, backend := range m.res.Spec.Mtls.Backends {
+		backend.Mode = mesh_proto.CertificateAuthorityBackend_PERMISSIVE
+	}
+	return m
+}
+
 func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
 	if m.res.Spec.Mtls == nil {
 		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
