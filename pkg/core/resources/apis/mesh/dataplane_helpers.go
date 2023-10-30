@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"hash/fnv"
 	"net"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -220,4 +222,12 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 		return adminPort
 	}
 	return defaultAdminPort
+}
+
+func (d *DataplaneResource) Hash() []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(model.HashMeta(d))
+	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
+	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
+	return hasher.Sum(nil)
 }

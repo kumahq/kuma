@@ -2,9 +2,11 @@ package context
 
 import (
 	"context"
+	"encoding/base64"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
@@ -49,7 +51,7 @@ func AggregateMeshContexts(
 			egressByName[egress.GetMeta().GetName()] = egress.(*core_mesh.ZoneEgressResource)
 		}
 
-		hash = sha256.Hash(hashResources(egressList.GetItems()...))
+		hash = base64.StdEncoding.EncodeToString(core_model.ResourceListHash(&egressList))
 	}
 
 	result := AggregatedMeshContexts{

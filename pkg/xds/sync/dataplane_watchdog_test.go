@@ -70,7 +70,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 		resManager = manager.NewResourceManager(store)
 		meshContextBuilder := xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),

@@ -30,10 +30,10 @@ var (
 	}
 )
 
-func MeshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
+func MeshResourceTypes() []core_model.ResourceType {
 	types := []core_model.ResourceType{}
 	for _, desc := range registry.Global().ObjectDescriptors() {
-		if desc.Scope == core_model.ScopeMesh && !exclude[desc.Name] {
+		if desc.Scope == core_model.ScopeMesh && !HashMeshExcludedResources[desc.Name] {
 			types = append(types, desc.Name)
 		}
 	}

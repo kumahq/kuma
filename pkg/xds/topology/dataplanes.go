@@ -3,7 +3,6 @@ package topology
 import (
 	"net"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
@@ -12,11 +11,11 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-// ResolveAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for
+// ResolveDataplaneAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for
 // some environments specifically AWS ECS. Dataplane resource has to be created before running Kuma DP, but IP address
 // will be assigned only after container's start. Envoy EDS doesn't support DNS names, that's why Kuma CP resolves
 // addresses before sending resources to the proxy.
-func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.DataplaneResource) (*core_mesh.DataplaneResource, error) {
+func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.DataplaneResource) (*core_mesh.DataplaneResource, error) {
 	if dataplane.Spec.Networking.Address == "" {
 		return nil, errors.New("Dataplane address must always be set")
 	}
@@ -58,32 +57,6 @@ func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngre
 		}, nil
 	}
 	return zoneIngress, nil
-}
-
-func ResolveAddresses(log logr.Logger, lookupIPFunc lookup.LookupIPFunc, dataplanes []*core_mesh.DataplaneResource) []*core_mesh.DataplaneResource {
-	rv := []*core_mesh.DataplaneResource{}
-	for _, d := range dataplanes {
-		dp, err := ResolveAddress(lookupIPFunc, d)
-		if err != nil {
-			log.Error(err, "failed to resolve dataplane's domain name, skipping dataplane")
-			continue
-		}
-		rv = append(rv, dp)
-	}
-	return rv
-}
-
-func ResolveZoneIngressAddresses(log logr.Logger, lookupIPFunc lookup.LookupIPFunc, zoneIngresses []*core_mesh.ZoneIngressResource) []*core_mesh.ZoneIngressResource {
-	rv := []*core_mesh.ZoneIngressResource{}
-	for _, zi := range zoneIngresses {
-		resolvedZi, err := ResolveZoneIngressPublicAddress(lookupIPFunc, zi)
-		if err != nil {
-			log.Error(err, "failed to resolve ingress's public name, skipping dataplane")
-			continue
-		}
-		rv = append(rv, resolvedZi)
-	}
-	return rv
 }
 
 func lookupFirstIp(lookupIPFunc lookup.LookupIPFunc, address string) (string, error) {

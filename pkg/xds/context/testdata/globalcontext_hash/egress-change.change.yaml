@@ -1,0 +1,5 @@
+type: ZoneEgress
+name: my-egress-2
+zone: foo
+networking:
+  port: 8080

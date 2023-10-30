@@ -61,7 +61,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
