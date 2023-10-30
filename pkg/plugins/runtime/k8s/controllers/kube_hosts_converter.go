@@ -43,7 +43,7 @@ func KubeHosts(
 		// ExternalName services, so we can safely skip them from processing.
 		if service.Spec.Type == kube_core.ServiceTypeExternalName {
 			converterLog.V(1).Info(
-				"ignoring hostnames for unsupported ExternalName service",
+				"ignoring hostnames for unsupported ExternalName Service",
 				"name", service.GetName(),
 				"namespace", service.GetNamespace(),
 			)
