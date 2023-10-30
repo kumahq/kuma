@@ -16,12 +16,6 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-const (
-	KubeNamespaceTag = "k8s.kuma.io/namespace"
-	KubeServiceTag   = "k8s.kuma.io/service-name"
-	KubePortTag      = "k8s.kuma.io/service-port"
-)
-
 type InboundConverter struct {
 	NameExtractor NameExtractor
 }
@@ -169,9 +163,9 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if len(ignoredLabels) > 0 {
 		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
-	tags[KubeServiceTag] = svc.Name
-	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeServiceTag] = svc.Name
+	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
 	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
@@ -229,7 +223,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone

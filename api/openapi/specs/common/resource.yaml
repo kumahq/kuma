@@ -1,0 +1,18 @@
+components:
+  schemas:
+    Meta:
+      type: object
+      required: [type, mesh, name]
+      properties:
+        type:
+          type: string
+          example: Dataplane
+          description: the type of this resource
+        mesh:
+          type: string
+          example: default
+          description: the mesh this resource is part of
+        name:
+          type: string
+          example: my-resource
+          description: the name of the resource

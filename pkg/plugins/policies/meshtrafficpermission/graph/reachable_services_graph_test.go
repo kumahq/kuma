@@ -7,9 +7,9 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
@@ -265,9 +265,9 @@ var _ = Describe("Reachable Services Graph", func() {
 			// given
 			services := map[string]mesh_proto.SingleValueTagSet{
 				"a_kuma-demo_svc_1234": map[string]string{
-					controllers.KubeNamespaceTag: "kuma-demo",
-					controllers.KubeServiceTag:   "a",
-					controllers.KubePortTag:      "1234",
+					mesh_proto.KubeNamespaceTag: "kuma-demo",
+					mesh_proto.KubeServiceTag:   "a",
+					mesh_proto.KubePortTag:      "1234",
 				},
 				"b": map[string]string{},
 			}
@@ -291,12 +291,12 @@ var _ = Describe("Reachable Services Graph", func() {
 				map[string]string{mesh_proto.ServiceTag: "b"},
 			)).To(BeFalse()) // it's not selected by top-level target ref
 		},
-		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(controllers.KubeNamespaceTag, "kuma-demo")),
-		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(controllers.KubeServiceTag, "a")),
-		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(controllers.KubePortTag, "1234")),
-		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubeNamespaceTag, "kuma-demo")),
-		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubeServiceTag, "a")),
-		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", controllers.KubePortTag, "1234")),
+		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(mesh_proto.KubeNamespaceTag, "kuma-demo")),
+		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(mesh_proto.KubeServiceTag, "a")),
+		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(mesh_proto.KubePortTag, "1234")),
+		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeNamespaceTag, "kuma-demo")),
+		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeServiceTag, "a")),
+		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubePortTag, "1234")),
 	)
 
 	It("should not modify MeshTrafficPermission passed to the func when replacing tags in subsets", func() {
@@ -323,10 +323,10 @@ var _ = Describe("Reachable Services Graph", func() {
 	It("should build services adding supported tags and including external services", func() {
 		// given
 		tags := map[string]string{
-			mesh_proto.ServiceTag:        "a_kuma-demo_svc_1234",
-			controllers.KubeNamespaceTag: "kuma-demo",
-			controllers.KubeServiceTag:   "a",
-			controllers.KubePortTag:      "1234",
+			mesh_proto.ServiceTag:       "a_kuma-demo_svc_1234",
+			mesh_proto.KubeNamespaceTag: "kuma-demo",
+			mesh_proto.KubeServiceTag:   "a",
+			mesh_proto.KubePortTag:      "1234",
 		}
 		dpps := []*mesh.DataplaneResource{
 			samples.DataplaneBackendBuilder().
@@ -364,9 +364,9 @@ var _ = Describe("Reachable Services Graph", func() {
 		// then
 		Expect(services).To(Equal(map[string]mesh_proto.SingleValueTagSet{
 			"a_kuma-demo_svc_1234": map[string]string{
-				controllers.KubeNamespaceTag: "kuma-demo",
-				controllers.KubeServiceTag:   "a",
-				controllers.KubePortTag:      "1234",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				mesh_proto.KubeServiceTag:   "a",
+				mesh_proto.KubePortTag:      "1234",
 			},
 			"b":    map[string]string{},
 			"c":    map[string]string{},

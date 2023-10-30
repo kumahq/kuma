@@ -1,11 +1,15 @@
 package inspect
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -57,4 +61,25 @@ func Inspect() {
 		Expect(stdout).To(ContainSubstring(`"name": "outbound:passthrough:ipv4"`))
 		Expect(stdout).To(ContainSubstring(`"name": "outbound:passthrough:ipv6"`))
 	})
+
+	DescribeTable("should execute inspect of policies",
+		func(policyType string, policyName string) {
+			Eventually(func(g Gomega) {
+				r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName))
+				g.Expect(err).ToNot(HaveOccurred())
+				defer r.Body.Close()
+				g.Expect(r).To(HaveHTTPStatus(200))
+
+				body, err := io.ReadAll(r.Body)
+				g.Expect(err).ToNot(HaveOccurred())
+				result := types.InspectDataplanesForPolicyResponse{}
+				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
+
+				g.Expect(result.Items).To(HaveLen(1))
+				g.Expect(result.Total).To(Equal(1))
+				g.Expect(result.Items[0].Name).To(HavePrefix("demo-client-"))
+			}, "30s", "1s").Should(Succeed())
+		},
+		Entry("of dataplanes", "timeouts", fmt.Sprintf("timeout-all-%s", meshName)),
+	)
 }

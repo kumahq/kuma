@@ -1,0 +1,56 @@
+#/meshes/default/meshtimeouts/mt1/_resources/dataplanes 200
+type: MeshTimeout
+name: mt1
+mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+---
+type: MeshHTTPRoute
+name: route-1
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_multizone-meshtimeout-ns_svc_80
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_multizone-meshtimeout-ns_svc_80
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /path/with/timeout
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server_multizone-meshtimeout-ns_svc_80
+                weight: 1
+---
+type: Dataplane
+name: not-the-dp
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: test-server_multizone-meshtimeout-ns_svc_80
+---
+type: Dataplane
+name: the-dp
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: test-client_multizone-meshtimeout-ns_svc_80

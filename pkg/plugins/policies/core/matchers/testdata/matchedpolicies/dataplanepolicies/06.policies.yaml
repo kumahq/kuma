@@ -1,0 +1,35 @@
+type: MeshTimeout
+name: mt1
+mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+---
+type: MeshHTTPRoute
+name: route-1-4w55b97x462v7vdz
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_multizone-meshtimeout-ns_svc_80
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_multizone-meshtimeout-ns_svc_80
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /path/with/timeout
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server_multizone-meshtimeout-ns_svc_80
+                weight: 1

@@ -56,6 +56,13 @@ type GlobalInsight struct {
 	Zones ZonesStats `json:"zones"`
 }
 
+// InspectDataplanesForPolicy A list of proxies
+type InspectDataplanesForPolicy struct {
+	Items []externalRef0.Meta `json:"items"`
+	Next  *string             `json:"next,omitempty"`
+	Total int                 `json:"total"`
+}
+
 // MeshesStats Mesh statistics
 type MeshesStats struct {
 	// Total Number of meshes
@@ -103,5 +110,20 @@ type BadRequest = externalRef0.Error
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsight
 
+// InspectDataplanesForPolicyResponse A list of proxies
+type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
+
 // InternalServerError standard error
 type InternalServerError = externalRef0.Error
+
+// InspectResourcesParams defines parameters for InspectResources.
+type InspectResourcesParams struct {
+	// Size The max number of items to return
+	Size *int `form:"size,omitempty" json:"size,omitempty"`
+
+	// Offset The offset of result
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Name A sub string to filter resources by name
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
+}

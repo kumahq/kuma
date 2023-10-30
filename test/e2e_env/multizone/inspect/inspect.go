@@ -1,9 +1,15 @@
 package inspect
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -139,5 +145,23 @@ func Inspect() {
 				expectedOut: `kuma:envoy:admin::`,
 			}),
 		)
+
+		It("match dataplanes of policy", func() {
+			Eventually(func(g Gomega) {
+				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/timeouts/timeout-all-%s/_resources/dataplanes", meshName, meshName))
+				g.Expect(err).ToNot(HaveOccurred())
+				defer r.Body.Close()
+				g.Expect(r).To(HaveHTTPStatus(200))
+
+				body, err := io.ReadAll(r.Body)
+				g.Expect(err).ToNot(HaveOccurred())
+				result := types.InspectDataplanesForPolicyResponse{}
+				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
+
+				g.Expect(result.Items).To(HaveLen(1))
+				g.Expect(result.Total).To(Equal(1))
+				g.Expect(result.Items[0].Name).To(HavePrefix("kuma-4.test-server"))
+			}, "30s", "1s").Should(Succeed())
+		})
 	})
 }
