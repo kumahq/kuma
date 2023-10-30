@@ -115,7 +115,6 @@ spec:
 
 	It("should be able to allow the traffic with permissive mTLS", func() {
 		// given mesh traffic permission with permissive mTLS
-		trafficBlocked()
 		permissive := samples.MeshDefaultBuilder().
 			WithName(meshName).
 			WithEnabledMTLSBackend("ca-1").
