@@ -130,7 +130,7 @@
     "version": "2"
    },
    "conf": {
-    "action": "ALLOW"
+    "action": "Allow"
    },
    "origins": [
     {
@@ -161,7 +161,7 @@
     "version": "!2"
    },
    "conf": {
-    "action": "DENY"
+    "action": "Deny"
    },
    "origins": [
     {
