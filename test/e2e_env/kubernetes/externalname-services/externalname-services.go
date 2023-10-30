@@ -1,4 +1,4 @@
-package externalservices
+package externalname_services
 
 import (
 	"fmt"
