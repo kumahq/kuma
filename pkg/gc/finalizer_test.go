@@ -29,7 +29,7 @@ var _ = Describe("Subscription Finalizer", func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 	})
 
-	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
+	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}, stopped chan<- error) {
 		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
@@ -37,7 +37,7 @@ var _ = Describe("Subscription Finalizer", func() {
 		}, metrics, system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
-			_ = finalizer.Start(stop)
+			stopped <- finalizer.Start(stop)
 		}()
 	}
 
@@ -141,10 +141,10 @@ var _ = Describe("Subscription Finalizer", func() {
 
 	It("should finalize subscription after idle timeout", func() {
 		stop := make(chan struct{})
-		defer close(stop)
 		ticks := make(chan time.Time)
 		defer close(ticks)
-		startSubscriptionFinalizer(ticks, stop)
+		stopped := make(chan error)
+		startSubscriptionFinalizer(ticks, stop, stopped)
 
 		createZoneInsight()
 
@@ -163,14 +163,17 @@ var _ = Describe("Subscription Finalizer", func() {
 		ticks <- time.Time{}
 		Eventually(listCalled(3), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeFalse())
+
+		close(stop)
+		Eventually(stopped).Should(Receive(Succeed()))
 	})
 
 	It("should not finalize subscription if generation is the same, but subscription id was changed", func() {
 		stop := make(chan struct{})
-		defer close(stop)
 		ticks := make(chan time.Time)
 		defer close(ticks)
-		startSubscriptionFinalizer(ticks, stop)
+		stopped := make(chan error)
+		startSubscriptionFinalizer(ticks, stop, stopped)
 
 		createZoneInsight()
 
@@ -185,14 +188,17 @@ var _ = Describe("Subscription Finalizer", func() {
 		ticks <- time.Time{}
 		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
+
+		close(stop)
+		Eventually(stopped).Should(Receive(Succeed()))
 	})
 
 	It("should finalize multiple subscriptions if generations haven't changed after timeout", func() {
 		stop := make(chan struct{})
-		defer close(stop)
 		ticks := make(chan time.Time)
 		defer close(ticks)
-		startSubscriptionFinalizer(ticks, stop)
+		stopped := make(chan error)
+		startSubscriptionFinalizer(ticks, stop, stopped)
 
 		createZoneInsightWithMultipleOnlineSubs()
 
@@ -205,14 +211,17 @@ var _ = Describe("Subscription Finalizer", func() {
 		ticks <- time.Time{}
 		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeFalse())
+
+		close(stop)
+		Eventually(stopped).Should(Receive(Succeed()))
 	})
 
 	It("should finalize only one of multiple online subscriptions if only its generation changes", func() {
 		stop := make(chan struct{})
-		defer close(stop)
 		ticks := make(chan time.Time)
 		defer close(ticks)
-		startSubscriptionFinalizer(ticks, stop)
+		stopped := make(chan error)
+		startSubscriptionFinalizer(ticks, stop, stopped)
 
 		createZoneInsightWithMultipleOnlineSubs()
 
@@ -229,6 +238,9 @@ var _ = Describe("Subscription Finalizer", func() {
 		ticks <- time.Time{}
 		Eventually(listCalled(3), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeFalse())
+
+		close(stop)
+		Eventually(stopped).Should(Receive(Succeed()))
 	})
 })
 
