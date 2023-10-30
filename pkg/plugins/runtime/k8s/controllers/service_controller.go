@@ -59,11 +59,11 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	if svc.Spec.Type == kube_core.ServiceTypeExternalName {
-		log.V(1).Info(fmt.Sprintf(
-			"ignoring %s because it is of an unsupported type (%s)",
-			req.NamespacedName.String(),
-			kube_core.ServiceTypeExternalName,
-		))
+		log.V(1).Info(
+			"ignoring service because it is of an unsupported type",
+			"name", req.NamespacedName.String(),
+			"type", kube_core.ServiceTypeExternalName,
+		)
 		return kube_ctrl.Result{}, nil
 	}
 
