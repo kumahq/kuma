@@ -43,6 +43,11 @@ These endpoints are getting replaced to achieve more coherency on the API:
 
 While you can use the old API they will be removed in a future version
 
+### Gateway API
+
+We support `v1` resources and `v1.0.0` of `gateway-api`. `v1beta1` resources are
+still supported but support for these WILL be removed in a future release.
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change
