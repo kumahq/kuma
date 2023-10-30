@@ -312,8 +312,12 @@ func (k *k8SDeployment) Delete(c framework.Cluster) error {
 	// This means that namespace is no longer available so the code below would throw an error
 	// If we ever switch DemoClient to be deployment and remove manual deletion of TestNamespace
 	// then we can rely on code below to delete tht deployment.
-	k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name)
-	k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name)
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
+		return err
+	}
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
+		return err
+	}
 	return nil
 }
 
