@@ -1,12 +1,14 @@
 package localityawarelb
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -53,12 +55,32 @@ spec:
                 to:
                   type: Only
                   zones: ["kuma-1-zone"]`, mesh)
+	meshLoadBalancingStrategyDemoClientMeshRoute := fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: mlbs-2
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client-mesh-route_locality-aware-lb_svc
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server-mesh-route_locality-aware-lb_svc_80
+      default:
+        localityAwareness:
+          crossZone:
+            failover:
+              - to:
+                  type: Only
+                  zones: ["kuma-1-zone"]`, mesh)
 
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(mesh).Build())).
+			Install(MTLSMeshUniversal(mesh)).
 			Install(YamlUniversal(meshLoadBalancingStrategyDemoClient)).
+			Install(YamlUniversal(meshLoadBalancingStrategyDemoClientMeshRoute)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -114,6 +136,10 @@ spec:
 				WithServiceName("test-server_locality-aware-lb_svc_80"),
 				WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
 			)).
+			Install(TestServerUniversal("test-server-mesh-route", mesh,
+				WithServiceName("test-server-mesh-route_locality-aware-lb_svc_80"),
+				WithArgs([]string{"echo", "--instance", "test-server-mesh-route-zone-5"}),
+			)).
 			Setup(multizone.UniZone2),
 		).To(Succeed())
 
@@ -127,12 +153,23 @@ spec:
 				testserver.WithNamespace(namespace),
 				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
 			)).
+			Install(testserver.Install(
+				testserver.WithName("test-server-mesh-route"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-mesh-route-zone-1"),
+			)).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		// Kubernetes Zone 2
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
+			Install(democlient.Install(
+				democlient.WithMesh(mesh),
+				democlient.WithNamespace(namespace),
+				democlient.WithName("demo-client-mesh-route"),
+			)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
 				testserver.WithMesh(mesh),
@@ -149,6 +186,14 @@ spec:
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
+
+	successRequestCount := func(cluster Cluster, name string) (int, error) {
+		return collectMetric(cluster, name, namespace, "test-server-mesh-route_locality-aware-lb_svc_80-f3615f466e37e855.upstream_rq_2xx")
+	}
+
+	failRequestCount := func(cluster Cluster, name string) (int, error) {
+		return collectMetric(cluster, name, namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
+	}
 
 	It("should route based on defined strategy", func() {
 		Eventually(func() (map[string]int, error) {
@@ -172,12 +217,12 @@ spec:
 		// then traffic goes to the next highest
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "500ms").Should(
+		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 96, 5)),
+				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 90, 5)),
 				Or(
-					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 2, 2)),
-					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 2, 2)),
+					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 5, 3)),
+					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 5, 3)),
 				),
 			),
 		)
@@ -188,7 +233,7 @@ spec:
 		// then traffic goes to the next highest
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "500ms").Should(
+		}, "30s", "5s").Should(
 			And(
 				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 50, 5)),
 				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 50, 5)),
@@ -202,34 +247,18 @@ spec:
 		// then traffic goes to the zone with the next priority, kuma-5
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "500ms").Should(
-			And(
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 5)),
-			),
-		)
+		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("==", 100)))
 
 		// when zone kuma-5 is disabled
-		Expect(YamlUniversal(`
-name: kuma-5
-type: Zone
-enabled: false
-`)(multizone.Global)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteApp("test-server")).To(Succeed())
 
 		// then traffic should goes to k8s
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "500ms").Should(
-			And(
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 5)),
-			),
-		)
+		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("==", 100)))
 
 		// when zone kuma-1-zone is disabled
-		Expect(YamlUniversal(`
-name: kuma-1-zone
-type: Zone
-enabled: false
-`)(multizone.Global)).To(Succeed())
+		Expect(multizone.KubeZone1.DeleteDeployment("test-server")).To(Succeed())
 
 		// then traffic should goes to k8s
 		Eventually(func(g Gomega) {
@@ -238,17 +267,73 @@ enabled: false
 			)
 			g.Expect(err).To(HaveOccurred())
 		}).Should(Succeed())
-
-		// enable zones
-		Expect(YamlUniversal(`
-name: kuma-1-zone
-type: Zone
-enabled: true
-`)(multizone.Global)).To(Succeed())
-		Expect(YamlUniversal(`
-name: kuma-5
-type: Zone
-enabled: true
-`)(multizone.Global)).To(Succeed())
 	})
+
+	It("should route based on the strategy when split defined", func() {
+		// given
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-1
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client-mesh-route_locality-aware-lb_svc
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server-mesh-route_locality-aware-lb_svc_80
+      rules:
+        - matches:
+          - path:
+              value: /
+              type: PathPrefix
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: test-server-mesh-route_locality-aware-lb_svc_80
+                weight: 50
+                tags:
+                  kuma.io/zone: kuma-5
+              - kind: MeshServiceSubset
+                name: test-server-mesh-route_locality-aware-lb_svc_80
+                weight: 50
+                tags:
+                  kuma.io/zone: kuma-1-zone
+`, mesh))(multizone.Global)).To(Succeed())
+
+		// when generate some traffic
+		_, err := client.CollectResponsesAndFailures(
+			multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
+			client.WithNumberOfRequests(100),
+			client.NoFail(),
+			client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		failedRequests, err := failRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(failedRequests).To(BeNumerically("~", 50, 10))
+		successRequests, err := successRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(successRequests).To(BeNumerically("~", 50, 10))
+	})
+}
+
+func collectMetric(cluster Cluster, name string, namespace string, metricName string) (int, error) {
+	resp, _, err := client.CollectResponse(cluster, name, fmt.Sprintf("http://localhost:9901/stats?filter=%s", metricName), client.FromKubernetesPod(namespace, name))
+	if err != nil {
+		return -1, err
+	}
+	split := strings.Split(resp, ": ")
+	if len(split) == 2 {
+		i, err := strconv.Atoi(split[1])
+		if err != nil {
+			return -1, err
+		}
+		return i, nil
+	} else {
+		return -1, errors.New("no metric found")
+	}
 }

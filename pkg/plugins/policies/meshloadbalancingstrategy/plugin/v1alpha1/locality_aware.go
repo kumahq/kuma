@@ -19,9 +19,11 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+const defaultOverprovisingFactor uint32 = 200
+
 func ConfigureStaticEndpointsLocalityAware(
 	proxy *core_xds.Proxy,
-	endpoints policies_xds.EndpointMap,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	splitEndpoints policies_xds.EndpointMap,
 	cluster *envoy_cluster.Cluster,
 	conf api.Conf,
@@ -33,15 +35,17 @@ func ConfigureStaticEndpointsLocalityAware(
 	}
 
 	if conf.LocalityAwareness != nil {
-		cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
-		if err != nil {
-			return err
+		if len(endpoints) > 0 {
+			cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
+			if err != nil {
+				return err
+			}
+			cluster.LoadAssignment = cla.(*envoy_endpoint.ClusterLoadAssignment)
 		}
-		cluster.LoadAssignment = cla.(*envoy_endpoint.ClusterLoadAssignment)
 
-		for key := range splitEndpoints {
-			if tags.IsSplitCluster(key) && strings.HasPrefix(key, serviceName) {
-				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, key, localZone)
+		for splitName, endpoints := range splitEndpoints {
+			if tags.IsSplitCluster(splitName) && strings.HasPrefix(splitName, serviceName) {
+				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, splitName, localZone)
 				if err != nil {
 					return err
 				}
@@ -54,7 +58,7 @@ func ConfigureStaticEndpointsLocalityAware(
 
 func ConfigureEndpointsLocalityAware(
 	proxy *core_xds.Proxy,
-	endpoints policies_xds.EndpointMap,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	splitEndpoints policies_xds.EndpointMap,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
@@ -62,19 +66,21 @@ func ConfigureEndpointsLocalityAware(
 	localZone string,
 ) error {
 	if conf.LocalityAwareness != nil {
-		cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
-		if err != nil {
-			return err
+		if len(endpoints) > 0 {
+			cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
+			if err != nil {
+				return err
+			}
+			rs.Add(&core_xds.Resource{
+				Name:     serviceName,
+				Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
+				Resource: cla,
+			})
 		}
-		rs.Add(&core_xds.Resource{
-			Name:     serviceName,
-			Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
-			Resource: cla,
-		})
 
-		for splitName := range splitEndpoints {
+		for splitName, endpoints := range splitEndpoints {
 			if tags.IsSplitCluster(splitName) && strings.HasPrefix(splitName, serviceName) {
-				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, splitEndpoints, splitName, localZone)
+				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, splitName, localZone)
 				if err != nil {
 					return err
 				}
@@ -92,16 +98,16 @@ func ConfigureEndpointsLocalityAware(
 func ConfigureEnpointLocalityAwareLb(
 	proxy *core_xds.Proxy,
 	conf *api.Conf,
-	endpoints policies_xds.EndpointMap,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	localZone string,
 ) (proto.Message, error) {
 	if len(endpoints) == 0 {
 		return nil, nil
 	}
-	localPriorityGroups, crossZonePriorityGroups := GetPriority(conf, proxy.Dataplane.Spec.TagSet(), localZone)
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, proxy.Dataplane.Spec.TagSet(), localZone)
 	endpointsList := []core_xds.Endpoint{}
-	for _, endpoint := range endpoints[serviceName] {
+	for _, endpoint := range endpoints {
 		for _, localityLbEndpoint := range endpoint.Endpoints {
 		endpointLoop:
 			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {

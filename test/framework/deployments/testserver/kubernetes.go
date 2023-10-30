@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -311,17 +312,21 @@ func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
 	// This means that namespace is no longer available so the code below would throw an error
 	// If we ever switch DemoClient to be deployment and remove manual deletion of TestNamespace
 	// then we can rely on code below to delete tht deployment.
-
-	// k8s.KubectlDeleteFromString(
-	// 	cluster.GetTesting(),
-	// 	cluster.GetKubectlOptions(framework.TestNamespace),
-	// 	service,
-	// )
-	// k8s.KubectlDeleteFromString(
-	// 	cluster.GetTesting(),
-	// 	cluster.GetKubectlOptions(framework.TestNamespace),
-	// 	fmt.Sprintf(deployment, k.opts.Mesh, framework.GetUniversalImage()),
-	// )
+	resourcePattern := `
+apiVersion: %s
+kind: %s
+metadata:
+  name: %s`
+	k8s.KubectlDeleteFromString(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(k.opts.Namespace),
+		fmt.Sprintf(resourcePattern, "v1", "Service", k.opts.Name),
+	)
+	k8s.KubectlDeleteFromString(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(k.opts.Namespace),
+		fmt.Sprintf(resourcePattern, "apps/v1", "Deployment", k.opts.Name),
+	)
 	return nil
 }
 

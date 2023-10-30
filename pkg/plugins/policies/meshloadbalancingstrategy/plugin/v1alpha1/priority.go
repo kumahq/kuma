@@ -14,14 +14,14 @@ type LocalLbGroup struct {
 	Weight uint32
 }
 
-// Structure which hold information about cross zone with zones in the map to gice better access
+// Structure which hold information about cross zone with zones in the map make it more accessible
 type CrossZoneLbGroup struct {
 	Type     api.ToZoneType
 	Zones    map[string]bool
 	Priority uint32
 }
 
-func GetPriority(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
+func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
 	if conf.LocalityAwareness == nil {
 		return nil, nil
 	}
@@ -34,6 +34,10 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) [
 		rulesLen := len(conf.LocalityAwareness.LocalZone.AffinityTags)
 		for i, tag := range conf.LocalityAwareness.LocalZone.AffinityTags {
 			values := inboundTags.Values(tag.Key)
+			// when weights are not provided we are generating weights by ourselves
+			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)
+			// that makes that the highest priority locality gets 90% of the traffic and sum of all weights is a
+			// power of 10
 			weight := pointer.DerefOr(tag.Weight, uint32(9*math.Pow10(rulesLen-i-1)))
 			if len(values) != 0 {
 				localGroups = append(localGroups, LocalLbGroup{

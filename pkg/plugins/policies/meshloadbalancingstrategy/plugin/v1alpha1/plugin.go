@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -22,8 +23,6 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
-
-const defaultOverprovisingFactor uint32 = 200
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
@@ -103,9 +102,12 @@ func (p plugin) configureDPP(
 				return err
 			}
 			if cluster.LoadAssignment != nil {
-				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, splitEndpoints, cluster, conf, serviceName); err != nil {
-					return err
+				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints[serviceName], splitEndpoints, cluster, conf, serviceName); err != nil {
+					return errors.Wrapf(err, "failed to configure static ClusterLoadAssignment for %s", serviceName)
 				}
+			}
+			if err := configureEndpoints(proxy, endpoints[serviceName], policies_xds.EndpointMap{}, serviceName, conf, rs); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
@@ -113,14 +115,13 @@ func (p plugin) configureDPP(
 				return err
 			}
 			if cluster.LoadAssignment != nil {
-				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, splitEndpoints, cluster, conf, serviceName); err != nil {
-					return err
+				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints[serviceName], splitEndpoints, cluster, conf, serviceName); err != nil {
+					return errors.Wrapf(err, "failed to configure static ClusterLoadAssignment for %s", serviceName)
 				}
 			}
-		}
-
-		if err := configureEndpoints(proxy, endpoints, splitEndpoints, serviceName, conf, rs); err != nil {
-			return err
+			if err := configureEndpoints(proxy, []*envoy_endpoint.ClusterLoadAssignment{}, splitEndpoints, serviceName, conf, rs); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
+			}
 		}
 	}
 
@@ -129,15 +130,15 @@ func (p plugin) configureDPP(
 
 func configureEndpoints(
 	proxy *core_xds.Proxy,
-	endpoints policies_xds.EndpointMap,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	splitEndpoints policies_xds.EndpointMap,
 	serviceName string,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
 ) error {
 	var localZone string
-	if inbounds := proxy.Dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
-		localZone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+	if tags := proxy.Dataplane.Spec.TagSet().Values(mesh_proto.ZoneTag); len(tags) > 0 {
+		localZone = tags[0]
 	}
 
 	if err := ConfigureEndpointsLocalityAware(proxy, endpoints, splitEndpoints, conf, rs, serviceName, localZone); err != nil {
@@ -145,7 +146,7 @@ func configureEndpoints(
 	}
 
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
-		for _, cla := range endpoints[serviceName] {
+		for _, cla := range endpoints {
 			for _, localityLbEndpoints := range cla.Endpoints {
 				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
 					localityLbEndpoints.Priority = 1
@@ -206,7 +207,7 @@ func (p plugin) configureGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy, endpoints, splitEndpoints, serviceName, *conf, rs); err != nil {
+				if err := configureEndpoints(proxy, endpoints[serviceName], splitEndpoints, serviceName, *conf, rs); err != nil {
 					return err
 				}
 			}
