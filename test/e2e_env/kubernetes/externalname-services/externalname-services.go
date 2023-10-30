@@ -40,6 +40,7 @@ spec:
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
 				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
 			)).
 			Setup(kubernetes.Cluster),
 		).To(Succeed())
