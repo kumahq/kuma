@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -30,11 +31,23 @@ var _ = Describe("RBAC", func() {
 		It("should enrich matching listener with RBAC filter", func() {
 			// given
 			rs := core_xds.NewResourceSet()
+			ctx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: samples.MeshMTLSBuilder().WithName("mesh-1").Build(),
+				},
+			}
 
 			// listener that matches
+<<<<<<< HEAD
 			listener, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener", "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+=======
+			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
+>>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -45,9 +58,16 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that is originated from inbound proxy generator but won't match
+<<<<<<< HEAD
 			listener2, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener2", "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+=======
+			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener2").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
+>>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -58,9 +78,16 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but is not originated from inbound proxy generator
+<<<<<<< HEAD
 			listener3, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener3", "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
+=======
+			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener3").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
+>>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -70,25 +97,18 @@ var _ = Describe("RBAC", func() {
 				Resource: listener3,
 			})
 
-			// mesh with enabled mTLS
-			ctx := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{Name: "mesh-1", Mesh: core_model.NoMesh},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin-1",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin-1",
-										Type: "builtin",
-									},
-								},
-							},
-						},
-					},
-				},
-			}
+			// listener that matches but it does not have mTLS
+			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
+				WithOverwriteName("test_listener4").
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+					Configure(listeners.HttpConnectionManager("test_listener", false)))).
+				Build()
+			Expect(err).ToNot(HaveOccurred())
+			rs.Add(&core_xds.Resource{
+				Name:     listener4.GetName(),
+				Origin:   generator.OriginInbound,
+				Resource: listener4,
+			})
 
 			proxy := &core_xds.Proxy{
 				Dataplane: &mesh.DataplaneResource{
