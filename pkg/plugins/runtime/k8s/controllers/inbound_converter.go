@@ -130,10 +130,9 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 		// Services of ExternalName type should not have any selectors.
 		// Kubernetes does not validate this, so in rare cases, a service of
 		// ExternalName type could point to a workload inside the mesh. If this
-		// happens, we will add the service to the VIPs config map, but we will
-		// not be able to obtain its IP address. As a result, the key in the map
-		// will be incorrect (e.g., "1:"). We do not currently support
-		// ExternalName services, so we can safely skip them from processing.
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
 			ifaces = append(ifaces, inboundForService(zone, pod, svc)...)
 		}
