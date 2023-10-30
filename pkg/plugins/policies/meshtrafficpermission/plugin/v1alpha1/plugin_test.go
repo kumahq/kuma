@@ -38,16 +38,10 @@ var _ = Describe("RBAC", func() {
 			}
 
 			// listener that matches
-<<<<<<< HEAD
 			listener, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener", "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
-=======
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
-				WithOverwriteName("test_listener").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
->>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -58,16 +52,10 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that is originated from inbound proxy generator but won't match
-<<<<<<< HEAD
 			listener2, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener2", "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
-=======
-			listener2, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8081, core_xds.SocketAddressProtocolTCP).
-				WithOverwriteName("test_listener2").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
->>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -78,16 +66,10 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but is not originated from inbound proxy generator
-<<<<<<< HEAD
 			listener3, err := listeners.NewListenerBuilder(envoy.APIV3).
 				Configure(listeners.InboundListener("test_listener3", "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
-=======
-			listener3, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8082, core_xds.SocketAddressProtocolTCP).
-				WithOverwriteName("test_listener3").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil))).
->>>>>>> 0e0489feb (fix(MeshTrafficPermission): support permissive mtls (#8171))
 					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -98,9 +80,9 @@ var _ = Describe("RBAC", func() {
 			})
 
 			// listener that matches but it does not have mTLS
-			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
-				WithOverwriteName("test_listener4").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+			listener4, err := listeners.NewListenerBuilder(envoy.APIV3).
+				Configure(listeners.InboundListener("test_listener4", "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP)).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3).
 					Configure(listeners.HttpConnectionManager("test_listener", false)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
