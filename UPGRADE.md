@@ -36,10 +36,10 @@ New rule is applied for CREATE operations. The old rule is still applied for UPD
 
 These endpoints are getting replaced to achieve more coherency on the API:
 
-- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/-overview`
-- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/-overview`
-- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/-overview`
-- `/zones+insights` moves to `/zones/-overview`
+- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/_overview`
+- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/_overview`
+- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/_overview`
+- `/zones+insights` moves to `/zones/_overview`
 
 While you can use the old API they will be removed in a future version
 
