@@ -1,9 +1,12 @@
 package meshtrafficpermission
 
 import (
+	"net"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -39,10 +42,10 @@ func MeshTrafficPermissionUniversal() {
 		}
 	})
 
-	trafficAllowed := func() {
+	trafficAllowed := func(addr string) {
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", addr,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
@@ -82,7 +85,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficAllowed()
+		trafficAllowed("test-server.mesh")
 	})
 
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
@@ -110,6 +113,42 @@ spec:
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		trafficAllowed()
+		trafficAllowed("test-server.mesh")
+	})
+
+	It("should be able to allow the traffic with permissive mTLS", func() {
+		// given mesh traffic permission with permissive mTLS
+		trafficBlocked()
+		permissive := samples.MeshDefaultBuilder().
+			WithName(meshName).
+			WithEnabledMTLSBackend("ca-1").
+			WithBuiltinMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends().
+			Build()
+		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+
+		// when specific MTP is applied
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-3
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server
+ from:
+   - targetRef:
+       kind: MeshService
+       name: demo-client
+     default:
+       action: Deny`
+		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+
+		// then
+		trafficBlocked()
+
+		// and it's still possible to access a service from outside the mesh
+		publicAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
+		trafficAllowed(publicAddress)
 	})
 }

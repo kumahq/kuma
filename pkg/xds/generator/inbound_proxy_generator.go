@@ -125,9 +125,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 					Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker))
 			}
 			return filterChainBuilder.
-				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol)).
-				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(),
-					proxy.Policies.TrafficPermissions[endpoint]))
+				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 		}
 
 		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
@@ -137,7 +135,9 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
 			listenerBuilder.
-				Configure(envoy_listeners.FilterChain(filterChainBuilder(true)))
+				Configure(envoy_listeners.FilterChain(filterChainBuilder(true).Configure(
+					envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
+				)))
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.TLSInspector()).
@@ -146,13 +146,17 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.
 						envoy_listeners.MatchTransportProtocol("raw_buffer"))),
 				).
 				Configure(envoy_listeners.FilterChain(
+					// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
+					// the app itself might be protected by TLS.
 					filterChainBuilder(false).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"))),
 				).
 				Configure(envoy_listeners.FilterChain(
 					filterChainBuilder(true).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
-						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...))),
+						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
+						envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
+					)),
 				)
 		default:
 			return nil, errors.New("unknown mode for CA backend")
