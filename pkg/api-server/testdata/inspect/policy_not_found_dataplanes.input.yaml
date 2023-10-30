@@ -1,4 +1,4 @@
-#/meshes/default/meshtimeouts/bar/-resources/dataplanes 404
+#/meshes/default/meshtimeouts/bar/_resources/dataplanes 404
 type: MeshTimeout
 name: foo
 mesh: default

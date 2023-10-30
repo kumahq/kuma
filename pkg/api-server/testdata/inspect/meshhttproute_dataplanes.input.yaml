@@ -1,4 +1,4 @@
-#/meshes/default/meshtimeouts/foo/-resources/dataplanes 200
+#/meshes/default/meshtimeouts/foo/_resources/dataplanes 200
 type: MeshTimeout
 name: foo
 mesh: default

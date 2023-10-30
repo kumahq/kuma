@@ -19,7 +19,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       operationId: get-global-insight
       description: Returns a Global Insight object
-  /meshes/{mesh}/{policyType}/{policyName}/-resources/dataplanes:
+  /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       parameters:
         - in: path
@@ -6448,7 +6448,7 @@ components:
       value:
         total: 100
         next: >-
-          http://localhost:5681/meshes/default/meshretries/-resources/dataplanes?offset=100
+          http://localhost:5681/meshes/default/meshretries/_resources/dataplanes?offset=100
         items:
           - type: Dataplane
             mesh: default

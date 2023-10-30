@@ -90,7 +90,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 		}
 	}
 	if r.descriptor.IsPolicy {
-		ws.Route(ws.GET(pathPrefix+"/{name}/-resources/dataplanes").To(r.matchingDataplanesForPolicy()).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_resources/dataplanes").To(r.matchingDataplanesForPolicy()).
 			Doc(fmt.Sprintf("Get matching dataplanes of a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
