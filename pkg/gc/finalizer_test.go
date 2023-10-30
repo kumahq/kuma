@@ -10,6 +10,7 @@ import (
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -108,27 +109,27 @@ var _ = Describe("Subscription Finalizer", func() {
 
 	incGeneration := func(id string) {
 		zoneInsight := system.NewZoneInsightResource()
-		Expect(
-			rm.Get(context.Background(), zoneInsight, store.GetByKey("zone-1", core_model.NoMesh)),
-		).To(Succeed())
-		zoneInsight.Spec.GetSubscription(id).(*system_proto.KDSSubscription).Generation++
-		Expect(rm.Update(context.Background(), zoneInsight)).To(Succeed())
+		key := core_model.ResourceKey{Name: "zone-1"}
+		Expect(manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
+			zoneInsight.Spec.GetSubscription(id).(*system_proto.KDSSubscription).Generation++
+			return nil
+		}, manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
 	}
 
 	disconnectAndAddNewSubscription := func() {
 		zoneInsight := system.NewZoneInsightResource()
-		Expect(
-			rm.Get(context.Background(), zoneInsight, store.GetByKey("zone-1", core_model.NoMesh)),
-		).To(Succeed())
-		zoneInsight.Spec.GetSubscription(onlineSub).SetDisconnectTime(sampleTime.Add(2 * time.Hour))
-		zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &system_proto.KDSSubscription{
-			Id:               "stream-id-3",
-			GlobalInstanceId: "cp-1",
-			ConnectTime:      proto.MustTimestampProto(sampleTime.Add(2 * time.Hour)),
-			Status:           system_proto.NewSubscriptionStatus(),
-			Generation:       0,
-		})
-		Expect(rm.Update(context.Background(), zoneInsight)).To(Succeed())
+		key := core_model.ResourceKey{Name: "zone-1"}
+		Expect(manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
+			zoneInsight.Spec.GetSubscription(onlineSub).SetDisconnectTime(sampleTime.Add(2 * time.Hour))
+			zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &system_proto.KDSSubscription{
+				Id:               "stream-id-3",
+				GlobalInstanceId: "cp-1",
+				ConnectTime:      proto.MustTimestampProto(sampleTime.Add(2 * time.Hour)),
+				Status:           system_proto.NewSubscriptionStatus(),
+				Generation:       0,
+			})
+			return nil
+		}, manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
 	}
 
 	listCalled := func(times uint32) func() bool {
