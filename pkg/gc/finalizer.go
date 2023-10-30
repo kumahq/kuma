@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/log"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -51,6 +52,7 @@ type subscriptionFinalizer struct {
 	onlineInsights tenantInsights
 	tenants        multitenant.Tenants
 	metric         prometheus.Summary
+	extensions     context.Context
 }
 
 func NewSubscriptionFinalizer(
@@ -58,6 +60,7 @@ func NewSubscriptionFinalizer(
 	tenants multitenant.Tenants,
 	newTicker func() *time.Ticker,
 	metrics core_metrics.Metrics,
+	extensions context.Context,
 	types ...core_model.ResourceType,
 ) (component.Component, error) {
 	for _, typ := range types {
@@ -82,6 +85,7 @@ func NewSubscriptionFinalizer(
 		onlineInsights: tenantInsights{},
 		tenants:        tenants,
 		metric:         metric,
+		extensions:     extensions,
 	}, nil
 }
 
@@ -137,7 +141,9 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 	f.removeDeletedInsights(insights, tenantId)
 
 	for _, item := range insights.GetItems() {
-		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		logger := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		logger = log.AddFieldsFromCtx(logger, ctx, f.extensions)
+
 		key := core_model.MetaToResourceKey(item.GetMeta())
 		insight := item.GetSpec().(generic.Insight)
 
@@ -167,7 +173,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 		if err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
 			insight := upsertInsight.GetSpec().(generic.Insight)
 			for id := range subsToFinalize {
-				log.V(1).Info("mark subscription as disconnected", "id", id)
+				logger.V(1).Info("mark subscription as disconnected", "id", id)
 				sub := insight.GetSubscription(id)
 				sub.SetDisconnectTime(now)
 				if err := insight.UpdateSubscription(sub); err != nil {
@@ -176,8 +182,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			}
 			return nil
 		}); err != nil {
-			log.Error(err, "unable to upsert insight")
-			return err
+			return errors.Wrap(err, "unable to upsert insight")
 		}
 
 		if len(newWatchedSubs) > 0 {

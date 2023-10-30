@@ -34,7 +34,7 @@ var _ = Describe("Subscription Finalizer", func() {
 		Expect(err).ToNot(HaveOccurred())
 		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
-		}, metrics, system.ZoneInsightType)
+		}, metrics, context.Background(), system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			stopped <- finalizer.Start(stop)
