@@ -67,7 +67,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 		Returns(404, "Not found", nil))
 	if r.descriptor.HasInsights() {
 		route := r.findResource(true)
-		ws.Route(ws.GET(pathPrefix+"/{name}/-overview").To(route).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_overview").To(route).
 			Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.WsPath)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -150,7 +150,7 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 		Returns(200, "OK", nil))
 	if r.descriptor.HasInsights() {
 		route := r.listResources(true)
-		ws.Route(ws.GET(pathPrefix+"/-overview").To(route).
+		ws.Route(ws.GET(pathPrefix+"/_overview").To(route).
 			Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 			Param(ws.QueryParameter("size", "size of page").DataType("int")).
 			Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
