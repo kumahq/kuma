@@ -109,24 +109,16 @@ func ConfigureEnpointLocalityAwareLb(
 	endpointsList := []core_xds.Endpoint{}
 	for _, endpoint := range endpoints {
 		for _, localityLbEndpoint := range endpoint.Endpoints {
-		endpointLoop:
 			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
 				ed := createEndpoint(lbEndpoint, localZone)
 				zoneName := ed.Tags[mesh_proto.ZoneTag]
 
-				// nolint: gocritic
 				if zoneName == localZone {
 					configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
-				} else if len(crossZonePriorityGroups) > 0 {
-					configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName)
-					// when endpoint wasn't matched with any rule
-					if ed.Locality.Zone == localZone {
-						break endpointLoop
-					}
-				} else {
-					break endpointLoop
+					endpointsList = append(endpointsList, ed)
+				} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
+					endpointsList = append(endpointsList, ed)
 				}
-				endpointsList = append(endpointsList, ed)
 			}
 		}
 	}
@@ -171,7 +163,7 @@ func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) cor
 	return endpoint
 }
 
-func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGroup, endpoint *core_xds.Endpoint, zoneName string) {
+func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGroup, endpoint *core_xds.Endpoint, zoneName string) bool {
 	for _, zoneRule := range crossZonePriorityGroups {
 		switch zoneRule.Type {
 		case api.Any:
@@ -179,7 +171,7 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 				Zone:     zoneName,
 				Priority: zoneRule.Priority,
 			}
-			return
+			return true
 		case api.AnyExcept:
 			if _, ok := zoneRule.Zones[zoneName]; ok {
 				continue
@@ -188,7 +180,7 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 					Zone:     zoneName,
 					Priority: zoneRule.Priority,
 				}
-				return
+				return true
 			}
 		case api.Only:
 			if _, ok := zoneRule.Zones[zoneName]; ok {
@@ -196,11 +188,12 @@ func configureCrossZoneEndpointLocality(crossZonePriorityGroups []CrossZoneLbGro
 					Zone:     zoneName,
 					Priority: zoneRule.Priority,
 				}
-				return
+				return true
 			}
 		default:
 		}
 	}
+	return false
 }
 
 func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endpoint *core_xds.Endpoint, localZone string) {
