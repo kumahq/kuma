@@ -129,6 +129,18 @@ var _ = Describe("Config", func() {
 		Expect(err.Error() + "\n").To(matchers.MatchGoldenEqual("testdata", "invalid-config.golden.txt"))
 	})
 
+	It("should have validators (valid DP proxyType, invalid DP name)", func() {
+		// given
+		cfg := kuma_dp.Config{}
+
+		// when
+		err := config.Load(filepath.Join("testdata", "invalid-dp-name-config.input.yaml"), &cfg)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error() + "\n").To(matchers.MatchGoldenEqual("testdata", "invalid-dp-name-config.golden.txt"))
+	})
+
 	DescribeTable("bad validation",
 		func(fn func(*kuma_dp.Config)) {
 			// given

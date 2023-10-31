@@ -8,6 +8,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -15,7 +16,7 @@ import (
 
 var _ config.Config = &MultizoneConfig{}
 
-// Global configuration
+// GlobalConfig defines Global configuration
 type GlobalConfig struct {
 	// KDS Configuration
 	KDS *KdsServerConfig `json:"kds,omitempty"`
@@ -23,6 +24,10 @@ type GlobalConfig struct {
 
 func (g *GlobalConfig) Sanitize() {
 	g.KDS.Sanitize()
+}
+
+func (g *GlobalConfig) PostProcess() error {
+	return multierr.Combine(g.KDS.PostProcess())
 }
 
 func (g *GlobalConfig) Validate() error {
@@ -46,7 +51,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 	}
 }
 
-// Zone configuration
+var _ config.Config = &ZoneConfig{}
+
+// ZoneConfig defines zone configuration
 type ZoneConfig struct {
 	// Kuma Zone name used to mark the zone dataplane resources
 	Name string `json:"name,omitempty" envconfig:"kuma_multizone_zone_name"`
@@ -58,6 +65,10 @@ type ZoneConfig struct {
 
 func (r *ZoneConfig) Sanitize() {
 	r.KDS.Sanitize()
+}
+
+func (r *ZoneConfig) PostProcess() error {
+	return multierr.Combine(r.KDS.PostProcess())
 }
 
 func (r *ZoneConfig) Validate() error {
@@ -107,7 +118,7 @@ func DefaultZoneConfig() *ZoneConfig {
 	}
 }
 
-// Multizone configuration
+// MultizoneConfig defines multizone configuration
 type MultizoneConfig struct {
 	Global *GlobalConfig `json:"global,omitempty"`
 	Zone   *ZoneConfig   `json:"zone,omitempty"`
@@ -116,6 +127,13 @@ type MultizoneConfig struct {
 func (m *MultizoneConfig) Sanitize() {
 	m.Global.Sanitize()
 	m.Zone.Sanitize()
+}
+
+func (m *MultizoneConfig) PostProcess() error {
+	return multierr.Combine(
+		m.Global.PostProcess(),
+		m.Zone.PostProcess(),
+	)
 }
 
 func (m *MultizoneConfig) Validate() error {

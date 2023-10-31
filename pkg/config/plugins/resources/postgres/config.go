@@ -33,8 +33,10 @@ var (
 	// some of the above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
 
-// Postgres store configuration
+// PostgresStoreConfig defines Postgres store configuration
 type PostgresStoreConfig struct {
+	config.BaseConfig
+
 	// Host of the Postgres DB
 	Host string `json:"host" envconfig:"kuma_store_postgres_host"`
 	// Port of the Postgres DB
@@ -130,16 +132,16 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 	return strings.Join(variables, " "), nil
 }
 
-// Modes available here https://godoc.org/github.com/lib/pq
+// TLSMode modes available here https://godoc.org/github.com/lib/pq
 type TLSMode string
 
 const (
 	Disable TLSMode = "disable"
-	// Always TLS (skip verification)
+	// VerifyNone represents Always TLS (skip verification)
 	VerifyNone TLSMode = "verifyNone"
-	// Always TLS (verify that the certificate presented by the server was signed by a trusted CA)
+	// VerifyCa represents Always TLS (verify that the certificate presented by the server was signed by a trusted CA)
 	VerifyCa TLSMode = "verifyCa"
-	// Always TLS (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
+	// VerifyFull represents Always TLS (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
 	VerifyFull TLSMode = "verifyFull"
 )
 
@@ -159,6 +161,8 @@ func (mode TLSMode) postgresMode() (string, error) {
 }
 
 type TLSPostgresStoreConfig struct {
+	config.BaseConfig
+
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
 	Mode TLSMode `json:"mode" envconfig:"kuma_store_postgres_tls_mode"`
 	// Path to TLS Certificate of the client. Required when server has METHOD=cert
@@ -169,9 +173,6 @@ type TLSPostgresStoreConfig struct {
 	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
 	// Whether to disable SNI the postgres `sslsni` option.
 	DisableSSLSNI bool `json:"disableSSLSNI" envconfig:"kuma_store_postgres_tls_disable_sslsni"`
-}
-
-func (s TLSPostgresStoreConfig) Sanitize() {
 }
 
 func (s TLSPostgresStoreConfig) Validate() error {

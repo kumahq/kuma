@@ -13,7 +13,11 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+var _ core_config.Config = E2eConfig{}
+
 type E2eConfig struct {
+	core_config.BaseConfig
+
 	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
 	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
 	KumaNamespace                 string            `json:"namespace,omitempty"`
@@ -94,9 +98,6 @@ type MultizoneConfig struct {
 type ControlPlaneConfig struct {
 	Envs                 map[string]string `json:"envs,omitempty"`
 	AdditionalYamlConfig string            `json:"additionalYamlConfig,omitempty"`
-}
-
-func (c E2eConfig) Sanitize() {
 }
 
 func (c E2eConfig) Validate() error {

@@ -194,12 +194,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_DATAPLANE_MESH",
 			Value: mesh,
 		},
-		"KUMA_DATAPLANE_NAME": {
-			Name: "KUMA_DATAPLANE_NAME",
-			// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
-			// that is why we have to use a runtime reference to POD_NAME instead
-			Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
-		},
 		"KUMA_DATAPLANE_DRAIN_TIME": {
 			Name:  "KUMA_DATAPLANE_DRAIN_TIME",
 			Value: drainTime.String(),
