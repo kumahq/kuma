@@ -30,27 +30,21 @@ var _ config.Config = &Config{}
 var _ config.Config = &Defaults{}
 
 type Defaults struct {
+	config.BaseConfig
+
 	// If true, it skips creating the default Mesh
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 }
 
-func (d *Defaults) Sanitize() {
-}
-
-func (d *Defaults) Validate() error {
-	return nil
-}
-
 type Metrics struct {
+	config.BaseConfig
+
 	Dataplane    *DataplaneMetrics    `json:"dataplane"`
 	Zone         *ZoneMetrics         `json:"zone"`
 	Mesh         *MeshMetrics         `json:"mesh"`
 	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
-}
-
-func (m *Metrics) Sanitize() {
 }
 
 func (m *Metrics) Validate() error {
@@ -61,11 +55,10 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
+	config.BaseConfig
+
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
-}
-
-func (d *DataplaneMetrics) Sanitize() {
 }
 
 func (d *DataplaneMetrics) Validate() error {
@@ -76,13 +69,12 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
+	config.BaseConfig
+
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 	// CompactFinishedSubscriptions compacts finished metrics (do not store config and details of KDS exchange).
 	CompactFinishedSubscriptions bool `json:"compactFinishedSubscriptions" envconfig:"kuma_metrics_zone_compact_finished_subscriptions"`
-}
-
-func (d *ZoneMetrics) Sanitize() {
 }
 
 func (d *ZoneMetrics) Validate() error {
@@ -93,6 +85,8 @@ func (d *ZoneMetrics) Validate() error {
 }
 
 type MeshMetrics struct {
+	config.BaseConfig
+
 	// Deprecated: use MinResyncInterval instead
 	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
 	// Deprecated: use FullResyncInterval instead
@@ -111,9 +105,6 @@ type ControlPlaneMetrics struct {
 	// ReportResourcesCount if true will report metrics with the count of resources.
 	// Default: true
 	ReportResourcesCount bool `json:"reportResourcesCount" envconfig:"kuma_metrics_control_plane_report_resources_count"`
-}
-
-func (d *MeshMetrics) Sanitize() {
 }
 
 func (d *MeshMetrics) Validate() error {
@@ -191,6 +182,23 @@ func (c *Config) Sanitize() {
 	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
+}
+
+func (c *Config) PostProcess() error {
+	return multierr.Combine(
+		c.General.PostProcess(),
+		c.Store.PostProcess(),
+		c.BootstrapServer.PostProcess(),
+		c.XdsServer.PostProcess(),
+		c.MonitoringAssignmentServer.PostProcess(),
+		c.ApiServer.PostProcess(),
+		c.Runtime.PostProcess(),
+		c.Metrics.PostProcess(),
+		c.Defaults.PostProcess(),
+		c.DNSServer.PostProcess(),
+		c.Multizone.PostProcess(),
+		c.Diagnostics.PostProcess(),
+	)
 }
 
 var DefaultConfig = func() Config {
@@ -332,6 +340,8 @@ func (c *Config) Validate() error {
 }
 
 type GeneralConfig struct {
+	config.BaseConfig
+
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
 	DNSCacheTTL config_types.Duration `json:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
@@ -351,9 +361,6 @@ type GeneralConfig struct {
 }
 
 var _ config.Config = &GeneralConfig{}
-
-func (g *GeneralConfig) Sanitize() {
-}
 
 func (g *GeneralConfig) Validate() error {
 	var errs error
@@ -385,6 +392,8 @@ func DefaultGeneralConfig() *GeneralConfig {
 }
 
 type ExperimentalConfig struct {
+	config.BaseConfig
+
 	// If true, experimental Gateway API is enabled
 	GatewayAPI bool `json:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
@@ -419,10 +428,6 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
-}
-
-func (e ExperimentalConfig) Validate() error {
-	return nil
 }
 
 func (c Config) GetEnvoyAdminPort() uint32 {
