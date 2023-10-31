@@ -118,13 +118,8 @@ func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_prot
 	return
 }
 
-<<<<<<< HEAD
 func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	ifaces := []*mesh_proto.Dataplane_Networking_Inbound{}
-=======
-func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
->>>>>>> 23f90014f (fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (#8168))
 	for _, svc := range services {
 		// Services of ExternalName type should not have any selectors.
 		// Kubernetes does not validate this, so in rare cases, a service of

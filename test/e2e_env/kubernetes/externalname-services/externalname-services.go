@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func ExternalNameServices() {
@@ -42,21 +42,21 @@ spec:
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 			)).
-			Setup(kubernetes.Cluster),
+			Setup(env.Cluster),
 		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should ignore ExternalName Service", func() {
 		// when
-		Expect(kubernetes.Cluster.Install(YamlK8s(externalNameService))).To(Succeed())
+		Expect(env.Cluster.Install(YamlK8s(externalNameService))).To(Succeed())
 
 		// then
-		Consistently(kubernetes.Cluster.GetKumaCPLogs, "10s", "1s").
+		Consistently(env.Cluster.GetKumaCPLogs, "10s", "1s").
 			ShouldNot(ContainSubstring("could not parse hostname entry"))
 	})
 }
