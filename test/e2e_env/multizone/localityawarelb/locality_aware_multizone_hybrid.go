@@ -307,6 +307,7 @@ spec:
 			multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
 			client.WithNumberOfRequests(100),
 			client.NoFail(),
+			client.WithoutRetries(),
 			client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -314,10 +315,10 @@ spec:
 		// then
 		failedRequests, err := failRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(failedRequests).To(BeNumerically("~", 50, 10))
+		Expect(failedRequests).To(BeNumerically("~", 45, 10))
 		successRequests, err := successRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(successRequests).To(BeNumerically("~", 50, 10))
+		Expect(successRequests).To(BeNumerically("~", 45, 10))
 	})
 }
 
