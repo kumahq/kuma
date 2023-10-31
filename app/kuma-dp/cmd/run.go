@@ -130,7 +130,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
-			if err := rootCtx.DataplaneTokenGenerator(cfg); err != nil {
+			tokenComp, err := rootCtx.DataplaneTokenGenerator(cfg)
+			if err != nil {
 				runLog.Error(err, "unable to get or generate dataplane token")
 				return err
 			}
@@ -147,6 +148,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			gracefulCtx, ctx := opts.SetupSignalHandler()
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			components := []component.Component{
+				tokenComp,
 				component.NewResilientComponent(
 					runLog.WithName("access-log-streamer"),
 					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
