@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
@@ -15,13 +16,14 @@ func DefaultUniversalRuntimeConfig() *UniversalRuntimeConfig {
 	}
 }
 
-// Universal-specific configuration
+var _ config.Config = &UniversalRuntimeConfig{}
+
+// UniversalRuntimeConfig defines Universal-specific configuration
 type UniversalRuntimeConfig struct {
+	config.BaseConfig
+
 	// DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
 	DataplaneCleanupAge config_types.Duration `json:"dataplaneCleanupAge" envconfig:"kuma_runtime_universal_dataplane_cleanup_age"`
-}
-
-func (u *UniversalRuntimeConfig) Sanitize() {
 }
 
 func (u *UniversalRuntimeConfig) Validate() error {

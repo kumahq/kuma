@@ -7,8 +7,10 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
-// DNS Server configuration
+// Config defines DNS Server configuration
 type Config struct {
+	config.BaseConfig
+
 	// The domain that the server will resolve the services for
 	Domain string `json:"domain" envconfig:"kuma_dns_server_domain"`
 	// CIDR used to allocate virtual IPs from
@@ -17,9 +19,6 @@ type Config struct {
 	ServiceVipEnabled bool `json:"serviceVipEnabled" envconfig:"kuma_dns_server_service_vip_enabled"`
 	// ServiceVipPort the port to use for virtual IP
 	ServiceVipPort uint32 `json:"serviceVipPort" envconfig:"kuma_dns_server_service_vip_port"`
-}
-
-func (g *Config) Sanitize() {
 }
 
 func (g *Config) Validate() error {

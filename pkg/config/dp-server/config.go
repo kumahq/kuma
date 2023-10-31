@@ -15,6 +15,8 @@ var _ config.Config = &DpServerConfig{}
 // DpServerConfig defines the data plane Server configuration that serves API
 // like Bootstrap/XDS.
 type DpServerConfig struct {
+	config.BaseConfig
+
 	// Port of the DP Server
 	Port int `json:"port" envconfig:"kuma_dp_server_port"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
@@ -58,6 +60,8 @@ const (
 
 // Authentication configuration for Dataplane Server
 type DpServerAuthConfig struct {
+	config.BaseConfig
+
 	// Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
 	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
 	Type string `json:"type" envconfig:"kuma_dp_server_auth_type"`
@@ -72,7 +76,8 @@ func (a *DpServerAuthConfig) Validate() error {
 	return nil
 }
 
-func (a *DpServerConfig) Sanitize() {
+func (a *DpServerConfig) PostProcess() error {
+	return multierr.Combine(a.Hds.PostProcess())
 }
 
 func (a *DpServerConfig) Validate() error {
@@ -271,6 +276,8 @@ func DefaultHdsConfig() *HdsConfig {
 }
 
 type HdsConfig struct {
+	config.BaseConfig
+
 	// Enabled if true then Envoy will actively check application's ports, but only on Universal.
 	// On Kubernetes this feature disabled for now regardless the flag value
 	Enabled bool `json:"enabled" envconfig:"kuma_dp_server_hds_enabled"`
@@ -282,7 +289,8 @@ type HdsConfig struct {
 	CheckDefaults *HdsCheck `json:"checkDefaults"`
 }
 
-func (h *HdsConfig) Sanitize() {
+func (h *HdsConfig) PostProcess() error {
+	return multierr.Combine(h.CheckDefaults.PostProcess())
 }
 
 func (h *HdsConfig) Validate() error {
@@ -295,7 +303,11 @@ func (h *HdsConfig) Validate() error {
 	return nil
 }
 
+var _ config.Config = &HdsCheck{}
+
 type HdsCheck struct {
+	config.BaseConfig
+
 	// Timeout is a time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
 	Timeout config_types.Duration `json:"timeout" envconfig:"kuma_dp_server_hds_check_timeout"`
@@ -310,9 +322,6 @@ type HdsCheck struct {
 	// UnhealthyThreshold is a number of unhealthy health checks required before a host is marked
 	// unhealthy.
 	UnhealthyThreshold uint32 `json:"unhealthyThreshold" envconfig:"kuma_dp_server_hds_check_unhealthy_threshold"`
-}
-
-func (h *HdsCheck) Sanitize() {
 }
 
 func (h *HdsCheck) Validate() error {
