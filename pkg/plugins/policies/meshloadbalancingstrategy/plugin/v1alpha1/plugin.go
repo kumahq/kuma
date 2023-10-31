@@ -133,10 +133,10 @@ func configureEndpoints(
 		if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, cluster, conf, serviceName); err != nil {
 			return err
 		}
-	}
-
-	if err := ConfigureEndpointsLocalityAware(proxy, endpoints, conf, rs, serviceName, localZone); err != nil {
-		return err
+	} else {
+		if err := ConfigureEndpointsLocalityAware(proxy, endpoints, conf, rs, serviceName, localZone); err != nil {
+			return err
+		}
 	}
 
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {

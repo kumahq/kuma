@@ -26,8 +26,8 @@ func ConfigureStaticEndpointsLocalityAware(
 	serviceName string,
 ) error {
 	var localZone string
-	if inbounds := proxy.Dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
-		localZone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+	if tags := proxy.Dataplane.Spec.TagSet().Values(mesh_proto.ZoneTag); len(tags) > 0 {
+		localZone = tags[0]
 	}
 
 	if conf.LocalityAwareness != nil {
