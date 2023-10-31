@@ -2,7 +2,7 @@ name: "Update insecure dependencies"
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: 0 8 * * *
+    - cron: 0 3 * * *
 jobs:
   build-matrix:
     runs-on: ubuntu-latest
