@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 
-	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -34,24 +33,18 @@ func KubeHosts(
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 
-		// Services of ExternalName type should not have any selectors.
-		// Kubernetes does not validate this, so in rare cases, a service of
-		// ExternalName type could point to a workload inside the mesh. If this
-		// happens, we will add the service to the VIPs config map, but we will
-		// not be able to obtain its IP address. As a result, the key in the map
-		// will be incorrect (e.g., "1:"). We do not currently support
-		// ExternalName services, so we can safely skip them from processing.
-		if service.Spec.Type == kube_core.ServiceTypeExternalName {
-			converterLog.V(1).Info(
-				"ignoring hostnames for unsupported ExternalName Service",
-				"name", service.GetName(),
-				"namespace", service.GetNamespace(),
-			)
+		// Do not generate hostnames for service-less
+		if isServiceLess(port) {
 			continue
 		}
 
-		// Do not generate outbounds for service-less
-		if isServiceLess(port) {
+		// Do not generate hostnames for ExternalName Service
+		if isExternalNameService(service) {
+			converterLog.V(1).Info(
+				"ignoring hostnames generation for unsupported ExternalName Service",
+				"name", service.GetName(),
+				"namespace", service.GetNamespace(),
+			)
 			continue
 		}
 
