@@ -30,10 +30,6 @@ func ServiceFromClusterName(name string) string {
 	return matchedGroups[1]
 }
 
-func IsSplitCluster(name string) bool {
-	return len(splitClusterRegex.FindStringSubmatch(name)) > 0
-}
-
 // DestinationClusterName generates a unique cluster name for the
 // destination. identifyingTags are useful for adding extra metadata outside of just tags. Tags must at least contain `kuma.io/service`
 func (t Tags) DestinationClusterName(
