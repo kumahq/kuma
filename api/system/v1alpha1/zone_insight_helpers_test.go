@@ -15,6 +15,33 @@ var _ = Describe("Zone Insights", func() {
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 
 	Context("UpdateSubscription", func() {
+		It("should leave subscriptions in a valid state", func() {
+			// given
+			zoneInsight := &system_proto.ZoneInsight{
+				Subscriptions: []*system_proto.KDSSubscription{
+					{
+						Id:             "1",
+						ConnectTime:    util_proto.MustTimestampProto(t1),
+						DisconnectTime: util_proto.MustTimestampProto(t1.Add(1 * time.Hour)),
+					},
+					{
+						Id:          "2",
+						ConnectTime: util_proto.MustTimestampProto(t1.Add(2 * time.Hour)),
+					},
+				},
+			}
+
+			// when
+			Expect(zoneInsight.UpdateSubscription(&system_proto.KDSSubscription{
+				Id:          "3",
+				ConnectTime: util_proto.MustTimestampProto(t1.Add(3 * time.Hour)),
+			})).To(Succeed())
+
+			// then
+			subscription := zoneInsight.GetSubscription("2")
+			Expect(subscription.(*system_proto.KDSSubscription).DisconnectTime).ToNot(BeNil())
+		})
+
 		It("should return error for wrong subscription type", func() {
 			// given
 			zoneInsight := &system_proto.ZoneInsight{
