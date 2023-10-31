@@ -23,7 +23,7 @@ type RootContext struct {
 	ComponentManager         component.Manager
 	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
 	BootstrapDynamicMetadata map[string]string
-	DataplaneTokenGenerator  func(*kumadp.Config) error
+	DataplaneTokenGenerator  func(cfg *kumadp.Config) (component.Component, error)
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel
 }
@@ -32,23 +32,25 @@ var features = []string{core_xds.FeatureTCPAccessLogViaNamedPipe}
 
 // defaultDataplaneTokenGenerator uses only given tokens or paths from the
 // config.
-func defaultDataplaneTokenGenerator(cfg *kumadp.Config) error {
+func defaultDataplaneTokenGenerator(cfg *kumadp.Config) (component.Component, error) {
 	if cfg.DataplaneRuntime.Token != "" {
 		path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
 		if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
 			runLog.Error(err, "unable to create file with dataplane token")
-			return err
+			return nil, err
 		}
 		cfg.DataplaneRuntime.TokenPath = path
 	}
 
 	if cfg.DataplaneRuntime.TokenPath != "" {
 		if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-			return errors.Wrapf(err, "dataplane token is invalid, in Kubernetes you must mount a serviceAccount token, in universal you must start your proxy with a generated token.")
+			return nil, errors.Wrapf(err, "dataplane token is invalid, in Kubernetes you must mount a serviceAccount token, in universal you must start your proxy with a generated token.")
 		}
 	}
 
-	return nil
+	return component.ComponentFunc(func(<-chan struct{}) error {
+		return nil
+	}), nil
 }
 
 func DefaultRootContext() *RootContext {
