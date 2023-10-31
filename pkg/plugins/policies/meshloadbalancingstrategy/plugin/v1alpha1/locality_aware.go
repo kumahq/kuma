@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -11,11 +10,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -24,7 +21,6 @@ const defaultOverprovisingFactor uint32 = 200
 func ConfigureStaticEndpointsLocalityAware(
 	proxy *core_xds.Proxy,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
-	splitEndpoints policies_xds.EndpointMap,
 	cluster *envoy_cluster.Cluster,
 	conf api.Conf,
 	serviceName string,
@@ -35,21 +31,13 @@ func ConfigureStaticEndpointsLocalityAware(
 	}
 
 	if conf.LocalityAwareness != nil {
-		if len(endpoints) > 0 {
-			cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
-			if err != nil {
-				return err
-			}
-			cluster.LoadAssignment = cla.(*envoy_endpoint.ClusterLoadAssignment)
-		}
-
-		for splitName, endpoints := range splitEndpoints {
-			if tags.IsSplitCluster(splitName) && strings.HasPrefix(splitName, serviceName) {
-				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, splitName, localZone)
+		for _, cla := range endpoints {
+			if cla.ClusterName == serviceName {
+				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
 				if err != nil {
 					return err
 				}
-				cluster.LoadAssignment = cla.(*envoy_endpoint.ClusterLoadAssignment)
+				cluster.LoadAssignment = loadAssignment.(*envoy_endpoint.ClusterLoadAssignment)
 			}
 		}
 	}
@@ -59,35 +47,22 @@ func ConfigureStaticEndpointsLocalityAware(
 func ConfigureEndpointsLocalityAware(
 	proxy *core_xds.Proxy,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
-	splitEndpoints policies_xds.EndpointMap,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
 	serviceName string,
 	localZone string,
 ) error {
 	if conf.LocalityAwareness != nil {
-		if len(endpoints) > 0 {
-			cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, serviceName, localZone)
-			if err != nil {
-				return err
-			}
-			rs.Add(&core_xds.Resource{
-				Name:     serviceName,
-				Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
-				Resource: cla,
-			})
-		}
-
-		for splitName, endpoints := range splitEndpoints {
-			if tags.IsSplitCluster(splitName) && strings.HasPrefix(splitName, serviceName) {
-				cla, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, endpoints, splitName, localZone)
+		for _, cla := range endpoints {
+			if cla.ClusterName == serviceName {
+				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
 				if err != nil {
 					return err
 				}
 				rs.Add(&core_xds.Resource{
-					Name:     splitName,
+					Name:     cla.ClusterName,
 					Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
-					Resource: cla,
+					Resource: loadAssignment,
 				})
 			}
 		}
@@ -98,37 +73,32 @@ func ConfigureEndpointsLocalityAware(
 func ConfigureEnpointLocalityAwareLb(
 	proxy *core_xds.Proxy,
 	conf *api.Conf,
-	endpoints []*envoy_endpoint.ClusterLoadAssignment,
+	cla *envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	localZone string,
 ) (proto.Message, error) {
-	if len(endpoints) == 0 {
-		return nil, nil
-	}
 	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, proxy.Dataplane.Spec.TagSet(), localZone)
 	endpointsList := []core_xds.Endpoint{}
-	for _, endpoint := range endpoints {
-		for _, localityLbEndpoint := range endpoint.Endpoints {
-			for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
-				ed := createEndpoint(lbEndpoint, localZone)
-				zoneName := ed.Tags[mesh_proto.ZoneTag]
+	for _, localityLbEndpoint := range cla.Endpoints {
+		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
+			ed := createEndpoint(lbEndpoint, localZone)
+			zoneName := ed.Tags[mesh_proto.ZoneTag]
 
-				if zoneName == localZone {
-					configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
-					endpointsList = append(endpointsList, ed)
-				} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
-					endpointsList = append(endpointsList, ed)
-				}
+			if zoneName == localZone {
+				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
+				endpointsList = append(endpointsList, ed)
+			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
+				endpointsList = append(endpointsList, ed)
 			}
 		}
 	}
 	// TODO(lukidzi): use CLA Cache https://github.com/kumahq/kuma/issues/8121
-	cla, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
+	loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterLb := cla.(*envoy_endpoint.ClusterLoadAssignment)
+	clusterLb := loadAssignment.(*envoy_endpoint.ClusterLoadAssignment)
 	overprovisingFactor := defaultOverprovisingFactor
 	if conf.LocalityAwareness.CrossZone != nil && conf.LocalityAwareness.CrossZone.FailoverThreshold != nil {
 		overprovisingFactor = uint32(100/conf.LocalityAwareness.CrossZone.FailoverThreshold.Percentage.IntVal) * 100
@@ -140,7 +110,7 @@ func ConfigureEnpointLocalityAwareLb(
 	} else {
 		clusterLb.Policy.OverprovisioningFactor = wrapperspb.UInt32(overprovisingFactor)
 	}
-	return cla, nil
+	return loadAssignment, nil
 }
 
 func createEndpoint(lbEndpoint *envoy_endpoint.LbEndpoint, localZone string) core_xds.Endpoint {

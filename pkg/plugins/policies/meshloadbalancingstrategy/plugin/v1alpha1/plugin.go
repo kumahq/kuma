@@ -54,13 +54,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := policies_xds.GatherClusters(rs)
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
-	splitEndpoints := policies_xds.GatherSplitEndpoints(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, splitEndpoints, rs); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, splitEndpoints, rs)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs)
 }
 
 func (p plugin) configureDPP(
@@ -69,7 +68,6 @@ func (p plugin) configureDPP(
 	listeners policies_xds.Listeners,
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
-	splitEndpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 ) error {
 	serviceConfs := map[string]api.Conf{}
@@ -101,12 +99,7 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if cluster.LoadAssignment != nil {
-				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints[serviceName], splitEndpoints, cluster, conf, serviceName); err != nil {
-					return errors.Wrapf(err, "failed to configure static ClusterLoadAssignment for %s", serviceName)
-				}
-			}
-			if err := configureEndpoints(proxy, endpoints[serviceName], policies_xds.EndpointMap{}, serviceName, conf, rs); err != nil {
+			if err := configureEndpoints(proxy, cluster, endpoints[serviceName], serviceName, conf, rs); err != nil {
 				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
@@ -114,13 +107,8 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if cluster.LoadAssignment != nil {
-				if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints[serviceName], splitEndpoints, cluster, conf, serviceName); err != nil {
-					return errors.Wrapf(err, "failed to configure static ClusterLoadAssignment for %s", serviceName)
-				}
-			}
-			if err := configureEndpoints(proxy, []*envoy_endpoint.ClusterLoadAssignment{}, splitEndpoints, serviceName, conf, rs); err != nil {
-				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
+			if err := configureEndpoints(proxy, cluster, endpoints[serviceName], cluster.Name, conf, rs); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
 			}
 		}
 	}
@@ -130,8 +118,8 @@ func (p plugin) configureDPP(
 
 func configureEndpoints(
 	proxy *core_xds.Proxy,
+	cluster *envoy_cluster.Cluster,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
-	splitEndpoints policies_xds.EndpointMap,
 	serviceName string,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
@@ -141,7 +129,13 @@ func configureEndpoints(
 		localZone = tags[0]
 	}
 
-	if err := ConfigureEndpointsLocalityAware(proxy, endpoints, splitEndpoints, conf, rs, serviceName, localZone); err != nil {
+	if cluster.LoadAssignment != nil {
+		if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, cluster, conf, serviceName); err != nil {
+			return err
+		}
+	}
+
+	if err := ConfigureEndpointsLocalityAware(proxy, endpoints, conf, rs, serviceName, localZone); err != nil {
 		return err
 	}
 
@@ -164,7 +158,6 @@ func (p plugin) configureGateway(
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
-	splitEndpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 ) error {
 	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
@@ -207,7 +200,7 @@ func (p plugin) configureGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy, endpoints[serviceName], splitEndpoints, serviceName, *conf, rs); err != nil {
+				if err := configureEndpoints(proxy, cluster, endpoints[serviceName], serviceName, *conf, rs); err != nil {
 					return err
 				}
 			}

@@ -38,29 +38,6 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 	return em
 }
 
-func GatherSplitEndpoints(rs *xds.ResourceSet) EndpointMap {
-	em := EndpointMap{}
-	for _, res := range rs.Resources(envoy_resource.EndpointType) {
-		if !tags.IsSplitCluster(res.Name) {
-			continue
-		}
-
-		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
-		em[cla.ClusterName] = append(em[cla.ClusterName], cla)
-	}
-	for _, res := range rs.Resources(envoy_resource.ClusterType) {
-		if !tags.IsSplitCluster(res.Name) {
-			continue
-		}
-
-		cluster := res.Resource.(*clusterv3.Cluster)
-		if cluster.LoadAssignment != nil {
-			em[cluster.Name] = append(em[cluster.Name], cluster.LoadAssignment)
-		}
-	}
-	return em
-}
-
 func GatherEgressEndpoints(rs *xds.ResourceSet) map[string]*endpointv3.ClusterLoadAssignment {
 	em := map[string]*endpointv3.ClusterLoadAssignment{}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
