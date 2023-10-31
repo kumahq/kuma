@@ -130,6 +130,7 @@ type Dataplane struct {
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }
+
 func (d *Dataplane) PostProcess() error {
 	if err := validateMeshOrName(".Name", d.Name); err != nil {
 		podName, ok := os.LookupEnv("POD_NAME")
