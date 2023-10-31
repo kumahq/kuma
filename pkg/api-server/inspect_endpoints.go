@@ -358,9 +358,16 @@ func newGatewayDataplaneInspectResponse(
 	}
 
 	for _, info := range gwListeners {
-		var hosts []api_server_types.HostInspectEntry
+		listener := api_server_types.GatewayListenerInspectEntry{
+			Port:     info.Listener.Port,
+			Protocol: info.Listener.Protocol.String(),
+			Hosts:    []api_server_types.HostInspectEntry{},
+		}
 		for _, info := range info.HostInfos {
-			var routes []api_server_types.RouteInspectEntry
+			hostInspectEntry := api_server_types.HostInspectEntry{
+				HostName: info.Host.Hostname,
+				Routes:   []api_server_types.RouteInspectEntry{},
+			}
 			routeMap := map[string][]api_server_types.Destination{}
 			for _, entry := range info.Entries {
 				destinations := routeMap[entry.Route]
@@ -378,28 +385,21 @@ func newGatewayDataplaneInspectResponse(
 					sort.SliceStable(destinations, func(i, j int) bool {
 						return destinations[i].Tags.String() < destinations[j].Tags.String()
 					})
-					routes = append(routes, api_server_types.RouteInspectEntry{
+					hostInspectEntry.Routes = append(hostInspectEntry.Routes, api_server_types.RouteInspectEntry{
 						Route:        name,
 						Destinations: destinations,
 					})
 				}
 			}
-			sort.SliceStable(routes, func(i, j int) bool {
-				return routes[i].Route < routes[j].Route
+			sort.SliceStable(hostInspectEntry.Routes, func(i, j int) bool {
+				return hostInspectEntry.Routes[i].Route < hostInspectEntry.Routes[j].Route
 			})
-			hosts = append(hosts, api_server_types.HostInspectEntry{
-				HostName: info.Host.Hostname,
-				Routes:   routes,
-			})
+			listener.Hosts = append(listener.Hosts, hostInspectEntry)
 		}
-		sort.SliceStable(hosts, func(i, j int) bool {
-			return hosts[i].HostName < hosts[j].HostName
+		sort.SliceStable(listener.Hosts, func(i, j int) bool {
+			return listener.Hosts[i].HostName < listener.Hosts[j].HostName
 		})
-		result.Listeners = append(result.Listeners, api_server_types.GatewayListenerInspectEntry{
-			Port:     info.Listener.Port,
-			Protocol: info.Listener.Protocol.String(),
-			Hosts:    hosts,
-		})
+		result.Listeners = append(result.Listeners, listener)
 	}
 
 	gatewayPolicies := api_server_types.PolicyMap{}
