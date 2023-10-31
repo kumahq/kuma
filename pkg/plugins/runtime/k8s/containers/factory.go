@@ -186,6 +186,33 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	envVars := map[string]kube_core.EnvVar{
+		"POD_NAME": {
+			Name: "POD_NAME",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
+			},
+		},
+		"POD_NAMESPACE": {
+			Name: "POD_NAMESPACE",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.namespace",
+				},
+			},
+		},
+		"INSTANCE_IP": {
+			Name: "INSTANCE_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
 		"KUMA_CONTROL_PLANE_URL": {
 			Name:  "KUMA_CONTROL_PLANE_URL",
 			Value: i.ControlPlaneURL,
@@ -193,12 +220,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		"KUMA_DATAPLANE_MESH": {
 			Name:  "KUMA_DATAPLANE_MESH",
 			Value: mesh,
-		},
-		"KUMA_DATAPLANE_NAME": {
-			Name: "KUMA_DATAPLANE_NAME",
-			// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
-			// that is why we have to use a runtime reference to POD_NAME instead
-			Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
 		},
 		"KUMA_DATAPLANE_DRAIN_TIME": {
 			Name:  "KUMA_DATAPLANE_DRAIN_TIME",
@@ -276,37 +297,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		result = append(result, v)
 	}
 	sort.Stable(EnvVarsByName(result))
-
-	// those values needs to be added before other vars, otherwise expressions like "$(POD_NAME).$(POD_NAMESPACE)" won't be evaluated
-	result = append([]kube_core.EnvVar{
-		{
-			Name: "POD_NAME",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.name",
-				},
-			},
-		},
-		{
-			Name: "POD_NAMESPACE",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.namespace",
-				},
-			},
-		},
-		{
-			Name: "INSTANCE_IP",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "status.podIP",
-				},
-			},
-		},
-	}, result...)
 
 	return result, nil
 }

@@ -19,6 +19,62 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       operationId: get-global-insight
       description: Returns a Global Insight object
+  /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: policyType
+          example: meshretries
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: path
+          name: policyName
+          example: retry-all
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      summary: Returns resources matched by this policy
+      description: >-
+        Returns resources matched by this policy. In the case of `targetRef`
+        policies we'll match using the top level `targetRef`
+      tags:
+        - Inspect
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      operationId: inspect-resources
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       summary: Returns MeshAccessLog entity
@@ -1126,6 +1182,23 @@ paths:
           $ref: '#/components/responses/MeshTrafficPermissionList'
 components:
   schemas:
+    InspectDataplanesForPolicy:
+      type: object
+      title: InspectPolicy
+      description: A list of proxies
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          example: 200
+        next:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
     BaseStatus:
       type: object
       title: Status
@@ -1341,6 +1414,25 @@ components:
           description: TODO
           items:
             $ref: '#/components/schemas/InvalidParameters'
+    Meta:
+      type: object
+      required:
+        - type
+        - mesh
+        - name
+      properties:
+        type:
+          type: string
+          example: Dataplane
+          description: the type of this resource
+        mesh:
+          type: string
+          example: default
+          description: the mesh this resource is part of
+        name:
+          type: string
+          example: my-resource
+          description: the name of the resource
     MeshAccessLogItem:
       type: object
       properties:
@@ -3915,12 +4007,129 @@ components:
                           LocalityAwareness contains configuration for locality
                           aware load balancing.
                         properties:
+                          crossZone:
+                            description: >-
+                              CrossZone defines locality aware load balancing
+                              priorities when dataplane proxies inside local
+                              zone are unavailable
+                            properties:
+                              failover:
+                                description: >-
+                                  Failover defines list of load balancing rules
+                                  in order of priority
+                                items:
+                                  properties:
+                                    from:
+                                      description: >-
+                                        From defines the list of zones to which
+                                        the rule applies
+                                      properties:
+                                        zones:
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                        - zones
+                                      type: object
+                                    to:
+                                      description: >-
+                                        To defines to which zones the traffic
+                                        should be load balanced
+                                      properties:
+                                        type:
+                                          description: >-
+                                            Type defines how target zones will be
+                                            picked from available zones
+                                          enum:
+                                            - None
+                                            - Only
+                                            - Any
+                                            - AnyExcept
+                                          type: string
+                                        zones:
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                        - type
+                                        - zones
+                                      type: object
+                                  required:
+                                    - to
+                                  type: object
+                                type: array
+                              failoverThreshold:
+                                description: >-
+                                  FailoverThreshold defines the percentage of
+                                  live destination dataplane proxies below which
+                                  load balancing to the next priority starts.
+                                  Example: If you configure failoverThreshold to
+                                  70, and you have deployed 10 destination
+                                  dataplane proxies. Load balancing to next
+                                  priority will start when number of live
+                                  destination dataplane proxies drops below 7.
+                                  Default 50
+                                properties:
+                                  percentage:
+                                    anyOf:
+                                      - type: integer
+                                      - type: string
+                                    x-kubernetes-int-or-string: true
+                                required:
+                                  - percentage
+                                type: object
+                            type: object
                           disabled:
                             description: >-
                               Disabled allows to disable locality-aware load
                               balancing. When disabled requests are distributed
                               across all endpoints regardless of locality.
                             type: boolean
+                          localZone:
+                            description: >-
+                              LocalZone defines locality aware load balancing
+                              priorities between dataplane proxies inside a zone
+                            properties:
+                              affinityTags:
+                                description: >-
+                                  AffinityTags list of tags for local zone load
+                                  balancing.
+                                items:
+                                  properties:
+                                    key:
+                                      description: >-
+                                        Key defines tag for which affinity is
+                                        configured
+                                      type: string
+                                    weight:
+                                      description: >-
+                                        Weight of the tag used for load
+                                        balancing. The bigger the weight the
+                                        bigger the priority. Percentage of local
+                                        traffic load balanced to tag is computed
+                                        by dividing weight by sum of weights
+                                        from all tags. For example with two
+                                        affinity tags first with weight 80 and
+                                        second with weight 20, then 80% of
+                                        traffic will be redirected to the first
+                                        tag, and 20% of traffic will be
+                                        redirected to second one. Setting
+                                        weights is not mandatory. When weights
+                                        are not set control plane will compute
+                                        default weight based on list order.
+                                        Default: If you do not specify weight we
+                                        will adjust them so that 90% traffic
+                                        goes to first tag, 9% to next, and 1% to
+                                        third and so on.
+                                      format: int32
+                                      type: integer
+                                  required:
+                                    - key
+                                  type: object
+                                type: array
+                            required:
+                              - affinityTags
+                            type: object
                         type: object
                     type: object
                   targetRef:
@@ -5883,6 +6092,15 @@ components:
           examples:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'
+    InspectDataplanesForPolicyResponse:
+      description: A response containing global insight.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesForPolicy'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
       content:
@@ -6226,4 +6444,16 @@ components:
             total: 100
           meshes:
             total: 3
+    InspectDataplanesForPolicyExample:
+      value:
+        total: 100
+        next: >-
+          http://localhost:5681/meshes/default/meshretries/_resources/dataplanes?offset=100
+        items:
+          - type: Dataplane
+            mesh: default
+            name: dp-1
+          - type: Dataplane
+            mesh: default
+            name: dp-2
 

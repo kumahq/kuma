@@ -1,0 +1,22 @@
+#/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes 200
+type: MeshTrafficPermission
+name: foo
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo

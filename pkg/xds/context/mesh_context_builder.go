@@ -33,6 +33,7 @@ type meshContextBuilder struct {
 	vipsPersistence *vips.Persistence
 	topLevelDomain  string
 	vipPort         uint32
+	rsGraphBuilder  ReachableServicesGraphBuilder
 }
 
 type MeshContextBuilder interface {
@@ -53,6 +54,7 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 	vipPort uint32,
+	rsGraphBuilder ReachableServicesGraphBuilder,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -67,6 +69,7 @@ func NewMeshContextBuilder(
 		vipsPersistence: vipsPersistence,
 		topLevelDomain:  topLevelDomain,
 		vipPort:         vipPort,
+		rsGraphBuilder:  rsGraphBuilder,
 	}
 }
 
@@ -129,16 +132,17 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	return &MeshContext{
-		Hash:                newHash,
-		Resource:            mesh,
-		Resources:           resources,
-		DataplanesByName:    dataplanesByName,
-		EndpointMap:         endpointMap,
-		CrossMeshEndpoints:  crossMeshEndpointMap,
-		VIPDomains:          domains,
-		VIPOutbounds:        outbounds,
-		ServiceTLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
-		DataSourceLoader:    datasource.NewStaticLoader(resources.Secrets().Items),
+		Hash:                   newHash,
+		Resource:               mesh,
+		Resources:              resources,
+		DataplanesByName:       dataplanesByName,
+		EndpointMap:            endpointMap,
+		CrossMeshEndpoints:     crossMeshEndpointMap,
+		VIPDomains:             domains,
+		VIPOutbounds:           outbounds,
+		ServiceTLSReadiness:    m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
+		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
+		ReachableServicesGraph: m.rsGraphBuilder(meshName, resources),
 	}, nil
 }
 

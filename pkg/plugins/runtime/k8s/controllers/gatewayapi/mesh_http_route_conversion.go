@@ -18,7 +18,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -72,7 +71,7 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshSubset,
 			Tags: map[string]string{
-				controllers.KubeNamespaceTag: route.Namespace,
+				mesh_proto.KubeNamespaceTag: route.Namespace,
 			},
 		}
 		// producer route

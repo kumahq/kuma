@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
@@ -17,6 +18,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
+
+var log = core.Log.WithName("store-remote")
 
 func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {
 	return &remoteStore{
@@ -166,6 +169,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	}
 	req.URL.RawQuery = query.Encode()
 
+	log.V(1).Info("doing request to control-plane", "method", req.Method, "url", req.URL.String())
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		return err

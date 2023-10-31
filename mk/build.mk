@@ -11,8 +11,7 @@ LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 
 EXTRA_GOENV ?=
 GOENV=CGO_ENABLED=0 $(EXTRA_GOENV)
-# add -tags=experimental for Gateway API conformance profiles
-GOFLAGS := -trimpath -tags=experimental $(EXTRA_GOFLAGS)
+GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
 
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build

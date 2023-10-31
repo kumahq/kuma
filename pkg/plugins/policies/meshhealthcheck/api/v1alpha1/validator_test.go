@@ -163,9 +163,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.unhealthyThreshold
-    message: must be defined and greater than zero
+    message: must be greater than zero when defined
   - field: spec.to[0].default.healthyThreshold
-    message: must be defined and greater than zero`,
+    message: must be greater than zero when defined`,
 			}),
 			Entry("positive durations are out of range", testCase{
 				inputYaml: `

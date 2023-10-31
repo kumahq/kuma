@@ -68,7 +68,7 @@
     "kuma.io/zone": "east"
    },
    "conf": {
-    "action": "DENY"
+    "action": "Deny"
    },
    "origins": [
     {

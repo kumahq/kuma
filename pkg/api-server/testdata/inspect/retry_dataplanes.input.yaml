@@ -1,0 +1,53 @@
+#/meshes/default/retries/foo/_resources/dataplanes 200
+type: Retry
+mesh: default
+name: foo
+sources:
+  - match:
+      kuma.io/service: svc-1
+destinations:
+  - match:
+      kuma.io/service: svc-2
+conf:
+  http:
+    numRetries: 5
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: svc-1
+---
+type: Dataplane
+name: dp-2
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: svc-1
+---
+type: Dataplane
+name: dp-3
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+       kuma.io/service: svc-2
+---
+type: Dataplane
+name: dp-4
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: svc-3

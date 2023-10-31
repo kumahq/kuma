@@ -53,8 +53,8 @@ var _ = Describe("MatchedPolicies", func() {
 			}
 		}
 
-		for num, tc := range testCaseMap {
-			res = append(res, Entry(num, *tc))
+		for _, tc := range testCaseMap {
+			res = append(res, Entry(tc.goldenFile, *tc))
 		}
 		return res
 	}

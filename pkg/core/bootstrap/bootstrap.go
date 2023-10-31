@@ -49,6 +49,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
@@ -500,6 +501,10 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
+	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
+	if builder.Config().Experimental.AutoReachableServices {
+		rsGraphBuilder = graph.Builder
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
@@ -508,6 +513,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
+		rsGraphBuilder,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
