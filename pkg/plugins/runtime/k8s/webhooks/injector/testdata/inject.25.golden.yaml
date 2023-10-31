@@ -29,16 +29,6 @@ spec:
     - --log-level=info
     - --concurrency=8
     env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.namespace
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -86,6 +76,16 @@ spec:
       value: "25055"
     - name: NEW_ENV_VAR
       value: "123"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

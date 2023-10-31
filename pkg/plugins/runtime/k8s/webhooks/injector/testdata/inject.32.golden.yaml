@@ -26,16 +26,6 @@ spec:
     - --log-level=info
     - --concurrency=2
     env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.namespace
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -73,6 +63,16 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
