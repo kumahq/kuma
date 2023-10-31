@@ -144,6 +144,10 @@ func (d *Dataplane) PostProcess() error {
 		}
 
 		d.Name = fmt.Sprintf("%s.%s", podName, podNamespace)
+
+		if err := validateMeshOrName(".Name", d.Name); err != nil {
+			return errors.Wrap(err, "Dataplane configuration post processing failed")
+		}
 	}
 
 	return nil
