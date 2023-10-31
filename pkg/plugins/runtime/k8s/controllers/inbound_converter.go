@@ -123,10 +123,17 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 }
 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	ifaces := []*mesh_proto.Dataplane_Networking_Inbound{}
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
-		svcIfaces := inboundForService(zone, pod, svc)
-		ifaces = append(ifaces, svcIfaces...)
+		// Services of ExternalName type should not have any selectors.
+		// Kubernetes does not validate this, so in rare cases, a service of
+		// ExternalName type could point to a workload inside the mesh. If this
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
+		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
+			ifaces = append(ifaces, inboundForService(zone, pod, svc)...)
+		}
 	}
 
 	if len(ifaces) == 0 {

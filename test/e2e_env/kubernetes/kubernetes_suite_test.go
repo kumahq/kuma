@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalname-services"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
@@ -75,3 +76,4 @@ var _ = Describe("MeshRetry", meshretry.API, Ordered)
 var _ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 var _ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)
 var _ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+var _ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
