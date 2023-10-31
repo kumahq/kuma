@@ -2,6 +2,8 @@ package vips
 
 import (
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 type EntryType int
@@ -41,8 +43,11 @@ func (e HostnameEntry) MarshalText() ([]byte, error) {
 }
 
 func (e *HostnameEntry) UnmarshalText(text []byte) error {
-	_, err := fmt.Sscanf(string(text), "%v:%s", &e.Type, &e.Name)
-	return err
+	if _, err := fmt.Sscanf(string(text), "%v:%s", &e.Type, &e.Name); err != nil {
+		return errors.Wrapf(err, "could not parse hostname entry: %+q", text)
+	}
+
+	return nil
 }
 
 func (e *HostnameEntry) Less(o *HostnameEntry) bool {

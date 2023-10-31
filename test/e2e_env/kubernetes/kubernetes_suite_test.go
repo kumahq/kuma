@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalname-services"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
@@ -69,6 +70,7 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
 	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
+	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
