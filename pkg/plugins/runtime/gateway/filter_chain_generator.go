@@ -93,6 +93,10 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
+	if info.Listener.CrossMesh {
+		// For cross-mesh, we can only add one listener filter chain as there will not be any (usable) SNI available for filter chain matching
+		hosts = hosts[:1]
+	}
 	for _, host := range hosts {
 		log.V(1).Info("generating filter chain", "hostname", host.Hostname)
 
