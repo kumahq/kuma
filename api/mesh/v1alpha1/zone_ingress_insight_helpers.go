@@ -9,13 +9,8 @@ import (
 
 var _ generic.Insight = &ZoneIngressInsight{}
 
-func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
-	for i, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return i, s
-		}
-	}
-	return -1, nil
+func (x *ZoneIngressInsight) GetSubscription(id string) generic.Subscription {
+	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
 func (x *ZoneIngressInsight) UpdateSubscription(s generic.Subscription) error {
@@ -26,13 +21,14 @@ func (x *ZoneIngressInsight) UpdateSubscription(s generic.Subscription) error {
 	if !ok {
 		return errors.Errorf("invalid type %T for ZoneIngressInsight", s)
 	}
-	i, old := x.GetSubscription(discoverySubscription.Id)
-	if old != nil {
-		x.Subscriptions[i] = discoverySubscription
-	} else {
-		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
+	for i, sub := range x.GetSubscriptions() {
+		if sub.GetId() == discoverySubscription.Id {
+			x.Subscriptions[i] = discoverySubscription
+			return nil
+		}
 	}
+	x.finalizeSubscriptions()
+	x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	return nil
 }
 
@@ -55,6 +51,10 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 		}
 	}
 	return false
+}
+
+func (x *ZoneIngressInsight) AllSubscriptions() []generic.Subscription {
+	return generic.AllSubscriptions[*DiscoverySubscription](x)
 }
 
 func (x *ZoneIngressInsight) GetLastSubscription() generic.Subscription {

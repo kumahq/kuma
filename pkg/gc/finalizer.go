@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/log"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -34,26 +35,24 @@ var finalizerLog = core.Log.WithName("finalizer")
 // 3. Kuma CP is up
 // 4. DPP status is Online whereas it should be Offline
 
-type descriptor struct {
-	id         string
-	generation uint32
-}
-
 type tenantID string
 
-type insightMap map[core_model.ResourceKey]*descriptor
+type subscriptionGenerationMap map[string]uint32
+
+type insightMap map[core_model.ResourceKey]subscriptionGenerationMap
 
 type insightsByType map[core_model.ResourceType]insightMap
 
 type tenantInsights map[tenantID]insightsByType
 
 type subscriptionFinalizer struct {
-	rm        manager.ResourceManager
-	newTicker func() *time.Ticker
-	types     []core_model.ResourceType
-	insights  tenantInsights
-	tenants   multitenant.Tenants
-	metric    prometheus.Summary
+	rm             manager.ResourceManager
+	newTicker      func() *time.Ticker
+	types          []core_model.ResourceType
+	onlineInsights tenantInsights
+	tenants        multitenant.Tenants
+	metric         prometheus.Summary
+	extensions     context.Context
 }
 
 func NewSubscriptionFinalizer(
@@ -61,6 +60,7 @@ func NewSubscriptionFinalizer(
 	tenants multitenant.Tenants,
 	newTicker func() *time.Ticker,
 	metrics core_metrics.Metrics,
+	extensions context.Context,
 	types ...core_model.ResourceType,
 ) (component.Component, error) {
 	for _, typ := range types {
@@ -79,12 +79,13 @@ func NewSubscriptionFinalizer(
 	}
 
 	return &subscriptionFinalizer{
-		rm:        rm,
-		types:     types,
-		newTicker: newTicker,
-		insights:  tenantInsights{},
-		tenants:   tenants,
-		metric:    metric,
+		rm:             rm,
+		types:          types,
+		newTicker:      newTicker,
+		onlineInsights: tenantInsights{},
+		tenants:        tenants,
+		metric:         metric,
+		extensions:     extensions,
 	}, nil
 }
 
@@ -104,11 +105,11 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 			}
 			for _, typ := range f.types {
 				for _, tenantId := range tenantIds {
-					if _, found := f.insights[tenantID(tenantId)]; !found {
-						f.insights[tenantID(tenantId)] = insightsByType{}
+					if _, found := f.onlineInsights[tenantID(tenantId)]; !found {
+						f.onlineInsights[tenantID(tenantId)] = insightsByType{}
 					}
-					if _, found := f.insights[tenantID(tenantId)][typ]; !found {
-						f.insights[tenantID(tenantId)][typ] = insightMap{}
+					if _, found := f.onlineInsights[tenantID(tenantId)][typ]; !found {
+						f.onlineInsights[tenantID(tenantId)][typ] = insightMap{}
 					}
 					ctx := multitenant.WithTenant(context.TODO(), tenantId)
 					if err := f.checkGeneration(user.Ctx(ctx, user.ControlPlane), typ, now); err != nil {
@@ -140,38 +141,55 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 	f.removeDeletedInsights(insights, tenantId)
 
 	for _, item := range insights.GetItems() {
-		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		logger := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		logger = log.AddFieldsFromCtx(logger, ctx, f.extensions)
+
 		key := core_model.MetaToResourceKey(item.GetMeta())
 		insight := item.GetSpec().(generic.Insight)
 
 		if !insight.IsOnline() {
-			delete(f.insights[tenantID(tenantId)][typ], key)
+			delete(f.onlineInsights[tenantID(tenantId)][typ], key)
 			continue
 		}
 
-		old, ok := f.insights[tenantID(tenantId)][typ][key]
-		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
-			// something changed since the last check, either subscriptionId or generation were updated
-			// don't finalize the subscription, update map with fresh data
-			f.insights[tenantID(tenantId)][typ][key] = &descriptor{
-				id:         insight.GetLastSubscription().GetId(),
-				generation: insight.GetLastSubscription().GetGeneration(),
+		lastGens := f.onlineInsights[tenantID(tenantId)][typ][key]
+
+		subsToFinalize := map[string]struct{}{}
+		newWatchedSubs := subscriptionGenerationMap{}
+
+		for _, sub := range insight.AllSubscriptions() {
+			if !sub.IsOnline() {
+				continue
 			}
-			continue
+			id := sub.GetId()
+			if gen, ok := lastGens[id]; !ok || gen != sub.GetGeneration() {
+				newWatchedSubs[id] = sub.GetGeneration()
+			} else {
+				subsToFinalize[id] = struct{}{}
+			}
 		}
-
-		log.V(1).Info("mark subscription as disconnected")
-		insight.GetLastSubscription().SetDisconnectTime(now)
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
-			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
-		})
-		if err != nil {
-			log.Error(err, "unable to finalize subscription")
-			return err
+		if err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
+			insight := upsertInsight.GetSpec().(generic.Insight)
+			for id := range subsToFinalize {
+				logger.V(1).Info("mark subscription as disconnected", "id", id)
+				sub := insight.GetSubscription(id)
+				sub.SetDisconnectTime(now)
+				if err := insight.UpdateSubscription(sub); err != nil {
+					return errors.Wrapf(err, "unable to update subscription %s", id)
+				}
+			}
+			return nil
+		}); err != nil {
+			return errors.Wrap(err, "unable to upsert insight")
 		}
-		delete(f.insights[tenantID(tenantId)][typ], key)
+
+		if len(newWatchedSubs) > 0 {
+			f.onlineInsights[tenantID(tenantId)][typ][key] = newWatchedSubs
+		} else {
+			delete(f.onlineInsights[tenantID(tenantId)][typ], key)
+		}
 	}
 	return nil
 }
@@ -181,9 +199,9 @@ func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.Resour
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
 	}
-	for rk := range f.insights[tenantID(tenantId)][insights.GetItemType()] {
+	for rk := range f.onlineInsights[tenantID(tenantId)][insights.GetItemType()] {
 		if !byResourceKey[rk] {
-			delete(f.insights[tenantID(tenantId)][insights.GetItemType()], rk)
+			delete(f.onlineInsights[tenantID(tenantId)][insights.GetItemType()], rk)
 		}
 	}
 }

@@ -38,8 +38,8 @@ var _ = Describe("Zone Insights", func() {
 			})).To(Succeed())
 
 			// then
-			_, subscription := zoneInsight.GetSubscription("2")
-			Expect(subscription.DisconnectTime).ToNot(BeNil())
+			subscription := zoneInsight.GetSubscription("2")
+			Expect(subscription.(*system_proto.KDSSubscription).DisconnectTime).ToNot(BeNil())
 		})
 
 		It("should return error for wrong subscription type", func() {

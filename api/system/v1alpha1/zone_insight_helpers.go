@@ -19,13 +19,8 @@ func NewSubscriptionStatus() *KDSSubscriptionStatus {
 	}
 }
 
-func (x *ZoneInsight) GetSubscription(id string) (int, *KDSSubscription) {
-	for i, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return i, s
-		}
-	}
-	return -1, nil
+func (x *ZoneInsight) GetSubscription(id string) generic.Subscription {
+	return generic.GetSubscription[*KDSSubscription](x, id)
 }
 
 func (x *ZoneInsight) GetLastSubscription() generic.Subscription {
@@ -44,8 +39,16 @@ func (x *ZoneInsight) IsOnline() bool {
 	return false
 }
 
+func (x *ZoneInsight) AllSubscriptions() []generic.Subscription {
+	return generic.AllSubscriptions[*KDSSubscription](x)
+}
+
 func (x *KDSSubscription) SetDisconnectTime(time time.Time) {
 	x.DisconnectTime = timestamppb.New(time)
+}
+
+func (x *KDSSubscription) IsOnline() bool {
+	return x.GetConnectTime() != nil && x.GetDisconnectTime() == nil
 }
 
 func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
@@ -64,13 +67,14 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 	if !ok {
 		return errors.Errorf("invalid type %T for ZoneInsight", s)
 	}
-	i, old := x.GetSubscription(kdsSubscription.Id)
-	if old != nil {
-		x.Subscriptions[i] = kdsSubscription
-	} else {
-		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, kdsSubscription)
+	for i, sub := range x.GetSubscriptions() {
+		if sub.GetId() == kdsSubscription.Id {
+			x.Subscriptions[i] = kdsSubscription
+			return nil
+		}
 	}
+	x.finalizeSubscriptions()
+	x.Subscriptions = append(x.Subscriptions, kdsSubscription)
 	return nil
 }
 
