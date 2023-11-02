@@ -6,7 +6,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 
@@ -33,8 +32,6 @@ type plugin struct{}
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
-
-var log = core.Log.WithName("MeshLoadBalance")
 
 func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources)
@@ -230,8 +227,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			conf := rule.Conf.(api.Conf)
 
 			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			cluster, ok := clusters.Egress[clusterName]
-			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, cluster, endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion)
+			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion)
 			if err != nil {
 				return err
 			}
