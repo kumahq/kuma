@@ -111,11 +111,11 @@ func validateCrossZone(crossZone *CrossZone) validators.ValidationError {
 		toZonesPath := path.Field("to").Field("zones")
 		switch failover.To.Type {
 		case Any, None:
-			if len(failover.To.Zones) > 0 {
+			if failover.To.Zones != nil && len(*failover.To.Zones) > 0 {
 				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must be empty when type is %s", failover.To.Type))
 			}
 		case AnyExcept, Only:
-			if len(failover.To.Zones) == 0 {
+			if failover.To.Zones == nil || len(*failover.To.Zones) == 0 {
 				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must not be empty when type is %s", failover.To.Type))
 			}
 		default:

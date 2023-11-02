@@ -19,21 +19,18 @@ import (
 const defaultOverprovisingFactor uint32 = 200
 
 func ConfigureStaticEndpointsLocalityAware(
-	proxy *core_xds.Proxy,
+	tags mesh_proto.MultiValueTagSet,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	cluster *envoy_cluster.Cluster,
 	conf api.Conf,
 	serviceName string,
+	localZone string,
+	apiVersion core_xds.APIVersion,
 ) error {
-	var localZone string
-	if tags := proxy.Dataplane.Spec.TagSet().Values(mesh_proto.ZoneTag); len(tags) > 0 {
-		localZone = tags[0]
-	}
-
 	if conf.LocalityAwareness != nil {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion)
 				if err != nil {
 					return err
 				}
@@ -45,17 +42,18 @@ func ConfigureStaticEndpointsLocalityAware(
 }
 
 func ConfigureEndpointsLocalityAware(
-	proxy *core_xds.Proxy,
+	tags mesh_proto.MultiValueTagSet,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
 	serviceName string,
 	localZone string,
+	apiVersion core_xds.APIVersion,
 ) error {
 	if conf.LocalityAwareness != nil {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion)
 				if err != nil {
 					return err
 				}
@@ -70,15 +68,16 @@ func ConfigureEndpointsLocalityAware(
 	return nil
 }
 
-func ConfigureEnpointLocalityAwareLb(
-	proxy *core_xds.Proxy,
+func ConfigureEndpointLocalityAwareLb(
+	tags mesh_proto.MultiValueTagSet,
 	conf *api.Conf,
 	cla *envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	localZone string,
+	apiVersion core_xds.APIVersion,
 ) (proto.Message, error) {
-	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, proxy.Dataplane.Spec.TagSet(), localZone)
-	endpointsList := []core_xds.Endpoint{}
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
+	var endpointsList []core_xds.Endpoint
 	for _, localityLbEndpoint := range cla.Endpoints {
 		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
 			ed := createEndpoint(lbEndpoint, localZone)
@@ -93,7 +92,7 @@ func ConfigureEnpointLocalityAwareLb(
 		}
 	}
 	// TODO(lukidzi): use CLA Cache https://github.com/kumahq/kuma/issues/8121
-	loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
+	loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, apiVersion)
 	if err != nil {
 		return nil, err
 	}

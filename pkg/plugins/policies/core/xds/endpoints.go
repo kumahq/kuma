@@ -38,8 +38,18 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 	return em
 }
 
-func GatherEgressEndpoints(rs *xds.ResourceSet) map[string]*endpointv3.ClusterLoadAssignment {
-	em := map[string]*endpointv3.ClusterLoadAssignment{}
+func GatherEgressEndpoints(rs *xds.ResourceSet) EndpointMap {
+	em := EndpointMap{}
+	for _, res := range rs.Resources(envoy_resource.EndpointType) {
+		if res.Origin != egress.OriginEgress {
+			continue
+		}
+
+		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
+		serviceName := tags.ServiceFromClusterName(cla.ClusterName)
+		em[serviceName] = append(em[serviceName], cla)
+	}
+
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		if res.Origin != egress.OriginEgress {
 			continue
@@ -47,7 +57,7 @@ func GatherEgressEndpoints(rs *xds.ResourceSet) map[string]*endpointv3.ClusterLo
 
 		cluster := res.Resource.(*clusterv3.Cluster)
 		if cluster.LoadAssignment != nil {
-			em[cluster.Name] = cluster.LoadAssignment
+			em[cluster.Name] = append(em[cluster.Name], cluster.LoadAssignment)
 		}
 	}
 	return em

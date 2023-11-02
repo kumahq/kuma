@@ -88,7 +88,7 @@ type FromZone struct {
 type ToZone struct {
 	// Type defines how target zones will be picked from available zones
 	Type  ToZoneType `json:"type"`
-	Zones []string   `json:"zones"`
+	Zones *[]string  `json:"zones,omitempty"`
 }
 
 type FailoverThreshold struct {

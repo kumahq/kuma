@@ -81,24 +81,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
+						createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
 					}),
 				},
 				{
@@ -107,77 +91,24 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
 						)).MustBuild(),
 				},
 				{
-					Name:   "backend",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "backend",
+					Origin:   generator.OriginOutbound,
+					Resource: backendListener(),
 				},
 				{
-					Name:   "payments",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("payment"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"payment": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "payments",
+					Origin:   generator.OriginOutbound,
+					Resource: paymentsListener(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
@@ -270,27 +201,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						MustBuild(),
 				},
 				{
-					Name:   "mesh-1:cla-for-eds-cluster",
+					Name:   "mesh-1:eds-cluster",
 					Origin: egress.OriginEgress,
 					Resource: endpoints.CreateClusterLoadAssignment("mesh-1:eds-cluster", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{}),
+						createEndpointWith("zone-2", "192.168.1.2", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.3", map[string]string{}),
 					}),
 				},
 				{
@@ -299,33 +215,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
 						)).MustBuild(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					ZoneEgressResource: &core_mesh.ZoneEgressResource{
-						Spec: &mesh_proto.ZoneEgress{Zone: "zone-1"},
-					},
 					MeshResourcesList: []*core_xds.MeshResources{
 						{
 							Mesh: builders.Mesh().WithName("mesh-1").Build(),
@@ -335,7 +233,27 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
+													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+														Disabled: pointer.To(false),
+														CrossZone: &v1alpha1.CrossZone{
+															Failover: []v1alpha1.Failover{
+																{
+																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
+																	To: v1alpha1.ToZone{
+																		Type:  v1alpha1.Only,
+																		Zones: &[]string{"zone-2"},
+																	},
+																},
+																{
+																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
+																	To: v1alpha1.ToZone{
+																		Type:  v1alpha1.Only,
+																		Zones: &[]string{"zone-3"},
+																	},
+																},
+															},
+														},
+													}}},
 												},
 											},
 										},
@@ -351,7 +269,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										FromRules: core_rules.FromRules{
 											Rules: map[core_rules.InboundListener]core_rules.Rules{
 												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{Disabled: pointer.To(false)}}},
+													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
+														Disabled: pointer.To(false),
+														CrossZone: &v1alpha1.CrossZone{
+															Failover: []v1alpha1.Failover{
+																{
+																	To: v1alpha1.ToZone{
+																		Type: v1alpha1.Any,
+																	},
+																},
+															},
+														},
+													}}},
 												},
 											},
 										},
@@ -376,83 +305,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-
-								"k8s.io/node": "node1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/node":          "node2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.3",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/az":            "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.4",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/region":        "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.5",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
-						{
-							Target: "192.168.1.6",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-3",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 0},
-						},
-						{
-							Target: "192.168.1.7",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-4",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-4", Priority: 0},
-						},
-						{
-							Target: "192.168.1.8",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-5",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-5", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWith("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWith("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
 					}),
 				},
 				{
@@ -461,88 +321,25 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-									"k8s.io/node":          "node1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-									"k8s.io/node":          "node2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.3",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{"k8s.io/node": "node1"}),
+							createEndpointWith("zone-1", "192.168.0.2", map[string]string{"k8s.io/node": "node2"}),
+							createEndpointWith("zone-2", "192.168.0.3", map[string]string{}),
 						)).MustBuild(),
 				},
 				{
-					Name:   "backend",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "backend",
+					Origin:   generator.OriginOutbound,
+					Resource: backendListener(),
 				},
 				{
-					Name:   "payments",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("payment"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"payment": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "payments",
+					Origin:   generator.OriginOutbound,
+					Resource: paymentsListener(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
@@ -598,7 +395,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,
-																Zones: []string{"zone-3", "zone-4", "zone-5"},
+																Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 															},
 														},
 														{
@@ -607,13 +404,13 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 															},
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-3"},
+																Zones: &[]string{"zone-3"},
 															},
 														},
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-4"},
+																Zones: &[]string{"zone-4"},
 															},
 														},
 													},
@@ -670,7 +467,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-2"},
+																Zones: &[]string{"zone-2"},
 															},
 														},
 													},
@@ -712,83 +509,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-
-								"k8s.io/node": "node1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/node":          "node2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.3",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/az":            "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.4",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/region":        "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.5",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
-						{
-							Target: "192.168.1.6",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-3",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 0},
-						},
-						{
-							Target: "192.168.1.7",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-4",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-4", Priority: 0},
-						},
-						{
-							Target: "192.168.1.8",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-5",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-5", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWith("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWith("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
 					}),
 				},
 				{
@@ -797,77 +525,24 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
 						)).MustBuild(),
 				},
 				{
-					Name:   "backend",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "backend",
+					Origin:   generator.OriginOutbound,
+					Resource: backendListener(),
 				},
 				{
-					Name:   "payments",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("payment"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"payment": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "payments",
+					Origin:   generator.OriginOutbound,
+					Resource: paymentsListener(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
@@ -984,83 +659,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-
-								"k8s.io/node": "node1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/node":          "node2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.3",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/az":            "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.4",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/region":        "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.5",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
-						{
-							Target: "192.168.1.6",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-3",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 0},
-						},
-						{
-							Target: "192.168.1.7",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-4",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-4", Priority: 0},
-						},
-						{
-							Target: "192.168.1.8",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-5",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-5", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWith("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWith("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
 					}),
 				},
 				{
@@ -1069,77 +675,24 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
 						)).MustBuild(),
 				},
 				{
-					Name:   "backend",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("backend"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"backend": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "backend",
+					Origin:   generator.OriginOutbound,
+					Resource: backendListener(),
 				},
 				{
-					Name:   "payments",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("payment"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"payment": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "payments",
+					Origin:   generator.OriginOutbound,
+					Resource: paymentsListener(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
@@ -1179,7 +732,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,
-																Zones: []string{"zone-3", "zone-4", "zone-5"},
+																Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 															},
 														},
 														{
@@ -1188,13 +741,13 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 															},
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-3"},
+																Zones: &[]string{"zone-3"},
 															},
 														},
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-4"},
+																Zones: &[]string{"zone-4"},
 															},
 														},
 													},
@@ -1272,137 +825,25 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "backend-bb38a94289f18fb9",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend-bb38a94289f18fb9", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-
-								"k8s.io/node": "node1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/node":          "node2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.3",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/az":            "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.4",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/region":        "test",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.5",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-						},
-						{
-							Target: "192.168.1.6",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-3",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 0},
-						},
-						{
-							Target: "192.168.1.7",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-4",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-4", Priority: 0},
-						},
-						{
-							Target: "192.168.1.8",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-5",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-5", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWith("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+						createEndpointWith("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
 					}),
 				},
 				{
 					Name:   "backend-c72efb5be46fae6b",
 					Origin: generator.OriginOutbound,
 					Resource: endpoints.CreateClusterLoadAssignment("backend-c72efb5be46fae6b", []core_xds.Endpoint{
-						{
-							Target: "192.168.1.1",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-
-								"k8s.io/node": "node1",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.2",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-1",
-								"k8s.io/node":          "node2",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-						},
-						{
-							Target: "192.168.1.6",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-3",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-3", Priority: 0},
-						},
-						{
-							Target: "192.168.1.7",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-4",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-4", Priority: 0},
-						},
-						{
-							Target: "192.168.1.8",
-							Port:   8080,
-							Tags: map[string]string{
-								mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-								mesh_proto.ZoneTag:     "zone-5",
-							},
-							Locality: &core_xds.Locality{Zone: "zone-5", Priority: 0},
-						},
+						createEndpointWith("zone-1", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+						createEndpointWith("zone-1", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+						createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+						createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+						createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
 					}),
 				},
 				{
@@ -1411,24 +852,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "payment").
 						Configure(clusters.ProvidedEndpointCluster(
 							false,
-							core_xds.Endpoint{
-								Target: "192.168.0.1",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-1",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-1", Priority: 0},
-							},
-							core_xds.Endpoint{
-								Target: "192.168.0.2",
-								Port:   8080,
-								Tags: map[string]string{
-									mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-									mesh_proto.ZoneTag:     "zone-2",
-								},
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
-							},
+							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
 						)).MustBuild(),
 				},
 				{
@@ -1462,32 +887,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).MustBuild(),
 				},
 				{
-					Name:   "payments",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27778", false)).
-							Configure(
-								HttpOutboundRoute(
-									"backend",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("payment"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-									map[string]map[string]bool{
-										"kuma.io/service": {
-											"payment": true,
-										},
-									},
-								),
-							),
-						)).MustBuild(),
+					Name:     "payments",
+					Origin:   generator.OriginOutbound,
+					Resource: paymentsListener(),
 				},
 			},
 			proxy: &core_xds.Proxy{
 				APIVersion: envoy_common.APIV3,
+				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
@@ -1540,7 +947,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,
-																Zones: []string{"zone-3", "zone-4", "zone-5"},
+																Zones: &[]string{"zone-3", "zone-4", "zone-5"},
 															},
 														},
 														{
@@ -1549,13 +956,13 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 															},
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-3"},
+																Zones: &[]string{"zone-3"},
 															},
 														},
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.Only,
-																Zones: []string{"zone-4"},
+																Zones: &[]string{"zone-4"},
 															},
 														},
 													},
@@ -1706,3 +1113,67 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		}),
 	)
 })
+
+func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
+	tags := map[string]string{
+		mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+		mesh_proto.ZoneTag:     zone,
+	}
+
+	for k, v := range extraTags {
+		tags[k] = v
+	}
+
+	return core_xds.Endpoint{
+		Target:   ip,
+		Port:     8080,
+		Tags:     tags,
+		Locality: &core_xds.Locality{Zone: zone, Priority: 0},
+	}
+}
+
+func paymentsListener() envoy_common.NamedResource {
+	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+			Configure(HttpConnectionManager("127.0.0.1:27778", false)).
+			Configure(
+				HttpOutboundRoute(
+					"backend",
+					envoy_common.Routes{{
+						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+							envoy_common.WithService("payment"),
+							envoy_common.WithWeight(100),
+						)},
+					}},
+					map[string]map[string]bool{
+						"kuma.io/service": {
+							"payment": true,
+						},
+					},
+				),
+			),
+		)).MustBuild()
+}
+
+func backendListener() envoy_common.NamedResource {
+	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+			Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+			Configure(
+				HttpOutboundRoute(
+					"backend",
+					envoy_common.Routes{{
+						Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+							envoy_common.WithService("backend"),
+							envoy_common.WithWeight(100),
+						)},
+					}},
+					map[string]map[string]bool{
+						"kuma.io/service": {
+							"backend": true,
+						},
+					},
+				),
+			),
+		)).MustBuild()
+}

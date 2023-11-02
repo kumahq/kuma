@@ -324,6 +324,14 @@ to:
 			},
 			{
 				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[4].to.zones",
+				Message: "must not be empty when type is Only",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[5].to.zones",
+				Message: "must not be empty when type is AnyExcept",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[6].to.zones",
 				Message: "must not be empty when type is AnyExcept",
 			},
 		}, `
@@ -356,8 +364,13 @@ to:
                 type: Only
                 zones: []
             - to:
+                type: Only
+            - to:
                 type: AnyExcept
                 zones: []
+            - to:
+                type: AnyExcept
+
 `),
 	)
 

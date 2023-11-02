@@ -414,7 +414,6 @@ spec:
                                             type: array
                                         required:
                                         - type
-                                        - zones
                                         type: object
                                     required:
                                     - to
