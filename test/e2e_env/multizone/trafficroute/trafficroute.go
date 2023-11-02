@@ -374,6 +374,8 @@ conf:
 					"echo-v2": Not(BeNil()),
 					"echo-v3": Not(BeNil()),
 					"echo-v4": Not(BeNil()),
+					"echo-v5": Not(BeNil()),
+					"echo-v6": Not(BeNil()),
 					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
