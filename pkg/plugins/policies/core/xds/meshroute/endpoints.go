@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 func GenerateEndpoints(
@@ -51,6 +52,7 @@ func GenerateEndpoints(
 
 				resources.Add(&core_xds.Resource{
 					Name:     cluster.Name(),
+					Origin:   generator.OriginOutbound,
 					Resource: loadAssignment,
 				})
 			}

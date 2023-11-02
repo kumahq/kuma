@@ -2,6 +2,8 @@ resources:
 - name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
     edsClusterConfig:
       edsConfig:
         ads: {}

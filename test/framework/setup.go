@@ -373,14 +373,19 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 		transparent := opts.transparent != nil && *opts.transparent // default false
+		additionalTags := ""
+		for key, val := range opts.additionalTags {
+			additionalTags += fmt.Sprintf(`
+      %s: %s`, key, val)
+		}
 		if appYaml == "" {
 			if transparent {
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, additionalTags, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
-					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, additionalTags, "80", "8080")
 				} else {
-					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, additionalTags, "80", "8080")
 				}
 			}
 		}
@@ -492,6 +497,12 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			}
 		}
 
+		additionalTags := ""
+		for key, val := range opts.additionalTags {
+			additionalTags += fmt.Sprintf(`
+      %s: %s`, key, val)
+		}
+
 		serviceProbe := ""
 		if opts.serviceProbe {
 			serviceProbe = `    serviceProbe:
@@ -525,7 +536,8 @@ networking:
 %s
 %s
 %s
-`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
+%s
+`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, additionalTags, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),

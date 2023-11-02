@@ -1,13 +1,27 @@
 resources:
-- name: backend
+- name: backend-bb38a94289f18fb9
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
     lbPolicy: RANDOM
-    name: backend
+    name: backend-bb38a94289f18fb9
+    type: EDS
+- name: backend-c72efb5be46fae6b
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: RANDOM
+    name: backend-c72efb5be46fae6b
     type: EDS
 - name: payment
   resource:

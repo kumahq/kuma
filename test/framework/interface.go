@@ -113,6 +113,7 @@ type appDeploymentOptions struct {
 	boundToContainerIp    bool
 	serviceAddress        string
 	dpEnvs                map[string]string
+	additionalTags        map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -499,6 +500,12 @@ func WithToken(token string) AppDeploymentOption {
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
+	})
+}
+
+func WithAdditionalTags(tags map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.additionalTags = tags
 	})
 }
 

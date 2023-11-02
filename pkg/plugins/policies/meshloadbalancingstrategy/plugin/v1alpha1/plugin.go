@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -54,11 +55,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs)
 }
 
 func (p plugin) configureDPP(
@@ -67,6 +68,7 @@ func (p plugin) configureDPP(
 	listeners policies_xds.Listeners,
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
@@ -94,40 +96,60 @@ func (p plugin) configureDPP(
 	// we configure clusters in a separate loop to avoid configuring the same cluster twice
 	for serviceName, conf := range serviceConfs {
 		if cluster, ok := clusters.Outbound[serviceName]; ok {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
+			}
+			if err := configureEndpoints(proxy, cluster, endpoints[serviceName], serviceName, conf, rs); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
+			if err := configureEndpoints(proxy, cluster, endpoints[serviceName], cluster.Name, conf, rs); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
+			}
 		}
-		configureEndpoints(proxy.Dataplane, endpoints, serviceName, conf)
 	}
 
 	return nil
 }
 
 func configureEndpoints(
-	dataplane *core_mesh.DataplaneResource,
-	endpoints policies_xds.EndpointMap,
+	proxy *core_xds.Proxy,
+	cluster *envoy_cluster.Cluster,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	conf api.Conf,
-) {
-	var zone string
-	if inbounds := dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
-		zone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+	rs *core_xds.ResourceSet,
+) error {
+	var localZone string
+	if tags := proxy.Dataplane.Spec.TagSet().Values(mesh_proto.ZoneTag); len(tags) > 0 {
+		localZone = tags[0]
 	}
+
+	// ExternalServices have static endpoints
+	if cluster.LoadAssignment != nil {
+		if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, cluster, conf, serviceName); err != nil {
+			return err
+		}
+	} else {
+		if err := ConfigureEndpointsLocalityAware(proxy, endpoints, conf, rs, serviceName, localZone); err != nil {
+			return err
+		}
+	}
+
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
-		for _, cla := range endpoints[serviceName] {
+		for _, cla := range endpoints {
 			for _, localityLbEndpoints := range cla.Endpoints {
-				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
 					localityLbEndpoints.Priority = 1
 				}
 			}
 		}
 	}
+	return nil
 }
 
 func (p plugin) configureGateway(
@@ -137,6 +159,7 @@ func (p plugin) configureGateway(
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
 ) error {
 	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
 	if len(gatewayListenerInfos) == 0 {
@@ -173,12 +196,14 @@ func (p plugin) configureGateway(
 					continue
 				}
 
-				if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+				if err := p.configureCluster(cluster, *conf); err != nil {
 					return err
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				configureEndpoints(proxy.Dataplane, endpoints, serviceName, *conf)
+				if err := configureEndpoints(proxy, cluster, endpoints[serviceName], serviceName, *conf, rs); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -294,9 +319,20 @@ func (p plugin) configureListener(
 	})
 }
 
-func (p plugin) configureCluster(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
-	if lbConf == nil {
-		return nil
+func (p plugin) configureCluster(c *envoy_cluster.Cluster, config api.Conf) error {
+	if shouldUseLocalityWeightedLb(config) {
+		if err := (&xds.LocalityWeightedLbConfigurer{}).Configure(c); err != nil {
+			return err
+		}
 	}
-	return (&xds.LoadBalancerConfigurer{LoadBalancer: *lbConf}).Configure(c)
+	if config.LoadBalancer != nil {
+		if err := (&xds.LoadBalancerConfigurer{LoadBalancer: *config.LoadBalancer}).Configure(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func shouldUseLocalityWeightedLb(config api.Conf) bool {
+	return config.LocalityAwareness != nil && config.LocalityAwareness.LocalZone != nil && len(config.LocalityAwareness.LocalZone.AffinityTags) > 0
 }
