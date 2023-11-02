@@ -129,6 +129,7 @@ func configureEndpoints(
 		localZone = tags[0]
 	}
 
+	// ExternalServices have static endpoints
 	if cluster.LoadAssignment != nil {
 		if err := ConfigureStaticEndpointsLocalityAware(proxy, endpoints, cluster, conf, serviceName); err != nil {
 			return err
