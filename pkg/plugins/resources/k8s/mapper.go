@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 type ResourceMapperFunc func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error)
@@ -33,21 +32,13 @@ func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) Resourc
 			return nil, err
 		}
 		if rs.Scope() == k8s_model.ScopeNamespace {
-			name, ns, err := util_k8s.CoreNameToK8sName(resource.GetMeta().GetName())
-			if err != nil {
-				// if the original resource doesn't look like a kubernetes name ("name"."namespace")`, just use the default namespace.
-				// this is in the case where someone calls this on a universal cluster. Exporting is a use-case for this.
-				ns = systemNamespace
-				name = resource.GetMeta().GetName()
-			}
 			if namespace != "" { // If the user is forcing the namespace accept it.
-				ns = namespace
+				rs.SetNamespace(namespace)
+			} else {
+				rs.SetNamespace(systemNamespace)
 			}
-			rs.SetName(name)
-			rs.SetNamespace(ns)
-		} else {
-			rs.SetName(resource.GetMeta().GetName())
 		}
+		rs.SetName(resource.GetMeta().GetName())
 		rs.SetMesh(resource.GetMeta().GetMesh())
 		rs.SetCreationTimestamp(v1.NewTime(resource.GetMeta().GetCreationTime()))
 		rs.SetSpec(resource.GetSpec())
