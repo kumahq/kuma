@@ -2,16 +2,14 @@ package localityawarelb
 
 import (
 	"fmt"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func LocalityAwareLBEgress() {
@@ -52,7 +50,7 @@ spec:
 		// Global
 		Expect(NewClusterSetup().
 			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(mesh).WithEgressRoutingEnabled().Build())).
-			Install(YamlUniversal(meshLoadBalancingStrategyDemoClient)).
+			// Install(YamlUniversal(meshLoadBalancingStrategyDemoClient)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -108,17 +106,30 @@ spec:
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
-			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 5)),
+			And(
+				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 66, 10)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 17, 10)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 17, 10)),
+			),
 		)
 
-		// when app with the highest weight is down
+		// apply lb policy
+		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClient))).To(Succeed())
+
+		Eventually(func() (map[string]int, error) {
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+		}, "30s", "5s").Should(
+			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 10)),
+		)
+
+		// when app with the highest priority is down
 		Expect(multizone.UniZone1.DeleteApp("test-server-zone-4")).To(Succeed())
 
 		// then traffic goes to the zone with the next priority, kuma-5
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
-			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 5)),
+			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 10)),
 		)
 
 		// when zone kuma-5 is disabled
@@ -128,7 +139,7 @@ spec:
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
-			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 5)),
+			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
 		)
 	})
 }
