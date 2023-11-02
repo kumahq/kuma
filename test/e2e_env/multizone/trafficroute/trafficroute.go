@@ -29,6 +29,14 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
 			)).
+			Install(TestServerUniversal("dp-echo-5", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v5"}),
+				WithServiceVersion("v5"),
+			)).
+			Install(TestServerUniversal("dp-echo-6", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v6"}),
+				WithServiceVersion("v6"),
+			)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -172,6 +180,47 @@ conf:
 			g.Expect(res).To(MatchAllKeys(Keys{
 				"echo-v1": BeNumerically("~", 2*v1Weight, 20),
 				"echo-v2": BeNumerically("~", 2*v2Weight, 20),
+			}))
+		}, "1m", "5s").Should(Succeed())
+	})
+
+	It("should route split traffic between the versions with 20/80 ratio, local zone", func() {
+		v1Weight := 80
+		v2Weight := 20
+
+		trafficRoute := fmt.Sprintf(`
+type: TrafficRoute
+name: route-20-80-split-local
+mesh: tr-test
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  loadBalancer:
+    roundRobin: {}
+  split:
+    - weight: %d
+      destination:
+        kuma.io/service: test-server
+        version: v5
+    - weight: %d
+      destination:
+        kuma.io/service: test-server
+        version: v6
+`, v1Weight, v2Weight)
+		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+		hashedName := hash.SyncedNameInZone(meshName, "route-20-80-split-local")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res).To(MatchAllKeys(Keys{
+				"echo-v5": BeNumerically("~", 2*v1Weight, 20),
+				"echo-v6": BeNumerically("~", 2*v2Weight, 20),
 			}))
 		}, "1m", "5s").Should(Succeed())
 	})
