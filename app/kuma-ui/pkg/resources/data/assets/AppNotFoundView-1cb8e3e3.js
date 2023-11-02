@@ -1,0 +1,3 @@
+import{d as r,r as t,o as l,i as u,w as e,j as o,p as n,v as m,n as a}from"./index-5147ae2d.js";const d={class:"overview"},f=n("p",null,"The page or entity you were looking for does not exist.",-1),x=r({__name:"AppNotFoundView",setup(w){return(V,h)=>{const s=t("RouteTitle"),p=t("KButton"),c=t("KEmptyState"),_=t("AppView"),i=t("RouteView");return l(),u(i,{name:"app-not-found-view"},{default:e(()=>[o(_,null,{default:e(()=>[n("div",d,[o(c,null,{title:e(()=>[o(m,{class:"mb-3"}),a(),n("h1",null,[o(s,{title:"Page Not Found",render:!0})])]),message:e(()=>[f]),cta:e(()=>[o(p,{appearance:"primary",to:{name:"home"}},{default:e(()=>[a(`
+              Go Home
+            `)]),_:1})]),_:1})])]),_:1})]),_:1})}}});export{x as default};
