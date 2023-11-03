@@ -113,7 +113,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 				"--skip-dns-conntrack-zone-split",
 			},
-			goldenFile: "install-transparent-proxy.dns.golden.txt",
+			goldenFile: "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
 		Entry("should generate defaults with overrides", testCase{
 			extraArgs: []string{
