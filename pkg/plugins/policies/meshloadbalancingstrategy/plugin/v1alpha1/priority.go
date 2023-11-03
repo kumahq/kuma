@@ -69,7 +69,7 @@ func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 			case api.AnyExcept:
 				lb.Type = api.AnyExcept
 				zones := map[string]bool{}
-				for _, zone := range *rule.To.Zones {
+				for _, zone := range pointer.Deref(rule.To.Zones) {
 					zones[zone] = true
 				}
 				lb.Zones = zones
@@ -77,7 +77,7 @@ func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 			case api.Only:
 				lb.Type = api.Only
 				zones := map[string]bool{}
-				for _, zone := range *rule.To.Zones {
+				for _, zone := range pointer.Deref(rule.To.Zones) {
 					zones[zone] = true
 				}
 				lb.Zones = zones

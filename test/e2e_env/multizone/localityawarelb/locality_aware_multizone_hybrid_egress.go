@@ -2,14 +2,16 @@ package localityawarelb
 
 import (
 	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 func LocalityAwareLBEgress() {
@@ -17,6 +19,36 @@ func LocalityAwareLBEgress() {
 	const namespace = "locality-aware-lb-egress"
 
 	meshLoadBalancingStrategyDemoClient := fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+name: mlbs-1
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_locality-aware-lb-egress_svc_80
+      default:
+        localityAwareness:
+          crossZone:
+            failover:
+              - from: 
+                  zones: ["kuma-4"]
+                to:
+                  type: Only
+                  zones: ["kuma-1-zone"]
+              - from: 
+                  zones: ["kuma-4"]
+                to:
+                  type: Only
+                  zones: ["kuma-5"]
+              - from: 
+                  zones: ["kuma-4"]
+                to:
+                  type: Any`, mesh)
+
+	meshLoadBalancingStrategyDemoClientChangedPriority := fmt.Sprintf(`
 type: MeshLoadBalancingStrategy
 name: mlbs-1
 mesh: %s
@@ -57,7 +89,7 @@ spec:
 		// Universal Zone 4
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb_svc",
+				"demo-client_locality-aware-lb-egress_svc",
 				mesh,
 				WithTransparentProxy(true),
 			)).
@@ -71,7 +103,7 @@ spec:
 		// Universal Zone 5
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb_svc",
+				"demo-client_locality-aware-lb-egress_svc",
 				mesh,
 				WithTransparentProxy(true),
 			)).
@@ -103,8 +135,9 @@ spec:
 	})
 
 	It("should route based on defined strategy with egress enabled", func() {
+		// no lb priorities
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
 			And(
 				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 66, 10)),
@@ -114,30 +147,42 @@ spec:
 		)
 
 		// apply lb policy
+		// kuma-4 - priority 0, kuma-1 - priority 1, kuma-5 - priority 2,
 		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClient))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 10)),
 		)
 
-		// when app with the highest priority is down
+		// kill test-server in kuma-4 zone
 		Expect(multizone.UniZone1.DeleteApp("test-server-zone-4")).To(Succeed())
 
-		// then traffic goes to the zone with the next priority, kuma-5
+		// traffic goes to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+		}, "30s", "5s").Should(
+			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
+		)
+
+		// apply lb policy with new priorities
+		// kuma-4 - priority 0, kuma-5 - priority 1, kuma-1 - priority 2,
+		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClientChangedPriority))).To(Succeed())
+
+		// traffic goes to kuma-5 zone
+		Eventually(func() (map[string]int, error) {
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 10)),
 		)
 
-		// when zone kuma-5 is disabled
+		// kill test-server from kuma-5 zone
 		Expect(multizone.UniZone2.DeleteApp("test-server-zone-5")).To(Succeed())
 
-		// then traffic should go to k8s
+		// then traffic should go to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
 		)

@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/proto"
@@ -11,9 +10,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 const defaultOverprovisingFactor uint32 = 200
@@ -26,11 +26,13 @@ func ConfigureStaticEndpointsLocalityAware(
 	serviceName string,
 	localZone string,
 	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) error {
 	if conf.LocalityAwareness != nil {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
 				if err != nil {
 					return err
 				}
@@ -49,17 +51,19 @@ func ConfigureEndpointsLocalityAware(
 	serviceName string,
 	localZone string,
 	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) error {
 	if conf.LocalityAwareness != nil {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
 				if err != nil {
 					return err
 				}
 				rs.Add(&core_xds.Resource{
 					Name:     cla.ClusterName,
-					Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
+					Origin:   origin, // needs to be set so GatherEndpoints can get them
 					Resource: loadAssignment,
 				})
 			}
@@ -75,6 +79,8 @@ func ConfigureEndpointLocalityAwareLb(
 	serviceName string,
 	localZone string,
 	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) (proto.Message, error) {
 	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
 	var endpointsList []core_xds.Endpoint
@@ -87,6 +93,9 @@ func ConfigureEndpointLocalityAwareLb(
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
 				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
+				if egressEnabled && origin != egress.OriginEgress {
+					ed.Locality = egressLocality(ed.Locality.Zone, ed.Locality.Priority)
+				}
 				endpointsList = append(endpointsList, ed)
 			}
 		}
@@ -177,5 +186,12 @@ func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endp
 			}
 			break
 		}
+	}
+}
+
+func egressLocality(zone string, priority uint32) *core_xds.Locality {
+	return &core_xds.Locality{
+		Zone:     sha256.Hash(fmt.Sprintf("%s:%d", zone, priority)),
+		Priority: 1,
 	}
 }

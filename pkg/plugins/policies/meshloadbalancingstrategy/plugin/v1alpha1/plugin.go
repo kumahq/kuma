@@ -23,6 +23,8 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -56,11 +58,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled())
 }
 
 func (p plugin) configureDPP(
@@ -70,6 +72,7 @@ func (p plugin) configureDPP(
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
+	egressEnabled bool,
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
@@ -100,7 +103,7 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, conf, rs, proxy.Zone, proxy.APIVersion); err != nil {
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
 				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
@@ -108,7 +111,7 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], cluster.Name, conf, rs, proxy.Zone, proxy.APIVersion); err != nil {
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], cluster.Name, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
 				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
 			}
 		}
@@ -126,13 +129,15 @@ func configureEndpoints(
 	rs *core_xds.ResourceSet,
 	localZone string,
 	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) error {
 	if cluster.LoadAssignment != nil {
-		if err := ConfigureStaticEndpointsLocalityAware(tags, endpoints, cluster, conf, serviceName, localZone, apiVersion); err != nil {
+		if err := ConfigureStaticEndpointsLocalityAware(tags, endpoints, cluster, conf, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
 			return err
 		}
 	} else {
-		if err := ConfigureEndpointsLocalityAware(tags, endpoints, conf, rs, serviceName, localZone, apiVersion); err != nil {
+		if err := ConfigureEndpointsLocalityAware(tags, endpoints, conf, rs, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
 			return err
 		}
 	}
@@ -157,6 +162,7 @@ func (p plugin) configureGateway(
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
+	egressEnabled bool,
 ) error {
 	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
 	if len(gatewayListenerInfos) == 0 {
@@ -198,7 +204,7 @@ func (p plugin) configureGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion); err != nil {
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
 					return err
 				}
 			}
@@ -227,7 +233,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			conf := rule.Conf.(api.Conf)
 
 			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion)
+			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
 			if err != nil {
 				return err
 			}

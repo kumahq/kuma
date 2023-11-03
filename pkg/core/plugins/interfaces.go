@@ -102,7 +102,7 @@ type EgressPolicyPlugin interface {
 	PolicyPlugin
 	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
 	// should be applied on the zone egress.
-	EgressMatchedPolicies(map[string]string, xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+	EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
 }
 
 // ProxyPlugin a plugin to modify the proxy. This happens before any `PolicyPlugin` or any envoy generation. and it is applied both for Dataplanes and ZoneProxies
