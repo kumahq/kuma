@@ -49,6 +49,11 @@ Due to the shadowing [issue](https://github.com/kumahq/kuma/issues/2417) with ol
 RBAC rules on the Prometheus inbound listener were blocking users from fully migrate to the new MeshTrafficPermission policy. 
 That's why we decided to discontinue TrafficPermission support on the Prometheus inbound listener starting 2.5.x.
 
+### Gateway API
+
+We support `v1` resources and `v1.0.0` of `gateway-api`. `v1beta1` resources are
+still supported but support for these WILL be removed in a future release.
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change

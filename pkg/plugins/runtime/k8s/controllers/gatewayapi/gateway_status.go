@@ -9,6 +9,7 @@ import (
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -40,7 +41,7 @@ func (r *GatewayReconciler) updateStatus(
 	return nil
 }
 
-func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayStatusAddress {
+func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi_v1.GatewayStatusAddress {
 	if instance == nil {
 		return nil
 	}
@@ -48,18 +49,18 @@ func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.Gatew
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
-	var addrs []gatewayapi.GatewayStatusAddress
+	var addrs []gatewayapi_v1.GatewayStatusAddress
 
 	if lb := instance.Status.LoadBalancer; lb != nil {
 		for _, addr := range instance.Status.LoadBalancer.Ingress {
 			if addr.IP != "" {
-				addrs = append(addrs, gatewayapi.GatewayStatusAddress{
+				addrs = append(addrs, gatewayapi_v1.GatewayStatusAddress{
 					Type:  &ipType,
 					Value: addr.IP,
 				})
 			}
 			if addr.Hostname != "" {
-				addrs = append(addrs, gatewayapi.GatewayStatusAddress{
+				addrs = append(addrs, gatewayapi_v1.GatewayStatusAddress{
 					Type:  &hostnameType,
 					Value: addr.Hostname,
 				})
@@ -200,23 +201,23 @@ func mergeGatewayStatus(
 	gateway.Status.Listeners = mergeGatewayListenerStatuses(gateway, listenerConditions, attachedListeners)
 
 	programmedStatus := kube_meta.ConditionTrue
-	programmedReason := string(gatewayapi.GatewayReasonProgrammed)
+	programmedReason := string(gatewayapi_v1.GatewayReasonProgrammed)
 
 	for _, listener := range gateway.Status.Listeners {
-		if !kube_apimeta.IsStatusConditionTrue(listener.Conditions, string(gatewayapi.ListenerConditionProgrammed)) {
+		if !kube_apimeta.IsStatusConditionTrue(listener.Conditions, string(gatewayapi_v1.ListenerConditionProgrammed)) {
 			programmedStatus = kube_meta.ConditionFalse
-			programmedReason = string(gatewayapi.GatewayReasonInvalid)
+			programmedReason = string(gatewayapi_v1.GatewayReasonInvalid)
 		}
 	}
 
 	conditions := []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.GatewayConditionAccepted),
+			Type:   string(gatewayapi_v1.GatewayConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.GatewayReasonAccepted),
+			Reason: string(gatewayapi_v1.GatewayReasonAccepted),
 		},
 		{
-			Type:   string(gatewayapi.GatewayConditionProgrammed),
+			Type:   string(gatewayapi_v1.GatewayConditionProgrammed),
 			Status: programmedStatus,
 			Reason: programmedReason,
 		},
