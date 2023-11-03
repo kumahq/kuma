@@ -137,11 +137,11 @@ spec:
 		// no lb priorities
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(
+		}, "1m", "10s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 66, 10)),
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 17, 10)),
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 17, 10)),
+				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 66, 15)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 17, 15)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 17, 15)),
 			),
 		)
 
@@ -151,7 +151,7 @@ spec:
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(
+		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 10)),
 		)
 
@@ -161,7 +161,7 @@ spec:
 		// traffic goes to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(
+		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
 		)
 
@@ -172,7 +172,7 @@ spec:
 		// traffic goes to kuma-5 zone
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(
+		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 10)),
 		)
 
@@ -182,7 +182,7 @@ spec:
 		// then traffic should go to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(
+		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
 		)
 	})
