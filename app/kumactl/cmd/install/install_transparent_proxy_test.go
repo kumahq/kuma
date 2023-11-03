@@ -75,7 +75,10 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--redirect-dns-port", "12345",
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
-			errorMatcher: HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"),
+			errorMatcher: Or(
+				HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"), // macOS
+				BeEmpty(), // linux
+			),
 			goldenFile:   "install-transparent-proxy.dns.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
