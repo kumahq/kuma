@@ -95,7 +95,8 @@ const (
 
 	// KumaEnvoyLogLevel allows to control Envoy log level.
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
-	KumaEnvoyLogLevel = "kuma.io/envoy-log-level"
+	KumaEnvoyLogLevel          = "kuma.io/envoy-log-level"
+	KumaEnvoyComponentLogLevel = "kuma.io/envoy-component-log-level"
 
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"

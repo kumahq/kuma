@@ -119,6 +119,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		"--log-level", e.opts.Config.DataplaneRuntime.EnvoyLogLevel,
 	}
 
+	if e.opts.Config.DataplaneRuntime.EnvoyComponentLogLevel != "" {
+		args = append(args, "--component-log-level", e.opts.Config.DataplaneRuntime.EnvoyComponentLogLevel)
+	}
+
 	// If the concurrency is explicit, use that. On Linux, users
 	// can also implicitly set concurrency using cpusets.
 	if e.opts.Config.DataplaneRuntime.Concurrency > 0 {
