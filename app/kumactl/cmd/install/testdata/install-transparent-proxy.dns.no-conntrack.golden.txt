@@ -1,9 +1,3 @@
-* raw
--A PREROUTING -p udp --sport 53 -j CT --zone 1
--A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j CT --zone 1
--A OUTPUT -p udp --sport 12345 -m owner --uid-owner 0 -j CT --zone 2
--A OUTPUT -p udp --dport 53 -j CT --zone 2
-COMMIT
 * nat
 -N KUMA_MESH_INBOUND
 -N KUMA_MESH_OUTBOUND
