@@ -35,7 +35,7 @@ resources:
                 kuma.io/protocol: http
                 kuma.io/zone: zone-2
         locality:
-          zone: egress:JXegjD3U4x07ItT7LMc9tUM8zYPBfHgLOLcRJ73nzms=
+          zone: egress_JXegjD3U
         priority: 1
       - lbEndpoints:
         - endpoint:

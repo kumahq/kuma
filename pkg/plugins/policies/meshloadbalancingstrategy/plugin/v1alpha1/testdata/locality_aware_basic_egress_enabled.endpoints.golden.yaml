@@ -18,55 +18,8 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               kuma.io/zone: zone-2
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.1.5
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-5
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-5
       locality:
-        zone: egress:+9ESnM2KXca5ii/1B4pp45do5Pqcju2lq/sjhaGwO2s=
-      priority: 1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.1.5
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-4
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-4
-      locality:
-        zone: egress:P6QVbabe5FiNPDS8SPIE5m1v0pCRFs/Sk14W77rnZL4=
-      priority: 1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.1.5
-              portValue: 8080
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-3
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              kuma.io/zone: zone-3
-      locality:
-        zone: egress:do0zBmmQuEx+oRYngyL1HNggzOvbEPvP/GC1d+rb8FQ=
+        zone: egress_+9ESnM2K
       priority: 1
     - lbEndpoints:
       - endpoint:

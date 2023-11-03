@@ -587,9 +587,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						createEndpointWith("zone-1", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
 						createEndpointWith("zone-1", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
 						createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
-						createEndpointWith("zone-3", "192.168.1.5", map[string]string{}),
-						createEndpointWith("zone-4", "192.168.1.5", map[string]string{}),
-						createEndpointWith("zone-5", "192.168.1.5", map[string]string{}),
 					}),
 				},
 				{

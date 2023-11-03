@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -198,13 +199,11 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 	for _, group := range crossZoneGroups {
 		switch group.Type {
 		case api.Only:
-			zones := strings.Join(maps.Keys(group.Zones), ",")
-			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, zones))
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, strings.Join(sortedZones(group.Zones), ",")))
 		case api.Any:
 			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, group.Type))
 		case api.AnyExcept:
-			zones := strings.Join(maps.Keys(group.Zones), ",")
-			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, zones))
+			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, strings.Join(sortedZones(group.Zones), ",")))
 		default:
 			continue
 		}
@@ -212,7 +211,12 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 	}
 
 	return &core_xds.Locality{
-		Zone:     fmt.Sprintf("egress:%s", sha256.Hash(builder.String())),
+		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
 		Priority: 1,
 	}
+}
+func sortedZones(zones map[string]bool) []string {
+	keys := maps.Keys(zones)
+	sort.Strings(keys)
+	return keys
 }
