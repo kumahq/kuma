@@ -2,9 +2,11 @@ package v1alpha1
 
 import (
 	"fmt"
+	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -30,7 +32,7 @@ func ConfigureStaticEndpointsLocalityAware(
 	egressEnabled bool,
 	origin string,
 ) error {
-	if conf.LocalityAwareness != nil {
+	if conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil) {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
 				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
@@ -55,7 +57,7 @@ func ConfigureEndpointsLocalityAware(
 	egressEnabled bool,
 	origin string,
 ) error {
-	if conf.LocalityAwareness != nil {
+	if conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil) {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
 				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
@@ -90,13 +92,14 @@ func ConfigureEndpointLocalityAwareLb(
 			ed := createEndpoint(lbEndpoint, localZone)
 			zoneName := ed.Tags[mesh_proto.ZoneTag]
 
+			// nolint:gocritic
 			if zoneName == localZone {
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
 				endpointsList = append(endpointsList, ed)
+			} else if egressEnabled && origin != egress.OriginEgress {
+				ed.Locality = egressLocality(crossZonePriorityGroups)
+				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
-				if egressEnabled && origin != egress.OriginEgress {
-					ed.Locality = egressLocality(ed.Locality.Zone, ed.Locality.Priority)
-				}
 				endpointsList = append(endpointsList, ed)
 			}
 		}
@@ -190,9 +193,26 @@ func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endp
 	}
 }
 
-func egressLocality(zone string, priority uint32) *core_xds.Locality {
+func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
+	builder := strings.Builder{}
+	for _, group := range crossZoneGroups {
+		switch group.Type {
+		case api.Only:
+			zones := strings.Join(maps.Keys(group.Zones), ",")
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, zones))
+		case api.Any:
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, group.Type))
+		case api.AnyExcept:
+			zones := strings.Join(maps.Keys(group.Zones), ",")
+			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, zones))
+		default:
+			continue
+		}
+		builder.WriteString(";")
+	}
+
 	return &core_xds.Locality{
-		Zone:     sha256.Hash(fmt.Sprintf("%s:%d", zone, priority)),
+		Zone:     fmt.Sprintf("egress:%s", sha256.Hash(builder.String())),
 		Priority: 1,
 	}
 }
