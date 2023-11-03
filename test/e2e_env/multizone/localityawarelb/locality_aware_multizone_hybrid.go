@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -290,7 +291,7 @@ spec:
 		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("==", 100)))
 
 		// when zone kuma-1-zone is disabled
-		Expect(multizone.KubeZone1.DeleteDeployment("test-server")).To(Succeed())
+		Expect(DeleteK8sApp(multizone.KubeZone1, "test-server", namespace)).To(Succeed())
 
 		// then traffic should goes to k8s
 		Eventually(func(g Gomega) {
@@ -398,4 +399,15 @@ func resetCounter(cluster Cluster, name string, namespace string) error {
 		client.WithMethod("POST"),
 	)
 	return err
+}
+
+// TODO(lukidzi): use test-server implementation: https://github.com/kumahq/kuma/issues/8245
+func DeleteK8sApp(c Cluster, name string, namespace string) error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "service", name); err != nil {
+		return err
+	}
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "deployment", name); err != nil {
+		return err
+	}
+	return nil
 }
