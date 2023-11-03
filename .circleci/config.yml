@@ -517,4 +517,4 @@ workflows:
           name: container-structure
           requires: [build]
       - distributions:
-          requires: [test, e2e, legacy, container-structure]
+          requires: [test, container-structure]
