@@ -17,6 +17,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -182,7 +183,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NoHostnameIntersection:
 				reason = string(gatewayapi.RouteReasonNoMatchingListenerHostname)
 			case attachment.NoMatchingParent:
-				reason = string(gatewayapi.RouteReasonNoMatchingParent)
+				reason = string(gatewayapi_v1.RouteReasonNoMatchingParent)
 			}
 			notAcceptedConditions[ref] = reason
 		}
