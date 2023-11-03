@@ -58,7 +58,7 @@ func (b BuildInfo) AsMap() map[string]string {
 		"git_tag":    b.GitTag,
 	}
 	if b.BasedOnKuma != "" {
-		res["based_on_kuma"] = shortCommit(b.BasedOnKuma)
+		res["based_on_kuma"] = b.BasedOnKuma
 	}
 	return res
 }
@@ -66,7 +66,7 @@ func (b BuildInfo) AsMap() map[string]string {
 func (b BuildInfo) UserAgent(component string) string {
 	commit := shortCommit(b.GitCommit)
 	if b.BasedOnKuma != "" {
-		commit = fmt.Sprintf("%s/kuma-%s", commit, shortCommit(b.BasedOnKuma))
+		commit = fmt.Sprintf("%s/kuma-%s", commit, b.BasedOnKuma)
 	}
 	return fmt.Sprintf("%s/%s (%s; %s; %s/%s)",
 		component,
