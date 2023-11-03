@@ -404,6 +404,8 @@ routing:
 			}, "30s", "500ms").Should(
 				MatchAllKeys(Keys{
 					"echo-v1": Not(BeNil()),
+					"echo-v5": Not(BeNil()),
+					"echo-v6": Not(BeNil()),
 				}),
 			)
 		})
