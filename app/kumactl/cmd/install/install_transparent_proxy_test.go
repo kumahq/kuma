@@ -74,7 +74,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
-		Entry("should generate defaults with user id and DNS redirected", testCase{
+		Entry("should generate defaults with user id and DNS redirected when no conntrack module present", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
@@ -90,7 +90,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			errorMatcher: HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"),
 			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
-		Entry("should generate defaults with user id and DNS redirected when no conntrack module present", testCase{
+		Entry("should generate defaults with user id and DNS redirected", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
