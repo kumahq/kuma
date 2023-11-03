@@ -215,6 +215,7 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 		Priority: 1,
 	}
 }
+
 func sortedZones(zones map[string]bool) []string {
 	keys := maps.Keys(zones)
 	sort.Strings(keys)
