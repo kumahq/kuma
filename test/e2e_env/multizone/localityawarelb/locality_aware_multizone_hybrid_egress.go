@@ -85,20 +85,6 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
-		// Universal Zone 4
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb-egress_svc",
-				mesh,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-zone-4", mesh,
-				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
-			)).
-			Setup(multizone.UniZone1),
-		).To(Succeed())
-
 		// Universal Zone 5
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
@@ -124,6 +110,20 @@ spec:
 				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
 			)).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
+
+		// Universal Zone 4
+		Expect(NewClusterSetup().
+			Install(DemoClientUniversal(
+				"demo-client_locality-aware-lb-egress_svc",
+				mesh,
+				WithTransparentProxy(true),
+			)).
+			Install(TestServerUniversal("test-server-zone-4", mesh,
+				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
+				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+			)).
+			Setup(multizone.UniZone1),
+		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
