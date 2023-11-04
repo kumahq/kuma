@@ -2,6 +2,7 @@ package localityawarelb
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -85,6 +86,18 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		// Kubernetes Zone 1
+		Expect(NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			)).
+			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
+
 		// Universal Zone 5
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
@@ -99,18 +112,7 @@ spec:
 			Setup(multizone.UniZone2),
 		).To(Succeed())
 
-		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
-			)).
-			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
-
+		time.Sleep(30 * time.Second)
 		// Universal Zone 4
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
