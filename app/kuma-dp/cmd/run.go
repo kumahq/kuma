@@ -160,17 +160,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
-				Quit:      shouldQuit,
 			}
 
-			if cfg.DNS.Enabled &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),
 					Stderr: cmd.OutOrStderr(),
-					Quit:   shouldQuit,
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)

@@ -107,16 +107,16 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
 
-	c.startHealthCheck(withKDSCtx, log, conn, stop, errorCh)
+	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
 
-	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
-	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
-	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
+	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
+	go c.startStats(withKDSCtx, log, conn, errorCh)
+	go c.startClusters(withKDSCtx, log, conn, errorCh)
 	if c.experimantalConfig.KDSDeltaEnabled {
-		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
-		go c.startZoneToGlobalSync(withKDSCtx, log, conn, stop, errorCh)
+		go c.startGlobalToZoneSync(withKDSCtx, log, conn, errorCh)
+		go c.startZoneToGlobalSync(withKDSCtx, log, conn, errorCh)
 	} else {
-		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+		go c.startKDSMultiplex(withKDSCtx, log, conn, errorCh)
 	}
 
 	select {
@@ -124,11 +124,12 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		cancel()
 		return errs
 	case err = <-errorCh:
+		cancel()
 		return err
 	}
 }
 
-func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	stream, err := muxClient.StreamMessage(ctx)
@@ -144,26 +145,21 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 		errorCh <- err
 		return
 	}
-	select {
-	case <-stop:
-		log.Info("KDS stream stopped", "reason", err)
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		err = <-session.Error()
-		errorCh <- err
-	case err = <-session.Error():
+	err = <-session.Error()
+	if errors.Is(err, context.Canceled) {
+		log.Info("KDS stream shutting down")
+	} else {
 		log.Error(err, "KDS stream failed prematurely, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
-		return
 	}
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	errorCh <- err
 }
 
-func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log = log.WithValues("rpc", "global-to-zone")
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
@@ -172,29 +168,12 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
-	select {
-	case <-stop:
-		log.Info("Global to Zone Sync rpc stream stopped")
-		if err := stream.CloseSend(); err != nil {
-			errorCh <- errors.Wrap(err, "CloseSend returned an error")
-		}
-	case err := <-processingErrorsCh:
-		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "Global to Zone Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
-			return
-		}
-		log.Error(err, "Global to Zone Sync rpc stream failed, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
-		return
-	}
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
-func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log = log.WithValues("rpc", "zone-to-global")
 	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
 	stream, err := kdsClient.ZoneToGlobalSync(ctx)
 	if err != nil {
@@ -203,32 +182,13 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}
 	processingErrorsCh := make(chan error)
 	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
-	select {
-	case <-stop:
-		log.Info("Zone to Global Sync rpc stream stopped")
-		if err := stream.CloseSend(); err != nil {
-			errorCh <- errors.Wrap(err, "CloseSend returned an error")
-		}
-	case err := <-processingErrorsCh:
-		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "Zone to Global Sync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so Admin RPC can still operate.
-			return
-		}
-		log.Error(err, "Zone to Global Sync rpc stream failed, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
-		return
-	}
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startXDSConfigs(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -242,14 +202,13 @@ func (c *client) startXDSConfigs(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startStats(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -263,14 +222,13 @@ func (c *client) startStats(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startClusters(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -284,79 +242,71 @@ func (c *client) startClusters(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startHealthCheck(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
 	log = log.WithValues("rpc", "healthcheck")
 	log.Info("starting")
 
-	go func() {
-		prevInterval := 5 * time.Minute
-		ticker := time.NewTicker(prevInterval)
-		defer ticker.Stop()
-		for {
-			log.Info("sending health check")
-			resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
-			if err != nil && !errors.Is(err, context.Canceled) {
-				if status.Code(err) == codes.Unimplemented {
-					log.Info("health check unimplemented in server, stopping")
-					return
-				}
-				log.Error(err, "health check failed")
-				errorCh <- errors.Wrap(err, "zone health check request failed")
-			} else if interval := resp.Interval.AsDuration(); interval > 0 {
-				if prevInterval != interval {
-					prevInterval = interval
-					log.Info("Global CP requested new healthcheck interval", "interval", interval)
-				}
-				ticker.Reset(interval)
-			}
-
-			select {
-			case <-ticker.C:
-				continue
-			case <-stop:
-				log.Info("stopping")
+	prevInterval := 5 * time.Minute
+	ticker := time.NewTicker(prevInterval)
+	defer ticker.Stop()
+	for {
+		log.Info("sending health check")
+		resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			if status.Code(err) == codes.Unimplemented {
+				log.Info("health check unimplemented in server, stopping")
 				return
 			}
+			log.Error(err, "health check failed")
+			errorCh <- errors.Wrap(err, "zone health check request failed")
+		} else if interval := resp.Interval.AsDuration(); interval > 0 {
+			if prevInterval != interval {
+				prevInterval = interval
+				log.Info("Global CP requested new healthcheck interval", "interval", interval)
+			}
+			ticker.Reset(interval)
 		}
-	}()
+
+		select {
+		case <-ticker.C:
+			continue
+		case <-ctx.Done():
+			log.Info("stopping")
+			return
+		}
+	}
 }
 
 func (c *client) handleProcessingErrors(
 	stream grpc.ClientStream,
 	log logr.Logger,
-	stop <-chan struct{},
 	processingErrorsCh chan error,
 	errorCh chan error,
 ) {
-	select {
-	case <-stop:
-		log.Info("Envoy Admin rpc stream stopped")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-	case err := <-processingErrorsCh:
-		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "Envoy Admin rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
-			return
-		}
-		log.Error(err, "Envoy Admin rpc stream failed prematurely, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
+	err := <-processingErrorsCh
+	if status.Code(err) == codes.Unimplemented {
+		log.Error(err, "rpc stream failed, because remote CP does not implement this rpc. Upgrade remote CP.")
+		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
+	if errors.Is(err, context.Canceled) {
+		log.Info("rpc stream shutting down")
+	} else {
+		log.Error(err, "rpc stream failed prematurely, will restart in background")
+	}
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	errorCh <- err
 }
 
 func (c *client) NeedLeaderElection() bool {

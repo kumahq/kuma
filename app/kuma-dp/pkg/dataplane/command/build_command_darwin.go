@@ -1,4 +1,4 @@
-//go:build linux
+//go:build darwin
 
 package command
 
@@ -18,7 +18,6 @@ func BuildCommand(
 ) *exec.Cmd {
 	command := baseBuildCommand(ctx, stdout, stderr, name, args...)
 	command.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGKILL,
 		// Set those attributes so the new process won't receive the signals from a parent automatically.
 		Setpgid: true,
 		Pgid:    0,
