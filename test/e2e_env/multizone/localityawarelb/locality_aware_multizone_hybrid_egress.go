@@ -2,16 +2,15 @@ package localityawarelb
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"time"
-
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"time"
 )
 
 func LocalityAwareLBEgress() {
@@ -85,6 +84,18 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		// Kubernetes Zone 1
+		Expect(NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			)).
+			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
+
 		// Universal Zone 5
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
@@ -100,6 +111,7 @@ spec:
 		).To(Succeed())
 
 		// Universal Zone 4
+		time.Sleep(30 * time.Second)
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
 				"demo-client_locality-aware-lb-egress_svc",
@@ -112,20 +124,6 @@ spec:
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())
-
-		time.Sleep(30 * time.Second)
-		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
-			)).
-			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
-
 	})
 
 	E2EAfterAll(func() {
