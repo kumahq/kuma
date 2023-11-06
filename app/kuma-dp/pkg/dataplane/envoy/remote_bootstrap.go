@@ -91,7 +91,7 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 
 		switch err {
 		case DpNotFoundErr:
-			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. If it takes too long, check kuma-cp logs. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
+			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, the control plane is most likely still in the process of converting Pod to Dataplane. If it takes too long, check pod events and control plane logs to see possible cause. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
 		default:
 			log.Info("could not fetch bootstrap configuration, make sure you are not trying to connect to global-cp. retrying (this could help only if you're connecting to zone-cp or standalone).", "backoff", cfg.ControlPlane.Retry.Backoff, "err", err.Error())
 		}

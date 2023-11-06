@@ -339,13 +339,13 @@ spec:
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(
 				multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
-				client.WithNumberOfRequests(100),
+				client.WithNumberOfRequests(200),
 				client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
 			)
-		}, "30s", "5s").Should(
+		}, "30s", "10s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-1`), BeNumerically("~", 50, 15)),
-				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-5`), BeNumerically("~", 50, 15)),
+				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-1`), BeNumerically("~", 100, 20)),
+				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-5`), BeNumerically("~", 100, 20)),
 			),
 		)
 
@@ -358,7 +358,7 @@ spec:
 		// and generate some traffic
 		_, err := client.CollectResponsesAndFailures(
 			multizone.KubeZone2, "demo-client-mesh-route", "test-server-mesh-route_locality-aware-lb_svc_80.mesh",
-			client.WithNumberOfRequests(100),
+			client.WithNumberOfRequests(200),
 			client.NoFail(),
 			client.WithoutRetries(),
 			client.FromKubernetesPod(namespace, "demo-client-mesh-route"),
@@ -368,10 +368,10 @@ spec:
 		// then
 		failedRequests, err := failRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(failedRequests).To(BeNumerically("~", 50, 15))
+		Expect(failedRequests).To(BeNumerically("~", 100, 20))
 		successRequests, err := successRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(successRequests).To(BeNumerically("~", 50, 15))
+		Expect(successRequests).To(BeNumerically("~", 100, 20))
 	})
 }
 
