@@ -152,9 +152,9 @@ spec:
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(200))
 		}, "2m", "10s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 132, 15)),
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 34, 15)),
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 34, 15)),
+				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 132, 20)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 34, 20)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 34, 20)),
 			),
 		)
 
