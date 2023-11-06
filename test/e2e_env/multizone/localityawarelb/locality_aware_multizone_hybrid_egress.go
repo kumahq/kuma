@@ -114,13 +114,13 @@ spec:
 		// TODO: should be removed after fixing egress issues
 		// Workaround to wait for all remote zones to set up
 		egressTunnel = multizone.UniZone1.GetZoneEgressEnvoyTunnel()
-		Eventually(func() int {
+		Eventually(func(g Gomega) int {
 			egressClusters, err := egressTunnel.GetClusters()
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 			cluster := egressClusters.GetCluster(fmt.Sprintf("%s:test-server_locality-aware-lb-egress_svc_80", mesh))
-			Expect(cluster).ToNot(BeNil())
+			g.Expect(cluster).ToNot(BeNil())
 			return len(cluster.HostStatuses)
-		}, "1m", "5s").Should(Equal(2))
+		}, "2m", "5s").Should(Equal(2))
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
@@ -148,7 +148,7 @@ spec:
 		// no lb priorities
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(200))
-		}, "6m", "10s").Should(
+		}, "2m", "10s").Should(
 			And(
 				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 132, 15)),
 				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 34, 15)),
@@ -182,13 +182,13 @@ spec:
 
 		// TODO: should be removed after fixing egress issues
 		// egress config refresh workaround
-		Eventually(func() int {
+		Eventually(func(g Gomega) int {
 			egressClusters, err := egressTunnel.GetClusters()
-			Expect(err).ToNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred())
 			cluster := egressClusters.GetCluster(fmt.Sprintf("%s:test-server_locality-aware-lb-egress_svc_80", mesh))
-			Expect(cluster).ToNot(BeNil())
+			g.Expect(cluster).ToNot(BeNil())
 			return cluster.GetPriorityForZone("kuma-5")
-		}, "1m", "5s").Should(Equal(1))
+		}, "2m", "5s").Should(Equal(1))
 		Expect(multizone.UniZone1.GetApp("demo-client_locality-aware-lb-egress_svc").ReStart()).To(Succeed())
 
 		// traffic goes to kuma-5 zone
