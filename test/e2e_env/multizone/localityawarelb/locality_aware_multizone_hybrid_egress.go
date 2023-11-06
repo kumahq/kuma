@@ -7,15 +7,16 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"time"
 )
 
 func LocalityAwareLBEgress() {
 	const mesh = "locality-aware-lb-egress"
 	const namespace = "locality-aware-lb-egress"
+	var egressTunnel envoy_admin.Tunnel
 
 	meshLoadBalancingStrategyDemoClient := fmt.Sprintf(`
 type: MeshLoadBalancingStrategy
@@ -110,8 +111,18 @@ spec:
 			Setup(multizone.UniZone2),
 		).To(Succeed())
 
+		// TODO: should be removed after fixing egress issues
+		// Workaround to wait for all remote zones to set up
+		egressTunnel = multizone.UniZone1.GetZoneEgressEnvoyTunnel()
+		Eventually(func() int {
+			egressClusters, err := egressTunnel.GetClusters()
+			Expect(err).ToNot(HaveOccurred())
+			cluster := egressClusters.GetCluster(fmt.Sprintf("%s:test-server_locality-aware-lb-egress_svc_80", mesh))
+			Expect(cluster).ToNot(BeNil())
+			return len(cluster.HostStatuses)
+		}, "1m", "5s").Should(Equal(2))
+
 		// Universal Zone 4
-		time.Sleep(30 * time.Second)
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
 				"demo-client_locality-aware-lb-egress_svc",
@@ -169,8 +180,15 @@ spec:
 		// kuma-4 - priority 0, kuma-5 - priority 1, kuma-1 - priority 2,
 		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClientChangedPriority))).To(Succeed())
 
-		// TODO: should be removed after fixing egress imperfections
+		// TODO: should be removed after fixing egress issues
 		// egress config refresh workaround
+		Eventually(func() int {
+			egressClusters, err := egressTunnel.GetClusters()
+			Expect(err).ToNot(HaveOccurred())
+			cluster := egressClusters.GetCluster(fmt.Sprintf("%s:test-server_locality-aware-lb-egress_svc_80", mesh))
+			Expect(cluster).ToNot(BeNil())
+			return cluster.GetPriorityForZone("kuma-5")
+		}, "1m", "5s").Should(Equal(1))
 		Expect(multizone.UniZone1.GetApp("demo-client_locality-aware-lb-egress_svc").ReStart()).To(Succeed())
 
 		// traffic goes to kuma-5 zone

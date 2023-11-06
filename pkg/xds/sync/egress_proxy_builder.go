@@ -95,7 +95,7 @@ func (p *EgressProxyBuilder) Build(
 		}
 
 		for _, es := range externalServices {
-			policies, err := matchExternalPolicies(es.Spec.GetTags(), meshCtx.Resources)
+			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)
 			if err != nil {
 				return nil, err
 			}
@@ -103,7 +103,7 @@ func (p *EgressProxyBuilder) Build(
 		}
 
 		for serviceName := range meshResources.EndpointMap {
-			policies, err := matchExternalPolicies(map[string]string{mesh_proto.ServiceTag: serviceName}, meshCtx.Resources)
+			policies, err := matchEgressPolicies(map[string]string{mesh_proto.ServiceTag: serviceName}, meshCtx.Resources)
 			if err != nil {
 				return nil, err
 			}
@@ -133,7 +133,7 @@ func (p *EgressProxyBuilder) Build(
 	return proxy, nil
 }
 
-func matchExternalPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
+func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
 	policies := core_xds.PluginOriginatedPolicies{}
 	for name, plugin := range core_plugins.Plugins().PolicyPlugins() {
 		egressPlugin, ok := plugin.(core_plugins.EgressPolicyPlugin)
