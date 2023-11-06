@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
@@ -112,6 +113,7 @@ spec:
 			Setup(multizone.UniZone1),
 		).To(Succeed())
 
+		time.Sleep(30 * time.Second)
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
