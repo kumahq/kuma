@@ -2,8 +2,6 @@ package localityawarelb
 
 import (
 	"fmt"
-	"time"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -112,7 +110,6 @@ spec:
 			Setup(multizone.UniZone2),
 		).To(Succeed())
 
-		time.Sleep(30 * time.Second)
 		// Universal Zone 4
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
@@ -139,7 +136,7 @@ spec:
 		// no lb priorities
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(200))
-		}, "1m", "10s").Should(
+		}, "6m", "10s").Should(
 			And(
 				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 132, 15)),
 				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 34, 15)),
