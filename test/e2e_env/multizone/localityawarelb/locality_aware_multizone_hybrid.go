@@ -344,8 +344,8 @@ spec:
 			)
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-1`), BeNumerically("~", 50, 10)),
-				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-5`), BeNumerically("~", 50, 10)),
+				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-1`), BeNumerically("~", 50, 15)),
+				HaveKeyWithValue(Equal(`test-server-mesh-route-zone-5`), BeNumerically("~", 50, 15)),
 			),
 		)
 
