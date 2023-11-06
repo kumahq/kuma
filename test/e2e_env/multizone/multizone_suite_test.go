@@ -69,4 +69,5 @@ var (
 	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("MeshTimeout", meshtimeout.MeshTimeout, Ordered)
 	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
+	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
 )

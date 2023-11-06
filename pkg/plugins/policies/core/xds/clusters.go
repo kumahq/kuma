@@ -6,12 +6,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 type Clusters struct {
@@ -21,7 +19,7 @@ type Clusters struct {
 	Gateway       map[string]*envoy_cluster.Cluster
 }
 
-func GatherClusters(rs *xds.ResourceSet) Clusters {
+func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 	clusters := Clusters{
 		Inbound:       map[string]*envoy_cluster.Cluster{},
 		Outbound:      map[string]*envoy_cluster.Cluster{},
@@ -81,7 +79,7 @@ func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Proto
 	externalEndpoints := routing.ExternalServiceOutboundTargets[serviceName]
 	allEndpoints = append(allEndpoints, externalEndpoints...)
 
-	return envoy_common.InferServiceProtocol(allEndpoints)
+	return generator.InferServiceProtocol(allEndpoints)
 }
 
 func HasExternalService(routing core_xds.Routing, serviceName string) bool {

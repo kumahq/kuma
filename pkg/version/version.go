@@ -42,14 +42,39 @@ func (b BuildInfo) FormatDetailedProductInfo() string {
 	)
 }
 
+func shortCommit(c string) string {
+	if len(c) < 7 {
+		return c
+	}
+	return c[:7]
+}
+
+func (b BuildInfo) AsMap() map[string]string {
+	res := map[string]string{
+		"product":    b.Product,
+		"version":    b.Version,
+		"build_date": b.BuildDate,
+		"git_commit": shortCommit(b.GitCommit),
+		"git_tag":    b.GitTag,
+	}
+	if b.BasedOnKuma != "" {
+		res["based_on_kuma"] = shortCommit(b.BasedOnKuma)
+	}
+	return res
+}
+
 func (b BuildInfo) UserAgent(component string) string {
+	commit := shortCommit(b.GitCommit)
+	if b.BasedOnKuma != "" {
+		commit = fmt.Sprintf("%s/kuma-%s", commit, shortCommit(b.BasedOnKuma))
+	}
 	return fmt.Sprintf("%s/%s (%s; %s; %s/%s)",
 		component,
 		b.Version,
 		runtime.GOOS,
 		runtime.GOARCH,
 		b.Product,
-		b.GitCommit[:7])
+		commit)
 }
 
 var Build BuildInfo

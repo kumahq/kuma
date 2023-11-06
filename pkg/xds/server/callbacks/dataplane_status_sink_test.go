@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/api/generic"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -81,7 +80,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			latestOperation = &create
 
 			// and
-			Expect(util_proto.ToYAML(latestOperation.DiscoverySubscription)).To(MatchYAML(`
+			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
@@ -114,7 +113,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				}
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(latestOperation.DiscoverySubscription)).To(MatchYAML(`
+			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
@@ -255,8 +254,8 @@ var _ manager.ResourceManager = &DataplaneInsightStoreRecorder{}
 
 type DataplaneInsightOperation struct {
 	core_model.ResourceKey
-	*mesh_proto.DiscoverySubscription
 	*mesh_proto.DataplaneInsight_MTLS
+	Subscriptions []*mesh_proto.DiscoverySubscription
 }
 
 type DataplaneInsightStoreRecorder struct {
@@ -272,7 +271,7 @@ func (d *DataplaneInsightStoreRecorder) Create(ctx context.Context, resource cor
 	opts := core_store.NewCreateOptions(optionsFunc...)
 	d.Creates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: opts.Mesh, Name: opts.Name},
-		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 	}
 	return nil
@@ -284,7 +283,7 @@ func (d *DataplaneInsightStoreRecorder) Update(ctx context.Context, resource cor
 	}
 	d.Updates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName()},
-		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		Subscriptions:         resource.GetSpec().(*mesh_proto.DataplaneInsight).Subscriptions,
 		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 	}
 	return nil

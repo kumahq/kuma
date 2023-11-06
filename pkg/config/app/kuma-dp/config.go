@@ -189,6 +189,9 @@ type DataplaneRuntime struct {
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
 	// By default it inherits Kuma DP logging level.
 	EnvoyLogLevel string `json:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
+	// EnvoyComponentLogLevel configures Envoy's --component-log-level and uses
+	// the exact same syntax: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-component-log-level
+	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process

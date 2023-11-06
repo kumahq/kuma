@@ -6,6 +6,7 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -21,26 +22,22 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 
 			data := printers.Table{
 				Headers: []string{"ACTIVE", "NAME", "ADDRESS"},
-				NextRow: func() func() []string {
-					i := 0
-					return func() []string {
-						defer func() { i++ }()
-						if len(controlPlanes) <= i {
-							return nil
-						}
-						cp := controlPlanes[i]
-
-						active := context != nil && context.ControlPlane == cp.Name
-
-						return []string{
-							table.Check(active), // ACTIVE
-							cp.GetName(),        // NAME
-							cp.GetCoordinates().GetApiServer().GetUrl(), // URL
-						}
+				RowForItem: func(i int, container interface{}) ([]string, error) {
+					cps := container.([]*v1alpha1.ControlPlane)
+					if len(cps) <= i {
+						return nil, nil
 					}
-				}(),
+					cp := cps[i]
+					active := context != nil && context.ControlPlane == cp.Name
+
+					return []string{
+						table.Check(active), // ACTIVE
+						cp.GetName(),        // NAME
+						cp.GetCoordinates().GetApiServer().GetUrl(), // URL
+					}, nil
+				},
 			}
-			return printers.NewTablePrinter().Print(data, cmd.OutOrStdout())
+			return data.Print(controlPlanes, cmd.OutOrStdout())
 		},
 	}
 }
