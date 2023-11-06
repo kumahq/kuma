@@ -158,6 +158,8 @@ controlPlane:
     path: /
     # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
     pathType: ImplementationSpecific
+    # -- Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port
+    servicePort: 5681
 
   globalZoneSyncService:
     # -- Whether to create a k8s service for the global zone sync
