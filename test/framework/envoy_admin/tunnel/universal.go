@@ -3,12 +3,12 @@ package tunnel
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
 
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
