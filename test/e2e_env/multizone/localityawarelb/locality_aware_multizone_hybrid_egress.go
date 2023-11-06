@@ -2,14 +2,14 @@ package localityawarelb
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/democlient"
-	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -84,18 +84,6 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
-		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
-			)).
-			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
-
 		// Universal Zone 5
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
@@ -123,6 +111,19 @@ spec:
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())
+
+		// Kubernetes Zone 1
+		Expect(NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			)).
+			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
+
 	})
 
 	E2EAfterAll(func() {
@@ -167,6 +168,10 @@ spec:
 		// apply lb policy with new priorities
 		// kuma-4 - priority 0, kuma-5 - priority 1, kuma-1 - priority 2,
 		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClientChangedPriority))).To(Succeed())
+
+		// TODO: should be removed after fixing egress imperfections
+		// egress config refresh workaround
+		Expect(multizone.UniZone1.GetApp("demo-client_locality-aware-lb-egress_svc").ReStart()).To(Succeed())
 
 		// traffic goes to kuma-5 zone
 		Eventually(func() (map[string]int, error) {
