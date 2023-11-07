@@ -15,7 +15,7 @@ func BuildCommand(
 	name string,
 	args ...string,
 ) *exec.Cmd {
-	command := baseBuildCommand(ctx, stdout, stderr, name, args)
+	command := baseBuildCommand(ctx, stdout, stderr, name, args...)
 	// todo(jakubdyszkiewicz): do not propagate SIGTERM
 
 	return command
