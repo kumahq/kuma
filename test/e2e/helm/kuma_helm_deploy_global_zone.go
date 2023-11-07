@@ -180,7 +180,7 @@ interCp:
 
 		podName, err := PodNameOfApp(c2, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.default", Kuma2, podName, TestNamespace)
+		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.%s", Kuma2, podName, TestNamespace, Config.KumaNamespace)
 
 		// when
 		_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--type", "config-dump")
