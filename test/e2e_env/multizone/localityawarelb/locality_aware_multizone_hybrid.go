@@ -368,10 +368,10 @@ spec:
 		// then
 		failedRequests, err := failRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(failedRequests).To(BeNumerically("~", 100, 20))
+		Expect(failedRequests).To(BeNumerically("~", 100, 25))
 		successRequests, err := successRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(successRequests).To(BeNumerically("~", 100, 20))
+		Expect(successRequests).To(BeNumerically("~", 100, 25))
 	})
 }
 

@@ -35,8 +35,8 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshTrafficPermissionType, dataplane, resources)
 }
 
-func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, es, resources)
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, tags, resources)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {

@@ -531,8 +531,12 @@ func (in *ToZone) DeepCopyInto(out *ToZone) {
 	*out = *in
 	if in.Zones != nil {
 		in, out := &in.Zones, &out.Zones
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 

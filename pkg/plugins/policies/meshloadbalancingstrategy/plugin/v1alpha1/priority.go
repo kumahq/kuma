@@ -29,7 +29,7 @@ func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, 
 }
 
 func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) []LocalLbGroup {
-	localGroups := []LocalLbGroup{}
+	var localGroups []LocalLbGroup
 	if conf.LocalityAwareness.LocalZone != nil {
 		rulesLen := len(conf.LocalityAwareness.LocalZone.AffinityTags)
 		for i, tag := range conf.LocalityAwareness.LocalZone.AffinityTags {
@@ -52,7 +52,7 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) [
 }
 
 func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
-	crossZoneGroups := []CrossZoneLbGroup{}
+	var crossZoneGroups []CrossZoneLbGroup
 	if conf.LocalityAwareness.CrossZone != nil && len(conf.LocalityAwareness.CrossZone.Failover) > 0 {
 		// iterator starts from 0 while for remote zones we always set priority that favors local zone
 		// we are using priority based on the rule position in the list so we increment it even if it doesn't match
@@ -69,7 +69,7 @@ func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 			case api.AnyExcept:
 				lb.Type = api.AnyExcept
 				zones := map[string]bool{}
-				for _, zone := range rule.To.Zones {
+				for _, zone := range pointer.Deref(rule.To.Zones) {
 					zones[zone] = true
 				}
 				lb.Zones = zones
@@ -77,7 +77,7 @@ func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 			case api.Only:
 				lb.Type = api.Only
 				zones := map[string]bool{}
-				for _, zone := range rule.To.Zones {
+				for _, zone := range pointer.Deref(rule.To.Zones) {
 					zones[zone] = true
 				}
 				lb.Zones = zones
