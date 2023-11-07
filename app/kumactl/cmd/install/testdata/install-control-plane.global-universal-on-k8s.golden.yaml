@@ -156,8 +156,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "universal"
-            - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-              value: "true"
             - name: KUMA_GENERAL_WORK_DIR
               value: "/tmp/kuma"
             - name: KUMA_MODE
@@ -200,8 +198,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "universal"
-            - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-              value: "true"
             - name: KUMA_GENERAL_WORK_DIR
               value: "/tmp/kuma"
             - name: KUMA_MODE

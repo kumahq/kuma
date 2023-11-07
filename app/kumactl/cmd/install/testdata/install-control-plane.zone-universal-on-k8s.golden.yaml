@@ -140,8 +140,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "universal"
-            - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -184,8 +182,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "universal"
-            - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
