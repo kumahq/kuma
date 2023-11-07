@@ -34,7 +34,7 @@ require (
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
 	github.com/lib/pq v1.10.9
 	github.com/miekg/dns v1.1.56
-	github.com/moby/sys/mountinfo v0.6.2
+	github.com/moby/sys/mountinfo v0.7.0
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.29.0
