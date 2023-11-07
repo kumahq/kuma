@@ -111,7 +111,7 @@ interCp:
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
+			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))

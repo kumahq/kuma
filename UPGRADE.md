@@ -57,6 +57,7 @@ still supported but support for these WILL be removed in a future release.
 ### KDS Delta enabled by default
 
 KDS Delta is enabled by default. You can fallback to SOTW KDS by setting `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=false`.
+As a side effect, on kubernetes policies synced will be persisted in the `kuma-system` namespace instead of `default`.
 
 ## Upgrade to `2.4.x`
 
