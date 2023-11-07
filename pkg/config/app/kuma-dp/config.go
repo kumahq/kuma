@@ -153,6 +153,11 @@ func (d *Dataplane) PostProcess() error {
 	return nil
 }
 
+func (d *Dataplane) IsZoneProxy() bool {
+	return d.ProxyType == string(mesh_proto.IngressProxyType) ||
+		d.ProxyType == string(mesh_proto.EgressProxyType)
+}
+
 func validateMeshOrName[V ~string](typ string, value V) error {
 	if value == "" {
 		return errors.Errorf("%s must be non-empty", typ)
@@ -345,7 +350,7 @@ type DNS struct {
 	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
 	// Dir to store auto-generated DNS Server config in.
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
-	// Port where Prometheus stats will be exposed for the DNS Server
+	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
 	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
 }
 

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -144,8 +145,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := make(chan struct{})
+			// gracefulCtx indicate that the process received a signal to shutdown
 			gracefulCtx, ctx := opts.SetupSignalHandler()
+			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
+			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			components := []component.Component{
 				tokenComp,
@@ -160,17 +163,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
-				Quit:      shouldQuit,
+				OnFinish:  cancelComponents,
 			}
 
-			if cfg.DNS.Enabled &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
-					Config: *cfg,
-					Stdout: cmd.OutOrStdout(),
-					Stderr: cmd.OutOrStderr(),
-					Quit:   shouldQuit,
+					Config:   *cfg,
+					Stdout:   cmd.OutOrStdout(),
+					Stderr:   cmd.OutOrStderr(),
+					OnFinish: cancelComponents,
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)
@@ -225,43 +226,44 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
-			dataplane, err := envoy.New(opts)
+			envoyComponent, err := envoy.New(opts)
 			if err != nil {
 				return err
 			}
+			components = append(components, envoyComponent)
 
-			components = append(components, dataplane)
 			metricsServer := metrics.New(
 				metricsSocketPath,
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
 			components = append(components, metricsServer)
-
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
+			stopComponents := make(chan struct{})
 			go func() {
-				<-gracefulCtx.Done()
-				runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
-				if err := dataplane.DrainConnections(); err != nil {
-					runLog.Error(err, "could not drain connections")
-				} else {
-					runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-					select {
-					case <-time.After(cfg.Dataplane.DrainTime.Duration):
-					case <-ctx.Done():
+				select {
+				case <-gracefulCtx.Done():
+					runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
+					if err := envoyComponent.DrainConnections(); err != nil {
+						runLog.Error(err, "could not drain connections")
+					} else {
+						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+						select {
+						case <-time.After(cfg.Dataplane.DrainTime.Duration):
+						case <-ctx.Done():
+						}
 					}
+				case <-componentCtx.Done():
 				}
 				runLog.Info("stopping all Kuma DP components")
-				if shouldQuit != nil {
-					close(shouldQuit)
-				}
+				close(stopComponents)
 			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
+			if err := rootCtx.ComponentManager.Start(stopComponents); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
