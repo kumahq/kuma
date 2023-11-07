@@ -275,7 +275,7 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
-{{- if eq .Values.experimental.deltaKds "false" }}
+{{- if eq .Values.experimental.deltaKds false }}
 - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   value: "false"
 {{- end }}
@@ -330,7 +330,7 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
-{{- if eq .Values.experimental.deltaKds "false" }}
+{{- if eq .Values.experimental.deltaKds false }}
 - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   value: "false"
 {{- end }}
