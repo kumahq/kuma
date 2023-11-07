@@ -294,19 +294,23 @@ func (c *client) handleProcessingErrors(
 ) {
 	err := <-processingErrorsCh
 	if status.Code(err) == codes.Unimplemented {
-		log.Error(err, "rpc stream failed, because remote CP does not implement this rpc. Upgrade remote CP.")
+		log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
 	if errors.Is(err, context.Canceled) {
 		log.Info("rpc stream shutting down")
+		// Let's not propagate this error further as we've already cancelled the context
+		err = nil
 	} else {
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
 	}
 	if err := stream.CloseSend(); err != nil {
 		log.Error(err, "CloseSend returned an error")
 	}
-	errorCh <- err
+	if err != nil {
+		errorCh <- err
+	}
 }
 
 func (c *client) NeedLeaderElection() bool {

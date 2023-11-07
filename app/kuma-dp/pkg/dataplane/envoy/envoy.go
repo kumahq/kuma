@@ -55,6 +55,9 @@ func New(opts Opts) (*Envoy, error) {
 	if _, err := lookupEnvoyPath(opts.Config.DataplaneRuntime.BinaryPath); err != nil {
 		return nil, errors.Wrap(err, "could not find envoy executable")
 	}
+	if opts.OnFinish == nil {
+		opts.OnFinish = func() {}
+	}
 	return &Envoy{opts: opts}, nil
 }
 

@@ -49,6 +49,9 @@ func New(opts *Opts) (*DNSServer, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not find coreDNS executable")
 	}
+	if opts.OnFinish == nil {
+		opts.OnFinish = func() {}
+	}
 
 	return &DNSServer{opts: opts, path: dnsServerPath}, nil
 }
