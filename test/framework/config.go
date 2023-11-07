@@ -59,7 +59,7 @@ type E2eConfig struct {
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
-	KumaDeltaKDS                  bool              `json:"kumaDeltaKDS,omitempty" envconfig:"KUMA_DELTA_KDS"`
+	KumaLegacyKDS                 bool              `json:"kumaLegacyKDS,omitempty" envconfig:"KUMA_LEGACY_KDS"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -152,11 +152,11 @@ func (c E2eConfig) AutoConfigure() error {
 		Config.CIDR = "fd00:fd00::/64"
 	}
 
-	if Config.KumaDeltaKDS {
-		Config.KumaCpConfig.Multizone.KubeZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.KubeZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.UniZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.UniZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
+	if Config.KumaLegacyKDS {
+		Config.KumaCpConfig.Multizone.KubeZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.KubeZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.UniZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.UniZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
 	}
 
 	Config.Arch = runtime.GOARCH
@@ -267,7 +267,7 @@ var defaultConf = E2eConfig{
 	ZoneIngressApp:       "kuma-ingress",
 	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
 	CleanupLogsOnSuccess: false,
-	KumaDeltaKDS:         false,
+	KumaLegacyKDS:        false,
 }
 
 func init() {
