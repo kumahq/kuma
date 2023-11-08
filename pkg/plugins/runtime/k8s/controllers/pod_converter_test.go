@@ -304,9 +304,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
@@ -381,9 +382,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
@@ -436,7 +438,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 		DescribeTable("should return a descriptive error",
 			func(given testCase) {
 				// given
-				converter := PodConverter{}
+				converter := PodConverter{
+					ResourceConverter: k8s.NewSimpleConverter(),
+				}
 
 				pod := &kube_core.Pod{}
 				err := yaml.Unmarshal([]byte(given.pod), pod)
