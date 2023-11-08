@@ -1,3 +1,0 @@
-import{d as r,a as t,o as l,b as u,w as e,e as o,p as n,W as m,f as a}from"./index-70fb4e48.js";const d={class:"overview"},f=n("p",null,"The page or entity you were looking for does not exist.",-1),x=r({__name:"NotFoundView",setup(w){return(V,h)=>{const s=t("RouteTitle"),c=t("KButton"),_=t("KEmptyState"),p=t("AppView"),i=t("RouteView");return l(),u(i,{name:"app-not-found-view"},{default:e(()=>[o(p,null,{default:e(()=>[n("div",d,[o(_,null,{title:e(()=>[o(m,{class:"mb-3"}),a(),n("h1",null,[o(s,{title:"Page Not Found",render:!0})])]),message:e(()=>[f]),cta:e(()=>[o(c,{appearance:"primary",to:{name:"home"}},{default:e(()=>[a(`
-              Go Home
-            `)]),_:1})]),_:1})])]),_:1})]),_:1})}}});export{x as default};
