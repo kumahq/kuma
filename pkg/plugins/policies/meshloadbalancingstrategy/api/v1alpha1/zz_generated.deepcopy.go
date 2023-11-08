@@ -322,9 +322,13 @@ func (in *LocalZone) DeepCopyInto(out *LocalZone) {
 	*out = *in
 	if in.AffinityTags != nil {
 		in, out := &in.AffinityTags, &out.AffinityTags
-		*out = make([]AffinityTag, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]AffinityTag)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]AffinityTag, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

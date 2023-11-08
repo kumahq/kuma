@@ -31,8 +31,8 @@ func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, 
 func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) []LocalLbGroup {
 	var localGroups []LocalLbGroup
 	if conf.LocalityAwareness.LocalZone != nil {
-		rulesLen := len(conf.LocalityAwareness.LocalZone.AffinityTags)
-		for i, tag := range conf.LocalityAwareness.LocalZone.AffinityTags {
+		rulesLen := len(pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags))
+		for i, tag := range pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags) {
 			values := inboundTags.Values(tag.Key)
 			// when weights are not provided we are generating weights by ourselves
 			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)

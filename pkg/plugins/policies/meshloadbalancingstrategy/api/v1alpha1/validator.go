@@ -7,6 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshLoadBalancingStrategyResource) validate() error {
@@ -71,7 +72,7 @@ func validateLocalZone(localZone *LocalZone) validators.ValidationError {
 	}
 
 	var weightSpecified int
-	for idx, affinityTag := range localZone.AffinityTags {
+	for idx, affinityTag := range pointer.Deref(localZone.AffinityTags) {
 		path := validators.RootedAt("affinityTags").Index(idx)
 		if affinityTag.Key == "" {
 			verr.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
@@ -82,7 +83,7 @@ func validateLocalZone(localZone *LocalZone) validators.ValidationError {
 		}
 	}
 
-	if weightSpecified > 0 && weightSpecified != len(localZone.AffinityTags) {
+	if weightSpecified > 0 && weightSpecified != len(pointer.Deref(localZone.AffinityTags)) {
 		verr.AddViolation("affinityTags", "all or none affinity tags should have weight")
 	}
 	return verr

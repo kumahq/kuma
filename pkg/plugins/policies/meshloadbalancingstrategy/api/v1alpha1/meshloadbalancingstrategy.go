@@ -48,7 +48,7 @@ type LocalityAwareness struct {
 
 type LocalZone struct {
 	// AffinityTags list of tags for local zone load balancing.
-	AffinityTags []AffinityTag `json:"affinityTags"`
+	AffinityTags *[]AffinityTag `json:"affinityTags,omitempty"`
 }
 
 type AffinityTag struct {
