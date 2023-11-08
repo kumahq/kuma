@@ -448,7 +448,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -520,7 +520,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -649,7 +649,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -721,7 +721,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -853,7 +853,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key:    "k8s.io/node",
 															Weight: pointer.To[uint32](9000),
@@ -1205,7 +1205,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											LocalityAwareness: &v1alpha1.LocalityAwareness{
 												LocalZone: &v1alpha1.LocalZone{
-													AffinityTags: []v1alpha1.AffinityTag{
+													AffinityTags: &[]v1alpha1.AffinityTag{
 														{
 															Key: "k8s.io/node",
 														},

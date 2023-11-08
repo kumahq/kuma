@@ -321,5 +321,5 @@ func (p plugin) configureCluster(c *envoy_cluster.Cluster, config api.Conf) erro
 }
 
 func shouldUseLocalityWeightedLb(config api.Conf) bool {
-	return config.LocalityAwareness != nil && config.LocalityAwareness.LocalZone != nil && len(config.LocalityAwareness.LocalZone.AffinityTags) > 0
+	return config.LocalityAwareness != nil && config.LocalityAwareness.LocalZone != nil && len(pointer.Deref(config.LocalityAwareness.LocalZone.AffinityTags)) > 0
 }
