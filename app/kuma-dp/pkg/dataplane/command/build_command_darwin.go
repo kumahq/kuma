@@ -1,4 +1,4 @@
-//go:build windows
+//go:build darwin
 
 package command
 
@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"syscall"
 )
 
 func BuildCommand(
@@ -16,7 +17,10 @@ func BuildCommand(
 	args ...string,
 ) *exec.Cmd {
 	command := baseBuildCommand(ctx, stdout, stderr, name, args...)
-	// todo(jakubdyszkiewicz): do not propagate SIGTERM
-
+	command.SysProcAttr = &syscall.SysProcAttr{
+		// Set those attributes so the new process won't receive the signals from a parent automatically.
+		Setpgid: true,
+		Pgid:    0,
+	}
 	return command
 }

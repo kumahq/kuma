@@ -30,10 +30,10 @@ type DNSServer struct {
 var _ component.GracefulComponent = &DNSServer{}
 
 type Opts struct {
-	Config kuma_dp.Config
-	Stdout io.Writer
-	Stderr io.Writer
-	Quit   chan struct{}
+	Config   kuma_dp.Config
+	Stdout   io.Writer
+	Stderr   io.Writer
+	OnFinish context.CancelFunc
 }
 
 func lookupDNSServerPath(configuredPath string) (string, error) {
@@ -47,8 +47,10 @@ func lookupDNSServerPath(configuredPath string) (string, error) {
 func New(opts *Opts) (*DNSServer, error) {
 	dnsServerPath, err := lookupDNSServerPath(opts.Config.DNS.CoreDNSBinaryPath)
 	if err != nil {
-		runLog.Error(err, "could not find the DNS Server executable in your path")
-		return nil, err
+		return nil, errors.Wrapf(err, "could not find coreDNS executable")
+	}
+	if opts.OnFinish == nil {
+		opts.OnFinish = func() {}
 	}
 
 	return &DNSServer{opts: opts, path: dnsServerPath}, nil
@@ -59,7 +61,7 @@ func (s *DNSServer) GetVersion() (string, error) {
 	command := exec.Command(path, "--version")
 	output, err := command.Output()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to execute coreDNS at path %s", path)
 	}
 
 	match := regexp.MustCompile(`CoreDNS-(.*)`).FindSubmatch(output)
@@ -76,6 +78,12 @@ func (s *DNSServer) NeedLeaderElection() bool {
 
 func (s *DNSServer) Start(stop <-chan struct{}) error {
 	s.wg.Add(1)
+	// Component should only be considered done after CoreDNS exists.
+	// Otherwise, we may not propagate SIGTERM on time.
+	defer func() {
+		s.wg.Done()
+		s.opts.OnFinish()
+	}()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -129,33 +137,18 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 
-	done := make(chan error, 1)
-
 	go func() {
-		done <- command.Wait()
-		// Component should only be considered done after CoreDNS exists.
-		// Otherwise, we may not propagate SIGTERM on time.
-		s.wg.Done()
-	}()
-
-	select {
-	case <-stop:
+		<-stop
 		runLog.Info("stopping DNS Server")
 		cancel()
-		return nil
-	case err := <-done:
-		if err != nil {
-			runLog.Error(err, "DNS Server terminated with an error")
-		} else {
-			runLog.Info("DNS Server terminated successfully")
-		}
-
-		if s.opts.Quit != nil {
-			close(s.opts.Quit)
-		}
-
+	}()
+	err = command.Wait()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		runLog.Error(err, "DNS Server terminated with an error")
 		return err
 	}
+	runLog.Info("DNS Server terminated successfully")
+	return nil
 }
 
 func (s *DNSServer) WaitForDone() {

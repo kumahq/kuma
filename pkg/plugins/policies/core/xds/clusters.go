@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 type Clusters struct {
@@ -17,6 +18,7 @@ type Clusters struct {
 	Outbound      map[string]*envoy_cluster.Cluster
 	OutboundSplit map[string][]*envoy_cluster.Cluster
 	Gateway       map[string]*envoy_cluster.Cluster
+	Egress        map[string]*envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
@@ -25,6 +27,7 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 		Outbound:      map[string]*envoy_cluster.Cluster{},
 		OutboundSplit: map[string][]*envoy_cluster.Cluster{},
 		Gateway:       map[string]*envoy_cluster.Cluster{},
+		Egress:        map[string]*envoy_cluster.Cluster{},
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		cluster := res.Resource.(*envoy_cluster.Cluster)
@@ -42,6 +45,8 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			clusters.Inbound[cluster.Name] = cluster
 		case metadata.OriginGateway:
 			clusters.Gateway[cluster.Name] = cluster
+		case egress.OriginEgress:
+			clusters.Egress[cluster.Name] = cluster
 		default:
 			continue
 		}
