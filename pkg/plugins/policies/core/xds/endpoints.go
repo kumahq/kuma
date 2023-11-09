@@ -4,6 +4,7 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -26,6 +27,30 @@ func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		if res.Origin != generator.OriginOutbound {
+			continue
+		}
+
+		cluster := res.Resource.(*clusterv3.Cluster)
+		serviceName := tags.ServiceFromClusterName(cluster.Name)
+		if cluster.LoadAssignment != nil {
+			em[serviceName] = append(em[serviceName], cluster.LoadAssignment)
+		}
+	}
+	return em
+}
+
+func GatherGatewayEndpoints(rs *xds.ResourceSet) EndpointMap {
+	em := EndpointMap{}
+	for _, res := range rs.Resources(envoy_resource.EndpointType) {
+		if res.Origin != metadata.OriginGateway {
+			continue
+		}
+
+		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
+		em[cla.ClusterName] = append(em[cla.ClusterName], cla)
+	}
+	for _, res := range rs.Resources(envoy_resource.ClusterType) {
+		if res.Origin != metadata.OriginGateway {
 			continue
 		}
 

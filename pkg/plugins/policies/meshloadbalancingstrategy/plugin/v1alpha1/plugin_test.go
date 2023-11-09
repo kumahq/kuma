@@ -1297,8 +1297,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		name    string
-		toRules core_rules.ToRules
+		name        string
+		endpointMap core_xds.EndpointMap
+		toRules     core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -1311,10 +1312,19 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
+			xdsCtx := test_xds.CreateSampleMeshContextWithEndpoints(resources, given.endpointMap)
 			proxy := core_xds.Proxy{
 				APIVersion: "v3",
-				Dataplane:  samples.GatewayDataplane(),
+				Dataplane: builders.Dataplane().
+					WithName("sample-gateway").
+					WithAddress("192.168.0.1").
+					WithBuiltInGateway("sample-gateway").
+					AddBuiltInGatewayTags(map[string]string{
+						"k8s.io/node":   "node1",
+						"k8s.io/az":     "test",
+						"k8s.io/region": "test",
+					}).
+					Build(),
 				Policies: core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
@@ -1324,6 +1334,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					},
 				},
 				RuntimeExtensions: map[string]interface{}{},
+				Zone:              "test-zone",
 			}
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
@@ -1345,6 +1356,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			// then
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.EndpointType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_endpoint.golden.yaml", given.name))))
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_listener.golden.yaml", given.name))))
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
@@ -1352,6 +1365,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
+			endpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					{
+						Tags: map[string]string{
+							"app": "backend",
+						},
+					},
+				},
+			},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -1377,6 +1399,73 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												SourceIP: pointer.To(true),
 											},
 											Terminal: pointer.To(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("locality aware gateway", gatewayTestCase{
+			name: "locality_aware",
+			endpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					createEndpointWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+					createEndpointWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+					createEndpointWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+					createEndpointWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+					createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
+					createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
+					createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
+					createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
+				},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{},
+						Conf: v1alpha1.Conf{
+							LocalityAwareness: &v1alpha1.LocalityAwareness{
+								LocalZone: &v1alpha1.LocalZone{
+									AffinityTags: &[]v1alpha1.AffinityTag{
+										{
+											Key:    "k8s.io/node",
+											Weight: pointer.To[uint32](9000),
+										},
+										{
+											Key:    "k8s.io/az",
+											Weight: pointer.To[uint32](900),
+										},
+										{
+											Key:    "k8s.io/region",
+											Weight: pointer.To[uint32](90),
+										},
+									},
+								},
+								CrossZone: &v1alpha1.CrossZone{
+									Failover: []v1alpha1.Failover{
+										{
+											To: v1alpha1.ToZone{
+												Type:  v1alpha1.AnyExcept,
+												Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+											},
+										},
+										{
+											From: &v1alpha1.FromZone{
+												Zones: []string{"zone-1"},
+											},
+											To: v1alpha1.ToZone{
+												Type:  v1alpha1.Only,
+												Zones: &[]string{"zone-3"},
+											},
+										},
+										{
+											To: v1alpha1.ToZone{
+												Type:  v1alpha1.Only,
+												Zones: &[]string{"zone-4"},
+											},
 										},
 									},
 								},

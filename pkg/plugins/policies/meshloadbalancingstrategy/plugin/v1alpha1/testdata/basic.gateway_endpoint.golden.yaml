@@ -1,0 +1,13 @@
+clusterName: backend
+endpoints:
+- lbEndpoints:
+  - endpoint:
+      address:
+        socketAddress:
+          portValue: 0
+    metadata:
+      filterMetadata:
+        envoy.lb:
+          app: backend
+        envoy.transport_socket_match:
+          app: backend

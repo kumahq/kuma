@@ -6,6 +6,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 
@@ -58,7 +59,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
@@ -160,7 +161,6 @@ func (p plugin) configureGateway(
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	egressEnabled bool,
 ) error {
@@ -168,6 +168,8 @@ func (p plugin) configureGateway(
 	if len(gatewayListenerInfos) == 0 {
 		return nil
 	}
+
+	endpoints := policies_xds.GatherGatewayEndpoints(rs)
 
 	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 	if conf == nil {
@@ -204,7 +206,7 @@ func (p plugin) configureGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
 					return err
 				}
 			}
