@@ -4,10 +4,15 @@ endpoints:
   - endpoint:
       address:
         socketAddress:
-          portValue: 0
+          address: 192.168.1.1
+          portValue: 8080
     metadata:
       filterMetadata:
         envoy.lb:
-          app: backend
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone
         envoy.transport_socket_match:
-          app: backend
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone
+  locality:
+    zone: test-zone

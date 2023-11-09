@@ -4,9 +4,9 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
@@ -14,59 +14,22 @@ import (
 
 type EndpointMap map[xds.ServiceName][]*endpointv3.ClusterLoadAssignment
 
-func GatherEndpoints(rs *xds.ResourceSet) EndpointMap {
-	em := EndpointMap{}
-	for _, res := range rs.Resources(envoy_resource.EndpointType) {
-		if res.Origin != generator.OriginOutbound {
-			continue
-		}
-
-		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
-		serviceName := tags.ServiceFromClusterName(cla.ClusterName)
-		em[serviceName] = append(em[serviceName], cla)
-	}
-	for _, res := range rs.Resources(envoy_resource.ClusterType) {
-		if res.Origin != generator.OriginOutbound {
-			continue
-		}
-
-		cluster := res.Resource.(*clusterv3.Cluster)
-		serviceName := tags.ServiceFromClusterName(cluster.Name)
-		if cluster.LoadAssignment != nil {
-			em[serviceName] = append(em[serviceName], cluster.LoadAssignment)
-		}
-	}
-	return em
+func GatherOutboundEndpoints(rs *xds.ResourceSet) EndpointMap {
+	return gatherEndpoints(rs, generator.OriginOutbound)
 }
 
 func GatherGatewayEndpoints(rs *xds.ResourceSet) EndpointMap {
-	em := EndpointMap{}
-	for _, res := range rs.Resources(envoy_resource.EndpointType) {
-		if res.Origin != metadata.OriginGateway {
-			continue
-		}
-
-		cla := res.Resource.(*endpointv3.ClusterLoadAssignment)
-		em[cla.ClusterName] = append(em[cla.ClusterName], cla)
-	}
-	for _, res := range rs.Resources(envoy_resource.ClusterType) {
-		if res.Origin != metadata.OriginGateway {
-			continue
-		}
-
-		cluster := res.Resource.(*clusterv3.Cluster)
-		serviceName := tags.ServiceFromClusterName(cluster.Name)
-		if cluster.LoadAssignment != nil {
-			em[serviceName] = append(em[serviceName], cluster.LoadAssignment)
-		}
-	}
-	return em
+	return gatherEndpoints(rs, metadata.OriginGateway)
 }
 
 func GatherEgressEndpoints(rs *xds.ResourceSet) EndpointMap {
+	return gatherEndpoints(rs, egress.OriginEgress)
+}
+
+func gatherEndpoints(rs *xds.ResourceSet, origin string) EndpointMap {
 	em := EndpointMap{}
 	for _, res := range rs.Resources(envoy_resource.EndpointType) {
-		if res.Origin != egress.OriginEgress {
+		if res.Origin != origin {
 			continue
 		}
 
@@ -74,15 +37,15 @@ func GatherEgressEndpoints(rs *xds.ResourceSet) EndpointMap {
 		serviceName := tags.ServiceFromClusterName(cla.ClusterName)
 		em[serviceName] = append(em[serviceName], cla)
 	}
-
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
-		if res.Origin != egress.OriginEgress {
+		if res.Origin != origin {
 			continue
 		}
 
 		cluster := res.Resource.(*clusterv3.Cluster)
+		serviceName := tags.ServiceFromClusterName(cluster.Name)
 		if cluster.LoadAssignment != nil {
-			em[cluster.Name] = append(em[cluster.Name], cluster.LoadAssignment)
+			em[serviceName] = append(em[serviceName], cluster.LoadAssignment)
 		}
 	}
 	return em

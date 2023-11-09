@@ -56,7 +56,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
-	endpoints := policies_xds.GatherEndpoints(rs)
+	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
 	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
