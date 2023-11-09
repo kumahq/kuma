@@ -39,6 +39,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Bad Request",
 			Detail: err.Error(),
 		}
+	case errors.Is(err, &BadRequest{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: err.Error(),
+		}
 	case manager.IsMeshNotFound(err):
 		kumaErr = &types.Error{
 			Status: 400,
