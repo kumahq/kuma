@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -137,6 +138,17 @@ spec:
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())
+		Expect(k8s.RunKubectlE(
+			multizone.KubeZone1.GetTesting(),
+			multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
+			"patch",
+			"deployments.apps",
+			"kuma-egress",
+			"--type",
+			"json",
+			"-p",
+			`[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--concurrency=1" }]`,
+		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
