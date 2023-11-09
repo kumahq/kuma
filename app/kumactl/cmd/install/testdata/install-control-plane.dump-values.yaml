@@ -690,8 +690,8 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
-  # -- If true, it uses new API for resource synchronization
-  deltaKds: false
+  # -- If false, it uses legacy API for resource synchronization
+  deltaKds: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:
