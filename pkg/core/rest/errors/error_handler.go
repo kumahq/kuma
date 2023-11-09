@@ -33,16 +33,10 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}) || errors.Is(err, &registry.InvalidResourceTypeError{}) || errors.Is(err, &store.PreconditionError{}):
+	case errors.Is(err, &rest.InvalidResourceError{}) || errors.Is(err, &registry.InvalidResourceTypeError{}) || errors.Is(err, &store.PreconditionError{}) || errors.Is(err, &BadRequest{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
-			Detail: err.Error(),
-		}
-	case errors.Is(err, &BadRequest{}):
-		kumaErr = &types.Error{
-			Status: 400,
-			Title:  title,
 			Detail: err.Error(),
 		}
 	case manager.IsMeshNotFound(err):
