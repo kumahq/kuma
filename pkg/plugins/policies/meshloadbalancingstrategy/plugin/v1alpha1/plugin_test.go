@@ -1368,6 +1368,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			endpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
 				"backend": {
 					createEndpointWith("test-zone", "192.168.1.1", map[string]string{}),
+					createEndpointWith("test-zone-2", "192.168.1.2", map[string]string{}),
 				},
 			},
 			toRules: core_rules.ToRules{
