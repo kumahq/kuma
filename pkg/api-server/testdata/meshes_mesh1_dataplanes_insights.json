@@ -29,6 +29,7 @@
       "controlPlaneInstanceId": "cp-1",
       "connectTime": "2019-07-01T00:00:00Z",
       "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
        "total": {},
        "cds": {},
        "eds": {},
@@ -85,6 +86,7 @@
       "controlPlaneInstanceId": "cp-1",
       "connectTime": "2019-07-01T00:00:00Z",
       "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
        "total": {},
        "cds": {},
        "eds": {},
@@ -118,6 +120,7 @@
       "controlPlaneInstanceId": "cp-1",
       "connectTime": "2019-07-01T00:00:00Z",
       "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
        "total": {},
        "cds": {},
        "eds": {},

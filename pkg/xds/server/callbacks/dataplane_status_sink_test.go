@@ -51,7 +51,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
 				ConnectTime:            util_proto.MustTimestampProto(t0),
-				Status:                 mesh_proto.NewSubscriptionStatus(),
+				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			accessor := &SubscriptionStatusHolder{key, subscription}
 			ticks := make(chan time.Time)
@@ -87,6 +87,7 @@ var _ = Describe("DataplaneInsightSink", func() {
             status:
               cds: {}
               eds: {}
+              lastUpdateTime: "2019-07-01T00:00:00Z"
               lds: {}
               rds: {}
               total: {}
@@ -160,7 +161,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
 				ConnectTime:            util_proto.MustTimestampProto(t0),
-				Status:                 mesh_proto.NewSubscriptionStatus(),
+				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			dataplaneType := core_mesh.DataplaneType
 			dataplaneInsight := core_mesh.NewDataplaneInsightResource()
@@ -194,6 +195,7 @@ var _ = Describe("DataplaneInsightSink", func() {
               status:
                 cds: {}
                 eds: {}
+                lastUpdateTime: "2019-07-01T00:00:00Z"
                 lds: {}
                 rds: {}
                 total: {}
