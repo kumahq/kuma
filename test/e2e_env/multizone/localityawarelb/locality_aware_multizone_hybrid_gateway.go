@@ -90,6 +90,17 @@ conf:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		// Universal Zone 4
+		Expect(NewClusterSetup().
+			Install(GatewayProxyUniversal(mesh, "edge-gateway")).
+			Install(TestServerUniversal("gateway-client", mesh, WithoutDataplane())).
+			Install(TestServerUniversal("test-server-zone-4", mesh,
+				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
+				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+			)).
+			Setup(multizone.UniZone1),
+		).To(Succeed())
+
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -116,17 +127,6 @@ conf:
 			Setup(multizone.UniZone2),
 		).To(Succeed())
 
-		// Universal Zone 4
-		Expect(NewClusterSetup().
-			Install(GatewayProxyUniversal(mesh, "edge-gateway")).
-			Install(TestServerUniversal("gateway-client", mesh, WithoutDataplane())).
-			Install(TestServerUniversal("test-server-zone-4", mesh,
-				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
-			)).
-			Setup(multizone.UniZone1),
-		).To(Succeed())
-
 		Expect(multizone.Global.Install(meshGateway)).To(Succeed())
 		Expect(multizone.Global.Install(meshGatewayRoute)).To(Succeed())
 	})
@@ -140,8 +140,8 @@ conf:
 
 	It("should route based on defined strategy when making requests through gateway", func() {
 		// no lb priorities
+		gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 		Eventually(func() (map[string]int, error) {
-			gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
 		}, "2m", "10s").Should(
 			And(
@@ -156,7 +156,6 @@ conf:
 		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClient))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 10)),
@@ -167,7 +166,6 @@ conf:
 
 		// traffic goes to kuma-5 zone
 		Eventually(func() (map[string]int, error) {
-			gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 100, 10)),
@@ -178,7 +176,6 @@ conf:
 
 		// traffic goes to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
-			gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 100, 10)),
