@@ -55,7 +55,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		Name: "kuma",
 		LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
 			StaticLayer: util_proto.MustStruct(map[string]interface{}{
-				"envoy.restart_features.use_apple_api_for_dns_lookups": false,
 				"re2.max_program_size.error_level":                     4294967295,
 				"re2.max_program_size.warn_level":                      1000,
 			}),
