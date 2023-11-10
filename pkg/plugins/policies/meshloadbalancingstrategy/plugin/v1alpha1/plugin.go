@@ -19,6 +19,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -55,10 +56,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
-	endpoints := policies_xds.GatherEndpoints(rs)
+	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
@@ -88,7 +89,7 @@ func (p plugin) configureDPP(
 		conf := computed.Conf.(api.Conf)
 
 		if listener, ok := listeners.Outbound[oface]; ok {
-			if err := p.configureListener(listener, nil, conf.LoadBalancer); err != nil {
+			if err := p.configureListener(listener, nil, &conf); err != nil {
 				return err
 			}
 		}
@@ -160,7 +161,6 @@ func (p plugin) configureGateway(
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	egressEnabled bool,
 ) error {
@@ -169,10 +169,9 @@ func (p plugin) configureGateway(
 		return nil
 	}
 
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
-	if conf == nil {
-		return nil
-	}
+	endpoints := policies_xds.GatherGatewayEndpoints(rs)
+
+	meshConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 
 	for _, listenerInfo := range gatewayListenerInfos {
 		listener, ok := gatewayListeners[core_rules.InboundListener{
@@ -183,7 +182,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		if err := p.configureListener(listener, gatewayRoutes, conf.LoadBalancer); err != nil {
+		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
 			return err
 		}
 
@@ -199,12 +198,16 @@ func (p plugin) configureGateway(
 					continue
 				}
 
-				if err := p.configureCluster(cluster, *conf); err != nil {
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
+				localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName))
+				if localityConf == nil {
+					continue
+				}
+				if err := p.configureCluster(cluster, *localityConf); err != nil {
 					return err
 				}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
 					return err
 				}
 			}
@@ -256,25 +259,25 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 func (p plugin) configureListener(
 	l *envoy_listener.Listener,
 	routes map[string]*envoy_route.RouteConfiguration,
-	lbConf *api.LoadBalancer,
+	conf *api.Conf,
 ) error {
-	if lbConf == nil {
+	if conf == nil || conf.LoadBalancer == nil {
 		return nil
 	}
 
 	var hashPolicy *[]api.HashPolicy
 
-	switch lbConf.Type {
+	switch conf.LoadBalancer.Type {
 	case api.RingHashType:
-		if lbConf.RingHash == nil {
+		if conf.LoadBalancer.RingHash == nil {
 			return nil
 		}
-		hashPolicy = lbConf.RingHash.HashPolicies
+		hashPolicy = conf.LoadBalancer.RingHash.HashPolicies
 	case api.MaglevType:
-		if lbConf.Maglev == nil {
+		if conf.LoadBalancer.Maglev == nil {
 			return nil
 		}
-		hashPolicy = lbConf.Maglev.HashPolicies
+		hashPolicy = conf.LoadBalancer.Maglev.HashPolicies
 	default:
 		return nil
 	}
