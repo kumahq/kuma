@@ -33,7 +33,10 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}) || errors.Is(err, &registry.InvalidResourceTypeError{}) || errors.Is(err, &store.PreconditionError{}) || errors.Is(err, &BadRequest{}):
+	case errors.Is(err, &rest.InvalidResourceError{}):
+	case errors.Is(err, &registry.InvalidResourceTypeError{}):
+	case errors.Is(err, &store.PreconditionError{}):
+	case errors.Is(err, &BadRequest{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
