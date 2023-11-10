@@ -19,7 +19,7 @@ func LocalityAwareLBGateway() {
 	const mesh = "locality-aware-lb-gateway"
 	const namespace = "locality-aware-lb-gateway"
 
-	meshLoadBalancingStrategyDemoClient := fmt.Sprintf(`
+	meshLoadBalancingStrategyTestServer := fmt.Sprintf(`
 type: MeshLoadBalancingStrategy
 name: mlbs-1
 mesh: %s
@@ -153,7 +153,7 @@ conf:
 
 		// apply lb policy
 		// kuma-4 - priority 0, kuma-5 - priority 1, kuma-1 - priority 2
-		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClient))).To(Succeed())
+		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyTestServer))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
