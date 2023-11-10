@@ -278,10 +278,13 @@ var _ = Describe("PodReconciler", func() {
 			}).Build()
 
 		reconciler = &PodReconciler{
-			Client:            kubeClient,
-			EventRecorder:     kube_record.NewFakeRecorder(10),
-			Scheme:            k8sClientScheme,
-			Log:               core.Log.WithName("test"),
+			Client:        kubeClient,
+			EventRecorder: kube_record.NewFakeRecorder(10),
+			Scheme:        k8sClientScheme,
+			Log:           core.Log.WithName("test"),
+			PodConverter: PodConverter{
+				ResourceConverter: k8s.NewSimpleConverter(),
+			},
 			SystemNamespace:   "kuma-system",
 			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
 			ResourceConverter: k8s.NewSimpleConverter(),

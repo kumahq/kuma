@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -50,24 +51,36 @@ func (p *PodConverter) PodToDataplane(
 }
 
 func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
-	zoneIngressProto := &mesh_proto.ZoneIngress{}
-	// Pass the current dataplane so we won't override available services in Ingress section
-	if err := p.IngressFor(ctx, zoneIngressProto, pod, services); err != nil {
+	logger := converterLog.WithValues("ZoneIngress.name", zoneIngress.Name, "Pod.name", pod.Name)
+	// Start with the existing ZoneIngress spec so we won't override available services in Ingress section
+	zoneIngressRes := core_mesh.NewZoneIngressResource()
+	if err := p.ResourceConverter.ToCoreResource(zoneIngress, zoneIngressRes); err != nil {
+		logger.Error(err, "unable to convert ZoneIngress k8s object into core resource")
 		return err
 	}
-	zoneIngress.SetSpec(zoneIngressProto)
+
+	if err := p.IngressFor(ctx, zoneIngressRes.Spec, pod, services); err != nil {
+		return err
+	}
+
+	zoneIngress.SetSpec(zoneIngressRes.Spec)
 	return nil
 }
 
 func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
-	zoneEgressProto := &mesh_proto.ZoneEgress{}
-	// Pass the current dataplane, so we won't override available services in Egress section
-	if err := p.EgressFor(ctx, zoneEgressProto, pod, services); err != nil {
+	logger := converterLog.WithValues("ZoneEgress.name", zoneEgress.Name, "Pod.name", pod.Name)
+	// Start with the existing ZoneEgress spec
+	zoneEgressRes := core_mesh.NewZoneEgressResource()
+	if err := p.ResourceConverter.ToCoreResource(zoneEgress, zoneEgressRes); err != nil {
+		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
 		return err
 	}
 
-	zoneEgress.SetSpec(zoneEgressProto)
+	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
+		return err
+	}
 
+	zoneEgress.SetSpec(zoneEgressRes.Spec)
 	return nil
 }
 
