@@ -20,7 +20,6 @@ import (
 
 func ExcludeOutboundPort() {
 	meshName := "exclude-outbound-port"
-	nodeName := fmt.Sprintf("second-%s", strings.ToLower(random.UniqueId()))
 
 	namespace := "exclude-outbound-port"
 	namespaceExternal := "exclude-outbound-port-external"
@@ -61,7 +60,6 @@ func ExcludeOutboundPort() {
 		Expect(cluster.DeleteNamespace(namespaceExternal)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(k8sCluster.DeleteNode("k3d-" + nodeName + "-0")).To(Succeed())
 	})
 
 	It("should be able to use network from init container if we ignore ports for uid", func() {
