@@ -3,6 +3,7 @@ package cni
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -76,6 +77,20 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	if err != nil {
 		return nil, err
 	}
+
+	excludePortsForUIDs := []string{}
+	for _, portAndUID := range strings.Split(intermediateConfig.excludeOutboundTCPPortsForUIDs, ";") {
+		excludePortsForUIDs = append(excludePortsForUIDs, fmt.Sprintf("tcp:%s", portAndUID))
+	}
+	for _, portAndUID := range strings.Split(intermediateConfig.excludeOutboundUDPPortsForUIDs, ";") {
+		excludePortsForUIDs = append(excludePortsForUIDs, fmt.Sprintf("udp:%s", portAndUID))
+	}
+
+	excludePortsForUIDsParsed, err := transparentproxy.ParseExcludePortsForUIDs(excludePortsForUIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := config.Config{
 		RuntimeStdout: logWriter,
 		Owner: config.Owner{
@@ -83,9 +98,10 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		},
 		Redirect: config.Redirect{
 			Outbound: config.TrafficFlow{
-				Enabled:      true,
-				Port:         port,
-				ExcludePorts: excludePorts,
+				Enabled:             true,
+				Port:                port,
+				ExcludePorts:        excludePorts,
+				ExcludePortsForUIDs: excludePortsForUIDsParsed,
 			},
 		},
 	}
