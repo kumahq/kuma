@@ -89,7 +89,7 @@ func (p plugin) configureDPP(
 		conf := computed.Conf.(api.Conf)
 
 		if listener, ok := listeners.Outbound[oface]; ok {
-			if err := p.configureListener(listener, nil, conf.LoadBalancer); err != nil {
+			if err := p.configureListener(listener, nil, &conf); err != nil {
 				return err
 			}
 		}
@@ -171,10 +171,7 @@ func (p plugin) configureGateway(
 
 	endpoints := policies_xds.GatherGatewayEndpoints(rs)
 
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
-	if conf == nil {
-		return nil
-	}
+	meshConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 
 	for _, listenerInfo := range gatewayListenerInfos {
 		listener, ok := gatewayListeners[core_rules.InboundListener{
@@ -185,7 +182,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		if err := p.configureListener(listener, gatewayRoutes, conf.LoadBalancer); err != nil {
+		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
 			return err
 		}
 
@@ -201,12 +198,16 @@ func (p plugin) configureGateway(
 					continue
 				}
 
-				if err := p.configureCluster(cluster, *conf); err != nil {
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
+				localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName))
+				if localityConf == nil {
+					continue
+				}
+				if err := p.configureCluster(cluster, *localityConf); err != nil {
 					return err
 				}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, *conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
 					return err
 				}
 			}
@@ -258,25 +259,25 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 func (p plugin) configureListener(
 	l *envoy_listener.Listener,
 	routes map[string]*envoy_route.RouteConfiguration,
-	lbConf *api.LoadBalancer,
+	conf *api.Conf,
 ) error {
-	if lbConf == nil {
+	if conf == nil || conf.LoadBalancer == nil {
 		return nil
 	}
 
 	var hashPolicy *[]api.HashPolicy
 
-	switch lbConf.Type {
+	switch conf.LoadBalancer.Type {
 	case api.RingHashType:
-		if lbConf.RingHash == nil {
+		if conf.LoadBalancer.RingHash == nil {
 			return nil
 		}
-		hashPolicy = lbConf.RingHash.HashPolicies
+		hashPolicy = conf.LoadBalancer.RingHash.HashPolicies
 	case api.MaglevType:
-		if lbConf.Maglev == nil {
+		if conf.LoadBalancer.Maglev == nil {
 			return nil
 		}
-		hashPolicy = lbConf.Maglev.HashPolicies
+		hashPolicy = conf.LoadBalancer.Maglev.HashPolicies
 	default:
 		return nil
 	}
