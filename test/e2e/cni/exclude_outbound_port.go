@@ -68,8 +68,7 @@ func ExcludeOutboundPort() {
 			testserver.WithMesh(meshName),
 			testserver.WithNamespace(namespace),
 			testserver.WithPodAnnotations(map[string]string{
-				metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs: "80:1234",
-				metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs: "53:1234",
+				metadata.KumaTrafficExcludeOutboundPortsForUIDs: "tcp:80:1234;udp:53:1234",
 			}),
 			testserver.AddInitContainer(corev1.Container{
 				Name:            "init-test-server",
