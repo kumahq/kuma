@@ -11440,6 +11440,7 @@ spec:
         checksum/dashboards-json-config: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
         checksum/sc-dashboard-provider-config: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
         checksum/secret: 281444758252a4bdd272546732dfb8e2be87be71b795d2aadc3726e3524f63e3
+        traffic.kuma.io/exclude-outbound-ports-for-uids: tcp:80,443:472;udp:53:472 # needed when running kuma CNI
     spec:
       serviceAccountName: grafana
       securityContext:
