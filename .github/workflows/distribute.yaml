@@ -9,7 +9,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - name: "Install basic tools"
         # `unzip`    is necessary to install `protoc`
         # `gcc`      is necessary to run `go test -race`
@@ -27,28 +26,20 @@ jobs:
             sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
             ;;
           esac
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
-      - id: retrieve-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/.kuma-dev
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      - if: steps.retrieve-cache.outputs.cache-hit != 'true'
-        run: |
-          make dev/tools
-      - if: steps.retrieve-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
+      - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
             ~/.kuma-dev
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - run: |
+          make dev/tools
       - run: |
           make clean
       - run: |
@@ -74,30 +65,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      - name: "Install basic tools"
-        run: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
-            ;;
-          esac
-      - uses: actions/cache/restore@v3
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
+      - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
             ~/.kuma-dev
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
-          fail-on-cache-miss: true
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
       - name: Free up disk space for the Runner
         run: |
           # source: https://github.com/apache/flink/blob/master/tools/azure-pipelines/free_disk_space.sh
@@ -146,30 +125,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      - name: "Install basic tools"
-        run: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
-            ;;
-          esac
-      - uses: actions/cache/restore@v3
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
+      - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
             ~/.kuma-dev
-          key: ${{ runner.os }}-build-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
-          fail-on-cache-miss: true
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
       - uses: actions/download-artifact@v2
         with:
           name: build-output
