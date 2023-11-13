@@ -50,11 +50,22 @@ require (
 	github.com/testcontainers/testcontainers-go v0.21.1-0.20230802082724-c0797a06f2c2 // UPDATE TO RELEASE TAG ASAP
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
+<<<<<<< HEAD
 	go.opentelemetry.io/proto/otlp v0.20.0
+=======
+	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.46.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0
+	go.opentelemetry.io/otel v1.20.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0
+	go.opentelemetry.io/otel/sdk v1.20.0
+	go.opentelemetry.io/otel/trace v1.20.0
+	go.opentelemetry.io/proto/otlp v1.0.0
+>>>>>>> 5a9c87f2a (chore(deps): bump the go-opentelemetry-io group with 3 updates  (#8347))
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/net v0.17.0
+<<<<<<< HEAD
 	golang.org/x/sys v0.13.0
 	golang.org/x/text v0.13.0
 	golang.org/x/time v0.3.0
@@ -63,6 +74,16 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
 	google.golang.org/grpc v1.57.1
 	google.golang.org/protobuf v1.30.0
+=======
+	golang.org/x/sys v0.14.1-0.20231108174845-98889049283a
+	golang.org/x/text v0.14.0
+	golang.org/x/time v0.3.0 // indirect
+	gonum.org/v1/gonum v0.14.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13
+	google.golang.org/grpc v1.59.0
+	google.golang.org/protobuf v1.31.0
+>>>>>>> 5a9c87f2a (chore(deps): bump the go-opentelemetry-io group with 3 updates  (#8347))
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.11.3
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
@@ -180,7 +201,13 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+<<<<<<< HEAD
 	go.opencensus.io v0.24.0 // indirect
+=======
+	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
+	go.opentelemetry.io/otel/metric v1.20.0 // indirect
+>>>>>>> 5a9c87f2a (chore(deps): bump the go-opentelemetry-io group with 3 updates  (#8347))
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
