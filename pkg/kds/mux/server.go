@@ -127,12 +127,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(
 		grpcOptions,
-<<<<<<< HEAD
-		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-=======
-		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
->>>>>>> 5a9c87f2a (chore(deps): bump the go-opentelemetry-io group with 3 updates  (#8347))
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
