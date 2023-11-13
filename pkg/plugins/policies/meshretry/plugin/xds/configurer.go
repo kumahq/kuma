@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -369,7 +370,7 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 		key := string(item)
 		statusCode, err := strconv.ParseUint(key, 10, 32)
 		switch {
-		case err == nil && http.StatusText(int(statusCode)) != "":
+		case err == nil && statusCode <= math.MaxInt && http.StatusText(int(statusCode)) != "":
 			retriableStatusCodes = append(retriableStatusCodes, uint32(statusCode))
 		case strings.HasPrefix(key, string(api.HttpMethodPrefix)):
 			retriableMethods = append(retriableMethods, api.HttpRetryOnEnumToEnvoyValue[item])
