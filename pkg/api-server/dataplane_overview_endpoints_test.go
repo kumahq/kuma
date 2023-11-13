@@ -56,7 +56,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 						Id:                     "stream-id-1",
 						ControlPlaneInstanceId: "cp-1",
 						ConnectTime:            proto.MustTimestampProto(sampleTime),
-						Status:                 v1alpha1.NewSubscriptionStatus(),
+						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
 					},
 				},
 			},
@@ -158,6 +158,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					"total": {},
 					"cds": {},
 					"eds": {},
+					"lastUpdateTime": "2019-07-01T00:00:00Z",
 					"lds": {},
 					"rds": {}
 				}
