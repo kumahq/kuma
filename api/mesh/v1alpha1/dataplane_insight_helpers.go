@@ -12,13 +12,14 @@ import (
 
 var _ generic.Insight = &DataplaneInsight{}
 
-func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
+func NewSubscriptionStatus(now time.Time) *DiscoverySubscriptionStatus {
 	return &DiscoverySubscriptionStatus{
-		Total: &DiscoveryServiceStats{},
-		Cds:   &DiscoveryServiceStats{},
-		Eds:   &DiscoveryServiceStats{},
-		Lds:   &DiscoveryServiceStats{},
-		Rds:   &DiscoveryServiceStats{},
+		LastUpdateTime: util_proto.MustTimestampProto(now),
+		Total:          &DiscoveryServiceStats{},
+		Cds:            &DiscoveryServiceStats{},
+		Eds:            &DiscoveryServiceStats{},
+		Lds:            &DiscoveryServiceStats{},
+		Rds:            &DiscoveryServiceStats{},
 	}
 }
 
