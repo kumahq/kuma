@@ -27,6 +27,9 @@ import (
 )
 
 type PodRedirect struct {
+	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
+	// keep in mind to update all other places listed in the issue
+
 	BuiltinDNSEnabled                        bool
 	BuiltinDNSPort                           uint32
 	ExcludeOutboundPorts                     string

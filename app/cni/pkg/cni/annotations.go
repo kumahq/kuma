@@ -29,9 +29,13 @@ var annotationRegistry = map[string]*annotationParam{
 	"builtinDNS":                  {"kuma.io/builtin-dns", "false", alwaysValidFunc},
 	"builtinDNSPort":              {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
 	"excludeOutboundPortsForUIDs": {"traffic.kuma.io/exclude-outbound-ports-for-uids", "", alwaysValidFunc},
+	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 }
 
 type IntermediateConfig struct {
+	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
+	// keep in mind to update all other places listed in the issue
+
 	targetPort                  string
 	inboundPort                 string
 	inboundPortV6               string
@@ -109,7 +113,6 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
-	intermediateConfig.noRedirectUID = defaultNoRedirectUID
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -121,6 +124,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNS":                  &intermediateConfig.builtinDNS,
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
+		"noRedirectUID":               &intermediateConfig.noRedirectUID,
 	}
 
 	for fieldName, fieldPointer := range allFields {
