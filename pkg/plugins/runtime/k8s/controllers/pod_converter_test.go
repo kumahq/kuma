@@ -64,14 +64,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 `
 
 	type testCase struct {
-		pod              string
-		servicesForPod   string
-		otherDataplanes  string
-		otherServices    string
-		otherReplicaSets string
-		otherJobs        string
-		node             string
-		dataplane        string
+		pod               string
+		servicesForPod    string
+		otherDataplanes   string
+		otherServices     string
+		otherReplicaSets  string
+		otherJobs         string
+		node              string
+		dataplane         string
+		existingDataplane string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -304,16 +305,23 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
 			ingress := &mesh_k8s.ZoneIngress{}
-			err = converter.PodToIngress(context.Background(), ingress, pod, services)
+			if given.existingDataplane != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, ingress)
+				Expect(err).ToNot(HaveOccurred())
+			}
 
 			// then
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
 			Expect(err).ToNot(HaveOccurred())
 
 			actual, err := yaml.Marshal(ingress)
@@ -352,6 +360,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
 		}),
+		Entry("Existing ZoneIngress with load balancer and ip", testCase{
+			pod:               "ingress-exists.pod.yaml",
+			servicesForPod:    "ingress-exists.services-for-pod.yaml",
+			existingDataplane: "ingress-exists.existing-dataplane.yaml",
+			dataplane:         "ingress-exists.golden.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
@@ -381,9 +395,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
@@ -436,7 +451,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 		DescribeTable("should return a descriptive error",
 			func(given testCase) {
 				// given
-				converter := PodConverter{}
+				converter := PodConverter{
+					ResourceConverter: k8s.NewSimpleConverter(),
+				}
 
 				pod := &kube_core.Pod{}
 				err := yaml.Unmarshal([]byte(given.pod), pod)

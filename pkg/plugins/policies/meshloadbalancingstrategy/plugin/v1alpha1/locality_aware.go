@@ -2,38 +2,41 @@ package v1alpha1
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 const defaultOverprovisingFactor uint32 = 200
 
 func ConfigureStaticEndpointsLocalityAware(
-	proxy *core_xds.Proxy,
+	tags mesh_proto.MultiValueTagSet,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	cluster *envoy_cluster.Cluster,
 	conf api.Conf,
 	serviceName string,
+	localZone string,
+	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) error {
-	var localZone string
-	if tags := proxy.Dataplane.Spec.TagSet().Values(mesh_proto.ZoneTag); len(tags) > 0 {
-		localZone = tags[0]
-	}
-
-	if conf.LocalityAwareness != nil {
+	if conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil) {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
 				if err != nil {
 					return err
 				}
@@ -45,23 +48,26 @@ func ConfigureStaticEndpointsLocalityAware(
 }
 
 func ConfigureEndpointsLocalityAware(
-	proxy *core_xds.Proxy,
+	tags mesh_proto.MultiValueTagSet,
 	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	conf api.Conf,
 	rs *core_xds.ResourceSet,
 	serviceName string,
 	localZone string,
+	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) error {
-	if conf.LocalityAwareness != nil {
+	if conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil) {
 		for _, cla := range endpoints {
 			if cla.ClusterName == serviceName {
-				loadAssignment, err := ConfigureEnpointLocalityAwareLb(proxy, &conf, cla, cla.ClusterName, localZone)
+				loadAssignment, err := ConfigureEndpointLocalityAwareLb(tags, &conf, cla, cla.ClusterName, localZone, apiVersion, egressEnabled, origin)
 				if err != nil {
 					return err
 				}
 				rs.Add(&core_xds.Resource{
 					Name:     cla.ClusterName,
-					Origin:   generator.OriginOutbound, // needs to be set so GatherEndpoints can get them
+					Origin:   origin, // needs to be set so GatherEndpoints can get them
 					Resource: loadAssignment,
 				})
 			}
@@ -70,22 +76,29 @@ func ConfigureEndpointsLocalityAware(
 	return nil
 }
 
-func ConfigureEnpointLocalityAwareLb(
-	proxy *core_xds.Proxy,
+func ConfigureEndpointLocalityAwareLb(
+	tags mesh_proto.MultiValueTagSet,
 	conf *api.Conf,
 	cla *envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	localZone string,
+	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
 ) (proto.Message, error) {
-	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, proxy.Dataplane.Spec.TagSet(), localZone)
-	endpointsList := []core_xds.Endpoint{}
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, localZone)
+	var endpointsList []core_xds.Endpoint
 	for _, localityLbEndpoint := range cla.Endpoints {
 		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {
 			ed := createEndpoint(lbEndpoint, localZone)
 			zoneName := ed.Tags[mesh_proto.ZoneTag]
 
+			// nolint:gocritic
 			if zoneName == localZone {
 				configureLocalZoneEndpointLocality(localPriorityGroups, &ed, localZone)
+				endpointsList = append(endpointsList, ed)
+			} else if egressEnabled && origin != egress.OriginEgress {
+				ed.Locality = egressLocality(crossZonePriorityGroups)
 				endpointsList = append(endpointsList, ed)
 			} else if configureCrossZoneEndpointLocality(crossZonePriorityGroups, &ed, zoneName) {
 				endpointsList = append(endpointsList, ed)
@@ -93,7 +106,7 @@ func ConfigureEnpointLocalityAwareLb(
 		}
 	}
 	// TODO(lukidzi): use CLA Cache https://github.com/kumahq/kuma/issues/8121
-	loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, proxy.APIVersion)
+	loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpointsList, apiVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -179,4 +192,32 @@ func configureLocalZoneEndpointLocality(localPriorityGroups []LocalLbGroup, endp
 			break
 		}
 	}
+}
+
+func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
+	builder := strings.Builder{}
+	for _, group := range crossZoneGroups {
+		switch group.Type {
+		case api.Only:
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, strings.Join(sortedZones(group.Zones), ",")))
+		case api.Any:
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, group.Type))
+		case api.AnyExcept:
+			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, strings.Join(sortedZones(group.Zones), ",")))
+		default:
+			continue
+		}
+		builder.WriteString(";")
+	}
+
+	return &core_xds.Locality{
+		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
+		Priority: 1,
+	}
+}
+
+func sortedZones(zones map[string]bool) []string {
+	keys := maps.Keys(zones)
+	sort.Strings(keys)
+	return keys
 }

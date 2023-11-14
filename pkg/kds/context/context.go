@@ -201,6 +201,10 @@ func AddHashSuffix(r model.Resource) (model.Resource, error) {
 	}
 
 	newObj := r.Descriptor().NewObject()
+
+	// When syncing mesh-scoped resources from Global to Zone, the only possible namespace on Global is system namespace.
+	// We always trim system namespace in RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper,
+	// that's why r.GetMeta().GetName() never has a namespace suffix, so we can safely call SyncedNameInZone with it.
 	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
 	_ = newObj.SetSpec(r.GetSpec())
 

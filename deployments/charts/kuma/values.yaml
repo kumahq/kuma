@@ -158,6 +158,8 @@ controlPlane:
     path: /
     # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
     pathType: ImplementationSpecific
+    # -- Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port
+    servicePort: 5681
 
   globalZoneSyncService:
     # -- Whether to create a k8s service for the global zone sync
@@ -688,8 +690,8 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
-  # -- If true, it uses new API for resource synchronization
-  deltaKds: false
+  # -- If false, it uses legacy API for resource synchronization
+  deltaKds: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:

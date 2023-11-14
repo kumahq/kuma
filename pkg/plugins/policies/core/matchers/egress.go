@@ -7,14 +7,13 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
 
 	if len(policies.GetItems()) == 0 {
@@ -41,9 +40,9 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 	var fr core_rules.FromRules
 	var err error
 	if isFrom {
-		fr, err = processFromRules(es, policies)
+		fr, err = processFromRules(tags, policies)
 	} else {
-		fr, err = processToRules(es, policies)
+		fr, err = processToRules(tags, policies)
 	}
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
@@ -56,14 +55,14 @@ func EgressMatchedPolicies(rType core_model.ResourceType, es *core_mesh.External
 }
 
 func processFromRules(
-	es *core_mesh.ExternalServiceResource,
+	tags map[string]string,
 	rl core_model.ResourceList,
 ) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range rl.GetItems() {
 		spec := policy.GetSpec().(core_model.Policy)
-		if !externalServiceSelectedByTargetRef(spec.GetTargetRef(), es) {
+		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
 			continue
 		}
 		matchedPolicies = append(matchedPolicies, policy)
@@ -113,11 +112,8 @@ func processFromRules(
 //	        disabled: true
 //
 // that's why processToRules() method produces FromRules for the Egress.
-func processToRules(
-	es *core_mesh.ExternalServiceResource,
-	rl core_model.ResourceList,
-) (core_rules.FromRules, error) {
-	matchedPolicies := []core_model.Resource{}
+func processToRules(tags map[string]string, rl core_model.ResourceList) (core_rules.FromRules, error) {
+	var matchedPolicies []core_model.Resource
 
 	for _, policy := range rl.GetItems() {
 		spec := policy.GetSpec().(core_model.Policy)
@@ -128,7 +124,7 @@ func processToRules(
 		}
 
 		for _, item := range to.GetToList() {
-			if externalServiceSelectedByTargetRef(item.GetTargetRef(), es) {
+			if serviceSelectedByTargetRef(item.GetTargetRef(), tags) {
 				matchedPolicies = append(matchedPolicies, policy)
 			}
 		}
@@ -136,10 +132,10 @@ func processToRules(
 
 	sort.Sort(ByTargetRef(matchedPolicies))
 
-	toList := []core_rules.PolicyItemWithMeta{}
+	var toList []core_rules.PolicyItemWithMeta
 	for _, policy := range matchedPolicies {
 		for _, item := range policy.GetSpec().(core_model.PolicyWithToList).GetToList() {
-			if !externalServiceSelectedByTargetRef(item.GetTargetRef(), es) {
+			if !serviceSelectedByTargetRef(item.GetTargetRef(), tags) {
 				continue
 			}
 			// convert 'to' policyItem to 'from' policyItem
@@ -175,17 +171,16 @@ func (a *artificialPolicyItem) GetDefault() interface{} {
 	return a.conf
 }
 
-func externalServiceSelectedByTargetRef(tr common_api.TargetRef, es *core_mesh.ExternalServiceResource) bool {
+func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string) bool {
 	switch tr.Kind {
 	case common_api.Mesh:
 		return true
 	case common_api.MeshSubset:
-		return mesh_proto.TagSelector(tr.Tags).Matches(es.Spec.GetTags())
+		return mesh_proto.TagSelector(tr.Tags).Matches(tags)
 	case common_api.MeshService:
-		return tr.Name == es.Spec.GetTags()[mesh_proto.ServiceTag]
+		return tr.Name == tags[mesh_proto.ServiceTag]
 	case common_api.MeshServiceSubset:
-		return tr.Name == es.Spec.GetTags()[mesh_proto.ServiceTag] &&
-			mesh_proto.TagSelector(tr.Tags).Matches(es.Spec.GetTags())
+		return tr.Name == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(tr.Tags).Matches(tags)
 	}
 	return false
 }

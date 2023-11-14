@@ -279,7 +279,6 @@ properties:
                                     type: array
                                 required:
                                   - type
-                                  - zones
                                 type: object
                             required:
                               - to
@@ -318,8 +317,6 @@ properties:
                               - key
                             type: object
                           type: array
-                      required:
-                        - affinityTags
                       type: object
                   type: object
               type: object
