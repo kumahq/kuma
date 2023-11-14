@@ -38,7 +38,7 @@ func NewBadRequestError(msg string) error {
 }
 
 func (e *BadRequest) Error() string {
-	if e.msg != "" {
+	if e.msg == "" {
 		return "bad request"
 	}
 	return fmt.Sprintf("bad request: %s", e.msg)
