@@ -2,6 +2,7 @@ name: "build-test-distribute"
 on:
   push:
     branches: ["master", "release-*"]
+    tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
 jobs:
@@ -41,11 +42,19 @@ jobs:
         run: |
           tar -czf build.tar.gz ./build
       - name: Temporarily saving build output
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-output
           path: build.tar.gz
           retention-days: 1
+      - name: Prepare for container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure
   test:
     needs: build
     runs-on: ubuntu-latest
@@ -89,38 +98,27 @@ jobs:
         run: |
           make test TEST_REPORTS=1
       - name: Save test reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-reports
           path: build/reports
           retention-days: 30
-      - name: Cleanup build folder
-        run: |
-          rm -rf ./build
-      - uses: actions/download-artifact@v2
-        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
-        with:
-          name: build-output
-      - name: Unpack artifact
-        run: |
-          tar -xzf build.tar.gz
-      - name: Prepare for container structure test
-        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
-        run: |
-          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - name: Run container structure test
-        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
-        run: |
-          make test/container-structure
   distributions:
     needs: test
-    # this jobs will still run even if "test" is skipped
-    if: ${{ always() }}
+    if: ${{ always() && !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: "Check if force push"
-        if: ${{ contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-        run: 'echo "ALLOW_PUSH=true" >> $GITHUB_ENV'
+        run: |
+          PR_FORCE_PUBLISH="${{ contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}"
+          RUN_ON_MASTER="${{ github.ref == 'refs/branch/master' }}"
+          RUN_ON_RELEASE="${{ startsWith(github.ref, 'refs/branch/release-') }}"
+          RUN_ON_TAG="${{ startsWith(github.ref, 'refs/tags/') }}"
+          ALL_CONDITIONS="$PR_FORCE_PUBLISH-$RUN_ON_MASTER-$RUN_ON_RELEASE-$RUN_ON_TAG"
+
+          if [[ "$ALL_CONDITIONS" == *"true"* ]]; then
+            'echo "ALLOW_PUSH=true" >> $GITHUB_ENV'
+          fi
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -134,7 +132,7 @@ jobs:
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: build-output
       - name: Unpack artifact
