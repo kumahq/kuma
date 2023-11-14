@@ -111,7 +111,7 @@ metadata:
 		// when new resources is created on Zone
 		err = democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))(zoneCluster)
 
-		// then resource is synchronized to Global
+		// then resource is synchronized to Global (The namespace here will need to be updated as soon as the minimum version is 2.5.x
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("default"), "get", "dataplanes")
@@ -126,17 +126,6 @@ metadata:
 			WithHelmChartPath(Config.HelmChartName),
 			WithoutHelmOpt("global.image.tag"),
 			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-		},
-	), Entry(
-		"Sync old global and new zone",
-		[]KumaDeploymentOption{
-			WithHelmChartPath(Config.HelmChartName),
-			WithoutHelmOpt("global.image.tag"),
-			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-		},
-		[]KumaDeploymentOption{
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmChartPath(Config.HelmChartPath),
 		},
 	))
 }

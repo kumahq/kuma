@@ -34,19 +34,6 @@ var _ = Describe("KubernetesStore template", func() {
 			Expect(res.GetNamespace()).To(Equal("core-ns"))
 		})
 
-		It("works with namespace in name on inference", func() {
-			in := core_mtp.NewMeshTrafficPermissionResource()
-			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo.namespace", Mesh: "default"})
-
-			mapper := k8s.NewInferenceMapper("core-ns", &k8s.SimpleKubeFactory{KubeTypes: kubeTypes})
-			res, err := mapper(in, "")
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res.GetMesh()).To(Equal("default"))
-			Expect(res.GetName()).To(Equal("foo"))
-			Expect(res.GetNamespace()).To(Equal("namespace"))
-		})
-
 		It("works passing namespace on inference", func() {
 			in := core_mtp.NewMeshTrafficPermissionResource()
 			in.SetMeta(&rest_v1alpha1.ResourceMeta{Name: "foo", Mesh: "default"})

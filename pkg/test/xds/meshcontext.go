@@ -33,3 +33,18 @@ func CreateSampleMeshContextWith(resources xds_context.Resources) xds_context.Co
 		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &DummyCLACache{}, Zone: "test-zone"},
 	}
 }
+
+func CreateSampleMeshContextWithEndpoints(resources xds_context.Resources, endpointMap core_xds.EndpointMap) xds_context.Context {
+	return xds_context.Context{
+		Mesh: xds_context.MeshContext{
+			Resource: &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+			},
+			Resources:   resources,
+			EndpointMap: endpointMap,
+		},
+		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &DummyCLACache{OutboundTargets: endpointMap}, Zone: "test-zone"},
+	}
+}

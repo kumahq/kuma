@@ -245,7 +245,7 @@ var DefaultConfig = func() Config {
 		Experimental: ExperimentalConfig{
 			GatewayAPI:                      false,
 			KubeOutboundsAsVIPs:             true,
-			KDSDeltaEnabled:                 false,
+			KDSDeltaEnabled:                 true,
 			UseTagFirstVirtualOutboundModel: false,
 			IngressTagFilters:               []string{},
 			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{

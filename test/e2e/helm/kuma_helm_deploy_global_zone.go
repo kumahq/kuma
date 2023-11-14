@@ -111,7 +111,7 @@ interCp:
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
+			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
@@ -180,7 +180,7 @@ interCp:
 
 		podName, err := PodNameOfApp(c2, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.default", Kuma2, podName, TestNamespace)
+		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.%s", Kuma2, podName, TestNamespace, Config.KumaNamespace)
 
 		// when
 		_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--type", "config-dump")

@@ -122,7 +122,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 	}
 	var excludeOutboundPortsForUids []config.UIDsToPorts
 	if len(tpConfig.ExcludedOutboundsForUIDs) > 0 {
-		excludeOutboundPortsForUids, err = parseExcludePortsForUIDs(tpConfig.ExcludedOutboundsForUIDs)
+		excludeOutboundPortsForUids, err = ParseExcludePortsForUIDs(tpConfig.ExcludedOutboundsForUIDs)
 		if err != nil {
 			return "", errors.Wrap(err, "parsing excluded outbound ports for uids failed")
 		}
@@ -194,7 +194,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 	return Setup(cfg)
 }
 
-func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {
+func ParseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {
 	var uidsToPorts []config.UIDsToPorts
 	for _, excludePort := range excludeOutboundPortsForUIDs {
 		parts := strings.Split(excludePort, ":")
