@@ -1,7 +1,9 @@
-name: "distribute"
+name: "build-test-distribute"
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "release-*"]
+  pull_request_target:
+    branches: ["master", "release-*"]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -9,23 +11,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Install basic tools"
-        # `unzip`    is necessary to install `protoc`
-        # `gcc`      is necessary to run `go test -race`
-        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils` is necessary to decompress xz files
-        run: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
-            ;;
-          esac
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -52,15 +37,19 @@ jobs:
           make -j images
       - run: |
           make -j docker/save
+      - name: Pack artifact
+        run: |
+          tar -czf build.tar.gz ./build
       - name: Temporarily saving build output
         uses: actions/upload-artifact@v2
         with:
           name: build-output
-          path: build
+          path: build.tar.gz
           retention-days: 1
   test:
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,8 +57,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/cache@v3
         with:
           path: |
@@ -111,25 +98,35 @@ jobs:
         run: |
           rm -rf ./build
       - uses: actions/download-artifact@v2
+        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
         with:
           name: build-output
-          path: build
-      - run: |
+      - name: Unpack artifact
+        run: |
+          tar -xzf build.tar.gz
+      - name: Prepare for container structure test
+        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
+        run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - run: |
+      - name: Run container structure test
+        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') }}
+        run: |
           make test/container-structure
   distributions:
     needs: test
+    # this jobs will still run even if "test" is skipped
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: "Check if force push"
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+        run: 'echo "ALLOW_PUSH=true" >> $GITHUB_ENV'
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/cache@v3
         with:
           path: |
@@ -140,7 +137,9 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: build-output
-          path: build
+      - name: Unpack artifact
+        run: |
+          tar -xzf build.tar.gz
       - name: Inspect created tars
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
