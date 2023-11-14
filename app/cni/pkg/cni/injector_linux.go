@@ -76,6 +76,17 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	if err != nil {
 		return nil, err
 	}
+
+	excludePortsForUIDs := []string{}
+	if intermediateConfig.excludeOutboundPortsForUIDs != "" {
+		excludePortsForUIDs = strings.Split(intermediateConfig.excludeOutboundPortsForUIDs, ";")
+	}
+
+	excludePortsForUIDsParsed, err := transparentproxy.ParseExcludePortsForUIDs(excludePortsForUIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := config.Config{
 		RuntimeStdout: logWriter,
 		Owner: config.Owner{
@@ -83,9 +94,10 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		},
 		Redirect: config.Redirect{
 			Outbound: config.TrafficFlow{
-				Enabled:      true,
-				Port:         port,
-				ExcludePorts: excludePorts,
+				Enabled:             true,
+				Port:                port,
+				ExcludePorts:        excludePorts,
+				ExcludePortsForUIDs: excludePortsForUIDsParsed,
 			},
 		},
 	}

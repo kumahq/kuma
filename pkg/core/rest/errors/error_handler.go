@@ -24,7 +24,7 @@ import (
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("error"), ctx, context.Background())
+	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
 	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err):

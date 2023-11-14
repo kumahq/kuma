@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -12,10 +12,11 @@ import (
 
 var _ generic.Insight = &ZoneInsight{}
 
-func NewSubscriptionStatus() *KDSSubscriptionStatus {
+func NewSubscriptionStatus(now time.Time) *KDSSubscriptionStatus {
 	return &KDSSubscriptionStatus{
-		Total: &KDSServiceStats{},
-		Stat:  map[string]*KDSServiceStats{},
+		LastUpdateTime: util_proto.MustTimestampProto(now),
+		Total:          &KDSServiceStats{},
+		Stat:           map[string]*KDSServiceStats{},
 	}
 }
 

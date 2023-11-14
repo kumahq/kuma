@@ -1,0 +1,35 @@
+clusterName: backend-d230d75c0fcb71dc
+endpoints:
+- lbEndpoints:
+  - endpoint:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+    metadata:
+      filterMetadata:
+        envoy.lb:
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone
+        envoy.transport_socket_match:
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone
+  locality:
+    zone: test-zone
+- lbEndpoints:
+  - endpoint:
+      address:
+        socketAddress:
+          address: 192.168.1.2
+          portValue: 8080
+    metadata:
+      filterMetadata:
+        envoy.lb:
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone-2
+        envoy.transport_socket_match:
+          kuma.io/protocol: http
+          kuma.io/zone: test-zone-2
+  locality:
+    zone: test-zone-2
+  priority: 1

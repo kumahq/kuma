@@ -66,11 +66,12 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 	defer c.mu.Unlock()
 
 	// initialize subscription
+	now := core.Now()
 	subscription := &mesh_proto.DiscoverySubscription{
 		Id:                     core.NewUUID(),
 		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:            util_proto.MustTimestampProto(core.Now()),
-		Status:                 mesh_proto.NewSubscriptionStatus(),
+		ConnectTime:            util_proto.MustTimestampProto(now),
+		Status:                 mesh_proto.NewSubscriptionStatus(now),
 		Version:                mesh_proto.NewVersion(),
 	}
 	// initialize state per ADS stream

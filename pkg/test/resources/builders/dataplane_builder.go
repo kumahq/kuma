@@ -192,6 +192,13 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 	return d
 }
 
+func (d *DataplaneBuilder) AddBuiltInGatewayTags(tags map[string]string) *DataplaneBuilder {
+	for k, v := range tags {
+		d.res.Spec.Networking.Gateway.Tags[k] = v
+	}
+	return d
+}
+
 func (d *DataplaneBuilder) WithAdminPort(i int) *DataplaneBuilder {
 	d.res.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{
 		Port: uint32(i),

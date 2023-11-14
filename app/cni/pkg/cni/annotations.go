@@ -18,28 +18,34 @@ const (
 )
 
 var annotationRegistry = map[string]*annotationParam{
-	"inject":               {"kuma.io/sidecar-injection", "", alwaysValidFunc},
-	"ports":                {"kuma.io/envoy-admin-port", "", validatePortList},
-	"excludeInboundPorts":  {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
-	"excludeOutboundPorts": {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
-	"inboundPort":          {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
-	"inboundPortV6":        {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
-	"outboundPort":         {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
-	"isGateway":            {"kuma.io/gateway", "false", alwaysValidFunc},
-	"builtinDNS":           {"kuma.io/builtin-dns", "false", alwaysValidFunc},
-	"builtinDNSPort":       {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
+	"inject":                      {"kuma.io/sidecar-injection", "", alwaysValidFunc},
+	"ports":                       {"kuma.io/envoy-admin-port", "", validatePortList},
+	"excludeInboundPorts":         {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
+	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
+	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
+	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
+	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
+	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
+	"builtinDNS":                  {"kuma.io/builtin-dns", "false", alwaysValidFunc},
+	"builtinDNSPort":              {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
+	"excludeOutboundPortsForUIDs": {"traffic.kuma.io/exclude-outbound-ports-for-uids", "", alwaysValidFunc},
+	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 }
 
 type IntermediateConfig struct {
-	targetPort           string
-	inboundPort          string
-	inboundPortV6        string
-	noRedirectUID        string
-	excludeInboundPorts  string
-	excludeOutboundPorts string
-	isGateway            string
-	builtinDNS           string
-	builtinDNSPort       string
+	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
+	// keep in mind to update all other places listed in the issue
+
+	targetPort                  string
+	inboundPort                 string
+	inboundPortV6               string
+	noRedirectUID               string
+	excludeInboundPorts         string
+	excludeOutboundPorts        string
+	excludeOutboundPortsForUIDs string
+	isGateway                   string
+	builtinDNS                  string
+	builtinDNSPort              string
 }
 
 type annotationValidationFunc func(value string) error
@@ -107,17 +113,18 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
-	intermediateConfig.noRedirectUID = defaultNoRedirectUID
 
 	allFields := map[string]*string{
-		"outboundPort":         &intermediateConfig.targetPort,
-		"inboundPort":          &intermediateConfig.inboundPort,
-		"inboundPortV6":        &intermediateConfig.inboundPortV6,
-		"excludeInboundPorts":  &intermediateConfig.excludeInboundPorts,
-		"excludeOutboundPorts": &intermediateConfig.excludeOutboundPorts,
-		"isGateway":            &intermediateConfig.isGateway,
-		"builtinDNS":           &intermediateConfig.builtinDNS,
-		"builtinDNSPort":       &intermediateConfig.builtinDNSPort,
+		"outboundPort":                &intermediateConfig.targetPort,
+		"inboundPort":                 &intermediateConfig.inboundPort,
+		"inboundPortV6":               &intermediateConfig.inboundPortV6,
+		"excludeInboundPorts":         &intermediateConfig.excludeInboundPorts,
+		"excludeOutboundPorts":        &intermediateConfig.excludeOutboundPorts,
+		"isGateway":                   &intermediateConfig.isGateway,
+		"builtinDNS":                  &intermediateConfig.builtinDNS,
+		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
+		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
+		"noRedirectUID":               &intermediateConfig.noRedirectUID,
 	}
 
 	for fieldName, fieldPointer := range allFields {

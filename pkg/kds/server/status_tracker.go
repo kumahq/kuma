@@ -77,11 +77,12 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 	}
 
 	// initialize subscription
+	now := core.Now()
 	subscription := &system_proto.KDSSubscription{
 		Id:                core.NewUUID(),
 		GlobalInstanceId:  c.runtimeInfo.GetInstanceId(),
-		ConnectTime:       util_proto.MustTimestampProto(core.Now()),
-		Status:            system_proto.NewSubscriptionStatus(),
+		ConnectTime:       util_proto.MustTimestampProto(now),
+		Status:            system_proto.NewSubscriptionStatus(now),
 		Version:           system_proto.NewVersion(),
 		AuthTokenProvided: containsAuthToken(md),
 	}
