@@ -743,6 +743,11 @@ experimental:
   # If true then control plane computes reachable services automatically based on MeshTrafficPermission.
   # Lack of MeshTrafficPermission is treated as Deny the traffic.
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
+  # KDSSyncNameWithHashSuffix if true then during KDS sync resource name is going to be suffixed with hash.
+  # The hash is computed based on various resource characteristics like mesh, namespace, etc. The feature prevents name
+  # collisions when syncing policies with the same names but different meshes from Global(Universal) to Zone(Kubernetes).
+  # More extensive explanation of the problem and solution can be found in the MADR https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/029-kds-sync-hash-suffix.md
+  KDSSyncNameWithHashSuffix: false # ENV: KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX
 
 proxy:
   gateway:
