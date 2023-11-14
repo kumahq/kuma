@@ -32,7 +32,7 @@ func WaitInterval(microseconds uint) *Parameter {
 
 	return &Parameter{
 		long:      "--wait-interval",
-		short:     "-W",
+		short:     "--wait-interval",
 		connector: "=",
 		parameters: []ParameterBuilder{
 			&WaitIntervalParameter{microseconds: microseconds},
