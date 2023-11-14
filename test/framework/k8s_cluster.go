@@ -538,6 +538,19 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
+	if c.opts.zoneEgressConcurrency != nil {
+		err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(Config.KumaNamespace), "patch",
+			"deployments.apps",
+			Config.ZoneEgressApp,
+			"--type",
+			"json",
+			"-p",
+			fmt.Sprintf(`[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--concurrency=%d" }]`, *c.opts.zoneEgressConcurrency))
+		if err != nil {
+			return err
+		}
+	}
+
 	if c.opts.zoneEgressEnvoyAdminTunnel {
 		if !c.opts.zoneEgress {
 			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")

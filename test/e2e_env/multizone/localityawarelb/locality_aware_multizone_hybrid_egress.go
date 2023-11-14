@@ -3,7 +3,6 @@ package localityawarelb
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -138,17 +137,6 @@ spec:
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())
-		Expect(k8s.RunKubectlE(
-			multizone.KubeZone1.GetTesting(),
-			multizone.KubeZone1.GetKubectlOptions(Config.KumaNamespace),
-			"patch",
-			"deployments.apps",
-			"kuma-egress",
-			"--type",
-			"json",
-			"-p",
-			`[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--concurrency=1" }]`,
-		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

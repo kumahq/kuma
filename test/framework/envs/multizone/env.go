@@ -49,6 +49,7 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
 			WithEgressEnvoyAdminTunnel(),
+			WithEgressConcurrency(1),
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1)...,
@@ -74,6 +75,7 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
 			WithEgressEnvoyAdminTunnel(),
+			WithEgressConcurrency(1),
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 			WithCNI(),
 		},
@@ -103,7 +105,7 @@ func SetupAndGetState() []byte {
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, uniZone1Options...)).
 			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressLegacyToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken)).
+			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	}()
@@ -125,7 +127,7 @@ func SetupAndGetState() []byte {
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, uniZone2Options...)).
 			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken)).
+			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 	}()
