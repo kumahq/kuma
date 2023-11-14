@@ -3,10 +3,10 @@ package localityawarelb
 import (
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"

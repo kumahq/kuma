@@ -71,5 +71,5 @@ var (
 	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
-	_ = FDescribe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
+	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
 )

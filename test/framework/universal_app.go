@@ -213,7 +213,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 		verbose:       verbose,
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
-		concurrency: concurrency,
+		concurrency:   concurrency,
 	}
 	if containerName != "" {
 		app.containerName = containerName
