@@ -40,7 +40,6 @@ type kumaDeploymentOptions struct {
 	zoneIngress                 bool
 	zoneIngressEnvoyAdminTunnel bool
 	zoneEgress                  bool
-	zoneEgressConcurrency       *int
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
 	cpReplicas                  int
@@ -312,12 +311,6 @@ const (
 func WithEgress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneEgress = true
-	})
-}
-
-func WithEgressConcurrency(concurrency int) KumaOptionFunc {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneEgressConcurrency = &concurrency
 	})
 }
 
