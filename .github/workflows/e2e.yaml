@@ -1,0 +1,177 @@
+name: e2e
+on:
+  workflow_call:
+    inputs:
+      k8sVersion:
+        description: version of k3s to use or "kind" and "kindIpv6"
+        type: string
+        default: v1.28.1-k3s1
+        required: false
+      parallelism:
+        description: level of parallelization
+        type: number
+        default: 1
+        required: false
+      target:
+        description: makefile target without e2e prefix
+        type: string
+        default: ""
+        required: false
+      arch:
+        description: The golang arch
+        type: string
+        default: amd64
+        required: false
+      cniNetworkPlugin:
+        description: The CNI networking plugin to use [flannel | calico]
+        type: string
+        default: flannel
+        required: false
+      deltaKDS:
+        description: if should run tests with new implementation of KDS
+        type: boolean
+        default: false
+        required: false
+env:
+  first_k8s_version: "v1.23.17-k3s1"
+  last_k8s_version: "v1.28.1-k3s1"
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    # runs-on: ${{ inputs.arch == 'amd64' && 'ubuntu-latest' || 'arm64-not-supported' }}
+    steps:
+      - id: check_if_should_skip
+        name: "Check if the job should be skipped"
+        run: |
+          echo "Running with: \
+            k8s: ${{ inputs.k8sVersion }} \
+            target: ${{ inputs.target }} \
+            parallelism: ${{ inputs.parallelism }} \
+            arch: ${{ inputs.arch }} \
+            cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
+            "
+          function skip() {
+            echo "$1"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          SKIP_CI_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test')  }}"
+          if [[ "$SKIP_CI_LABEL" == "true" ]]; then
+            skip "Halting job because the pull request contained a 'ci/skip-*' label."
+          fi
+
+          NON_PRIORITY=
+          if [[ "" == "${{ inputs.target }}" ]] || [[ "calico" == "${{ inputs.cniNetworkPlugin }}" ]] || [[ "arm64" == "${{ inputs.arch }}" ]] || [[ "true" == "${{ inputs.deltaKDS }}" ]] || [[ "kindIpv6" == "${{ inputs.k8sVersion }}" ]] || [[ "${{ env.first_k8s_version }}" == "${{ inputs.k8sVersion }}" ]]; then
+            NON_PRIORITY=1
+          fi
+
+          RUN_FULL_MATRIX="${{ contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
+          if [[ "$NON_PRIORITY" == "1" ]] && [[ "$RUN_FULL_MATRIX" == "false" ]]; then
+            skip "Halting job because non priority job detected and no label 'ci/run-full-matrix' was found on the pull request."
+          fi
+
+          if [[ "arm64" == "${{ inputs.arch }}" ]]; then
+            skip "Halting job because arm64 runners are currently not supported by GitHub Actions."
+          fi
+
+
+          # Handle invalid test combinations
+          if [[ "${{ inputs.k8sVersion }}" == "kind" && "${{ inputs.target }}" != "universal" ]]; then
+            skip "Non valid job combination, halting job reason: kind should only be used when testing ipv6 or with e2e-universal."
+          fi
+
+          if [[ "${{ inputs.k8sVersion }}" != kind* && "${{ inputs.target }}" == "universal" ]]; then
+            skip "Non valid job combination, halting job reason: universal only runs on kind."
+          fi
+
+          echo "Continuing tests."
+      - uses: actions/checkout@v4
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - uses: actions/download-artifact@v2
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        with:
+          name: build-output
+      - name: Unpack artifact
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        run: |
+          tar -xzf build.tar.gz
+      - name: "Setup helm"
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        run: |
+          make dev/set-kuma-helm-repo
+      # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
+      - if: ${{ 'kindIpv6' == inputs.k8sVersion && steps.check_if_should_skip.outputs.skip != 'true' }}
+        name: Enable IPV6 and change DNS
+        run: |
+          cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
+      - name: "Run E2E tests"
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        run: |
+          if [[ "${{ inputs.k8sVersion }}" == "kindIpv6" ]]; then
+            export IPV6=true
+            export K8S_CLUSTER_TOOL=kind
+            export KUMA_DEFAULT_RETRIES=60
+            export KUMA_DEFAULT_TIMEOUT="6s"
+          fi
+          if [[ "${{ inputs.k8sVersion }}" != "kind"* ]]; then
+            export CI_K3S_VERSION=${{ inputs.k8sVersion }}
+            export K3D_NETWORK_CNI=${{ inputs.cniNetworkPlugin }}
+          fi
+          if [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            export MAKE_PARAMETERS="-j1"
+          else
+            export MAKE_PARAMETERS="-j2"
+          fi
+
+          if [[ "${{ inputs.deltaKDS }}" == true ]]; then
+            export KUMA_DELTA_KDS=true
+            export KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED=true
+          fi
+
+          if [[ "${{ inputs.target }}" == "" ]]; then
+            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+          fi
+          env
+          if [[ "${{ inputs.target }}" != "" ]]; then
+            target="test/e2e-${{ inputs.target }}"
+          else
+            target="test/e2e"
+          fi
+          make ${MAKE_PARAMETERS} CI=true "${target}"
+      - name: Store e2e test reports
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e-test-reports
+          path: build/reports
+          retention-days: 30
+      - name: Store e2e test logs
+        if: ${{ steps.check_if_should_skip.outputs.skip != 'true' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e-test-logs
+          path: /tmp/e2e
+          retention-days: 30
