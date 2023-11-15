@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*"]
+    branches: ["master", "release-*", "gh-actions-build-test-dist"]
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
@@ -30,7 +30,7 @@ jobs:
           make check
   build:
     runs-on: ubuntu-latest
-    needs: [ "check" ]
+    needs: ["check"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,14 +63,18 @@ jobs:
           make -j images
       - run: |
           make -j docker/save
-      - name: Pack artifact
+      - name: Cleanup redundant build outputs
         run: |
-          tar -czf build.tar.gz ./build
-      - name: Temporarily saving build output
+          find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          find ./build/distributions/* -maxdepth 0 -type d | grep -v '/out' | xargs -I % rm -rf %
+          find  ./build/tools-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          rm -rf ./build/oapitmp
+          rm -rf ./build/ebpf/
+      - name: Upload build output
         uses: actions/upload-artifact@v3
         with:
           name: build-output
-          path: build.tar.gz
+          path: build
           retention-days: 1
       - name: Prepare for container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -81,7 +85,7 @@ jobs:
         run: |
           make test/container-structure
   test:
-    needs: [ "check", "build" ]
+    needs: ["check", "build"]
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     steps:
@@ -120,12 +124,12 @@ jobs:
     steps:
       - name: "Check if force push"
         if: |
-            ${{ 
-              contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
-              (github.ref == 'refs/branch/master') ||
-              startsWith(github.ref, 'refs/branch/release-')  ||
-              startsWith(github.ref, 'refs/tags/') ||
-            false }}
+          ${{
+            contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
+            (github.ref == 'refs/branch/master') ||
+            startsWith(github.ref, 'refs/branch/release-')  ||
+            startsWith(github.ref, 'refs/tags/') ||
+          false }}
         run: |
           echo "ALLOW_PUSH=true" >> $GITHUB_ENV
       - name: "Check if run on all arch/os combinations"
@@ -148,9 +152,6 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: build-output
-      - name: Unpack artifact
-        run: |
-          tar -xzf build.tar.gz
       - name: Inspect created tars
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
