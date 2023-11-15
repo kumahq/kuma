@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -165,7 +166,8 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 
 	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy, ipv6)
 
-	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
+	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
+	for i := 0; i <= maxRetries; i++ {
 		output, err := runRestoreCmd(cmdName, params)
 		if err == nil {
 			return output, nil
@@ -174,12 +176,12 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
 			"# [%d/%d] %s returned error: '%s'",
 			i+1,
-			cfg.Retry.MaxRetries+1,
+			maxRetries+1,
 			strings.Join(append([]string{cmdName}, params...), " "),
 			err.Error(),
 		)))
 
-		if i < cfg.Retry.MaxRetries {
+		if i < maxRetries {
 			_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
 				" will try again in %s",
 				cfg.Retry.SleepBetweenReties.String(),
