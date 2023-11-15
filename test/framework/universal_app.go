@@ -202,9 +202,10 @@ type UniversalApp struct {
 	ip            string
 	verbose       bool
 	mesh          string
+	concurrency   int
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
 		logsPath:      universal_logs.CurrentLogsPath(Config.UniversalE2ELogsPath),
@@ -212,6 +213,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 		verbose:       verbose,
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
+		concurrency:   concurrency,
 	}
 	if containerName != "" {
 		app.containerName = containerName

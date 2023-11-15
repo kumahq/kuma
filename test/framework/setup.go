@@ -247,6 +247,7 @@ func universalZoneRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	appType AppMode,
 	resourceManifestFunc func(address string, port, advertisedPort int) string,
+	concurrency int,
 ) func(cluster Cluster) error {
 	dpName := string(appType)
 
@@ -264,6 +265,7 @@ func universalZoneRelatedResource(
 			[]string{},
 			[]string{},
 			"",
+			concurrency,
 		)
 		if err != nil {
 			return err
@@ -300,20 +302,26 @@ func universalZoneRelatedResource(
 	}
 }
 
-func IngressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
+func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	manifestFunc := func(address string, port, advertisedPort int) string {
 		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
 	}
 
-	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
+	var opts appDeploymentOptions
+	opts.apply(opt...)
+
+	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc, opts.concurrency)
 }
 
-func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
+func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	manifestFunc := func(_ string, port, _ int) string {
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
+	var opts appDeploymentOptions
+	opts.apply(opt...)
+
+	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc, opts.concurrency)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
