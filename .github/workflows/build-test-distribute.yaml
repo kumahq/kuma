@@ -35,6 +35,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: "Check to run on all arch/os combinations"
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+        run: |
+          echo 'ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"' >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -115,16 +119,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Check if force push"
+        if: |
+            ${{ 
+              contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
+              (github.ref == 'refs/branch/master') ||
+              startsWith(github.ref, 'refs/branch/release-')  ||
+              startsWith(github.ref, 'refs/tags/') ||
+            false }}
         run: |
-          PR_FORCE_PUBLISH="${{ contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}"
-          RUN_ON_MASTER="${{ github.ref == 'refs/branch/master' }}"
-          RUN_ON_RELEASE="${{ startsWith(github.ref, 'refs/branch/release-') }}"
-          RUN_ON_TAG="${{ startsWith(github.ref, 'refs/tags/') }}"
-          ALL_CONDITIONS="$PR_FORCE_PUBLISH-$RUN_ON_MASTER-$RUN_ON_RELEASE-$RUN_ON_TAG"
-
-          if [[ "$ALL_CONDITIONS" == *"true"* ]]; then
-            'echo "ALLOW_PUSH=true" >> $GITHUB_ENV'
-          fi
+          echo "ALLOW_PUSH=true" >> $GITHUB_ENV
+      - name: "Check if run on all arch/os combinations"
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+        run: |
+          echo 'ENABLED_GOARCHES="arm64 amd64" ENABLED_GOOSES="linux darwin"' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
