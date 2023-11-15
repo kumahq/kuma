@@ -701,6 +701,7 @@ experimental:
     fullResyncInterval: 15s
     delayFullResync: true
   autoReachableServices: true
+  kdsSyncNameWithHashSuffix: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -965,6 +966,7 @@ tracing:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
+				"KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX":                                         "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

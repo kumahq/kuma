@@ -21,7 +21,7 @@ var _ = Describe("WaitIntervalParameter", func() {
 		},
 		Entry("no flag when parameter is 0", 0, false, ""),
 		Entry("no flag when parameter is 0 - verbose", 0, true, ""),
-		Entry("wait interval", 20, false, "-W=20"),
+		Entry("wait interval", 20, false, "--wait-interval=20"),
 		Entry("wait interval - verbose", 20, true, "--wait-interval=20"),
 	)
 })

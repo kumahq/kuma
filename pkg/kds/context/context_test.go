@@ -464,6 +464,8 @@ var _ = Describe("Context", func() {
 				cfg.Store.Kubernetes.SystemNamespace = caseCfg.k8sSystemNamespace
 			}
 
+			cfg.Experimental.KDSSyncNameWithHashSuffix = true
+
 			return cfg
 		}
 

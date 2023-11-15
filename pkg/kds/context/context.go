@@ -61,21 +61,24 @@ func DefaultContext(
 		config_manager.ClusterIdConfigKey: true,
 	}
 
-	globalResourceMappers := CompositeResourceMapper(
+	mappers := []reconcile.ResourceMapper{
 		MapZoneTokenSigningKeyGlobalToPublicKey,
 		RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
 			cfg.Store.Type,
 			cfg.Store.Kubernetes.SystemNamespace,
 		),
-		AddHashSuffix,
-	)
+	}
+
+	if cfg.Experimental.KDSSyncNameWithHashSuffix {
+		mappers = append(mappers, AddHashSuffix)
+	}
 
 	return &Context{
 		ZoneClientCtx:        ctx,
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(cfg.Multizone.Zone.Name),
 		Configs:              configs,
-		GlobalResourceMapper: globalResourceMappers,
+		GlobalResourceMapper: CompositeResourceMapper(mappers...),
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
