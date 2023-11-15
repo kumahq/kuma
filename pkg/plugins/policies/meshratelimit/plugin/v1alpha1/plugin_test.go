@@ -15,7 +15,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
@@ -25,7 +24,8 @@ import (
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -47,9 +47,9 @@ var _ = Describe("MeshRateLimit", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := test_xds.CreateSampleMeshContext()
-			proxy := core_xds.Proxy{
-				Dataplane: builders.Dataplane().
+			context := xds_samples.SampleMeshContext()
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().
 					WithName("test").
 					WithMesh("default").
 					WithAddress("127.0.0.1").
@@ -64,9 +64,8 @@ var _ = Describe("MeshRateLimit", func() {
 							WithAddress("127.0.0.1").
 							WithPort(17778).
 							WithService("frontend"),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					)).
+				WithPolicies(core_xds.MatchedPolicies{
 					RateLimitsInbound: given.inboundRateLimitsMap,
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						api.MeshRateLimitType: {
@@ -74,12 +73,12 @@ var _ = Describe("MeshRateLimit", func() {
 							FromRules: given.fromRules,
 						},
 					},
-				},
-			}
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			// when
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			// then
 			for i, expected := range given.expectedListeners {
@@ -454,32 +453,30 @@ var _ = Describe("MeshRateLimit", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-		proxy := xds.Proxy{
-			APIVersion: "v3",
-			Dataplane:  samples.GatewayDataplane(),
-			Policies: core_xds.MatchedPolicies{
+		xdsCtx := xds_samples.SampleMeshContextWith(resources)
+		proxy := xds_builders.Proxy().
+			WithDataplane(samples.GatewayDataplaneBuilder()).
+			WithPolicies(core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshRateLimitType: {
 						Type:      api.MeshRateLimitType,
 						FromRules: fromRules,
 					},
 				},
-			},
-			RuntimeExtensions: map[string]interface{}{},
-		}
+			}).
+			Build()
 		for n, p := range core_plugins.Plugins().ProxyPlugins() {
-			Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 		}
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 		// then
-		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_routes.golden.yaml")))
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})

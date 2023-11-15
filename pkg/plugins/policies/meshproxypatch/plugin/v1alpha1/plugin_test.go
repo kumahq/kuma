@@ -13,6 +13,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -36,21 +37,20 @@ var _ = Describe("MeshProxyPatch", func() {
 			}
 
 			context := xds_context.Context{}
-			proxy := core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Dataplane:  samples.DataplaneBackend(),
-				Policies: core_xds.MatchedPolicies{
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						api.MeshProxyPatchType: {
 							Type:            api.MeshProxyPatchType,
 							SingleItemRules: given.rules,
 						},
 					},
-				},
-			}
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
 		Entry("add and patch a cluster", testCase{
