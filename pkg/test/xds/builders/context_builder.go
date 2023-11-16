@@ -40,7 +40,6 @@ func (mc *ContextBuilder) With(fn func(*xds_context.Context)) *ContextBuilder {
 func (mc *ContextBuilder) WithEndpointMap(endpointMap core_xds.EndpointMap) *ContextBuilder {
 	mc.res.Mesh.EndpointMap = endpointMap
 	mc.res.ControlPlane.CLACache.(*xds.DummyCLACache).OutboundTargets = endpointMap
-	mc.res.Mesh.EndpointMap = endpointMap
 	return mc
 }
 
