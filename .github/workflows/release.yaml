@@ -29,12 +29,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-<<<<<<< HEAD
-=======
       - uses: actions/checkout@v4
         with:
           ref: "master"
->>>>>>> 4415f6d7d (ci(.github): fix release which was invalid and ignore branches on docs (#8391))
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
