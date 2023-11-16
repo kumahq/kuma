@@ -39,7 +39,7 @@ run:
 linters-settings:
   forbidigo:
     analyze-types: true
-    forbidigo:
+    forbid:
       - p: ^errors.Errorf$
         pkg: ^github.com/pkg/errors$
         msg: Use fmt.Errorf instead
