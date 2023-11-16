@@ -3,6 +3,7 @@ linters:
     - bodyclose
     - contextcheck
     - errcheck
+    - forbidigo
     - gci
     - ginkgolinter
     - gocritic
@@ -36,6 +37,12 @@ run:
   timeout: 30m
 
 linters-settings:
+  forbidigo:
+    analyze-types: true
+    forbidigo:
+      - p: ^errors.Errorf$
+        pkg: ^github.com/pkg/errors$
+        msg: Use fmt.Errorf instead
   gocritic:
     disabled-checks:
       - singleCaseSwitch
