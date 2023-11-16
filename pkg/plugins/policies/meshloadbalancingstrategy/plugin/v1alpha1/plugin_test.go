@@ -22,7 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -410,31 +410,31 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: paymentsListener(),
 				},
 			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				Dataplane: builders.Dataplane().
-					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
-					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(
+					builders.Dataplane().
+						AddInboundOfTagsMap(map[string]string{
+							mesh_proto.ServiceTag: "backend",
+							mesh_proto.ZoneTag:    "zone-1",
+							"k8s.io/node":         "node1",
+							"k8s.io/az":           "test",
+							"k8s.io/region":       "test",
+						}).
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  "backend",
+								mesh_proto.ProtocolTag: "http",
+							}),
+						).
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  "payment",
+								mesh_proto.ProtocolTag: "http",
+							}),
+						)).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
@@ -552,22 +552,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						},
 					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			},
+				}).
+				Build(),
 		}),
 		Entry("locality_aware_basic_egress_enabled", testCase{
 			resources: []core_xds.Resource{
@@ -611,10 +597,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: paymentsListener(),
 				},
 			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				Dataplane: builders.Dataplane().
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.ZoneTag:    "zone-1",
@@ -633,9 +618,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ServiceTag:  "payment",
 							mesh_proto.ProtocolTag: "http",
 						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					)).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
@@ -753,22 +738,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						},
 					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			},
+				}).
+				Build(),
 			context: contextWithEgressEnabled(),
 		}),
 		Entry("locality_aware_no_cross_zone", testCase{
@@ -815,10 +786,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: paymentsListener(),
 				},
 			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				Dataplane: builders.Dataplane().
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.ZoneTag:    "zone-1",
@@ -837,9 +807,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ServiceTag:  "payment",
 							mesh_proto.ProtocolTag: "http",
 						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					)).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
@@ -904,22 +874,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						},
 					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			},
+				}).
+				Build(),
 		}),
 		Entry("locality_aware_cross_zone", testCase{
 			resources: []core_xds.Resource{
@@ -965,10 +921,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: paymentsListener(),
 				},
 			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				Dataplane: builders.Dataplane().
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.ZoneTag:    "zone-1",
@@ -987,9 +942,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ServiceTag:  "payment",
 							mesh_proto.ProtocolTag: "http",
 						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					)).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
@@ -1063,22 +1018,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						},
 					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			},
+				}).
+				Build(),
 		}),
 		Entry("locality_aware_split", testCase{
 			resources: []core_xds.Resource{
@@ -1167,10 +1108,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: paymentsListener(),
 				},
 			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				Dataplane: builders.Dataplane().
+			proxy: xds_builders.Proxy().
+				WithZone("zone-1").
+				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.ZoneTag:    "zone-1",
@@ -1189,9 +1129,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ServiceTag:  "payment",
 							mesh_proto.ProtocolTag: "http",
 						}),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					)).
+				WithRouting(paymentsAndBackendRouting()).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type: v1alpha1.MeshLoadBalancingStrategyType,
@@ -1278,22 +1218,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							},
 						},
 					},
-				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
-			},
+				}).
+				Build(),
 		}),
 	)
 	type gatewayTestCase struct {
@@ -1312,10 +1238,13 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWithEndpoints(resources, given.endpointMap)
-			proxy := core_xds.Proxy{
-				APIVersion: "v3",
-				Dataplane: builders.Dataplane().
+			xdsCtx := *xds_builders.Context().
+				WithResources(resources).
+				WithEndpointMap(given.endpointMap).
+				Build()
+			proxy := xds_builders.Proxy().
+				WithZone("test-zone").
+				WithDataplane(builders.Dataplane().
 					WithName("sample-gateway").
 					WithAddress("192.168.0.1").
 					WithBuiltInGateway("sample-gateway").
@@ -1323,29 +1252,26 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/node":   "node1",
 						"k8s.io/az":     "test",
 						"k8s.io/region": "test",
-					}).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+					})).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						v1alpha1.MeshLoadBalancingStrategyType: {
 							Type:    v1alpha1.MeshLoadBalancingStrategyType,
 							ToRules: given.toRules,
 						},
 					},
-				},
-				RuntimeExtensions: map[string]interface{}{},
-				Zone:              "test-zone",
-			}
+				}).
+				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)
@@ -1493,6 +1419,24 @@ func createEndpointWith(zone string, ip string, extraTags map[string]string) cor
 	}
 }
 
+// TODO move to routing builder
+func paymentsAndBackendRouting() core_xds.Routing {
+	return core_xds.Routing{
+		OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+			"backend": {
+				{
+					Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+				},
+			},
+			"payment": {
+				{
+					Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+				},
+			},
+		},
+	}
+}
+
 func paymentsListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
@@ -1540,13 +1484,7 @@ func backendListener() envoy_common.NamedResource {
 }
 
 func contextWithEgressEnabled() xds_context.Context {
-	return xds_context.Context{
-		Mesh: xds_context.MeshContext{
-			Resource: &core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Routing: &mesh_proto.Routing{ZoneEgress: true},
-				},
-			},
-		},
-	}
+	return *xds_builders.Context().
+		WithMesh(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
+		Build()
 }

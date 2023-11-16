@@ -27,6 +27,8 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -51,25 +53,15 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := test_xds.CreateSampleMeshContext()
-		proxy := xds.Proxy{
-			Dataplane: builders.Dataplane().
+		context := xds_samples.SampleContext()
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("other-service", "second-service").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
-				Build(),
-			Policies: xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:      api.MeshTimeoutType,
-						ToRules:   given.toRules,
-						FromRules: given.fromRules,
-					},
-				},
-			},
-			Routing: core_xds.Routing{
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithRouting(core_xds.Routing{
 				OutboundTargets: core_xds.EndpointMap{
 					"other-service": []core_xds.Endpoint{{
 						Tags: map[string]string{
@@ -87,12 +79,21 @@ var _ = Describe("MeshTimeout", func() {
 						},
 					}},
 				},
-			},
-		}
+			}).
+			WithPolicies(xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshTimeoutType: {
+						Type:      api.MeshTimeoutType,
+						ToRules:   given.toRules,
+						FromRules: given.fromRules,
+					},
+				},
+			}).
+			Build()
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 		// then
 		for i, expectedListener := range given.expectedListeners {
@@ -434,19 +435,10 @@ var _ = Describe("MeshTimeout", func() {
 			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
-		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-		proxy := xds.Proxy{
-			APIVersion: "v3",
-			Dataplane:  samples.GatewayDataplane(),
-			Policies: xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:    api.MeshTimeoutType,
-						ToRules: given.toRules,
-					},
-				},
-			},
-			Routing: core_xds.Routing{
+		xdsCtx := xds_samples.SampleContextWith(resources)
+		proxy := xds_builders.Proxy().
+			WithDataplane(samples.GatewayDataplaneBuilder()).
+			WithRouting(core_xds.Routing{
 				OutboundTargets: core_xds.EndpointMap{
 					"backend": []core_xds.Endpoint{{
 						Tags: map[string]string{
@@ -459,17 +451,25 @@ var _ = Describe("MeshTimeout", func() {
 						},
 					}},
 				},
-			},
-			RuntimeExtensions: map[string]interface{}{},
-		}
-		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed())
+			}).
+			WithPolicies(xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshTimeoutType: {
+						Type:    api.MeshTimeoutType,
+						ToRules: given.toRules,
+					},
+				},
+			}).
+			Build()
+
+		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 		nameSplit := strings.Split(GinkgoT().Name(), " ")
 		name := nameSplit[len(nameSplit)-1]

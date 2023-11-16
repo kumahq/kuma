@@ -25,7 +25,8 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -37,7 +38,7 @@ import (
 var _ = Describe("MeshAccessLog", func() {
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		outbounds         []*mesh_proto.Dataplane_Networking_Outbound
+		outbounds         []*builders.OutboundBuilder
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
@@ -51,51 +52,28 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
-			xdsCtx := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-				},
-			}
-			proxy := xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Metadata: &xds.DataplaneMetadata{
+			xdsCtx := xds_samples.SampleContext()
+			proxy := xds_builders.Proxy().
+				WithMetadata(&xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/kuma-al-backend-default.sock",
-				},
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "backend",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-									},
-									Address: "127.0.0.1",
-									Port:    17777,
-								},
-							},
-							Outbound: append([]*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Address: "127.0.0.1",
-									Port:    27777,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "other-service",
-									},
-								},
-							},
-								given.outbounds...,
-							),
-						},
-					},
-				},
-				Policies: xds.MatchedPolicies{
+				}).
+				WithDataplane(
+					builders.Dataplane().
+						WithName("backend").
+						WithMesh("default").
+						AddInbound(builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777),
+						).
+						AddOutbound(builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777),
+						).
+						AddOutbounds(given.outbounds),
+				).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshAccessLogType: {
 							Type:      api.MeshAccessLogType,
@@ -103,11 +81,11 @@ var _ = Describe("MeshAccessLog", func() {
 							FromRules: given.fromRules,
 						},
 					},
-				},
-			}
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
@@ -168,7 +146,7 @@ var _ = Describe("MeshAccessLog", func() {
                       logFormat:
                           textFormatSource:
                               inlineString: |
-                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "backend" "other-service" "" "%UPSTREAM_HOST%"
+                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "backend" "other-service" "127.0.0.1" "%UPSTREAM_HOST%"
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
@@ -243,7 +221,7 @@ var _ = Describe("MeshAccessLog", func() {
                                 logFormat:
                                     textFormatSource:
                                         inlineString: |
-                                            [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                                            [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                                 path: /tmp/log
                         cluster: backend
                         statPrefix: "127_0_0_1_27777"
@@ -418,7 +396,7 @@ var _ = Describe("MeshAccessLog", func() {
                                     jsonFormat:
                                         address: logging.backend
                                         message: |
-                                            [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                                            [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                                 path: /tmp/kuma-al-backend-default.sock
                         cluster: backend
                         statPrefix: "127_0_0_1_27777"
@@ -467,19 +445,16 @@ var _ = Describe("MeshAccessLog", func() {
 						)),
 					)).MustBuild(),
 			}},
-			outbounds: []*mesh_proto.Dataplane_Networking_Outbound{{
-				Address: "127.0.0.1",
-				Port:    27778,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "foo-service",
-				},
-			}, {
-				Address: "127.0.0.1",
-				Port:    27779,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "bar-service",
-				},
-			}},
+			outbounds: []*builders.OutboundBuilder{
+				builders.Outbound().
+					WithService("foo-service").
+					WithAddress("127.0.0.1").
+					WithPort(27778),
+				builders.Outbound().
+					WithService("bar-service").
+					WithAddress("127.0.0.1").
+					WithPort(27779),
+			},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -650,7 +625,7 @@ var _ = Describe("MeshAccessLog", func() {
                               typedConfig:
                                 '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
                                 body:
-                                    stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes'
+                                    stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes'
                                 attributes: {}
                                 commonConfig:
                                     grpcService:
@@ -922,7 +897,7 @@ var _ = Describe("MeshAccessLog", func() {
                       logFormat:
                           textFormatSource:
                               inlineString: |
-                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "unknown" "backend" "" "%UPSTREAM_HOST%"
+                                [%START_TIME%] default "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "unknown" "backend" "127.0.0.1" "%UPSTREAM_HOST%"
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
@@ -983,49 +958,37 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: given.routes,
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-			proxy := xds.Proxy{
-				APIVersion: "v3",
-				Metadata: &core_xds.DataplaneMetadata{
+			xdsCtx := xds_samples.SampleContextWith(resources)
+			proxy := xds_builders.Proxy().
+				WithMetadata(&core_xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/foo",
-				},
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "gateway",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "127.0.0.1",
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-								Tags: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-								Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-							},
-						},
-					},
-				},
-				Policies: xds.MatchedPolicies{
+				}).
+				WithDataplane(
+					builders.Dataplane().
+						WithName("gateway").
+						WithMesh("default").
+						WithBuiltInGateway("gateway"),
+				).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshAccessLogType: {
 							Type:    api.MeshAccessLogType,
 							ToRules: given.toRules,
 						},
 					},
-				},
-				RuntimeExtensions: map[string]interface{}{},
-			}
+				}).
+				Build()
+
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
