@@ -451,14 +451,15 @@ var _ = Describe("MeshTimeout", func() {
 						},
 					}},
 				},
-			}).WithPolicies(xds.MatchedPolicies{
-			Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-				api.MeshTimeoutType: {
-					Type:    api.MeshTimeoutType,
-					ToRules: given.toRules,
+			}).
+			WithPolicies(xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshTimeoutType: {
+						Type:    api.MeshTimeoutType,
+						ToRules: given.toRules,
+					},
 				},
-			},
-		}).
+			}).
 			Build()
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())

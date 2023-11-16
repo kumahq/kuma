@@ -77,14 +77,15 @@ var _ = Describe("MeshRetry", func() {
 						},
 					}},
 				},
-			}).WithPolicies(xds.MatchedPolicies{
-			Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-				api.MeshRetryType: {
-					Type:    api.MeshRetryType,
-					ToRules: given.toRules,
+			}).
+			WithPolicies(xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshRetryType: {
+						Type:    api.MeshRetryType,
+						ToRules: given.toRules,
+					},
 				},
-			},
-		}).
+			}).
 			Build()
 
 		// when
