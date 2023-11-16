@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type transparentProxyArgs struct {
@@ -78,7 +79,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		VnetNetworks:                   []string{},
 		Wait:                           5,
 		WaitInterval:                   0,
-		MaxRetries:                     5,
+		MaxRetries:                     4,
 		SleepBetweenRetries:            2 * time.Second,
 	}
 	cmd := &cobra.Command{
@@ -280,7 +281,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		Stderr:                    cmd.ErrOrStderr(),
 		Wait:                      args.Wait,
 		WaitInterval:              args.WaitInterval,
-		MaxRetries:                args.MaxRetries,
+		MaxRetries:                pointer.To(args.MaxRetries),
 		SleepBetweenRetries:       args.SleepBetweenRetries,
 	}
 	tp = transparentproxy.V2()
