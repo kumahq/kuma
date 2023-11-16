@@ -50,6 +50,22 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
+          # some steps don't support cross running, so write the actual arch down here. 
+          ARCH=$(uname -m)
+          case $ARCH in
+            aarch64)
+            RUNNER_ARCH=arm64
+            ;;
+            x86_64)
+            RUNNER_ARCH=amd64
+            ;;
+            *)
+            echo "Unsupported arch '$ARCH'"
+            exit 1
+            ;;
+          esac
+          echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
+
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -69,9 +85,9 @@ jobs:
       - run: |
           make -j build/distributions
       - run: |
-          make -j images
+          ENABLED_GOARCHES=$RUNNER_ARCH make -j images
       - run: |
-          make -j docker/save
+          ENABLED_GOARCHES=$RUNNER_ARCH make -j docker/save
       - name: Cleanup redundant build outputs
         run: |
           find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
@@ -92,7 +108,7 @@ jobs:
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
-          make test/container-structure
+          ENABLED_GOARCHES=$RUNNER_ARCH make test/container-structure
   test:
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -154,6 +170,21 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
+          # some steps don't support cross running, so write the actual arch down here. 
+          ARCH=$(uname -m)
+          case $ARCH in
+            aarch64)
+            RUNNER_ARCH=arm64
+            ;;
+            x86_64)
+            RUNNER_ARCH=amd64
+            ;;
+            *)
+            echo "Unsupported arch '$ARCH'"
+            exit 1
+            ;;
+          esac
+          echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -179,7 +210,7 @@ jobs:
           make publish/pulp
       - name: Load images
         run: |
-          make docker/load
+          ENABLED_GOARCHES=$RUNNER_ARCH make docker/load
       - name: Publish images
         run: |-
           make docker/login
@@ -188,5 +219,5 @@ jobs:
             make docker/logout
           }
           trap on_exit EXIT
-          make docker/push
-          make docker/manifest
+          ENABLED_GOARCHES=$RUNNER_ARCH make docker/push
+          ENABLED_GOARCHES=$RUNNER_ARCH make docker/manifest
