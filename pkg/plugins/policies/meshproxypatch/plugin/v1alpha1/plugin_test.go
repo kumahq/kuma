@@ -14,8 +14,8 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -36,7 +36,7 @@ var _ = Describe("MeshProxyPatch", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_context.Context{}
+			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithPolicies(core_xds.MatchedPolicies{

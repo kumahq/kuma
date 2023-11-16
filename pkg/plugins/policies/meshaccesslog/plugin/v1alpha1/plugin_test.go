@@ -25,7 +25,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -53,9 +52,7 @@ var _ = Describe("MeshAccessLog", func() {
 				resourceSet.Add(&r)
 			}
 
-			xdsCtx := xds_builders.MeshContext().
-				WithMesh(samples.MeshDefaultBuilder()).
-				Build()
+			xdsCtx := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithMetadata(&xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/kuma-al-backend-default.sock",
@@ -88,7 +85,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, *xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
@@ -961,7 +958,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: given.routes,
 			}
 
-			xdsCtx := xds_samples.SampleMeshContextWith(resources)
+			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithMetadata(&core_xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/foo",

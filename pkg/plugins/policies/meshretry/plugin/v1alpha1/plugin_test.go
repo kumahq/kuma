@@ -51,7 +51,7 @@ var _ = Describe("MeshRetry", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := xds_samples.SampleMeshContext()
+		context := xds_samples.SampleContext()
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
@@ -318,7 +318,7 @@ var _ = Describe("MeshRetry", func() {
 				Items: given.gatewayRoutes,
 			}
 
-			xdsCtx := xds_samples.SampleMeshContextWith(resources)
+			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds.MatchedPolicies{

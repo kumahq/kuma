@@ -7,14 +7,13 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func SampleMeshContext() xds_context.Context {
-	return SampleMeshContextWith(xds_context.NewResources())
+func SampleContext() xds_context.Context {
+	return SampleContextWith(xds_context.NewResources())
 }
 
-func SampleMeshContextWith(resources xds_context.Resources) xds_context.Context {
-	return *builders.MeshContext().
+func SampleContextWith(resources xds_context.Resources) xds_context.Context {
+	return *builders.Context().
 		WithMesh(samples.MeshDefaultBuilder()).
-		WithZone("test-zone").
 		WithResources(resources).
 		WithEndpointMap(map[core_xds.ServiceName][]core_xds.Endpoint{
 			"some-service": {

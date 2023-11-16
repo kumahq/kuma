@@ -1238,9 +1238,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := *xds_builders.MeshContext().
-				WithMesh(samples.MeshDefaultBuilder()).
-				WithZone("test-zone").
+			xdsCtx := *xds_builders.Context().
 				WithResources(resources).
 				WithEndpointMap(given.endpointMap).
 				Build()
@@ -1486,13 +1484,7 @@ func backendListener() envoy_common.NamedResource {
 }
 
 func contextWithEgressEnabled() xds_context.Context {
-	return xds_context.Context{
-		Mesh: xds_context.MeshContext{
-			Resource: &core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Routing: &mesh_proto.Routing{ZoneEgress: true},
-				},
-			},
-		},
-	}
+	return *xds_builders.Context().
+		WithMesh(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
+		Build()
 }

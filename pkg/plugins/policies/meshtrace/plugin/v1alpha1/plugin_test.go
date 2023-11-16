@@ -16,8 +16,8 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -57,7 +57,7 @@ var _ = Describe("MeshTrace", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_context.Context{}
+			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(builders.Dataplane().
 					WithName("backend").

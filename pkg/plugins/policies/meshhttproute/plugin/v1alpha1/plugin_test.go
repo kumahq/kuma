@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -202,15 +201,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -248,15 +239,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -344,15 +327,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -397,15 +372,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -488,15 +455,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -549,15 +508,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{
@@ -620,15 +571,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(core_xds.Routing{

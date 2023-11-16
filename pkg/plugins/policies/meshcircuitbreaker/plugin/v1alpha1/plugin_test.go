@@ -24,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
@@ -90,15 +89,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-				},
-			}
+			context := xds_samples.SampleContext()
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(
@@ -421,7 +412,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleMeshContextWith(resources)
+			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds.MatchedPolicies{

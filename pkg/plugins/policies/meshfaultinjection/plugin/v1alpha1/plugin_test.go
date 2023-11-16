@@ -43,7 +43,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_samples.SampleMeshContext()
+			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -236,7 +236,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		xdsCtx := xds_samples.SampleMeshContextWith(resources)
+		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithPolicies(core_xds.MatchedPolicies{

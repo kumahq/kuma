@@ -83,7 +83,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_context.Context{}
+			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder().
 					AddOutbound(
@@ -267,7 +267,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleMeshContextWith(resources)
+			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds.MatchedPolicies{

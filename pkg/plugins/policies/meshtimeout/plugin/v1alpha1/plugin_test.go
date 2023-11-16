@@ -53,7 +53,7 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := xds_samples.SampleMeshContext()
+		context := xds_samples.SampleContext()
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
@@ -435,7 +435,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
-		xdsCtx := xds_samples.SampleMeshContextWith(resources)
+		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithRouting(core_xds.Routing{
