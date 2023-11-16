@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*"]
+    branches: ["master", "release-*", "gh-actions-build-test-dist"]
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
@@ -34,23 +34,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Check if run on releasable ref"
-        id: "releasable_ref_checker"
-        if: |
-          (github.ref == 'refs/branch/master') ||
-          startsWith(github.ref, 'refs/branch/release-')  ||
-          startsWith(github.ref, 'refs/tags/') ||
-          false
-        run: |
-          echo "releasable=true" >> $GITHUB_OUTPUT
       - name: "Check if should run on all arch/os combinations"
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') ||
-          'true' == steps.releasable_ref_checker.outputs.releasable
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-          # some steps don't support cross running, so write the actual arch down here. 
+          # some steps don't support cross running, so write the actual arch down here.
           ARCH=$(uname -m)
           case $ARCH in
             aarch64)
@@ -65,7 +54,6 @@ jobs:
             ;;
           esac
           echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
-
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -146,31 +134,12 @@ jobs:
     if: ${{ always() && !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - name: "Check if run on releasable ref"
-        id: "releasable_ref_checker"
-        if: |
-          (github.ref == 'refs/branch/master') ||
-          startsWith(github.ref, 'refs/branch/release-')  ||
-          startsWith(github.ref, 'refs/tags/') ||
-          false
-        run: |
-          echo "releasable=true" >> $GITHUB_OUTPUT
-      - name: "Check if force push"
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
-          false
-        # Open up the following conditions when we don't generate artifacts on CircleCI
-        #  'true' == steps.releasable_ref_checker.outputs.releasable ||
-        run: |
-          echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
       - name: "Check if should run on all arch/os combinations"
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') ||
-          'true' == steps.releasable_ref_checker.outputs.releasable
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-          # some steps don't support cross running, so write the actual arch down here. 
+          # some steps don't support cross running, so write the actual arch down here.
           ARCH=$(uname -m)
           case $ARCH in
             aarch64)
@@ -185,6 +154,14 @@ jobs:
             ;;
           esac
           echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
+      - name: "Check if force push"
+        if: |
+          contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
+          false
+        # Open up the following conditions when we don't generate artifacts on CircleCI
+        #  github.event_name == 'push' ||
+        run: |
+          echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
