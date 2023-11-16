@@ -84,8 +84,6 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: >-
-            [${{ env.GH_OWNER }}"/charts"]
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:
