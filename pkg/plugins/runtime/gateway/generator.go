@@ -224,12 +224,12 @@ func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, pro
 		resources.AddSet(rdsResources)
 	}
 
-	resources.Add(g.generateRTDS(limits))
+	resources.Add(GenerateRTDS(limits))
 
 	return resources, nil
 }
 
-func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
+func GenerateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
 	layer := map[string]interface{}{}
 	for _, limit := range limits {
 		layer[fmt.Sprintf("envoy.resource_limits.listener.%s.connection_limit", limit.Name)] = limit.ConnectionLimit
