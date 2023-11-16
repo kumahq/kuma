@@ -1,5 +1,11 @@
 name: "Update docs"
 on:
+  push:
+    paths:
+      - CHANGELOG.md
+      - versions.yml
+      - UPGRADE.md
+      - docs/generated/raw/**
   workflow_dispatch: {}
   schedule:
     - cron: 0 8 * * *
