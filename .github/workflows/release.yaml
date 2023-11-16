@@ -29,6 +29,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+<<<<<<< HEAD
+=======
+      - uses: actions/checkout@v4
+        ref: "master"
+>>>>>>> 43c4b4484 (ci(docs): auto-trigger workflows on release and docs change (#8382))
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -36,10 +41,6 @@ jobs:
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
           go install github.com/kumahq/ci-tools/cmd/release-tool@latest
-      - name: remove-cni
-        # CNI was only introduced in 1.7 so versions before should remove
-        if: startsWith(env.RELEASE, '1.7') || startsWith(env.RELEASE, '1.6')
-        run: echo DOCKER_IMAGES=${{env.DOCKER_IMAGES}} | sed 's/,kuma-cni//g' >> $GITHUB_ENV
       - name: create-release
         if: env.RELEASE != '0.0.0'
         env:
@@ -100,10 +101,11 @@ jobs:
           commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true
           branch: chore/update-changelog
+          base: master
           delete-branch: true
           title: "docs(CHANGELOG.md): updating changelog and version files"
           draft: false
-          labels: ci/skip-test
+          labels: ci/skip-test,ci/auto-merge
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
