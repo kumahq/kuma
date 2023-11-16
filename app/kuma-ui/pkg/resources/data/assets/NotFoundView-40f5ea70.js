@@ -1,0 +1,3 @@
+import{d as l,a as t,o as m,b as u,w as e,e as o,p as n,Z as r,f as a}from"./index-d50afca2.js";const d={class:"overview"},f=n("p",null,"The page or entity you were looking for does not exist.",-1),x=l({__name:"NotFoundView",setup(w){return(V,h)=>{const s=t("RouteTitle"),c=t("KButton"),_=t("KEmptyState"),p=t("AppView"),i=t("RouteView");return m(),u(i,{name:"app-not-found-view"},{default:e(()=>[o(p,null,{default:e(()=>[n("div",d,[o(_,null,{title:e(()=>[o(r,{class:"mb-3"}),a(),n("h1",null,[o(s,{title:"Page Not Found"})])]),message:e(()=>[f]),cta:e(()=>[o(c,{appearance:"primary",to:{name:"home"}},{default:e(()=>[a(`
+              Go Home
+            `)]),_:1})]),_:1})])]),_:1})]),_:1})}}});export{x as default};
