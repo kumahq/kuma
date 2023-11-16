@@ -1,10 +1,10 @@
 package component
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -35,7 +35,7 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 					if err, ok := e.(error); ok {
 						errCh <- err
 					} else {
-						errCh <- errors.Errorf("%v", e)
+						errCh <- fmt.Errorf("%v", e)
 					}
 				}
 			}()

@@ -5,8 +5,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Separator is the separator used in resource names.
@@ -30,7 +28,7 @@ func GetLocalClusterName(port uint32) string {
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
 	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {
-		return 0, errors.Errorf("failed to  parse local cluster name: %s", cluster)
+		return 0, fmt.Errorf("failed to  parse local cluster name: %s", cluster)
 	}
 	port, err := strconv.ParseUint(parts[1], 10, 32)
 	if err != nil {

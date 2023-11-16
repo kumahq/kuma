@@ -160,11 +160,11 @@ func (d *Dataplane) IsZoneProxy() bool {
 
 func validateMeshOrName[V ~string](typ string, value V) error {
 	if value == "" {
-		return errors.Errorf("%s must be non-empty", typ)
+		return fmt.Errorf("%s must be non-empty", typ)
 	}
 
 	if strings.ContainsAny(string(value), "$(){}") {
-		return errors.Errorf("%s %+q contains invalid characters", typ, value)
+		return fmt.Errorf("%s %+q contains invalid characters", typ, value)
 	}
 
 	return nil
@@ -276,21 +276,21 @@ func (d *Dataplane) Validate() error {
 			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
 		} else {
 			// Not all Dataplane types are allowed to be set directly in config.
-			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
+			errs = multierr.Append(errs, fmt.Errorf(".ProxyType %q is not supported", proxyType))
 		}
 	}
 
 	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType && proxyType != mesh_proto.EgressProxyType {
-		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Mesh must be non-empty"))
 	}
 
 	if d.Name == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Name must be non-empty"))
 	}
 
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 
 	return errs
@@ -300,7 +300,7 @@ func (d *Dataplane) ValidateForTemplate() error {
 	var errs error
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 	return errs
 }
@@ -310,7 +310,7 @@ var _ config.Config = &DataplaneRuntime{}
 func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
-		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".BinaryPath must be non-empty"))
 	}
 	return errs
 }
@@ -320,12 +320,12 @@ var _ config.Config = &ApiServer{}
 func (d *ApiServer) Validate() error {
 	var errs error
 	if d.URL == "" {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".URL must be non-empty"))
 	}
 	if url, err := url.Parse(d.URL); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
 	} else if !url.IsAbs() {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
+		errs = multierr.Append(errs, fmt.Errorf(".URL must be a valid absolute URI"))
 	}
 	if err := d.Retry.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))

@@ -1,6 +1,7 @@
 package dp_server
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -71,7 +72,7 @@ type DpServerAuthConfig struct {
 
 func (a *DpServerAuthConfig) Validate() error {
 	if a.Type != "" && a.Type != DpServerAuthNone && a.Type != DpServerAuthDpToken && a.Type != DpServerAuthServiceAccountToken {
-		return errors.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
+		return fmt.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
 	}
 	return nil
 }

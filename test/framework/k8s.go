@@ -30,7 +30,7 @@ func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error
 		return "", err
 	}
 	if len(pods) != 1 {
-		return "", errors.Errorf("expected %d pods, got %d", 1, len(pods))
+		return "", fmt.Errorf("expected %d pods, got %d", 1, len(pods))
 	}
 	return pods[0].Name, nil
 }
@@ -47,7 +47,7 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 		return "", err
 	}
 	if len(pods) != 1 {
-		return "", errors.Errorf("expected %d pods, got %d", 1, len(pods))
+		return "", fmt.Errorf("expected %d pods, got %d", 1, len(pods))
 	}
 	return pods[0].Status.PodIP, nil
 }
@@ -73,7 +73,7 @@ func UpdateKubeObject(
 	codecs := serializer.NewCodecFactory(scheme)
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	if !ok {
-		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
+		return fmt.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
 	_, err = retry.DoWithRetryableErrorsE(t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {

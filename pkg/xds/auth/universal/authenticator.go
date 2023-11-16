@@ -2,8 +2,7 @@ package universal
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -47,7 +46,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.ZoneEgressResource:
 		return u.authZoneEntity(ctx, credential, zone.EgressScope)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 
@@ -58,10 +57,10 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	}
 
 	if dpIdentity.Name != "" && dataplane.Meta.GetName() != dpIdentity.Name {
-		return errors.Errorf("proxy name from requestor: %s is different than in token: %s", dataplane.Meta.GetName(), dpIdentity.Name)
+		return fmt.Errorf("proxy name from requestor: %s is different than in token: %s", dataplane.Meta.GetName(), dpIdentity.Name)
 	}
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
-		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
+		return fmt.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
@@ -80,7 +79,7 @@ func (u *universalAuthenticator) authZoneEntity(
 	}
 
 	if !zone.InScope(identity.Scope, scope) {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"token cannot be used to authenticate zone entity (%s is out of token's scope: %+v)",
 			scope,
 			identity.Scope,
@@ -88,7 +87,7 @@ func (u *universalAuthenticator) authZoneEntity(
 	}
 
 	if identity.Zone != "" && u.zone != identity.Zone {
-		return errors.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
+		return fmt.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
 
 	return nil
@@ -98,11 +97,11 @@ func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.Multi
 	for tagName, allowedValues := range tokenTags {
 		dpValues, exist := dpTags[tagName]
 		if !exist {
-			return errors.Errorf("dataplane has no tag %q required by the token", tagName)
+			return fmt.Errorf("dataplane has no tag %q required by the token", tagName)
 		}
 		for value := range dpValues {
 			if !allowedValues[value] {
-				return errors.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, value, tokenTags.Values(tagName))
+				return fmt.Errorf("dataplane contains tag %q with value %q which is not allowed with this token. Allowed values in token are %q", tagName, value, tokenTags.Values(tagName))
 			}
 		}
 	}

@@ -1,9 +1,9 @@
 package universal
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -29,7 +29,7 @@ type UniversalRuntimeConfig struct {
 func (u *UniversalRuntimeConfig) Validate() error {
 	var errs error
 	if u.DataplaneCleanupAge.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DataplaneCleanupAge must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DataplaneCleanupAge must be positive"))
 	}
 	return errs
 }

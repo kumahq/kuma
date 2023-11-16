@@ -1,12 +1,12 @@
 package topology_test
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -35,7 +35,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 		if s == "advertise-2.example.com" {
 			return []net.IP{net.ParseIP("192.0.2.2")}, nil
 		}
-		return nil, errors.Errorf("can't resolve hostname: %s", s)
+		return nil, fmt.Errorf("can't resolve hostname: %s", s)
 	}
 
 	Context("ResolveAddress", func() {

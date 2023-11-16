@@ -2,6 +2,7 @@ package authn
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -67,7 +68,7 @@ func (a *authn) OnStreamOpen(ctx context.Context, streamID int64) error {
 func (a *authn) OnHealthCheckRequest(streamID int64, req *envoy_service_health.HealthCheckRequest) error {
 	if id, alreadyAuthenticated := a.authNodeId(streamID); alreadyAuthenticated {
 		if req.GetNode().GetId() != "" && req.GetNode().GetId() != id {
-			return errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.GetNode().GetId())
+			return fmt.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.GetNode().GetId())
 		}
 		return nil
 	}
@@ -88,7 +89,7 @@ func (a *authn) OnHealthCheckRequest(streamID int64, req *envoy_service_health.H
 
 func (a *authn) OnEndpointHealthResponse(streamID int64, _ *envoy_service_health.EndpointHealthResponse) error {
 	if id, alreadyAuthenticated := a.authNodeId(streamID); !alreadyAuthenticated {
-		return errors.Errorf("stream was not authenticated for ID %s", id)
+		return fmt.Errorf("stream was not authenticated for ID %s", id)
 	}
 	return nil
 }
@@ -113,7 +114,7 @@ func (a *authn) credential(streamID core_xds.StreamID) (xds_auth.Credential, err
 
 	ctx, exists := a.contexts[streamID]
 	if !exists {
-		return "", errors.Errorf("there is no context for stream ID %d", streamID)
+		return "", fmt.Errorf("there is no context for stream ID %d", streamID)
 	}
 	credential, err := extractCredential(ctx)
 	if err != nil {
@@ -125,11 +126,11 @@ func (a *authn) credential(streamID core_xds.StreamID) (xds_auth.Credential, err
 func extractCredential(ctx context.Context) (xds_auth.Credential, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", errors.Errorf("request has no metadata")
+		return "", fmt.Errorf("request has no metadata")
 	}
 	if values, ok := metadata[authorization]; ok {
 		if len(values) != 1 {
-			return "", errors.Errorf("request must have exactly 1 %q header, got %d", authorization, len(values))
+			return "", fmt.Errorf("request must have exactly 1 %q header, got %d", authorization, len(values))
 		}
 		return values[0], nil
 	}

@@ -10,7 +10,7 @@ import (
 func CoreNameToK8sName(coreName string) (string, string, error) {
 	idx := strings.LastIndex(coreName, ".")
 	if idx == -1 {
-		return "", "", errors.Errorf(`name %q must include namespace after the dot, ex. "name.namespace"`, coreName)
+		return "", "", fmt.Errorf(`name %q must include namespace after the dot, ex. "name.namespace"`, coreName)
 	}
 	// namespace cannot contain "." therefore it's always the last part
 	namespace := coreName[idx+1:]

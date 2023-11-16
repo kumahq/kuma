@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -48,7 +49,7 @@ type identityCertProvider struct {
 func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, string, error) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
-		return nil, "", errors.Errorf("CA default backend in mesh %q has to be defined", mesh.GetMeta().GetName())
+		return nil, "", fmt.Errorf("CA default backend in mesh %q has to be defined", mesh.GetMeta().GetName())
 	}
 
 	timeout := backend.GetDpCert().GetRequestTimeout()
@@ -60,7 +61,7 @@ func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
-		return nil, "", errors.Errorf("CA manager of type %s not exist", backend.Type)
+		return nil, "", fmt.Errorf("CA manager of type %s not exist", backend.Type)
 	}
 
 	var pair core_ca.KeyPair

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
@@ -24,7 +26,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 		return nil, err
 	}
 	if !exist {
-		return nil, errors.Errorf("%s annotation doesn't exist", metadata.KumaVirtualProbesPortAnnotation)
+		return nil, fmt.Errorf("%s annotation doesn't exist", metadata.KumaVirtualProbesPortAnnotation)
 	}
 
 	dpProbes := &mesh_proto.Dataplane_Probes{

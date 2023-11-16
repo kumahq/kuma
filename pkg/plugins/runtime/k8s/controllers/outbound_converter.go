@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -145,7 +146,7 @@ func parseService(host string) (string, string, uint32, error) {
 		// one here to note that this service is actually
 		port = mesh_proto.TCPPortReserved
 	default:
-		return "", "", 0, errors.Errorf("service tag in unexpected format")
+		return "", "", 0, fmt.Errorf("service tag in unexpected format")
 	}
 
 	name, namespace := segments[0], segments[1]

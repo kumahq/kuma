@@ -1,9 +1,8 @@
 package tokens
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
@@ -28,7 +27,7 @@ var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
 func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	if validFor == 0 {
-		return "", errors.Errorf("You must set a token validFor value")
+		return "", fmt.Errorf("You must set a token validFor value")
 	}
 	tokenReq := &types.DataplaneTokenRequest{
 		Name:     name,

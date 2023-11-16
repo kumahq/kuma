@@ -346,7 +346,7 @@ func (s *UniversalApp) Stop() error {
 		func() (string, error) {
 			_, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.Errorf("Container still running")
+				return "Container still running", fmt.Errorf("Container still running")
 			}
 			return "Container stopped", nil
 		})
@@ -527,5 +527,5 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	if isipv6 {
 		errString = "No IPv6 address found"
 	}
-	return "", errors.Errorf(errString)
+	return "", fmt.Errorf(errString)
 }

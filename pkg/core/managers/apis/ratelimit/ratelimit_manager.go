@@ -2,9 +2,8 @@ package ratelimit
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -108,7 +107,7 @@ func (m *rateLimitManager) Update(ctx context.Context, resource core_model.Resou
 func (m *rateLimitManager) rateLimit(resource core_model.Resource) (*core_mesh.RateLimitResource, error) {
 	rateLimit, ok := resource.(*core_mesh.RateLimitResource)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.RateLimitResource)(nil), resource)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.RateLimitResource)(nil), resource)
 	}
 	return rateLimit, nil
 }
@@ -116,7 +115,7 @@ func (m *rateLimitManager) rateLimit(resource core_model.Resource) (*core_mesh.R
 func (m *rateLimitManager) rateLimits(list core_model.ResourceList) (*core_mesh.RateLimitResourceList, error) {
 	rateLimits, ok := list.(*core_mesh.RateLimitResourceList)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.RateLimitResourceList)(nil), list)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.RateLimitResourceList)(nil), list)
 	}
 	return rateLimits, nil
 }

@@ -1,6 +1,7 @@
 package kuma_cp
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -282,7 +283,7 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
 		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+			return fmt.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 		}
 		if err := c.Runtime.Validate(c.Environment); err != nil {
 			return errors.Wrap(err, "Runtime validation failed")
@@ -304,7 +305,7 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
 		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+			return fmt.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 		}
 		if err := c.Runtime.Validate(c.Environment); err != nil {
 			return errors.Wrap(err, "Runtime validation failed")

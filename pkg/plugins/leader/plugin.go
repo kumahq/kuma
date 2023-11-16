@@ -1,6 +1,7 @@
 package leader
 
 import (
+	"fmt"
 	"time"
 
 	"cirello.io/pglock"
@@ -37,6 +38,6 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 		return leader_memory.NewAlwaysLeaderElector(), nil
 	// In case of Kubernetes, Leader Elector is embedded in a Kubernetes ComponentManager
 	default:
-		return nil, errors.Errorf("no election leader for storage of type %s", b.Config().Store.Type)
+		return nil, fmt.Errorf("no election leader for storage of type %s", b.Config().Store.Type)
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -62,7 +61,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		},
 	)
 	if len(pods) != 1 {
-		return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
+		return fmt.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
 	}
 
 	return k8s.WaitUntilPodAvailableE(cluster.GetTesting(),

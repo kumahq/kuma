@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -19,7 +20,7 @@ func Load(file string, cfg *config_proto.Configuration) error {
 		if util_files.FileExists(file) {
 			configFile = file
 		} else {
-			return errors.Errorf("Failed to access configuration file %q", file)
+			return fmt.Errorf("Failed to access configuration file %q", file)
 		}
 	}
 	if util_files.FileExists(configFile) {

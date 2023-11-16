@@ -2,6 +2,7 @@ package watchdog
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -61,7 +62,7 @@ func (w *SimpleWatchdog) onTick(ctx context.Context) error {
 				case error:
 					err = typ
 				default:
-					err = errors.Errorf("%v", cause)
+					err = fmt.Errorf("%v", cause)
 				}
 				w.OnError(err)
 			}

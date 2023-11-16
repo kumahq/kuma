@@ -1,9 +1,10 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -30,7 +31,7 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 	case api.ModOpPatch:
 		return l.patch(resources, listener)
 	default:
-		return errors.Errorf("invalid operation: %s", l.Operation)
+		return fmt.Errorf("invalid operation: %s", l.Operation)
 	}
 	return nil
 }

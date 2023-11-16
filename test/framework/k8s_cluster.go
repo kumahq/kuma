@@ -124,7 +124,7 @@ func (c *K8sCluster) ClosePortForward(name string) {
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 	tnl, ok := c.portForwards[Config.ZoneEgressApp]
 	if !ok {
-		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
+		c.t.Fatal(fmt.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
 	}
 	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
@@ -132,7 +132,7 @@ func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 	tnl, ok := c.portForwards[Config.ZoneIngressApp]
 	if !ok {
-		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
+		c.t.Fatal(fmt.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
 	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
@@ -490,7 +490,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	switch mode {
 	case core.Zone:
 		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
+			return fmt.Errorf("GlobalAddress expected for zone")
 		}
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
@@ -507,7 +507,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 		err = c.deployKumaViaHelm(mode)
 	default:
-		return errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
+		return fmt.Errorf("invalid installation mode: %s", c.opts.installationMode)
 	}
 
 	if err != nil {
@@ -631,7 +631,7 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	switch mode {
 	case core.Zone:
 		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
+			return fmt.Errorf("GlobalAddress expected for zone")
 		}
 	}
 
@@ -804,7 +804,7 @@ func (c *K8sCluster) GetKumaCPLogs() (string, error) {
 
 	pods := c.GetKuma().(*K8sControlPlane).GetKumaCPPods()
 	if len(pods) < 1 {
-		return "", errors.Errorf("no kuma-cp pods found for logs")
+		return "", fmt.Errorf("no kuma-cp pods found for logs")
 	}
 
 	for _, p := range pods {
@@ -1080,7 +1080,7 @@ func (c *K8sCluster) Deploy(deployment Deployment) error {
 func (c *K8sCluster) DeleteDeployment(name string) error {
 	deployment, ok := c.deployments[name]
 	if !ok {
-		return errors.Errorf("deployment %s not found", name)
+		return fmt.Errorf("deployment %s not found", name)
 	}
 	if err := deployment.Delete(c); err != nil {
 		return err
@@ -1106,7 +1106,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		},
 	)
 	if len(pods) < replicas {
-		return errors.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
+		return fmt.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
 	}
 
 	for i := 0; i < replicas; i++ {

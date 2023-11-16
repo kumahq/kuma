@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -51,7 +52,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
 		err = k.authResource(ctx, resource, credential)
 	default:
-		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		err = fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	if err != nil {
@@ -72,22 +73,22 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 		return errors.Wrap(err, "call to TokenReview API failed")
 	}
 	if !tokenReview.Status.Authenticated {
-		return errors.Errorf("token doesn't belong to a valid user")
+		return fmt.Errorf("token doesn't belong to a valid user")
 	}
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
-		return errors.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
+		return fmt.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
 	}
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
-		return errors.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
+		return fmt.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
 	}
 	namespace := userInfo[2]
 	if namespace != proxyNamespace {
-		return errors.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
+		return fmt.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
 	}
 	name := userInfo[3]
 	if name != serviceAccountName {
-		return errors.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
+		return fmt.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,7 +40,7 @@ func MigrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			if err != nil {
 				return 0, err
 			}
-			return 0, errors.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
+			return 0, fmt.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
 		}
 		return 0, errors.Wrap(err, "error while executing up migration")
 	}

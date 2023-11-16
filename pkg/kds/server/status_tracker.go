@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -73,7 +73,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return errors.Errorf("request has no metadata")
+		return fmt.Errorf("request has no metadata")
 	}
 
 	// initialize subscription

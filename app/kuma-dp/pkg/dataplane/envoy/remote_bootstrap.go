@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	net_url "net/url"
@@ -43,7 +44,7 @@ var (
 )
 
 func InvalidRequestErr(msg string) error {
-	return errors.Errorf("Invalid request: %s", msg)
+	return fmt.Errorf("Invalid request: %s", msg)
 }
 
 func IsInvalidRequestErr(err error) bool {
@@ -219,7 +220,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		if resp.StatusCode/100 == 4 {
 			return nil, InvalidRequestErr(string(bodyBytes))
 		}
-		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {

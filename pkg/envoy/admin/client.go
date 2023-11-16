@@ -128,7 +128,7 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+		return fmt.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
 	return nil
@@ -203,7 +203,7 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+		return nil, fmt.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
 	resp, err := io.ReadAll(response.Body)

@@ -46,7 +46,7 @@ func (h *httpPolicyInspectClient) DataplanesForPolicy(ctx context.Context, polic
 		return types.InspectDataplanesForPolicyResponse{}, err
 	}
 	if statusCode != 200 {
-		return types.InspectDataplanesForPolicyResponse{}, errors.Errorf("(%d): %s", statusCode, string(b))
+		return types.InspectDataplanesForPolicyResponse{}, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	entryList := types.InspectDataplanesForPolicyResponse{}
 	if err := json.Unmarshal(b, &entryList); err != nil {
@@ -69,7 +69,7 @@ func (h *httpPolicyInspectClient) Inspect(ctx context.Context, policyDesc core_m
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	entryList := &api_server_types.PolicyInspectEntryList{}
 	if err := json.Unmarshal(b, entryList); err != nil {

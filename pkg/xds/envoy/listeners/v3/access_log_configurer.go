@@ -76,7 +76,7 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 			return legacyTcpAccessLog(format, backend.Conf)
 		}
 	default: // should be caught by validator
-		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
+		return nil, fmt.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}
 }
 

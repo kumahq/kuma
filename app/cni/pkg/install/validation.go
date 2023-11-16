@@ -1,6 +1,8 @@
 package install
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/util/files"
@@ -29,7 +31,7 @@ func isValidConfFile(file string) error {
 		log.V(1).Info("config valid", "file", file, "type", configType)
 		return nil
 	}
-	return errors.Errorf(`config file %v not valid - does not contain "type" field`, file)
+	return fmt.Errorf(`config file %v not valid - does not contain "type" field`, file)
 }
 
 func isValidConflistFile(file string) error {
@@ -45,7 +47,7 @@ func isValidConflistFile(file string) error {
 		return nil
 	}
 
-	return errors.Errorf(`config file %v not valid - does not contain "name" and "plugin" fields`, file)
+	return fmt.Errorf(`config file %v not valid - does not contain "name" and "plugin" fields`, file)
 }
 
 func checkInstall(cniConfPath string, isPluginChained bool) error {

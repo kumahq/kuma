@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"math/big"
 	"net"
 	"time"
@@ -139,7 +140,7 @@ func newCert(issuer *pkix.Name, certType CertType, hosts ...string) (x509.Certif
 	case ClientCertType:
 		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
 	default:
-		return x509.Certificate{}, errors.Errorf("invalid certificate type %q, expected either %q or %q",
+		return x509.Certificate{}, fmt.Errorf("invalid certificate type %q, expected either %q or %q",
 			certType, ServerCertType, ClientCertType)
 	}
 	for _, host := range hosts {

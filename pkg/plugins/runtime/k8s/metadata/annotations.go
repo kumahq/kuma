@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // Annotations that can be used by the end users.
@@ -203,7 +201,7 @@ func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool
 		case AnnotationDisabled, AnnotationFalse:
 			return false, nil
 		default:
-			return false, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
+			return false, fmt.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
 		}
 	}, keys...)
 	if err != nil {
@@ -220,7 +218,7 @@ func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, b
 	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
 		u, err := strconv.ParseUint(value, 10, 32)
 		if err != nil {
-			return 0, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
+			return 0, fmt.Errorf("failed to parse annotation %q: %s", key, err.Error())
 		}
 		return uint32(u), nil
 	}, keys...)
@@ -288,7 +286,7 @@ func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (m
 		for _, pair := range pairs {
 			kvSplit := strings.Split(pair, "=")
 			if len(kvSplit) != 2 {
-				return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+				return nil, fmt.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
 			}
 			result[kvSplit[0]] = kvSplit[1]
 		}

@@ -4,6 +4,7 @@
 package uninstall
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
@@ -36,7 +37,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 			"and /etc/resolv.conf or removing leftover ebpf objects",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
+				return fmt.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
 			cfg := &config.TransparentProxyConfig{

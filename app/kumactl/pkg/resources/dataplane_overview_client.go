@@ -41,7 +41,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := mesh.DataplaneOverviewResourceList{}
 	if err := rest.JSON.UnmarshalListToCore(b, &overviews); err != nil {

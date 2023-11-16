@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -66,7 +68,7 @@ func ApplyMods(resources *core_xds.ResourceSet, modifications []api.Modification
 			mod := virtualHostModificator(*modification.VirtualHost)
 			modificator = &mod
 		default:
-			return errors.Errorf("invalid modification")
+			return fmt.Errorf("invalid modification")
 		}
 		if err := modificator.apply(resources); err != nil {
 			return errors.Wrapf(err, "could not apply %d modification", i)

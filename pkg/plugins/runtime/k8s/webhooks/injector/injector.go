@@ -421,7 +421,7 @@ func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMo
 				}}, nil
 			}
 		}
-		return nil, errors.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
+		return nil, fmt.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
 	}
 
 	// If not specified with the above annotation, instead query each container in the pod to find a

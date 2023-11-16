@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -55,7 +56,7 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
-		return nil, nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
+		return nil, nil, fmt.Errorf("CA manager of type %s not exist", backend.Type)
 	}
 
 	var certs [][]byte

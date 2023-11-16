@@ -313,7 +313,7 @@ func BuildProxyId(mesh, name string) *ProxyId {
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	if id == "" {
-		return nil, errors.Errorf("Envoy ID must not be nil")
+		return nil, fmt.Errorf("Envoy ID must not be nil")
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]

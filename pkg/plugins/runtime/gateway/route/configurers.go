@@ -1,6 +1,8 @@
 package route
 
 import (
+	"fmt"
+
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -106,7 +108,7 @@ func RouteActionRedirect(redirect *Redirection, port uint32) envoy_routes.RouteC
 		case 308:
 			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_PERMANENT_REDIRECT
 		default:
-			return errors.Errorf("redirect status code %d is not supported", redirect.Status)
+			return fmt.Errorf("redirect status code %d is not supported", redirect.Status)
 		}
 
 		r.Action = &envoy_config_route.Route_Redirect{

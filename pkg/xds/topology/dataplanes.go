@@ -1,6 +1,7 @@
 package topology
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/go-logr/logr"
@@ -96,7 +97,7 @@ func lookupFirstIp(lookupIPFunc lookup.LookupIPFunc, address string) (string, er
 		return "", err
 	}
 	if len(ips) == 0 {
-		return "", errors.Errorf("can't resolve address %v", address)
+		return "", fmt.Errorf("can't resolve address %v", address)
 	}
 	// Pick the first lexicographic order ip (to make resolution deterministic
 	minIp := ""

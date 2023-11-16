@@ -2,12 +2,12 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -48,7 +48,7 @@ func ParseLogLevel(text string) (LogLevel, error) {
 	case "debug":
 		return DebugLevel, nil
 	default:
-		return OffLevel, errors.Errorf("unknown log level %q", text)
+		return OffLevel, fmt.Errorf("unknown log level %q", text)
 	}
 }
 

@@ -152,7 +152,7 @@ func (p *PodConverter) dataplaneFor(
 			}
 			dataplane.Networking.Gateway = gateway
 		default:
-			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
+			return nil, fmt.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
 		ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)

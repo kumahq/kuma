@@ -3,8 +3,6 @@ package registry
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
@@ -40,7 +38,7 @@ type typeRegistry struct {
 func (r *typeRegistry) RegisterObjectType(typ ResourceType, obj model.KubernetesObject) error {
 	name := core_model.FullName(typ)
 	if previous, ok := r.objectTypes[name]; ok {
-		return errors.Errorf("duplicate registration of KubernetesObject type under name %q: previous=%#v new=%#v", name, previous, obj)
+		return fmt.Errorf("duplicate registration of KubernetesObject type under name %q: previous=%#v new=%#v", name, previous, obj)
 	}
 	r.objectTypes[name] = obj
 	return nil
@@ -57,7 +55,7 @@ func (r *typeRegistry) RegisterObjectTypeIfAbsent(typ ResourceType, obj model.Ku
 func (r *typeRegistry) RegisterListType(typ ResourceType, obj model.KubernetesList) error {
 	name := core_model.FullName(typ)
 	if previous, ok := r.objectListTypes[name]; ok {
-		return errors.Errorf("duplicate registration of KubernetesList type under name %q: previous=%#v new=%#v", name, previous, obj)
+		return fmt.Errorf("duplicate registration of KubernetesList type under name %q: previous=%#v new=%#v", name, previous, obj)
 	}
 	r.objectListTypes[name] = obj
 	return nil

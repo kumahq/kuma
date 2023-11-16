@@ -1,6 +1,7 @@
 package cni
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -96,7 +97,7 @@ func validatePortList(ports string) error {
 
 func getAnnotationOrDefault(name string, annotations map[string]string) (string, error) {
 	if _, ok := annotationRegistry[name]; !ok {
-		return "", errors.Errorf("no registered annotation with name %s", name)
+		return "", fmt.Errorf("no registered annotation with name %s", name)
 	}
 	if val, found := annotations[annotationRegistry[name].key]; found {
 		if err := annotationRegistry[name].validator(val); err != nil {

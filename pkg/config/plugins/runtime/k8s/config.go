@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -387,7 +388,7 @@ func (c *KubernetesRuntimeConfig) Validate() error {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
 	}
 	if c.MarshalingCacheExpirationTime.Duration < 0 {
-		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
+		errs = multierr.Append(errs, fmt.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	if c.ServiceAccountName != defaultServiceAccountName {
 		logger.Info("[WARNING]: using deprecated configuration option - .ServiceAccountName, please use AllowedUsers.")
@@ -400,10 +401,10 @@ var _ config.Config = &AdmissionServerConfig{}
 func (c *AdmissionServerConfig) Validate() error {
 	var errs error
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".Port must be in the range [0, 65535]"))
 	}
 	if c.CertDir == "" {
-		errs = multierr.Append(errs, errors.Errorf(".CertDir should not be empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".CertDir should not be empty"))
 	}
 	return errs
 }
@@ -452,22 +453,22 @@ func (c *SidecarContainer) PostProcess() error {
 func (c *SidecarContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Image must be non-empty"))
 	}
 	if 65535 < c.RedirectPortInbound {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
 	}
 	if 0 != c.RedirectPortInboundV6 && 65535 < c.RedirectPortInboundV6 {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
 	}
 	if 65535 < c.RedirectPortOutbound {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
 	}
 	if 65535 < c.AdminPort {
-		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".AdminPort must be in the range [0, 65535]"))
 	}
 	if c.DrainTime.Duration <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 	if err := c.ReadinessProbe.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ReadinessProbe is not valid"))
@@ -486,7 +487,7 @@ var _ config.Config = &InitContainer{}
 func (c *InitContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Image must be non-empty"))
 	}
 	return errs
 }
@@ -496,19 +497,19 @@ var _ config.Config = &SidecarReadinessProbe{}
 func (c *SidecarReadinessProbe) Validate() error {
 	var errs error
 	if c.InitialDelaySeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".InitialDelaySeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".InitialDelaySeconds must be >= 1"))
 	}
 	if c.TimeoutSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".TimeoutSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".TimeoutSeconds must be >= 1"))
 	}
 	if c.PeriodSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".PeriodSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".PeriodSeconds must be >= 1"))
 	}
 	if c.SuccessThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".SuccessThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".SuccessThreshold must be >= 1"))
 	}
 	if c.FailureThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".FailureThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".FailureThreshold must be >= 1"))
 	}
 	return errs
 }
@@ -518,16 +519,16 @@ var _ config.Config = &SidecarLivenessProbe{}
 func (c *SidecarLivenessProbe) Validate() error {
 	var errs error
 	if c.InitialDelaySeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".InitialDelaySeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".InitialDelaySeconds must be >= 1"))
 	}
 	if c.TimeoutSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".TimeoutSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".TimeoutSeconds must be >= 1"))
 	}
 	if c.PeriodSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".PeriodSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".PeriodSeconds must be >= 1"))
 	}
 	if c.FailureThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".FailureThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".FailureThreshold must be >= 1"))
 	}
 	return errs
 }
@@ -588,7 +589,7 @@ var _ config.Config = &BuiltinDNS{}
 func (c *BuiltinDNS) Validate() error {
 	var errs error
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".port must be in the range [0, 65535]"))
 	}
 	return errs
 }

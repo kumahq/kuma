@@ -40,7 +40,7 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 	for i, filter := range filterChain.Filters {
 		if filter.Name == filterName {
 			if filter.GetTypedConfig() == nil {
-				return errors.Errorf("filters[%d]: config cannot be 'nil'", i)
+				return fmt.Errorf("filters[%d]: config cannot be 'nil'", i)
 			}
 
 			msg, err := filter.GetTypedConfig().UnmarshalNew()

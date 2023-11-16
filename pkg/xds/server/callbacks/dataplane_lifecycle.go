@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -122,7 +123,7 @@ func (d *DataplaneLifecycle) register(
 
 	if info.deleted {
 		// we took info object that was deleted from proxyInfo map by other goroutine, return err so DPP retry registration
-		return errors.Errorf("attempt to concurently register deleted DPP resource, needs retry")
+		return fmt.Errorf("attempt to concurently register deleted DPP resource, needs retry")
 	}
 
 	log.Info("register proxy")
@@ -228,7 +229,7 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing core_m
 
 func (d *DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, proxyResource core_model.Resource) error {
 	if core_model.MetaToResourceKey(proxyResource.GetMeta()) != proxyKey {
-		return errors.Errorf("proxyId %s does not match proxy resource %s", proxyKey, proxyResource.GetMeta())
+		return fmt.Errorf("proxyId %s does not match proxy resource %s", proxyKey, proxyResource.GetMeta())
 	}
 	return nil
 }

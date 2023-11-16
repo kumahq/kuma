@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
@@ -41,7 +42,7 @@ func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, valid
 
 func loadFromFile(file string, cfg Config, strict bool) error {
 	if _, err := os.Stat(file); err != nil {
-		return errors.Errorf("Failed to access configuration file %q", file)
+		return fmt.Errorf("Failed to access configuration file %q", file)
 	}
 	contents, err := os.ReadFile(file)
 	if err != nil {

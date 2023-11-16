@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -143,7 +144,7 @@ func podToNodeMapper(log logr.Logger, cniApp string, cniNamespace string) kube_h
 	return func(_ context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
-			log.WithValues("pod", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", pod, obj), "wrong argument type")
+			log.WithValues("pod", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", pod, obj), "wrong argument type")
 			return nil
 		}
 

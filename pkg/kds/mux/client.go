@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/url"
 	"os"
 	"time"
@@ -85,7 +86,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
-		return errors.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
+		return fmt.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.Dial(u.Host, dialOpts...)
 	if err != nil {

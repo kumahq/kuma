@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -34,7 +36,7 @@ func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTem
 			mod := virtualHostModificator(*modification.GetVirtualHost())
 			modificator = &mod
 		default:
-			return errors.Errorf("invalid modification type %T", modification.Type)
+			return fmt.Errorf("invalid modification type %T", modification.Type)
 		}
 		if err := modificator.apply(resources); err != nil {
 			return errors.Wrapf(err, "could not apply %d modification", i)

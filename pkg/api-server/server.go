@@ -429,7 +429,7 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 				return errors.Wrapf(err, "could not read certificate %q", path)
 			}
 			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return errors.Errorf("failed to load PEM client certificate from %q", path)
+				return fmt.Errorf("failed to load PEM client certificate from %q", path)
 			}
 		}
 	}
@@ -439,7 +439,7 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 			return err
 		}
 		if !clientCertPool.AppendCertsFromPEM(file) {
-			return errors.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
+			return fmt.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
 		}
 	}
 

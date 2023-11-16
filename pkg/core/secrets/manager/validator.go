@@ -65,7 +65,7 @@ func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh 
 func (s *secretValidator) secretUsedByMTLSBackend(name string, mesh string, backend *mesh_proto.CertificateAuthorityBackend) (bool, error) {
 	caManager := s.caManagers[backend.Type]
 	if caManager == nil { // this should be caught earlier by validator
-		return false, errors.Errorf("manager of type %q does not exist", backend.Type)
+		return false, fmt.Errorf("manager of type %q does not exist", backend.Type)
 	}
 	secrets, err := caManager.UsedSecrets(mesh, backend)
 	if err != nil {

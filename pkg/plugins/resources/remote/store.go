@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -86,9 +87,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_
 	}
 	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
 		if statusCode == http.StatusMethodNotAllowed {
-			return errors.Errorf("%s", string(b))
+			return fmt.Errorf("%s", string(b))
 		} else {
-			return errors.Errorf("(%d): %s", statusCode, string(b))
+			return fmt.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
 	res.SetMeta(meta)
@@ -114,9 +115,9 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	}
 	if statusCode != http.StatusOK {
 		if statusCode == http.StatusMethodNotAllowed {
-			return errors.Errorf("%s", string(b))
+			return fmt.Errorf("%s", string(b))
 		} else {
-			return errors.Errorf("(%d): %s", statusCode, string(b))
+			return fmt.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
 	return nil
@@ -140,7 +141,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return err
 	}
 	if statusCode != 200 {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		return fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	restRes, err := rest.JSON.Unmarshal(b, res.Descriptor())
 	if err != nil {
@@ -175,7 +176,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return err
 	}
 	if statusCode != http.StatusOK {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		return fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return rest.JSON.UnmarshalListToCore(b, rs)
 }

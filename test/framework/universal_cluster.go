@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -114,7 +115,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 	c.opts.apply(opt...)
 	if c.opts.installationMode != KumactlInstallationMode {
-		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
+		return fmt.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
 	}
 
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
@@ -309,7 +310,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	Logf("Started universal app %q in container %q", opts.name, app.container)
 
 	if _, ok := c.apps[opts.name]; ok {
-		return errors.Errorf("app %q already exists", opts.name)
+		return fmt.Errorf("app %q already exists", opts.name)
 	}
 	c.apps[opts.name] = app
 
@@ -383,7 +384,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 
 	app := ssh.NewApp(kumaCP.containerName, "", kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
-		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
+		return fmt.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
 
 	return nil
@@ -396,7 +397,7 @@ func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
 func (c *UniversalCluster) DeleteApp(appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {
-		return errors.Errorf("App %s not found for deletion", appname)
+		return fmt.Errorf("App %s not found for deletion", appname)
 	}
 	if err := app.Stop(); err != nil {
 		return err
@@ -429,7 +430,7 @@ func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
 func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...string) (string, string, error) {
 	app, ok := c.apps[appname]
 	if !ok {
-		return "", "", errors.Errorf("App %s not found", appname)
+		return "", "", fmt.Errorf("App %s not found", appname)
 	}
 	sshApp := ssh.NewApp(app.containerName, "", c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
@@ -452,7 +453,7 @@ func (c *UniversalCluster) Deploy(deployment Deployment) error {
 func (c *UniversalCluster) DeleteDeployment(name string) error {
 	deployment, ok := c.deployments[name]
 	if !ok {
-		return errors.Errorf("deployment %s not found", name)
+		return fmt.Errorf("deployment %s not found", name)
 	}
 	if err := deployment.Delete(c); err != nil {
 		return err
@@ -538,7 +539,7 @@ func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
 	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
 	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+		return nil, fmt.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
 	}
 
 	return t, nil
@@ -547,7 +548,7 @@ func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, erro
 func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
 	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
 	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
+		return nil, fmt.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
 	}
 
 	return t, nil

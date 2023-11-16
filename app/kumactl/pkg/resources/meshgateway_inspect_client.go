@@ -43,7 +43,7 @@ func (h *httpMeshGatewayInspectClient) InspectDataplanes(ctx context.Context, me
 		return api_server_types.GatewayDataplanesInspectEntryList{}, err
 	}
 	if statusCode != 200 {
-		return api_server_types.GatewayDataplanesInspectEntryList{}, errors.Errorf("(%d): %s", statusCode, string(b))
+		return api_server_types.GatewayDataplanesInspectEntryList{}, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	response := &api_server_types.GatewayDataplanesInspectEntryList{}
 	if err := json.Unmarshal(b, &response); err != nil {

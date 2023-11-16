@@ -260,7 +260,7 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.
 			"value": r.(*secret_model.GlobalSecretResource).Spec.GetData().GetValue(),
 		}
 	default:
-		return nil, errors.Errorf("invalid type %s, expected %s or %s", r.Descriptor().Name, secret_model.SecretType, secret_model.GlobalSecretType)
+		return nil, fmt.Errorf("invalid type %s, expected %s or %s", r.Descriptor().Name, secret_model.SecretType, secret_model.GlobalSecretType)
 	}
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
@@ -308,7 +308,7 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 			secOut.Items[i] = r
 		}
 	default:
-		return errors.Errorf("invalid type %s, expected %s or %s", out.GetItemType(), secret_model.SecretType, secret_model.GlobalSecretType)
+		return fmt.Errorf("invalid type %s, expected %s or %s", out.GetItemType(), secret_model.SecretType, secret_model.GlobalSecretType)
 	}
 	return nil
 }

@@ -493,7 +493,7 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 		}
 		return ss, nil
 	default:
-		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
+		return nil, fmt.Errorf("can't represent %s as tags", tr.Kind)
 	}
 }
 

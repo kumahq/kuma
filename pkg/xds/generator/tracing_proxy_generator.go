@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 	net_url "net/url"
 	"strconv"
 
@@ -87,7 +88,7 @@ func (t TracingProxyGenerator) endpointForZipkin(cfg *mesh_proto.ZipkinTracingBa
 
 func (t TracingProxyGenerator) endpointForDatadog(cfg *mesh_proto.DatadogTracingBackendConfig) (*core_xds.Endpoint, error) {
 	if cfg.Port > 0xFFFF || cfg.Port < 1 {
-		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
+		return nil, fmt.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
 	}
 	return &core_xds.Endpoint{
 		Target: cfg.Address,

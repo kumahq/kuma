@@ -43,7 +43,7 @@ func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 		return api_server_types.DataplaneInspectResponse{}, err
 	}
 	if statusCode != 200 {
-		return api_server_types.DataplaneInspectResponse{}, errors.Errorf("(%d): %s", statusCode, string(b))
+		return api_server_types.DataplaneInspectResponse{}, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	response := &api_server_types.DataplaneInspectResponse{}
 	if err := json.Unmarshal(b, &response); err != nil {

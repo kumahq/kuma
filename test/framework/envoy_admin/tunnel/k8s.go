@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
@@ -40,7 +39,7 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"got response with unexpected status code: %+q, Expected: %+q",
 			response.Status,
 			http.StatusText(http.StatusOK),
@@ -65,7 +64,7 @@ func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"got response with unexpected status code: %+q, Expected: %+q",
 			response.Status,
 			http.StatusText(http.StatusOK),
@@ -90,7 +89,7 @@ func (t *K8sTunnel) ResetCounters() error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"got response with unexpected status code: %+q, Expected: %+q",
 			response.Status,
 			http.StatusText(http.StatusOK),

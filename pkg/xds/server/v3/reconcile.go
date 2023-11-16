@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"fmt"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -176,7 +177,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 	for _, policyName := range policies.Policies {
 		policy, exists := allPolicies[policyName]
 		if !exists {
-			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
+			reconcileLog.Error(fmt.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
 			continue
 		}
 		if err := policy.Apply(rs, xdsCtx, proxy); err != nil {

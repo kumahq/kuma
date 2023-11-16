@@ -44,12 +44,12 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return fmt.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 
 	converter, ok := k8s_extensions.FromResourceConverterContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("k8s resource converter hasn't been configured")
+		return fmt.Errorf("k8s resource converter hasn't been configured")
 	}
 
 	if err := addControllers(mgr, rt, converter); err != nil {
@@ -234,7 +234,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite, ok := k8s_extensions.FromCompositeValidatorContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("could not find composite validator in the extensions context")
+		return fmt.Errorf("could not find composite validator in the extensions context")
 	}
 
 	allowedUsers := append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector")
@@ -281,7 +281,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("secret client hasn't been configured")
+		return fmt.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
 		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),

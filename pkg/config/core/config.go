@@ -1,6 +1,6 @@
 package core
 
-import "github.com/pkg/errors"
+import "fmt"
 
 type EnvironmentType = string
 
@@ -22,7 +22,7 @@ const (
 // ValidateCpMode to check modes of kuma-cp
 func ValidateCpMode(mode CpMode) error {
 	if mode != Standalone && mode != Zone && mode != Global {
-		return errors.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Zone, Global)
+		return fmt.Errorf("invalid mode. Available modes: %s, %s, %s", Standalone, Zone, Global)
 	}
 	return nil
 }

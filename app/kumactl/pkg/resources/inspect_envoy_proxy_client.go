@@ -59,7 +59,7 @@ func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context,
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return b, nil
 }

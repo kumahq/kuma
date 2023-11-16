@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -64,7 +65,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 			return nil, errors.New("invalid request type")
 		}
 		if configResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", configResp.GetError())
+			return nil, fmt.Errorf("error response from Zone CP: %s", configResp.GetError())
 		}
 		return configResp.GetConfig(), nil
 	}
@@ -102,7 +103,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			return nil, errors.New("invalid request type")
 		}
 		if statsResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", statsResp.GetError())
+			return nil, fmt.Errorf("error response from Zone CP: %s", statsResp.GetError())
 		}
 		return statsResp.GetStats(), nil
 	}
@@ -140,7 +141,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 			return nil, errors.New("invalid request type")
 		}
 		if clustersResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", clustersResp.GetError())
+			return nil, fmt.Errorf("error response from Zone CP: %s", clustersResp.GetError())
 		}
 		return clustersResp.GetClusters(), nil
 	}

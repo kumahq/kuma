@@ -296,79 +296,79 @@ func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService)
 
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
-		return nil, errors.Errorf("ComponentManager has not been configured")
+		return nil, fmt.Errorf("ComponentManager has not been configured")
 	}
 	if b.rs == nil {
-		return nil, errors.Errorf("ResourceStore has not been configured")
+		return nil, fmt.Errorf("ResourceStore has not been configured")
 	}
 	if b.txs == nil {
-		return nil, errors.Errorf("Transactions has not been configured")
+		return nil, fmt.Errorf("Transactions has not been configured")
 	}
 	if b.rm == nil {
-		return nil, errors.Errorf("ResourceManager has not been configured")
+		return nil, fmt.Errorf("ResourceManager has not been configured")
 	}
 	if b.rom == nil {
-		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
+		return nil, fmt.Errorf("ReadOnlyResourceManager has not been configured")
 	}
 	if b.dsl == nil {
-		return nil, errors.Errorf("DataSourceLoader has not been configured")
+		return nil, fmt.Errorf("DataSourceLoader has not been configured")
 	}
 	if b.ext == nil {
-		return nil, errors.Errorf("Extensions have been misconfigured")
+		return nil, fmt.Errorf("Extensions have been misconfigured")
 	}
 	if b.leadInfo == nil {
-		return nil, errors.Errorf("LeaderInfo has not been configured")
+		return nil, fmt.Errorf("LeaderInfo has not been configured")
 	}
 	if b.lif == nil {
-		return nil, errors.Errorf("LookupIP func has not been configured")
+		return nil, fmt.Errorf("LookupIP func has not been configured")
 	}
 	if b.eac == nil {
-		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
+		return nil, fmt.Errorf("EnvoyAdminClient has not been configured")
 	}
 	if b.metrics == nil {
-		return nil, errors.Errorf("Metrics has not been configured")
+		return nil, fmt.Errorf("Metrics has not been configured")
 	}
 	if b.erf == nil {
-		return nil, errors.Errorf("EventReaderFactory has not been configured")
+		return nil, fmt.Errorf("EventReaderFactory has not been configured")
 	}
 	if b.apim == nil {
-		return nil, errors.Errorf("APIManager has not been configured")
+		return nil, fmt.Errorf("APIManager has not been configured")
 	}
 	if b.xds == (xds_runtime.XDSRuntimeContext{}) {
 		return nil, errors.New("xds is not configured")
 	}
 	if b.cap == nil {
-		return nil, errors.Errorf("CAProvider has not been configured")
+		return nil, fmt.Errorf("CAProvider has not been configured")
 	}
 	if b.dps == nil {
-		return nil, errors.Errorf("DpServer has not been configured")
+		return nil, fmt.Errorf("DpServer has not been configured")
 	}
 	if b.kdsctx == nil {
-		return nil, errors.Errorf("KDSContext has not been configured")
+		return nil, fmt.Errorf("KDSContext has not been configured")
 	}
 	if b.rv == (ResourceValidators{}) {
-		return nil, errors.Errorf("ResourceValidators have not been configured")
+		return nil, fmt.Errorf("ResourceValidators have not been configured")
 	}
 	if b.au == nil {
-		return nil, errors.Errorf("API Server Authenticator has not been configured")
+		return nil, fmt.Errorf("API Server Authenticator has not been configured")
 	}
 	if b.acc == (Access{}) {
-		return nil, errors.Errorf("Access has not been configured")
+		return nil, fmt.Errorf("Access has not been configured")
 	}
 	if b.tokenIssuers == (builtin.TokenIssuers{}) {
-		return nil, errors.Errorf("TokenIssuers has not been configured")
+		return nil, fmt.Errorf("TokenIssuers has not been configured")
 	}
 	if b.meshCache == nil {
-		return nil, errors.Errorf("MeshCache has not been configured")
+		return nil, fmt.Errorf("MeshCache has not been configured")
 	}
 	if b.interCpPool == nil {
-		return nil, errors.Errorf("InterCP client pool has not been configured")
+		return nil, fmt.Errorf("InterCP client pool has not been configured")
 	}
 	if b.pgxConfigCustomizationFn == nil {
-		return nil, errors.Errorf("PgxConfigCustomizationFn has not been configured")
+		return nil, fmt.Errorf("PgxConfigCustomizationFn has not been configured")
 	}
 	if b.tenants == nil {
-		return nil, errors.Errorf("Tenants has not been configured")
+		return nil, fmt.Errorf("Tenants has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,

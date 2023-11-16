@@ -14,7 +14,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -126,7 +125,7 @@ func (c *K8sControlPlane) GetKumaCPSyncSvc() v1.Service {
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
 	if c.portFwd.ApiServerEndpoint == "" {
-		return errors.Errorf("API port not forwarded")
+		return fmt.Errorf("API port not forwarded")
 	}
 
 	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")

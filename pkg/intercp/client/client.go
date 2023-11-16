@@ -3,10 +3,10 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"net/url"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -45,7 +45,7 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
-		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	return grpc.Dial(url.Host, dialOpts...)
 }

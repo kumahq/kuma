@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	net_url "net/url"
 
 	"github.com/pkg/errors"
@@ -67,14 +68,14 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				}
 			}
 			if !cfg.AddControlPlane(cp, args.overwrite) {
-				return errors.Errorf("Control Plane with name %q already exists. Use --overwrite to replace an existing one.", cp.Name)
+				return fmt.Errorf("Control Plane with name %q already exists. Use --overwrite to replace an existing one.", cp.Name)
 			}
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
 				ControlPlane: cp.Name,
 			}
 			if !cfg.AddContext(ctx, args.overwrite) {
-				return errors.Errorf("Context with name %q already exists", ctx.Name)
+				return fmt.Errorf("Context with name %q already exists", ctx.Name)
 			}
 			cfg.CurrentContext = ctx.Name
 			if err := pctx.SaveConfig(); err != nil {
@@ -114,7 +115,7 @@ func validateArgs(args controlPlaneAddArgs, plugins map[string]plugins.AuthnPlug
 	if args.authType != "" {
 		plugin, ok := plugins[args.authType]
 		if !ok {
-			return errors.Errorf("authentication plugin of type %q is not found", args.authType)
+			return fmt.Errorf("authentication plugin of type %q is not found", args.authType)
 		}
 		if err := plugin.Validate(args.authConf); err != nil {
 			return errors.Wrap(err, "--auth-conf is not valid")

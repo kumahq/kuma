@@ -43,7 +43,7 @@ func New(serverURL string) (*Client, error) {
 	case "grpcs":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12})))
 	default:
-		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.Dial(url.Host, dialOpts...)
 	if err != nil {

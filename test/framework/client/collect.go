@@ -458,7 +458,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 			return response, err
 		}
 
-		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+		return response, fmt.Errorf("empty JSON response from curl: %q", stdout)
 	}
 
 	// for k8s

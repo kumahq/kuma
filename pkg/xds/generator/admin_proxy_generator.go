@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -66,7 +65,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Co
 		for _, address := range util_maps.SortedKeys(adminAddressAllowedValues) {
 			allowedAddresses = append(allowedAddresses, fmt.Sprintf(`"%s"`, address))
 		}
-		return nil, errors.Errorf("envoy admin cluster is not allowed to have addresses other than %s", strings.Join(allowedAddresses, ", "))
+		return nil, fmt.Errorf("envoy admin cluster is not allowed to have addresses other than %s", strings.Join(allowedAddresses, ", "))
 	}
 	switch adminAddress {
 	case "", "0.0.0.0":

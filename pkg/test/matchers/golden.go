@@ -1,6 +1,7 @@
 package matchers
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -100,6 +101,6 @@ func (g *GoldenMatcher) actualString(actual interface{}) (string, error) {
 	case string:
 		return actual, nil
 	default:
-		return "", errors.Errorf("not supported type %T for MatchGolden", actual)
+		return "", fmt.Errorf("not supported type %T for MatchGolden", actual)
 	}
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -146,11 +147,11 @@ func (rc *RootContext) LoadInMemoryConfig() {
 
 func (rc *RootContext) CurrentContext() (*config_proto.Context, error) {
 	if rc.Config().CurrentContext == "" {
-		return nil, errors.Errorf("active Control Plane is not set. Use `kumactl config control-planes add` to add a Control Plane and make it active")
+		return nil, fmt.Errorf("active Control Plane is not set. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	_, currentContext := rc.Config().GetContext(rc.Config().CurrentContext)
 	if currentContext == nil {
-		return nil, errors.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
+		return nil, fmt.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	return currentContext, nil
 }
@@ -162,7 +163,7 @@ func (rc *RootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 	}
 	_, controlPlane := rc.Config().GetControlPlane(currentContext.ControlPlane)
 	if controlPlane == nil {
-		return nil, errors.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
+		return nil, fmt.Errorf("apparently, configuration is broken. Use `kumactl config control-planes add` to add a Control Plane and make it active")
 	}
 	return controlPlane, nil
 }
@@ -191,7 +192,7 @@ func (rc *RootContext) BaseAPIServerClient() (util_http.Client, error) {
 	if controlPlane.Coordinates.ApiServer.AuthType != "" {
 		plugin, ok := rc.Runtime.AuthnPlugins[controlPlane.Coordinates.ApiServer.AuthType]
 		if !ok {
-			return nil, errors.Errorf("authentication plugin of type %q not found", controlPlane.Coordinates.ApiServer.AuthType)
+			return nil, fmt.Errorf("authentication plugin of type %q not found", controlPlane.Coordinates.ApiServer.AuthType)
 		}
 		client, err = plugin.DecorateClient(client, controlPlane.Coordinates.ApiServer.AuthConf)
 		if err != nil {

@@ -135,15 +135,15 @@ runuser -u kuma-dp -- \
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
+				return fmt.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
 			if args.User == "" && args.UID == "" {
-				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
+				return fmt.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
 			if args.RedirectAllDNSTraffic && args.RedirectDNS {
-				return errors.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
+				return fmt.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
 			}
 
 			if args.RedirectAllDNSTraffic {
@@ -152,7 +152,7 @@ runuser -u kuma-dp -- \
 
 			if args.EbpfEnabled {
 				if args.EbpfInstanceIP == "" {
-					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
+					return fmt.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
 				}
 
 				if args.StoreFirewalld {
@@ -165,7 +165,7 @@ runuser -u kuma-dp -- \
 			}
 			// Backward compatibility
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
-				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
+				return fmt.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
 			}
 			if len(args.ExcludeOutboundTCPPortsForUIDs) > 0 {
 				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead\n"))
@@ -232,7 +232,7 @@ func findUidGid(uid, user string) (string, string, error) {
 	if u, err = os_user.LookupId(uid); err != nil {
 		if user != "" {
 			if u, err = os_user.Lookup(user); err != nil {
-				return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+				return "", "", fmt.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
 			}
 		} else {
 			u = &os_user.User{

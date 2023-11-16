@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -78,7 +79,7 @@ func (s *StoreConfig) Validate() error {
 	case MemoryStore:
 		return nil
 	default:
-		return errors.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
+		return fmt.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
 	}
 	if err := s.Cache.Validate(); err != nil {
 		return errors.Wrap(err, "Cache validation failed")

@@ -1,9 +1,10 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
@@ -29,7 +30,7 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 	case api.ModOpPatch:
 		return c.patch(resources, clusterMod)
 	default:
-		return errors.Errorf("invalid operation: %s", c.Operation)
+		return fmt.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }

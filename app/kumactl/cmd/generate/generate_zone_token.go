@@ -106,7 +106,7 @@ func validateArgs(args *generateZoneTokenContextArgs) error {
 	}
 
 	if len(unsupportedScopes) > 0 {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"invalid --scope values: %+v (supported scopes: %+v)",
 			unsupportedScopes,
 			zone.FullScope,

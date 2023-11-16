@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -292,7 +293,7 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 		m := r.GetTypedPerFilterConfig()
 
 		if _, ok := m[filterName]; ok {
-			return errors.Errorf("duplicate %q per-filter config for %s",
+			return fmt.Errorf("duplicate %q per-filter config for %s",
 				filterConfig.GetTypeUrl(), filterName)
 		}
 
@@ -402,7 +403,7 @@ func VirtualHostRoute(route *RouteBuilder) envoy_virtual_hosts.VirtualHostBuilde
 
 			routeProto, ok := resource.(*envoy_config_route_v3.Route)
 			if !ok {
-				return errors.Errorf("attempt to attach %T as type %q",
+				return fmt.Errorf("attempt to attach %T as type %q",
 					resource, "envoy_config_route_v3.Route")
 			}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,7 +58,7 @@ func (r *GatewayReconciler) createSecretIfMissing(
 // be displayed in a condition message.
 func convertSecret(secret *kube_core.Secret) ([]byte, error) {
 	if secret.Type != kube_core.SecretTypeTLS {
-		return nil, errors.Errorf("only secrets of type %q are supported", kube_core.SecretTypeTLS)
+		return nil, fmt.Errorf("only secrets of type %q are supported", kube_core.SecretTypeTLS)
 	}
 
 	data := append(secret.Data["tls.key"], secret.Data["tls.crt"]...)

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -25,14 +26,14 @@ func (p *PodConverter) IngressFor(
 	ctx context.Context, zoneIngress *mesh_proto.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service,
 ) error {
 	if len(services) != 1 {
-		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
+		return fmt.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
 	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
 	if err != nil {
 		return errors.Wrap(err, "could not generate inbound interfaces")
 	}
 	if len(ifaces) != 1 {
-		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
+		return fmt.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
 
 	if zoneIngress.Networking == nil {
@@ -82,7 +83,7 @@ func (p *PodConverter) coordinatesFromAnnotations(annotations metadata.Annotatio
 		return nil, errors.Wrapf(err, "failed to parse annotation %s", metadata.KumaIngressPublicPortAnnotation)
 	}
 	if addressExist != portExist {
-		return nil, errors.Errorf("both %s and %s has to be defined", metadata.KumaIngressPublicAddressAnnotation, metadata.KumaIngressPublicPortAnnotation)
+		return nil, fmt.Errorf("both %s and %s has to be defined", metadata.KumaIngressPublicAddressAnnotation, metadata.KumaIngressPublicPortAnnotation)
 	}
 	if addressExist && portExist {
 		return &coordinates{

@@ -1,9 +1,9 @@
 package grpc
 
 import (
+	"fmt"
 	"sync"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
@@ -38,7 +38,7 @@ func (x *clientStreams) ResponseReceived(client string, resp ReverseUnaryMessage
 	ch, ok := stream.watchForRequestId[resp.GetRequestId()]
 	stream.Unlock()
 	if !ok {
-		return errors.Errorf("callback for request Id %s not found", resp.GetRequestId())
+		return fmt.Errorf("callback for request Id %s not found", resp.GetRequestId())
 	}
 	ch <- resp
 	return nil
@@ -64,7 +64,7 @@ func (x *clientStreams) clientStream(client string) (*clientStream, error) {
 	defer x.Unlock()
 	stream, ok := x.streamForClient[client]
 	if !ok {
-		return nil, errors.Errorf("client %s is not connected", client)
+		return nil, fmt.Errorf("client %s is not connected", client)
 	}
 	return stream, nil
 }

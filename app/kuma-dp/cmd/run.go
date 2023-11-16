@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -71,7 +72,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
-				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
+				return fmt.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
 			}
 
 			if cfg.DataplaneRuntime.EnvoyLogLevel == "" {
@@ -87,7 +88,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if proxyResource != nil {
 				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
-					return errors.Errorf("invalid proxy resource type %q, expected %s",
+					return fmt.Errorf("invalid proxy resource type %q, expected %s",
 						proxyResource.Descriptor().Name, resType)
 				}
 
@@ -216,13 +217,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
 			})
 			if err != nil {
-				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
+				return fmt.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 			}
 			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
-				return errors.Errorf("could not convert to yaml. %v", err)
+				return fmt.Errorf("could not convert to yaml. %v", err)
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 

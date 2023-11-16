@@ -3,6 +3,7 @@ package install
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -129,7 +130,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 	backoff := retry.WithMaxDuration(5*time.Minute, retry.NewConstant(time.Second))
 	err := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		if !files.FileExists(cniConfPath) {
-			return retry.RetryableError(errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath))
+			return retry.RetryableError(fmt.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath))
 		}
 		return nil
 	})

@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"fmt"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -63,7 +65,7 @@ func (h *httpFilterModificator) applyHCMModification(hcm *envoy_hcm.HttpConnecti
 			return errors.Wrap(err, "could not patch the resource")
 		}
 	default:
-		return errors.Errorf("invalid operation: %s", h.Operation)
+		return fmt.Errorf("invalid operation: %s", h.Operation)
 	}
 	return nil
 }

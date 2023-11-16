@@ -982,7 +982,7 @@ func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, o
 	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
 	data, ok := r[fqName]
 	if !ok {
-		return errors.Errorf("service not found: %s", fqName)
+		return fmt.Errorf("service not found: %s", fqName)
 	}
 	return yaml.Unmarshal([]byte(data), obj)
 }
@@ -1042,7 +1042,7 @@ func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey
 	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
 	data, ok := r[fqName]
 	if !ok {
-		return errors.Errorf("replicaset not found: %s", fqName)
+		return fmt.Errorf("replicaset not found: %s", fqName)
 	}
 	return yaml.Unmarshal([]byte(data), obj)
 }
@@ -1057,7 +1057,7 @@ func (r fakeJobReader) Get(ctx context.Context, key kube_client.ObjectKey, obj k
 	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
 	data, ok := r[fqName]
 	if !ok {
-		return errors.Errorf("job not found: %s", fqName)
+		return fmt.Errorf("job not found: %s", fqName)
 	}
 	return yaml.Unmarshal([]byte(data), obj)
 }

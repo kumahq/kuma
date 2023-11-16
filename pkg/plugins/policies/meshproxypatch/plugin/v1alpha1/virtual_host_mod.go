@@ -1,11 +1,12 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
@@ -69,7 +70,7 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 	case api.ModOpPatch:
 		return c.patch(routeCfg, virtualHost)
 	default:
-		return errors.Errorf("invalid operation: %s", c.Operation)
+		return fmt.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }

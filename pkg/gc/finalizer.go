@@ -2,6 +2,7 @@ package gc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -65,7 +66,7 @@ func NewSubscriptionFinalizer(
 ) (component.Component, error) {
 	for _, typ := range types {
 		if !isInsightType(typ) {
-			return nil, errors.Errorf("%q type is not an Insight", typ)
+			return nil, fmt.Errorf("%q type is not an Insight", typ)
 		}
 	}
 

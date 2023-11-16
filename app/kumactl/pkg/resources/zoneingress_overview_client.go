@@ -2,9 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -35,7 +34,7 @@ func (d *httpZoneIngressOverviewClient) List(ctx context.Context) (*mesh.ZoneIng
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := mesh.ZoneIngressOverviewResourceList{}
 	if err := rest.JSON.UnmarshalListToCore(b, &overviews); err != nil {

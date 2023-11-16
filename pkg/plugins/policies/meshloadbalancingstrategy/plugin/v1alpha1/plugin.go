@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -283,7 +285,7 @@ func (p plugin) configureListener(
 	}
 
 	if l.FilterChains == nil || len(l.FilterChains) != 1 {
-		return errors.Errorf("expected exactly one filter chain, got %d", len(l.FilterChains))
+		return fmt.Errorf("expected exactly one filter chain, got %d", len(l.FilterChains))
 	}
 
 	return v3.UpdateHTTPConnectionManager(l.FilterChains[0], func(hcm *envoy_hcm.HttpConnectionManager) error {
@@ -294,7 +296,7 @@ func (p plugin) configureListener(
 		case *envoy_hcm.HttpConnectionManager_Rds:
 			routeConfig = routes[r.Rds.RouteConfigName]
 		default:
-			return errors.Errorf("unexpected RouteSpecifer %T", r)
+			return fmt.Errorf("unexpected RouteSpecifer %T", r)
 		}
 
 		hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}

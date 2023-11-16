@@ -48,7 +48,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					return errors.New("at least one hostname must be given")
 				}
 			default:
-				return errors.Errorf("invalid certificate type %q", certType)
+				return fmt.Errorf("invalid certificate type %q", certType)
 			}
 
 			keyType := tls.DefaultKeyType
@@ -59,7 +59,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			case "ecdsa":
 				keyType = tls.ECDSAKeyType
 			default:
-				return errors.Errorf("invalid key type %q", ctx.args.keyType)
+				return fmt.Errorf("invalid key type %q", ctx.args.keyType)
 			}
 
 			keyPair, err := NewSelfSignedCert(certType, keyType, ctx.args.hostnames...)

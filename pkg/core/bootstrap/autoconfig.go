@@ -43,7 +43,7 @@ func autoconfigureGeneral(cfg *kuma_cp.Config) error {
 	if cfg.General.WorkDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return errors.Errorf("failed to create a working directory inside $HOME: %v, "+
+			return fmt.Errorf("failed to create a working directory inside $HOME: %v, "+
 				"please pick a working directory by setting KUMA_GENERAL_WORK_DIR manually", err)
 		}
 		cfg.General.WorkDir = path.Join(home, ".kuma")
@@ -158,7 +158,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	}
 	crtFile, keyFile, err := saveKeyPair(cert, workDir(cfg.General.WorkDir))
 	if err != nil {
-		return errors.Errorf("failed to save auto-generated TLS cert and key into a working directory: %v, "+
+		return fmt.Errorf("failed to save auto-generated TLS cert and key into a working directory: %v, "+
 			"working directory could be changed using KUMA_GENERAL_WORK_DIR environment variable", err)
 	}
 	cfg.General.TlsCertFile = crtFile

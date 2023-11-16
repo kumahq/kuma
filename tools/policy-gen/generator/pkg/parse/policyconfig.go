@@ -1,14 +1,13 @@
 package parse
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -64,7 +63,7 @@ func Policy(path string) (PolicyConfig, error) {
 
 	st, ok := mainStruct.Type.(*ast.StructType)
 	if !ok {
-		return PolicyConfig{}, errors.Errorf("type %s is not a struct", mainStruct.Name.String())
+		return PolicyConfig{}, fmt.Errorf("type %s is not a struct", mainStruct.Name.String())
 	}
 
 	for _, field := range st.Fields.List {
@@ -95,7 +94,7 @@ func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
 		trimmed := strings.TrimPrefix(comment.Text, "// +")
 		mrkr := strings.Split(trimmed, "=")
 		if len(mrkr) != 2 {
-			return nil, errors.Errorf("marker %s has wrong format", trimmed)
+			return nil, fmt.Errorf("marker %s has wrong format", trimmed)
 		}
 		result[mrkr[0]] = mrkr[1]
 	}

@@ -39,7 +39,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 				currentMesh := pctx.CurrentMesh()
 				if err := rs.Get(cmd.Context(), resource, store.GetByKey(name, currentMesh)); err != nil {
 					if store.IsResourceNotFound(err) {
-						return errors.Errorf("No resources found in %s mesh", currentMesh)
+						return fmt.Errorf("No resources found in %s mesh", currentMesh)
 					}
 					return errors.Wrapf(err, "failed to get %s in mesh %s", name, currentMesh)
 				}

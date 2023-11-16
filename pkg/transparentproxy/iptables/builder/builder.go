@@ -195,7 +195,7 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 
 	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
 
-	return "", errors.Errorf("%s failed", cmdName)
+	return "", fmt.Errorf("%s failed", cmdName)
 }
 
 // checkForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is

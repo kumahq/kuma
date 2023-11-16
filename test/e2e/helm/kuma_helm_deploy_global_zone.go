@@ -12,7 +12,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -88,11 +87,11 @@ interCp:
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobalStatusAPI(), nil)
 			if status != http.StatusOK {
-				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobalStatusAPI(), status)
+				return false, fmt.Errorf("unable to contact server %s with status %d", global.GetGlobalStatusAPI(), status)
 			}
 			err := json.Unmarshal([]byte(response), &clustersStatus)
 			if err != nil {
-				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
+				return false, fmt.Errorf("unable to parse response [%s] with error: %v", response, err)
 			}
 			if len(clustersStatus) != 1 {
 				return false, nil
