@@ -30,7 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        ref: "master"
+        with:
+          ref: "master"
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
