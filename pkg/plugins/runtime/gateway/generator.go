@@ -289,7 +289,7 @@ func (g Generator) generateCDS(
 	resources := core_xds.NewResourceSet()
 
 	for _, hostInfo := range hostInfos {
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, xdsCtx, info, hostInfo)
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries, hostInfo.Host.Tags)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
