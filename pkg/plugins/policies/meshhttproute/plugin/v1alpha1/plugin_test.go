@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,11 +20,13 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -180,6 +183,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
+			}
+			gatewayGenerator := plugin_gateway.NewGenerator("test-zone")
+			_, err = gatewayGenerator.Generate(context.Background(), given.xdsContext, given.proxy)
+
+			Expect(err).NotTo(HaveOccurred())
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).To(Succeed())
@@ -619,6 +629,60 @@ var _ = Describe("MeshHTTPRoute", func() {
 																},
 															},
 														},
+													},
+												}},
+											},
+										},
+									},
+								},
+							},
+						},
+					}).
+					Build(),
+			}
+		}()),
+		Entry("gateway", func() outboundsTestCase {
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			outboundTargets := core_xds.EndpointMap{
+				"backend": []core_xds.Endpoint{{
+					Target: "192.168.0.4",
+					Port:   8084,
+					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
+					Weight: 1,
+				}},
+			}
+			xdsContext := xds_samples.SampleContextWith(resources)
+			xdsContext.Mesh.EndpointMap = outboundTargets
+			return outboundsTestCase{
+				xdsContext: xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(core_xds.Routing{
+						OutboundTargets: outboundTargets,
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
+						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+							api.MeshHTTPRouteType: {
+								ToRules: core_rules.ToRules{
+									Rules: core_rules.Rules{
+										{
+											Subset: core_rules.MeshSubset(),
+											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.PathPrefix,
+															Value: "/",
+														},
+													}},
+													Default: api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+														}},
 													},
 												}},
 											},
