@@ -140,8 +140,10 @@ controlPlane:
     # -- Service type of the Kuma Control Plane
     type: ClusterIP
 
-    # -- Additional annotations to put on the Kuma Control Plane
-    annotations: { }
+    # -- Annotations to put on the Kuma Control Plane
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "5680"
 
   # Kuma API and GUI ingress settings. Useful if you want to expose the
   # API and GUI of Kuma outside the k8s cluster.
