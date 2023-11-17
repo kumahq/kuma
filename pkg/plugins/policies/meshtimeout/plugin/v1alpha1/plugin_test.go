@@ -61,7 +61,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("other-service", "second-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithRoutingBuilder(
+			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
 						xds_builders.EndpointMap().
@@ -428,7 +428,7 @@ var _ = Describe("MeshTimeout", func() {
 		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithRoutingBuilder(xds_builders.Routing().
+			WithRouting(xds_builders.Routing().
 				WithOutboundTargets(
 					xds_builders.EndpointMap().
 						AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).

@@ -273,7 +273,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRoutingBuilder(
+					WithRouting(
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets).
 							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
@@ -324,7 +324,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRoutingBuilder(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(policies).
 					Build(),
 			}
@@ -406,7 +406,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRoutingBuilder(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(policies).
 					Build(),
 			}
@@ -488,7 +488,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRoutingBuilder(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(policies).
 					Build(),
 			}

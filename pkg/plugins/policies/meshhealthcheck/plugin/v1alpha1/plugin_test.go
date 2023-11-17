@@ -124,7 +124,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						},
 					},
 				}).
-				WithRoutingBuilder(
+				WithRouting(
 					xds_builders.Routing().
 						WithOutboundTargets(
 							xds_builders.EndpointMap().

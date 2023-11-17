@@ -175,7 +175,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					},
 				},
-				Routing: paymentsAndBackendRouting(),
+				Routing: *paymentsAndBackendRouting().Build(),
 			},
 		}),
 		Entry("egress", testCase{
@@ -1407,14 +1407,13 @@ func createEndpointBuilderWith(zone string, ip string, extraTags map[string]stri
 }
 
 // TODO move to routing builder
-func paymentsAndBackendRouting() core_xds.Routing {
-	return *xds_builders.Routing().
+func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
+	return xds_builders.Routing().
 		WithOutboundTargets(
 			xds_builders.EndpointMap().
 				AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
 				AddEndpoint("payment", xds_samples.HttpEndpointBuilder()),
-		).
-		Build()
+		)
 }
 
 func paymentsListener() envoy_common.NamedResource {
