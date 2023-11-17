@@ -20,10 +20,10 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 	BeforeAll(func() {
 		var err error
-		globalCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+		globalCluster = NewK8sCluster(NewTestingT(), Kuma3, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
+		zoneCluster = NewK8sCluster(NewTestingT(), Kuma4, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
@@ -34,7 +34,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
-			Install(postgres.Install(Kuma2,
+			Install(postgres.Install(Kuma4,
 				postgres.WithK8sNamespace(Config.KumaNamespace),
 				postgres.WithUsername("mesh"),
 				postgres.WithPassword("mesh"),
