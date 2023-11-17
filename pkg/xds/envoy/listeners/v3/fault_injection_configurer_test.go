@@ -70,7 +70,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     headers:
                     - name: x-kuma-tags
                       safeRegexMatch:
-                        googleRe2: {}
                         regex: '.*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
                 - name: envoy.filters.http.router
                   typedConfig:
@@ -118,7 +117,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     headers:
                     - name: x-kuma-tags
                       safeRegexMatch:
-                        googleRe2: {}
                         regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.filters.http.router
                   typedConfig:
@@ -199,7 +197,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                      headers:
                      - name: x-kuma-tags
                        safeRegexMatch:
-                         googleRe2: {}
                          regex: .*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*&tag3=[^&]*value3[,&].*
                  - name: envoy.filters.http.fault
                    typedConfig:
@@ -211,7 +208,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                      headers:
                      - name: x-kuma-tags
                        safeRegexMatch:
-                         googleRe2: {}
                          regex: .*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*
                  - name: envoy.filters.http.fault
                    typedConfig:
@@ -223,7 +219,6 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                      headers:
                      - name: x-kuma-tags
                        safeRegexMatch:
-                         googleRe2: {}
                          regex: .*&tag1=.*&tag2=.*
                  - name: envoy.filters.http.router
                    typedConfig:

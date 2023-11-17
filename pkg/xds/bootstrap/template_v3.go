@@ -192,7 +192,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			Clusters: staticClusters,
 		},
 		DefaultRegexEngine: &envoy_core_v3.TypedExtensionConfig{
-			Name:        "GoogleRe2",
+			Name:        "envoy.regex_engines.google_re2",
 			TypedConfig: util_proto.MustMarshalAny(&regex_engines.GoogleRE2{}),
 		},
 	}

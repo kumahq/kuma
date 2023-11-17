@@ -24,7 +24,6 @@ filterChains:
           - name: x-kuma-tags
             stringMatch:
               safeRegex:
-                googleRe2: {}
                 regex: .*&kuma.io/service=[^&]*demo-client[,&].*
           responseRateLimit:
             fixedLimit:
@@ -48,7 +47,6 @@ filterChains:
             name: x-kuma-tags
             stringMatch:
               safeRegex:
-                googleRe2: {}
                 regex: .*&kuma.io/service=[^&]*demo-client[,&].*
           responseRateLimit:
             fixedLimit:
