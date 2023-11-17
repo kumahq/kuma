@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "gh-actions-build-test-dist"]
+    branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
@@ -39,21 +39,6 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-          # some steps don't support cross running, so write the actual arch down here.
-          ARCH=$(uname -m)
-          case $ARCH in
-            aarch64)
-            RUNNER_ARCH=arm64
-            ;;
-            x86_64)
-            RUNNER_ARCH=amd64
-            ;;
-            *)
-            echo "Unsupported arch '$ARCH'"
-            exit 1
-            ;;
-          esac
-          echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -72,10 +57,13 @@ jobs:
           make build
       - run: |
           make -j build/distributions
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - run: |
-          ENABLED_GOARCHES=$RUNNER_ARCH make -j images
+          make -j images
       - run: |
-          ENABLED_GOARCHES=$RUNNER_ARCH make -j docker/save
+          make -j docker/save
       - name: Cleanup redundant build outputs
         run: |
           find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
@@ -89,14 +77,10 @@ jobs:
           name: build-output
           path: build
           retention-days: 1
-      - name: Prepare for container structure test
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
-        run: |
-          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
-          ENABLED_GOARCHES=$RUNNER_ARCH make test/container-structure
+          make test/container-structure
   test:
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -116,9 +100,11 @@ jobs:
             ${{ runner.os }}-devtools
       - name: Free up disk space for the Runner
         run: |
-          echo "Removing large directories"
+          echo "Disk usage before cleanup"
+          sudo df -h
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           docker system prune --all -f
+          echo "Disk usage after cleanup"
           sudo df -h
       - name: Run tests
         run: |
@@ -139,29 +125,15 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-          # some steps don't support cross running, so write the actual arch down here.
-          ARCH=$(uname -m)
-          case $ARCH in
-            aarch64)
-            RUNNER_ARCH=arm64
-            ;;
-            x86_64)
-            RUNNER_ARCH=amd64
-            ;;
-            *)
-            echo "Unsupported arch '$ARCH'"
-            exit 1
-            ;;
-          esac
-          echo "RUNNER_ARCH=$RUNNER_ARCH" >> $GITHUB_ENV
       - name: "Check if force push"
-        if: |
-          contains(github.event.pull_request.labels.*.name, 'ci/force-publish') ||
-          false
+        if: contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
         # Open up the following conditions when we don't generate artifacts on CircleCI
-        #  github.event_name == 'push' ||
+        #  github.event_name == 'push'
         run: |
           echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -187,7 +159,7 @@ jobs:
           make publish/pulp
       - name: Load images
         run: |
-          ENABLED_GOARCHES=$RUNNER_ARCH make docker/load
+          make docker/load
       - name: Publish images
         run: |-
           make docker/login
@@ -196,5 +168,5 @@ jobs:
             make docker/logout
           }
           trap on_exit EXIT
-          ENABLED_GOARCHES=$RUNNER_ARCH make docker/push
-          ENABLED_GOARCHES=$RUNNER_ARCH make docker/manifest
+          make docker/push
+          make docker/manifest
