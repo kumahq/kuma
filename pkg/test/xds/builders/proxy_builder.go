@@ -55,8 +55,8 @@ func (p *ProxyBuilder) WithMetadata(metadata *xds.DataplaneMetadata) *ProxyBuild
 	return p
 }
 
-func (p *ProxyBuilder) WithPolicies(policies xds.MatchedPolicies) *ProxyBuilder {
-	p.res.Policies = policies
+func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuilder {
+	p.res.Policies = *policies.Build()
 	return p
 }
 

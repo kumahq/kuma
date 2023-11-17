@@ -12,7 +12,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
@@ -65,14 +64,7 @@ var _ = Describe("MeshFaultInjection", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(core_xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						api.MeshFaultInjectionType: {
-							Type:      api.MeshFaultInjectionType,
-							FromRules: given.fromRules,
-						},
-					},
-				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, given.fromRules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -239,14 +231,7 @@ var _ = Describe("MeshFaultInjection", func() {
 		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithPolicies(core_xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					api.MeshFaultInjectionType: {
-						Type:      api.MeshFaultInjectionType,
-						FromRules: fromRules,
-					},
-				},
-			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, fromRules)).
 			Build()
 		for n, p := range core_plugins.Plugins().ProxyPlugins() {
 			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
