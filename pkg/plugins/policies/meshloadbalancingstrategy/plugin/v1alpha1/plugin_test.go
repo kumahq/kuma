@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -174,20 +175,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					},
 				},
-				Routing: core_xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						"backend": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						"payment": {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-					},
-				},
+				Routing: *paymentsAndBackendRouting().Build(),
 			},
 		}),
 		Entry("egress", testCase{
@@ -1224,7 +1212,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 	)
 	type gatewayTestCase struct {
 		name        string
-		endpointMap core_xds.EndpointMap
+		endpointMap *xds_builders.EndpointMapBuilder
 		toRules     core_rules.ToRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
@@ -1291,12 +1279,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
-			endpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					createEndpointWith("test-zone", "192.168.1.1", map[string]string{}),
-					createEndpointWith("test-zone-2", "192.168.1.2", map[string]string{}),
-				},
-			},
+			endpointMap: xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{}),
+					createEndpointBuilderWith("test-zone-2", "192.168.1.2", map[string]string{}),
+				),
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -1333,18 +1320,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		}),
 		Entry("locality aware gateway", gatewayTestCase{
 			name: "locality_aware",
-			endpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					createEndpointWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
-					createEndpointWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
-					createEndpointWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
-					createEndpointWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
-					createEndpointWith("zone-2", "192.168.1.5", map[string]string{}),
-					createEndpointWith("zone-3", "192.168.1.6", map[string]string{}),
-					createEndpointWith("zone-4", "192.168.1.7", map[string]string{}),
-					createEndpointWith("zone-5", "192.168.1.8", map[string]string{}),
-				},
-			},
+			endpointMap: xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
+					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
+					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
+					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
+				),
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -1402,39 +1388,32 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 })
 
 func createEndpointWith(zone string, ip string, extraTags map[string]string) core_xds.Endpoint {
-	tags := map[string]string{
-		mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
-		mesh_proto.ZoneTag:     zone,
-	}
+	return *xds_builders.Endpoint().
+		WithTarget(ip).
+		WithPort(8080).
+		WithTags(mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, mesh_proto.ZoneTag, zone).
+		AddTagsMap(extraTags).
+		WithZone(zone).
+		Build()
+}
 
-	for k, v := range extraTags {
-		tags[k] = v
-	}
-
-	return core_xds.Endpoint{
-		Target:   ip,
-		Port:     8080,
-		Tags:     tags,
-		Locality: &core_xds.Locality{Zone: zone, Priority: 0},
-	}
+func createEndpointBuilderWith(zone string, ip string, extraTags map[string]string) *xds_builders.EndpointBuilder {
+	return xds_builders.Endpoint().
+		WithTarget(ip).
+		WithPort(8080).
+		WithTags(mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, mesh_proto.ZoneTag, zone).
+		AddTagsMap(extraTags).
+		WithZone(zone)
 }
 
 // TODO move to routing builder
-func paymentsAndBackendRouting() core_xds.Routing {
-	return core_xds.Routing{
-		OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-			"backend": {
-				{
-					Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-				},
-			},
-			"payment": {
-				{
-					Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-				},
-			},
-		},
-	}
+func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
+	return xds_builders.Routing().
+		WithOutboundTargets(
+			xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
+				AddEndpoint("payment", xds_samples.HttpEndpointBuilder()),
+		)
 }
 
 func paymentsListener() envoy_common.NamedResource {

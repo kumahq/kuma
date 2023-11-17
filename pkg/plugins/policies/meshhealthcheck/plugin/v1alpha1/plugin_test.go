@@ -124,30 +124,16 @@ var _ = Describe("MeshHealthCheck", func() {
 						},
 					},
 				}).
-				WithRouting(xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						httpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						splitHttpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						grpcServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolGRPC},
-							},
-						},
-						tcpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolTCP},
-							},
-						},
-					},
-				}).
+				WithRouting(
+					xds_builders.Routing().
+						WithOutboundTargets(
+							xds_builders.EndpointMap().
+								AddEndpoint(httpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(splitHttpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(grpcServiceTag, xds_samples.GrpcEndpointBuilder()).
+								AddEndpoint(tcpServiceTag, xds_samples.TcpEndpointBuilder()),
+						),
+				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
