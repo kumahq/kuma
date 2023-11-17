@@ -322,9 +322,6 @@ func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
 						Regex: string(header.Value),
-						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-						},
 					},
 				},
 			},

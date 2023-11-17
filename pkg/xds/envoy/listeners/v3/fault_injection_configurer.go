@@ -72,9 +72,6 @@ func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_route.Header
 		Name: tags.TagsHeaderName,
 		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-				},
 				Regex: regexOR,
 			},
 		},
