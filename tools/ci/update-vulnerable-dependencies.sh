@@ -9,7 +9,7 @@ for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[]
   name: $vulnerablePackage,
   current: .package.version,
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events[] | select(.fixed != null) | .fixed] | unique
-} | select(.fixedVersions | length > 0)'); do
+} | select(.fixedVersions | length > 0) | select(.name != "github.com/kumahq/kuma")'); do
   IFS=. read -r currentMajor currentMinor currentPatch <<< "$(jq -r .current <<< "$dep")"
   # Update to the first version that's greater than our current version
   for version in $(jq -cr .fixedVersions[] <<< "$dep" | sort -V); do # sort supports semver sort
@@ -24,7 +24,12 @@ for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[]
     # Do not downgrade in order to fix the vulnerability
     if ((currentMajor <= fixMajor)) && ((currentMinor <= fixMinor)) && ((currentPatch <= fixPatch)); then
       package=$(jq -r .name <<< "$dep")
-      go get -u "$package"@v"$version"
+      if [[ "$package" == "stdlib" ]]; then
+        yq -i e ".parameters.go_version.default = \"$version\"" .circleci/config.yml
+        go mod edit -go="$version"
+      else
+        go get -u "$package"@v"$version"
+      fi
       break
     fi
   done

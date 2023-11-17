@@ -23,12 +23,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_envoy "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -169,7 +168,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 	}),
 	)
 	type outboundsTestCase struct {
-		proxy      core_xds.Proxy
+		proxy      *core_xds.Proxy
 		xdsContext xds_context.Context
 	}
 	DescribeTable("Apply",
@@ -183,7 +182,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resourceSet, given.xdsContext, &given.proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
@@ -202,25 +201,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
+					}).
 					// This is a policy that doesn't apply to these services on
 					// purpose, so that the plugin is activated
 					// TODO: remove this when the plugin runs by default
-					Policies: core_xds.MatchedPolicies{
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -231,8 +221,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).Build(),
 			}
 		}()),
 		Entry("basic", func() outboundsTestCase {
@@ -250,22 +239,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -322,8 +302,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 		Entry("mixed-tcp-and-http-outbounds", func() outboundsTestCase {
@@ -347,22 +327,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -387,8 +358,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 		Entry("header-modifiers", func() outboundsTestCase {
@@ -401,22 +372,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -479,8 +441,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 		Entry("url-rewrite", func() outboundsTestCase {
@@ -493,22 +455,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -541,8 +494,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 		Entry("headers-match", func() outboundsTestCase {
@@ -555,22 +508,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -607,8 +551,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 		Entry("request-mirror", func() outboundsTestCase {
@@ -627,22 +571,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 			}
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing: core_xds.Routing{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(core_xds.Routing{
 						OutboundTargets: outboundTargets,
-					},
-					Policies: core_xds.MatchedPolicies{
+					}).
+					WithPolicies(core_xds.MatchedPolicies{
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_rules.ToRules{
@@ -692,8 +627,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							},
 						},
-					},
-				},
+					}).
+					Build(),
 			}
 		}()),
 	)

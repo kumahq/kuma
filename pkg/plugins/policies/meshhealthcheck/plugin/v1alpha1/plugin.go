@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -42,7 +40,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateways(ctx, policies.ToRules, clusters.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.ToRules, clusters.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -64,20 +62,11 @@ func applyToOutbounds(rules core_rules.ToRules, outboundClusters map[string]*env
 }
 
 func applyToGateways(
-	ctx xds_context.Context,
 	rules core_rules.ToRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	proxy *core_xds.Proxy,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
-		return nil
-	}
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
-
-	for _, listenerInfo := range gatewayListenerInfos {
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
 			for _, dest := range destinations {

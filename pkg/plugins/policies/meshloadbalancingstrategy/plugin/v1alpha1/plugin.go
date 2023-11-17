@@ -1,13 +1,13 @@
 package v1alpha1
 
 import (
-	"context"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -19,10 +19,13 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
@@ -37,8 +40,8 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources)
 }
 
-func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, es, resources)
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, tags, resources)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -53,14 +56,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
-	endpoints := policies_xds.GatherEndpoints(rs)
+	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(ctx, proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, endpoints); err != nil {
+	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints)
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled())
 }
 
 func (p plugin) configureDPP(
@@ -69,6 +72,8 @@ func (p plugin) configureDPP(
 	listeners policies_xds.Listeners,
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
+	egressEnabled bool,
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
@@ -84,7 +89,7 @@ func (p plugin) configureDPP(
 		conf := computed.Conf.(api.Conf)
 
 		if listener, ok := listeners.Outbound[oface]; ok {
-			if err := p.configureListener(listener, nil, conf.LoadBalancer); err != nil {
+			if err := p.configureListener(listener, nil, &conf); err != nil {
 				return err
 			}
 		}
@@ -96,64 +101,77 @@ func (p plugin) configureDPP(
 	// we configure clusters in a separate loop to avoid configuring the same cluster twice
 	for serviceName, conf := range serviceConfs {
 		if cluster, ok := clusters.Outbound[serviceName]; ok {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
+			}
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
 		for _, cluster := range clusters.OutboundSplit[serviceName] {
-			if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], cluster.Name, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
+			}
 		}
-		configureEndpoints(proxy.Dataplane, endpoints, serviceName, conf)
 	}
 
 	return nil
 }
 
 func configureEndpoints(
-	dataplane *core_mesh.DataplaneResource,
-	endpoints policies_xds.EndpointMap,
+	tags mesh_proto.MultiValueTagSet,
+	cluster *envoy_cluster.Cluster,
+	endpoints []*envoy_endpoint.ClusterLoadAssignment,
 	serviceName string,
 	conf api.Conf,
-) {
-	var zone string
-	if inbounds := dataplane.Spec.GetNetworking().GetInbound(); len(inbounds) != 0 {
-		zone = inbounds[0].GetTags()[mesh_proto.ZoneTag]
+	rs *core_xds.ResourceSet,
+	localZone string,
+	apiVersion core_xds.APIVersion,
+	egressEnabled bool,
+	origin string,
+) error {
+	if cluster.LoadAssignment != nil {
+		if err := ConfigureStaticEndpointsLocalityAware(tags, endpoints, cluster, conf, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
+			return err
+		}
+	} else {
+		if err := ConfigureEndpointsLocalityAware(tags, endpoints, conf, rs, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
+			return err
+		}
 	}
+
 	if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
-		for _, cla := range endpoints[serviceName] {
+		for _, cla := range endpoints {
 			for _, localityLbEndpoints := range cla.Endpoints {
-				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
 					localityLbEndpoints.Priority = 1
 				}
 			}
 		}
 	}
+	return nil
 }
 
 func (p plugin) configureGateway(
-	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	rules core_rules.ToRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
+	egressEnabled bool,
 ) error {
-	if !proxy.Dataplane.Spec.IsBuiltinGateway() {
+	gatewayListenerInfos := gateway_plugin.ExtractGatewayListeners(proxy)
+	if len(gatewayListenerInfos) == 0 {
 		return nil
 	}
 
-	gatewayListenerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
-	if err != nil {
-		return err
-	}
+	endpoints := policies_xds.GatherGatewayEndpoints(rs)
 
-	conf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
-	if conf == nil {
-		return nil
-	}
+	meshConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
 
 	for _, listenerInfo := range gatewayListenerInfos {
 		listener, ok := gatewayListeners[core_rules.InboundListener{
@@ -164,7 +182,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		if err := p.configureListener(listener, gatewayRoutes, conf.LoadBalancer); err != nil {
+		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
 			return err
 		}
 
@@ -180,12 +198,18 @@ func (p plugin) configureGateway(
 					continue
 				}
 
-				if err := p.configureCluster(cluster, conf.LoadBalancer); err != nil {
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
+				localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName))
+				if localityConf == nil {
+					continue
+				}
+				if err := p.configureCluster(cluster, *localityConf); err != nil {
 					return err
 				}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				configureEndpoints(proxy.Dataplane, endpoints, serviceName, *conf)
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -194,38 +218,27 @@ func (p plugin) configureGateway(
 }
 
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	localityAwareExternalServices := map[string][]core_xds.ServiceName{}
+	endpoints := policies_xds.GatherEgressEndpoints(rs)
+	clusters := policies_xds.GatherClusters(rs)
 
 	for _, mr := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for es, dynamic := range mr.Dynamic {
+		for serviceName, dynamic := range mr.Dynamic {
+			meshName := mr.Mesh.GetMeta().GetName()
 			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
 			if !ok {
 				continue
 			}
 
-			if !p.isLocalityAware(policies.FromRules) {
+			rule := p.computeFrom(policies.FromRules)
+			if rule == nil {
 				continue
 			}
+			conf := rule.Conf.(api.Conf)
 
-			meshName := mr.Mesh.GetMeta().GetName()
-			localityAwareExternalServices[meshName] = append(localityAwareExternalServices[meshName], es)
-		}
-	}
-
-	endpoints := policies_xds.GatherEgressEndpoints(rs)
-	zone := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetZone()
-
-	for meshName, externalServices := range localityAwareExternalServices {
-		for _, es := range externalServices {
-			clusterName := envoy_names.GetMeshClusterName(meshName, es)
-			cla, ok := endpoints[clusterName]
-			if !ok {
-				continue
-			}
-			for _, localityLbEndpoints := range cla.Endpoints {
-				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != zone {
-					localityLbEndpoints.Priority = 1
-				}
+			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -234,42 +247,37 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 }
 
 // Zone egress is a single point for multiple clients. At this moment we don't support different
-// configurations based on the client, that's why locality awareness is enabled if at least one
-// client requires it to be enabled.
-func (p plugin) isLocalityAware(fr core_rules.FromRules) bool {
-	for _, rules := range fr.Rules {
-		for _, r := range rules {
-			conf := r.Conf.(api.Conf)
-			if conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled) {
-				return true
-			}
-		}
+// configurations based on the client. That's why we are computing rules for MeshSubset
+func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
+	rules := maps.Values(fr.Rules)
+	if len(rules) == 0 {
+		return nil
 	}
-	return false
+	return rules[0].Compute(core_rules.MeshSubset())
 }
 
 func (p plugin) configureListener(
 	l *envoy_listener.Listener,
 	routes map[string]*envoy_route.RouteConfiguration,
-	lbConf *api.LoadBalancer,
+	conf *api.Conf,
 ) error {
-	if lbConf == nil {
+	if conf == nil || conf.LoadBalancer == nil {
 		return nil
 	}
 
 	var hashPolicy *[]api.HashPolicy
 
-	switch lbConf.Type {
+	switch conf.LoadBalancer.Type {
 	case api.RingHashType:
-		if lbConf.RingHash == nil {
+		if conf.LoadBalancer.RingHash == nil {
 			return nil
 		}
-		hashPolicy = lbConf.RingHash.HashPolicies
+		hashPolicy = conf.LoadBalancer.RingHash.HashPolicies
 	case api.MaglevType:
-		if lbConf.Maglev == nil {
+		if conf.LoadBalancer.Maglev == nil {
 			return nil
 		}
-		hashPolicy = lbConf.Maglev.HashPolicies
+		hashPolicy = conf.LoadBalancer.Maglev.HashPolicies
 	default:
 		return nil
 	}
@@ -301,9 +309,20 @@ func (p plugin) configureListener(
 	})
 }
 
-func (p plugin) configureCluster(c *envoy_cluster.Cluster, lbConf *api.LoadBalancer) error {
-	if lbConf == nil {
-		return nil
+func (p plugin) configureCluster(c *envoy_cluster.Cluster, config api.Conf) error {
+	if shouldUseLocalityWeightedLb(config) {
+		if err := (&xds.LocalityWeightedLbConfigurer{}).Configure(c); err != nil {
+			return err
+		}
 	}
-	return (&xds.LoadBalancerConfigurer{LoadBalancer: *lbConf}).Configure(c)
+	if config.LoadBalancer != nil {
+		if err := (&xds.LoadBalancerConfigurer{LoadBalancer: *config.LoadBalancer}).Configure(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func shouldUseLocalityWeightedLb(config api.Conf) bool {
+	return config.LocalityAwareness != nil && config.LocalityAwareness.LocalZone != nil && len(pointer.Deref(config.LocalityAwareness.LocalZone.AffinityTags)) > 0
 }

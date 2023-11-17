@@ -13,6 +13,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
@@ -385,14 +386,19 @@ var _ = Describe("Rules", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				var policies []core_model.Resource
+				var httpRoutes []core_model.Resource
 				for _, policyBytes := range util_yaml.SplitYAML(string(policiesBytes)) {
 					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
 					Expect(err).ToNot(HaveOccurred())
-					policies = append(policies, policy)
+					if policy.Descriptor().Name == v1alpha1.MeshHTTPRouteType {
+						httpRoutes = append(httpRoutes, policy)
+					} else {
+						policies = append(policies, policy)
+					}
 				}
 
 				// when
-				rules, err := core_rules.BuildToRules(policies)
+				rules, err := core_rules.BuildToRules(policies, httpRoutes)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then

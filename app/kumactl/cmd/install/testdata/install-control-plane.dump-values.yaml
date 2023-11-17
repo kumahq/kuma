@@ -158,6 +158,8 @@ controlPlane:
     path: /
     # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
     pathType: ImplementationSpecific
+    # -- Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port
+    servicePort: 5681
 
   globalZoneSyncService:
     # -- Whether to create a k8s service for the global zone sync
@@ -406,6 +408,9 @@ ingress:
   # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
   replicas: 1
 
+  # -- Log level for ingress (available values: off|info|debug)
+  logLevel: info
+
   # -- Define the resources to allocate to mesh ingress
   resources:
     requests:
@@ -525,6 +530,9 @@ egress:
   drainTime: 30s
   # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # -- Log level for egress (available values: off|info|debug)
+  logLevel: info
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:
@@ -682,22 +690,8 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
-  # -- If true, it uses new API for resource synchronization
-  deltaKds: false
-
-legacy:
-  # -- If true, use the legacy transparent proxy engine
-  transparentProxy: false
-  cni:
-    # -- If true, it installs legacy version of the CNI
-    enabled: false
-    image:
-      # -- CNI v1 image registry
-      registry: "docker.io/kumahq"
-      # -- CNI v1 image repository
-      repository: "install-cni"
-      # -- CNI v1 image tag
-      tag: "0.0.10"
+  # -- If false, it uses legacy API for resource synchronization
+  deltaKds: true
 
 # Postgres' settings for universal control plane on k8s
 postgres:

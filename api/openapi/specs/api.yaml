@@ -1,0 +1,323 @@
+openapi: 3.0.3
+info:
+  title: Kuma API
+  description: Kuma API
+  version: '1.0.0'
+paths:
+  /global-insight:
+    get:
+      summary: Get Global Insight
+      tags: ["GlobalInsight"]
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalInsightResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      operationId: get-global-insight
+      description: Returns a Global Insight object
+  /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: policyType
+          example: meshretries
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: path
+          name: policyName
+          example: retry-all
+          schema:
+            type: string
+          required: true
+          description: The type of the policy
+        - in: query
+          name: size
+          schema:
+            type: integer
+          required: false
+          description: The max number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          required: false
+          description: The offset of result
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: A sub string to filter resources by name
+      summary: Returns resources matched by this policy
+      description: Returns resources matched by this policy. In the case of `targetRef` policies we'll match using the top level `targetRef`
+      tags: ["Inspect"]
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      operationId: inspect-resources
+components:
+  schemas:
+    InspectDataplanesForPolicy:
+      type: object
+      title: InspectPolicy
+      description: A list of proxies
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        next:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/Meta'
+    BaseStatus:
+      type: object
+      title: Status
+      required:
+        - online
+        - total
+      properties:
+        online:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 30
+    FullStatus:
+      allOf:
+        - $ref: "#/components/schemas/BaseStatus"
+        - type: object
+          required:
+            - offline
+            - partiallyDegraded
+          properties:
+            offline:
+              type: integer
+              example: 15
+            partiallyDegraded:
+              type: integer
+              example: 5
+    ServicesStats:
+      type: object
+      title: ServicesStats
+      description: Services statistics
+      required:
+        - total
+        - internal
+        - external
+        - gatewayBuiltin
+        - gatewayDelegated
+      properties:
+        internal:
+          description: Internal services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        external:
+          type: object
+          description: External services statistics
+          required:
+            - total
+          properties:
+            total:
+              type: integer
+              example: 5
+        gatewayBuiltin:
+          description: Builtin Gateway services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayDelegated:
+          description: Delegated Gateway services statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+    ZonesStats:
+      type: object
+      title: Zones Stats
+      description: Zone statistics
+      required:
+        - controlPlanes
+        - zoneEgresses
+        - zoneIngresses
+      properties:
+        controlPlanes:
+          description: Control Planes statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+        zoneEgresses:
+          description: Zone Egresses statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+        zoneIngresses:
+          description: Zone Ingresses statistics
+          allOf:
+            - $ref: "#/components/schemas/BaseStatus"
+    DataplanesStats:
+      type: object
+      title: Dataplanes Stats
+      description: Dataplanes statistics
+      required:
+        - standard
+        - gatewayBuiltin
+        - gatewayDelegated
+      properties:
+        standard:
+          description: Standard dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayBuiltin:
+          description: Builtin Gateway dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+        gatewayDelegated:
+          description: Delegated Gateway dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/FullStatus"
+    PoliciesStats:
+      type: object
+      title: Policies Stats
+      description: Policies statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of policies
+          example: 30
+    MeshesStats:
+      type: object
+      title: Meshes Stats
+      description: Mesh statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of meshes
+          example: 3
+    GlobalInsight:
+      type: object
+      title: GlobalInsight
+      description: Global Insight contains statistics for all main resources
+      required:
+        - createdAt
+        - services
+        - zones
+        - dataplanes
+        - policies
+        - meshes
+      properties:
+        createdAt:
+          type: string
+          description: Time of Global Insight creation
+          format: date-time
+          example: '2023-01-11T02:30:42.227Z'
+        services:
+          description: Mesh services statistics
+          allOf:
+            - $ref: "#/components/schemas/ServicesStats"
+        zones:
+          description: Zones statistics
+          allOf:
+            - $ref: "#/components/schemas/ZonesStats"
+        dataplanes:
+          description: Dataplane proxy statistics
+          allOf:
+            - $ref: "#/components/schemas/DataplanesStats"
+        policies:
+          description: Policies statistics
+          allOf:
+            - $ref: "#/components/schemas/PoliciesStats"
+        meshes:
+          description: Mesh statistics
+          allOf:
+            - $ref: "#/components/schemas/MeshesStats"
+  responses:
+    GlobalInsightResponse:
+      description: A response containing global insight.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalInsight'
+          examples:
+            Single control plane response:
+              $ref: '#/components/examples/GlobalInsightExample'
+    InspectDataplanesForPolicyResponse:
+      description: A response containing global insight.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesForPolicy'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+    BadRequest:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
+  examples:
+    GlobalInsightExample:
+      value:
+        services:
+          total: 5
+          internal: 4
+          external: 1
+          gatewayBuiltin: 1
+          gatewayProvided: 2
+          internalByStatus:
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+        zones:
+          controlPlanes:
+            online: 1
+            total: 1
+          zoneEgresses:
+            online: 1
+            total: 1
+          zoneIngresses:
+            online: 1
+            total: 1
+          dataplanes:
+            online: 23
+            offline: 10
+            partiallyDegraded: 17
+            total: 50
+          policies:
+            total: 100
+          meshes:
+            total: 3
+    InspectDataplanesForPolicyExample:
+      value:
+        total: 100
+        next: http://localhost:5681/meshes/default/meshretries/_resources/dataplanes?offset=100
+        items:
+          - type: Dataplane
+            mesh: default
+            name: dp-1
+          - type: Dataplane
+            mesh: default
+            name: dp-2

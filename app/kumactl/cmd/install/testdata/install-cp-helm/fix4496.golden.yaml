@@ -392,7 +392,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: ee6892afab29a67bc0284f76da1e9fb8684f356964e6f8e1558184a535e30820
+        checksum/tls-secrets: 898408447c01709a9e7cb02e9250f64d1c84589507dc58042520d76cfa8a9c34
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -617,8 +617,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 30s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -710,6 +708,11 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -743,6 +746,11 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -792,8 +800,13 @@ webhooks:
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     namespaceSelector:
-      matchLabels:
-        kuma.io/sidecar-injection: enabled
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values: ["enabled"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -813,6 +826,11 @@ webhooks:
   - name: pods-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -835,6 +853,11 @@ webhooks:
   - name: kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore 
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -866,6 +889,11 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -920,6 +948,11 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -964,6 +997,11 @@ webhooks:
   - name: gateway.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:

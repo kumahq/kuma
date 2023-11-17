@@ -351,7 +351,6 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
-      transparentProxyV1: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1
       # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
       # installed using ebpf instead of iptables
       ebpf:
@@ -728,7 +727,7 @@ experimental:
   # format you can downgrade your cp
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
   # If true, KDS will sync using incremental xDS updates
-  kdsDeltaEnabled: false # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  kdsDeltaEnabled: true # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
   # This can trim the size of the ZoneIngress object significantly.
   # The drawback is that you cannot use filtered out tags for traffic routing.
@@ -744,6 +743,14 @@ experimental:
     fullResyncInterval: 60s # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
     # If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
     delayFullResync: false # ENV: KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
+  # If true then control plane computes reachable services automatically based on MeshTrafficPermission.
+  # Lack of MeshTrafficPermission is treated as Deny the traffic.
+  autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
+  # KDSSyncNameWithHashSuffix if true then during KDS sync resource name is going to be suffixed with hash.
+  # The hash is computed based on various resource characteristics like mesh, namespace, etc. The feature prevents name
+  # collisions when syncing policies with the same names but different meshes from Global(Universal) to Zone(Kubernetes).
+  # More extensive explanation of the problem and solution can be found in the MADR https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/029-kds-sync-hash-suffix.md
+  KDSSyncNameWithHashSuffix: false # ENV: KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX
 
 proxy:
   gateway:

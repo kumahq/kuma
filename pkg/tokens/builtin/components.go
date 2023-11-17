@@ -43,8 +43,12 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 	if err != nil {
 		return nil, err
 	}
+
 	return issuer.NewValidator(func(meshName string) (tokens.Validator, error) {
 		keys := keysByMesh[meshName]
+		// Also use keys that are not bound to any mesh
+		keys = append(keys, keysByMesh[""]...)
+
 		staticSigningKeyAccessor, err := tokens.NewStaticSigningKeyAccessor(keys)
 		if err != nil {
 			return nil, err

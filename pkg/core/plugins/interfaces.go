@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -100,5 +102,12 @@ type EgressPolicyPlugin interface {
 	PolicyPlugin
 	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
 	// should be applied on the zone egress.
-	EgressMatchedPolicies(*core_mesh.ExternalServiceResource, xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+	EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+}
+
+// ProxyPlugin a plugin to modify the proxy. This happens before any `PolicyPlugin` or any envoy generation. and it is applied both for Dataplanes and ZoneProxies
+type ProxyPlugin interface {
+	Plugin
+	// Apply mutate the proxy as needed.
+	Apply(ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy) error
 }

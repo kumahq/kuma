@@ -27,6 +27,9 @@ import (
 )
 
 type PodRedirect struct {
+	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
+	// keep in mind to update all other places listed in the issue
+
 	BuiltinDNSEnabled                        bool
 	BuiltinDNSPort                           uint32
 	ExcludeOutboundPorts                     string
@@ -36,7 +39,6 @@ type PodRedirect struct {
 	RedirectPortInbound                      uint32
 	RedirectPortInboundV6                    uint32
 	UID                                      string
-	UseTransparentProxyEngineV1              bool
 	TransparentProxyEnableEbpf               bool
 	TransparentProxyEbpfBPFFSPath            string
 	TransparentProxyEbpfCgroupPath           string
@@ -46,7 +48,7 @@ type PodRedirect struct {
 	ExcludeOutboundPortsForUIDs              []string
 }
 
-func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
@@ -108,14 +110,6 @@ func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedi
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	podRedirect.UseTransparentProxyEngineV1, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
-		transparentProxyV1,
-		metadata.KumaTransparentProxyingEngineV1,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
 		return nil, err
 	} else if exists {
@@ -161,8 +155,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--exclude-outbound-ports",
 		pr.ExcludeOutboundPorts,
 		"--verbose",
-		// Remove with https://github.com/kumahq/kuma/issues/4759
-		"--skip-resolv-conf",
 	}
 
 	for _, exclusion := range pr.ExcludeOutboundPortsForUIDs {
@@ -176,10 +168,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
 		)
-	}
-
-	if pr.UseTransparentProxyEngineV1 {
-		result = append(result, "--use-transparent-proxy-engine-v1")
 	}
 
 	if pr.TransparentProxyEnableEbpf {

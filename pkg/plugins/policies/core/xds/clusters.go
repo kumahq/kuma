@@ -1,42 +1,40 @@
 package xds
 
 import (
-	"regexp"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
-
-var splitClusterRegex = regexp.MustCompile("(.*)(-_[0-9+]_$)")
 
 type Clusters struct {
 	Inbound       map[string]*envoy_cluster.Cluster
 	Outbound      map[string]*envoy_cluster.Cluster
 	OutboundSplit map[string][]*envoy_cluster.Cluster
 	Gateway       map[string]*envoy_cluster.Cluster
+	Egress        map[string]*envoy_cluster.Cluster
 }
 
-func GatherClusters(rs *xds.ResourceSet) Clusters {
+func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 	clusters := Clusters{
 		Inbound:       map[string]*envoy_cluster.Cluster{},
 		Outbound:      map[string]*envoy_cluster.Cluster{},
 		OutboundSplit: map[string][]*envoy_cluster.Cluster{},
 		Gateway:       map[string]*envoy_cluster.Cluster{},
+		Egress:        map[string]*envoy_cluster.Cluster{},
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		cluster := res.Resource.(*envoy_cluster.Cluster)
 
 		switch res.Origin {
 		case generator.OriginOutbound:
-			serviceName := ServiceFromClusterName(cluster.Name)
+			serviceName := tags.ServiceFromClusterName(cluster.Name)
 			if serviceName != cluster.Name {
 				// first group is service name and second split number
 				clusters.OutboundSplit[serviceName] = append(clusters.OutboundSplit[serviceName], cluster)
@@ -47,20 +45,13 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 			clusters.Inbound[cluster.Name] = cluster
 		case metadata.OriginGateway:
 			clusters.Gateway[cluster.Name] = cluster
+		case egress.OriginEgress:
+			clusters.Egress[cluster.Name] = cluster
 		default:
 			continue
 		}
 	}
 	return clusters
-}
-
-func ServiceFromClusterName(name string) string {
-	matchedGroups := splitClusterRegex.FindStringSubmatch(name)
-	if len(matchedGroups) == 3 {
-		return matchedGroups[1]
-	} else {
-		return name
-	}
 }
 
 func GatherTargetedClusters(
@@ -93,7 +84,7 @@ func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Proto
 	externalEndpoints := routing.ExternalServiceOutboundTargets[serviceName]
 	allEndpoints = append(allEndpoints, externalEndpoints...)
 
-	return envoy_common.InferServiceProtocol(allEndpoints)
+	return generator.InferServiceProtocol(allEndpoints)
 }
 
 func HasExternalService(routing core_xds.Routing, serviceName string) bool {

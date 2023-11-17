@@ -255,15 +255,11 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
-{{- if and .Values.cni.enabled (not .Values.legacy.cni.enabled) }}
+{{- if .Values.cni.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
   value: "{{ include "kuma.name" . }}-cni"
-{{- end }}
-{{- if .Values.legacy.transparentProxy }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1
-  value: "true"
 {{- end }}
 {{- if .Values.experimental.ebpf.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
@@ -279,9 +275,9 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
-{{- if .Values.experimental.deltaKds }}
+{{- if not .Values.experimental.deltaKds }}
 - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-  value: "true"
+  value: "false"
 {{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
@@ -334,9 +330,9 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
-{{- if .Values.experimental.deltaKds }}
+{{- if not .Values.experimental.deltaKds }}
 - name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-  value: "true"
+  value: "false"
 {{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY

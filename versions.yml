@@ -65,12 +65,18 @@
   endOfLifeDate: "2024-06-23"
   branch: release-2.3
 - edition: kuma
-  version: 2.4.3
+  version: 2.4.4
   release: 2.4.x
-  latest: true
   releaseDate: "2023-08-29"
   endOfLifeDate: "2024-08-29"
   branch: release-2.4
+- edition: kuma
+  version: 2.5.0
+  release: 2.5.x
+  latest: true
+  releaseDate: "2023-11-15"
+  endOfLifeDate: "2024-11-15"
+  branch: release-2.5
 - edition: kuma
   version: preview
   release: dev

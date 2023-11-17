@@ -3,7 +3,7 @@ TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
 
 GINKGO_UNIT_TEST_FLAGS ?= \
-	--skip-package ./test,./pkg/transparentproxy/istio/tools --race
+	--skip-package ./test --race
 
 # -race requires CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
 UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),TESTCONTAINERS_RYUK_DISABLED=true,GINKGO_EDITOR_INTEGRATION=true)
@@ -16,7 +16,7 @@ ifdef TEST_REPORTS
 	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
 endif
 ifndef TEST_REPORTS
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "pkg/transparentproxy/istio/tools")
+	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests")
 endif
 
 $(REPORTS_DIR):

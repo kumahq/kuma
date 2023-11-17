@@ -30,6 +30,7 @@ resources:
               envoy.transport_socket_match:
                 kuma.io/protocol: http
                 kuma.io/zone: zone-1
+        loadBalancingWeight: 1
         locality:
           zone: zone-1
       - lbEndpoints:
@@ -49,5 +50,7 @@ resources:
         locality:
           zone: zone-2
         priority: 1
+      policy:
+        overprovisioningFactor: 200
     name: mesh-2:static-cluster
     type: STATIC

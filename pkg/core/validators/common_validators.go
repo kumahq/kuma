@@ -73,7 +73,7 @@ func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) Validatio
 		return err
 	}
 	if *value <= 0 {
-		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
+		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThanZero)
 	}
 	return err
 }
@@ -123,6 +123,40 @@ func ValidatePercentageOrNil(path PathBuilder, percentage *intstr.IntOrString) V
 	if dec.LessThan(decimal.Zero) || dec.GreaterThan(decimal.NewFromInt(100)) {
 		verr.AddViolationAt(path, HasToBeInPercentageRange)
 	}
+	return verr
+}
+
+func ValidateIntOrStringGreaterThan(path PathBuilder, number *intstr.IntOrString, minValue int) ValidationError {
+	var verr ValidationError
+	if number == nil {
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*number)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+	if dec.LessThanOrEqual(decimal.NewFromInt(int64(minValue))) {
+		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeGreaterThan, minValue))
+	}
+
+	return verr
+}
+
+func ValidateIntOrStringLessThan(path PathBuilder, number *intstr.IntOrString, maxValue int) ValidationError {
+	var verr ValidationError
+	if number == nil {
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*number)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+	if dec.GreaterThanOrEqual(decimal.NewFromInt(int64(maxValue))) {
+		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeLessThan, maxValue))
+	}
+
 	return verr
 }
 

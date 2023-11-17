@@ -5,6 +5,7 @@
 package system
 
 import (
+	"errors"
 	"fmt"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -497,10 +498,17 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 
 func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	return t.SetSpec(&system_proto.ZoneOverview{
-		Zone:        resource.GetSpec().(*system_proto.Zone),
-		ZoneInsight: insight.GetSpec().(*system_proto.ZoneInsight),
-	})
+	overview := &system_proto.ZoneOverview{
+		Zone: resource.GetSpec().(*system_proto.Zone),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*system_proto.ZoneInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneInsight'")
+		}
+		overview.ZoneInsight = ins
+	}
+	return t.SetSpec(overview)
 }
 
 var _ model.ResourceList = &ZoneOverviewResourceList{}

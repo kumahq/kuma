@@ -52,8 +52,6 @@ To run all code formatting, linting and vetting tools use the target:
 make check
 ```
 
-> `clang-format-lint` will not run if the tool is not installed manually: [#2441](https://github.com/kumahq/kuma/issues/2441)
-
 ## Testing
 
 We use Ginkgo as our testing framework. To run the existing test suite, you have several options:

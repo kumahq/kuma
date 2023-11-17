@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
@@ -18,7 +18,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
@@ -29,7 +29,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 }
 
 func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.MeshService,
 		},
@@ -208,7 +208,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 			}
 			errs.AddErrorAt(
 				path.Field("requestMirror").Field("backendRef"),
-				matcher_validators.ValidateTargetRef(filter.RequestMirror.BackendRef, &matcher_validators.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,
@@ -265,7 +265,7 @@ func validateBackendRefs(backendRefs *[]common_api.BackendRef) validators.Valida
 	for i, backendRef := range *backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			matcher_validators.ValidateTargetRef(backendRef.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 					common_api.MeshServiceSubset,

@@ -54,6 +54,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.ingress.annotations | object | `{}` | Map of ingress annotations. |
 | controlPlane.ingress.path | string | `"/"` | Ingress path. |
 | controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
+| controlPlane.ingress.servicePort | int | `5681` | Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port |
 | controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -126,6 +127,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.extraLabels | object | `{}` | Labels to add to resources, in addition to default labels |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
+| ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
@@ -156,6 +158,7 @@ A Helm chart for the Kuma Control Plane
 | egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress. Ignored when autoscaling is enabled. |
+| egress.logLevel | string | `"info"` | Log level for egress (available values: off|info|debug) |
 | egress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | egress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
@@ -202,12 +205,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
-| experimental.deltaKds | bool | `false` | If true, it uses new API for resource synchronization |
-| legacy.transparentProxy | bool | `false` | If true, use the legacy transparent proxy engine |
-| legacy.cni.enabled | bool | `false` | If true, it installs legacy version of the CNI |
-| legacy.cni.image.registry | string | `"docker.io/kumahq"` | CNI v1 image registry |
-| legacy.cni.image.repository | string | `"install-cni"` | CNI v1 image repository |
-| legacy.cni.image.tag | string | `"0.0.10"` | CNI v1 image tag |
+| experimental.deltaKds | bool | `true` | If false, it uses legacy API for resource synchronization |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |

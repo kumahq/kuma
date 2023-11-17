@@ -44,25 +44,25 @@ resources:
                   path: /v2
                 name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
-                  cluster: backend-_0_
+                  cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v2/
                 name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
-                  cluster: backend-_0_
+                  cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   path: /v3
                 name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
-                  cluster: backend-_0_
+                  cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v3/
                 name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
                 route:
-                  cluster: backend-_0_
+                  cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /

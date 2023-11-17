@@ -8,7 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `2.5.x`
 
-#### More strict validation rules for resource names
+### Transparent-proxy and CNI v1 removal
+
+v2 has been default since 2.2.x. We are therefore removing v1.
+
+### Deprecated argument to transparent-proxy
+
+Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
+We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+The previous versions will still work but will be removed in the future.
+
+### More strict validation rules for resource names
 
 In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
 
@@ -20,18 +30,41 @@ New rule:
 
 New rule is applied for CREATE operations. The old rule is still applied for UPDATE, but this is going to change in Kuma 2.7.x or later.
 
+### API
+
+#### overview API coherency
+
+These endpoints are getting replaced to achieve more coherency on the API:
+
+- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/_overview`
+- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/_overview`
+- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/_overview`
+- `/zones+insights` moves to `/zones/_overview`
+
+While you can use the old API they will be removed in a future version
+
+### Prometheus inbound listener is not secured by TrafficPermission anymore
+
+Due to the shadowing [issue](https://github.com/kumahq/kuma/issues/2417) with old TrafficPermission it was quite impossible to protect Prometheus inbound listener as expected.
+RBAC rules on the Prometheus inbound listener were blocking users from fully migrate to the new MeshTrafficPermission policy. 
+That's why we decided to discontinue TrafficPermission support on the Prometheus inbound listener starting 2.5.x.
+
+### Gateway API
+
+We support `v1` resources and `v1.0.0` of `gateway-api`. `v1beta1` resources are
+still supported but support for these WILL be removed in a future release.
+
+### KDS Delta enabled by default
+
+KDS Delta is enabled by default. You can fallback to SOTW KDS by setting `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=false`.
+As a side effect, on kubernetes policies synced will be persisted in the `kuma-system` namespace instead of `default`.
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change
 
 The configuration: `Metrics.Mesh.MinResyncTimeout` and `Metrics.Mesh.MaxResyncTimeout` are replaced by `Metrics.Mesh.MinResyncInterval` and `Metrics.Mesh.FullResyncInterval`.
 You can still use the current configs but it will be removed in the future.
-
-### Deprecated argument
-
-Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
-We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
-The previous versions will still work but will be removed in the future.
 
 ### **Breaking changes**
 

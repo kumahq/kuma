@@ -24,7 +24,7 @@ import (
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("error"), ctx, context.Background())
+	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
 	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err):
@@ -33,7 +33,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}) || errors.Is(err, &registry.InvalidResourceTypeError{}) || errors.Is(err, &store.PreconditionError{}):
+	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), errors.Is(err, &store.PreconditionError{}), errors.Is(err, &BadRequest{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",

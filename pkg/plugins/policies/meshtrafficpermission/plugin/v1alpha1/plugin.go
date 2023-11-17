@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -34,8 +35,8 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshTrafficPermissionType, dataplane, resources)
 }
 
-func (p plugin) EgressMatchedPolicies(es *core_mesh.ExternalServiceResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, es, resources)
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, tags, resources)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -82,6 +83,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
 		}
 		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				// we only want to configure RBAC on listeners protected by Kuma's TLS
+				continue
+			}
 			if err := configurer.Configure(filterChain); err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -20,6 +21,10 @@ type BootstrapServerConfig struct {
 
 func (b *BootstrapServerConfig) Sanitize() {
 	b.Params.Sanitize()
+}
+
+func (b *BootstrapServerConfig) PostProcess() error {
+	return multierr.Combine(b.Params.PostProcess())
 }
 
 func (b *BootstrapServerConfig) Validate() error {
@@ -38,6 +43,8 @@ func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 var _ config.Config = &BootstrapParamsConfig{}
 
 type BootstrapParamsConfig struct {
+	config.BaseConfig
+
 	// Address of Envoy Admin
 	AdminAddress string `json:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
@@ -50,9 +57,6 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
-}
-
-func (b *BootstrapParamsConfig) Sanitize() {
 }
 
 func (b *BootstrapParamsConfig) Validate() error {

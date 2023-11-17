@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type TransparentProxyConfig struct {
@@ -38,7 +40,7 @@ type TransparentProxyConfig struct {
 	RestoreLegacy             bool
 	Wait                      uint
 	WaitInterval              uint
-	MaxRetries                int
+	MaxRetries                *int
 	SleepBetweenRetries       time.Duration
 }
 
@@ -122,7 +124,7 @@ type LogConfig struct {
 }
 
 type RetryConfig struct {
-	MaxRetries         int
+	MaxRetries         *int
 	SleepBetweenReties time.Duration
 }
 
@@ -272,7 +274,7 @@ func defaultConfig() Config {
 		Wait:         5,
 		WaitInterval: 0,
 		Retry: RetryConfig{
-			MaxRetries:         4,
+			MaxRetries:         pointer.To(4),
 			SleepBetweenReties: 2 * time.Second,
 		},
 	}
@@ -413,7 +415,7 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	result.WaitInterval = cfg.WaitInterval
 
 	// .Retry
-	if cfg.Retry.MaxRetries > 0 {
+	if cfg.Retry.MaxRetries != nil {
 		result.Retry.MaxRetries = cfg.Retry.MaxRetries
 	}
 

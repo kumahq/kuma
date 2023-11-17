@@ -26,7 +26,8 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -50,24 +51,15 @@ var _ = Describe("MeshRetry", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := test_xds.CreateSampleMeshContext()
-		proxy := xds.Proxy{
-			Dataplane: builders.Dataplane().
+		context := xds_samples.SampleContext()
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("http-service", "grpc-service", "tcp-service").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
-				Build(),
-			Policies: xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshRetryType: {
-						Type:    api.MeshRetryType,
-						ToRules: given.toRules,
-					},
-				},
-			},
-			Routing: core_xds.Routing{
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithRouting(core_xds.Routing{
 				OutboundTargets: core_xds.EndpointMap{
 					"http-service": []core_xds.Endpoint{{
 						Tags: map[string]string{
@@ -85,12 +77,20 @@ var _ = Describe("MeshRetry", func() {
 						},
 					}},
 				},
-			},
-		}
+			}).
+			WithPolicies(xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshRetryType: {
+						Type:    api.MeshRetryType,
+						ToRules: given.toRules,
+					},
+				},
+			}).
+			Build()
 
 		// when
 		plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 		// then
 		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).
@@ -318,26 +318,28 @@ var _ = Describe("MeshRetry", func() {
 				Items: given.gatewayRoutes,
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-			proxy := xds.Proxy{
-				APIVersion: "v3",
-				Dataplane:  samples.GatewayDataplane(),
-				Policies: xds.MatchedPolicies{
+			xdsCtx := xds_samples.SampleContextWith(resources)
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshRetryType: {
 							Type:    api.MeshRetryType,
 							ToRules: given.toRules,
 						},
 					},
-				},
+				}).
+				Build()
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// then
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).

@@ -22,7 +22,8 @@ import (
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -42,40 +43,41 @@ var _ = Describe("MeshFaultInjection", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := test_xds.CreateSampleMeshContext()
-			proxy := core_xds.Proxy{
-				Dataplane: builders.Dataplane().
-					WithName("test").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddInbound(
-						builders.Inbound().
-							WithTags(map[string]string{mesh_proto.ProtocolTag: "http"}).
-							WithAddress("127.0.0.1").
-							WithPort(17777).
-							WithService("backend"),
-					).
-					AddInbound(
-						builders.Inbound().
-							WithTags(map[string]string{mesh_proto.ProtocolTag: "tcp"}).
-							WithAddress("127.0.0.1").
-							WithPort(17778).
-							WithService("frontend"),
-					).
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+			context := xds_samples.SampleContext()
+			proxy := xds_builders.Proxy().
+				WithDataplane(
+					builders.Dataplane().
+						WithName("test").
+						WithMesh("default").
+						WithAddress("127.0.0.1").
+						AddInbound(
+							builders.Inbound().
+								WithTags(map[string]string{mesh_proto.ProtocolTag: "http"}).
+								WithAddress("127.0.0.1").
+								WithPort(17777).
+								WithService("backend"),
+						).
+						AddInbound(
+							builders.Inbound().
+								WithTags(map[string]string{mesh_proto.ProtocolTag: "tcp"}).
+								WithAddress("127.0.0.1").
+								WithPort(17778).
+								WithService("frontend"),
+						),
+				).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						api.MeshFaultInjectionType: {
 							Type:      api.MeshFaultInjectionType,
 							FromRules: given.fromRules,
 						},
 					},
-				},
-			}
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			// when
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			// then
 			for i, expected := range given.expectedListeners {
@@ -234,28 +236,30 @@ var _ = Describe("MeshFaultInjection", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-		proxy := core_xds.Proxy{
-			APIVersion: "v3",
-			Dataplane:  samples.GatewayDataplane(),
-			Policies: core_xds.MatchedPolicies{
+		xdsCtx := xds_samples.SampleContextWith(resources)
+		proxy := xds_builders.Proxy().
+			WithDataplane(samples.GatewayDataplaneBuilder()).
+			WithPolicies(core_xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 					api.MeshFaultInjectionType: {
 						Type:      api.MeshFaultInjectionType,
 						FromRules: fromRules,
 					},
 				},
-			},
+			}).
+			Build()
+		for n, p := range core_plugins.Plugins().ProxyPlugins() {
+			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 		}
 		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
 		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 		// then
-		Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})
 })

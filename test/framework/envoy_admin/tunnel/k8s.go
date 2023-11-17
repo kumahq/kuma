@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
@@ -52,6 +53,31 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 	}
 
 	return &s, nil
+}
+
+func (t *K8sTunnel) GetClusters() (*clusters.Clusters, error) {
+	url := fmt.Sprintf("http://%s/stats?format=json", t.endpoint)
+
+	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf(
+			"got response with unexpected status code: %+q, Expected: %+q",
+			response.Status,
+			http.StatusText(http.StatusOK),
+		)
+	}
+
+	var c clusters.Clusters
+	if err := json.NewDecoder(response.Body).Decode(&c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }
 
 func (t *K8sTunnel) ResetCounters() error {

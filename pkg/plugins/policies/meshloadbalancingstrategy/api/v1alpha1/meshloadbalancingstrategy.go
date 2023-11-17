@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
@@ -38,7 +39,75 @@ type LocalityAwareness struct {
 	// Disabled allows to disable locality-aware load balancing.
 	// When disabled requests are distributed across all endpoints regardless of locality.
 	Disabled *bool `json:"disabled,omitempty"`
+	// LocalZone defines locality aware load balancing priorities between dataplane proxies inside a zone
+	LocalZone *LocalZone `json:"localZone,omitempty"`
+	// CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
+	// are unavailable
+	CrossZone *CrossZone `json:"crossZone,omitempty"`
 }
+
+type LocalZone struct {
+	// AffinityTags list of tags for local zone load balancing.
+	AffinityTags *[]AffinityTag `json:"affinityTags,omitempty"`
+}
+
+type AffinityTag struct {
+	// Key defines tag for which affinity is configured
+	Key string `json:"key"`
+	// Weight of the tag used for load balancing. The bigger the weight the bigger the priority.
+	// Percentage of local traffic load balanced to tag is computed by dividing weight by sum of weights from all tags.
+	// For example with two affinity tags first with weight 80 and second with weight 20,
+	// then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
+	// Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
+	// Default: If you do not specify weight we will adjust them so that 90% traffic goes to first tag, 9% to next, and 1% to third and so on.
+	Weight *uint32 `json:"weight,omitempty"`
+}
+
+type CrossZone struct {
+	// Failover defines list of load balancing rules in order of priority
+	Failover []Failover `json:"failover,omitempty"`
+	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
+	// next priority starts.
+	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
+	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
+	// Default 50
+	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
+}
+
+type Failover struct {
+	// From defines the list of zones to which the rule applies
+	From *FromZone `json:"from,omitempty"`
+	// To defines to which zones the traffic should be load balanced
+	To ToZone `json:"to"`
+}
+
+type FromZone struct {
+	Zones []string `json:"zones"`
+}
+
+type ToZone struct {
+	// Type defines how target zones will be picked from available zones
+	Type  ToZoneType `json:"type"`
+	Zones *[]string  `json:"zones,omitempty"`
+}
+
+type FailoverThreshold struct {
+	Percentage intstr.IntOrString `json:"percentage"`
+}
+
+// +kubebuilder:validation:Enum=None;Only;Any;AnyExcept
+type ToZoneType string
+
+const (
+	// Traffic will not be load balanced to any zone
+	None ToZoneType = "None"
+	// Traffic will be load balanced only to zones specified in zones list
+	Only ToZoneType = "Only"
+	// Traffic will be load balanced to every available zone
+	Any ToZoneType = "Any"
+	// Traffic will be load balanced to every available zone except these specified in zones list
+	AnyExcept ToZoneType = "AnyExcept"
+)
 
 // +kubebuilder:validation:Enum=RoundRobin;LeastRequest;RingHash;Random;Maglev
 type LoadBalancerType string

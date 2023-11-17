@@ -211,7 +211,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV1).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
@@ -355,6 +354,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -526,7 +526,6 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
-      transparentProxyV1: true
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -701,6 +700,8 @@ experimental:
     flushInterval: 10s
     fullResyncInterval: 15s
     delayFullResync: true
+  autoReachableServices: true
+  kdsSyncNameWithHashSuffix: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -830,7 +831,6 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
@@ -965,6 +965,8 @@ tracing:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
+				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
+				"KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX":                                         "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

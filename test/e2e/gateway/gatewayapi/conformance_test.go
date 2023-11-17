@@ -9,7 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgo_kube "k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
@@ -73,7 +74,8 @@ func TestConformance(t *testing.T) {
 	client, err := client.New(clientConfig, client.Options{})
 	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
+	g.Expect(gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
+	g.Expect(gatewayapi_v1.AddToScheme(client.Scheme())).To(Succeed())
 
 	clientset, err := clientgo_kube.NewForConfig(clientConfig)
 	g.Expect(err).ToNot(HaveOccurred())
@@ -92,7 +94,7 @@ func TestConformance(t *testing.T) {
 			suite.SupportGateway,
 			suite.SupportGatewayPort8080,
 			suite.SupportReferenceGrant,
-			suite.SupportHTTPResponseHeaderModification,
+			suite.SupportHTTPRouteResponseHeaderModification,
 			suite.SupportHTTPRoute,
 			suite.SupportHTTPRouteHostRewrite,
 			suite.SupportHTTPRouteMethodMatching,

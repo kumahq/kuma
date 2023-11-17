@@ -1,11 +1,13 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/matchers/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshLoadBalancingStrategyResource) validate() error {
@@ -20,7 +22,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
@@ -35,7 +37,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
@@ -49,6 +51,91 @@ func validateTo(to []To) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
+	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness))
+	return verr
+}
+
+func validateLocalityAwareness(localityAwareness *LocalityAwareness) validators.ValidationError {
+	var verr validators.ValidationError
+	if localityAwareness == nil {
+		return verr
+	}
+	verr.AddError("localZone", validateLocalZone(localityAwareness.LocalZone))
+	verr.AddError("crossZone", validateCrossZone(localityAwareness.CrossZone))
+	return verr
+}
+
+func validateLocalZone(localZone *LocalZone) validators.ValidationError {
+	var verr validators.ValidationError
+	if localZone == nil {
+		return verr
+	}
+
+	var weightSpecified int
+	for idx, affinityTag := range pointer.Deref(localZone.AffinityTags) {
+		path := validators.RootedAt("affinityTags").Index(idx)
+		if affinityTag.Key == "" {
+			verr.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
+		}
+		if affinityTag.Weight != nil {
+			verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("weight"), affinityTag.Weight))
+			weightSpecified++
+		}
+	}
+
+	if weightSpecified > 0 && weightSpecified != len(pointer.Deref(localZone.AffinityTags)) {
+		verr.AddViolation("affinityTags", "all or none affinity tags should have weight")
+	}
+	return verr
+}
+
+func validateCrossZone(crossZone *CrossZone) validators.ValidationError {
+	var verr validators.ValidationError
+	if crossZone == nil {
+		return verr
+	}
+
+	for idx, failover := range crossZone.Failover {
+		path := validators.RootedAt("failover").Index(idx)
+		if failover.From != nil {
+			if len(failover.From.Zones) == 0 {
+				verr.AddViolationAt(path.Field("from").Field("zones"), validators.MustNotBeEmpty)
+			}
+
+			for zoneIdx, from := range failover.From.Zones {
+				if from == "" {
+					verr.AddViolationAt(path.Field("from").Field("zones").Index(zoneIdx), validators.MustNotBeEmpty)
+				}
+			}
+		}
+
+		toZonesPath := path.Field("to").Field("zones")
+		switch failover.To.Type {
+		case Any, None:
+			if failover.To.Zones != nil && len(*failover.To.Zones) > 0 {
+				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must be empty when type is %s", failover.To.Type))
+			}
+		case AnyExcept, Only:
+			if failover.To.Zones == nil || len(*failover.To.Zones) == 0 {
+				verr.AddViolationAt(toZonesPath, fmt.Sprintf("must not be empty when type is %s", failover.To.Type))
+			}
+		default:
+			verr.AddViolationAt(path.Field("to").Field("type"), "unrecognized type")
+		}
+	}
+
+	verr.AddError("failoverThreshold", validateFailoverThreshold(crossZone.FailoverThreshold))
+
+	return verr
+}
+
+func validateFailoverThreshold(failoverThreshold *FailoverThreshold) validators.ValidationError {
+	var verr validators.ValidationError
+	if failoverThreshold == nil {
+		return verr
+	}
+	verr.Add(validators.ValidateIntOrStringGreaterThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 0))
+	verr.Add(validators.ValidateIntOrStringLessThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 100))
 	return verr
 }
 

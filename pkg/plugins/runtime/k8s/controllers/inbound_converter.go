@@ -16,12 +16,6 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-const (
-	KubeNamespaceTag = "k8s.kuma.io/namespace"
-	KubeServiceTag   = "k8s.kuma.io/service-name"
-	KubePortTag      = "k8s.kuma.io/service-port"
-)
-
 type InboundConverter struct {
 	NameExtractor NameExtractor
 }
@@ -125,10 +119,17 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 }
 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	ifaces := []*mesh_proto.Dataplane_Networking_Inbound{}
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
-		svcIfaces := inboundForService(zone, pod, svc)
-		ifaces = append(ifaces, svcIfaces...)
+		// Services of ExternalName type should not have any selectors.
+		// Kubernetes does not validate this, so in rare cases, a service of
+		// ExternalName type could point to a workload inside the mesh. If this
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
+		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
+			ifaces = append(ifaces, inboundForService(zone, pod, svc)...)
+		}
 	}
 
 	if len(ifaces) == 0 {
@@ -162,9 +163,9 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if len(ignoredLabels) > 0 {
 		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
-	tags[KubeServiceTag] = svc.Name
-	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeServiceTag] = svc.Name
+	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
 	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
@@ -222,7 +223,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone

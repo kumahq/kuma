@@ -13,7 +13,11 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+var _ core_config.Config = E2eConfig{}
+
 type E2eConfig struct {
+	core_config.BaseConfig
+
 	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
 	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
 	KumaNamespace                 string            `json:"namespace,omitempty"`
@@ -55,7 +59,7 @@ type E2eConfig struct {
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
-	KumaDeltaKDS                  bool              `json:"kumaDeltaKDS,omitempty" envconfig:"KUMA_DELTA_KDS"`
+	KumaLegacyKDS                 bool              `json:"kumaLegacyKDS,omitempty" envconfig:"KUMA_LEGACY_KDS"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -94,9 +98,6 @@ type MultizoneConfig struct {
 type ControlPlaneConfig struct {
 	Envs                 map[string]string `json:"envs,omitempty"`
 	AdditionalYamlConfig string            `json:"additionalYamlConfig,omitempty"`
-}
-
-func (c E2eConfig) Sanitize() {
 }
 
 func (c E2eConfig) Validate() error {
@@ -151,15 +152,17 @@ func (c E2eConfig) AutoConfigure() error {
 		Config.CIDR = "fd00:fd00::/64"
 	}
 
-	if Config.KumaDeltaKDS {
-		Config.KumaCpConfig.Multizone.KubeZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.KubeZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.UniZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
-		Config.KumaCpConfig.Multizone.UniZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "true"
+	if Config.KumaLegacyKDS {
+		Config.KumaCpConfig.Multizone.KubeZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.KubeZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.UniZone1.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
+		Config.KumaCpConfig.Multizone.UniZone2.Envs["KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"] = "false"
 	}
 
 	Config.Arch = runtime.GOARCH
 	Config.OS = runtime.GOOS
+
+	Config.KumaCpConfig.Multizone.Global.Envs["KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX"] = "true"
 
 	return nil
 }
@@ -218,11 +221,11 @@ var defaultConf = E2eConfig{
 	SuiteConfig: SuiteConfig{
 		Helm: HelmSuiteConfig{
 			Versions: []string{
-				"2.0.1",
+				"2.3.3",
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "1.6.0",
+			HelmVersion: "2.3.3",
 		},
 	},
 	K8sType:                      KindK8sType,
@@ -266,7 +269,7 @@ var defaultConf = E2eConfig{
 	ZoneIngressApp:       "kuma-ingress",
 	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
 	CleanupLogsOnSuccess: false,
-	KumaDeltaKDS:         false,
+	KumaLegacyKDS:        false,
 }
 
 func init() {

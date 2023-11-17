@@ -32,15 +32,28 @@ func AggregateMeshContexts(
 		meshContextsByName[mesh.Meta.GetName()] = meshCtx
 	}
 
+	hash := aggregatedHash(meshContexts)
+
 	egressByName := map[string]*core_mesh.ZoneEgressResource{}
 	if len(meshContexts) > 0 {
 		for _, egress := range meshContexts[0].Resources.ZoneEgresses().Items {
 			egressByName[egress.Meta.GetName()] = egress
 		}
+	} else {
+		var egressList core_mesh.ZoneEgressResourceList
+		if err := resManager.List(ctx, &egressList, core_store.ListOrdered()); err != nil {
+			return AggregatedMeshContexts{}, err
+		}
+
+		for _, egress := range egressList.GetItems() {
+			egressByName[egress.GetMeta().GetName()] = egress.(*core_mesh.ZoneEgressResource)
+		}
+
+		hash = sha256.Hash(hashResources(egressList.GetItems()...))
 	}
 
 	result := AggregatedMeshContexts{
-		Hash:               aggregatedHash(meshContexts),
+		Hash:               hash,
 		Meshes:             meshList.Items,
 		MeshContextsByName: meshContextsByName,
 		ZoneEgressByName:   egressByName,

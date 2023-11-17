@@ -11,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -24,8 +25,8 @@ type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
 func validProtocol(crossMesh bool, protocol gatewayapi.ProtocolType) bool {
 	switch protocol {
-	case gatewayapi.HTTPProtocolType, gatewayapi.HTTPSProtocolType:
-		return !crossMesh || protocol == gatewayapi.HTTPProtocolType
+	case gatewayapi_v1.HTTPProtocolType, gatewayapi_v1.HTTPSProtocolType:
+		return !crossMesh || protocol == gatewayapi_v1.HTTPProtocolType
 	default:
 	}
 
@@ -44,15 +45,15 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 		listenerConditions[listener] = append(
 			listenerConditions[listener],
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionAccepted),
+				Type:    string(gatewayapi_v1.ListenerConditionAccepted),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  string(reason),
 				Message: message,
 			},
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionProgrammed),
+				Type:    string(gatewayapi_v1.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
-				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Reason:  string(gatewayapi_v1.ListenerReasonInvalid),
 				Message: "detached",
 			},
 		)
@@ -66,15 +67,15 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 		listenerConditions[listener] = append(
 			listenerConditions[listener],
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionConflicted),
+				Type:    string(gatewayapi_v1.ListenerConditionConflicted),
 				Status:  kube_meta.ConditionTrue,
 				Reason:  string(reason),
 				Message: message,
 			},
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionProgrammed),
+				Type:    string(gatewayapi_v1.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
-				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Reason:  string(gatewayapi_v1.ListenerReasonInvalid),
 				Message: "conflicts found",
 			},
 		)
@@ -118,7 +119,7 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 			}
 			appendDetachedCondition(
 				l.Name,
-				gatewayapi.ListenerReasonUnsupportedProtocol,
+				gatewayapi_v1.ListenerReasonUnsupportedProtocol,
 				message,
 			)
 			continue
@@ -135,7 +136,7 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 			if num := portHostnames[hostnamePort]; num > 1 {
 				appendConflictedCondition(
 					l.Name,
-					gatewayapi.ListenerReasonHostnameConflict,
+					gatewayapi_v1.ListenerReasonHostnameConflict,
 					fmt.Sprintf("multiple listeners for %s:%d", *hn, l.Port),
 				)
 				continue
@@ -145,7 +146,7 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 		if protocols := portProtocols[l.Port]; len(protocols) > 1 {
 			appendConflictedCondition(
 				l.Name,
-				gatewayapi.ListenerReasonProtocolConflict,
+				gatewayapi_v1.ListenerReasonProtocolConflict,
 				fmt.Sprintf("multiple listeners on %d with conflicting protocols", l.Port),
 			)
 			continue
@@ -191,9 +192,9 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			// TODO admission webhook should prevent this
 			listenerConditions[l.Name] = append(listenerConditions[l.Name],
 				kube_meta.Condition{
-					Type:    string(gatewayapi.ListenerConditionProgrammed),
+					Type:    string(gatewayapi_v1.ListenerConditionProgrammed),
 					Status:  kube_meta.ConditionFalse,
-					Reason:  string(gatewayapi.ListenerReasonInvalid),
+					Reason:  string(gatewayapi_v1.ListenerReasonInvalid),
 					Message: fmt.Sprintf("unexpected protocol %s", l.Protocol),
 				},
 			)
@@ -210,9 +211,9 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 		if len(unsupportedRouteGroupKinds) > 0 {
 			listenerConditions[l.Name] = append(listenerConditions[l.Name],
 				kube_meta.Condition{
-					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+					Type:    string(gatewayapi_v1.ListenerConditionResolvedRefs),
 					Status:  kube_meta.ConditionFalse,
-					Reason:  string(gatewayapi.ListenerReasonInvalidRouteKinds),
+					Reason:  string(gatewayapi_v1.ListenerReasonInvalidRouteKinds),
 					Message: fmt.Sprintf("unexpected RouteGroupKind %q", strings.Join(unsupportedRouteGroupKinds, ", ")),
 				},
 			)
@@ -276,14 +277,14 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 			return nil, nil, err
 		} else if !permitted {
 			return nil, &certRefCondition{
-				reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
+				reason:  string(gatewayapi_v1.ListenerReasonRefNotPermitted),
 				message: fmt.Sprintf("reference to %s not permitted by any ReferenceGrant", name),
 			}, nil
 		}
 
 		if *certRef.Kind != "Secret" || *certRef.Group != "" {
 			return nil, &certRefCondition{
-				reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+				reason:  string(gatewayapi_v1.ListenerReasonInvalidCertificateRef),
 				message: fmt.Sprintf("invalid reference to %s/%s", *certRef.Group, *certRef.Kind),
 			}, nil
 		}
@@ -292,7 +293,7 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 		if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), secret); err != nil {
 			if kube_apierrs.IsNotFound(err) {
 				return nil, &certRefCondition{
-					reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+					reason:  string(gatewayapi_v1.ListenerReasonInvalidCertificateRef),
 					message: fmt.Sprintf("invalid reference to %s", name),
 				}, nil
 			}
@@ -303,7 +304,7 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 		data, err := convertSecret(secret)
 		if err != nil {
 			return nil, &certRefCondition{
-				reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+				reason:  string(gatewayapi_v1.ListenerReasonInvalidCertificateRef),
 				message: err.Error(),
 			}, nil
 		}
@@ -314,7 +315,7 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 		})
 	}
 
-	if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
+	if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi_v1.TLSModePassthrough {
 		return nil, nil, nil // todo admission webhook should prevent this
 	}
 
@@ -342,23 +343,23 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 	conditions = append(
 		conditions,
 		kube_meta.Condition{
-			Type:   string(gatewayapi.ListenerConditionAccepted),
+			Type:   string(gatewayapi_v1.ListenerConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.ListenerReasonAccepted),
+			Reason: string(gatewayapi_v1.ListenerReasonAccepted),
 		},
 		kube_meta.Condition{
-			Type:   string(gatewayapi.ListenerConditionConflicted),
+			Type:   string(gatewayapi_v1.ListenerConditionConflicted),
 			Status: kube_meta.ConditionFalse,
-			Reason: string(gatewayapi.ListenerReasonNoConflicts),
+			Reason: string(gatewayapi_v1.ListenerReasonNoConflicts),
 		},
 	)
 
 	var resolvedRefConditions []kube_meta.Condition
 
-	if unresolvableCertRef != nil && !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
+	if unresolvableCertRef != nil && !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi_v1.ListenerConditionResolvedRefs)) {
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+				Type:    string(gatewayapi_v1.ListenerConditionResolvedRefs),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  unresolvableCertRef.reason,
 				Message: unresolvableCertRef.message,
@@ -366,27 +367,27 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 		)
 	}
 
-	if !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
+	if !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi_v1.ListenerConditionResolvedRefs)) {
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:   string(gatewayapi.ListenerConditionResolvedRefs),
+				Type:   string(gatewayapi_v1.ListenerConditionResolvedRefs),
 				Status: kube_meta.ConditionTrue,
-				Reason: string(gatewayapi.ListenerReasonResolvedRefs),
+				Reason: string(gatewayapi_v1.ListenerReasonResolvedRefs),
 			},
 		)
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:   string(gatewayapi.ListenerConditionProgrammed),
+				Type:   string(gatewayapi_v1.ListenerConditionProgrammed),
 				Status: kube_meta.ConditionTrue,
-				Reason: string(gatewayapi.ListenerReasonProgrammed),
+				Reason: string(gatewayapi_v1.ListenerReasonProgrammed),
 			},
 		)
 	} else {
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionProgrammed),
+				Type:    string(gatewayapi_v1.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
-				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Reason:  string(gatewayapi_v1.ListenerReasonInvalid),
 				Message: "unable to resolve refs",
 			},
 		)

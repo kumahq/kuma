@@ -27,16 +27,6 @@ spec:
     - --log-level=info
     - --concurrency=2
     env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.namespace
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -70,12 +60,20 @@ spec:
       value: 31s
     - name: KUMA_DATAPLANE_MESH
       value: default
-    - name: KUMA_DATAPLANE_NAME
-      value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -144,7 +142,6 @@ spec:
     - --exclude-outbound-ports
     - 4321,7654
     - --verbose
-    - --skip-resolv-conf
     command:
     - /usr/bin/kumactl
     - install

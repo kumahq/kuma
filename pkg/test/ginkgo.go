@@ -1,6 +1,8 @@
 package test
 
 import (
+	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -49,4 +51,19 @@ func runSpecs(t *testing.T, description string) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
 	ginkgo.RunSpecs(t, description)
+}
+
+// EntriesForFolder returns all files in the folder as gingko table entries for files *.input.yaml this makes it easier to add test by only adding input and golden files
+func EntriesForFolder(folder string) []ginkgo.TableEntry {
+	var entries []ginkgo.TableEntry
+	testDir := path.Join("testdata", folder)
+	files, err := os.ReadDir(testDir)
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".input.yaml") {
+			input := path.Join(testDir, f.Name())
+			entries = append(entries, ginkgo.Entry(input, input))
+		}
+	}
+	return entries
 }

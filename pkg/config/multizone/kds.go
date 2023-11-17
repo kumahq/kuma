@@ -9,6 +9,8 @@ import (
 )
 
 type KdsServerConfig struct {
+	config.BaseConfig
+
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
 	GrpcPort uint32 `json:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
 	// Interval for refreshing state of the world
@@ -46,7 +48,8 @@ type KdsServerConfig struct {
 
 var _ config.Config = &KdsServerConfig{}
 
-func (c *KdsServerConfig) Sanitize() {
+func (c *KdsServerConfig) PostProcess() error {
+	return multierr.Combine(c.ZoneHealthCheck.PostProcess())
 }
 
 func (c *KdsServerConfig) Validate() error {
@@ -82,6 +85,8 @@ func (c *KdsServerConfig) Validate() error {
 }
 
 type KdsClientConfig struct {
+	config.BaseConfig
+
 	// Interval for refreshing state of the world
 	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
 	// If true, TLS connection to the server won't be verified.
@@ -103,23 +108,17 @@ type KdsClientConfig struct {
 
 var _ config.Config = &KdsClientConfig{}
 
-func (k KdsClientConfig) Sanitize() {
-}
-
-func (k KdsClientConfig) Validate() error {
-	return nil
-}
+var _ config.Config = ZoneHealthCheckConfig{}
 
 type ZoneHealthCheckConfig struct {
+	config.BaseConfig
+
 	// PollInterval is the interval between the global CP checking ZoneInsight for
 	// health check pings and interval between zone CP sending health check pings
 	PollInterval config_types.Duration `json:"pollInterval" envconfig:"kuma_multizone_global_kds_zone_health_check_poll_interval"`
 	// Timeout is the time after the last health check that a zone counts as
 	// no longer online
 	Timeout config_types.Duration `json:"timeout" envconfig:"kuma_multizone_global_kds_zone_health_check_timeout"`
-}
-
-func (c ZoneHealthCheckConfig) Sanitize() {
 }
 
 func (c ZoneHealthCheckConfig) Validate() error {

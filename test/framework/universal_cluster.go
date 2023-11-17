@@ -160,7 +160,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (c *UniversalCluster) CreateZoneEgress(
 	name, ip, dpYAML, token string,
 	builtinDNS bool,
 ) error {
-	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", 0, app.dpEnv)
+	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", app.concurrency, app.dpEnv)
 
 	if err := c.addEgressEnvoyTunnel(); err != nil {
 		return err
@@ -297,7 +297,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
 	if err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 		builtindns := opts.builtindns == nil || *opts.builtindns
 		if transparent {
-			app.setupTransparent(c.controlplane.Networking().IP, builtindns, opts.transparentProxyV1)
+			app.setupTransparent(builtindns)
 		}
 
 		ip := app.ip

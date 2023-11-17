@@ -17,6 +17,7 @@ const (
 	caPlugin            pluginType = "ca"
 	authnAPIServer      pluginType = "authn-api-server"
 	policyPlugin        pluginType = "policy"
+	proxyPlugin         pluginType = "proxy"
 )
 
 type PluginName string
@@ -40,6 +41,7 @@ type Registry interface {
 	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
 	PolicyPlugins() map[PluginName]PolicyPlugin
+	ProxyPlugins() map[PluginName]ProxyPlugin
 }
 
 type RegistryMutator interface {
@@ -61,6 +63,7 @@ func NewRegistry() MutableRegistry {
 		ca:             make(map[PluginName]CaPlugin),
 		authnAPIServer: make(map[PluginName]AuthnAPIServerPlugin),
 		policy:         make(map[PluginName]PolicyPlugin),
+		proxy:          make(map[PluginName]ProxyPlugin),
 	}
 }
 
@@ -72,6 +75,7 @@ type registry struct {
 	secretStore    map[PluginName]SecretStorePlugin
 	configStore    map[PluginName]ConfigStorePlugin
 	runtime        map[PluginName]RuntimePlugin
+	proxy          map[PluginName]ProxyPlugin
 	ca             map[PluginName]CaPlugin
 	authnAPIServer map[PluginName]AuthnAPIServerPlugin
 	policy         map[PluginName]PolicyPlugin
@@ -107,6 +111,10 @@ func (r *registry) CaPlugins() map[PluginName]CaPlugin {
 
 func (r *registry) RuntimePlugins() map[PluginName]RuntimePlugin {
 	return r.runtime
+}
+
+func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
+	return r.proxy
 }
 
 func (r *registry) PolicyPlugins() map[PluginName]PolicyPlugin {
@@ -181,6 +189,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(policyPlugin, name, old, policy)
 		}
 		r.policy[name] = policy
+	}
+	if proxy, ok := plugin.(ProxyPlugin); ok {
+		if old, exists := r.policy[name]; exists {
+			return pluginAlreadyRegisteredError(proxyPlugin, name, old, proxy)
+		}
+		r.proxy[name] = proxy
 	}
 	return nil
 }

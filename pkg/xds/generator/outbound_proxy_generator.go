@@ -17,6 +17,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -26,19 +27,6 @@ var outboundLog = core.Log.WithName("outbound-proxy-generator")
 const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct{}
-
-// Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag
-// We generate a separate Envoy cluster with _X_ suffix. SplitCounter ensures that we have different X for every split in one Dataplane
-// Each split is distinct for the whole Dataplane so we can avoid accidental cluster overrides.
-type splitCounter struct {
-	counter int
-}
-
-func (s *splitCounter) getAndIncrement() int {
-	counter := s.counter
-	s.counter++
-	return counter
-}
 
 func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
@@ -55,12 +43,11 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
-	splitCounter := &splitCounter{}
 
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
 		protocol := InferProtocol(proxy, clusters)
@@ -340,7 +327,6 @@ func (OutboundProxyGenerator) determineRoutes(
 	proxy *model.Proxy,
 	outbound *mesh_proto.Dataplane_Networking_Outbound,
 	clusterCache map[string]string,
-	splitCounter *splitCounter,
 	hasEgress bool,
 ) envoy_common.Routes {
 	var routes envoy_common.Routes
@@ -368,11 +354,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				continue
 			}
 
-			name := service
-
-			if len(destination.GetDestination()) > 1 {
-				name = envoy_names.GetSplitClusterName(service, splitCounter.getAndIncrement())
-			}
+			name, _ := tags.Tags(destination.Destination).DestinationClusterName(nil)
 
 			if mesh, ok := destination.Destination[mesh_proto.MeshTag]; ok {
 				// The name should be distinct to the service & mesh combination

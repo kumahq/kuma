@@ -137,6 +137,13 @@ func (d *DataplaneBuilder) AddOutbound(outbound *OutboundBuilder) *DataplaneBuil
 	return d
 }
 
+func (d *DataplaneBuilder) AddOutbounds(outbounds []*OutboundBuilder) *DataplaneBuilder {
+	for _, outbound := range outbounds {
+		d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, outbound.Build())
+	}
+	return d
+}
+
 func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilder {
 	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
 		Port: FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound)),
@@ -188,6 +195,13 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 			mesh_proto.ServiceTag: name,
 		},
 		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+	}
+	return d
+}
+
+func (d *DataplaneBuilder) AddBuiltInGatewayTags(tags map[string]string) *DataplaneBuilder {
+	for k, v := range tags {
+		d.res.Spec.Networking.Gateway.Tags[k] = v
 	}
 	return d
 }

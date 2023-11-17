@@ -53,11 +53,22 @@ func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 	return fields
 }
 
-const TagsKey = "io.kuma.tags"
+const (
+	TagsKey   = "io.kuma.tags"
+	LbTagsKey = "envoy.lb"
+)
 
 func ExtractTags(metadata *envoy_core.Metadata) tags.Tags {
 	tags := tags.Tags{}
 	for key, value := range metadata.GetFilterMetadata()[TagsKey].GetFields() {
+		tags[key] = value.GetStringValue()
+	}
+	return tags
+}
+
+func ExtractLbTags(metadata *envoy_core.Metadata) tags.Tags {
+	tags := tags.Tags{}
+	for key, value := range metadata.GetFilterMetadata()[LbTagsKey].GetFields() {
 		tags[key] = value.GetStringValue()
 	}
 	return tags

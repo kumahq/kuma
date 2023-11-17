@@ -1,6 +1,7 @@
 package dnsserver
 
 import (
+	"embed"
 	"os"
 	"path/filepath"
 
@@ -8,6 +9,9 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
+
+//go:embed Corefile
+var config embed.FS
 
 func GenerateConfigFile(cfg kuma_dp.DNS, config []byte) (string, error) {
 	configFile := filepath.Join(cfg.ConfigDir, "Corefile")

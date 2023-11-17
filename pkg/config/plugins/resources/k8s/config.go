@@ -12,15 +12,14 @@ func DefaultKubernetesStoreConfig() *KubernetesStoreConfig {
 	}
 }
 
-// Kubernetes store configuration
-type KubernetesStoreConfig struct {
-	// Namespace where Control Plane is installed to.
-	SystemNamespace string `json:"systemNamespace" envconfig:"kuma_store_kubernetes_system_namespace"`
-}
-
 var _ config.Config = &KubernetesStoreConfig{}
 
-func (p *KubernetesStoreConfig) Sanitize() {
+// KubernetesStoreConfig defines Kubernetes store configuration
+type KubernetesStoreConfig struct {
+	config.BaseConfig
+
+	// Namespace where Control Plane is installed to.
+	SystemNamespace string `json:"systemNamespace" envconfig:"kuma_store_kubernetes_system_namespace"`
 }
 
 func (p *KubernetesStoreConfig) Validate() error {

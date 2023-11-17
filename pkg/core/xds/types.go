@@ -64,7 +64,9 @@ type ExternalService struct {
 
 type Locality struct {
 	Zone     string
+	SubZone  string
 	Priority uint32
+	Weight   uint32
 }
 
 // Endpoint holds routing-related information about a single endpoint.
@@ -150,6 +152,10 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
+	RuntimeExtensions map[string]interface{}
+	// Zone the zone the proxy is in
+	Zone string
 }
 
 type ServerSideMTLSCerts struct {
@@ -264,7 +270,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return e.Locality.Zone
+	return fmt.Sprintf("%s:%s", e.Locality.Zone, e.Locality.SubZone)
 }
 
 func (e Endpoint) HasLocality() bool {

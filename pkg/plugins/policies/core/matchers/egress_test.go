@@ -59,7 +59,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.EgressMatchedPolicies(policies_api.MeshTrafficPermissionType, es, resources)
+			policies, err := matchers.EgressMatchedPolicies(policies_api.MeshTrafficPermissionType, es.Spec.Tags, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -76,7 +76,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.EgressMatchedPolicies(v1alpha1.MeshLoadBalancingStrategyType, es, resources)
+			policies, err := matchers.EgressMatchedPolicies(v1alpha1.MeshLoadBalancingStrategyType, es.Spec.Tags, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

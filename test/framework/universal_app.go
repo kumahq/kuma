@@ -128,6 +128,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -154,6 +155,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -177,6 +179,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
@@ -199,9 +202,10 @@ type UniversalApp struct {
 	ip            string
 	verbose       bool
 	mesh          string
+	concurrency   int
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
 		logsPath:      universal_logs.CurrentLogsPath(Config.UniversalE2ELogsPath),
@@ -209,6 +213,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 		verbose:       verbose,
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
+		concurrency:   concurrency,
 	}
 	if containerName != "" {
 		app.containerName = containerName
@@ -472,21 +477,13 @@ func (s *UniversalApp) CreateDP(
 	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
 
-func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, transparentProxyV1 bool) {
+func (s *UniversalApp) setupTransparent(builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-dp-uid", "5678",
 		"--skip-dns-conntrack-zone-split",
-	}
-
-	if transparentProxyV1 {
-		args = append(args,
-			"--kuma-cp-ip", cpIp,
-			"--use-transparent-proxy-engine-v1",
-		)
-	} else {
-		args = append(args, "--exclude-inbound-ports", "22")
+		"--exclude-inbound-ports", "22",
 	}
 
 	if builtindns {

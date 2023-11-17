@@ -10,6 +10,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -286,6 +287,18 @@ func (a ByMeta) Less(i, j int) bool {
 
 func (a ByMeta) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
+const (
+	// K8sNamespaceComponent identifies the namespace component of a resource name on Kubernetes.
+	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
+	// The value has a format of a Kubernetes label name.
+	K8sNamespaceComponent = "k8s.kuma.io/namespace"
+
+	// K8sNameComponent identifies the name component of a resource name on Kubernetes.
+	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
+	// The value has a format of a Kubernetes label name.
+	K8sNameComponent = "k8s.kuma.io/name"
+)
+
 type ResourceType string
 
 // ResourceNameExtensions represents an composite resource name in environments
@@ -316,6 +329,31 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+}
+
+// IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`
+// This is required because in multi-zone policies may have names different from the name they are defined with.
+func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMeta) bool {
+	if refMeta.GetMesh() != resourceMeta.GetMesh() {
+		return false
+	}
+
+	if len(refMeta.GetNameExtensions()) == 0 {
+		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
+	}
+
+	nsRef := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	nsRes := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	if nsRef == "" || nsRef != nsRes {
+		return false
+	}
+
+	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
+}
+
+func equalNames(mesh, n1, n2 string) bool {
+	// instead of dragging the info if it's Zone or Standalone we can simply check 3 possible combinations
+	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {

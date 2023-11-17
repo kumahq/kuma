@@ -1,12 +1,16 @@
 package gateway
 
 import (
+	"context"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
@@ -14,14 +18,21 @@ import (
 )
 
 func init() {
-	core_plugins.Register(metadata.PluginName, &plugin{})
+	core_plugins.Register(metadata.PluginName, NewPlugin())
 }
 
 var log = core.Log.WithName("plugin").WithName("runtime").WithName("gateway")
 
 type plugin struct{}
 
-var _ core_plugins.BootstrapPlugin = &plugin{}
+var (
+	_ core_plugins.BootstrapPlugin = &plugin{}
+	_ core_plugins.ProxyPlugin     = &plugin{}
+)
+
+func NewPlugin() core_plugins.Plugin {
+	return &plugin{}
+}
 
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	if context.Config().Environment == config_core.KubernetesEnvironment {
@@ -32,6 +43,22 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 		}
 	}
 	return nil
+}
+
+func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error {
+	if proxy.Dataplane == nil || !proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
+	proxy.RuntimeExtensions[metadata.PluginName] = gatewayListenerInfoFromProxy(ctx, &meshContext, proxy)
+	return nil
+}
+
+func ExtractGatewayListeners(proxy *core_xds.Proxy) []GatewayListenerInfo {
+	ext := proxy.RuntimeExtensions[metadata.PluginName]
+	if ext == nil {
+		return nil
+	}
+	return ext.([]GatewayListenerInfo)
 }
 
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {

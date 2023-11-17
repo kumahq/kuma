@@ -1,0 +1,75 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "DataplaneOverview",
+   "mesh": "mesh1",
+   "name": "gateway-builtin",
+   "creationTime": "2018-07-17T16:05:36.995Z",
+   "modificationTime": "2018-07-17T16:05:36.995Z",
+   "dataplane": {
+    "networking": {
+     "address": "127.0.0.1",
+     "gateway": {
+      "tags": {
+       "service": "gateway"
+      },
+      "type": "BUILTIN"
+     }
+    }
+   },
+   "dataplaneInsight": {
+    "subscriptions": [
+     {
+      "id": "stream-id-1",
+      "controlPlaneInstanceId": "cp-1",
+      "connectTime": "2019-07-01T00:00:00Z",
+      "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
+       "total": {},
+       "cds": {},
+       "eds": {},
+       "lds": {},
+       "rds": {}
+      }
+     }
+    ]
+   }
+  },
+  {
+   "type": "DataplaneOverview",
+   "mesh": "mesh1",
+   "name": "gateway-delegated",
+   "creationTime": "2018-07-17T16:05:36.995Z",
+   "modificationTime": "2018-07-17T16:05:36.995Z",
+   "dataplane": {
+    "networking": {
+     "address": "127.0.0.1",
+     "gateway": {
+      "tags": {
+       "service": "gateway"
+      }
+     }
+    }
+   },
+   "dataplaneInsight": {
+    "subscriptions": [
+     {
+      "id": "stream-id-1",
+      "controlPlaneInstanceId": "cp-1",
+      "connectTime": "2019-07-01T00:00:00Z",
+      "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
+       "total": {},
+       "cds": {},
+       "eds": {},
+       "lds": {},
+       "rds": {}
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "next": null
+}

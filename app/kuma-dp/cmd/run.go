@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -130,7 +131,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
-			if err := rootCtx.DataplaneTokenGenerator(cfg); err != nil {
+			tokenComp, err := rootCtx.DataplaneTokenGenerator(cfg)
+			if err != nil {
 				runLog.Error(err, "unable to get or generate dataplane token")
 				return err
 			}
@@ -143,10 +145,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := make(chan struct{})
+			// gracefulCtx indicate that the process received a signal to shutdown
 			gracefulCtx, ctx := opts.SetupSignalHandler()
+			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
+			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			components := []component.Component{
+				tokenComp,
 				component.NewResilientComponent(
 					runLog.WithName("access-log-streamer"),
 					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
@@ -158,17 +163,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
-				Quit:      shouldQuit,
+				OnFinish:  cancelComponents,
 			}
 
-			if cfg.DNS.Enabled &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
-					Config: *cfg,
-					Stdout: cmd.OutOrStdout(),
-					Stderr: cmd.OutOrStderr(),
-					Quit:   shouldQuit,
+					Config:   *cfg,
+					Stdout:   cmd.OutOrStdout(),
+					Stderr:   cmd.OutOrStderr(),
+					OnFinish: cancelComponents,
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)
@@ -223,43 +226,44 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
-			dataplane, err := envoy.New(opts)
+			envoyComponent, err := envoy.New(opts)
 			if err != nil {
 				return err
 			}
+			components = append(components, envoyComponent)
 
-			components = append(components, dataplane)
 			metricsServer := metrics.New(
 				metricsSocketPath,
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
 			components = append(components, metricsServer)
-
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
+			stopComponents := make(chan struct{})
 			go func() {
-				<-gracefulCtx.Done()
-				runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
-				if err := dataplane.DrainConnections(); err != nil {
-					runLog.Error(err, "could not drain connections")
-				} else {
-					runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-					select {
-					case <-time.After(cfg.Dataplane.DrainTime.Duration):
-					case <-ctx.Done():
+				select {
+				case <-gracefulCtx.Done():
+					runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
+					if err := envoyComponent.DrainConnections(); err != nil {
+						runLog.Error(err, "could not drain connections")
+					} else {
+						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+						select {
+						case <-time.After(cfg.Dataplane.DrainTime.Duration):
+						case <-ctx.Done():
+						}
 					}
+				case <-componentCtx.Done():
 				}
 				runLog.Info("stopping all Kuma DP components")
-				if shouldQuit != nil {
-					close(shouldQuit)
-				}
+				close(stopComponents)
 			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
+			if err := rootCtx.ComponentManager.Start(stopComponents); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
@@ -286,6 +290,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyLogLevel, "envoy-log-level", "", "Envoy log level. Available values are: [trace][debug][info][warning|warn][error][critical][off]. By default it inherits Kuma DP logging level.")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyComponentLogLevel, "envoy-component-log-level", "", "Configures Envoy's --component-log-level")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")

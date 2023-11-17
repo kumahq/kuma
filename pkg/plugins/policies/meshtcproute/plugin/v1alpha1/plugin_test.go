@@ -16,6 +16,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -23,12 +24,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_envoy "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func getResource(
@@ -159,7 +159,7 @@ var _ = Describe("MeshTCPRoute", func() {
 	)
 
 	type outboundsTestCase struct {
-		proxy      core_xds.Proxy
+		proxy      *core_xds.Proxy
 		xdsContext xds_context.Context
 	}
 
@@ -174,7 +174,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resourceSet, given.xdsContext, &given.proxy)).
+			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).
 				To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
@@ -301,21 +301,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing:    routing,
-					Policies:   policies,
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(routing).
+					WithPolicies(policies).
+					Build(),
 			}
 		}()),
 
@@ -373,21 +364,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			routing := core_xds.Routing{OutboundTargets: outboundTargets}
 
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing:    routing,
-					Policies:   policies,
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(routing).
+					WithPolicies(policies).
+					Build(),
 			}
 		}()),
 
@@ -486,21 +468,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			routing := core_xds.Routing{OutboundTargets: outboundTargets}
 
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing:    routing,
-					Policies:   policies,
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(routing).
+					WithPolicies(policies).
+					Build(),
 			}
 		}()),
 
@@ -599,21 +572,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			routing := core_xds.Routing{OutboundTargets: outboundTargets}
 
 			return outboundsTestCase{
-				xdsContext: xds_context.Context{
-					ControlPlane: &xds_context.ControlPlaneContext{
-						Secrets: &xds.TestSecrets{},
-					},
-					Mesh: xds_context.MeshContext{
-						Resource:    samples.MeshDefault(),
-						EndpointMap: outboundTargets,
-					},
-				},
-				proxy: core_xds.Proxy{
-					APIVersion: xds_envoy.APIV3,
-					Dataplane:  samples.DataplaneWeb(),
-					Routing:    routing,
-					Policies:   policies,
-				},
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(routing).
+					WithPolicies(policies).
+					Build(),
 			}
 		}()),
 	)

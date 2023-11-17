@@ -5,7 +5,6 @@ package install
 
 import (
 	"fmt"
-	"net"
 	os_user "os/user"
 	"runtime"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type transparentProxyArgs struct {
@@ -38,7 +38,6 @@ type transparentProxyArgs struct {
 	DNSUpstreamTargetChain         string
 	StoreFirewalld                 bool
 	SkipDNSConntrackZoneSplit      bool
-	UseTransparentProxyEngineV1    bool
 	EbpfEnabled                    bool
 	EbpfProgramsSourcePath         string
 	EbpfInstanceIP                 string
@@ -72,7 +71,6 @@ func newInstallTransparentProxy() *cobra.Command {
 		DNSUpstreamTargetChain:         "RETURN",
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
-		UseTransparentProxyEngineV1:    false,
 		EbpfEnabled:                    false,
 		EbpfProgramsSourcePath:         "/kuma/ebpf",
 		EbpfBPFFSPath:                  "/sys/fs/bpf",
@@ -81,7 +79,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		VnetNetworks:                   []string{},
 		Wait:                           5,
 		WaitInterval:                   0,
-		MaxRetries:                     5,
+		MaxRetries:                     4,
 		SleepBetweenRetries:            2 * time.Second,
 	}
 	cmd := &cobra.Command{
@@ -157,10 +155,6 @@ runuser -u kuma-dp -- \
 					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
 				}
 
-				if args.UseTransparentProxyEngineV1 {
-					return errors.Errorf("--use-transparent-proxy-engine-v1 flag cannot be specified when --ebpf-enabled is provided")
-				}
-
 				if args.StoreFirewalld {
 					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used\n"))
 				}
@@ -205,18 +199,11 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the uid of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
-	// Deprecation issue: https://github.com/kumahq/kuma/issues/4759
 	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
-	// Deprecation issue: https://github.com/kumahq/kuma/issues/4759
-	_ = cmd.Flags().Bool("skip-resolv-conf", false, "[Deprecated]")
-	_ = cmd.Flags().MarkDeprecated("skip-resolv-conf", "we never change resolveConf so this flag has no effect, you can stop using it")
 	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
-	_ = cmd.Flags().IP("kuma-cp-ip", net.IPv4(0, 0, 0, 0), "[Deprecated]")
-	_ = cmd.Flags().MarkDeprecated("kuma-cp-ip", "Running a DNS inside the CP is not possible anymore")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
-	cmd.Flags().BoolVar(&args.UseTransparentProxyEngineV1, "use-transparent-proxy-engine-v1", args.UseTransparentProxyEngineV1, "use legacy transparent proxy engine v1")
 
 	// ebpf
 	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
@@ -294,21 +281,10 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		Stderr:                    cmd.ErrOrStderr(),
 		Wait:                      args.Wait,
 		WaitInterval:              args.WaitInterval,
-		MaxRetries:                args.MaxRetries,
+		MaxRetries:                pointer.To(args.MaxRetries),
 		SleepBetweenRetries:       args.SleepBetweenRetries,
 	}
-
-	if args.UseTransparentProxyEngineV1 {
-		tp = transparentproxy.V1()
-
-		// best effort cleanup before we apply the rules (again?)
-		_, err := tp.Cleanup(cfg)
-		if err != nil {
-			return errors.Wrapf(err, "unable to invoke cleanup")
-		}
-	} else {
-		tp = transparentproxy.V2()
-	}
+	tp = transparentproxy.V2()
 
 	output, err := tp.Setup(cfg)
 	if err != nil {

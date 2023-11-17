@@ -11,6 +11,7 @@ import (
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
@@ -48,7 +49,7 @@ func findRouteListenerAttachment(
 
 		// From determines whether we are permitted to attach to this ParentRef
 		switch *ns.From {
-		case gatewayapi.NamespacesFromSelector:
+		case gatewayapi_v1.NamespacesFromSelector:
 			// TODO, the gateway controller/webhook should verify this isn't an
 			// error
 			selector, err := kube_meta.LabelSelectorAsSelector(ns.Selector)
@@ -61,13 +62,13 @@ func findRouteListenerAttachment(
 			} else {
 				listeners[l.Name] = Allowed
 			}
-		case gatewayapi.NamespacesFromSame:
+		case gatewayapi_v1.NamespacesFromSame:
 			if gateway.Namespace != routeNs.GetName() {
 				listeners[l.Name] = NotPermitted
 			} else {
 				listeners[l.Name] = Allowed
 			}
-		case gatewayapi.NamespacesFromAll:
+		case gatewayapi_v1.NamespacesFromAll:
 			listeners[l.Name] = Allowed
 		}
 	}

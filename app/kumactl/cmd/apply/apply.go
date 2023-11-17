@@ -13,8 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	yaml_output "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -132,10 +131,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					return err
 				}
 			}
-			p, err := printers.NewGenericPrinter(output.YAMLFormat)
-			if err != nil {
-				return err
-			}
+			p := yaml_output.NewPrinter()
 			for _, resource := range resources {
 				if rs == nil {
 					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {

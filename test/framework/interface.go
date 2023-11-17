@@ -42,12 +42,10 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
-	cniV1                       bool
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
 	yamlConfig                  string
-	transparentProxyV1          bool
 	apiHeaders                  []string
 	zoneName                    string
 	verifyKuma                  bool
@@ -64,7 +62,6 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
-	k.transparentProxyV1 = false
 	k.verifyKuma = true
 	k.setupKumactl = true
 
@@ -115,8 +112,8 @@ type appDeploymentOptions struct {
 	appendDataplaneConfig string
 	boundToContainerIp    bool
 	serviceAddress        string
-	transparentProxyV1    bool
 	dpEnvs                map[string]string
+	additionalTags        map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -317,15 +314,9 @@ func WithEgress() KumaDeploymentOption {
 	})
 }
 
-func WithCNI(version ...CNIVersion) KumaDeploymentOption {
-	if len(version) > 1 {
-		panic("only one arg is supported")
-	}
+func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-		if len(version) == 1 && version[0] == CNIVersion1 {
-			o.cniV1 = true
-		}
 	})
 }
 
@@ -512,10 +503,9 @@ func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	})
 }
 
-func WithTransparentProxyV1(transparent bool) AppDeploymentOption {
+func WithAdditionalTags(tags map[string]string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.transparent = &transparent
-		o.transparentProxyV1 = true
+		o.additionalTags = tags
 	})
 }
 

@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -34,14 +34,11 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, meshContext, dp)
-	if err != nil {
-		return nil, err
-	}
+	routing, destinations := p.resolveRouting(ctx, meshContext, dp)
 
 	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not match policies")
 	}
 
 	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
@@ -56,13 +53,21 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	secretsTracker := envoy.NewSecretsTracker(meshName, allMeshNames)
 
 	proxy := &core_xds.Proxy{
-		Id:             core_xds.FromResourceKey(key),
-		APIVersion:     p.APIVersion,
-		Dataplane:      dp,
-		Routing:        *routing,
-		Policies:       *matchedPolicies,
-		SecretsTracker: secretsTracker,
-		Metadata:       &core_xds.DataplaneMetadata{},
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.APIVersion,
+		Dataplane:         dp,
+		Routing:           *routing,
+		Policies:          *matchedPolicies,
+		SecretsTracker:    secretsTracker,
+		Metadata:          &core_xds.DataplaneMetadata{},
+		Zone:              p.Zone,
+		RuntimeExtensions: map[string]interface{}{},
+	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, meshContext, proxy)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed applying proxy plugin: %s", k)
+		}
 	}
 	return proxy, nil
 }
@@ -71,11 +76,8 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
-) (*core_xds.Routing, core_xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
-	if err != nil {
-		return nil, nil, err
-	}
+) (*core_xds.Routing, core_xds.DestinationMap) {
+	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
 	p.resolveVIPOutbounds(meshContext, dataplane)
 
@@ -97,7 +99,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}
-	return routing, destinations, nil
+	return routing, destinations
 }
 
 func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) {
@@ -114,11 +116,21 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, ob := range meshContext.VIPOutbounds {
 		generatedVips[ob.Address] = true
 	}
+	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		service := outbound.GetService()
-		if len(reachableServices) != 0 && !reachableServices[service] {
-			continue // ignore VIP outbound if reachableServices is defined and not specified
+		if len(reachableServices) != 0 {
+			if !reachableServices[service] {
+				// ignore VIP outbound if reachableServices is defined and not specified
+				// Reachable services takes precedence over reachable services graph.
+				continue
+			}
+		} else {
+			// static reachable services takes precedence over the graph
+			if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
+				continue
+			}
 		}
 		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
 			// Skip overlapping outbound interface with inbound.
@@ -159,7 +171,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
-	for name, p := range plugins.Plugins().PolicyPlugins() {
+	for name, p := range core_plugins.Plugins().PolicyPlugins() {
 		res, err := p.MatchedPolicies(dataplane, resources)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)

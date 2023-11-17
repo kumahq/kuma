@@ -30,16 +30,6 @@ spec:
     - --log-level=info
     - --concurrency=99
     env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.namespace
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -73,8 +63,6 @@ spec:
       value: 5s
     - name: KUMA_DATAPLANE_MESH
       value: default
-    - name: KUMA_DATAPLANE_NAME
-      value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_CORE_DNS_BINARY_PATH
@@ -89,6 +77,16 @@ spec:
       value: "25055"
     - name: NEW_ENV_VAR
       value: "123"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -157,7 +155,6 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
-    - --skip-resolv-conf
     - --redirect-all-dns-traffic
     - --redirect-dns-port
     - "25053"

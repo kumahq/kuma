@@ -28,13 +28,12 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		transparentProxyV1 bool
-		pod                *kube_core.Pod
-		commandLine        []string
+		pod         *kube_core.Pod
+		commandLine []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV1, given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -67,7 +66,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-inbound-ports", "12000",
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
-				"--skip-resolv-conf",
 				"--exclude-outbound-ports-for-uids", "0",
 				"--exclude-outbound-ports-for-uids", "12",
 				"--exclude-outbound-ports-for-uids", "tcp:11003:3",
@@ -99,7 +97,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-inbound-ports", "12000",
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
-				"--skip-resolv-conf",
 			},
 		}),
 
@@ -125,61 +122,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-inbound-ports", "12000",
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
-				"--skip-resolv-conf",
-			},
-		}),
-		Entry("should generate engine v1", testCaseKumactl{
-			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
-						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
-						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
-						metadata.KumaSidecarUID:                                 "12345",
-						metadata.KumaTransparentProxyingEngineV1:                metadata.AnnotationEnabled,
-					},
-				},
-			},
-			commandLine: []string{
-				"--redirect-outbound-port", "25100",
-				"--redirect-inbound=" + "true",
-				"--redirect-inbound-port", "25204",
-				"--redirect-inbound-port-v6", "25206",
-				"--kuma-dp-uid", "12345",
-				"--exclude-inbound-ports", "12000",
-				"--exclude-outbound-ports", "11000",
-				"--verbose",
-				"--skip-resolv-conf",
-				"--use-transparent-proxy-engine-v1",
-			},
-		}),
-		Entry("should generate engine v1 if enabled even without annotation", testCaseKumactl{
-			transparentProxyV1: true,
-			pod: &kube_core.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
-						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
-						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
-						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
-						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
-						metadata.KumaSidecarUID:                                 "12345",
-					},
-				},
-			},
-			commandLine: []string{
-				"--redirect-outbound-port", "25100",
-				"--redirect-inbound=" + "true",
-				"--redirect-inbound-port", "25204",
-				"--redirect-inbound-port-v6", "25206",
-				"--kuma-dp-uid", "12345",
-				"--exclude-inbound-ports", "12000",
-				"--exclude-outbound-ports", "11000",
-				"--verbose",
-				"--skip-resolv-conf",
-				"--use-transparent-proxy-engine-v1",
 			},
 		}),
 		Entry("should generate for Gateway", testCaseKumactl{
@@ -207,7 +149,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-inbound-ports", "12000",
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
-				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
 			},
@@ -242,7 +183,6 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-inbound-ports", "12000",
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
-				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
 				"--ebpf-enabled",

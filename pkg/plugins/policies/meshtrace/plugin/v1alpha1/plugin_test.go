@@ -6,9 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -16,9 +14,10 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -58,49 +57,30 @@ var _ = Describe("MeshTrace", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_context.Context{}
-			proxy := xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "backend",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-									},
-									Address: "127.0.0.1",
-									Port:    17777,
-								},
-							},
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Address: "127.0.0.1",
-									Port:    27777,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "other-service",
-									},
-								},
-							},
-						},
-					},
-				},
-				Policies: xds.MatchedPolicies{
+			context := xds_samples.SampleContext()
+			proxy := xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().
+					WithName("backend").
+					AddInbound(builders.Inbound().
+						WithService("backend").
+						WithAddress("127.0.0.1").
+						WithPort(17777)).
+					AddOutbound(builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777))).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshTraceType: {
 							Type:            api.MeshTraceType,
 							SingleItemRules: given.singleItemRules,
 						},
 					},
-				},
-			}
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
