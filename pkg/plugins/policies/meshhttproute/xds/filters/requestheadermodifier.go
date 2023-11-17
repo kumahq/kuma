@@ -8,7 +8,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type RequestHeaderModifierConfigurer struct {
@@ -35,8 +34,12 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 
 	for _, set := range mod.Set {
 		for i, headerValue := range headerValues(set.Value) {
+			appendAction := envoy_config_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+			if i > 0 {
+				appendAction = envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+			}
 			replace := &envoy_config_core.HeaderValueOption{
-				Append: util_proto.Bool(i > 0),
+				AppendAction: appendAction,
 				Header: &envoy_config_core.HeaderValue{
 					Key:   string(set.Name),
 					Value: headerValue,
@@ -48,7 +51,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 	for _, add := range mod.Add {
 		for _, headerValue := range headerValues(add.Value) {
 			appendOption := &envoy_config_core.HeaderValueOption{
-				Append: util_proto.Bool(true),
+				AppendAction: envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 				Header: &envoy_config_core.HeaderValue{
 					Key:   string(add.Name),
 					Value: headerValue,

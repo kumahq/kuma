@@ -44,12 +44,16 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHo
 
 func (c RoutesConfigurer) setHeadersModifications(route *envoy_config_route_v3.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
 	for _, add := range modify.GetRequestHeaders().GetAdd() {
+		appendAction := envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+		if add.Append {
+			appendAction = envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+		}
 		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
 			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},
-			Append: util_proto.Bool(add.Append),
+			AppendAction: appendAction,
 		})
 	}
 	for _, remove := range modify.GetRequestHeaders().GetRemove() {
@@ -57,12 +61,16 @@ func (c RoutesConfigurer) setHeadersModifications(route *envoy_config_route_v3.R
 	}
 
 	for _, add := range modify.GetResponseHeaders().GetAdd() {
+		appendAction := envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+		if add.Append {
+			appendAction = envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+		}
 		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
 			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},
-			Append: util_proto.Bool(add.Append),
+			AppendAction: appendAction,
 		})
 	}
 	for _, remove := range modify.GetResponseHeaders().GetRemove() {
