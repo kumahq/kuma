@@ -21,11 +21,10 @@ healthChecks:
     - header:
         key: x-kuma-tags
         value: '&kuma.io/service=backend&'
-    - append: true
-      header:
+    - header:
         key: x-some-header
         value: value
-    - append: false
+    - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
       header:
         key: x-some-other-header
         value: value
