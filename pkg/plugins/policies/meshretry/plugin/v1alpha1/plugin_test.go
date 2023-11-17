@@ -59,25 +59,14 @@ var _ = Describe("MeshRetry", func() {
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("http-service", "grpc-service", "tcp-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithRouting(core_xds.Routing{
-				OutboundTargets: core_xds.EndpointMap{
-					"http-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "http",
-						},
-					}},
-					"tcp-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "tcp",
-						},
-					}},
-					"grpc-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "grpc",
-						},
-					}},
-				},
-			}).
+			WithRoutingBuilder(
+				xds_builders.Routing().
+					WithOutboundTargets(xds_builders.EndpointMap().
+						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
+						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
+						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
+					),
+			).
 			WithPolicies(xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 					api.MeshRetryType: {

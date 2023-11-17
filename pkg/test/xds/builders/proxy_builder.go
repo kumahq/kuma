@@ -64,3 +64,8 @@ func (p *ProxyBuilder) WithRouting(routing xds.Routing) *ProxyBuilder {
 	p.res.Routing = routing
 	return p
 }
+
+func (p *ProxyBuilder) WithRoutingBuilder(routing *RoutingBuilder) *ProxyBuilder {
+	p.res.Routing = *routing.Build()
+	return p
+}
