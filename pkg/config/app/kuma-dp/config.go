@@ -1,7 +1,10 @@
 package kumadp
 
 import (
+	"fmt"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,7 +21,7 @@ var DefaultConfig = func() Config {
 			URL: "https://localhost:5678",
 			Retry: CpRetry{
 				Backoff:     config_types.Duration{Duration: 3 * time.Second},
-				MaxDuration: config_types.Duration{Duration: 5 * time.Minute}, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
+				MaxDuration: config_types.Duration{Duration: 5 * time.Minute}, // this value can be fairy long since what will happen when there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
 			},
 		},
 		Dataplane: Dataplane{
@@ -63,6 +66,15 @@ func (c *Config) Sanitize() {
 	c.DNS.Sanitize()
 }
 
+func (c *Config) PostProcess() error {
+	return multierr.Combine(
+		c.ControlPlane.PostProcess(),
+		c.Dataplane.PostProcess(),
+		c.DataplaneRuntime.PostProcess(),
+		c.DNS.PostProcess(),
+	)
+}
+
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
 	// URL defines the address of Control Plane DP server.
@@ -76,6 +88,8 @@ type ControlPlane struct {
 }
 
 type ApiServer struct {
+	config.BaseConfig
+
 	// Address defines the address of Control Plane API server.
 	URL string `json:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
 	// Retry settings for API Server
@@ -83,13 +97,12 @@ type ApiServer struct {
 }
 
 type CpRetry struct {
+	config.BaseConfig
+
 	// Duration to wait between retries
 	Backoff config_types.Duration `json:"backoff,omitempty" envconfig:"kuma_control_plane_retry_backoff"`
 	// Max duration for retries (this is not exact time for execution, the check is done between retries)
 	MaxDuration config_types.Duration `json:"maxDuration,omitempty" envconfig:"kuma_control_plane_retry_max_duration"`
-}
-
-func (a *CpRetry) Sanitize() {
 }
 
 func (a *CpRetry) Validate() error {
@@ -106,6 +119,8 @@ var _ config.Config = &CpRetry{}
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
+	config.BaseConfig
+
 	// Mesh name.
 	Mesh string `json:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
@@ -116,8 +131,49 @@ type Dataplane struct {
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }
 
+func (d *Dataplane) PostProcess() error {
+	if err := validateMeshOrName(".Name", d.Name); err != nil {
+		podName, ok := os.LookupEnv("POD_NAME")
+		if !ok {
+			return nil
+		}
+
+		podNamespace, ok := os.LookupEnv("POD_NAMESPACE")
+		if !ok {
+			return nil
+		}
+
+		d.Name = fmt.Sprintf("%s.%s", podName, podNamespace)
+
+		if err := validateMeshOrName(".Name", d.Name); err != nil {
+			return errors.Wrap(err, "Dataplane configuration post processing failed")
+		}
+	}
+
+	return nil
+}
+
+func (d *Dataplane) IsZoneProxy() bool {
+	return d.ProxyType == string(mesh_proto.IngressProxyType) ||
+		d.ProxyType == string(mesh_proto.EgressProxyType)
+}
+
+func validateMeshOrName[V ~string](typ string, value V) error {
+	if value == "" {
+		return errors.Errorf("%s must be non-empty", typ)
+	}
+
+	if strings.ContainsAny(string(value), "$(){}") {
+		return errors.Errorf("%s %+q contains invalid characters", typ, value)
+	}
+
+	return nil
+}
+
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 type DataplaneRuntime struct {
+	config.BaseConfig
+
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
@@ -138,6 +194,9 @@ type DataplaneRuntime struct {
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
 	// By default it inherits Kuma DP logging level.
 	EnvoyLogLevel string `json:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
+	// EnvoyComponentLogLevel configures Envoy's --component-log-level and uses
+	// the exact same syntax: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-component-log-level
+	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
@@ -190,6 +249,10 @@ func (c *ControlPlane) Sanitize() {
 	c.Retry.Sanitize()
 }
 
+func (c *ControlPlane) PostProcess() error {
+	return multierr.Combine(c.Retry.PostProcess())
+}
+
 func (c *ControlPlane) Validate() error {
 	var errs error
 	if _, err := url.Parse(c.URL); err != nil {
@@ -202,9 +265,6 @@ func (c *ControlPlane) Validate() error {
 }
 
 var _ config.Config = &Dataplane{}
-
-func (d *Dataplane) Sanitize() {
-}
 
 func (d *Dataplane) Validate() error {
 	var errs error
@@ -247,9 +307,6 @@ func (d *Dataplane) ValidateForTemplate() error {
 
 var _ config.Config = &DataplaneRuntime{}
 
-func (d *DataplaneRuntime) Sanitize() {
-}
-
 func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
@@ -259,9 +316,6 @@ func (d *DataplaneRuntime) Validate() error {
 }
 
 var _ config.Config = &ApiServer{}
-
-func (d *ApiServer) Sanitize() {
-}
 
 func (d *ApiServer) Validate() error {
 	var errs error
@@ -280,6 +334,8 @@ func (d *ApiServer) Validate() error {
 }
 
 type DNS struct {
+	config.BaseConfig
+
 	// If true then builtin DNS functionality is enabled and CoreDNS server is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
@@ -294,11 +350,8 @@ type DNS struct {
 	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
 	// Dir to store auto-generated DNS Server config in.
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
-	// Port where Prometheus stats will be exposed for the DNS Server
+	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
 	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
-}
-
-func (d *DNS) Sanitize() {
 }
 
 func (d *DNS) Validate() error {

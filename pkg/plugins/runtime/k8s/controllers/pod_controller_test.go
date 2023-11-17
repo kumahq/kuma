@@ -11,7 +11,6 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
-	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -27,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -235,7 +235,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: utilpointer.String("http"),
+							AppProtocol: pointer.To("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -277,10 +277,13 @@ var _ = Describe("PodReconciler", func() {
 			}).Build()
 
 		reconciler = &PodReconciler{
-			Client:            kubeClient,
-			EventRecorder:     kube_record.NewFakeRecorder(10),
-			Scheme:            k8sClientScheme,
-			Log:               core.Log.WithName("test"),
+			Client:        kubeClient,
+			EventRecorder: kube_record.NewFakeRecorder(10),
+			Scheme:        k8sClientScheme,
+			Log:           core.Log.WithName("test"),
+			PodConverter: PodConverter{
+				ResourceConverter: k8s.NewSimpleConverter(),
+			},
 			SystemNamespace:   "kuma-system",
 			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore()), false),
 			ResourceConverter: k8s.NewSimpleConverter(),
@@ -585,7 +588,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-1",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-1",
 				}},
@@ -602,7 +605,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-2",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-2",
 				}},
@@ -619,7 +622,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-3",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-3",
 				}},

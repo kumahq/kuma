@@ -1,0 +1,172 @@
+name: "build-test-distribute"
+on:
+  push:
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
+  pull_request_target:
+    branches: ["master", "release-*"]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make clean
+      - run: |
+          make check
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - run: |
+          make -j images
+      - run: |
+          make -j docker/save
+      - name: Cleanup redundant build outputs
+        run: |
+          find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          find ./build/distributions/* -maxdepth 0 -type d | grep -v '/out' | xargs -I % rm -rf %
+          find  ./build/tools-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          rm -rf ./build/oapitmp
+          rm -rf ./build/ebpf/
+      - name: Upload build output
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: build
+          retention-days: 1
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure
+  test:
+    runs-on: ubuntu-latest
+    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - name: Run tests
+        run: |
+          make test TEST_REPORTS=1
+      - name: Save test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: build/reports
+          retention-days: 7
+  distributions:
+    needs: ["check", "build", "test"]
+    if: ${{ always() && !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
+      - name: "Check if force push"
+        if: contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
+        # Open up the following conditions when we don't generate artifacts on CircleCI
+        #  github.event_name == 'push'
+        run: |
+          echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-output
+          path: build
+      - name: Inspect created tars
+        run: |
+          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+      - name: Publish distributions to Pulp
+        run: |
+          make publish/pulp
+      - name: Load images
+        run: |
+          make docker/load
+      - name: Publish images
+        run: |-
+          make docker/login
+          # ensure we always logout
+          function on_exit() {
+            make docker/logout
+          }
+          trap on_exit EXIT
+          make docker/push
+          make docker/manifest

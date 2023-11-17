@@ -24,9 +24,10 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -88,25 +89,18 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-				},
-			}
+			context := xds_samples.SampleContext()
 
-			proxy := core_xds.Proxy{
-				Dataplane: builders.Dataplane().
-					WithName("backend").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddOutboundsToServices("other-service", "second-service").
-					WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
-					Build(),
-				Policies: core_xds.MatchedPolicies{
+			proxy := xds_builders.Proxy().
+				WithDataplane(
+					builders.Dataplane().
+						WithName("backend").
+						WithMesh("default").
+						WithAddress("127.0.0.1").
+						AddOutboundsToServices("other-service", "second-service").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
+				).
+				WithPolicies(core_xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 						api.MeshCircuitBreakerType: {
 							Type:      api.MeshCircuitBreakerType,
@@ -114,12 +108,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							ToRules:   given.toRules,
 						},
 					},
-				},
-			}
-
+				}).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			for idx, expected := range given.expectedCluster {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -419,30 +412,28 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-			proxy := xds.Proxy{
-				APIVersion: "v3",
-				Dataplane:  samples.GatewayDataplane(),
-				Policies: xds.MatchedPolicies{
+			xdsCtx := xds_samples.SampleContextWith(resources)
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshCircuitBreakerType: {
 							Type:    api.MeshCircuitBreakerType,
 							ToRules: given.toRules,
 						},
 					},
-				},
-				RuntimeExtensions: map[string]interface{}{},
-			}
+				}).
+				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

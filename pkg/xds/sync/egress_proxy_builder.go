@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -94,22 +95,19 @@ func (p *EgressProxyBuilder) Build(
 		}
 
 		for _, es := range externalServices {
-			policies := core_xds.PluginOriginatedPolicies{}
-			for name, plugin := range core_plugins.Plugins().PolicyPlugins() {
-				egressPlugin, ok := plugin.(core_plugins.EgressPolicyPlugin)
-				if !ok {
-					continue
-				}
-				res, err := egressPlugin.EgressMatchedPolicies(es, meshCtx.Resources)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
-				}
-				if res.Type == "" {
-					return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
-				}
-				policies[res.Type] = res
+			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)
+			if err != nil {
+				return nil, err
 			}
 			meshResources.Dynamic[es.Spec.GetService()] = policies
+		}
+
+		for serviceName := range meshResources.EndpointMap {
+			policies, err := matchEgressPolicies(map[string]string{mesh_proto.ServiceTag: serviceName}, meshCtx.Resources)
+			if err != nil {
+				return nil, err
+			}
+			meshResources.Dynamic[serviceName] = policies
 		}
 
 		meshResourcesList = append(meshResourcesList, meshResources)
@@ -133,4 +131,24 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	return proxy, nil
+}
+
+func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
+	policies := core_xds.PluginOriginatedPolicies{}
+	for name, plugin := range core_plugins.Plugins().PolicyPlugins() {
+		egressPlugin, ok := plugin.(core_plugins.EgressPolicyPlugin)
+		if !ok {
+			continue
+		}
+		res, err := egressPlugin.EgressMatchedPolicies(tags, resources)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+		}
+		if res.Type == "" {
+			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
+		}
+		policies[res.Type] = res
+	}
+
+	return policies, nil
 }

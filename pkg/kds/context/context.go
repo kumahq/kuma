@@ -61,21 +61,24 @@ func DefaultContext(
 		config_manager.ClusterIdConfigKey: true,
 	}
 
-	globalResourceMappers := CompositeResourceMapper(
+	mappers := []reconcile.ResourceMapper{
 		MapZoneTokenSigningKeyGlobalToPublicKey,
 		RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
 			cfg.Store.Type,
 			cfg.Store.Kubernetes.SystemNamespace,
 		),
-		AddHashSuffix,
-	)
+	}
+
+	if cfg.Experimental.KDSSyncNameWithHashSuffix {
+		mappers = append(mappers, AddHashSuffix)
+	}
 
 	return &Context{
 		ZoneClientCtx:        ctx,
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(cfg.Multizone.Zone.Name),
 		Configs:              configs,
-		GlobalResourceMapper: globalResourceMappers,
+		GlobalResourceMapper: CompositeResourceMapper(mappers...),
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
@@ -201,6 +204,10 @@ func AddHashSuffix(r model.Resource) (model.Resource, error) {
 	}
 
 	newObj := r.Descriptor().NewObject()
+
+	// When syncing mesh-scoped resources from Global to Zone, the only possible namespace on Global is system namespace.
+	// We always trim system namespace in RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper,
+	// that's why r.GetMeta().GetName() never has a namespace suffix, so we can safely call SyncedNameInZone with it.
 	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
 	_ = newObj.SetSpec(r.GetSpec())
 

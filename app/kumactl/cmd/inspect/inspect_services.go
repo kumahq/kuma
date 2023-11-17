@@ -3,7 +3,6 @@ package inspect
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/spf13/cobra"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type inspectServicesContext struct {
@@ -34,16 +32,8 @@ func newInspectServicesCmd(pctx *cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(pctx.InspectContext.Args.OutputFormat); format {
-			case output.TableFormat:
-				return printServiceInsights(insights, cmd.OutOrStdout())
-			default:
-				printer, err := printers.NewGenericPrinter(format)
-				if err != nil {
-					return err
-				}
-				return printer.Print(rest_types.From.ResourceList(insights), cmd.OutOrStdout())
-			}
+			format := output.Format(pctx.InspectContext.Args.OutputFormat)
+			return printers.GenericPrint(format, insights, inspectServiceTable, cmd.OutOrStdout())
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&ctx.mesh, "mesh", "m", "default", "mesh")
@@ -51,28 +41,22 @@ func newInspectServicesCmd(pctx *cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func printServiceInsights(overviews *mesh.ServiceOverviewResourceList, out io.Writer) error {
-	data := printers.Table{
-		Headers: []string{
-			"SERVICE",
-			"STATUS",
-			"DATAPLANES",
-		},
-		NextRow: func() func() []string {
-			i := 0
-			return func() []string {
-				defer func() { i++ }()
-				if len(overviews.Items) <= i {
-					return nil
-				}
-				overview := overviews.Items[i]
-				return []string{
-					overview.Meta.GetName(),       // SERVICE
-					overview.GetStatus().String(), // STATUS
-					fmt.Sprintf("%d/%d", overview.Spec.Dataplanes.Online, overview.Spec.Dataplanes.Total), // DATAPLANES
-				}
-			}
-		}(),
-	}
-	return printers.NewTablePrinter().Print(data, out)
+var inspectServiceTable = printers.Table{
+	Headers: []string{
+		"SERVICE",
+		"STATUS",
+		"DATAPLANES",
+	},
+	RowForItem: func(i int, container interface{}) ([]string, error) {
+		overviews := container.(*mesh.ServiceOverviewResourceList)
+		if len(overviews.Items) <= i {
+			return nil, nil
+		}
+		overview := overviews.Items[i]
+		return []string{
+			overview.Meta.GetName(),       // SERVICE
+			overview.GetStatus().String(), // STATUS
+			fmt.Sprintf("%d/%d", overview.Spec.Dataplanes.Online, overview.Spec.Dataplanes.Total), // DATAPLANES
+		}, nil
+	},
 }

@@ -1,0 +1,218 @@
+resources:
+- name: backend-bb38a94289f18fb9
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-bb38a94289f18fb9
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.2
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 1
+      locality:
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.3
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/az: test
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/az: test
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 90
+      locality:
+        subZone: k8s.io/az=test
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.1
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 900
+      locality:
+        subZone: k8s.io/node=node1
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.4
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/region: test
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/region: test
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 9
+      locality:
+        subZone: k8s.io/region=test
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.5
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-2
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-2
+      locality:
+        zone: zone-2
+      priority: 1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.6
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-3
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-3
+      locality:
+        zone: zone-3
+      priority: 2
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.7
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-4
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-4
+      locality:
+        zone: zone-4
+      priority: 3
+    policy:
+      overprovisioningFactor: 200
+- name: backend-c72efb5be46fae6b
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-c72efb5be46fae6b
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.2
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 1
+      locality:
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.1
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      loadBalancingWeight: 900
+      locality:
+        subZone: k8s.io/node=node1
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.6
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-3
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-3
+      locality:
+        zone: zone-3
+      priority: 2
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.7
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-4
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-4
+      locality:
+        zone: zone-4
+      priority: 3
+    policy:
+      overprovisioningFactor: 200

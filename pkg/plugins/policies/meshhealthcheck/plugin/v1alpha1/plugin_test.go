@@ -25,7 +25,8 @@ import (
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -82,10 +83,9 @@ var _ = Describe("MeshHealthCheck", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_context.Context{}
-			proxy := xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Dataplane: samples.DataplaneBackendBuilder().
+			context := xds_samples.SampleContext()
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder().
 					AddOutbound(
 						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 							mesh_proto.ServiceTag:  httpServiceTag,
@@ -115,44 +115,29 @@ var _ = Describe("MeshHealthCheck", func() {
 							mesh_proto.ServiceTag:  splitHttpServiceTag,
 							mesh_proto.ProtocolTag: "http",
 						}),
-					).
-					Build(),
-				Policies: xds.MatchedPolicies{
+					)).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshHealthCheckType: {
 							Type:    api.MeshHealthCheckType,
 							ToRules: given.toRules,
 						},
 					},
-				},
-				Routing: xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						httpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						splitHttpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						grpcServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolGRPC},
-							},
-						},
-						tcpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolTCP},
-							},
-						},
-					},
-				},
-			}
+				}).
+				WithRouting(
+					xds_builders.Routing().
+						WithOutboundTargets(
+							xds_builders.EndpointMap().
+								AddEndpoint(httpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(splitHttpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(grpcServiceTag, xds_samples.GrpcEndpointBuilder()).
+								AddEndpoint(tcpServiceTag, xds_samples.TcpEndpointBuilder()),
+						),
+				).
+				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
+			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
 
 			for idx, expected := range given.expectedClusters {
 				Expect(util_proto.ToYAML(resources.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -268,30 +253,28 @@ var _ = Describe("MeshHealthCheck", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := test_xds.CreateSampleMeshContextWith(resources)
-			proxy := xds.Proxy{
-				APIVersion: "v3",
-				Dataplane:  samples.GatewayDataplane(),
-				Policies: xds.MatchedPolicies{
+			xdsCtx := xds_samples.SampleContextWith(resources)
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithPolicies(xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshHealthCheckType: {
 							Type:    api.MeshHealthCheckType,
 							ToRules: given.toRules,
 						},
 					},
-				},
-				RuntimeExtensions: map[string]interface{}{},
-			}
+				}).
+				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
-				Expect(p.Apply(context.Background(), xdsCtx.Mesh, &proxy)).To(Succeed(), n)
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, &proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, &proxy)).To(Succeed())
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

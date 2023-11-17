@@ -2086,7 +2086,6 @@ spec:
                                             type: array
                                         required:
                                         - type
-                                        - zones
                                         type: object
                                     required:
                                     - to
@@ -2152,8 +2151,6 @@ spec:
                                     - key
                                     type: object
                                   type: array
-                              required:
-                              - affinityTags
                               type: object
                           type: object
                       type: object
@@ -6450,8 +6447,8 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
 spec:
   type: ClusterIP
   ports:

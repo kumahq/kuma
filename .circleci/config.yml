@@ -3,7 +3,7 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.21.3"
+    default: "1.21.4"
   first_k8s_version:
     type: string
     default: "v1.23.17-k3s1"
@@ -239,7 +239,7 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      deltaKDS:
+      legacyKDS:
         description: if should run tests with new implementation of KDS
         type: boolean
         default: false
@@ -259,7 +259,7 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
-              - {equal: [true, << parameters.deltaKDS >>]}
+              - {equal: [true, << parameters.legacyKDS >>]}
               - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
@@ -336,9 +336,8 @@ jobs:
               export MAKE_PARAMETERS="-j2"
             fi
 
-            if [[ "<< parameters.deltaKDS >>" == true ]]; then
-              export KUMA_DELTA_KDS=true
-              export KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED=true
+            if [[ "<< parameters.legacyKDS >>" == true ]]; then
+              export KUMA_LEGACY_KDS=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then
@@ -494,14 +493,14 @@ workflows:
               arch: [amd64, arm64]
           requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-delta-kds
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-legacy-kds
           matrix:
-            alias: delta-kds
+            alias: legacy-kds
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
               target: [multizone]
               arch: [amd64]
-              deltaKDS: [true]
+              legacyKDS: [true]
           requires: [build, go_cache-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
@@ -517,4 +516,4 @@ workflows:
           name: container-structure
           requires: [build]
       - distributions:
-          requires: [test, e2e, legacy, container-structure]
+          requires: [test, container-structure]

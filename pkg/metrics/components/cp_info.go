@@ -12,18 +12,13 @@ import (
 )
 
 func Setup(rt runtime.Runtime) error {
+	labels := version.Build.AsMap()
+	labels["instance_id"] = rt.GetInstanceId()
+	labels["cluster_id"] = rt.GetClusterId()
 	cpInfoMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Name: "cp_info",
-		Help: "Static information about the CP instance",
-		ConstLabels: map[string]string{
-			"instance_id": rt.GetInstanceId(),
-			"cluster_id":  rt.GetClusterId(),
-			"product":     version.Product,
-			"version":     version.Build.Version,
-			"build_date":  version.Build.BuildDate,
-			"git_commit":  version.Build.GitCommit,
-			"git_tag":     version.Build.GitTag,
-		},
+		Name:        "cp_info",
+		Help:        "Static information about the CP instance",
+		ConstLabels: labels,
 	}, func() float64 {
 		return 1.0
 	})

@@ -2106,7 +2106,6 @@ spec:
                                             type: array
                                         required:
                                         - type
-                                        - zones
                                         type: object
                                     required:
                                     - to
@@ -2172,8 +2171,6 @@ spec:
                                     - key
                                     type: object
                                   type: array
-                              required:
-                              - affinityTags
                               type: object
                           type: object
                       type: object
@@ -6470,8 +6467,8 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
 spec:
   type: ClusterIP
   ports:
@@ -6789,8 +6786,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 30s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -6921,8 +6916,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 30s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH

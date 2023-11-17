@@ -4,7 +4,7 @@ edsClusterConfig:
     ads: {}
     resourceApiVersion: V3
 lbPolicy: RING_HASH
-name: backend-26cb64fa4e85e7b7
+name: backend-d230d75c0fcb71dc
 perConnectionBufferLimitBytes: 32768
 ringHashLbConfig:
   hashFunction: MURMUR_HASH_2

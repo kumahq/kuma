@@ -43,6 +43,22 @@ These endpoints are getting replaced to achieve more coherency on the API:
 
 While you can use the old API they will be removed in a future version
 
+### Prometheus inbound listener is not secured by TrafficPermission anymore
+
+Due to the shadowing [issue](https://github.com/kumahq/kuma/issues/2417) with old TrafficPermission it was quite impossible to protect Prometheus inbound listener as expected.
+RBAC rules on the Prometheus inbound listener were blocking users from fully migrate to the new MeshTrafficPermission policy. 
+That's why we decided to discontinue TrafficPermission support on the Prometheus inbound listener starting 2.5.x.
+
+### Gateway API
+
+We support `v1` resources and `v1.0.0` of `gateway-api`. `v1beta1` resources are
+still supported but support for these WILL be removed in a future release.
+
+### KDS Delta enabled by default
+
+KDS Delta is enabled by default. You can fallback to SOTW KDS by setting `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=false`.
+As a side effect, on kubernetes policies synced will be persisted in the `kuma-system` namespace instead of `default`.
+
 ## Upgrade to `2.4.x`
 
 ### Configuration change

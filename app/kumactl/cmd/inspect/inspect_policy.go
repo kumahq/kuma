@@ -1,7 +1,6 @@
 package inspect
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"text/template"
@@ -10,7 +9,10 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -29,7 +31,7 @@ var policyInspectTemplate = `Affected data plane proxies:
 {{ end }}{{ end }}`
 
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
-	tmpl, err := template.New("policy_inspect").Funcs(template.FuncMap{
+	legacyTmpl := template.Must(template.New("policy_inspect").Funcs(template.FuncMap{
 		"IsSidecar": func(e api_server_types.PolicyInspectEntry) *api_server_types.PolicyInspectSidecarEntry {
 			if concrete, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectSidecarEntry); ok {
 				return concrete
@@ -50,11 +52,10 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			return true
 		},
 		"FormatTags": tagsToStr(false),
-	}).Parse(policyInspectTemplate)
-	if err != nil {
-		panic("unable to parse template")
-	}
+	}).Parse(policyInspectTemplate))
 
+	var newApi bool
+	var offset int
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s NAME", policyDesc.KumactlArg),
 		Short: fmt.Sprintf("Inspect %s", policyDesc.Name),
@@ -66,14 +67,37 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 				return errors.Wrap(err, "failed to create a policy inspect client")
 			}
 			name := args[0]
-			entryList, err := client.Inspect(context.Background(), policyDesc, pctx.CurrentMesh(), name)
+			if !newApi {
+				entryList, err := client.Inspect(cmd.Context(), policyDesc, pctx.CurrentMesh(), name)
+				if err != nil {
+					return err
+				}
+				return legacyTmpl.Execute(cmd.OutOrStdout(), entryList)
+			}
+			res, err := client.DataplanesForPolicy(cmd.Context(), policyDesc, pctx.CurrentMesh(), name)
 			if err != nil {
 				return err
 			}
-			return tmpl.Execute(cmd.OutOrStdout(), entryList)
+			format := output.Format(pctx.InspectContext.Args.OutputFormat)
+			return printers.GenericPrint(format, res, printers.Table{
+				Headers: []string{"Type", "Mesh", "Name"},
+				FooterFn: func(container interface{}) string {
+					return fmt.Sprintf("Total: %d", container.(types.InspectDataplanesForPolicyResponse).Total)
+				},
+				RowForItem: func(i int, container interface{}) ([]string, error) {
+					items := container.(types.InspectDataplanesForPolicyResponse).Items
+					if i >= len(items) {
+						return nil, nil
+					}
+					itm := items[i]
+					return []string{itm.Type, itm.Mesh, itm.Name}, nil
+				},
+			}, cmd.OutOrStdout())
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
+	cmd.PersistentFlags().IntVar(&offset, "offset", 0, "the offset for pagination")
+	cmd.PersistentFlags().BoolVar(&newApi, "new-api", false, "use the newer version of the inspect api")
 	return cmd
 }
 

@@ -75,7 +75,7 @@ kumactl install transparent-proxy [flags]
   -h, --help                                                                            help for transparent-proxy
       --kuma-dp-uid string                                                              the uid of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
-      --max-retries int                                                                 flag can be used to specify the maximum number of times to retry an installation before giving up (default 5)
+      --max-retries int                                                                 flag can be used to specify the maximum number of times to retry an installation before giving up (default 4)
       --redirect-all-dns-traffic                                                        redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf
       --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")

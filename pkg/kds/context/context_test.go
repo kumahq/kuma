@@ -450,6 +450,7 @@ var _ = Describe("Context", func() {
 			name                       string
 			expectedName               string
 			isResourcePluginOriginated bool
+			scope                      model.ResourceScope
 		}
 
 		genConfig := func(caseCfg config) kuma_cp.Config {
@@ -463,6 +464,8 @@ var _ = Describe("Context", func() {
 				cfg.Store.Kubernetes.SystemNamespace = caseCfg.k8sSystemNamespace
 			}
 
+			cfg.Experimental.KDSSyncNameWithHashSuffix = true
+
 			return cfg
 		}
 
@@ -470,6 +473,7 @@ var _ = Describe("Context", func() {
 			descriptor := model.ResourceTypeDescriptor{
 				IsPluginOriginated: given.isResourcePluginOriginated,
 				Resource:           core_mesh.NewCircuitBreakerResource(),
+				Scope:              given.scope,
 			}
 
 			meta := &test_model.ResourceMeta{Name: given.name}
@@ -501,6 +505,7 @@ var _ = Describe("Context", func() {
 				},
 				name:         "foo.custom-namespace",
 				expectedName: "foo-zxw6c95d42zfz9cc",
+				scope:        model.ScopeMesh,
 			}),
 			Entry("shouldn't be removed when store type is kubernetes "+
 				"and resource isn't plugin originated", testCase{
@@ -509,28 +514,9 @@ var _ = Describe("Context", func() {
 					storeType:          config_store.KubernetesStore,
 					k8sSystemNamespace: "custom-namespace",
 				},
-				name:         "foo.custom-namespace",
-				expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
-			}),
-			Entry("shouldn't be removed when store type is not kubernetes",
-				testCase{
-					isResourcePluginOriginated: true,
-					config: config{
-						storeType:          config_store.PostgresStore,
-						k8sSystemNamespace: "custom-namespace",
-					},
-					name:         "foo.custom-namespace",
-					expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
-				}),
-			Entry("shouldn't be removed when suffix is not k8s system "+
-				"namespace", testCase{
-				isResourcePluginOriginated: true,
-				config: config{
-					storeType:          config_store.KubernetesStore,
-					k8sSystemNamespace: "kuma-system",
-				},
-				name:         "foo.custom-namespace",
-				expectedName: "foo-zxw6c95d42zfz9cc.custom-namespace",
+				name:         "foo.default",
+				expectedName: "foo.default",
+				scope:        model.ScopeGlobal,
 			}),
 		)
 	})

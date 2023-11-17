@@ -10,6 +10,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
@@ -299,8 +300,8 @@ var _ = Describe("NoMatchingParent support", func() {
 var (
 	defaultNs       = "default"
 	otherNs         = "other"
-	fromAll         = gatewayapi.NamespacesFromAll
-	fromSame        = gatewayapi.NamespacesFromSame
+	fromAll         = gatewayapi_v1.NamespacesFromAll
+	fromSame        = gatewayapi_v1.NamespacesFromSame
 	gatewayGroup    = gatewayapi.Group(gatewayapi.GroupName)
 	gatewayKind     = gatewayapi.Kind("Gateway")
 	simpleHostname  = gatewayapi.Hostname("simple.local")
@@ -308,7 +309,7 @@ var (
 
 	listenerProgrammed = []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.ListenerConditionProgrammed),
+			Type:   string(gatewayapi_v1.ListenerConditionProgrammed),
 			Status: kube_meta.ConditionTrue,
 		},
 	}
@@ -318,7 +319,7 @@ var (
 	simpleListener          = gatewayapi.Listener{
 		Name:     simpleListenerName,
 		Port:     gatewayapi.PortNumber(80),
-		Protocol: gatewayapi.HTTPProtocolType,
+		Protocol: gatewayapi_v1.HTTPProtocolType,
 		AllowedRoutes: &gatewayapi.AllowedRoutes{
 			Namespaces: &gatewayapi.RouteNamespaces{
 				From: &fromSame,
@@ -329,7 +330,7 @@ var (
 	wildcardListener     = gatewayapi.Listener{
 		Name:     wildcardListenerName,
 		Port:     gatewayapi.PortNumber(80),
-		Protocol: gatewayapi.HTTPProtocolType,
+		Protocol: gatewayapi_v1.HTTPProtocolType,
 		Hostname: &anyTestHostname,
 		AllowedRoutes: &gatewayapi.AllowedRoutes{
 			Namespaces: &gatewayapi.RouteNamespaces{
@@ -342,7 +343,7 @@ var (
 	allNsListener              = gatewayapi.Listener{
 		Name:     allNsListenerName,
 		Port:     gatewayapi.PortNumber(80),
-		Protocol: gatewayapi.HTTPProtocolType,
+		Protocol: gatewayapi_v1.HTTPProtocolType,
 		Hostname: &simpleHostname,
 		AllowedRoutes: &gatewayapi.AllowedRoutes{
 			Namespaces: &gatewayapi.RouteNamespaces{

@@ -64,7 +64,9 @@ type ExternalService struct {
 
 type Locality struct {
 	Zone     string
+	SubZone  string
 	Priority uint32
+	Weight   uint32
 }
 
 // Endpoint holds routing-related information about a single endpoint.
@@ -268,7 +270,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return e.Locality.Zone
+	return fmt.Sprintf("%s:%s", e.Locality.Zone, e.Locality.SubZone)
 }
 
 func (e Endpoint) HasLocality() bool {

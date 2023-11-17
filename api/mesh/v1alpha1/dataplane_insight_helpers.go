@@ -12,13 +12,14 @@ import (
 
 var _ generic.Insight = &DataplaneInsight{}
 
-func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
+func NewSubscriptionStatus(now time.Time) *DiscoverySubscriptionStatus {
 	return &DiscoverySubscriptionStatus{
-		Total: &DiscoveryServiceStats{},
-		Cds:   &DiscoveryServiceStats{},
-		Eds:   &DiscoveryServiceStats{},
-		Lds:   &DiscoveryServiceStats{},
-		Rds:   &DiscoveryServiceStats{},
+		LastUpdateTime: util_proto.MustTimestampProto(now),
+		Total:          &DiscoveryServiceStats{},
+		Cds:            &DiscoveryServiceStats{},
+		Eds:            &DiscoveryServiceStats{},
+		Lds:            &DiscoveryServiceStats{},
+		Rds:            &DiscoveryServiceStats{},
 	}
 }
 
@@ -56,13 +57,12 @@ func (x *DataplaneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
-	for i, s := range x.GetSubscriptions() {
-		if s.Id == id {
-			return i, s
-		}
-	}
-	return -1, nil
+func (x *DataplaneInsight) AllSubscriptions() []generic.Subscription {
+	return generic.AllSubscriptions[*DiscoverySubscription](x)
+}
+
+func (x *DataplaneInsight) GetSubscription(id string) generic.Subscription {
+	return generic.GetSubscription[*DiscoverySubscription](x, id)
 }
 
 func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {
@@ -93,13 +93,14 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 	if !ok {
 		return errors.Errorf("invalid type %T for DataplaneInsight", s)
 	}
-	i, old := x.GetSubscription(discoverySubscription.Id)
-	if old != nil {
-		x.Subscriptions[i] = discoverySubscription
-	} else {
-		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
+	for i, sub := range x.GetSubscriptions() {
+		if sub.GetId() == discoverySubscription.Id {
+			x.Subscriptions[i] = discoverySubscription
+			return nil
+		}
 	}
+	x.finalizeSubscriptions()
+	x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	return nil
 }
 
@@ -124,6 +125,10 @@ func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 
 func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
 	x.DisconnectTime = util_proto.MustTimestampProto(t)
+}
+
+func (x *DiscoverySubscription) IsOnline() bool {
+	return x.GetConnectTime() != nil && x.GetDisconnectTime() == nil
 }
 
 func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {

@@ -26,6 +26,11 @@ func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, valid
 			return err
 		}
 	}
+
+	if err := cfg.PostProcess(); err != nil {
+		return errors.Wrap(err, "configuration post processing failed")
+	}
+
 	if validate {
 		if err := cfg.Validate(); err != nil {
 			return errors.Wrapf(err, "Invalid configuration")

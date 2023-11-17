@@ -48,13 +48,15 @@ type Opts struct {
 	Dataplane       rest.Resource
 	Stdout          io.Writer
 	Stderr          io.Writer
-	Quit            chan struct{}
+	OnFinish        func()
 }
 
 func New(opts Opts) (*Envoy, error) {
 	if _, err := lookupEnvoyPath(opts.Config.DataplaneRuntime.BinaryPath); err != nil {
-		runLog.Error(err, "could not find the envoy executable in your path")
-		return nil, err
+		return nil, errors.Wrap(err, "could not find envoy executable")
+	}
+	if opts.OnFinish == nil {
+		opts.OnFinish = func() {}
 	}
 	return &Envoy{opts: opts}, nil
 }
@@ -87,6 +89,12 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	e.wg.Add(1)
+	// Component should only be considered done after Envoy exists.
+	// Otherwise, we may not propagate SIGTERM on time.
+	defer func() {
+		e.wg.Done()
+		e.opts.OnFinish()
+	}()
 
 	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
@@ -119,6 +127,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		"--log-level", e.opts.Config.DataplaneRuntime.EnvoyLogLevel,
 	}
 
+	if e.opts.Config.DataplaneRuntime.EnvoyComponentLogLevel != "" {
+		args = append(args, "--component-log-level", e.opts.Config.DataplaneRuntime.EnvoyComponentLogLevel)
+	}
+
 	// If the concurrency is explicit, use that. On Linux, users
 	// can also implicitly set concurrency using cpusets.
 	if e.opts.Config.DataplaneRuntime.Concurrency > 0 {
@@ -140,31 +152,18 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		runLog.Error(err, "envoy executable failed", "path", resolvedPath, "arguments", args)
 		return err
 	}
-	done := make(chan error, 1)
 	go func() {
-		done <- command.Wait()
-		// Component should only be considered done after Envoy exists.
-		// Otherwise, we may not propagate SIGTERM on time.
-		e.wg.Done()
-	}()
-
-	select {
-	case <-stop:
+		<-stop
 		runLog.Info("stopping Envoy")
 		cancel()
-		return nil
-	case err := <-done:
-		if err != nil {
-			runLog.Error(err, "Envoy terminated with an error")
-		} else {
-			runLog.Info("Envoy terminated successfully")
-		}
-		if e.opts.Quit != nil {
-			close(e.opts.Quit)
-		}
-
+	}()
+	err = command.Wait()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		runLog.Error(err, "Envoy terminated with an error")
 		return err
 	}
+	runLog.Info("Envoy terminated successfully")
+	return nil
 }
 
 func (e *Envoy) WaitForDone() {

@@ -14,7 +14,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -23,6 +22,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -64,14 +64,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 `
 
 	type testCase struct {
-		pod              string
-		servicesForPod   string
-		otherDataplanes  string
-		otherServices    string
-		otherReplicaSets string
-		otherJobs        string
-		node             string
-		dataplane        string
+		pod               string
+		servicesForPod    string
+		otherDataplanes   string
+		otherServices     string
+		otherReplicaSets  string
+		otherJobs         string
+		node              string
+		dataplane         string
+		existingDataplane string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -304,16 +305,23 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
 			ingress := &mesh_k8s.ZoneIngress{}
-			err = converter.PodToIngress(context.Background(), ingress, pod, services)
+			if given.existingDataplane != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, ingress)
+				Expect(err).ToNot(HaveOccurred())
+			}
 
 			// then
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
 			Expect(err).ToNot(HaveOccurred())
 
 			actual, err := yaml.Marshal(ingress)
@@ -352,6 +360,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
 		}),
+		Entry("Existing ZoneIngress with load balancer and ip", testCase{
+			pod:               "ingress-exists.pod.yaml",
+			servicesForPod:    "ingress-exists.services-for-pod.yaml",
+			existingDataplane: "ingress-exists.existing-dataplane.yaml",
+			dataplane:         "ingress-exists.golden.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
@@ -381,9 +395,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: nil,
-				NodeGetter:    nodeGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     nil,
+				NodeGetter:        nodeGetter,
+				ResourceConverter: k8s.NewSimpleConverter(),
+				Zone:              "zone-1",
 			}
 
 			// when
@@ -436,7 +451,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 		DescribeTable("should return a descriptive error",
 			func(given testCase) {
 				// given
-				converter := PodConverter{}
+				converter := PodConverter{
+					ResourceConverter: k8s.NewSimpleConverter(),
+				}
 
 				pod := &kube_core.Pod{}
 				err := yaml.Unmarshal([]byte(given.pod), pod)
@@ -622,7 +639,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":     "example",
 				"version": "0.1",
 			},
-			appProtocol: utilpointer.String("http"),
+			appProtocol: pointer.To("http"),
 			expected: map[string]string{
 				"app":                      "example",
 				"version":                  "0.1",
@@ -832,7 +849,7 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("appProtocol has an empty value", testCase{
-			appProtocol: utilpointer.String(""),
+			appProtocol: pointer.To(""),
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
@@ -843,19 +860,19 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected: "http", // we want to support both ways of providing protocol
 		}),
 		Entry("appProtocol has an unknown value", testCase{
-			appProtocol: utilpointer.String("not-yet-supported-protocol"),
+			appProtocol: pointer.To("not-yet-supported-protocol"),
 			expected:    "tcp", // we want Kuma's behavior to be straightforward to a user (appProtocol is not Kuma specific)
 		}),
 		Entry("appProtocol has a lowercase value", testCase{
-			appProtocol: utilpointer.String("HtTp"),
+			appProtocol: pointer.To("HtTp"),
 			expected:    "http", // we want Kuma's behavior to be straightforward to a user (copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a known value: http", testCase{
-			appProtocol: utilpointer.String("http"),
+			appProtocol: pointer.To("http"),
 			expected:    "http",
 		}),
 		Entry("appProtocol has a known value: tcp", testCase{
-			appProtocol: utilpointer.String("tcp"),
+			appProtocol: pointer.To("tcp"),
 			expected:    "tcp",
 		}),
 		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{
