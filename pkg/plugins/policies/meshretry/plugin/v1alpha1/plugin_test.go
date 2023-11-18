@@ -14,8 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -67,14 +65,7 @@ var _ = Describe("MeshRetry", func() {
 						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
 					),
 			).
-			WithPolicies(xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshRetryType: {
-						Type:    api.MeshRetryType,
-						ToRules: given.toRules,
-					},
-				},
-			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 
 		// when
@@ -310,14 +301,7 @@ var _ = Describe("MeshRetry", func() {
 			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshRetryType: {
-							Type:    api.MeshRetryType,
-							ToRules: given.toRules,
-						},
-					},
-				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)

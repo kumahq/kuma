@@ -13,8 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -70,15 +68,9 @@ var _ = Describe("MeshTimeout", func() {
 							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
 					),
 			).
-			WithPolicies(xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:      api.MeshTimeoutType,
-						ToRules:   given.toRules,
-						FromRules: given.fromRules,
-					},
-				},
-			}).
+			WithPolicies(
+				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
+			).
 			Build()
 
 		// when
@@ -435,14 +427,7 @@ var _ = Describe("MeshTimeout", func() {
 						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
 				),
 			).
-			WithPolicies(xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:    api.MeshTimeoutType,
-						ToRules: given.toRules,
-					},
-				},
-			}).
+			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTimeoutType, given.toRules)).
 			Build()
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())

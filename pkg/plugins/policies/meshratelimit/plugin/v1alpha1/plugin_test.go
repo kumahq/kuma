@@ -14,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
@@ -49,31 +48,29 @@ var _ = Describe("MeshRateLimit", func() {
 
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
-				WithDataplane(builders.Dataplane().
-					WithName("test").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddInbound(
-						builders.Inbound().
-							WithAddress("127.0.0.1").
-							WithPort(17777).
-							WithService("backend"),
-					).
-					AddInbound(
-						builders.Inbound().
-							WithAddress("127.0.0.1").
-							WithPort(17778).
-							WithService("frontend"),
-					)).
-				WithPolicies(core_xds.MatchedPolicies{
-					RateLimitsInbound: given.inboundRateLimitsMap,
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						api.MeshRateLimitType: {
-							Type:      api.MeshRateLimitType,
-							FromRules: given.fromRules,
-						},
-					},
-				}).
+				WithDataplane(
+					builders.Dataplane().
+						WithName("test").
+						WithMesh("default").
+						WithAddress("127.0.0.1").
+						AddInbound(
+							builders.Inbound().
+								WithAddress("127.0.0.1").
+								WithPort(17777).
+								WithService("backend"),
+						).
+						AddInbound(
+							builders.Inbound().
+								WithAddress("127.0.0.1").
+								WithPort(17778).
+								WithService("frontend"),
+						),
+				).
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithRateLimitsInbound(given.inboundRateLimitsMap).
+						WithFromPolicy(api.MeshRateLimitType, given.fromRules),
+				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -456,14 +453,9 @@ var _ = Describe("MeshRateLimit", func() {
 		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithPolicies(core_xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					api.MeshRateLimitType: {
-						Type:      api.MeshRateLimitType,
-						FromRules: fromRules,
-					},
-				},
-			}).
+			WithPolicies(
+				xds_builders.MatchedPolicies().WithFromPolicy(api.MeshRateLimitType, fromRules),
+			).
 			Build()
 		for n, p := range core_plugins.Plugins().ProxyPlugins() {
 			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
