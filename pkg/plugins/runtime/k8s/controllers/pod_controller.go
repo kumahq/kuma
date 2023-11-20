@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -384,16 +384,16 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 
 func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		// List Pods in the same namespace as a Service
 		pods := &kube_core.PodList{}
 		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(obj.(*kube_core.Service).Spec.Selector)); err != nil {
 			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
 			return nil
 		}
-		var req []kube_reconile.Request
+		var req []kube_reconcile.Request
 		for _, pod := range pods.Items {
-			req = append(req, kube_reconile.Request{
+			req = append(req, kube_reconcile.Request{
 				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
 			})
 		}
