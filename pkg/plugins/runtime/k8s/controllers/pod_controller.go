@@ -286,12 +286,11 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
+		if !errors.Is(err, context.Canceled) {
+			log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
+			r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		}
 
-		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
 	}
 	switch operationResult {
