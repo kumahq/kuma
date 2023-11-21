@@ -95,7 +95,7 @@ During the resource creation Zone CP will append `kuma.io/zone` tag to MeshGatew
 
 Syncing Zone originated policies to Global is needed only for visibility in GUI.
 
-During the implementation it's important to pay attention to policies not be synced from Global to Zone if they're
+During the implementation it's important to pay attention to not sync policies from Global to Zone if they're
 originated in Zone. Naming is also crucial, for policy `policy-1` from `us-east` we'll create a policy named
 `policy-1-{{hash-suffix}}` in Global with metadata `zone: us-east`. Metadata should be implemented as `labels` when
 Global on k8s and as an additional field in schema on Universal. For more information see https://github.com/kumahq/kuma/pull/7484.
