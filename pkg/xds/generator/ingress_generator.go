@@ -26,6 +26,7 @@ type IngressGenerator struct{}
 
 func (i IngressGenerator) Generate(
 	_ context.Context,
+	_ *core_xds.ResourceSet,
 	_ xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {

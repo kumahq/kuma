@@ -970,7 +970,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)

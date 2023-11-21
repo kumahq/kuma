@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/generator"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -58,6 +59,7 @@ func makeListenerBuilder(
 
 func (g Generator) Generate(
 	ctx context.Context,
+	_ *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
@@ -103,7 +105,13 @@ func (g Generator) Generate(
 			})
 		}
 
-		rs, err := g.SecretGenerator.GenerateForZoneEgress(
+		rs, err := generator.NewGenerator().Generate(ctx, resources, xdsCtx, proxy)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(rs)
+
+		rs, err = g.SecretGenerator.GenerateForZoneEgress(
 			ctx, xdsCtx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
 		)
 		if err != nil {
