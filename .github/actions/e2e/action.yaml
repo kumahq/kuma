@@ -1,0 +1,44 @@
+name: 'Kuma E2E'
+description: 'Run end to end tests for kuma'
+inputs:
+  k8sVersion:
+    description: version of k3s to use or "kind" and "kindIpv6"
+    default: v1.28.1-k3s1
+    required: false
+  parallelism:
+    description: level of parallelization
+    default: '1'
+    required: false
+  target:
+    description: makefile target without e2e prefix
+    default: ""
+    required: false
+  arch:
+    description: The golang arch
+    default: amd64
+    required: false
+  cniNetworkPlugin:
+    description: The CNI networking plugin to use [flannel | calico]
+    default: flannel
+    required: false
+  deltaKDS:
+    description: if should run tests with new implementation of KDS
+    default: 'false'
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        echo "All inputs:"
+        echo "Running with: \
+            k8s: ${{ inputs.k8sVersion }} \
+            target: ${{ inputs.target }} \
+            parallelism: ${{ inputs.parallelism }} \
+            arch: ${{ inputs.arch }} \
+            cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
+            "
+      shell: bash
+    - id: random-number-generator
+      run: |
+        echo "Invoking CircleCI (todo)"
+      shell: bash

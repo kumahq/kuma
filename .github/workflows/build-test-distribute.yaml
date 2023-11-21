@@ -5,6 +5,9 @@ on:
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
+env:
+  K8S_MIN_VERSION: v1.23.17-k3s1
+  K8S_MAX_VERSION: v1.28.1-k3s1
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -170,3 +173,153 @@ jobs:
           trap on_exit EXIT
           make docker/push
           make docker/manifest
+  gen_e2e_matrix:
+    runs-on: ubuntu-latest
+    needs: ["build"]
+    outputs:
+      slow: ${{ steps.generate-matrix.outputs.slow }}
+      main: ${{ steps.generate-matrix.outputs.main }}
+      delta_kds: ${{ steps.generate-matrix.outputs.delta_kds }}
+      cni: ${{ steps.generate-matrix.outputs.cni }}
+    steps:
+      - name: Install jq
+        run: |
+          sudo apt-get install -y jq
+      - id: generate-matrix
+        name: Generate matrix
+        run: |
+          SKIP_CI_LABEL="${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test')  }}"
+          if [[ "$SKIP_CI_LABEL" == "true" ]]; then
+            echo "Skipping e2e jobs because the pull request contained a 'ci/skip-*' label."
+            exit 0
+          fi
+
+          JQ_PATH=$(which jq)
+          if [ "$JQ_PATH" == "" ]; then
+            echo "Could not find devtool 'jq', please check if 'check' job has run correctly prior to this job."
+            exit 1
+          fi
+
+          ALL_K8S_VERSION='{"k8sVersion":["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"]}'
+          ALL_ARCH='{"arch": ["amd64", "arm64"]}'
+          ALL_TARGET='{"target": ["kubernetes", "universal", "multizone"]}'
+          SINGLE_ENV='{"k8sVersion": ["${{ env.K8S_MAX_VERSION }}"], "target": ["multizone"], "arch":["amd64"]}'
+          ALL_DELTA_KDS='{"deltaKDS": [true]}'
+          ALL_CNI='{"cniNetworkPlugin": ["calico"]}'
+
+          # GitHub Actions does not support ARM64
+          EXCLUDE_ARM64='[{"arch": "arm64"}]'
+
+          # kind should only be used when testing ipv6 or with e2e-universal
+          EXCLUDE_KIND='[{"k8sVersion":"kind", "target": "kubernetes"}, {"k8sVersion":"kind", "target": "multizone"}]'
+
+          # universal only runs on kind
+          EXCLUDE_UNIVERSAL='[{"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"}, {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}]'
+
+          # non priority main e2e
+          EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
+
+          # Default matrix
+          SLOW=$(echo '{}' | $JQ_PATH -rc ".exclude += $EXCLUDE_ARM64" | $JQ_PATH -rc ". += $ALL_K8S_VERSION | . += $ALL_ARCH")
+          MAIN=$(echo '{}' | $JQ_PATH -rc ".exclude += $EXCLUDE_ARM64" | $JQ_PATH -rc ". += $ALL_K8S_VERSION | . += $ALL_ARCH | . += $ALL_TARGET" | $JQ_PATH -rc ".exclude += $EXCLUDE_KIND | .exclude += $EXCLUDE_UNIVERSAL" )
+          DELTA_KDS=$(echo '{}' | $JQ_PATH -rc ".exclude += $EXCLUDE_ARM64" | $JQ_PATH -rc ". += $ALL_DELTA_KDS | . += $SINGLE_ENV")
+          CNI=$(echo '{}' | $JQ_PATH -rc ".exclude += $EXCLUDE_ARM64" | $JQ_PATH -rc ". += $ALL_CNI | . += $SINGLE_ENV")
+
+          RUN_FULL_MATRIX="${{ contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
+          if [[ "$RUN_FULL_MATRIX" == "false" ]]; then
+            echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request."
+
+            SLOW=''         # target==""
+            DELTA_KDS=''    # deltaKDS=="true"
+            CNI=''          # cniNetworkPlugin=="calico"
+            MAIN=$(echo $MAIN | $JQ_PATH -rc ".exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
+          fi
+
+          echo "slow=$SLOW" >> $GITHUB_OUTPUT
+          echo "main=$MAIN" >> $GITHUB_OUTPUT
+          echo "delta_kds=$DELTA_KDS" >> $GITHUB_OUTPUT
+          echo "cni=$CNI" >> $GITHUB_OUTPUT
+  e2e_slow:
+    name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
+    runs-on: ubuntu-latest
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.slow != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.slow) }}
+    steps:
+      - run: |
+          echo "k8sVersion: ${{ matrix.k8sVersion }}"
+          echo "arch: ${{ matrix.arch }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/e2e
+        with:
+          k8sVersion: ${{ matrix.k8sVersion }}
+          arch: ${{ matrix.arch }}
+          parallelism: 3
+          target: ""
+  e2e_main:
+    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
+    runs-on: ubuntu-latest
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.main != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.main) }}
+    steps:
+      - run: |
+          echo "k8sVersion: ${{ matrix.k8sVersion }}"
+          echo "target: ${{ matrix.target }}"
+          echo "arch: ${{ matrix.arch }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/e2e
+        with:
+          k8sVersion: ${{ matrix.k8sVersion }}
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
+  e2e_delta_kds:
+    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}-delta-kds"
+    runs-on: ubuntu-latest
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.delta_kds != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.delta_kds) }}
+    steps:
+      - run: |
+          echo "k8sVersion: ${{ matrix.k8sVersion }}"
+          echo "target: ${{ matrix.target }}"
+          echo "arch: ${{ matrix.arch }}"
+          echo "deltaKDS: ${{ matrix.arch }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/e2e
+        with:
+          k8sVersion: ${{ matrix.k8sVersion }}
+          target: ${{ matrix.arch }}
+          arch: ${{ matrix.arch }}
+          deltaKDS: ${{ matrix.deltaKDS }}
+  e2e_calico:
+    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}-calico"
+    runs-on: ubuntu-latest
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.cni != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.cni) }}
+    steps:
+      - run: |
+          echo "k8sVersion: ${{ matrix.k8sVersion }}"
+          echo "target: ${{ matrix.target }}"
+          echo "arch: ${{ matrix.arch }}"
+          echo "cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/e2e
+        with:
+          k8sVersion: ${{ matrix.k8sVersion }}
+          target: ${{ matrix.arch }}
+          arch: ${{ matrix.arch }}
+          cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
