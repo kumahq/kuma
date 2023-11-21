@@ -13,6 +13,27 @@ parameters:
   ubuntu_image:
     type: string
     default: "ubuntu-2204:2022.10.2"
+  manual_e2e:
+    type: boolean
+    default: false
+  e2e_param_k8s_version:
+    type: string
+    default: ""
+  e2e_param_arch:
+    type: string
+    default: ""
+  e2e_param_parallelism:
+    type: integer
+    default: 1
+  e2e_param_target:
+    type: string
+    default: ""
+  e2e_param_cni_network_plugin:
+    type: string
+    default: flannel
+  e2e_param_legacy_kds:
+    type: boolean
+    default: false
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -517,3 +538,20 @@ workflows:
           requires: [build]
       - distributions:
           requires: [test, container-structure]
+  manual-e2e:
+    when:
+      equal: [true, << pipeline.parameters.manual_e2e >>]
+    jobs:
+      - go_cache:
+          name: go_cache-<< pipeline.parameters.e2e_param_arch >>
+          arch: << pipeline.parameters.e2e_param_arch >>
+      - build:
+          name: build
+      - e2e:
+          k8sVersion: << pipeline.parameters.e2e_param_k8s_version >>
+          parallelism: << pipeline.parameters.e2e_param_parallelism >>
+          target: << pipeline.parameters.e2e_param_target >>
+          arch: << pipeline.parameters.e2e_param_arch >>
+          cniNetworkPlugin: << pipeline.parameters.e2e_param_cni_network_plugin >>
+          legacyKDS: << pipeline.parameters.e2e_param_legacy_kds >>
+          requires: [build, go_cache-<< pipeline.parameters.e2e_param_arch >>]

@@ -21,9 +21,13 @@ inputs:
     description: The CNI networking plugin to use [flannel | calico]
     default: flannel
     required: false
-  deltaKDS:
+  legacyKDS:
     description: if should run tests with new implementation of KDS
     default: 'false'
+    required: false
+  secureCircleCIToken:
+    description: The personal access token used to invoke CircleCI API (not project API Token)
+    default: ''
     required: false
 runs:
   using: "composite"
@@ -38,7 +42,36 @@ runs:
             cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
             "
       shell: bash
-    - id: random-number-generator
-      run: |
-        echo "Invoking CircleCI (todo)"
+    - run: |
+        # Trigger CircleCI manually, reference: https://github.com/CircleCI-Public/trigger-circleci-pipeline-action/blob/main/dist/index.js#L16310
+        
+        BODY='{"parameters": { "manual_e2e": true, "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  } }'
+        
+        if [ "${{ github.ref_type }}" == "tag" ]]; then
+          BODY=$(echo $BODY | jq -rc '.+= {"tag": "${{ github.ref_name }}"}')
+        else
+          BODY=$(echo $BODY | jq -rc '.+= {"branch": "${{ github.ref_name }}"}')
+        fi
+        
+        CIRCLE_CI_API_PATH=https://circleci.com/api/v2/project/gh/${{ github.repository }}/pipeline
+        echo "Calling CircleCI api with parameters:
+          URL: $CIRCLE_CI_API_PATH
+          BODY: $BODY"
+        
+        if [ "${{ inputs.secureCircleCIToken }}" == "" ]; then
+          echo "Skipping request CircleCI because secret 'CIRCLECI_TOKEN' not set." 
+          exit 0
+        fi
+        
+        VERBOSE=
+        if [ "${{ runner.debug }}" == "1" ]; then
+          VERBOSE='-v'
+        fi
+        
+        curl $VERBOSE --fail -X POST $CIRCLE_CI_API_PATH \
+          --header "content-type: application/json" \
+          --header "x-attribution-login: ${{ github.actor }}" \
+          --header "x-attribution-actor-id: ${{ github.actor }}" \
+          --header "Circle-Token: ${{ inputs.secureCircleCIToken }}" \
+          --data "$BODY"
       shell: bash
