@@ -1,0 +1,16 @@
+type: ZoneIngress
+name: my-ingress
+zone: foo
+networking:
+  port: 8080
+availableServices:
+  - zone: foo
+    instances: 3
+    mesh: mesh-1
+    tags:
+      kuma.io/service: foo
+  - zone: foo
+    instances: 3
+    mesh: mesh-1
+    tags:
+      kuma.io/service: bar

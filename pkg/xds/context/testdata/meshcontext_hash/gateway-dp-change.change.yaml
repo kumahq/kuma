@@ -1,0 +1,10 @@
+type: Dataplane
+name: dp-2
+mesh: mesh-2
+networking:
+  address: 127.0.0.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: other-gateway
+      foo: bar

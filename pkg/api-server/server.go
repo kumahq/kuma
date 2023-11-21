@@ -458,7 +458,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.ResourceManager(),
 		xds_context.NewMeshContextBuilder(
 			rt.ResourceManager(),
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),

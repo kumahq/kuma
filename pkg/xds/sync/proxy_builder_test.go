@@ -84,7 +84,7 @@ var _ = Describe("Proxy Builder", func() {
 	})
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
