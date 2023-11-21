@@ -103,7 +103,20 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
 				}()
 				log.V(1).Info("on tick")
+<<<<<<< HEAD
 				return reconciler.Reconcile(ctx, node)
+=======
+				err, changed := reconciler.Reconcile(ctx, node, changedTypes, log)
+				if err == nil {
+					result := ResultNoChanges
+					if changed {
+						result = ResultChanged
+					}
+					kdsMetrics.KdsGenerations.WithLabelValues(ReasonResync, result).
+						Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}
+				return err
+>>>>>>> 2d5d4fbcb (fix(metrics): fix kds metrics for simple watchdog (#8428))
 			},
 			OnError: func(err error) {
 				kdsGenerationsErrors.Inc()
