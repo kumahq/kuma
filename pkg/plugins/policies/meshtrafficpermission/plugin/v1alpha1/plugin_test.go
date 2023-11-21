@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -97,28 +96,25 @@ var _ = Describe("RBAC", func() {
 						WithMesh("mesh-1").
 						WithServices("backend"),
 				).
-				WithPolicies(core_xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						policies_api.MeshTrafficPermissionType: {
-							FromRules: core_rules.FromRules{
-								Rules: map[core_rules.InboundListener]core_rules.Rules{
+				WithPolicies(
+					xds_builders.MatchedPolicies().
+						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
+							Rules: map[core_rules.InboundListener]core_rules.Rules{
+								{
+									Address: "192.168.0.1", Port: 8080,
+								}: {
 									{
-										Address: "192.168.0.1", Port: 8080,
-									}: {
-										{
-											Subset: []core_rules.Tag{
-												{Key: mesh_proto.ServiceTag, Value: "frontend"},
-											},
-											Conf: policies_api.Conf{
-												Action: "Allow",
-											},
+										Subset: []core_rules.Tag{
+											{Key: mesh_proto.ServiceTag, Value: "frontend"},
+										},
+										Conf: policies_api.Conf{
+											Action: "Allow",
 										},
 									},
 								},
 							},
-						},
-					},
-				}).
+						}),
+				).
 				Build()
 			// when
 			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)

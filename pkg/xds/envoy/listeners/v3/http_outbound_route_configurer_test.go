@@ -244,14 +244,14 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                             name: :method
                           prefix: /asd
                         requestHeadersToAdd:
-                        - append: false
+                        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                           header:
                             key: test-add
                             value: abc
                         requestHeadersToRemove:
                         - test-remove
                         responseHeadersToAdd:
-                        - append: false
+                        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                           header:
                             key: test-add
                             value: abc

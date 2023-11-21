@@ -186,7 +186,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                                 numerator: 100
                               runtimeKey: local_rate_limit_enforced
                             responseHeadersToAdd:
-                            - append: false
+                            - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                               header:
                                 key: x-local-rate-limit
                                 value: "true"
@@ -284,7 +284,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                                 numerator: 100
                               runtimeKey: local_rate_limit_enforced
                             responseHeadersToAdd:
-                            - append: false
+                            - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                               header:
                                 key: x-local-rate-limit
                                 value: "true"

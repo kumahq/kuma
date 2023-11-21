@@ -199,7 +199,7 @@ resources:
                         numerator: 100
                       runtimeKey: local_rate_limit_enforced
                     responseHeadersToAdd:
-                    - append: false
+                    - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                       header:
                         key: x-rate-limited
                         value: "true"

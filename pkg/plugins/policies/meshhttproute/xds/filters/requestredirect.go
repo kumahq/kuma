@@ -52,7 +52,7 @@ func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) err
 		}
 	}
 
-	switch pointer.DerefOr(redirect.StatusCode, 301) {
+	switch pointer.DerefOr(redirect.StatusCode, 302) {
 	case 301:
 		envoyRedirect.ResponseCode = envoy_route.RedirectAction_MOVED_PERMANENTLY
 	case 302:
