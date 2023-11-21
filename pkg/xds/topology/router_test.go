@@ -613,7 +613,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				routes: []*core_mesh.TrafficRouteResource{
 					{
-						Meta: &PseudoMeta{
+						Meta: &test_model.ResourceMeta{
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
@@ -643,7 +643,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
 					}: &core_mesh.TrafficRouteResource{
-						Meta: &PseudoMeta{
+						Meta: &test_model.ResourceMeta{
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
@@ -667,7 +667,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1235,
 					}: &core_mesh.TrafficRouteResource{
-						Meta: &PseudoMeta{
+						Meta: &test_model.ResourceMeta{
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
@@ -715,7 +715,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				routes: []*core_mesh.TrafficRouteResource{
 					{
-						Meta: &PseudoMeta{
+						Meta: &test_model.ResourceMeta{
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
@@ -766,7 +766,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
 					}: &core_mesh.TrafficRouteResource{
-						Meta: &PseudoMeta{
+						Meta: &test_model.ResourceMeta{
 							Name: "route-all-default",
 						},
 						Spec: &mesh_proto.TrafficRoute{
