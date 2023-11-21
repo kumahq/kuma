@@ -19,5 +19,5 @@ jobs:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@v3
         with:
-          args: --fix=false --verbose
+          args: --fix=false --verbose --timeout=10m
           version: v1.54.1
