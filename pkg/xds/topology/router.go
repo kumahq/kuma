@@ -2,7 +2,6 @@ package topology
 
 import (
 	"context"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 
@@ -10,38 +9,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
-
-type pseudoMeta struct {
-	Name string
-}
-
-func (m *pseudoMeta) GetMesh() string {
-	return ""
-}
-
-func (m *pseudoMeta) GetName() string {
-	return m.Name
-}
-
-func (m *pseudoMeta) GetNameExtensions() core_model.ResourceNameExtensions {
-	return core_model.ResourceNameExtensionsUnsupported
-}
-
-func (m *pseudoMeta) GetVersion() string {
-	return ""
-}
-
-func (m *pseudoMeta) GetCreationTime() time.Time {
-	return time.Now()
-}
-
-func (m *pseudoMeta) GetModificationTime() time.Time {
-	return time.Now()
-}
 
 // GetRoutes picks a single the most specific route for each outbound interface of a given Dataplane.
 func GetRoutes(ctx context.Context, dataplane *core_mesh.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (core_xds.RouteMap, error) {
