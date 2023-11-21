@@ -2,9 +2,10 @@ package metrics
 
 import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 )
 
 type RegistererGatherer interface {
