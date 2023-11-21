@@ -55,7 +55,7 @@ these policies to Global. For example, when user creates a policy in `us-east` z
 type: MeshTimeout
 mesh: mesh-1
 name: t-1
-labels: # not implemented today, requires Postgres schema 
+labels: # not implemented today, requires Postgres schema change
   kuma.io/managed-by: zone
 spec:
   targetRef:
