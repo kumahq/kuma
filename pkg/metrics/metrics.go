@@ -2,6 +2,7 @@ package metrics
 
 import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 )
@@ -84,4 +85,18 @@ func (m *metrics) BulkRegister(cs ...prometheus.Collector) error {
 		}
 	}
 	return nil
+}
+
+func ZoneNameOrMode(mode config_core.CpMode, name string) string {
+	zoneName := ""
+	switch mode {
+	case config_core.Zone:
+		zoneName = name
+	case config_core.Global:
+		zoneName = "Global"
+	case config_core.Standalone:
+		zoneName = "Standalone"
+	}
+
+	return zoneName
 }
