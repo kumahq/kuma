@@ -3,11 +3,10 @@ package inspect
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"io"
+	"net/http"
 
 	"github.com/kumahq/kuma/api/openapi/types"
 	. "github.com/kumahq/kuma/test/framework"
@@ -163,5 +162,46 @@ func Inspect() {
 				g.Expect(result.Items[0].Name).To(HavePrefix("kuma-4.test-server"))
 			}, "30s", "1s").Should(Succeed())
 		})
+
+		It("should execute inspect rules of dataplane", func() {
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshTimeout
+name: mt1
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, meshName))(multizone.Global)).To(Succeed())
+			Eventually(func(g Gomega) {
+				clientDp := "kuma-4.test-server"
+				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, clientDp))
+				g.Expect(err).ToNot(HaveOccurred())
+				defer r.Body.Close()
+				g.Expect(r).To(HaveHTTPStatus(200))
+
+				body, err := io.ReadAll(r.Body)
+				g.Expect(err).ToNot(HaveOccurred())
+				result := types.InspectRulesForDataplaneResponse{}
+				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
+
+				g.Expect(result.Resource.Name).To(Equal(clientDp))
+				g.Expect(result.Rules).ToNot(BeEmpty())
+				for _, rule := range result.Rules {
+					if rule.Type == "MeshTimeout" {
+						g.Expect(rule.ToRules).ToNot(BeNil())
+						g.Expect(*rule.ToRules).ToNot(BeEmpty())
+						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mt1"))
+					}
+				}
+			}, "30s", "1s").Should(Succeed())
+		})
+
 	})
 }
