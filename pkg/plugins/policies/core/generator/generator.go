@@ -18,13 +18,13 @@ func NewGenerator() generator_core.ResourceGenerator {
 }
 
 type generator struct {
-	plugins map[plugins.PluginName]plugins.PolicyPlugin
+	plugins []plugins.RegisteredPolicyPlugin
 }
 
 func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
 	for _, policy := range g.plugins {
-		if err := policy.Apply(rs, xdsCtx, proxy); err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policy)
+		if err := policy.Plugin.Apply(rs, xdsCtx, proxy); err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policy.Name)
 		}
 	}
 	return rs, nil

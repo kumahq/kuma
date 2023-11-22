@@ -135,17 +135,17 @@ func (p *EgressProxyBuilder) Build(
 
 func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
 	policies := core_xds.PluginOriginatedPolicies{}
-	for name, plugin := range core_plugins.Plugins().PolicyPlugins() {
-		egressPlugin, ok := plugin.(core_plugins.EgressPolicyPlugin)
+	for _, plugin := range core_plugins.Plugins().PolicyPlugins() {
+		egressPlugin, ok := plugin.Plugin.(core_plugins.EgressPolicyPlugin)
 		if !ok {
 			continue
 		}
 		res, err := egressPlugin.EgressMatchedPolicies(tags, resources)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", plugin.Name)
 		}
 		if res.Type == "" {
-			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
+			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", plugin.Name)
 		}
 		policies[res.Type] = res
 	}

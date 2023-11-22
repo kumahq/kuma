@@ -32,6 +32,11 @@ const (
 	CaProvided PluginName = "provided"
 )
 
+type RegisteredPolicyPlugin struct {
+	Plugin PolicyPlugin
+	Name   PluginName
+}
+
 type Registry interface {
 	BootstrapPlugins() []BootstrapPlugin
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
@@ -40,7 +45,7 @@ type Registry interface {
 	RuntimePlugins() map[PluginName]RuntimePlugin
 	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
-	PolicyPlugins() map[PluginName]PolicyPlugin
+	PolicyPlugins() []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
 }
 
@@ -55,30 +60,31 @@ type MutableRegistry interface {
 
 func NewRegistry() MutableRegistry {
 	return &registry{
-		bootstrap:      make(map[PluginName]BootstrapPlugin),
-		resourceStore:  make(map[PluginName]ResourceStorePlugin),
-		secretStore:    make(map[PluginName]SecretStorePlugin),
-		configStore:    make(map[PluginName]ConfigStorePlugin),
-		runtime:        make(map[PluginName]RuntimePlugin),
-		ca:             make(map[PluginName]CaPlugin),
-		authnAPIServer: make(map[PluginName]AuthnAPIServerPlugin),
-		policy:         make(map[PluginName]PolicyPlugin),
-		proxy:          make(map[PluginName]ProxyPlugin),
+		bootstrap:          make(map[PluginName]BootstrapPlugin),
+		resourceStore:      make(map[PluginName]ResourceStorePlugin),
+		secretStore:        make(map[PluginName]SecretStorePlugin),
+		configStore:        make(map[PluginName]ConfigStorePlugin),
+		runtime:            make(map[PluginName]RuntimePlugin),
+		ca:                 make(map[PluginName]CaPlugin),
+		authnAPIServer:     make(map[PluginName]AuthnAPIServerPlugin),
+		proxy:              make(map[PluginName]ProxyPlugin),
+		registeredPolicies: make(map[PluginName]PolicyPlugin),
 	}
 }
 
 var _ MutableRegistry = &registry{}
 
 type registry struct {
-	bootstrap      map[PluginName]BootstrapPlugin
-	resourceStore  map[PluginName]ResourceStorePlugin
-	secretStore    map[PluginName]SecretStorePlugin
-	configStore    map[PluginName]ConfigStorePlugin
-	runtime        map[PluginName]RuntimePlugin
-	proxy          map[PluginName]ProxyPlugin
-	ca             map[PluginName]CaPlugin
-	authnAPIServer map[PluginName]AuthnAPIServerPlugin
-	policy         map[PluginName]PolicyPlugin
+	bootstrap          map[PluginName]BootstrapPlugin
+	resourceStore      map[PluginName]ResourceStorePlugin
+	secretStore        map[PluginName]SecretStorePlugin
+	configStore        map[PluginName]ConfigStorePlugin
+	runtime            map[PluginName]RuntimePlugin
+	proxy              map[PluginName]ProxyPlugin
+	ca                 map[PluginName]CaPlugin
+	authnAPIServer     map[PluginName]AuthnAPIServerPlugin
+	orderedPolicies    []PluginName
+	registeredPolicies map[PluginName]PolicyPlugin
 }
 
 func (r *registry) ResourceStore(name PluginName) (ResourceStorePlugin, error) {
@@ -117,8 +123,15 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 	return r.proxy
 }
 
-func (r *registry) PolicyPlugins() map[PluginName]PolicyPlugin {
-	return r.policy
+func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
+	var plugins []RegisteredPolicyPlugin
+	for _, policy := range r.orderedPolicies {
+		plugins = append(plugins, RegisteredPolicyPlugin{
+			Plugin: r.registeredPolicies[policy],
+			Name:   policy,
+		})
+	}
+	return plugins
 }
 
 func (r *registry) BootstrapPlugins() []BootstrapPlugin {
@@ -185,13 +198,14 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.authnAPIServer[name] = authn
 	}
 	if policy, ok := plugin.(PolicyPlugin); ok {
-		if old, exists := r.policy[name]; exists {
+		if old, exists := r.registeredPolicies[name]; exists {
 			return pluginAlreadyRegisteredError(policyPlugin, name, old, policy)
 		}
-		r.policy[name] = policy
+		r.registeredPolicies[name] = policy
+		r.orderedPolicies = append(r.orderedPolicies, name)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {
-		if old, exists := r.policy[name]; exists {
+		if old, exists := r.registeredPolicies[name]; exists {
 			return pluginAlreadyRegisteredError(proxyPlugin, name, old, proxy)
 		}
 		r.proxy[name] = proxy

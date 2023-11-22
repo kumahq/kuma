@@ -7,7 +7,7 @@ import (
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/v1alpha1"
 )
 
-func init() {
+func Register() {
 	core.Register(
 		api_v1alpha1.MeshRetryResourceTypeDescriptor,
 		k8s_v1alpha1.AddToScheme,

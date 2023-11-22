@@ -7,7 +7,7 @@ import (
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 )
 
-func init() {
+func Register() {
 	core.Register(
 		api_v1alpha1.MeshHealthCheckResourceTypeDescriptor,
 		k8s_v1alpha1.AddToScheme,

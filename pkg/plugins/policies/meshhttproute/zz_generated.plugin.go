@@ -7,7 +7,7 @@ import (
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 )
 
-func init() {
+func Register() {
 	core.Register(
 		api_v1alpha1.MeshHTTPRouteResourceTypeDescriptor,
 		k8s_v1alpha1.AddToScheme,

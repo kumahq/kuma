@@ -7,7 +7,7 @@ import (
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
 )
 
-func init() {
+func Register() {
 	core.Register(
 		api_v1alpha1.MeshProxyPatchResourceTypeDescriptor,
 		k8s_v1alpha1.AddToScheme,
