@@ -150,11 +150,13 @@ spec:
                 name: test-server
                 weight: 1
                 tags:
+                  kuma.io/zone: kuma-5
                   version: v1
               - kind: MeshServiceSubset
                 name: test-server
                 weight: 1
                 tags:
+                  kuma.io/zone: kuma-5
                   version: v2
 `, meshName))(multizone.Global)).To(Succeed())
 
