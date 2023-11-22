@@ -205,7 +205,7 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 		r.orderedPolicies = append(r.orderedPolicies, name)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {
-		if old, exists := r.registeredPolicies[name]; exists {
+		if old, exists := r.proxy[name]; exists {
 			return pluginAlreadyRegisteredError(proxyPlugin, name, old, proxy)
 		}
 		r.proxy[name] = proxy
