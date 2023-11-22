@@ -62,7 +62,7 @@ func (i IngressGenerator) Generate(
 		}
 		resources.Add(edsResources...)
 
-		zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
+		zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap, zoneproxy.NoFilter)
 	}
 
 	listener, err := listenerBuilder.Build()
