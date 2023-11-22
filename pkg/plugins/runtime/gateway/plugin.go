@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	policies_generator "github.com/kumahq/kuma/pkg/plugins/policies/generator"
+	policies_generator "github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
