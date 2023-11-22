@@ -178,10 +178,8 @@ jobs:
     needs: ["build"]
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
-      slow: ${{ steps.generate-matrix.outputs.slow }}
-      main: ${{ steps.generate-matrix.outputs.main }}
-      legacy_kds: ${{ steps.generate-matrix.outputs.legacy_kds }}
-      cni: ${{ steps.generate-matrix.outputs.cni }}
+      test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
+      test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
     steps:
       - name: Install jq
         run: |
@@ -189,55 +187,60 @@ jobs:
       - id: generate-matrix
         name: Generate matrix
         run: |
-          BASE_MATRIX=$(cat <<-END
+          BASE_MATRIX_SLOW=$(cat <<-END
+          {
+            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+            "arch": ["amd64", "arm64"]
+          }
+          END
+          )
+          BASE_MATRIX_ENV=$(cat <<-END
           {
             "target": ["kubernetes", "universal", "multizone"],
             "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
             "arch": ["amd64", "arm64"],
-            "cniNetworkPlugin": ["flannel"],
-            "legacyKDS": [false],
+            "cniNetworkPlugin": ["flannel", "calico"],
+            "legacyKDS": [false, true],
             "exclude":[
+              {"cniNetworkPlugin": "calico"},
+              {"legacyKDS": true},
               {"target": "kubernetes", "k8sVersion":"kind"},
               {"target": "multizone", "k8sVersion":"kind"},
               {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"}, 
               {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+            ],
+            "include":[
+              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
+              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
             ]
           }
           END
           )
           
-          SLOW=$(echo $BASE_MATRIX | jq -rc '.target = [""]')
-          MAIN=$(echo $BASE_MATRIX | jq -rc)
-          
-          SINGLE_ENV='{"k8sVersion": ["${{ env.K8S_MAX_VERSION }}"], "target": ["multizone"], "arch":["amd64"]}'
-          LEGACY_KDS=$(echo '{}' | jq -rc ".legacyKDS = [true] | . += $SINGLE_ENV")
-          CNI=$(echo '{}' | jq -rc ".cniNetworkPlugin = [\"calico\"] | . += $SINGLE_ENV")
+          MATRIX_SLOW=$(echo $BASE_MATRIX_SLOW | jq -rc)
+          MATRIX_ENV=$(echo $BASE_MATRIX_ENV | jq -rc)
 
           RUN_FULL_MATRIX="${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
           if [[ "$RUN_FULL_MATRIX" == "false" ]]; then
             echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
 
-            SLOW=''         # target==""
-            LEGACY_KDS=''   # legacyKDS=="true"
-            CNI=''          # cniNetworkPlugin=="calico"
+            MATRIX_SLOW=''  # target==""
           
             # non priority main e2e
             EXCLUDE_ARM64='[{"arch": "arm64"}]'
             EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
-            MAIN=$(echo $MAIN | jq -rc ".exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
+            MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "del(.include) | .exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
           fi
 
-          echo "slow=$SLOW" >> $GITHUB_OUTPUT
-          echo "main=$MAIN" >> $GITHUB_OUTPUT
-          echo "legacy_kds=$LEGACY_KDS" >> $GITHUB_OUTPUT
-          echo "cni=$CNI" >> $GITHUB_OUTPUT
-  e2e_slow:
+          echo "test_e2e=$MATRIX_SLOW" >> $GITHUB_OUTPUT
+          echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
+  test_e2e:
     name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
     runs-on: ubuntu-latest
     needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.slow != ''
+    if: needs.gen_e2e_matrix.outputs.test_e2e != ''
     strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.slow) }}
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
     steps:
       - run: |
           echo "k8sVersion: ${{ matrix.k8sVersion }}"
@@ -255,13 +258,13 @@ jobs:
           parallelism: 3
           target: ""
           secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
-  e2e_main:
-    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
+  test_e2e_env:
+    name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
     runs-on: ubuntu-latest
     needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.main != ''
+    if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
     strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.main) }}
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
     steps:
       - run: |
           echo "k8sVersion: ${{ matrix.k8sVersion }}"
@@ -278,56 +281,6 @@ jobs:
           k8sVersion: ${{ matrix.k8sVersion }}
           target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
-          secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
-  e2e_legacy_kds:
-    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}-legacy-kds"
-    runs-on: ubuntu-latest
-    needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.legacy_kds != ''
-    strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.legacy_kds) }}
-    steps:
-      - run: |
-          echo "k8sVersion: ${{ matrix.k8sVersion }}"
-          echo "target: ${{ matrix.target }}"
-          echo "arch: ${{ matrix.arch }}"
-          echo "legacyKDS: ${{ matrix.arch }}"
-      - name: Install jq
-        run: |
-          sudo apt-get install -y jq
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/e2e
-        with:
-          k8sVersion: ${{ matrix.k8sVersion }}
-          target: ${{ matrix.arch }}
-          arch: ${{ matrix.arch }}
           legacyKDS: ${{ matrix.legacyKDS }}
-          secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
-  e2e_calico:
-    name: "${{ matrix.target }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}-calico"
-    runs-on: ubuntu-latest
-    needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.cni != ''
-    strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.cni) }}
-    steps:
-      - run: |
-          echo "k8sVersion: ${{ matrix.k8sVersion }}"
-          echo "target: ${{ matrix.target }}"
-          echo "arch: ${{ matrix.arch }}"
-          echo "cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}"
-      - name: Install jq
-        run: |
-          sudo apt-get install -y jq
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/e2e
-        with:
-          k8sVersion: ${{ matrix.k8sVersion }}
-          target: ${{ matrix.arch }}
-          arch: ${{ matrix.arch }}
           cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
           secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
