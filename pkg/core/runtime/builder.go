@@ -103,7 +103,7 @@ type Builder struct {
 	*runtimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
-	apiWebServiceCustomize   func(*restful.WebService) error
+	apiWebServiceCustomize   []func(*restful.WebService) error
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
@@ -290,7 +290,7 @@ func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.P
 }
 
 func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService) error) *Builder {
-	b.apiWebServiceCustomize = customize
+	b.apiWebServiceCustomize = append(b.apiWebServiceCustomize, customize)
 	return b
 }
 
@@ -542,9 +542,6 @@ func (b *Builder) Tenants() multitenant.Tenants {
 	return b.tenants
 }
 
-func (b *Builder) APIWebServiceCustomize() func(*restful.WebService) error {
-	if b.apiWebServiceCustomize == nil {
-		return func(*restful.WebService) error { return nil }
-	}
+func (b *Builder) APIWebServiceCustomize() []func(*restful.WebService) error {
 	return b.apiWebServiceCustomize
 }
