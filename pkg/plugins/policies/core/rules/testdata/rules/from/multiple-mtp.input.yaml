@@ -1,4 +1,4 @@
----
+# MeshTrafficPermission with mix of MeshService and MeshServiceSubset
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
