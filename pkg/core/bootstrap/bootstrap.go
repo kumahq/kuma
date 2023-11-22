@@ -219,15 +219,7 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 		// do not configure if it was already configured in BeforeBootstrap
 		return nil
 	}
-	zoneName := ""
-	switch builder.Config().Mode {
-	case config_core.Zone:
-		zoneName = builder.Config().Multizone.Zone.Name
-	case config_core.Global:
-		zoneName = "Global"
-	case config_core.Standalone:
-		zoneName = "Standalone"
-	}
+	zoneName := metrics.ZoneNameOrMode(builder.Config().Mode, builder.Config().Multizone.Zone.Name)
 	metrics, err := metrics.NewMetrics(zoneName)
 	if err != nil {
 		return err

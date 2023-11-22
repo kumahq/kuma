@@ -100,10 +100,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
 	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
-	zoneName := "Standalone"
-	if b.Config().Mode == config_core.Zone {
-		zoneName = b.Config().Multizone.Zone.Name
-	}
+	zoneName := core_metrics.ZoneNameOrMode(b.Config().Mode, b.Config().Multizone.Zone.Name)
 	metrics, err := core_metrics.NewMetricsOfRegistererGatherer(zoneName, kube_metrics.Registry)
 	if err != nil {
 		return err
