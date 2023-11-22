@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/xds"
@@ -156,7 +157,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), nil, ctx, proxy)
+			rs, err := gen.Generate(context.Background(), core_xds.NewResourceSet(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
