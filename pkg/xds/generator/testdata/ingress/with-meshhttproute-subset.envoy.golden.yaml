@@ -81,6 +81,7 @@ resources:
           metadataMatch:
             filterMetadata:
               envoy.lb:
+                kuma.io/zone: zone
                 region: eu
                 version: v1
           statPrefix: mesh1_backend
