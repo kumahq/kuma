@@ -1043,6 +1043,7 @@ var _ = Describe("Resource Endpoints", func() {
 	DescribeTable("inspect for policies /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("inspect/policies/_resources/dataplanes"))
+
 	DescribeTable("inspect dataplane rules /meshes/{mesh}/dataplanes/{dpName}/_rules", func(inputFile string) {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)

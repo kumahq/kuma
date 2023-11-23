@@ -3,10 +3,10 @@ package inspect
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"io"
 	"net/http"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/openapi/types"
 	. "github.com/kumahq/kuma/test/framework"
@@ -202,6 +202,5 @@ spec:
 				}
 			}, "30s", "1s").Should(Succeed())
 		})
-
 	})
 }
