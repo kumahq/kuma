@@ -216,7 +216,7 @@ jobs:
           }
           END
           )
-          
+
           MATRIX_SLOW=$(echo $BASE_MATRIX_SLOW | jq -rc)
           MATRIX_ENV=$(echo $BASE_MATRIX_ENV | jq -rc)
 
@@ -225,7 +225,7 @@ jobs:
             echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
 
             MATRIX_SLOW=''  # target==""
-          
+
             # non priority main e2e
             EXCLUDE_ARM64='[{"arch": "arm64"}]'
             EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
