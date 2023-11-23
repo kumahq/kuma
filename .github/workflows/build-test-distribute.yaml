@@ -206,7 +206,7 @@ jobs:
               {"legacyKDS": true},
               {"target": "kubernetes", "k8sVersion":"kind"},
               {"target": "multizone", "k8sVersion":"kind"},
-              {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"}, 
+              {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
               {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
             ],
             "include":[
