@@ -118,9 +118,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
-			// If we don't have a gateway, we don't want our Service anymore
+			// If we don't have a gateway, we don't change anything. If the Service was already created, we keep it.
+			// If there is no Service, we don't create one. We don't want to break the traffic if MeshGateway is absent
+			// for a short period of time (i.e. due to renaming).
 			if gateway == nil {
-				return nil, nil
+				return obj, nil
 			}
 
 			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
