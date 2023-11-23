@@ -21,7 +21,7 @@ inputs:
     description: The CNI networking plugin to use [flannel | calico]
     default: flannel
     required: false
-  deltaKDS:
+  legacyKDS:
     description: if should run tests with new implementation of KDS
     default: 'false'
     required: false
@@ -38,7 +38,7 @@ runs:
             cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
             "
       shell: bash
-    - id: random-number-generator
+    - id: circleci-trigger
       run: |
         echo "Invoking CircleCI (todo)"
       shell: bash
