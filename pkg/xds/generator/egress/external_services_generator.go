@@ -176,6 +176,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				envoy_common.WithName(clusterName),
 				envoy_common.WithService(serviceName),
 				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+				envoy_common.WithExternalService(true),
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(serviceName, meshName)).Configure(

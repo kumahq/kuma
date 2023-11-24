@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"strings"
 	"time"
@@ -69,6 +70,27 @@ type Resource interface {
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
 	Descriptor() ResourceTypeDescriptor
+}
+
+type ResourceHasher interface {
+	Hash() []byte
+}
+
+func Hash(resource Resource) []byte {
+	if r, ok := resource.(ResourceHasher); ok {
+		return r.Hash()
+	}
+	return HashMeta(resource)
+}
+
+func HashMeta(r Resource) []byte {
+	meta := r.GetMeta()
+	hasher := fnv.New128a()
+	_, _ = hasher.Write([]byte(r.Descriptor().Name))
+	_, _ = hasher.Write([]byte(meta.GetMesh()))
+	_, _ = hasher.Write([]byte(meta.GetName()))
+	_, _ = hasher.Write([]byte(meta.GetVersion()))
+	return hasher.Sum(nil)
 }
 
 type ResourceValidator interface {
@@ -372,6 +394,29 @@ func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
 		rkey = append(rkey, MetaToResourceKey(r.GetMeta()))
 	}
 	return rkey
+}
+
+func ResourceListByMesh(rl ResourceList) (map[string]ResourceList, error) {
+	res := map[string]ResourceList{}
+	for _, r := range rl.GetItems() {
+		mrl, ok := res[r.GetMeta().GetMesh()]
+		if !ok {
+			mrl = r.Descriptor().NewList()
+			res[r.GetMeta().GetMesh()] = mrl
+		}
+		if err := mrl.AddItem(r); err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func ResourceListHash(rl ResourceList) []byte {
+	hasher := fnv.New128()
+	for _, entity := range rl.GetItems() {
+		_, _ = hasher.Write(Hash(entity))
+	}
+	return hasher.Sum(nil)
 }
 
 type ResourceList interface {

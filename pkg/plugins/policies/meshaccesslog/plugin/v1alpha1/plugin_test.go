@@ -14,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -73,15 +72,9 @@ var _ = Describe("MeshAccessLog", func() {
 						).
 						AddOutbounds(given.outbounds),
 				).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshAccessLogType: {
-							Type:      api.MeshAccessLogType,
-							ToRules:   given.toRules,
-							FromRules: given.fromRules,
-						},
-					},
-				}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
+				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -969,14 +962,7 @@ var _ = Describe("MeshAccessLog", func() {
 						WithMesh("default").
 						WithBuiltInGateway("gateway"),
 				).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshAccessLogType: {
-							Type:    api.MeshAccessLogType,
-							ToRules: given.toRules,
-						},
-					},
-				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshAccessLogType, given.toRules)).
 				Build()
 
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {

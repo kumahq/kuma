@@ -123,7 +123,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		rt.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		server.MeshResourceTypes(),
 		rt.LookupIP(),
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager(), false),

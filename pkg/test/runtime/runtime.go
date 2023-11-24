@@ -30,6 +30,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
@@ -131,6 +132,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
 		DataplaneToken:   tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
@@ -179,7 +181,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 func initializeMeshCache(builder *core_runtime.Builder) error {
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
-		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
+		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),

@@ -13,8 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -100,15 +98,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						AddOutboundsToServices("other-service", "second-service").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
 				).
-				WithPolicies(core_xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						api.MeshCircuitBreakerType: {
-							Type:      api.MeshCircuitBreakerType,
-							FromRules: given.fromRules,
-							ToRules:   given.toRules,
-						},
-					},
-				}).
+				WithPolicies(
+					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
+				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -415,14 +407,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshCircuitBreakerType: {
-							Type:    api.MeshCircuitBreakerType,
-							ToRules: given.toRules,
-						},
-					},
-				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshCircuitBreakerType, given.toRules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)

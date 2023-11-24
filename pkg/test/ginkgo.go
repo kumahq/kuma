@@ -58,7 +58,9 @@ func EntriesForFolder(folder string) []ginkgo.TableEntry {
 	var entries []ginkgo.TableEntry
 	testDir := path.Join("testdata", folder)
 	files, err := os.ReadDir(testDir)
-	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	if err != nil {
+		panic(err)
+	}
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), ".input.yaml") {
 			input := path.Join(testDir, f.Name())
