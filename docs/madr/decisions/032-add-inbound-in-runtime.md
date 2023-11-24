@@ -67,7 +67,7 @@ Chosen option: "Ignore labels in selector to add ignored listener". While it's t
 ## Pros and Cons of the Options
 
 To consider options, we need to first introduce new concept of "Ignored" listener.
-Instead of `healthy: false/true` we also need another state of the listener.
+Instead of `healthy.ready: false/true` we also need another state of the listener.
 
 ```yaml
 type: Dataplane
@@ -84,26 +84,29 @@ networking:
       state: Ready | NotReady | Ignored
 ```
 
-* Ready - listener is ready to receive the traffic (equivalent of existing `healthy: true`)
-* NotReady - listener is not ready to receive the traffic (equivalent of existing `healthy: false`)
+* Ready - listener is ready to receive the traffic (equivalent of existing `healthy.ready: true`)
+* NotReady - listener is not ready to receive the traffic (equivalent of existing `healthy.ready: false`)
 * Ignored - listener is not created. It cannot be targeted by policies. It will however receive a cert with `kuma.io/service` of this listener.
 
+`state` field would replace `healthy` branch. 
+
 **Why we need Ignored state. Can't we just use NotReady?**
-* Targeting outbound. Let say we have active `backend` and `backend-preview`. We want to redirect the traffic from `backend-preview` to `redis-staging`.
-  We create traffic policies `backend->redis` and `backend-preview->redis-staging`. If `backend-preview` gets NotReady listener for `backend` and ready for `backend-preview`.
-  It may match either `backend->redis` or `backend-preview->redis-staging` and cause unexpected behavior.
-* GUI handling. DPP with at least one unhealthy inbound is considered offline. Service with unhealthy inbound is considered partially degraded.
+* Targeting outbound. Let say we have `backend` and `backend-preview` services. We want to redirect the traffic from `backend-preview` to `redis-staging`.
+  We create traffic policies `backend->redis` and `backend-preview->redis-staging`.
+  Let's say we have a data plane proxy in the middle of ArgoCD rollout, so with Ready `backend-preview` listener and NotReady `backend`.
+  It may match either `backend->redis` or `backend-preview->redis-staging`, but we only really want to match `backend-preview->redis-staging`. 
+* GUI handling. Data plane proxy with at least one unhealthy inbound is considered offline. Service with unhealthy inbound is considered partially degraded.
   This might be confusing for users as rollout is an operation that brings more attention to inspect what is going on in infra.
-  Ignored listeners can be just not be considered when computing status of DPP / Service.
+  Ignored listeners can be just not be considered when computing status of data plane proxy / Service.
 
 ### Wait for certs using Dataplane Insights
 
-Ideally we would like to just mark the inbound as `healthy: false` until we know we received certificate for `kuma.io/service` in this listener.
-Inbounds with `healthy: false` are not included in endpoints set for clients.
+Ideally we would like to just mark the inbound as `healthy.ready: false` until we know we received certificate for `kuma.io/service` in this listener.
+Inbounds with `healthy.ready: false` are not included in endpoints set for clients.
 
 However, implementing this is quite difficult.
-With multiple instances of CP, it might be so one instance is responsible for generating Dataplane object (leader - Pod Controller)
-and another instance is handling XDS of this data plane proxy - it has information that DPP received cert.
+With multiple instances of the control plane, it might be so one instance is responsible for generating Dataplane object (leader - Pod Controller)
+and another instance is handling XDS of this data plane proxy - it has information that data plane proxy received cert.
 To synchronize this information between instances we would need to store it in DataplaneInsight.
 Then, when generating Dataplane from Pod we need to check DataplaneInsight.
 
@@ -115,11 +118,11 @@ This option does not require introducing new "Ignored" state.
 ### Wait for certs using XDS callbacks
 
 Pod Controller could detect that we are just about to add listener in runtime for healthy pod, and it would mark listener as "Ignored"
-We would have a new XDS Callbacks that whenever we deliver a new cert and DPP ACKs them, check if Dataplane object has "Ignored" listener and update it to be ready.
+We would have a new XDS Callbacks that whenever we deliver a new cert and data plane proxy confirms them (sent ACK), check if Dataplane object has "Ignored" listener and update it to be ready.
 
 Disadvantages:
 * We have two writers, which can lead to races, bugs etc.
-* We need to fetch (and potentially update) Dataplane object whenever there is cert delivery = more requests to the DB.
+* We need to fetch (and potentially update) Dataplane object whenever there is cert delivery = more requests to the database.
 
 ### Ignore labels in selector to add ignored listener
 
