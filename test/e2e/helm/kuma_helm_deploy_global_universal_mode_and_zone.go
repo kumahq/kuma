@@ -106,6 +106,8 @@ stringData:
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
 		Expect(zoneCluster.DismissCluster()).To(Succeed())
+		Expect(globalCluster.DeleteNamespace(Config.KumaNamespace)).To(Succeed())
+		Expect(zoneCluster.DeleteNamespace(Config.KumaNamespace)).To(Succeed())
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {

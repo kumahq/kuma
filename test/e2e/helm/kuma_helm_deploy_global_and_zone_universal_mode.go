@@ -20,10 +20,10 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 	BeforeAll(func() {
 		var err error
-		globalCluster = NewK8sCluster(NewTestingT(), Kuma3, Silent).
+		globalCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-		zoneCluster = NewK8sCluster(NewTestingT(), Kuma4, Silent).
+		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
@@ -34,7 +34,7 @@ func GlobalAndZoneInUniversalModeWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
-			Install(postgres.Install(Kuma4,
+			Install(postgres.Install(Kuma2,
 				postgres.WithK8sNamespace(Config.KumaNamespace),
 				postgres.WithUsername("mesh"),
 				postgres.WithPassword("mesh"),
@@ -100,6 +100,8 @@ stringData:
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
 		Expect(zoneCluster.DismissCluster()).To(Succeed())
+		Expect(globalCluster.DeleteNamespace(Config.KumaNamespace)).To(Succeed())
+		Expect(zoneCluster.DeleteNamespace(Config.KumaNamespace)).To(Succeed())
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {
