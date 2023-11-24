@@ -406,7 +406,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if name != resourceMeta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
-	if r.mode == config_core.Zone && !r.doesNameLengthFitsGlobal(name) {
+	if r.mode == config_core.Zone && !r.doesNameLengthFitsGlobal(name) { // fixme
 		err.AddViolation("name", "the length of the name must be shorter")
 	}
 	if string(r.descriptor.Name) != resourceMeta.Type {

@@ -35,7 +35,7 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	if rt.Config().Mode != config_core.Zone {
+	if rt.Config().Mode != config_core.Zone || !rt.Config().IsFederatedZoneCP() {
 		// Only run on zone
 		return nil
 	}

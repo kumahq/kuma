@@ -91,11 +91,12 @@ func (m *metrics) BulkRegister(cs ...prometheus.Collector) error {
 func ZoneNameOrMode(mode config_core.CpMode, name string) string {
 	switch mode {
 	case config_core.Zone:
+		if name == "" {
+			return "Zone"
+		}
 		return name
 	case config_core.Global:
 		return "Global"
-	case config_core.Standalone:
-		return "Standalone"
 	default:
 		return ""
 	}
