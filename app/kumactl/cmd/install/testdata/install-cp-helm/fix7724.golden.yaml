@@ -354,7 +354,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: ec0bc0b5613dc75c86fb3dc148f404db4eaec3e3817ee4eba2a70fd1bc535999
+        checksum/tls-secrets: ef229d2d8e83f89fc76345a85158c87105b2b3553cbfbba83b25dce66479a6e3
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -633,30 +633,6 @@ webhooks:
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /inject-sidecar
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-        resources:
-          - pods
-    sideEffects: None
-  - name: kuma-injector.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore 
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
