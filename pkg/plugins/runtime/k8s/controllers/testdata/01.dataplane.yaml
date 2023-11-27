@@ -25,9 +25,7 @@ spec:
         kuma.io/service: example_demo_svc_443
         kuma.io/zone: zone-1
         version: "0.1"
-    - health:
-        ready: true
-      port: 7070
+    - port: 7070
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -37,9 +35,7 @@ spec:
         kuma.io/service: sample_playground_svc_7071
         kuma.io/zone: zone-1
         version: "0.1"
-    - health:
-        ready: true
-      port: 6060
+    - port: 6060
       tags:
         app: example
         k8s.kuma.io/namespace: demo

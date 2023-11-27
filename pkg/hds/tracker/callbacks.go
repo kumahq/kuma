@@ -208,11 +208,12 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 		} else {
 			workloadHealth = envoyHealth
 		}
-		if inbound.Health == nil || inbound.Health.Ready != workloadHealth {
-			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-				Ready: workloadHealth,
-			}
+		if workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_NOT_READY {
+			inbound.State = mesh_proto.Dataplane_Networking_Inbound_READY
 			changed = true
+		} else if !workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_READY {
+			inbound.State = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			changed = false
 		}
 	}
 

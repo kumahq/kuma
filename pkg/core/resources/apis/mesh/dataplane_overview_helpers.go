@@ -24,7 +24,7 @@ func (t *DataplaneOverviewResource) GetStatus() (Status, []string) {
 	var errs []string
 
 	for _, inbound := range t.Spec.Dataplane.Networking.Inbound {
-		if inbound.Health != nil && !inbound.Health.Ready {
+		if (inbound.Health != nil && !inbound.Health.Ready) || inbound.State == mesh_proto.Dataplane_Networking_Inbound_NOT_READY {
 			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
 		}
 	}

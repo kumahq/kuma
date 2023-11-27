@@ -21,6 +21,7 @@ injector:
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP
     programsSourcePath: /kuma/ebpf
+  ignoredServiceSelectorLabels: []
   exceptions:
     labels:
       openshift.io/build.name: '*'
