@@ -20,7 +20,7 @@ type (
 	ResourceMapper func(features kds.Features, r model.Resource) (model.Resource, error)
 )
 
-func NoopResourceMapper(r model.Resource) (model.Resource, error) {
+func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {
 	return r, nil
 }
 
