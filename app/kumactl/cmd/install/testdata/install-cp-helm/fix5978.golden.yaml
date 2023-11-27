@@ -413,7 +413,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: ef229d2d8e83f89fc76345a85158c87105b2b3553cbfbba83b25dce66479a6e3
+        checksum/tls-secrets: 87b73793dde9ce325cf7c6f129e091e2a9a4f88a44b1f01663fd0f1a18e6472b
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -931,7 +931,7 @@ webhooks:
           values: ["kube-system"]
         - key: kuma.io/sidecar-injection
           operator: In
-          values: ["enabled"]
+          values: ["enabled", "true"]
     clientConfig:
       caBundle: XYZ
       service:
