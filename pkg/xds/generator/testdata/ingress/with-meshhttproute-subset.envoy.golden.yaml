@@ -13,7 +13,6 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - kuma.io/zone
         - region
         - version
     name: mesh1:backend
