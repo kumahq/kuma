@@ -17,3 +17,5 @@ const FeatureZoneToken string = "zone-token"
 // FeatureZonePingHealth means that the zone control plane sends pings to the
 // global control plane to indicate it's still running.
 const FeatureZonePingHealth string = "zone-ping-health"
+
+const FeatureHashSuffix string = "hash-suffix"

@@ -88,14 +88,14 @@ func DefaultContext(
 // a single ResourceMapper which calls each in order. If an error
 // occurs, the first one is returned and no further mappers are executed.
 func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
-	return func(r model.Resource) (model.Resource, error) {
+	return func(features kds.Features, r model.Resource) (model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
 			if mapper == nil {
 				continue
 			}
 
-			r, err = mapper(r)
+			r, err = mapper(features, r)
 			if err != nil {
 				return r, err
 			}
@@ -112,7 +112,7 @@ type specWithDiscoverySubscriptions interface {
 // MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
 // the field has only local relevance. This prevents reconciliation from unnecessarily
 // deeming the object to have changed.
-func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error) {
+func MapInsightResourcesZeroGeneration(_ kds.Features, r model.Resource) (model.Resource, error) {
 	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
 		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
 		for _, sub := range spec.GetSubscriptions() {
@@ -135,6 +135,7 @@ func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error)
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(
+	_ kds.Features,
 	r model.Resource,
 ) (model.Resource, error) {
 	resType := r.Descriptor().Name
@@ -184,7 +185,7 @@ func RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
 		return nil
 	}
 
-	return func(r model.Resource) (model.Resource, error) {
+	return func(_ kds.Features, r model.Resource) (model.Resource, error) {
 		if r.Descriptor().IsPluginOriginated {
 			util.TrimSuffixFromName(r, k8sSystemNamespace)
 		}
@@ -193,7 +194,11 @@ func RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
 	}
 }
 
-func AddHashSuffix(r model.Resource) (model.Resource, error) {
+func AddHashSuffix(features kds.Features, r model.Resource) (model.Resource, error) {
+	if !features.HasFeature(kds.FeatureHashSuffix) {
+		return r, nil
+	}
+
 	if r.Descriptor().Scope == model.ScopeGlobal {
 		return r, nil
 	}
