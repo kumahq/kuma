@@ -162,8 +162,6 @@ func (c E2eConfig) AutoConfigure() error {
 	Config.Arch = runtime.GOARCH
 	Config.OS = runtime.GOOS
 
-	Config.KumaCpConfig.Multizone.Global.Envs["KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX"] = "true"
-
 	return nil
 }
 

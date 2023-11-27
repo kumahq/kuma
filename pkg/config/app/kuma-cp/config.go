@@ -254,7 +254,6 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
 			},
-			KDSSyncNameWithHashSuffix: false,
 		},
 		Proxy:    xds.DefaultProxyConfig(),
 		InterCp:  intercp.DefaultInterCpConfig(),
@@ -418,9 +417,6 @@ type ExperimentalConfig struct {
 	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
 	// Lack of MeshTrafficPermission is treated as Deny the traffic.
 	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
-	// KDSSyncNameWithHashSuffix if true then during KDS sync resource name is going to be suffixed with hash.
-	// The hash is computed based on various resource characteristics like mesh, namespace, etc.
-	KDSSyncNameWithHashSuffix bool `json:"kdsSyncNameWithHashSuffix" envconfig:"KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
