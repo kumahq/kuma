@@ -18,4 +18,6 @@ const FeatureZoneToken string = "zone-token"
 // global control plane to indicate it's still running.
 const FeatureZonePingHealth string = "zone-ping-health"
 
+// FeatureHashSuffix means that the zone control plane has a fix for the MeshGateway renaming
+// issue https://github.com/kumahq/kuma/pull/8450 and can handle the hash suffix in the resource name.
 const FeatureHashSuffix string = "hash-suffix"
