@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -37,7 +38,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceTLSReadiness)
+	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceInformations.TLSReadiness)
 
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
@@ -50,7 +51,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
-		protocol := InferProtocol(proxy, clusters)
+		protocol := InferProtocol(xdsCtx.Mesh.ServiceInformations.Protocol, clusters)
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			if hasMeshRoutes {
@@ -188,7 +189,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := InferProtocol(proxy, service.Clusters())
+		protocol := InferProtocol(ctx.Mesh.ServiceInformations.Protocol, service.Clusters())
 		tlsReady := service.TLSReady()
 
 		for _, c := range service.Clusters() {
@@ -309,18 +310,18 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-// InferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
-// Deprecated: for new policies use InferProtocol from pkg/plugins/policies/xds/clusters.go
-func InferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
-	var allEndpoints []model.Endpoint
+func InferProtocol(servicesProtocol map[string]core_mesh.Protocol, clusters []envoy_common.Cluster) core_mesh.Protocol {
+	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
-		endpoints := model.EndpointList(proxy.Routing.OutboundTargets[serviceName])
-		allEndpoints = append(allEndpoints, endpoints...)
-		endpoints = proxy.Routing.ExternalServiceOutboundTargets[serviceName]
-		allEndpoints = append(allEndpoints, endpoints...)
+		currentProtocol := servicesProtocol[serviceName]
+		if protocol == core_mesh.ProtocolUnknown && currentProtocol != "" {
+			protocol = currentProtocol
+		} else {
+			protocol = util_protocol.GetCommonProtocol(currentProtocol, protocol)
+		}
 	}
-	return InferServiceProtocol(allEndpoints)
+	return protocol
 }
 
 func (OutboundProxyGenerator) determineRoutes(

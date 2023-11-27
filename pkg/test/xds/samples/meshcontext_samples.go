@@ -1,6 +1,7 @@
 package samples
 
 import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -18,5 +19,8 @@ func SampleContextWith(resources xds_context.Resources) xds_context.Context {
 			builders.EndpointMap().
 				AddEndpoint("some-service", builders.Endpoint().WithTags("app", "some-service")),
 		).
+		WithProtocols(map[string]core_mesh.Protocol{
+			"some-service": core_mesh.ProtocolUnknown,
+		}).
 		Build()
 }

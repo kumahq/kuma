@@ -10,7 +10,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -26,6 +25,7 @@ func generateListeners(
 	proxy *core_xds.Proxy,
 	rules []ToRouteRule,
 	servicesAcc envoy_common.ServicesAccumulator,
+	servicesProtocol map[string]core_mesh.Protocol,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
@@ -48,10 +48,10 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
-		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
+		protocol := servicesProtocol[serviceName]
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs)
+			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, servicesProtocol)
 			if split == nil {
 				continue
 			}
@@ -63,7 +63,9 @@ func generateListeners(
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
-						}})
+						}},
+						servicesProtocol,
+					)
 				}
 			}
 			routes = append(routes, xds.OutboundRoute{

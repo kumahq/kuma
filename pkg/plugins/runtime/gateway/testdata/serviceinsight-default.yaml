@@ -1,4 +1,10 @@
 type: ServiceInsight
 mesh: default
 name: all-services-default
-services: {}
+services:
+  "external-httpbin":
+    protocol: http
+  "external-http2-httpbin":
+    protocol: http2
+  "external-tcp-httpbin":
+    protocol: tcp

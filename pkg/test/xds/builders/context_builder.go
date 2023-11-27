@@ -1,6 +1,7 @@
 package builders
 
 import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -55,5 +56,10 @@ func (mc *ContextBuilder) WithResources(resources xds_context.Resources) *Contex
 
 func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
 	mc.res.Mesh.Resource = mesh.Build()
+	return mc
+}
+
+func (mc *ContextBuilder) WithProtocols(protocols map[string]core_mesh.Protocol) *ContextBuilder {
+	mc.res.Mesh.ServiceInformations.Protocol = protocols
 	return mc
 }

@@ -78,7 +78,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				upstreamServiceName = mesh_proto.ZoneEgressServiceName
 			}
 
-			r, err = c.generateMeshCluster(xdsCtx.Mesh.Resource, info, dest, upstreamServiceName, hostInfo.Host.Tags)
+			r, err = c.generateMeshCluster(xdsCtx.Mesh, info, dest, upstreamServiceName, hostInfo.Host.Tags)
 		}
 
 		if err != nil {
@@ -123,20 +123,20 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
-	mesh *core_mesh.MeshResource,
+	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
-		Tags: dest.Destination,
-	}}, dest.RouteProtocol)
+	serviceName := dest.Destination[mesh_proto.ServiceTag]
+	serviceProtocol := meshCtx.ServiceInformations.Protocol[serviceName]
+	protocol := route.InferServiceProtocol(serviceProtocol, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 
@@ -167,12 +167,12 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 		endpoints = append(endpoints, *ep)
 	}
-
-	protocol := route.InferServiceProtocol(endpoints, dest.RouteProtocol)
+	serviceName := dest.Destination[mesh_proto.ServiceTag]
+	protocol := route.InferServiceProtocol(meshCtx.ServiceInformations.Protocol[serviceName], dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
-		newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
 			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),

@@ -404,7 +404,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithProtocols(map[string]core_mesh.Protocol{
+					"backend": core_mesh.ProtocolHTTP,
+				}).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshCircuitBreakerType, given.toRules)).

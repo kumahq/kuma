@@ -14,3 +14,37 @@ func (t *ServiceOverviewResource) GetStatus() Status {
 		return Offline
 	}
 }
+
+func MapProtocol(protocol mesh_proto.ServiceInsight_Service_Protocol) Protocol {
+	switch protocol {
+	case mesh_proto.ServiceInsight_Service_grpc:
+		return ProtocolGRPC
+	case mesh_proto.ServiceInsight_Service_http:
+		return ProtocolHTTP
+	case mesh_proto.ServiceInsight_Service_http2:
+		return ProtocolHTTP2
+	case mesh_proto.ServiceInsight_Service_tcp:
+		return ProtocolTCP
+	case mesh_proto.ServiceInsight_Service_kafka:
+		return ProtocolKafka
+	default:
+		return ProtocolUnknown
+	}
+}
+
+func MapProtocolProto(protocol Protocol) mesh_proto.ServiceInsight_Service_Protocol {
+	switch protocol {
+	case ProtocolGRPC:
+		return mesh_proto.ServiceInsight_Service_grpc
+	case ProtocolHTTP:
+		return mesh_proto.ServiceInsight_Service_http
+	case ProtocolHTTP2:
+		return mesh_proto.ServiceInsight_Service_http2
+	case ProtocolTCP:
+		return mesh_proto.ServiceInsight_Service_tcp
+	case ProtocolKafka:
+		return mesh_proto.ServiceInsight_Service_kafka
+	default:
+		return mesh_proto.ServiceInsight_Service_unknown
+	}
+}

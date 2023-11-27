@@ -183,15 +183,18 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	return &MeshContext{
-		Hash:                   newHash,
-		Resource:               mesh,
-		Resources:              resources,
-		DataplanesByName:       dataplanesByName,
-		EndpointMap:            endpointMap,
-		CrossMeshEndpoints:     crossMeshEndpointMap,
-		VIPDomains:             domains,
-		VIPOutbounds:           outbounds,
-		ServiceTLSReadiness:    m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
+		Hash:               newHash,
+		Resource:           mesh,
+		Resources:          resources,
+		DataplanesByName:   dataplanesByName,
+		EndpointMap:        endpointMap,
+		CrossMeshEndpoints: crossMeshEndpointMap,
+		VIPDomains:         domains,
+		VIPOutbounds:       outbounds,
+		ServiceInformations: ServiceInformations{
+			TLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
+			Protocol:     m.resolveProtocol(resources.ServiceInsights()),
+		},
 		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
 		ReachableServicesGraph: m.rsGraphBuilder(meshName, resources),
 	}, nil
@@ -293,9 +296,9 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 		// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
 		// This information is only useful when mTLS is enabled with PERMISSIVE mode.
 		// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
-		if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
-			return desc.NewList(), nil
-		}
+		// if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+		// 	return desc.NewList(), nil
+		// }
 	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
@@ -363,6 +366,18 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	}
 	newList.GetPagination().SetTotal(uint32(len(newList.GetItems())))
 	return newList, nil
+}
+
+func (m *meshContextBuilder) resolveProtocol(serviceInsights *core_mesh.ServiceInsightResourceList) map[string]core_mesh.Protocol {
+	protocol := map[string]core_mesh.Protocol{}
+	if len(serviceInsights.Items) == 0 {
+		logger.Info("could not determine service protocol, ServiceInsight is not yet present")
+		return protocol
+	}
+	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
+		protocol[svc] = core_mesh.MapProtocol(insight.GetProtocol())
+	}
+	return protocol
 }
 
 func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, serviceInsights *core_mesh.ServiceInsightResourceList) map[string]bool {

@@ -49,7 +49,17 @@ var _ = Describe("MeshRetry", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := xds_samples.SampleContext()
+		context := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			WithProtocols(map[string]core_mesh.Protocol{
+				"http-service": core_mesh.ProtocolHTTP,
+				"tcp-service":  core_mesh.ProtocolTCP,
+				"grpc-service": core_mesh.ProtocolGRPC,
+				"backend":      core_mesh.ProtocolHTTP,
+			}).
+			Build()
+
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").

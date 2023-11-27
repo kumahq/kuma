@@ -66,9 +66,14 @@ type MeshContext struct {
 	CrossMeshEndpoints     map[xds.MeshName]xds.EndpointMap
 	VIPDomains             []xds.VIPDomains
 	VIPOutbounds           []*mesh_proto.Dataplane_Networking_Outbound
-	ServiceTLSReadiness    map[string]bool
+	ServiceInformations    ServiceInformations
 	DataSourceLoader       datasource.Loader
 	ReachableServicesGraph ReachableServicesGraph
+}
+
+type ServiceInformations struct {
+	TLSReadiness map[string]bool
+	Protocol     map[string]core_mesh.Protocol
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

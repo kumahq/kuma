@@ -19,6 +19,7 @@ func MakeTCPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	servicesProtocol map[string]core_mesh.Protocol,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -31,6 +32,7 @@ func MakeTCPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
+		servicesProtocol,
 	)
 }
 
@@ -39,6 +41,7 @@ func MakeHTTPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	servicesProtocol map[string]core_mesh.Protocol,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -49,6 +52,7 @@ func MakeHTTPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
+		servicesProtocol,
 	)
 }
 
@@ -58,6 +62,7 @@ func makeSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	servicesProtocol map[string]core_mesh.Protocol,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
@@ -73,7 +78,7 @@ func makeSplit(
 			continue
 		}
 
-		if _, ok := protocols[plugins_xds.InferProtocol(proxy.Routing, service)]; !ok {
+		if _, ok := protocols[servicesProtocol[service]]; !ok {
 			return nil
 		}
 

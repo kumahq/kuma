@@ -1202,6 +1202,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			xdsCtx := *xds_builders.Context().
 				WithResources(resources).
 				WithEndpointMap(given.endpointMap).
+				WithProtocols(map[string]core_mesh.Protocol{
+					"backend": core_mesh.ProtocolHTTP,
+				}).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithZone("test-zone").

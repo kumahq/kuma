@@ -1,9 +1,7 @@
-package generator
+package protocol
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // protocolStack is a mapping between a protocol and its full protocol stack, e.g.
@@ -26,7 +24,7 @@ var protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
 // a common protocol between HTTP and TCP   is TCP,
 // a common protocol between GRPC and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP2 is HTTP.
-func getCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
+func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 	if one == another {
 		return one
 	}
@@ -49,17 +47,4 @@ func getCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 		}
 	}
 	return core_mesh.ProtocolUnknown
-}
-
-// InferServiceProtocol returns a common protocol for a given group of endpoints.
-func InferServiceProtocol(endpoints []core_xds.Endpoint) core_mesh.Protocol {
-	if len(endpoints) == 0 {
-		return core_mesh.ProtocolUnknown
-	}
-	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
-	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
-		serviceProtocol = getCommonProtocol(serviceProtocol, endpointProtocol)
-	}
-	return serviceProtocol
 }
