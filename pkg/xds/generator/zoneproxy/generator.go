@@ -73,12 +73,6 @@ func GenerateEDS(
 	return resources, nil
 }
 
-type FilterDestinationTags func(envoy_tags.Tags, []core_xds.Endpoint) envoy_tags.Tags
-
-func NoFilter(tags envoy_tags.Tags, _ []core_xds.Endpoint) envoy_tags.Tags {
-	return tags
-}
-
 // AddFilterChains adds filter chains to a listener. Generated listener assumes that
 // mTLS is on. Using TLSInspector we sniff SNI value. SNI value has service name
 // and tag values specified with the following format:
@@ -94,7 +88,6 @@ func AddFilterChains(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	destinationsPerService map[string][]envoy_tags.Tags,
 	endpointMap core_xds.EndpointMap,
-	filterTags FilterDestinationTags,
 ) {
 	sniUsed := map[string]struct{}{}
 	for _, service := range availableServices {
@@ -114,9 +107,38 @@ func AddFilterChains(
 			}
 			sniUsed[sni] = struct{}{}
 
+			// relevantTags is a set of tags for which it actually makes sense to do LB split on.
+			// If the endpoint list is the same with or without the tag, we should just not do the split.
+			// However, we should preserve full SNI, because the client expects Zone Proxy to support it.
+			// This solves the problem that Envoy deduplicate endpoints of the same address and different metadata.
+			// example 1:
+			// Ingress1 (10.0.0.1) supports service:a,version:1 and service:a,version:2
+			// Ingress2 (10.0.0.2) supports service:a,version:1 and service:a,version:2
+			// If we want to split by version, we don't need to do LB subset on version.
+			//
+			// example 2:
+			// Ingress1 (10.0.0.1) supports service:a,version:1
+			// Ingress2 (10.0.0.2) supports service:a,version:2
+			// If we want to split by version, we need LB subset.
+			relevantTags := envoy_tags.Tags{}
+			for key, value := range destination {
+				matchedTargets := map[string]struct{}{}
+				allTargets := map[string]struct{}{}
+				for _, endpoint := range serviceEndpoints {
+					address := endpoint.Address()
+					if endpoint.Tags[key] == value || value == mesh_proto.MatchAllTag {
+						matchedTargets[address] = struct{}{}
+					}
+					allTargets[address] = struct{}{}
+				}
+				if len(matchedTargets) < len(allTargets) {
+					relevantTags[key] = value
+				}
+			}
+
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithName(clusterName),
-				envoy_common.WithTags(filterTags(destination, serviceEndpoints)),
+				envoy_common.WithTags(relevantTags),
 			)
 
 			filterChain := envoy_listeners.FilterChain(
