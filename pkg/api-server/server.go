@@ -140,7 +140,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
 	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
@@ -229,6 +229,7 @@ func addResourcesEndpoints(
 	cfg *kuma_cp.Config,
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
+	meshContextBuilder xds_context.MeshContextBuilder,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -254,12 +255,13 @@ func addResourcesEndpoints(
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			k8sMapper:      k8sMapper,
-			mode:           cfg.Mode,
-			resManager:     resManager,
-			descriptor:     definition,
-			resourceAccess: resourceAccess,
-			filter:         filters.Resource(definition),
+			k8sMapper:          k8sMapper,
+			mode:               cfg.Mode,
+			resManager:         resManager,
+			descriptor:         definition,
+			resourceAccess:     resourceAccess,
+			filter:             filters.Resource(definition),
+			meshContextBuilder: meshContextBuilder,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
