@@ -47,6 +47,9 @@ default:
     - color: c7def8
       name: kind/improvement
       description: "Improvement on an existing feature"
+    - color: c7def8
+      name: kind/service-review
+      description: "Service review issue"
     - color: e11d21
       name: breaking-change
     - color: 7057ff
