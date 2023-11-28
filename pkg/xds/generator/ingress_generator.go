@@ -44,14 +44,16 @@ func (i IngressGenerator) Generate(
 
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		meshName := mr.Mesh.GetMeta().GetName()
-		services := maps.Keys(mr.EndpointMap)
-		sort.Strings(services)
+		serviceList := maps.Keys(mr.EndpointMap)
+		sort.Strings(serviceList)
 		dest := zoneproxy.BuildMeshDestinations(
 			availableSvcsByMesh[meshName],
 			xds_context.Resources{MeshLocalResources: mr.Resources},
 		)
 
-		cdsResources, err := zoneproxy.GenerateCDS(services, dest, proxy.APIVersion, meshName, OriginIngress)
+		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
+
+		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, OriginIngress)
 		if err != nil {
 			return nil, err
 		}
@@ -62,8 +64,6 @@ func (i IngressGenerator) Generate(
 			return nil, err
 		}
 		resources.Add(edsResources...)
-
-		zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 	}
 
 	listener, err := listenerBuilder.Build()
