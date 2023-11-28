@@ -3,7 +3,7 @@ on:
   push:
     branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
-  pull_request_target:
+  pull_request:
     branches: ["master", "release-*"]
 env:
   K8S_MIN_VERSION: v1.23.17-k3s1
@@ -119,7 +119,7 @@ jobs:
           path: build/reports
           retention-days: 7
   distributions:
-    needs: ["check", "build", "test"]
+    needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() && !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -210,8 +210,8 @@ jobs:
               {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
             ],
             "include":[
-              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
-              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
+              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "cniNetworkPlugin": "flannel"},
+              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "legacyKDS": false}
             ]
           }
           END
@@ -236,51 +236,33 @@ jobs:
           echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
   test_e2e:
     name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
-    runs-on: ubuntu-latest
     needs: ["gen_e2e_matrix"]
     if: needs.gen_e2e_matrix.outputs.test_e2e != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
-    steps:
-      - run: |
-          echo "k8sVersion: ${{ matrix.k8sVersion }}"
-          echo "arch: ${{ matrix.arch }}"
-      - name: Install jq
-        run: |
-          sudo apt-get install -y jq
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/e2e
-        with:
-          k8sVersion: ${{ matrix.k8sVersion }}
-          arch: ${{ matrix.arch }}
-          parallelism: 3
-          target: ""
-          secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ""
+      arch: ${{ matrix.arch }}
+      legacyKDS: 'false'
+      cniNetworkPlugin: 'flannel'
+      parallelism: '3'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
     name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
-    runs-on: ubuntu-latest
     needs: ["gen_e2e_matrix"]
     if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
-    steps:
-      - run: |
-          echo "k8sVersion: ${{ matrix.k8sVersion }}"
-          echo "target: ${{ matrix.target }}"
-          echo "arch: ${{ matrix.arch }}"
-      - name: Install jq
-        run: |
-          sudo apt-get install -y jq
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/e2e
-        with:
-          k8sVersion: ${{ matrix.k8sVersion }}
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
-          legacyKDS: ${{ matrix.legacyKDS }}
-          cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
-          secureCircleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ${{ matrix.target }}
+      arch: ${{ matrix.arch }}
+      legacyKDS: ${{ matrix.legacyKDS }}
+      cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
+      parallelism: '1'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
