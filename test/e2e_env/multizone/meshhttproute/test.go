@@ -24,14 +24,14 @@ func Test() {
 		err := NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "zone1"}),
+				WithArgs([]string{"echo", "--instance", "zone1-v1"}),
 				WithServiceVersion("v1"),
 			)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-2", meshName,
+			Install(TestServerUniversal("dp-echo-2-v1", meshName,
 				WithArgs([]string{"echo", "--instance", "zone2-v1"}),
 				WithServiceVersion("v1"),
 			)).
@@ -39,9 +39,17 @@ func Test() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-3", meshName,
+			Install(TestServerUniversal("dp-echo-2-v2", meshName,
 				WithArgs([]string{"echo", "--instance", "zone2-v2"}),
 				WithServiceVersion("v2"),
+			)).
+			Setup(multizone.UniZone2)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
+			Install(TestServerUniversal("dp-echo-2-v3", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2-v3"}),
+				WithServiceVersion("v3"),
 			)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
@@ -132,11 +140,13 @@ spec:
                 name: test-server
                 weight: 1
                 tags:
+                  kuma.io/zone: kuma-5
                   version: v1
               - kind: MeshServiceSubset
                 name: test-server
                 weight: 1
                 tags:
+                  kuma.io/zone: kuma-5
                   version: v2
 `, meshName))(multizone.Global)).To(Succeed())
 
@@ -145,8 +155,9 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(
-					HaveKey(MatchRegexp(`^zone2-v1.*`)),
+					HaveKey(MatchRegexp(`^.*-v1.*`)),
 					HaveKey(MatchRegexp(`^zone2-v2.*`)),
+					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
 				),
 			)
 		}, "30s", "500ms").Should(Succeed())
