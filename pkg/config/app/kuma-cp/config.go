@@ -276,10 +276,8 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "Multizone Global validation failed")
 		}
 	case core.Zone:
-		if c.IsFederatedZoneCP() {
-			if err := c.Multizone.Zone.Validate(); err != nil {
-				return errors.Wrap(err, "Multizone Zone validation failed")
-			}
+		if err := c.Multizone.Zone.Validate(); err != nil {
+			return errors.Wrap(err, "Multizone Zone validation failed")
 		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
