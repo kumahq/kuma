@@ -194,7 +194,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPOutbounds:       outbounds,
 		ServiceInformations: ServiceInformations{
 			TLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
-			Protocol:     m.resolveProtocol(resources.ServiceInsights(), endpointMap),
+			Protocol:     m.resolveProtocol(endpointMap),
 		},
 		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
 		ReachableServicesGraph: m.rsGraphBuilder(meshName, resources),
@@ -356,32 +356,10 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) resolveProtocol(
-	serviceInsights *core_mesh.ServiceInsightResourceList,
-	endpointMap xds.EndpointMap,
-) map[string]core_mesh.Protocol {
-	protocol := map[string]core_mesh.Protocol{}
-	if len(serviceInsights.Items) == 0 {
-		logger.Info("could not determine service protocol, ServiceInsight is not yet present, fallback")
-		return m.fallbackResolveProtocol(endpointMap)
-	}
-	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		protocol[svc] = core_mesh.MapProtocol(insight.GetProtocol())
-	}
-	for svc, endpoints := range endpointMap {
-		if _, ok := protocol[svc]; !ok {
-			protocol[svc] = util_protocol.InferServiceProtocol(endpoints)
-		}
-	}
-	return protocol
-}
-
-// backward compatibility
-// instead of doing this code in each plugin we can do this once in mesh context
-func (m *meshContextBuilder) fallbackResolveProtocol(endpointMap xds.EndpointMap) map[string]core_mesh.Protocol {
+func (m *meshContextBuilder) resolveProtocol(endpointMap xds.EndpointMap) map[string]core_mesh.Protocol {
 	protocol := map[string]core_mesh.Protocol{}
 	for svc, endpoints := range endpointMap {
-		protocol[svc] = util_protocol.InferServiceProtocol(endpoints)
+		protocol[svc] = inferServiceProtocol(endpoints)
 	}
 	return protocol
 }
@@ -474,4 +452,16 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
 	}
 	return hasher.Sum(nil)
+}
+
+func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
+	if len(endpoints) == 0 {
+		return core_mesh.ProtocolUnknown
+	}
+	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
+	for _, endpoint := range endpoints[1:] {
+		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
+	}
+	return serviceProtocol
 }

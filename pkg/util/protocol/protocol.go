@@ -1,9 +1,7 @@
 package protocol
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // protocolStack is a mapping between a protocol and its full protocol stack, e.g.
@@ -49,16 +47,4 @@ func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 		}
 	}
 	return core_mesh.ProtocolUnknown
-}
-
-func InferServiceProtocol(endpoints []core_xds.Endpoint) core_mesh.Protocol {
-	if len(endpoints) == 0 {
-		return core_mesh.ProtocolUnknown
-	}
-	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
-	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
-		serviceProtocol = GetCommonProtocol(serviceProtocol, endpointProtocol)
-	}
-	return serviceProtocol
 }
