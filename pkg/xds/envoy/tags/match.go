@@ -109,7 +109,7 @@ func (t Tags) String() string {
 	return strings.Join(pairs, ",")
 }
 
-func TagsFromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
+func FromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
 	tags := Tags{}
 

@@ -116,7 +116,7 @@ func addMeshHTTPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range policy.Spec.To {
-			if toTags, ok := tags.TagsFromTargetRef(to.TargetRef); ok {
+			if toTags, ok := tags.FromTargetRef(to.TargetRef); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -135,7 +135,7 @@ func addMeshHTTPRouteToDestinations(
 		}
 
 		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := tags.TagsFromTargetRef(backendRef.TargetRef); ok {
+			if tags, ok := tags.FromTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}
 		}
