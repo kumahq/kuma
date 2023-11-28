@@ -16,7 +16,7 @@ var protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
 	core_mesh.ProtocolTCP:   {core_mesh.ProtocolTCP},
 }
 
-// getCommonProtocol returns a common protocol between given two.
+// GetCommonProtocol returns a common protocol between given two.
 //
 // E.g.,
 // a common protocol between HTTP and HTTP2 is HTTP2,

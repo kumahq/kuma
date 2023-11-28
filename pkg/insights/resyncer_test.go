@@ -359,7 +359,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service": "backend-1",
+							"kuma.io/service":  "backend-1",
 							"kuma.io/protocol": "http",
 						},
 					},
@@ -392,7 +392,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service": "backend-1",
+							"kuma.io/service":  "backend-1",
 							"kuma.io/protocol": "http",
 						},
 					},
@@ -425,7 +425,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: false,
 						},
 						Tags: map[string]string{
-							"kuma.io/service": "backend-1",
+							"kuma.io/service":  "backend-1",
 							"kuma.io/protocol": "http",
 						},
 					},
@@ -435,7 +435,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service": "db-1",
+							"kuma.io/service":  "db-1",
 							"kuma.io/protocol": "tcp",
 						},
 					},
@@ -468,7 +468,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service": "backend-1",
+							"kuma.io/service":  "backend-1",
 							"kuma.io/protocol": "http2",
 						},
 					},
@@ -526,7 +526,7 @@ var _ = Describe("Insight Persistence", func() {
 					{
 						Port: 5000,
 						Tags: map[string]string{
-							"kuma.io/service": "internal",
+							"kuma.io/service":  "internal",
 							"kuma.io/protocol": "http",
 						},
 					},
