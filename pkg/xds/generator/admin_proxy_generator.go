@@ -46,7 +46,7 @@ var adminAddressAllowedValues = map[string]struct{}{
 	"":          {},
 }
 
-func (g AdminProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	if proxy.Metadata.GetAdminPort() == 0 {
 		// It's not possible to export Admin endpoints if Envoy Admin API has not been enabled on that dataplane.
 		return nil, nil

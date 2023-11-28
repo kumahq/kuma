@@ -10,17 +10,16 @@ import (
 )
 
 type ResourceGenerator interface {
-	Generate(context.Context, xds_context.Context, *model.Proxy) (*model.ResourceSet, error)
+	Generate(context.Context, *model.ResourceSet, xds_context.Context, *model.Proxy) (*model.ResourceSet, error)
 }
 
 type CompositeResourceGenerator []ResourceGenerator
 
 func (c CompositeResourceGenerator) Generate(
-	ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy,
+	ctx context.Context, resources *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy,
 ) (*model.ResourceSet, error) {
-	resources := model.NewResourceSet()
 	for _, gen := range c {
-		rs, err := gen.Generate(ctx, xdsCtx, proxy)
+		rs, err := gen.Generate(ctx, resources, xdsCtx, proxy)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%T failed", gen)
 		}

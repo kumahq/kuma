@@ -32,7 +32,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), nil, given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -199,7 +199,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			gen := &generator.PrometheusEndpointGenerator{}
 
 			// when
-			rs, err := gen.Generate(context.Background(), given.ctx, given.proxy)
+			rs, err := gen.Generate(context.Background(), nil, given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -855,7 +855,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				gen := &generator.PrometheusEndpointGenerator{}
 
 				// when
-				rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
+				rs, err := gen.Generate(context.Background(), nil, xdsCtx, proxy)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

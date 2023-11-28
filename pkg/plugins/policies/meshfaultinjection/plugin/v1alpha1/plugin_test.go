@@ -237,7 +237,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 		}
 		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when

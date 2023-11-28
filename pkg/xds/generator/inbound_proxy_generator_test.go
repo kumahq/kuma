@@ -207,7 +207,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xdsCtx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

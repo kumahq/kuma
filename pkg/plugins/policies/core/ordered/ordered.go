@@ -1,4 +1,4 @@
-package policies
+package ordered
 
 import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
@@ -18,8 +18,10 @@ import (
 )
 
 var Policies = []plugins.PluginName{
+	// Routes have to come first
 	plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
+	// For other policies order isn't important at the moment
 	plugins.PluginName(meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
@@ -30,5 +32,6 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshretry_api.MeshRetryResourceTypeDescriptor.KumactlArg),
+	// MeshProxyPatch comes after all others
 	plugins.PluginName(meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor.KumactlArg),
 }
