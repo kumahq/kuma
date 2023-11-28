@@ -287,19 +287,6 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 		return nil, fmt.Errorf("unknown resource scope:%s", desc.Scope)
 	}
 
-	// For some resources we apply extra filters
-	switch resType {
-	case core_mesh.ServiceInsightType:
-		if mesh == nil {
-			return desc.NewList(), nil
-		}
-		// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
-		// This information is only useful when mTLS is enabled with PERMISSIVE mode.
-		// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
-		// if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
-		// 	return desc.NewList(), nil
-		// }
-	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {

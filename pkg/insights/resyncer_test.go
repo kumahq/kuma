@@ -360,6 +360,7 @@ var _ = Describe("Insight Persistence", func() {
 						},
 						Tags: map[string]string{
 							"kuma.io/service": "backend-1",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
@@ -392,6 +393,7 @@ var _ = Describe("Insight Persistence", func() {
 						},
 						Tags: map[string]string{
 							"kuma.io/service": "backend-1",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
@@ -424,6 +426,7 @@ var _ = Describe("Insight Persistence", func() {
 						},
 						Tags: map[string]string{
 							"kuma.io/service": "backend-1",
+							"kuma.io/protocol": "http",
 						},
 					},
 					{
@@ -433,6 +436,7 @@ var _ = Describe("Insight Persistence", func() {
 						},
 						Tags: map[string]string{
 							"kuma.io/service": "db-1",
+							"kuma.io/protocol": "tcp",
 						},
 					},
 				},
@@ -465,6 +469,7 @@ var _ = Describe("Insight Persistence", func() {
 						},
 						Tags: map[string]string{
 							"kuma.io/service": "backend-1",
+							"kuma.io/protocol": "http2",
 						},
 					},
 				},
@@ -500,8 +505,12 @@ var _ = Describe("Insight Persistence", func() {
 			service := serviceInsight.Spec.Services["backend-1"]
 			// then
 			g.Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+			g.Expect(service.Protocol).To(Equal(mesh_proto.ServiceInsight_Service_tcp))
 			g.Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
 			g.Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
+
+			dbService := serviceInsight.Spec.Services["db-1"]
+			g.Expect(dbService.Protocol).To(Equal(mesh_proto.ServiceInsight_Service_tcp))
 		}).Should(Succeed())
 	})
 
@@ -518,6 +527,7 @@ var _ = Describe("Insight Persistence", func() {
 						Port: 5000,
 						Tags: map[string]string{
 							"kuma.io/service": "internal",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
@@ -549,7 +559,7 @@ var _ = Describe("Insight Persistence", func() {
 		}
 		externalService := core_mesh.NewExternalServiceResource()
 		externalService.Spec = &mesh_proto.ExternalService{
-			Tags: map[string]string{"kuma.io/service": "external-service"},
+			Tags: map[string]string{"kuma.io/service": "external-service", "kuma.io/protocol": "tcp"},
 			Networking: &mesh_proto.ExternalService_Networking{
 				Address: "foobar:8080",
 			},
@@ -569,6 +579,7 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			internal := serviceInsight.Spec.Services["internal"]
 			g.Expect(internal).ToNot(BeNil())
+			g.Expect(internal.Protocol).To(Equal(mesh_proto.ServiceInsight_Service_http))
 			g.Expect(internal.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_internal))
 
 			gw1 := serviceInsight.Spec.Services["gw1"]
@@ -583,6 +594,7 @@ var _ = Describe("Insight Persistence", func() {
 
 			ext := serviceInsight.Spec.Services["external-service"]
 			g.Expect(ext).ToNot(BeNil())
+			g.Expect(ext.Protocol).To(Equal(mesh_proto.ServiceInsight_Service_tcp))
 			g.Expect(ext.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_external))
 			g.Expect(ext.AddressPort).To(Equal("foobar:8080"))
 		}).Should(Succeed())
