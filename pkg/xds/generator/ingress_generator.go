@@ -36,7 +36,40 @@ func (i IngressGenerator) Generate(
 
 	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)
 
+<<<<<<< HEAD
 	listener, err := i.generateLDS(proxy, proxy.ZoneIngress, destinationsPerService, proxy.APIVersion)
+=======
+	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	for _, service := range proxy.ZoneIngressProxy.ZoneIngressResource.Spec.AvailableServices {
+		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
+	}
+
+	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
+		meshName := mr.Mesh.GetMeta().GetName()
+		serviceList := maps.Keys(mr.EndpointMap)
+		sort.Strings(serviceList)
+		dest := zoneproxy.BuildMeshDestinations(
+			availableSvcsByMesh[meshName],
+			xds_context.Resources{MeshLocalResources: mr.Resources},
+		)
+
+		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
+
+		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, OriginIngress)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(cdsResources...)
+
+		edsResources, err := zoneproxy.GenerateEDS(services, mr.EndpointMap, proxy.APIVersion, meshName, OriginIngress)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(edsResources...)
+	}
+
+	listener, err := listenerBuilder.Build()
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 	if err != nil {
 		return nil, err
 	}
