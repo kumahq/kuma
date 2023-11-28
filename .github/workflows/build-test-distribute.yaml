@@ -34,19 +34,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/cache@v3
         with:
           path: |
@@ -56,6 +51,11 @@ jobs:
             ${{ runner.os }}-devtools
       - run: |
           make dev/tools
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - run: |
           make build
       - run: |
@@ -120,9 +120,14 @@ jobs:
           retention-days: 7
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
-    if: ${{ always() && !failure() && !cancelled() }}
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      # see https://stackoverflow.com/a/67532120/4907315
+      - name: "Halt due to previous failures"
+        run: |
+          exit 1
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |

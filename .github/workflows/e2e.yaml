@@ -29,7 +29,104 @@ on:
       circleCIToken:
         required: true
 jobs:
-  e2e:
+  e2e_gh_actions:
+    if: ${{ inputs.arch == 'amd64' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Print parameters"
+        run: |
+          echo "All inputs:"
+          echo "Running with: \
+              k8s: ${{ inputs.k8sVersion }} \
+              target: ${{ inputs.target }} \
+              parallelism: ${{ inputs.parallelism }} \
+              arch: ${{ inputs.arch }} \
+              cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
+              "
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-output
+          path: build
+      - name: Install build tools
+        run: |
+          command: |
+            if ! command -v sudo 2>&1 >/dev/null; then
+              apt update
+              apt install -y sudo
+            fi
+
+            sudo apt update
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
+      - name: "Setup Helm"
+        run: |
+          make dev/set-kuma-helm-repo
+      - name: "Extract artifacts"
+        run: |
+          echo "Extracting artifacts..."
+          ARCH='${{ inputs.arch }}'
+          ARTIFACT=$(find build/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+          if [[ "$ARTIFACT" == "" ]]; then
+            echo "Could not find built artifact for linux($ARCH)."
+            exit 1
+          fi
+          cat $ARTIFACT.sha256 | sha256sum --check
+
+          mkdir build/distributions/artifacts
+          tar -xzf $ARTIFACT -C build/distributions/artifacts
+
+          SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
+          DEST_DIR=build/artifacts-linux-$ARCH
+          for BIN in $(ls $SRC_DIR); do
+            mkdir -p $DEST_DIR/$BIN
+            cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
+          done
+      - name: "Run E2E tests"
+        run: |
+          if [[ "${{ inputs.k8sVersion }}" == "kindIpv6" ]]; then
+            export IPV6=true
+            export K8S_CLUSTER_TOOL=kind
+            export KUMA_DEFAULT_RETRIES=60
+            export KUMA_DEFAULT_TIMEOUT="6s"
+          fi
+          if [[ "${{ inputs.k8sVersion }}" != "kind"* ]]; then
+            export CI_K3S_VERSION=${{ inputs.k8sVersion }}
+            export K3D_NETWORK_CNI=${{ inputs.cniNetworkPlugin }}
+          fi
+          if [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            export MAKE_PARAMETERS="-j1"
+          else
+            export MAKE_PARAMETERS="-j2"
+          fi
+
+          if [[ "${{ inputs.legacyKDS }}" == true ]]; then
+            export KUMA_LEGACY_KDS=true
+          fi
+
+          if [[ "${{ inputs.target }}" == "" ]]; then
+            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+          fi
+          env
+          if [[ "${{ inputs.target }}" != "" ]]; then
+            target="test/e2e-${{ inputs.target }}"
+          else
+            target="test/e2e"
+          fi
+          make ${MAKE_PARAMETERS} CI=true "${target}"
+  e2e_circleci:
+    if: ${{ inputs.arch != 'amd64' }}
     runs-on: ubuntu-latest
     steps:
       - name: "Print parameters"
