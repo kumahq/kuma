@@ -248,6 +248,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	if t.zone != "" {
 		cfg.Mode = config_core.Zone
 		cfg.Multizone.Zone.Name = t.zone
+		cfg.Multizone.Zone.GlobalAddress = "grpcs://global:5685"
 	} else if t.global {
 		cfg.Mode = config_core.Global
 	}
