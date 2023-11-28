@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -125,8 +126,12 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 func (r *registry) PolicyPlugins(ordered []PluginName) []RegisteredPolicyPlugin {
 	var plugins []RegisteredPolicyPlugin
 	for _, policy := range ordered {
+		plugin, ok := r.registeredPolicies[policy]
+		if !ok {
+			panic(fmt.Sprintf("Couldn't find plugin %s", policy))
+		}
 		plugins = append(plugins, RegisteredPolicyPlugin{
-			Plugin: r.registeredPolicies[policy],
+			Plugin: plugin,
 			Name:   policy,
 		})
 	}
