@@ -479,7 +479,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
 				svcType = mesh_proto.ServiceInsight_Service_gateway_delegated
 			}
-			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "", core_mesh.ProtocolUnknown)
+			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "", core_mesh.ProtocolHTTP)
 		}
 
 		for _, inbound := range networking.GetInbound() {
