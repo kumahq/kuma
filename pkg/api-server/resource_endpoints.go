@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -589,7 +590,7 @@ func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
 		}
 
 		// Get all the matching policies
-		allPlugins := core_plugins.Plugins().PolicyPlugins()
+		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
 		for _, policy := range allPlugins {
 			res, err := policy.Plugin.MatchedPolicies(dp, xds_context.Resources{

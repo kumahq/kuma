@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -134,8 +135,8 @@ func (p *EgressProxyBuilder) Build(
 }
 
 func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
-	policies := core_xds.PluginOriginatedPolicies{}
-	for _, plugin := range core_plugins.Plugins().PolicyPlugins() {
+	pluginPolicies := core_xds.PluginOriginatedPolicies{}
+	for _, plugin := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
 		egressPlugin, ok := plugin.Plugin.(core_plugins.EgressPolicyPlugin)
 		if !ok {
 			continue
@@ -147,8 +148,8 @@ func matchEgressPolicies(tags map[string]string, resources xds_context.Resources
 		if res.Type == "" {
 			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", plugin.Name)
 		}
-		policies[res.Type] = res
+		pluginPolicies[res.Type] = res
 	}
 
-	return policies, nil
+	return pluginPolicies, nil
 }

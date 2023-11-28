@@ -7,7 +7,7 @@ import (
 	plugin_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 )
 
-func Register() {
+func init() {
 	core.Register(
 		api_v1alpha1.MeshTraceResourceTypeDescriptor,
 		k8s_v1alpha1.AddToScheme,

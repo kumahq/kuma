@@ -45,7 +45,7 @@ type Registry interface {
 	RuntimePlugins() map[PluginName]RuntimePlugin
 	CaPlugins() map[PluginName]CaPlugin
 	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
-	PolicyPlugins() []RegisteredPolicyPlugin
+	PolicyPlugins([]PluginName) []RegisteredPolicyPlugin
 	ProxyPlugins() map[PluginName]ProxyPlugin
 }
 
@@ -83,7 +83,6 @@ type registry struct {
 	proxy              map[PluginName]ProxyPlugin
 	ca                 map[PluginName]CaPlugin
 	authnAPIServer     map[PluginName]AuthnAPIServerPlugin
-	orderedPolicies    []PluginName
 	registeredPolicies map[PluginName]PolicyPlugin
 }
 
@@ -123,9 +122,9 @@ func (r *registry) ProxyPlugins() map[PluginName]ProxyPlugin {
 	return r.proxy
 }
 
-func (r *registry) PolicyPlugins() []RegisteredPolicyPlugin {
+func (r *registry) PolicyPlugins(ordered []PluginName) []RegisteredPolicyPlugin {
 	var plugins []RegisteredPolicyPlugin
-	for _, policy := range r.orderedPolicies {
+	for _, policy := range ordered {
 		plugins = append(plugins, RegisteredPolicyPlugin{
 			Plugin: r.registeredPolicies[policy],
 			Name:   policy,
@@ -202,7 +201,6 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(policyPlugin, name, old, policy)
 		}
 		r.registeredPolicies[name] = policy
-		r.orderedPolicies = append(r.orderedPolicies, name)
 	}
 	if proxy, ok := plugin.(ProxyPlugin); ok {
 		if old, exists := r.proxy[name]; exists {
