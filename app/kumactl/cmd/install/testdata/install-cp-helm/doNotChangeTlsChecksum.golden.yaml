@@ -601,7 +601,7 @@ webhooks:
           values: ["kube-system"]
         - key: kuma.io/sidecar-injection
           operator: In
-          values: ["enabled"]
+          values: ["enabled", "true"]
     clientConfig:
       caBundle: XYZ
       service:
