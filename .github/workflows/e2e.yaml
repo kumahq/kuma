@@ -76,8 +76,8 @@ jobs:
             BODY: $BODY"
 
           if [ "${{ secrets.circleCIToken }}" == "" ]; then
-            echo "Skipping request CircleCI because secret 'CIRCLECI_TOKEN' not set."
-            exit 0
+            echo "Failing request CircleCI because secret 'CIRCLECI_TOKEN' not set."
+            exit 1
           fi
 
           function request(){
