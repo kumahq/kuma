@@ -106,7 +106,6 @@ func ExternalServices() {
 		)
 
 		It("should access external service through zoneegress", func() {
-			//time.Sleep(10 * time.Hour)
 			Eventually(func(g Gomega) {
 				stat, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
