@@ -1,4 +1,4 @@
-FROM debian:12@sha256:fab22df37377621693c68650b06680c0d8f7c6bf816ec92637944778db3ca2c0 as envoy
+FROM debian:12@sha256:133a1f2aa9e55d1c93d0ae1aaa7b94fb141265d0ee3ea677175cdb96f5f990e5 as envoy
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/envoy/envoy /envoy
