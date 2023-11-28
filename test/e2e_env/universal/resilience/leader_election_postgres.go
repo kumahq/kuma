@@ -26,14 +26,14 @@ func LeaderElectionPostgres() {
 
 		// Standalone 1
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithPostgres(postgresInstance.GetEnvVars()))).
+			Install(Kuma(core.Zone, WithPostgres(postgresInstance.GetEnvVars()))).
 			Setup(standalone1)
 
 		Expect(err).ToNot(HaveOccurred())
 
 		// Standalone 2
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithPostgres(postgresInstance.GetEnvVars()))).
+			Install(Kuma(core.Zone, WithPostgres(postgresInstance.GetEnvVars()))).
 			Setup(standalone2)
 
 		Expect(err).ToNot(HaveOccurred())

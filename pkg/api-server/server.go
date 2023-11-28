@@ -256,6 +256,7 @@ func addResourcesEndpoints(
 		endpoints := resourceEndpoints{
 			k8sMapper:          k8sMapper,
 			mode:               cfg.Mode,
+			federatedZone:      cfg.IsFederatedZoneCP(),
 			resManager:         resManager,
 			descriptor:         definition,
 			resourceAccess:     resourceAccess,

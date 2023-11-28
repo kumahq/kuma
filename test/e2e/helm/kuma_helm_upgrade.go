@@ -40,7 +40,7 @@ func UpgradingWithHelmChart() {
 			)
 
 			err := NewClusterSetup().
-				Install(Kuma(core.Standalone,
+				Install(Kuma(core.Zone,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
 					WithHelmReleaseName(releaseName),
@@ -52,7 +52,7 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			err = k8sCluster.UpgradeKuma(core.Standalone,
+			err = k8sCluster.UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),

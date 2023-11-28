@@ -461,8 +461,8 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Create,
 		}),
-		Entry("should fail validation due to applying Zone on Standalone CP", testCase{
-			mode:        core.Standalone,
+		Entry("should fail validation due to applying Zone on Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &system_proto.Zone{},
 			username:    "cli-user",
 			obj: `
