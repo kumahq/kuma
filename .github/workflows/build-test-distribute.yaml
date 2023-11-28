@@ -243,9 +243,11 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
     with:
       k8sVersion: ${{ matrix.k8sVersion }}
-      arch: ${{ matrix.arch }}
-      parallelism: 3
       target: ""
+      arch: ${{ matrix.arch }}
+      legacyKDS: 'false'
+      cniNetworkPlugin: 'flannel'
+      parallelism: '3'
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
@@ -261,5 +263,6 @@ jobs:
       arch: ${{ matrix.arch }}
       legacyKDS: ${{ matrix.legacyKDS }}
       cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
+      parallelism: '1'
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}

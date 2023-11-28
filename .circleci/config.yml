@@ -24,7 +24,7 @@ parameters:
     default: ""
   e2e_param_k8s_version:
     type: string
-    default: ""
+    default: "v1.28.1-k3s1"
   e2e_param_arch:
     type: string
     default: "amd64"
@@ -407,7 +407,6 @@ jobs:
       legacyKDS:
         description: if should run tests with new implementation of KDS
         type: boolean
-        default: false
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -517,10 +516,6 @@ jobs:
               mkdir -p $DEST_DIR/$BIN
               cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
             done
-      - run:
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y unzip
       - install_build_tools:
           go_arch: << parameters.arch >>
       - run:
@@ -751,8 +746,8 @@ workflows:
     jobs:
       - e2e_testing:
           k8sVersion: << pipeline.parameters.e2e_param_k8s_version >>
-          parallelism: << pipeline.parameters.e2e_param_parallelism >>
           target: << pipeline.parameters.e2e_param_target >>
           arch: << pipeline.parameters.e2e_param_arch >>
-          cniNetworkPlugin: << pipeline.parameters.e2e_param_cni_network_plugin >>
           legacyKDS: << pipeline.parameters.e2e_param_legacy_kds >>
+          cniNetworkPlugin: << pipeline.parameters.e2e_param_cni_network_plugin >>
+          parallelism: << pipeline.parameters.e2e_param_parallelism >>
