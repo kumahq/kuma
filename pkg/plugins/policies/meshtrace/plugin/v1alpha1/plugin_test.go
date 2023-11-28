@@ -7,8 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -59,24 +57,19 @@ var _ = Describe("MeshTrace", func() {
 
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
-				WithDataplane(builders.Dataplane().
-					WithName("backend").
-					AddInbound(builders.Inbound().
-						WithService("backend").
-						WithAddress("127.0.0.1").
-						WithPort(17777)).
-					AddOutbound(builders.Outbound().
-						WithService("other-service").
-						WithAddress("127.0.0.1").
-						WithPort(27777))).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshTraceType: {
-							Type:            api.MeshTraceType,
-							SingleItemRules: given.singleItemRules,
-						},
-					},
-				}).
+				WithDataplane(
+					builders.Dataplane().
+						WithName("backend").
+						AddInbound(builders.Inbound().
+							WithService("backend").
+							WithAddress("127.0.0.1").
+							WithPort(17777)).
+						AddOutbound(builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777)),
+				).
+				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 

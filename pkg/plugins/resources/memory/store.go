@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -102,6 +104,9 @@ func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...sto
 
 	opts := store.NewCreateOptions(fs...)
 	// Name must be provided via CreateOptions
+	if opts.Name == "" && opts.Mesh == "" {
+		return errors.New("you must pass store.CreateBy or store.CreateByKey as a parameter")
+	}
 	if _, record := c.findRecord(string(r.Descriptor().Name), opts.Name, opts.Mesh); record != nil {
 		return store.ErrorResourceAlreadyExists(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}

@@ -32,33 +32,31 @@ resources:
                   path: /v1
                 name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 redirect:
+                  responseCode: FOUND
                   schemeRedirect: other
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header
                     value: set-value
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header-multiple
                     value: one-value
-                - append: true
-                  header:
+                - header:
                     key: request-set-header-multiple
                     value: second-value
-                - append: true
-                  header:
+                - header:
                     key: request-add-header
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
                 responseHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: response-set-header
                     value: set-value
-                - append: true
-                  header:
+                - header:
                     key: response-add-header
                     value: add-value
                 responseHeadersToRemove:
@@ -67,33 +65,31 @@ resources:
                   prefix: /v1/
                 name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 redirect:
+                  responseCode: FOUND
                   schemeRedirect: other
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header
                     value: set-value
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header-multiple
                     value: one-value
-                - append: true
-                  header:
+                - header:
                     key: request-set-header-multiple
                     value: second-value
-                - append: true
-                  header:
+                - header:
                     key: request-add-header
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
                 responseHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: response-set-header
                     value: set-value
-                - append: true
-                  header:
+                - header:
                     key: response-add-header
                     value: add-value
                 responseHeadersToRemove:

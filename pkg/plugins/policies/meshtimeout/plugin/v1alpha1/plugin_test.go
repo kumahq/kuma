@@ -13,8 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -61,34 +59,18 @@ var _ = Describe("MeshTimeout", func() {
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("other-service", "second-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithRouting(core_xds.Routing{
-				OutboundTargets: core_xds.EndpointMap{
-					"other-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "http",
-						},
-					}},
-					"other-service-_0_": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "http",
-						},
-					}},
-					"second-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "tcp",
-						},
-					}},
-				},
-			}).
-			WithPolicies(xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:      api.MeshTimeoutType,
-						ToRules:   given.toRules,
-						FromRules: given.fromRules,
-					},
-				},
-			}).
+			WithRouting(
+				xds_builders.Routing().
+					WithOutboundTargets(
+						xds_builders.EndpointMap().
+							AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("other-service-_0_", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
+					),
+			).
+			WithPolicies(
+				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
+			).
 			Build()
 
 		// when
@@ -438,33 +420,19 @@ var _ = Describe("MeshTimeout", func() {
 		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithRouting(core_xds.Routing{
-				OutboundTargets: core_xds.EndpointMap{
-					"backend": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "http",
-						},
-					}},
-					"other-service": []core_xds.Endpoint{{
-						Tags: map[string]string{
-							"kuma.io/protocol": "http",
-						},
-					}},
-				},
-			}).
-			WithPolicies(xds.MatchedPolicies{
-				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-					api.MeshTimeoutType: {
-						Type:    api.MeshTimeoutType,
-						ToRules: given.toRules,
-					},
-				},
-			}).
+			WithRouting(xds_builders.Routing().
+				WithOutboundTargets(
+					xds_builders.EndpointMap().
+						AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
+						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
+				),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTimeoutType, given.toRules)).
 			Build()
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when

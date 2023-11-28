@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type ZoneInsightSink interface {
@@ -68,7 +67,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	var lastStoredState *system_proto.KDSSubscription
 	var generation uint32
 
-	gracefulCtx, cancel := context.WithCancel(multitenant.CopyIntoCtx(ctx, context.Background()))
+	gracefulCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	defer cancel()
 
 	log := kuma_log.AddFieldsFromCtx(s.log, ctx, s.extensions)

@@ -353,7 +353,7 @@ Routes:
         name: two.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
@@ -384,7 +384,7 @@ Routes:
         name: three.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
@@ -415,7 +415,7 @@ Routes:
         name: one.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains

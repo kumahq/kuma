@@ -1,17 +1,47 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*"]
+    branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
-  pull_request_target:
+  pull_request:
     branches: ["master", "release-*"]
+env:
+  K8S_MIN_VERSION: v1.23.17-k3s1
+  K8S_MAX_VERSION: v1.28.1-k3s1
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make clean
+      - run: |
+          make check
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -27,36 +57,34 @@ jobs:
       - run: |
           make dev/tools
       - run: |
-          make clean
-      - run: |
-          make check
-      - run: |
           make build
       - run: |
           make -j build/distributions
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - run: |
           make -j images
       - run: |
           make -j docker/save
-      - name: Pack artifact
+      - name: Cleanup redundant build outputs
         run: |
-          tar -czf build.tar.gz ./build
-      - name: Temporarily saving build output
+          find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          find ./build/distributions/* -maxdepth 0 -type d | grep -v '/out' | xargs -I % rm -rf %
+          find  ./build/tools-* -maxdepth 0 -type d | xargs -I % rm -rf %
+          rm -rf ./build/oapitmp
+          rm -rf ./build/ebpf/
+      - name: Upload build output
         uses: actions/upload-artifact@v3
         with:
           name: build-output
-          path: build.tar.gz
+          path: build
           retention-days: 1
-      - name: Prepare for container structure test
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
-        run: |
-          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
           make test/container-structure
   test:
-    needs: build
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     steps:
@@ -75,24 +103,11 @@ jobs:
             ${{ runner.os }}-devtools
       - name: Free up disk space for the Runner
         run: |
-          # source: https://github.com/apache/flink/blob/master/tools/azure-pipelines/free_disk_space.sh
-          echo "=============================================================================="
-          echo "Freeing up disk space on CI system"
-          echo "=============================================================================="
-          echo "Listing 100 largest packages"
-          dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
-          df -h
-          echo "Removing large packages"
-          sudo apt-get remove -y '^ghc-8.*' || true
-          sudo apt-get remove -y '^dotnet-.*' || true
-          sudo apt-get remove -y '^llvm-.*' || true
-          sudo apt-get remove -y 'php.*' || true
-          sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel  || true
-          sudo apt-get autoremove -y
-          sudo apt-get clean
-          echo "Removing large directories"
+          echo "Disk usage before cleanup"
+          sudo df -h
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           docker system prune --all -f
+          echo "Disk usage after cleanup"
           sudo df -h
       - name: Run tests
         run: |
@@ -102,23 +117,26 @@ jobs:
         with:
           name: test-reports
           path: build/reports
-          retention-days: 30
+          retention-days: 7
   distributions:
-    needs: test
+    needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() && !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - name: "Check if force push"
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
-          PR_FORCE_PUBLISH="${{ contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}"
-          RUN_ON_MASTER="${{ github.ref == 'refs/branch/master' }}"
-          RUN_ON_RELEASE="${{ startsWith(github.ref, 'refs/branch/release-') }}"
-          RUN_ON_TAG="${{ startsWith(github.ref, 'refs/tags/') }}"
-          ALL_CONDITIONS="$PR_FORCE_PUBLISH-$RUN_ON_MASTER-$RUN_ON_RELEASE-$RUN_ON_TAG"
-
-          if [[ "$ALL_CONDITIONS" == *"true"* ]]; then
-            'echo "ALLOW_PUSH=true" >> $GITHUB_ENV'
-          fi
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
+      - name: "Check if force push"
+        if: contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
+        # Open up the following conditions when we don't generate artifacts on CircleCI
+        #  github.event_name == 'push'
+        run: |
+          echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -135,9 +153,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: build-output
-      - name: Unpack artifact
-        run: |
-          tar -xzf build.tar.gz
+          path: build
       - name: Inspect created tars
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
@@ -157,3 +173,96 @@ jobs:
           trap on_exit EXIT
           make docker/push
           make docker/manifest
+  gen_e2e_matrix:
+    runs-on: ubuntu-latest
+    needs: ["build"]
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
+    outputs:
+      test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
+      test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
+    steps:
+      - name: Install jq
+        run: |
+          sudo apt-get install -y jq
+      - id: generate-matrix
+        name: Generate matrix
+        run: |-
+          BASE_MATRIX_SLOW=$(cat <<-END
+          {
+            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+            "arch": ["amd64", "arm64"]
+          }
+          END
+          )
+          BASE_MATRIX_ENV=$(cat <<-END
+          {
+            "target": ["kubernetes", "universal", "multizone"],
+            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+            "arch": ["amd64", "arm64"],
+            "cniNetworkPlugin": ["flannel", "calico"],
+            "legacyKDS": [false, true],
+            "exclude":[
+              {"cniNetworkPlugin": "calico"},
+              {"legacyKDS": true},
+              {"target": "kubernetes", "k8sVersion":"kind"},
+              {"target": "multizone", "k8sVersion":"kind"},
+              {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
+              {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+            ],
+            "include":[
+              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "cniNetworkPlugin": "flannel"},
+              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "legacyKDS": false}
+            ]
+          }
+          END
+          )
+
+          MATRIX_SLOW=$(echo $BASE_MATRIX_SLOW | jq -rc)
+          MATRIX_ENV=$(echo $BASE_MATRIX_ENV | jq -rc)
+
+          RUN_FULL_MATRIX="${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
+          if [[ "$RUN_FULL_MATRIX" == "false" ]]; then
+            echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
+
+            MATRIX_SLOW=''  # target==""
+
+            # non priority main e2e
+            EXCLUDE_ARM64='[{"arch": "arm64"}]'
+            EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
+            MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "del(.include) | .exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
+          fi
+
+          echo "test_e2e=$MATRIX_SLOW" >> $GITHUB_OUTPUT
+          echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
+  test_e2e:
+    name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.test_e2e != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ""
+      arch: ${{ matrix.arch }}
+      legacyKDS: 'false'
+      cniNetworkPlugin: 'flannel'
+      parallelism: '3'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
+  test_e2e_env:
+    name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ${{ matrix.target }}
+      arch: ${{ matrix.arch }}
+      legacyKDS: ${{ matrix.legacyKDS }}
+      cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
+      parallelism: '1'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}

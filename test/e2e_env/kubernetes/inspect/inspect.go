@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -82,4 +83,58 @@ func Inspect() {
 		},
 		Entry("of dataplanes", "timeouts", fmt.Sprintf("timeout-all-%s", meshName)),
 	)
+
+	It("should execute inspect rules of dataplane", func() {
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
+		Eventually(func(g Gomega) {
+			dataplanes, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("dataplanes", meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			clientDp := ""
+			for _, dp := range dataplanes {
+				if strings.Contains(dp, "demo-client") {
+					clientDp = dp
+					break
+				}
+			}
+			Expect(clientDp).ToNot(BeEmpty(), "no demo-client dpp found")
+
+			r, err := http.Get(kubernetes.Cluster.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, clientDp))
+			g.Expect(err).ToNot(HaveOccurred())
+			defer r.Body.Close()
+			g.Expect(r).To(HaveHTTPStatus(200))
+
+			body, err := io.ReadAll(r.Body)
+			g.Expect(err).ToNot(HaveOccurred())
+			result := types.InspectRulesForDataplaneResponse{}
+			g.Expect(json.Unmarshal(body, &result)).To(Succeed())
+
+			g.Expect(result.Resource.Name).To(Equal(clientDp))
+			g.Expect(result.Rules).ToNot(BeEmpty())
+			for _, rule := range result.Rules {
+				if rule.Type == "MeshTimeout" {
+					g.Expect(rule.ToRules).ToNot(BeNil())
+					g.Expect(*rule.ToRules).ToNot(BeEmpty())
+					g.Expect((*rule.ToRules)[0].Origin[0].Name).To(Equal(fmt.Sprintf("mt1.%s", Config.KumaNamespace)))
+				}
+			}
+		}, "30s", "1s").Should(Succeed())
+	})
 }

@@ -88,7 +88,7 @@ func TestConformance(t *testing.T) {
 		CleanupBaseResources: true,
 		Debug:                false,
 		NamespaceLabels: map[string]string{
-			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
+			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
 		SupportedFeatures: sets.New(
 			suite.SupportGateway,

@@ -222,7 +222,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
                   start: "201"
                 path: /foo
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: foobar
                     value: foobaz
@@ -299,7 +299,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
                   start: "201"
                 path: /foo
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: foobar
                     value: foobaz

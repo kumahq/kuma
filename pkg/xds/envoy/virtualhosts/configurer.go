@@ -5,7 +5,6 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
@@ -53,7 +52,7 @@ func SetResponseHeader(name string, value string) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		VirtualHostMustConfigureFunc(func(vh *envoy_config_route_v3.VirtualHost) {
 			hsts := &envoy_config_core_v3.HeaderValueOption{
-				Append: util_proto.Bool(false),
+				AppendAction: envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 				Header: &envoy_config_core_v3.HeaderValue{
 					Key:   name,
 					Value: value,

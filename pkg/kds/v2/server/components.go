@@ -149,7 +149,7 @@ func newSyncTracker(
 				start := core.Now()
 				log.V(1).Info("on tick")
 				err, changed := reconciler.Reconcile(ctx, node, changedTypes, log)
-				if err != nil {
+				if err == nil {
 					result := ResultNoChanges
 					if changed {
 						result = ResultChanged

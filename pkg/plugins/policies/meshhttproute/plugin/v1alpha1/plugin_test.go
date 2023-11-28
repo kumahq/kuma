@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -26,7 +27,6 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -187,7 +187,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := plugin_gateway.NewGenerator("test-zone")
-			_, err = gatewayGenerator.Generate(context.Background(), given.xdsContext, given.proxy)
+			_, err = gatewayGenerator.Generate(context.Background(), nil, given.xdsContext, given.proxy)
 
 			Expect(err).NotTo(HaveOccurred())
 			resourceSet := core_xds.NewResourceSet()
@@ -202,64 +202,174 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(getResource(resourceSet, envoy_resource.EndpointType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
 		},
 		Entry("default-route", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					// This is a policy that doesn't apply to these services on
 					// purpose, so that the plugin is activated
 					// TODO: remove this when the plugin runs by default
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{{
-										Subset: core_rules.MeshService("some-nonexistent-service"),
-										Conf:   api.PolicyDefault{},
-									}},
-								},
-							},
-						},
-					}).Build(),
+					WithPolicies(
+						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+							Rules: core_rules.Rules{{
+								Subset: core_rules.MeshService("some-nonexistent-service"),
+								Conf:   api.PolicyDefault{},
+							}},
+						}),
+					).
+					Build(),
 			}
 		}()),
 		Entry("basic", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "eu"},
-					Weight: 1,
-				}, {
-					Target: "192.168.0.5",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.4").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "eu"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.5").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{{
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{{
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										}, {
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v2",
+												},
+											}, {
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v3",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										}, {
+											Matches: []api.Match{{
+												QueryParams: []api.QueryParamsMatch{{
+													Type:  api.ExactQueryMatch,
+													Name:  "v1",
+													Value: "true",
+												}},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										}},
+									},
+								}},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("mixed-tcp-and-http-outbounds", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.4").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "eu"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.5").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us")).
+				AddEndpoint("other-tcp", xds_builders.Endpoint().
+					WithTarget("192.168.0.10").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "other-tcp", mesh_proto.ProtocolTag, core_mesh.ProtocolTCP, "region", "eu"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{{
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										}},
+									},
+								}},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("header-modifiers", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -269,85 +379,245 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											}, {
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v2",
-													},
-												}, {
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/v3",
-													},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											}, {
-												Matches: []api.Match{{
-													QueryParams: []api.QueryParamsMatch{{
-														Type:  api.ExactQueryMatch,
-														Name:  "v1",
-														Value: "true",
-													}},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
+													Filters: &[]api.Filter{{
+														Type: api.RequestHeaderModifierType,
+														RequestHeaderModifier: &api.HeaderModifier{
+															Add: []api.HeaderKeyValue{{
+																Name:  "request-add-header",
+																Value: "add-value",
+															}},
+															Set: []api.HeaderKeyValue{{
+																Name:  "request-set-header",
+																Value: "set-value",
+															}, {
+																Name:  "request-set-header-multiple",
+																Value: "one-value,second-value",
+															}},
+															Remove: []string{
+																"request-header-to-remove",
+															},
+														},
+													}, {
+														Type: api.ResponseHeaderModifierType,
+														ResponseHeaderModifier: &api.HeaderModifier{
+															Add: []api.HeaderKeyValue{{
+																Name:  "response-add-header",
+																Value: "add-value",
+															}},
+															Set: []api.HeaderKeyValue{{
+																Name:  "response-set-header",
+																Value: "set-value",
+															}},
+															Remove: []string{
+																"response-header-to-remove",
+															},
+														},
+													}, {
+														Type: api.RequestRedirectType,
+														RequestRedirect: &api.RequestRedirect{
+															Scheme: pointer.To("other"),
+														},
 													}},
 												},
 											}},
 										},
-									}},
+									},
 								},
-							},
-						},
-					}).
+							}),
+					).
 					Build(),
 			}
 		}()),
-		Entry("mixed-tcp-and-http-outbounds", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "eu"},
-					Weight: 1,
-				}, {
-					Target: "192.168.0.5",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-				"other-tcp": []core_xds.Endpoint{{
-					Target: "192.168.0.10",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "other-tcp", "kuma.io/protocol": "tcp", "region": "eu"},
-					Weight: 1,
-				}},
-			}
+		Entry("url-rewrite", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{{
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+							Rules: core_rules.Rules{
+								{
+									Subset: core_rules.MeshService("backend"),
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												Filters: &[]api.Filter{{
+													Type: api.URLRewriteType,
+													URLRewrite: &api.URLRewrite{
+														Path: &api.PathRewrite{
+															Type:               api.ReplacePrefixMatchType,
+															ReplacePrefixMatch: pointer.To("/v2"),
+														},
+													},
+												}},
+											},
+										}},
+									},
+								},
+							},
+						}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("headers-match", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Headers: []common_api.HeaderMatch{{
+														Type:  pointer.To(common_api.HeaderMatchExact),
+														Name:  "foo-exact",
+														Value: "bar",
+													}, {
+														Type: pointer.To(common_api.HeaderMatchPresent),
+														Name: "foo-present",
+													}, {
+														Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+														Name:  "foo-regex",
+														Value: "x.*y",
+													}, {
+														Type: pointer.To(common_api.HeaderMatchAbsent),
+														Name: "foo-absent",
+													}, {
+														Type:  pointer.To(common_api.HeaderMatchPrefix),
+														Name:  "foo-prefix",
+														Value: "x",
+													}},
+												}},
+											}},
+										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("request-mirror", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us")).
+				AddEndpoint("payments", xds_builders.Endpoint().
+					WithTarget("192.168.0.6").
+					WithPort(8086).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us", "version", "v1", "env", "dev"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{
+														{
+															Type: api.RequestMirrorType,
+															RequestMirror: &api.RequestMirror{
+																Percentage: pointer.To(intstr.FromString("99.9")),
+																BackendRef: common_api.TargetRef{
+																	Kind: common_api.MeshServiceSubset,
+																	Name: "payments",
+																	Tags: map[string]string{
+																		"version": "v1",
+																		"region":  "us",
+																		"env":     "dev",
+																	},
+																},
+															},
+														},
+														{
+															Type: api.RequestMirrorType,
+															RequestMirror: &api.RequestMirror{
+																BackendRef: common_api.TargetRef{
+																	Kind: common_api.MeshService,
+																	Name: "backend",
+																},
+															},
+														},
+													},
+												},
+											}},
+										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway", func() outboundsTestCase {
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshSubset(),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -364,334 +634,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 										},
-									}},
-								},
-							},
-						},
-					}).
-					Build(),
-			}
-		}()),
-		Entry("header-modifiers", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
-			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{
-										{
-											Subset: core_rules.MeshService("backend"),
-											Conf: api.PolicyDefault{
-												Rules: []api.Rule{{
-													Matches: []api.Match{{
-														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
-															Value: "/v1",
-														},
-													}},
-													Default: api.RuleConf{
-														Filters: &[]api.Filter{{
-															Type: api.RequestHeaderModifierType,
-															RequestHeaderModifier: &api.HeaderModifier{
-																Add: []api.HeaderKeyValue{{
-																	Name:  "request-add-header",
-																	Value: "add-value",
-																}},
-																Set: []api.HeaderKeyValue{{
-																	Name:  "request-set-header",
-																	Value: "set-value",
-																}, {
-																	Name:  "request-set-header-multiple",
-																	Value: "one-value,second-value",
-																}},
-																Remove: []string{
-																	"request-header-to-remove",
-																},
-															},
-														}, {
-															Type: api.ResponseHeaderModifierType,
-															ResponseHeaderModifier: &api.HeaderModifier{
-																Add: []api.HeaderKeyValue{{
-																	Name:  "response-add-header",
-																	Value: "add-value",
-																}},
-																Set: []api.HeaderKeyValue{{
-																	Name:  "response-set-header",
-																	Value: "set-value",
-																}},
-																Remove: []string{
-																	"response-header-to-remove",
-																},
-															},
-														}, {
-															Type: api.RequestRedirectType,
-															RequestRedirect: &api.RequestRedirect{
-																Scheme: pointer.To("other"),
-															},
-														}},
-													},
-												}},
-											},
-										},
 									},
 								},
-							},
-						},
-					}).
-					Build(),
-			}
-		}()),
-		Entry("url-rewrite", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
-			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{
-										{
-											Subset: core_rules.MeshService("backend"),
-											Conf: api.PolicyDefault{
-												Rules: []api.Rule{{
-													Matches: []api.Match{{
-														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
-															Value: "/v1",
-														},
-													}},
-													Default: api.RuleConf{
-														Filters: &[]api.Filter{{
-															Type: api.URLRewriteType,
-															URLRewrite: &api.URLRewrite{
-																Path: &api.PathRewrite{
-																	Type:               api.ReplacePrefixMatchType,
-																	ReplacePrefixMatch: pointer.To("/v2"),
-																},
-															},
-														}},
-													},
-												}},
-											},
-										},
-									},
-								},
-							},
-						},
-					}).
-					Build(),
-			}
-		}()),
-		Entry("headers-match", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
-			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{
-										{
-											Subset: core_rules.MeshService("backend"),
-											Conf: api.PolicyDefault{
-												Rules: []api.Rule{{
-													Matches: []api.Match{{
-														Headers: []common_api.HeaderMatch{{
-															Type:  pointer.To(common_api.HeaderMatchExact),
-															Name:  "foo-exact",
-															Value: "bar",
-														}, {
-															Type: pointer.To(common_api.HeaderMatchPresent),
-															Name: "foo-present",
-														}, {
-															Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-															Name:  "foo-regex",
-															Value: "x.*y",
-														}, {
-															Type: pointer.To(common_api.HeaderMatchAbsent),
-															Name: "foo-absent",
-														}, {
-															Type:  pointer.To(common_api.HeaderMatchPrefix),
-															Name:  "foo-prefix",
-															Value: "x",
-														}},
-													}},
-												}},
-											},
-										},
-									},
-								},
-							},
-						},
-					}).
-					Build(),
-			}
-		}()),
-		Entry("request-mirror", func() outboundsTestCase {
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-				"payments": []core_xds.Endpoint{{
-					Target: "192.168.0.6",
-					Port:   8086,
-					Tags:   map[string]string{"kuma.io/service": "payments", "kuma.io/protocol": "http", "region": "us", "version": "v1", "env": "dev"},
-					Weight: 1,
-				}},
-			}
-			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{
-										{
-											Subset: core_rules.MeshService("backend"),
-											Conf: api.PolicyDefault{
-												Rules: []api.Rule{{
-													Matches: []api.Match{{
-														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
-															Value: "/v1",
-														},
-													}},
-													Default: api.RuleConf{
-														Filters: &[]api.Filter{
-															{
-																Type: api.RequestMirrorType,
-																RequestMirror: &api.RequestMirror{
-																	Percentage: pointer.To(intstr.FromString("99.9")),
-																	BackendRef: common_api.TargetRef{
-																		Kind: common_api.MeshServiceSubset,
-																		Name: "payments",
-																		Tags: map[string]string{
-																			"version": "v1",
-																			"region":  "us",
-																			"env":     "dev",
-																		},
-																	},
-																},
-															},
-															{
-																Type: api.RequestMirrorType,
-																RequestMirror: &api.RequestMirror{
-																	BackendRef: common_api.TargetRef{
-																		Kind: common_api.MeshService,
-																		Name: "backend",
-																	},
-																},
-															},
-														},
-													},
-												}},
-											},
-										},
-									},
-								},
-							},
-						},
-					}).
-					Build(),
-			}
-		}()),
-		Entry("gateway", func() outboundsTestCase {
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-			}
-			outboundTargets := core_xds.EndpointMap{
-				"backend": []core_xds.Endpoint{{
-					Target: "192.168.0.4",
-					Port:   8084,
-					Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
-					Weight: 1,
-				}},
-			}
-			xdsContext := xds_samples.SampleContextWith(resources)
-			xdsContext.Mesh.EndpointMap = outboundTargets
-			return outboundsTestCase{
-				xdsContext: xdsContext,
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.GatewayDataplaneBuilder()).
-					WithRouting(core_xds.Routing{
-						OutboundTargets: outboundTargets,
-					}).
-					WithPolicies(core_xds.MatchedPolicies{
-						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-							api.MeshHTTPRouteType: {
-								ToRules: core_rules.ToRules{
-									Rules: core_rules.Rules{
-										{
-											Subset: core_rules.MeshSubset(),
-											Conf: api.PolicyDefault{
-												Rules: []api.Rule{{
-													Matches: []api.Match{{
-														Path: &api.PathMatch{
-															Type:  api.PathPrefix,
-															Value: "/",
-														},
-													}},
-													Default: api.RuleConf{
-														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefService("backend"),
-															Weight:    pointer.To(uint(100)),
-														}},
-													},
-												}},
-											},
-										},
-									},
-								},
-							},
-						},
-					}).
+							}),
+					).
 					Build(),
 			}
 		}()),

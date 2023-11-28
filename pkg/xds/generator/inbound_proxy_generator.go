@@ -25,7 +25,7 @@ const OriginInbound = "inbound"
 
 type InboundProxyGenerator struct{}
 
-func (g InboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
 		// we do not create inbounds for serviceless

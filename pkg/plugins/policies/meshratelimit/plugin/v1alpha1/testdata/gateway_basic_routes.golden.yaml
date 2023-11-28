@@ -33,12 +33,10 @@ virtualHosts:
             numerator: 100
           runtimeKey: local_rate_limit_enforced
         responseHeadersToAdd:
-        - append: true
-          header:
+        - header:
             key: x-kuma-rate-limit-header
             value: test-value
-        - append: true
-          header:
+        - header:
             key: x-kuma-rate-limit
             value: other-value
         statPrefix: rate_limit

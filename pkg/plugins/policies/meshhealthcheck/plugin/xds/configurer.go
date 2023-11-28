@@ -130,7 +130,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 					Key:   string(header.Name),
 					Value: val,
 				},
-				Append: util_proto.Bool(true),
+				AppendAction: envoy_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 			})
 		}
 	}
@@ -141,7 +141,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 					Key:   string(header.Name),
 					Value: val,
 				},
-				Append: util_proto.Bool(false),
+				AppendAction: envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 			})
 		}
 	}

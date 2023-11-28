@@ -16,3 +16,93 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+    InspectRule:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          example: MeshRetry
+          description: the type of the policy
+        proxyRule:
+          description: a rule that affects the entire proxy
+          $ref: '#/components/schemas/ProxyRule'
+        toRules:
+          type: array
+          description: a set of rules for the outbounds of this proxy
+          items:
+            $ref: '#/components/schemas/Rule'
+        fromRules:
+          type: array
+          description: a set of rules for each inbound of this proxy
+          items:
+            $ref: '#/components/schemas/FromRule'
+        warnings:
+          type: array
+          description: a set of warnings to show in policy matching
+          example: ["Mesh is not Mtls enabled this policy will have no effect"]
+          items:
+            type: string
+    FromRule:
+     type: object
+     required: [rules, inbound]
+     properties:
+       inbound:
+         $ref: '#/components/schemas/Inbound'
+       rules:
+         type: array
+         items:
+           $ref: '#/components/schemas/Rule'
+    Inbound:
+      type: object
+      required: [tags, port]
+      properties:
+        tags:
+          type: object
+          x-go-type: 'map[string]string'
+        port:
+          type: integer
+    ProxyRule:
+      type: object
+      required: [conf, origin]
+      properties:
+        conf:
+          description: The actual conf generated
+          type: object
+          x-go-type: 'interface{}'
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    Rule:
+      type: object
+      required: [matchers, conf, origin]
+      properties:
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleMatcher'
+        conf:
+          description: The actual conf generated
+          type: object
+          x-go-type: 'interface{}'
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    RuleMatcher:
+      type: object
+      required: [key, value, not]
+      description: A matcher to select which traffic this conf applies to
+      properties:
+        key:
+          type: string
+          description: the key to match against
+          example: kuma.io/service
+        value:
+          type: string
+          description: the value for the key to match against
+          example: my-cool-service
+        not:
+          type: boolean
+          description: whether we check on the absence of this key:value pair

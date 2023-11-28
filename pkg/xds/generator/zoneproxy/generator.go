@@ -13,21 +13,29 @@ import (
 )
 
 func GenerateCDS(
-	services []string,
 	destinationsPerService map[string][]envoy_tags.Tags,
+	services envoy_common.Services,
 	apiVersion core_xds.APIVersion,
 	meshName string,
 	origin string,
 ) ([]*core_xds.Resource, error) {
-	var resources []*core_xds.Resource
-	for _, service := range services {
-		clusterName := envoy_names.GetMeshClusterName(meshName, service)
+	matchAllDestinations := destinationsPerService[mesh_proto.MatchAllTag]
 
-		tagSlice := envoy_tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+	var resources []*core_xds.Resource
+	for _, service := range services.Sorted() {
+		clusters := services[service]
+
+		var tagsSlice envoy_tags.TagsSlice
+		for _, cluster := range clusters.Clusters() {
+			tagsSlice = append(tagsSlice, cluster.Tags())
+		}
+		tagSlice := append(tagsSlice, matchAllDestinations...)
+
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
 			envoy_tags.Without(mesh_proto.ServiceTag),
 		)
 
+		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 			Configure(envoy_clusters.EdsCluster()).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
@@ -47,7 +55,7 @@ func GenerateCDS(
 }
 
 func GenerateEDS(
-	services []string,
+	services envoy_common.Services,
 	endpointMap core_xds.EndpointMap,
 	apiVersion core_xds.APIVersion,
 	meshName string,
@@ -55,10 +63,10 @@ func GenerateEDS(
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
-	for _, service := range services {
+	for _, service := range services.Sorted() {
 		endpoints := endpointMap[service]
-		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 
+		clusterName := envoy_names.GetMeshClusterName(meshName, service)
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
 		if err != nil {
 			return nil, err
@@ -88,7 +96,9 @@ func AddFilterChains(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	destinationsPerService map[string][]envoy_tags.Tags,
 	endpointMap core_xds.EndpointMap,
-) {
+) envoy_common.Services {
+	servicesAcc := envoy_common.NewServicesAccumulator(nil)
+
 	sniUsed := map[string]struct{}{}
 	for _, service := range availableServices {
 		serviceName := service.Tags[mesh_proto.ServiceTag]
@@ -138,8 +148,10 @@ func AddFilterChains(
 
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithName(clusterName),
+				envoy_common.WithService(serviceName),
 				envoy_common.WithTags(relevantTags),
 			)
+			cluster.SetMesh(service.Mesh)
 
 			filterChain := envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
@@ -153,6 +165,10 @@ func AddFilterChains(
 			)
 
 			listenerBuilder.Configure(filterChain)
+
+			servicesAcc.Add(cluster)
 		}
 	}
+
+	return servicesAcc.Services()
 }

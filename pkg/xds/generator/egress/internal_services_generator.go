@@ -6,7 +6,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -27,7 +26,6 @@ func (g *InternalServicesGenerator) Generate(
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
-	services := util_maps.SortedKeys(servicesMap)
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
 
@@ -36,9 +34,9 @@ func (g *InternalServicesGenerator) Generate(
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 	)
 
-	zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
+	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
 
-	cds, err := zoneproxy.GenerateCDS(services, destinations, proxy.APIVersion, meshName, OriginEgress)
+	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, OriginEgress)
 	if err != nil {
 		return nil, err
 	}

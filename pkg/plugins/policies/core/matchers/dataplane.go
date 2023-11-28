@@ -68,17 +68,17 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 
 	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
 	if err != nil {
-		return core_xds.TypedMatchingPolicies{}, err
+		warnings = append(warnings, fmt.Sprintf("couldn't create From rules: %s", err.Error()))
 	}
 
 	tr, err := core_rules.BuildToRules(dpPolicies, resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
 	if err != nil {
-		return core_xds.TypedMatchingPolicies{}, err
+		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
 	sr, err := core_rules.BuildSingleItemRules(dpPolicies)
 	if err != nil {
-		return core_xds.TypedMatchingPolicies{}, err
+		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
 	}
 
 	return core_xds.TypedMatchingPolicies{

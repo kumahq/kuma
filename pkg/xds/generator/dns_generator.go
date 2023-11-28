@@ -15,7 +15,7 @@ const OriginDNS = "dns"
 
 type DNSGenerator struct{}
 
-func (g DNSGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	dnsPort := proxy.Metadata.GetDNSPort()
 	emptyDnsPort := proxy.Metadata.GetEmptyDNSPort()
 	if dnsPort == 0 || emptyDnsPort == 0 {

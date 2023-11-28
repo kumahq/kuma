@@ -195,7 +195,7 @@ func gatewayListenerInfoFromProxy(
 	return listenerInfos
 }
 
-func (g Generator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	var limits []RuntimeResoureLimitListener

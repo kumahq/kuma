@@ -21,6 +21,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
@@ -84,7 +85,7 @@ var _ = Describe("Proxy Builder", func() {
 	})
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
 		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),

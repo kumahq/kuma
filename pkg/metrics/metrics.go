@@ -4,6 +4,8 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 )
 
 type RegistererGatherer interface {
@@ -84,4 +86,17 @@ func (m *metrics) BulkRegister(cs ...prometheus.Collector) error {
 		}
 	}
 	return nil
+}
+
+func ZoneNameOrMode(mode config_core.CpMode, name string) string {
+	switch mode {
+	case config_core.Zone:
+		return name
+	case config_core.Global:
+		return "Global"
+	case config_core.Standalone:
+		return "Standalone"
+	default:
+		return ""
+	}
 }

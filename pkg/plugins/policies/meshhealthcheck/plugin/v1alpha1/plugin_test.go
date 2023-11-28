@@ -13,8 +13,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
@@ -85,69 +83,50 @@ var _ = Describe("MeshHealthCheck", func() {
 
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
-				WithDataplane(samples.DataplaneBackendBuilder().
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  httpServiceTag,
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  tcpServiceTag,
-							mesh_proto.ProtocolTag: "tcp",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  grpcServiceTag,
-							mesh_proto.ProtocolTag: "grpc",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  grpcServiceTag,
-							mesh_proto.ProtocolTag: "grpc",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27780).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  splitHttpServiceTag,
-							mesh_proto.ProtocolTag: "http",
-						}),
-					)).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshHealthCheckType: {
-							Type:    api.MeshHealthCheckType,
-							ToRules: given.toRules,
-						},
-					},
-				}).
-				WithRouting(xds.Routing{
-					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
-						httpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						splitHttpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
-							},
-						},
-						grpcServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolGRPC},
-							},
-						},
-						tcpServiceTag: {
-							{
-								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolTCP},
-							},
-						},
-					},
-				}).
+				WithDataplane(
+					samples.DataplaneBackendBuilder().
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  httpServiceTag,
+								mesh_proto.ProtocolTag: "http",
+							}),
+						).
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  tcpServiceTag,
+								mesh_proto.ProtocolTag: "tcp",
+							}),
+						).
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  grpcServiceTag,
+								mesh_proto.ProtocolTag: "grpc",
+							}),
+						).
+						AddOutbound(
+							builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  grpcServiceTag,
+								mesh_proto.ProtocolTag: "grpc",
+							}),
+						).
+						AddOutbound(
+							builders.Outbound().WithAddress("127.0.0.1").WithPort(27780).WithTags(map[string]string{
+								mesh_proto.ServiceTag:  splitHttpServiceTag,
+								mesh_proto.ProtocolTag: "http",
+							}),
+						),
+				).
+				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
+				WithRouting(
+					xds_builders.Routing().
+						WithOutboundTargets(
+							xds_builders.EndpointMap().
+								AddEndpoint(httpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(splitHttpServiceTag, xds_samples.HttpEndpointBuilder()).
+								AddEndpoint(grpcServiceTag, xds_samples.GrpcEndpointBuilder()).
+								AddEndpoint(tcpServiceTag, xds_samples.TcpEndpointBuilder()),
+						),
+				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -270,20 +249,13 @@ var _ = Describe("MeshHealthCheck", func() {
 			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshHealthCheckType: {
-							Type:    api.MeshHealthCheckType,
-							ToRules: given.toRules,
-						},
-					},
-				}).
+				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
 			}
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-			generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
 
 			// when

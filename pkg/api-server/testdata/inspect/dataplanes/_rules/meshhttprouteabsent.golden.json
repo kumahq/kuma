@@ -1,0 +1,8 @@
+{
+ "resource": {
+  "mesh": "default",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": []
+}

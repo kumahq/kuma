@@ -110,7 +110,7 @@ var _ = Describe("GenerateSnapshot", func() {
 		cfg.Multizone.Zone.Name = "eun-blue"
 		mCtxBuilder = xds_context.NewMeshContextBuilder(
 			manager.NewResourceManager(store),
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(rm, config_manager.NewConfigManager(store), false),

@@ -44,8 +44,8 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	test_store "github.com/kumahq/kuma/pkg/test/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -257,7 +257,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
@@ -338,14 +338,7 @@ func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resource
 	status, err := strconv.Atoi(actions[1])
 	Expect(err).NotTo(HaveOccurred(), "status is not an int")
 
-	rawResources := util_yaml.SplitYAML(string(inputs))
-	Expect(rawResources).ToNot(BeEmpty())
-	for i, rawResource := range rawResources {
-		resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
-		Expect(err).ToNot(HaveOccurred())
-		err = resourceStore.Create(context.Background(), resource, store.CreateByKey(resource.GetMeta().GetName(), resource.GetMeta().GetMesh()))
-		Expect(err).NotTo(HaveOccurred(), "failed with resource %d %v", i, resource.GetMeta())
-	}
+	Expect(test_store.LoadResources(context.Background(), resourceStore, string(inputs))).To(Succeed())
 
 	req, err := http.NewRequest("GET", url, nil)
 	Expect(err).NotTo(HaveOccurred())

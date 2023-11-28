@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
@@ -177,7 +178,7 @@ type runtimeContext struct {
 	interCpPool              *client.Pool
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
-	apiWebServiceCustomize   func(*restful.WebService) error
+	apiWebServiceCustomize   []func(*restful.WebService) error
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -309,8 +310,13 @@ func (rc *runtimeContext) Tenants() multitenant.Tenants {
 }
 
 func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
-	if rc.apiWebServiceCustomize == nil {
-		return func(*restful.WebService) error { return nil }
+	return func(ws *restful.WebService) error {
+		err := &multierror.Error{}
+
+		for _, apiWebServiceCustomize := range rc.apiWebServiceCustomize {
+			err = multierror.Append(err, apiWebServiceCustomize(ws))
+		}
+
+		return err.ErrorOrNil()
 	}
-	return rc.apiWebServiceCustomize
 }
