@@ -33,6 +33,7 @@ func (g *InternalServicesGenerator) Generate(
 	services := g.buildServices(endpointMap, meshResources.Mesh.ZoneEgressEnabled(), zone)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
+<<<<<<< HEAD
 	g.addFilterChains(
 		apiVersion,
 		destinations,
@@ -43,6 +44,20 @@ func (g *InternalServicesGenerator) Generate(
 	)
 
 	cds, err := g.generateCDS(meshName, apiVersion, services, destinations)
+=======
+	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
+
+	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
+
+	destinations := zoneproxy.BuildMeshDestinations(
+		availableServices,
+		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+	)
+
+	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
+
+	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, OriginEgress)
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 	if err != nil {
 		return nil, err
 	}

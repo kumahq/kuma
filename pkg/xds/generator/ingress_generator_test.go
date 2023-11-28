@@ -659,7 +659,123 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
+<<<<<<< HEAD
 			meshHTTPRoutes: []*v1alpha1.MeshHTTPRouteResource{
+=======
+		}),
+		Entry("with MeshHTTPRoute and subsets", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+                  kuma.io/zone: zone
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+                  kuma.io/zone: zone
+`,
+			expected: "with-meshhttproute-subset.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+									"kuma.io/zone":    "zone",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+									"kuma.io/zone":    "zone",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
+							Items: []*v1alpha1.MeshHTTPRouteResource{
+								{
+									Spec: &v1alpha1.MeshHTTPRoute{
+										TargetRef: common_api.TargetRef{
+											Kind: common_api.MeshService,
+											Name: "frontend",
+										},
+										To: []v1alpha1.To{{
+											TargetRef: common_api.TargetRef{
+												Kind: common_api.MeshService,
+												Name: "backend",
+											},
+											Rules: []v1alpha1.Rule{{
+												Matches: []v1alpha1.Match{{
+													Path: &v1alpha1.PathMatch{
+														Type:  v1alpha1.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: v1alpha1.RuleConf{
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshServiceSubset,
+															Name: "backend",
+															Tags: map[string]string{
+																"version":      "v1",
+																"region":       "eu",
+																"kuma.io/zone": "zone",
+															},
+														},
+													}},
+												},
+											}},
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("with VirtualOutbound", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-0
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: ins-1
+`,
+			expected: "virtual-outbound.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 				{
 					Spec: &v1alpha1.MeshHTTPRoute{
 						TargetRef: common_api.TargetRef{

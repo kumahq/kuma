@@ -24,22 +24,47 @@ func Test() {
 		err := NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "zone1"}),
+				WithArgs([]string{"echo", "--instance", "zone1-v1"}),
 				WithServiceVersion("v1"),
 			)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
+<<<<<<< HEAD
 			Install(TestServerUniversal("dp-echo-2", meshName,
 				WithArgs([]string{"echo", "--instance", "zone2"}),
+=======
+			Install(TestServerUniversal("dp-echo-2-v1", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2-v1"}),
+				WithServiceVersion("v1"),
+			)).
+			Setup(multizone.UniZone2)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
+			Install(TestServerUniversal("dp-echo-2-v2", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2-v2"}),
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 				WithServiceVersion("v2"),
 			)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
+<<<<<<< HEAD
 			Install(TestServerUniversal("dp-echo-3", meshName,
+=======
+			Install(TestServerUniversal("dp-echo-2-v3", meshName,
+				WithArgs([]string{"echo", "--instance", "zone2-v3"}),
+				WithServiceVersion("v3"),
+			)).
+			Setup(multizone.UniZone2)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
+			Install(TestServerUniversal("dp-echo-4", meshName,
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 				WithArgs([]string{"echo", "--instance", "alias-zone2"}),
 				WithServiceName("alias-test-server"),
 				WithServiceVersion("v2"),
@@ -99,4 +124,54 @@ spec:
 			)
 		}, "30s", "500ms").Should(Succeed())
 	})
+<<<<<<< HEAD
+=======
+
+	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-1
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+          - path:
+              value: /
+              type: PathPrefix
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: test-server
+                weight: 1
+                tags:
+                  kuma.io/zone: kuma-5
+                  version: v1
+              - kind: MeshServiceSubset
+                name: test-server
+                weight: 1
+                tags:
+                  kuma.io/zone: kuma-5
+                  version: v2
+`, meshName))(multizone.Global)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response).To(
+				And(
+					HaveKey(MatchRegexp(`^.*-v1.*`)),
+					HaveKey(MatchRegexp(`^zone2-v2.*`)),
+					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
+				),
+			)
+		}, "30s", "500ms").Should(Succeed())
+	})
+>>>>>>> 1e81dcb2d (fix(ZoneIngress): subset routing when tag is present on all subsets (#8443))
 }
