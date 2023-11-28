@@ -10,7 +10,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -114,9 +113,6 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	var verr validators.ValidationError
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
-	}
-	if err := accesslog.ValidateFormat(backend.Format); err != nil {
-		verr.AddViolation("format", err.Error())
 	}
 	switch backend.GetType() {
 	case mesh_proto.LoggingFileType:

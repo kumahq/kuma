@@ -13,6 +13,33 @@ parameters:
   ubuntu_image:
     type: string
     default: "ubuntu-2204:2022.10.2"
+  gh_action_build_artifact_name:
+    type: string
+    default: ""
+  gh_action_artifact_list_url:
+    type: string
+    default: ""
+  gh_action_runtime_token:
+    type: string
+    default: ""
+  e2e_param_k8s_version:
+    type: string
+    default: "v1.28.1-k3s1"
+  e2e_param_arch:
+    type: string
+    default: "amd64"
+  e2e_param_parallelism:
+    type: integer
+    default: 1
+  e2e_param_target:
+    type: string
+    default: ""
+  e2e_param_cni_network_plugin:
+    type: string
+    default: flannel
+  e2e_param_legacy_kds:
+    type: boolean
+    default: false
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -355,6 +382,201 @@ jobs:
       - store_artifacts:
           name: "Store logs"
           path: /tmp/e2e
+  e2e_testing:
+    parameters:
+      k8sVersion:
+        description: version of k3s to use or "kind" and "kindIpv6"
+        type: string
+        default: << pipeline.parameters.last_k8s_version >>
+      parallelism:
+        description: level of parallelization
+        type: integer
+        default: 1
+      target:
+        description: makefile target without test/e2e prefix
+        type: string
+        default: ""
+      arch:
+        description: The golang arch
+        type: string
+        default: amd64
+      cniNetworkPlugin:
+        description: The CNI networking plugin to use [flannel | calico]
+        type: string
+        default: flannel
+      legacyKDS:
+        description: if should run tests with new implementation of KDS
+        type: boolean
+    executor:
+      name: vm-<< parameters.arch >>
+    parallelism: << parameters.parallelism >>
+    steps:
+      - checkout
+      - run:
+          name: Download build output from GitHub action
+          command: |
+            echo "Running with: \
+              k8s:<< parameters.k8sVersion >> \
+              target:<< parameters.target >> \
+              parallelism:<< parameters.parallelism >> \
+              arch:<< parameters.arch >> \
+              legacyKDS:<< parameters.legacyKDS >> \
+              cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
+            "
+
+            GH_ARTIFACT_LIST_URL=<< pipeline.parameters.gh_action_artifact_list_url >>
+            GH_ACTIONS_RUNTIME_TOKEN=<< pipeline.parameters.gh_action_runtime_token >>
+            GH_ACTIONS_BUILD_ARTIFACT_NAME=<< pipeline.parameters.gh_action_build_artifact_name >>
+            BASE_DIR=build
+
+            if [[ "$GH_ACTIONS_RUNTIME_TOKEN" == "" ]]; then
+                echo "Please set these environment variables: GH_ACTIONS_RUNTIME_TOKEN"
+                exit 1
+            fi
+
+            if [[ "$BASE_DIR" == "" ]]; then
+                BASE_DIR="."
+            fi
+
+            function request(){
+                METHOD=$1
+                URL=$2
+                IS_STREAM=$3
+
+                if [[ "$URL" == "" ]]; then
+                    echo "Unknown URL"
+                    exit 1
+                fi
+
+                ACCEPT=application/json
+                if [[ "$IS_STREAM" == "1" ]]; then
+                    ACCEPT="*/*"
+                fi
+
+                OUTPUT_FILE=/tmp/gh-response-$RANDOM
+                STATUS_CODE=
+                while [[ "$STATUS_CODE" == "" ]]; do
+                    STATUS_CODE=$(curl --compressed -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
+                    --header "accept: $ACCEPT" --header "Authorization: Bearer $GH_ACTIONS_RUNTIME_TOKEN")
+
+                    if [[ "$STATUS_CODE" == "429" ]]; then
+                        STATUS_CODE=
+                        echo '' > $OUTPUT_FILE
+                        sleep $((RANDOM % 3))
+                    fi
+                done
+
+                if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
+                    echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
+                    exit 1
+                fi
+                if [[ "$IS_STREAM" != "1" ]]; then
+                    cat $OUTPUT_FILE
+                    rm $OUTPUT_FILE
+                else
+                    echo "$OUTPUT_FILE"
+                fi
+            }
+
+            LIST_RESP=$(request GET "$GH_ARTIFACT_LIST_URL")
+            if [[ "${LIST_RESP:0:5}" == "Error" ]]; then
+              echo "$LIST_RESP"
+              exit 1
+            fi
+            FILE_LIST_URL=$(echo "$LIST_RESP" | jq -rc '.value[0].fileContainerResourceUrl //empty')
+            LIST_JSON_FILE=$(request GET "$FILE_LIST_URL" 1)
+            while read FILE_PATH; do
+              DOWNLOAD_URL=$(cat $LIST_JSON_FILE | jq -rc ".value[] | select(.path==\"$FILE_PATH\") | .contentLocation")
+              FILE_SIZE=$(cat $LIST_JSON_FILE | jq -rc ".value[] | select(.path==\"$FILE_PATH\") | .fileLength")
+
+              FILE_PATH=${FILE_PATH#*/}
+              echo "Downloading $FILE_PATH (size: $FILE_SIZE)"
+              mkdir -p $(dirname $BASE_DIR/$FILE_PATH)
+              FILE_SAVED=$(request GET "$DOWNLOAD_URL" 1)
+              mv $FILE_SAVED $BASE_DIR/$FILE_PATH
+            done < <(cat $LIST_JSON_FILE | jq -rc ".value[] | select((.itemType==\"file\") and (.path|startswith(\"$GH_ACTIONS_BUILD_ARTIFACT_NAME/\"))) | .path")
+
+            echo "Downloading complete."
+
+            echo "Extracting files..."
+            ARCH='<< parameters.arch >>'
+            ARTIFACT=$(find $BASE_DIR/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+            if [[ "$ARTIFACT" == "" ]]; then
+              echo "Could not find built artifact for linux($ARCH)."
+              exit 1
+            fi
+            cat $ARTIFACT.sha256 | sha256sum --check
+
+            mkdir $BASE_DIR/distributions/artifacts
+            tar -xzf $ARTIFACT -C $BASE_DIR/distributions/artifacts
+
+            SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
+            DEST_DIR=$BASE_DIR/artifacts-linux-$ARCH
+            for BIN in $(ls $SRC_DIR); do
+              mkdir -p $DEST_DIR/$BIN
+              cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
+            done
+      - install_build_tools:
+          go_arch: << parameters.arch >>
+      - run:
+          command: make dev/tools
+      - run:
+          name: "Download Go modules"
+          command: |
+            go mod download -x
+      - run:
+          name: "Setup Helm"
+          command: |
+            make dev/set-kuma-helm-repo
+      - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
+          condition:
+            equal: [<< parameters.k8sVersion >>, "kindIpv6"]
+          steps:
+            - run:
+                name: Enable IPV6 and change DNS
+                command: |
+                  cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+                  {
+                    "ipv6": true,
+                    "fixed-cidr-v6": "2001:db8:1::/64",
+                    "dns": ["8.8.8.8"],
+                    "dns-search": ["."]
+                  }
+                  EOF
+                  sudo service docker restart
+      - run:
+          name: "Run E2E tests"
+          command: |
+            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+              export IPV6=true
+              export K8S_CLUSTER_TOOL=kind
+              export KUMA_DEFAULT_RETRIES=60
+              export KUMA_DEFAULT_TIMEOUT="6s"
+            fi
+            if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
+              export CI_K3S_VERSION=<< parameters.k8sVersion >>
+              export K3D_NETWORK_CNI=<< parameters.cniNetworkPlugin >>
+            fi
+            if [[ "<< parameters.arch >>" == "arm64" ]]; then
+              export MAKE_PARAMETERS="-j1"
+            else
+              export MAKE_PARAMETERS="-j2"
+            fi
+
+            if [[ "<< parameters.legacyKDS >>" == true ]]; then
+              export KUMA_LEGACY_KDS=true
+            fi
+
+            if [[ "<< parameters.target >>" == "" ]]; then
+              export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+            fi
+            env
+            if [[ "<< parameters.target >>" != "" ]]; then
+              target="test/e2e-<< parameters.target >>"
+            else
+              target="test/e2e"
+            fi
+            make ${MAKE_PARAMETERS} CI=true "${target}"
   build:
     executor: vm-xlarge-amd64
     steps:
@@ -517,3 +739,15 @@ workflows:
           requires: [build]
       - distributions:
           requires: [test, container-structure]
+  manual-e2e:
+    when:
+      not:
+        equal: ["", << pipeline.parameters.gh_action_build_artifact_name >>]
+    jobs:
+      - e2e_testing:
+          k8sVersion: << pipeline.parameters.e2e_param_k8s_version >>
+          target: << pipeline.parameters.e2e_param_target >>
+          arch: << pipeline.parameters.e2e_param_arch >>
+          legacyKDS: << pipeline.parameters.e2e_param_legacy_kds >>
+          cniNetworkPlugin: << pipeline.parameters.e2e_param_cni_network_plugin >>
+          parallelism: << pipeline.parameters.e2e_param_parallelism >>

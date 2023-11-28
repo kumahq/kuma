@@ -1,0 +1,24 @@
+#/meshes/default/dataplanes/dp-1/_rules 200
+type: MeshTimeout
+name: foo
+mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: the-http-route
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 15s
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-1

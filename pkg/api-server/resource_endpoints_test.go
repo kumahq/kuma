@@ -10,6 +10,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -1039,7 +1040,12 @@ var _ = Describe("Resource Endpoints", func() {
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_response_size_bytes")).ToNot(BeNil())
 	})
 
-	DescribeTable("inspect", func(inputFile string) {
+	DescribeTable("inspect for policies /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect"))
+	}, test.EntriesForFolder("inspect/policies/_resources/dataplanes"))
+
+	DescribeTable("inspect dataplane rules /meshes/{mesh}/dataplanes/{dpName}/_rules", func(inputFile string) {
+		format.MaxLength = 0
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("inspect/dataplanes/_rules"))
 })
