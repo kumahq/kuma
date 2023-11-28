@@ -368,6 +368,11 @@ func (m *meshContextBuilder) resolveProtocol(
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
 		protocol[svc] = core_mesh.MapProtocol(insight.GetProtocol())
 	}
+	for svc, endpoints := range endpointMap{
+		if _, ok := protocol[svc]; !ok {
+			protocol[svc] = util_protocol.InferServiceProtocol(endpoints)
+		}
+	}
 	return protocol
 }
 
