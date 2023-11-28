@@ -17,8 +17,11 @@ import (
 )
 
 func init() {
+	// Routes have to come first
 	meshhttproute.Register()
 	meshtcproute.Register()
+
+	// For other policies order isn't important at the moment
 	meshloadbalancingstrategy.Register()
 	meshaccesslog.Register()
 	meshtrace.Register()
@@ -29,5 +32,7 @@ func init() {
 	meshcircuitbreaker.Register()
 	meshhealthcheck.Register()
 	meshretry.Register()
+
+	// MeshProxyPatch comes after all others
 	meshproxypatch.Register()
 }
