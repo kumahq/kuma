@@ -383,6 +383,8 @@ cni:
     runAsGroup: 0
 
 dataPlane:
+  # -- If true, then turn on CoreDNS query logging
+  dnsLogging: false
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"

@@ -240,6 +240,11 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: "true",
 		}
 
+		envVars["KUMA_DNS_ENABLE_LOGGING"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENABLE_LOGGING",
+			Value: strconv.FormatBool(i.BuiltinDNS.Logging),
+		}
+
 		envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_CORE_DNS_PORT",
 			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
