@@ -12,17 +12,14 @@ import (
 )
 
 func NewGenerator() generator_core.ResourceGenerator {
-	return generator{
-		plugins: plugins.Plugins().PolicyPlugins(),
-	}
+	return generator{}
 }
 
 type generator struct {
-	plugins []plugins.RegisteredPolicyPlugin
 }
 
 func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
-	for _, policy := range g.plugins {
+	for _, policy := range plugins.Plugins().PolicyPlugins() {
 		if err := policy.Plugin.Apply(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policy.Name)
 		}
