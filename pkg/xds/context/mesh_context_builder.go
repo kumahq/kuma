@@ -195,7 +195,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		CrossMeshEndpoints:          crossMeshEndpointMap,
 		VIPDomains:                  domains,
 		VIPOutbounds:                outbounds,
-		ServiceInformations:         m.generateServicesInformations(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		ServicesInformation:         m.generateServicesInformations(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:            loader,
 		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
 	}, nil
@@ -373,40 +373,40 @@ func (m *meshContextBuilder) generateServicesInformations(
 	serviceInsights *core_mesh.ServiceInsightResourceList,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
-) map[string]ServiceInformations {
-	servicesInformations := map[string]ServiceInformations{}
-	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformations)
-	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformations)
-	return servicesInformations
+) map[string]ServiceInformation {
+	servicesInformation := map[string]ServiceInformation{}
+	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
+	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformation)
+	return servicesInformation
 }
 
 func (m *meshContextBuilder) resolveProtocol(
 	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
-	servicesInformations map[string]ServiceInformations,
+	servicesInformation map[string]ServiceInformation,
 ) {
 	// when Egress is not enabled we are not adding egresses to the EndpointMap
 	if !mesh.ZoneEgressEnabled() {
 		for svc, endpoints := range esEndpointMap {
-			serviceInfo := getServiceInformations(servicesInformations, svc)
+			serviceInfo := getServiceInformations(servicesInformation, svc)
 			serviceInfo.Protocol = inferServiceProtocol(endpoints)
 			serviceInfo.IsExternalService = true
-			servicesInformations[svc] = serviceInfo
+			servicesInformation[svc] = serviceInfo
 		}
 	}
 	for svc, endpoints := range endpointMap {
-		serviceInfo := getServiceInformations(servicesInformations, svc)
+		serviceInfo := getServiceInformations(servicesInformation, svc)
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)
 		serviceInfo.IsExternalService = isExternalService(endpoints)
-		servicesInformations[svc] = serviceInfo
+		servicesInformation[svc] = serviceInfo
 	}
 }
 
 func (m *meshContextBuilder) resolveTLSReadiness(
 	mesh *core_mesh.MeshResource,
 	serviceInsights *core_mesh.ServiceInsightResourceList,
-	servicesInformations map[string]ServiceInformations,
+	servicesInformation map[string]ServiceInformation,
 ) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
@@ -421,13 +421,13 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 		return
 	}
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		serviceInfo := getServiceInformations(servicesInformations, svc)
+		serviceInfo := getServiceInformations(servicesInformation, svc)
 		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
 			serviceInfo.TLSReadiness = true
 		} else {
 			serviceInfo.TLSReadiness = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
 		}
-		servicesInformations[svc] = serviceInfo
+		servicesInformation[svc] = serviceInfo
 	}
 }
 
@@ -496,11 +496,11 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	return hasher.Sum(nil)
 }
 
-func getServiceInformations(servicesInformations map[string]ServiceInformations, serviceName string) ServiceInformations {
-	if info, found := servicesInformations[serviceName]; found {
+func getServiceInformations(servicesInformation map[string]ServiceInformation, serviceName string) ServiceInformation {
+	if info, found := servicesInformation[serviceName]; found {
 		return info
 	} else {
-		return ServiceInformations{}
+		return ServiceInformation{}
 	}
 }
 

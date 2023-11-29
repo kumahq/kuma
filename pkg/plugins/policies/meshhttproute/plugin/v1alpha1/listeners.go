@@ -26,7 +26,7 @@ func generateListeners(
 	proxy *core_xds.Proxy,
 	rules []ToRouteRule,
 	servicesAcc envoy_common.ServicesAccumulator,
-	servicesInformations map[string]xds_context.ServiceInformations,
+	servicesInformation map[string]xds_context.ServiceInformation,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
@@ -49,10 +49,10 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
-		serviceInfo := servicesInformations[serviceName]
+		serviceInfo := servicesInformation[serviceName]
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, serviceInfo.Protocol) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, servicesInformations)
+			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, servicesInformation)
 			if split == nil {
 				continue
 			}
@@ -65,7 +65,7 @@ func generateListeners(
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
 						}},
-						servicesInformations,
+						servicesInformation,
 					)
 				}
 			}

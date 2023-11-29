@@ -22,7 +22,7 @@ func GenerateClusters(
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		serviceInfo := meshCtx.ServiceInformations[serviceName]
+		serviceInfo := meshCtx.ServicesInformation[serviceName]
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {

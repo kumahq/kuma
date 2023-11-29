@@ -67,12 +67,12 @@ type MeshContext struct {
 	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
 	VIPDomains                  []xds.VIPDomains
 	VIPOutbounds                []*mesh_proto.Dataplane_Networking_Outbound
-	ServiceInformations         map[string]ServiceInformations
+	ServicesInformation         map[string]ServiceInformation
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
 }
 
-type ServiceInformations struct {
+type ServiceInformation struct {
 	TLSReadiness      bool
 	Protocol          core_mesh.Protocol
 	IsExternalService bool

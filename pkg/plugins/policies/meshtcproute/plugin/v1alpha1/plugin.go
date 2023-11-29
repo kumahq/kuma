@@ -39,13 +39,13 @@ func (p plugin) Apply(
 	}
 
 	tlsReady := map[string]bool{}
-	for serviceName, info := range ctx.Mesh.ServiceInformations {
+	for serviceName, info := range ctx.Mesh.ServicesInformation {
 		tlsReady[serviceName] = info.TLSReadiness
 	}
 
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, tcpRules, servicesAccumulator, ctx.Mesh.ServiceInformations)
+	listeners, err := generateListeners(proxy, tcpRules, servicesAccumulator, ctx.Mesh.ServicesInformation)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}

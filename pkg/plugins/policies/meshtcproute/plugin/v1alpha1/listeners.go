@@ -20,7 +20,7 @@ func generateListeners(
 	proxy *core_xds.Proxy,
 	toRulesTCP rules.Rules,
 	servicesAccumulator envoy_common.ServicesAccumulator,
-	servicesInforomations map[string]xds_context.ServiceInformations,
+	servicesInformation map[string]xds_context.ServiceInformation,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// Cluster cache protects us from creating excessive amount of clusters.
@@ -33,14 +33,14 @@ func generateListeners(
 
 	for _, outbound := range networking.GetOutbound() {
 		serviceName := outbound.GetService()
-		protocol := servicesInforomations[serviceName]
+		protocol := servicesInformation[serviceName]
 
 		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol.Protocol)
 		if len(backendRefs) == 0 {
 			continue
 		}
 
-		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, servicesInforomations)
+		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, servicesInformation)
 		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)

@@ -20,7 +20,7 @@ func MakeTCPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesInforomations map[string]xds_context.ServiceInformations,
+	servicesInformation map[string]xds_context.ServiceInformation,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -33,7 +33,7 @@ func MakeTCPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
-		servicesInforomations,
+		servicesInformation,
 	)
 }
 
@@ -42,7 +42,7 @@ func MakeHTTPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesInforomations map[string]xds_context.ServiceInformations,
+	servicesInformation map[string]xds_context.ServiceInformation,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -53,7 +53,7 @@ func MakeHTTPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
-		servicesInforomations,
+		servicesInformation,
 	)
 }
 
@@ -63,7 +63,7 @@ func makeSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesInforomations map[string]xds_context.ServiceInformations,
+	servicesInformation map[string]xds_context.ServiceInformation,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
@@ -79,7 +79,7 @@ func makeSplit(
 			continue
 		}
 
-		info := servicesInforomations[service]
+		info := servicesInformation[service]
 		if _, ok := protocols[info.Protocol]; !ok {
 			return nil
 		}

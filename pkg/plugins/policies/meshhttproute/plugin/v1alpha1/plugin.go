@@ -77,12 +77,12 @@ func ApplyToOutbounds(
 	rules []ToRouteRule,
 ) error {
 	tlsReady := map[string]bool{}
-	for serviceName, info := range ctx.Mesh.ServiceInformations {
+	for serviceName, info := range ctx.Mesh.ServicesInformation {
 		tlsReady[serviceName] = info.TLSReadiness
 	}
 	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, rules, servicesAcc, ctx.Mesh.ServiceInformations)
+	listeners, err := generateListeners(proxy, rules, servicesAcc, ctx.Mesh.ServicesInformation)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}

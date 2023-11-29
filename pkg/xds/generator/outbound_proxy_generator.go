@@ -39,7 +39,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	}
 
 	tlsReady := map[string]bool{}
-	for serviceName, info := range xdsCtx.Mesh.ServiceInformations {
+	for serviceName, info := range xdsCtx.Mesh.ServicesInformation {
 		tlsReady[serviceName] = info.TLSReadiness
 	}
 	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
@@ -55,7 +55,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
-		protocol := inferProtocol(xdsCtx.Mesh.ServiceInformations, clusters)
+		protocol := inferProtocol(xdsCtx.Mesh.ServicesInformation, clusters)
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			if hasMeshRoutes {
@@ -192,7 +192,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		info := ctx.Mesh.ServiceInformations[serviceName]
+		info := ctx.Mesh.ServicesInformation[serviceName]
 		tlsReady := service.TLSReady()
 
 		for _, c := range service.Clusters() {
@@ -313,12 +313,12 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-func inferProtocol(servicesInformations map[string]xds_context.ServiceInformations, clusters []envoy_common.Cluster) core_mesh.Protocol {
+func inferProtocol(servicesInformation map[string]xds_context.ServiceInformation, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
 	isFirstCluster := true
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
-		info := servicesInformations[serviceName]
+		info := servicesInformation[serviceName]
 		if isFirstCluster {
 			protocol = util_protocol.GetCommonProtocol(core_mesh.ProtocolIgnore, info.Protocol)
 			isFirstCluster = false
