@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -171,13 +172,13 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
-	for name, p := range core_plugins.Plugins().PolicyPlugins() {
-		res, err := p.MatchedPolicies(dataplane, resources)
+	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+		res, err := p.Plugin.MatchedPolicies(dataplane, resources)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)
 		}
 		if res.Type == "" {
-			return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", name)
+			return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", p.Name)
 		}
 		matchedPolicies.Dynamic[res.Type] = res
 	}

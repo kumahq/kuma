@@ -29,7 +29,7 @@ const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct{}
 
-func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
 
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()

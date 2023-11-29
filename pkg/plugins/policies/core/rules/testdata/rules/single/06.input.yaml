@@ -1,0 +1,15 @@
+# Simple MeshTrace
+type: MeshTrace
+mesh: mesh-1
+name: mt-1
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    tags:
+      - name: team
+        literal: core
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector.mesh-observability:9411/api/v2/spans

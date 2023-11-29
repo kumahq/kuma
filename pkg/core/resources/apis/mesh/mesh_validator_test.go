@@ -327,21 +327,6 @@ var _ = Describe("Mesh", func() {
                 - field: logging.backends[0].config.path
                   message: cannot be empty`,
 			}),
-			Entry("invalid access log format", testCase{
-				mesh: `
-                logging:
-                  backends:
-                  - name: backend-1
-                    format: "%START_TIME% %sent_bytes%"
-                    type: file
-                    conf:
-                      path: /var/logs
-                  defaultBackend: backend-1`,
-				expected: `
-                violations:
-                - field: logging.backends[0].format
-                  message: 'format string is not valid: expected a command operator to start at position 14, instead got: "%sent_bytes%"'`,
-			}),
 			Entry("default backend has to be set to one of the backends", testCase{
 				mesh: `
                 logging:

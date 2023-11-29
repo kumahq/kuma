@@ -17,6 +17,34 @@ paths:
           $ref: '#/components/responses/InternalServerError'
       operationId: get-global-insight
       description: Returns a Global Insight object
+  /meshes/{mesh}/dataplanes/{dataplaneName}/_rules:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the policy is part of
+        - in: path
+          name: dataplaneName
+          example: my-dp
+          schema:
+            type: string
+          required: true
+          description: The name of the dataplane
+      summary: Returns rules matching this dataplane
+      description: Returns rules matching this dataplane
+      tags: ["Inspect"]
+      operationId: inspect-dataplanes-rules
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectRulesForDataplaneResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       parameters:
@@ -74,7 +102,7 @@ components:
   schemas:
     InspectDataplanesForPolicy:
       type: object
-      title: InspectPolicy
+      title: InspectDataplanesForPolicy
       description: A list of proxies
       required: [total, items]
       properties:
@@ -87,6 +115,18 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
+    InspectRulesForDataplane:
+      type: object
+      title: InspectRulesForDataplane
+      description: A list of rules for a dataplane
+      required: [rules, resource]
+      properties:
+        resource:
+          $ref: './common/resource.yaml#/components/schemas/Meta'
+        rules:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/InspectRule'
     BaseStatus:
       type: object
       title: Status
@@ -258,7 +298,7 @@ components:
             Single control plane response:
               $ref: '#/components/examples/GlobalInsightExample'
     InspectDataplanesForPolicyResponse:
-      description: A response containing global insight.
+      description: A response containing dataplanes that match a policy.
       content:
         application/json:
           schema:
@@ -266,6 +306,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+    InspectRulesForDataplaneResponse:
+      description: A response containing policies that match a dataplane
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectRulesForDataplane'
     BadRequest:
       description: Bad Request
       content:

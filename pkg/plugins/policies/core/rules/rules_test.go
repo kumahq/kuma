@@ -2,7 +2,7 @@ package rules_test
 
 import (
 	"os"
-	"path"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,9 +12,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -306,146 +306,74 @@ var _ = Describe("Rules", func() {
 	})
 
 	Describe("BuildRules", func() {
-		type testCase struct {
-			policyFile string
-			goldenFile string
-			typ        string
+		buildRulesTestTemplate := func(inputFile string, fn func(policies []core_model.Resource) (interface{}, error)) {
+			// given
+			inputs, err := os.ReadFile(inputFile)
+			Expect(err).NotTo(HaveOccurred())
+			parts := strings.SplitN(string(inputs), "\n", 2)
+			Expect(parts[0]).To(HavePrefix("#"), "is not a comment which explains the test")
+			policiesBytesList := util_yaml.SplitYAML(string(inputs))
+
+			var policies []core_model.Resource
+			for _, policyBytes := range policiesBytesList {
+				policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
+				Expect(err).ToNot(HaveOccurred())
+				policies = append(policies, policy)
+			}
+			// when
+			rules, err := fn(policies)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(rules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.yaml", ".golden.yaml", 1)))
 		}
 
 		DescribeTable("should build a rule-based view for the policy with a from list",
-			func(given testCase) {
-				// given
-				policiesBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
-				Expect(err).ToNot(HaveOccurred())
-
-				policies := util_yaml.SplitYAML(string(policiesBytes))
-
-				listener := core_rules.InboundListener{
-					Address: "127.0.0.1",
-					Port:    80,
-				}
-				policiesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
-
-				for _, policyBytes := range policies {
-					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
-					Expect(err).ToNot(HaveOccurred())
-					policiesByInbound[listener] = append(policiesByInbound[listener], policy)
-				}
-
-				// when
-				rules, err := core_rules.BuildFromRules(policiesByInbound)
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				bytes, err := yaml.Marshal(rules)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+			func(inputFile string) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+					// given
+					listener := core_rules.InboundListener{
+						Address: "127.0.0.1",
+						Port:    80,
+					}
+					policiesByInbound := map[core_rules.InboundListener][]core_model.Resource{
+						listener: policies,
+					}
+					// when
+					return core_rules.BuildFromRules(policiesByInbound)
+				})
 			},
-			Entry("01. MeshTrafficPermission with 2 'env' tags that have different values", testCase{
-				policyFile: "01.policy.yaml",
-				goldenFile: "01.golden.yaml",
-				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
-			}),
-			Entry("02. MeshTrafficPermission with 3 different tags", testCase{
-				policyFile: "02.policy.yaml",
-				goldenFile: "02.golden.yaml",
-				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
-			}),
-			Entry("03. MeshTrafficPermission with MeshService targets", testCase{
-				policyFile: "03.policy.yaml",
-				goldenFile: "03.golden.yaml",
-				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
-			}),
-			Entry("04. MeshAccessLog with overriding empty backend list", testCase{
-				policyFile: "04.policy.yaml",
-				goldenFile: "04.golden.yaml",
-				typ:        string(meshaccesslog_api.MeshAccessLogType),
-			}),
-			Entry("05. MeshAccessLog with overriding list of different backend type", testCase{
-				policyFile: "05.policy.yaml",
-				goldenFile: "05.golden.yaml",
-				typ:        string(meshaccesslog_api.MeshAccessLogType),
-			}),
-			Entry("Multiple policies", testCase{
-				policyFile: "multiple-mtp.policy.yaml",
-				goldenFile: "multiple-mtp.golden.yaml",
-				typ:        string(meshaccesslog_api.MeshAccessLogType),
-			}),
-			Entry("MeshTrafficPermission with mix of MeshService and MeshServiceSubset", testCase{
-				policyFile: "mtp-mix-ms-and-mss.policy.yaml",
-				goldenFile: "mtp-mix-ms-and-mss.golden.yaml",
-				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
-			}),
+			test.EntriesForFolder("rules/from"),
 		)
 
 		DescribeTable("should build a rule-based view for the policy with a to list",
-			func(given testCase) {
-				// given
-				policiesBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
-				Expect(err).ToNot(HaveOccurred())
-
-				var policies []core_model.Resource
-				var httpRoutes []core_model.Resource
-				for _, policyBytes := range util_yaml.SplitYAML(string(policiesBytes)) {
-					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
-					Expect(err).ToNot(HaveOccurred())
-					if policy.Descriptor().Name == v1alpha1.MeshHTTPRouteType {
-						httpRoutes = append(httpRoutes, policy)
-					} else {
-						policies = append(policies, policy)
+			func(inputFile string) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+					actualPolicies := []core_model.Resource{}
+					var httpRoutes []core_model.Resource
+					for _, policy := range policies {
+						switch policy.Descriptor().Name {
+						case v1alpha1.MeshHTTPRouteType:
+							httpRoutes = append(httpRoutes, policy)
+						default:
+							actualPolicies = append(actualPolicies, policy)
+						}
 					}
-				}
-
-				// when
-				rules, err := core_rules.BuildToRules(policies, httpRoutes)
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				bytes, err := yaml.Marshal(rules)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+					return core_rules.BuildToRules(actualPolicies, httpRoutes)
+				})
 			},
-			Entry("Single to policy", testCase{
-				policyFile: "single-to.policy.yaml",
-				goldenFile: "single-to.golden.yaml",
-			}),
+			test.EntriesForFolder("rules/to"),
 		)
 
 		DescribeTable("should build a rule-based view for list of single item policies",
-			func(given testCase) {
-				// given
-				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
-				Expect(err).ToNot(HaveOccurred())
-
-				yamls := util_yaml.SplitYAML(string(policyBytes))
-				var policies []core_model.Resource
-				for _, yaml := range yamls {
-					policy, err := rest.YAML.UnmarshalCore([]byte(yaml))
-					Expect(err).ToNot(HaveOccurred())
-
-					policies = append(policies, policy)
-				}
-
-				// when
-				rules, err := core_rules.BuildSingleItemRules(policies)
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				bytes, err := yaml.Marshal(rules)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+			func(inputFile string) {
+				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
+					return core_rules.BuildSingleItemRules(policies)
+				})
 			},
-			Entry("06. MeshTrace", testCase{
-				policyFile: "06.policy.yaml",
-				goldenFile: "06.golden.yaml",
-			}),
-			Entry("07. MeshTrace list", testCase{
-				policyFile: "07.policy.yaml",
-				goldenFile: "07.golden.yaml",
-			}),
+			test.EntriesForFolder("rules/single"),
 		)
 	})
 

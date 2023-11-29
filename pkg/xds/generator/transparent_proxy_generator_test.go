@@ -52,7 +52,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), xdsCtx, given.proxy)
+			rs, err := gen.Generate(context.Background(), nil, xdsCtx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

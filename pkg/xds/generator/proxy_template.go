@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -24,7 +25,7 @@ func (g *ProxyTemplateGenerator) Generate(ctx context.Context, xdsCtx xds_contex
 	resources := model.NewResourceSet()
 	for i, name := range g.ProxyTemplate.GetConf().GetImports() {
 		generator := &ProxyTemplateProfileSource{ProfileName: name}
-		if rs, err := generator.Generate(ctx, xdsCtx, proxy); err != nil {
+		if rs, err := generator.Generate(ctx, resources, xdsCtx, proxy); err != nil {
 			return nil, fmt.Errorf("imports[%d]{name=%q}: %s", i, name, err)
 		} else {
 			resources.AddSet(rs)
@@ -67,12 +68,12 @@ type ProxyTemplateProfileSource struct {
 	ProfileName string
 }
 
-func (s *ProxyTemplateProfileSource) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (s *ProxyTemplateProfileSource) Generate(ctx context.Context, rs *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	g, ok := predefinedProfiles[s.ProfileName]
 	if !ok {
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.ProfileName)
 	}
-	return g.Generate(ctx, xdsCtx, proxy)
+	return g.Generate(ctx, rs, xdsCtx, proxy)
 }
 
 func NewDefaultProxyProfile() core.ResourceGenerator {
@@ -86,6 +87,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
+		generator.NewGenerator(),
 		generator_secrets.Generator{},
 	}
 }
@@ -128,7 +130,7 @@ func init() {
 
 type FailingResourceGenerator struct{}
 
-func (c FailingResourceGenerator) Generate(context.Context, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
+func (c FailingResourceGenerator) Generate(context.Context, *model.ResourceSet, xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
 	panic("generator for this resource should not be called")
 }
 

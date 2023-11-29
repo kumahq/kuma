@@ -63,6 +63,12 @@ type InspectDataplanesForPolicy struct {
 	Total int                 `json:"total"`
 }
 
+// InspectRulesForDataplane A list of rules for a dataplane
+type InspectRulesForDataplane struct {
+	Resource externalRef0.Meta          `json:"resource"`
+	Rules    []externalRef0.InspectRule `json:"rules"`
+}
+
 // MeshesStats Mesh statistics
 type MeshesStats struct {
 	// Total Number of meshes
@@ -112,6 +118,9 @@ type GlobalInsightResponse = GlobalInsight
 
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
+
+// InspectRulesForDataplaneResponse A list of rules for a dataplane
+type InspectRulesForDataplaneResponse = InspectRulesForDataplane
 
 // InternalServerError standard error
 type InternalServerError = externalRef0.Error

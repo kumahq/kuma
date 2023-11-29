@@ -68,7 +68,7 @@ var _ = Describe("DNSGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), ctx, proxy)
+			rs, err := gen.Generate(context.Background(), nil, ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

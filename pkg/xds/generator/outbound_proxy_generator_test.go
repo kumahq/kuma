@@ -600,7 +600,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
-			rs, err := gen.Generate(context.Background(), given.ctx, proxy)
+			rs, err := gen.Generate(context.Background(), nil, given.ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -870,7 +870,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				Protocol: core_mesh.ProtocolUnknown,
 			},
 		}
-		rs, err := gen.Generate(context.Background(), plainCtx, proxy)
+		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

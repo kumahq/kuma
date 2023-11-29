@@ -1,0 +1,25 @@
+# MeshAccessLog with overriding list of different backend type
+type: MeshAccessLog
+mesh: mesh-1
+name: mal-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: "/tmp/log/1"
+          - type: File
+            file:
+              path: "/tmp/log/2"
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp
+            tcp:
+              address: "logging:8080"

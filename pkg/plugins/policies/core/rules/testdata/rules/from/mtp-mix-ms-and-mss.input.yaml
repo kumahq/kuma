@@ -1,0 +1,22 @@
+# Multiple policies
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshServiceSubset
+        name: web
+        tags:
+          version: v1
+      default:
+        action: Deny
+
+

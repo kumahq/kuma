@@ -5,6 +5,9 @@ on:
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
+env:
+  K8S_MIN_VERSION: v1.23.17-k3s1
+  K8S_MAX_VERSION: v1.28.1-k3s1
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -31,19 +34,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/cache@v3
         with:
           path: |
@@ -53,6 +51,11 @@ jobs:
             ${{ runner.os }}-devtools
       - run: |
           make dev/tools
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - run: |
           make build
       - run: |
@@ -116,10 +119,15 @@ jobs:
           path: build/reports
           retention-days: 7
   distributions:
-    needs: ["check", "build", "test"]
-    if: ${{ always() && !failure() && !cancelled() }}
+    needs: ["check", "test", "test_e2e", "test_e2e_env"]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      # see https://stackoverflow.com/a/67532120/4907315
+      - name: "Halt due to previous failures"
+        run: |
+          exit 1
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
@@ -170,3 +178,96 @@ jobs:
           trap on_exit EXIT
           make docker/push
           make docker/manifest
+  gen_e2e_matrix:
+    runs-on: ubuntu-latest
+    needs: ["build"]
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
+    outputs:
+      test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
+      test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
+    steps:
+      - name: Install jq
+        run: |
+          sudo apt-get install -y jq
+      - id: generate-matrix
+        name: Generate matrix
+        run: |-
+          BASE_MATRIX_SLOW=$(cat <<-END
+          {
+            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+            "arch": ["amd64", "arm64"]
+          }
+          END
+          )
+          BASE_MATRIX_ENV=$(cat <<-END
+          {
+            "target": ["kubernetes", "universal", "multizone"],
+            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+            "arch": ["amd64", "arm64"],
+            "cniNetworkPlugin": ["flannel", "calico"],
+            "legacyKDS": [false, true],
+            "exclude":[
+              {"cniNetworkPlugin": "calico"},
+              {"legacyKDS": true},
+              {"target": "kubernetes", "k8sVersion":"kind"},
+              {"target": "multizone", "k8sVersion":"kind"},
+              {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
+              {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+            ],
+            "include":[
+              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "cniNetworkPlugin": "flannel"},
+              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "legacyKDS": false}
+            ]
+          }
+          END
+          )
+
+          MATRIX_SLOW=$(echo $BASE_MATRIX_SLOW | jq -rc)
+          MATRIX_ENV=$(echo $BASE_MATRIX_ENV | jq -rc)
+
+          RUN_FULL_MATRIX="${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
+          if [[ "$RUN_FULL_MATRIX" == "false" ]]; then
+            echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
+
+            MATRIX_SLOW=''  # target==""
+
+            # non priority main e2e
+            EXCLUDE_ARM64='[{"arch": "arm64"}]'
+            EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
+            MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "del(.include) | .exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
+          fi
+
+          echo "test_e2e=$MATRIX_SLOW" >> $GITHUB_OUTPUT
+          echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
+  test_e2e:
+    name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.test_e2e != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ""
+      arch: ${{ matrix.arch }}
+      legacyKDS: 'false'
+      cniNetworkPlugin: 'flannel'
+      parallelism: '3'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
+  test_e2e_env:
+    name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
+    needs: ["gen_e2e_matrix"]
+    if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
+    strategy:
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
+    uses: ./.github/workflows/e2e.yaml
+    with:
+      k8sVersion: ${{ matrix.k8sVersion }}
+      target: ${{ matrix.target }}
+      arch: ${{ matrix.arch }}
+      legacyKDS: ${{ matrix.legacyKDS }}
+      cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
+      parallelism: '1'
+    secrets:
+      circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
