@@ -42,16 +42,103 @@ jobs:
               arch: ${{ inputs.arch }} \
               cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
               "
-      - name: Expose github action artifact variables
+      - name: "GitHub Actions: check out code"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "GitHub Actions: setup go"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - name: "GitHub Actions: set up cache"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - name: "GitHub Actions: download build artifacts"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: build-output
+          path: build
+      - name: "GitHub Actions: extract artifacts"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          echo "Extracting artifacts..."
+          ARCH='${{ inputs.arch }}'
+          ARTIFACT=$(find build/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+          if [[ "$ARTIFACT" == "" ]]; then
+            echo "Could not find built artifact for linux($ARCH)."
+            exit 1
+          fi
+          cat $ARTIFACT.sha256 | sha256sum --check
+
+          mkdir build/distributions/artifacts
+          tar -xzf $ARTIFACT -C build/distributions/artifacts
+
+          SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
+          DEST_DIR=build/artifacts-linux-$ARCH
+          for BIN in $(ls $SRC_DIR); do
+            mkdir -p $DEST_DIR/$BIN
+            cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
+          done
+      - name: "GitHub Actions: setup helm"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          make dev/set-kuma-helm-repo
+      - name: "GitHub Actions: run E2E tests"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          if [[ "${{ inputs.k8sVersion }}" == "kindIpv6" ]]; then
+            export IPV6=true
+            export K8S_CLUSTER_TOOL=kind
+            export KUMA_DEFAULT_RETRIES=60
+            export KUMA_DEFAULT_TIMEOUT="6s"
+          fi
+          if [[ "${{ inputs.k8sVersion }}" != "kind"* ]]; then
+            export CI_K3S_VERSION=${{ inputs.k8sVersion }}
+            export K3D_NETWORK_CNI=${{ inputs.cniNetworkPlugin }}
+          fi
+          if [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            export MAKE_PARAMETERS="-j1"
+          else
+            export MAKE_PARAMETERS="-j2"
+          fi
+
+          if [[ "${{ inputs.legacyKDS }}" == true ]]; then
+            export KUMA_LEGACY_KDS=true
+          fi
+
+          if [[ "${{ inputs.target }}" == "" ]]; then
+            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+          fi
+          env
+          if [[ "${{ inputs.target }}" != "" ]]; then
+            target="test/e2e-${{ inputs.target }}"
+          else
+            target="test/e2e"
+          fi
+          make ${MAKE_PARAMETERS} CI=true "${target}"
+
+      - name: "CircleCI: expose github action artifact variables"
+        if: ${{ inputs.arch != 'amd64' }}
         uses: actions/github-script@v6
         with:
           script: |
             core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'])
-      - name: Install jq
+      - name: "CircleCI: install jq"
+        if: ${{ inputs.arch != 'amd64' }}
         run: |
           sudo apt-get install -y jq
-      - name: "Trigger a new pipeline workflow on CircleCI"
+      - name: "CircleCI: trigger a new pipeline workflow on CircleCI"
+        if: ${{ inputs.arch != 'amd64' }}
         id: circle-ci-trigger
         run: |
           # Trigger CircleCI manually, reference: https://github.com/CircleCI-Public/trigger-circleci-pipeline-action/blob/main/src/lib/CircleCIPipelineTrigger.ts#L82
@@ -129,8 +216,8 @@ jobs:
           echo ''
           echo "CircleCI pipeline triggered successfully, pipeline id: $PIPELINE_ID"
           echo "Check CircleCI workflow details at: https://app.circleci.com/pipelines/gh/${{ github.repository }}/$PIPELINE_NUMBER/workflows/$WORKFLOW_ID"
-      - name: "Check run status of pipeline workflow on CircleCI"
-        if: steps.circle-ci-trigger.outputs.workflow_id != ''
+      - name: "CircleCI: check run status of pipeline workflow on CircleCI"
+        if: ${{ inputs.arch != 'amd64' && steps.circle-ci-trigger.outputs.workflow_id != '' }}
         run: |
           set -e
           if [ "${{ runner.debug }}" == "1" ]; then
@@ -155,8 +242,8 @@ jobs:
             cat $OUTPUT_FILE
             rm $OUTPUT_FILE
             if [ "$STATUS_CODE" == "429" ]; then
-              # we are exceeding rate limit
-              echo "{}"
+              # we are exceeding rate limit, try again later
+              echo '{"status": ""}'
               return
             fi
             if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
@@ -192,8 +279,8 @@ jobs:
           echo "Check CircleCI workflow details at: https://app.circleci.com/pipelines/gh/${{ github.repository }}/$PIPELINE_NUMBER/workflows/$WORKFLOW_ID"
           echo "Tracking workflow status:"
           check_workflow '${{ steps.circle-ci-trigger.outputs.workflow_id }}'
-      - name: Cancel CircleCI running if requested
-        if: cancelled() && steps.circle-ci-trigger.outputs.workflow_id != ''
+      - name: "CircleCI: cancel CircleCI running if requested"
+        if: ${{ inputs.arch != 'amd64' && cancelled() && steps.circle-ci-trigger.outputs.workflow_id != '' }}
         run: |
           set -e
           if [ "${{ runner.debug }}" == "1" ]; then
