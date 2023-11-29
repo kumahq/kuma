@@ -125,7 +125,6 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-
       - name: "CircleCI: expose github action artifact variables"
         if: ${{ inputs.arch != 'amd64' }}
         uses: actions/github-script@v6
