@@ -11,7 +11,9 @@ import (
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
+	oapi_helpers "github.com/kumahq/kuma/pkg/api-server/oapi-helpers"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -25,7 +27,9 @@ import (
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -42,13 +46,14 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode           config_core.CpMode
-	zoneName       string
-	resManager     manager.ResourceManager
-	descriptor     model.ResourceTypeDescriptor
-	resourceAccess access.ResourceAccess
-	k8sMapper      k8s.ResourceMapperFunc
-	filter         func(request *restful.Request) (store.ListFilterFunc, error)
+	mode               config_core.CpMode
+	zoneName           string
+	resManager         manager.ResourceManager
+	descriptor         model.ResourceTypeDescriptor
+	resourceAccess     access.ResourceAccess
+	k8sMapper          k8s.ResourceMapperFunc
+	filter             func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder xds_context.MeshContextBuilder
 }
 
 func typeToLegacyOverviewPath(resourceType model.ResourceType) string {
@@ -92,6 +97,13 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	if r.descriptor.IsPolicy {
 		ws.Route(ws.GET(pathPrefix+"/{name}/_resources/dataplanes").To(r.matchingDataplanesForPolicy()).
 			Doc(fmt.Sprintf("Get matching dataplanes of a %s", r.descriptor.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(404, "Not found", nil))
+	}
+	if r.descriptor.Name == mesh.DataplaneType {
+		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(r.rulesForDataplanes()).
+			Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
@@ -538,10 +550,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 		}
 		items := make([]api_common.Meta, len(dppList.GetItems()))
 		for i, elt := range dppList.GetItems() {
-			meta := elt.GetMeta()
-			items[i].Type = string(mesh.DataplaneType)
-			items[i].Name = meta.GetName()
-			items[i].Mesh = meta.GetMesh()
+			items[i] = oapi_helpers.ResourceToMeta(elt)
 		}
 		out := api_types.InspectDataplanesForPolicyResponse{
 			Total: int(dppList.GetPagination().Total),
@@ -549,7 +558,124 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			Next:  nextLink(request, dppList.GetPagination().NextOffset),
 		}
 		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
+		}
+	}
+}
+
+func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		resourceName := request.PathParameter("name")
+		meshName := r.meshFromRequest(request)
+
+		if err := r.resourceAccess.ValidateGet(
+			request.Request.Context(),
+			model.ResourceKey{Mesh: meshName, Name: resourceName},
+			r.descriptor,
+			user.FromCtx(request.Request.Context()),
+		); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			return
+		}
+
+		resource := r.descriptor.NewObject()
+		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(resourceName, meshName)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
+			return
+		}
+		dp := resource.(*mesh.DataplaneResource)
+		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build Mesh context")
+		}
+
+		// Get all the matching policies
+		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
+		rules := []api_common.InspectRule{}
+		for _, policy := range allPlugins {
+			res, err := policy.Plugin.MatchedPolicies(dp, xds_context.Resources{
+				CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
+				MeshLocalResources: baseMeshContext.ResourceMap,
+			})
+			if err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policy.Name))
+			}
+			if res.Type == "" {
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policy.Name))
+			}
+
+			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
+				continue
+			}
+			// TODO resolve MeshHTTPRoute hashes in response
+			toRules := []api_common.Rule{}
+			for _, ruleItem := range res.ToRules.Rules {
+				toRules = append(toRules, api_common.Rule{
+					Conf:     ruleItem.Conf,
+					Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
+					Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
+				})
+			}
+			var proxyRule *api_common.ProxyRule
+			if len(res.SingleItemRules.Rules) > 0 {
+				proxyRule = &api_common.ProxyRule{
+					Conf:   res.SingleItemRules.Rules[0].Conf,
+					Origin: oapi_helpers.ResourceMetaListToMetaList(res.Type, res.SingleItemRules.Rules[0].Origin),
+				}
+			}
+
+			fromRules := []api_common.FromRule{}
+			if len(res.FromRules.Rules) > 0 {
+				for inbound, rulesForInbound := range res.FromRules.Rules {
+					if len(rulesForInbound) == 0 {
+						continue
+					}
+					fromRulesForInbound := make([]api_common.Rule, len(rulesForInbound))
+					for i := range rulesForInbound {
+						fromRulesForInbound[i] = api_common.Rule{
+							Conf:     rulesForInbound[i].Conf,
+							Matchers: oapi_helpers.SubsetToRuleMatcher(rulesForInbound[i].Subset),
+							Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, rulesForInbound[i].Origin),
+						}
+					}
+					var tags map[string]string
+					if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+						tags = dp.Spec.Networking.Gateway.Tags
+					} else {
+						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+					}
+					fromRules = append(fromRules, api_common.FromRule{
+						Inbound: api_common.Inbound{
+							Tags: tags,
+							Port: int(inbound.Port),
+						},
+						Rules: fromRulesForInbound,
+					})
+				}
+			}
+
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 {
+				// No matches for this policy, keep going...
+				continue
+			}
+			warnings := res.Warnings
+			if warnings == nil {
+				warnings = []string{}
+			}
+			rules = append(rules, api_common.InspectRule{
+				Type:      string(res.Type),
+				ToRules:   &toRules,
+				FromRules: &fromRules,
+				ProxyRule: proxyRule,
+				Warnings:  &warnings,
+			})
+		}
+		out := api_types.InspectRulesForDataplaneResponse{
+			Resource: oapi_helpers.ResourceToMeta(dp),
+			Rules:    rules,
+		}
+		if err := response.WriteAsJson(out); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
 		}
 	}
 }

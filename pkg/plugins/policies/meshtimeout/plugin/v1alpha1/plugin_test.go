@@ -432,7 +432,7 @@ var _ = Describe("MeshTimeout", func() {
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), xdsCtx, proxy)
+		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when

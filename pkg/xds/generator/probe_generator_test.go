@@ -42,7 +42,7 @@ var _ = Describe("ProbeGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), xds_context.Context{}, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
