@@ -1,7 +1,7 @@
-# Lexicographic ordering of top level targetRef with the same kind
+# When using multiple policies with the same top level targetRef the lexicographic order of the policy should be maintained
 type: MeshTrafficPermission
 mesh: default
-name: default-demo-app
+name: rule-b
 spec:
   targetRef:
     kind: MeshSubset
@@ -29,7 +29,7 @@ spec:
 ---
 type: MeshTrafficPermission
 mesh: default
-name: default-demo-app-b
+name: rule-a
 spec:
   targetRef:
     kind: MeshSubset
@@ -40,3 +40,4 @@ spec:
         action: Deny
       targetRef:
         kind: Mesh
+

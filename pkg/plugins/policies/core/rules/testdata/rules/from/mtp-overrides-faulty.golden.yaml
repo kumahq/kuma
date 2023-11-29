@@ -1,7 +1,7 @@
 Rules:
   127.0.0.1:80:
     - Conf:
-        action: Allow
+        action: Deny
       Origin:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
@@ -11,14 +11,14 @@ Rules:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
           modificationTime: "0001-01-01T00:00:00Z"
-          name: default-demo-app-b
+          name: default-demo-app-a
           type: MeshTrafficPermission
       Subset:
         - Key: app.kubernetes.io/name
           Not: false
           Value: ui
     - Conf:
-        action: Allow
+        action: Deny
       Origin:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
@@ -28,14 +28,14 @@ Rules:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
           modificationTime: "0001-01-01T00:00:00Z"
-          name: default-demo-app-b
+          name: default-demo-app-a
           type: MeshTrafficPermission
       Subset:
         - Key: app.kubernetes.io/name
           Not: false
           Value: service-payment
     - Conf:
-        action: Allow
+        action: Deny
       Origin:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
@@ -45,7 +45,7 @@ Rules:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
           modificationTime: "0001-01-01T00:00:00Z"
-          name: default-demo-app-b
+          name: default-demo-app-a
           type: MeshTrafficPermission
       Subset:
         - Key: app.kubernetes.io/name
@@ -57,7 +57,7 @@ Rules:
         - creationTime: "0001-01-01T00:00:00Z"
           mesh: default
           modificationTime: "0001-01-01T00:00:00Z"
-          name: default-demo-app-b
+          name: default-demo-app
           type: MeshTrafficPermission
       Subset:
         - Key: app.kubernetes.io/name
