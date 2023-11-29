@@ -1769,7 +1769,7 @@ conf:
 	}
 
 	tcpEntries := []TableEntry{
-		FEntry("generates clusters for TCP",
+		Entry("generates clusters for TCP",
 			"tcp-route.yaml", `
 type: Mesh
 name: default
