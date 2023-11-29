@@ -83,7 +83,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - rules:
+  - hostnames:
+    - example.com
+    rules:
     - matches:
       - path:
           type: PathPrefix
