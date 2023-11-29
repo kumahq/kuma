@@ -433,7 +433,6 @@ func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight
 			AddressPort:    addressPort,
 		}
 	}
-
 	if backend != "" {
 		insight.Services[svcName].IssuedBackends[backend]++
 	}

@@ -359,8 +359,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service":  "backend-1",
-							"kuma.io/protocol": "http",
+							"kuma.io/service": "backend-1",
 						},
 					},
 				},
@@ -392,8 +391,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service":  "backend-1",
-							"kuma.io/protocol": "http",
+							"kuma.io/service": "backend-1",
 						},
 					},
 				},
@@ -425,8 +423,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: false,
 						},
 						Tags: map[string]string{
-							"kuma.io/service":  "backend-1",
-							"kuma.io/protocol": "http",
+							"kuma.io/service": "backend-1",
 						},
 					},
 					{
@@ -435,8 +432,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service":  "db-1",
-							"kuma.io/protocol": "tcp",
+							"kuma.io/service": "db-1",
 						},
 					},
 				},
@@ -468,8 +464,7 @@ var _ = Describe("Insight Persistence", func() {
 							Ready: true,
 						},
 						Tags: map[string]string{
-							"kuma.io/service":  "backend-1",
-							"kuma.io/protocol": "http2",
+							"kuma.io/service": "backend-1",
 						},
 					},
 				},
@@ -522,8 +517,7 @@ var _ = Describe("Insight Persistence", func() {
 					{
 						Port: 5000,
 						Tags: map[string]string{
-							"kuma.io/service":  "internal",
-							"kuma.io/protocol": "http",
+							"kuma.io/service": "internal",
 						},
 					},
 				},
@@ -555,7 +549,7 @@ var _ = Describe("Insight Persistence", func() {
 		}
 		externalService := core_mesh.NewExternalServiceResource()
 		externalService.Spec = &mesh_proto.ExternalService{
-			Tags: map[string]string{"kuma.io/service": "external-service", "kuma.io/protocol": "tcp"},
+			Tags: map[string]string{"kuma.io/service": "external-service"},
 			Networking: &mesh_proto.ExternalService_Networking{
 				Address: "foobar:8080",
 			},
