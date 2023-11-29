@@ -3,7 +3,7 @@ on:
   push:
     branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
-  pull_request:
+  pull_request_target:
     branches: ["master", "release-*"]
 env:
   K8S_MIN_VERSION: v1.23.17-k3s1
