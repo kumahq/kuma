@@ -67,6 +67,8 @@ func EntriesForFolder(folder string) []ginkgo.TableEntry {
 			input := path.Join(testDir, f.Name())
 			if strings.HasPrefix(f.Name(), "F") {
 				entries = append(entries, ginkgo.FEntry(input, input))
+			} else if strings.HasPrefix(f.Name(), "P") {
+				entries = append(entries, ginkgo.PEntry(input, input))
 			} else {
 				entries = append(entries, ginkgo.Entry(input, input))
 			}
