@@ -65,11 +65,12 @@ func EntriesForFolder(folder string) []ginkgo.TableEntry {
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), ".input.yaml") {
 			input := path.Join(testDir, f.Name())
-			if strings.HasPrefix(f.Name(), "F") {
+			switch {
+			case strings.HasPrefix(f.Name(), "F"):
 				entries = append(entries, ginkgo.FEntry(input, input))
-			} else if strings.HasPrefix(f.Name(), "P") {
+			case strings.HasPrefix(f.Name(), "P"):
 				entries = append(entries, ginkgo.PEntry(input, input))
-			} else {
+			default:
 				entries = append(entries, ginkgo.Entry(input, input))
 			}
 		}
