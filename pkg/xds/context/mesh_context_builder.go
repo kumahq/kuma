@@ -163,12 +163,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 	// resolve all the domains
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
 	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -184,20 +186,18 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	return &MeshContext{
-		Hash:               newHash,
-		Resource:           mesh,
-		Resources:          resources,
-		DataplanesByName:   dataplanesByName,
-		EndpointMap:        endpointMap,
-		CrossMeshEndpoints: crossMeshEndpointMap,
-		VIPDomains:         domains,
-		VIPOutbounds:       outbounds,
-		ServiceInformations: ServiceInformations{
-			TLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
-			Protocol:     m.resolveProtocol(endpointMap),
-		},
-		DataSourceLoader:       datasource.NewStaticLoader(resources.Secrets().Items),
-		ReachableServicesGraph: m.rsGraphBuilder(meshName, resources),
+		Hash:                        newHash,
+		Resource:                    mesh,
+		Resources:                   resources,
+		DataplanesByName:            dataplanesByName,
+		EndpointMap:                 endpointMap,
+		ExternalServicesEndpointMap: esEndpointMap,
+		CrossMeshEndpoints:          crossMeshEndpointMap,
+		VIPDomains:                  domains,
+		VIPOutbounds:                outbounds,
+		ServiceInformations:         m.generateServicesInformations(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		DataSourceLoader:            loader,
+		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
 	}, nil
 }
 
@@ -287,7 +287,19 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	default:
 		return nil, fmt.Errorf("unknown resource scope:%s", desc.Scope)
 	}
-
+	// For some resources we apply extra filters
+	switch resType {
+	case core_mesh.ServiceInsightType:
+		if mesh == nil {
+			return desc.NewList(), nil
+		}
+		// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
+		// This information is only useful when mTLS is enabled with PERMISSIVE mode.
+		// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
+		if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+			return desc.NewList(), nil
+		}
+	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
@@ -356,37 +368,67 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) resolveProtocol(endpointMap xds.EndpointMap) map[string]core_mesh.Protocol {
-	protocol := map[string]core_mesh.Protocol{}
-	for svc, endpoints := range endpointMap {
-		protocol[svc] = inferServiceProtocol(endpoints)
-	}
-	return protocol
+func (m *meshContextBuilder) generateServicesInformations(
+	mesh *core_mesh.MeshResource,
+	serviceInsights *core_mesh.ServiceInsightResourceList,
+	endpointMap xds.EndpointMap,
+	esEndpointMap xds.EndpointMap,
+) map[string]ServiceInformations {
+	servicesInformations := map[string]ServiceInformations{}
+	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformations)
+	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformations)
+	return servicesInformations
 }
 
-func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, serviceInsights *core_mesh.ServiceInsightResourceList) map[string]bool {
-	tlsReady := map[string]bool{}
+func (m *meshContextBuilder) resolveProtocol(
+	mesh *core_mesh.MeshResource,
+	endpointMap xds.EndpointMap,
+	esEndpointMap xds.EndpointMap,
+	servicesInformations map[string]ServiceInformations,
+) {
+	// when Egress is not enabled we are not adding egresses to the EndpointMap
+	if !mesh.ZoneEgressEnabled() {
+		for svc, endpoints := range esEndpointMap {
+			serviceInfo := getServiceInformations(servicesInformations, svc)
+			serviceInfo.Protocol = inferServiceProtocol(endpoints)
+			serviceInfo.IsExternalService = true
+			servicesInformations[svc] = serviceInfo
+		}
+	}
+	for svc, endpoints := range endpointMap {
+		serviceInfo := getServiceInformations(servicesInformations, svc)
+		serviceInfo.Protocol = inferServiceProtocol(endpoints)
+		serviceInfo.IsExternalService = isExternalService(endpoints)
+		servicesInformations[svc] = serviceInfo
+	}
+}
 
+func (m *meshContextBuilder) resolveTLSReadiness(
+	mesh *core_mesh.MeshResource,
+	serviceInsights *core_mesh.ServiceInsightResourceList,
+	servicesInformations map[string]ServiceInformations,
+) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
 	// checking ServiceInsights if we aren't.
 	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
-		return tlsReady
+		return
 	}
 
 	if len(serviceInsights.Items) == 0 {
 		// Nothing about the TLS readiness has been reported yet
 		logger.Info("could not determine service TLS readiness, ServiceInsight is not yet present")
-		return tlsReady
+		return
 	}
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
+		serviceInfo := getServiceInformations(servicesInformations, svc)
 		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
-			tlsReady[svc] = true
+			serviceInfo.TLSReadiness = true
 		} else {
-			tlsReady[svc] = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
+			serviceInfo.TLSReadiness = insight.IssuedBackends[backend.Name] == (insight.Dataplanes.Offline + insight.Dataplanes.Online)
 		}
+		servicesInformations[svc] = serviceInfo
 	}
-	return tlsReady
 }
 
 func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, resources Resources) error {
@@ -452,6 +494,21 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 		_, _ = hasher.Write(resources.CrossMeshResources[m].Hash())
 	}
 	return hasher.Sum(nil)
+}
+
+func getServiceInformations(servicesInformations map[string]ServiceInformations, serviceName string) ServiceInformations {
+	if info, found := servicesInformations[serviceName]; found {
+		return info
+	} else {
+		return ServiceInformations{}
+	}
+}
+
+func isExternalService(endpoints []xds.Endpoint) bool {
+	for _, endpoint := range endpoints {
+		return endpoint.IsExternalService()
+	}
+	return false
 }
 
 func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {

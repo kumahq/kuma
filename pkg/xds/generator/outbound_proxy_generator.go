@@ -38,7 +38,11 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceInformations.TLSReadiness)
+	tlsReady := map[string]bool{}
+	for serviceName, info := range xdsCtx.Mesh.ServiceInformations {
+		tlsReady[serviceName] = info.TLSReadiness
+	}
+	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
@@ -51,7 +55,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
-		protocol := InferProtocol(xdsCtx.Mesh.ServiceInformations.Protocol, clusters)
+		protocol := inferProtocol(xdsCtx.Mesh.ServiceInformations, clusters)
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			if hasMeshRoutes {
@@ -87,7 +91,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 		return nil, err
 	}
 	resources.AddSet(edsResources)
-
 	return resources, nil
 }
 
@@ -189,17 +192,17 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := InferProtocol(ctx.Mesh.ServiceInformations.Protocol, service.Clusters())
+		info := ctx.Mesh.ServiceInformations[serviceName]
 		tlsReady := service.TLSReady()
 
 		for _, c := range service.Clusters() {
 			cluster := c.(*envoy_common.ClusterImpl)
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
-				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
+				Configure(envoy_clusters.Timeout(cluster.Timeout(), info.Protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
+				Configure(envoy_clusters.HealthCheck(info.Protocol, healthCheck))
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
@@ -223,7 +226,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
-				switch protocol {
+				switch info.Protocol {
 				case core_mesh.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
 				case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
@@ -310,16 +313,18 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-func InferProtocol(servicesProtocol map[string]core_mesh.Protocol, clusters []envoy_common.Cluster) core_mesh.Protocol {
+func inferProtocol(servicesInformations map[string]xds_context.ServiceInformations, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
+	isFirstCluster := true
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
-		currentProtocol := servicesProtocol[serviceName]
-		if protocol == core_mesh.ProtocolUnknown && currentProtocol != "" {
-			protocol = currentProtocol
-		} else {
-			protocol = util_protocol.GetCommonProtocol(currentProtocol, protocol)
+		info := servicesInformations[serviceName]
+		if isFirstCluster {
+			protocol = util_protocol.GetCommonProtocol(core_mesh.ProtocolIgnore, info.Protocol)
+			isFirstCluster = false
+			continue
 		}
+		protocol = util_protocol.GetCommonProtocol(info.Protocol, protocol)
 	}
 	return protocol
 }

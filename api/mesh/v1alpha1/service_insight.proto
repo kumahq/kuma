@@ -52,15 +52,6 @@ message ServiceInsight {
     }
     Type serviceType = 4;
     string addressPort = 5;
-    enum Protocol {
-      grpc = 0;
-      http2 = 1;
-      http = 2;
-      kafka = 3;
-      tcp = 4;
-      unknown = 5;
-    }
-    Protocol protocol = 6;
   }
 
   map<string, Service> services = 2;

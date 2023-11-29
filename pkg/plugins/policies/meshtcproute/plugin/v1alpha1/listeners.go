@@ -5,11 +5,11 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -20,7 +20,7 @@ func generateListeners(
 	proxy *core_xds.Proxy,
 	toRulesTCP rules.Rules,
 	servicesAccumulator envoy_common.ServicesAccumulator,
-	servicesProtocol map[string]core_mesh.Protocol,
+	servicesInforomations map[string]xds_context.ServiceInformations,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// Cluster cache protects us from creating excessive amount of clusters.
@@ -33,14 +33,14 @@ func generateListeners(
 
 	for _, outbound := range networking.GetOutbound() {
 		serviceName := outbound.GetService()
-		protocol := servicesProtocol[serviceName]
+		protocol := servicesInforomations[serviceName]
 
-		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol)
+		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol.Protocol)
 		if len(backendRefs) == 0 {
 			continue
 		}
 
-		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, servicesProtocol)
+		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, servicesInforomations)
 		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)

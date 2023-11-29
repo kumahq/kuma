@@ -955,10 +955,8 @@ var _ = Describe("MeshAccessLog", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				WithProtocols(map[string]core_mesh.Protocol{
-					"backend":       core_mesh.ProtocolHTTP,
-					"other-service": core_mesh.ProtocolHTTP,
-				}).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithMetadata(&core_xds.DataplaneMetadata{

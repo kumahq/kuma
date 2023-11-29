@@ -28,6 +28,15 @@ func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 	if one == another {
 		return one
 	}
+	if one == core_mesh.ProtocolIgnore {
+		return getProtocol(another)
+	}
+	if another == core_mesh.ProtocolIgnore {
+		return getProtocol(one)
+	}
+	if one == "" || another == "" {
+		return core_mesh.ProtocolUnknown
+	}
 	if one == core_mesh.ProtocolUnknown || another == core_mesh.ProtocolUnknown {
 		return core_mesh.ProtocolUnknown
 	}
@@ -47,4 +56,11 @@ func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 		}
 	}
 	return core_mesh.ProtocolUnknown
+}
+
+func getProtocol(one core_mesh.Protocol) core_mesh.Protocol {
+	if one == "" {
+		return core_mesh.ProtocolUnknown
+	}
+	return one
 }

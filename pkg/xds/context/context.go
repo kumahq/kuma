@@ -58,22 +58,24 @@ func (g BaseMeshContext) Hash() string {
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                   string
-	Resource               *core_mesh.MeshResource
-	Resources              Resources
-	DataplanesByName       map[string]*core_mesh.DataplaneResource
-	EndpointMap            xds.EndpointMap
-	CrossMeshEndpoints     map[xds.MeshName]xds.EndpointMap
-	VIPDomains             []xds.VIPDomains
-	VIPOutbounds           []*mesh_proto.Dataplane_Networking_Outbound
-	ServiceInformations    ServiceInformations
-	DataSourceLoader       datasource.Loader
-	ReachableServicesGraph ReachableServicesGraph
+	Hash                        string
+	Resource                    *core_mesh.MeshResource
+	Resources                   Resources
+	DataplanesByName            map[string]*core_mesh.DataplaneResource
+	EndpointMap                 xds.EndpointMap
+	ExternalServicesEndpointMap xds.EndpointMap
+	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
+	VIPDomains                  []xds.VIPDomains
+	VIPOutbounds                []*mesh_proto.Dataplane_Networking_Outbound
+	ServiceInformations         map[string]ServiceInformations
+	DataSourceLoader            datasource.Loader
+	ReachableServicesGraph      ReachableServicesGraph
 }
 
 type ServiceInformations struct {
-	TLSReadiness map[string]bool
-	Protocol     map[string]core_mesh.Protocol
+	TLSReadiness      bool
+	Protocol          core_mesh.Protocol
+	IsExternalService bool
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

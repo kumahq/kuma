@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -19,7 +20,7 @@ func MakeTCPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesProtocol map[string]core_mesh.Protocol,
+	servicesInforomations map[string]xds_context.ServiceInformations,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -32,7 +33,7 @@ func MakeTCPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
-		servicesProtocol,
+		servicesInforomations,
 	)
 }
 
@@ -41,7 +42,7 @@ func MakeHTTPSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesProtocol map[string]core_mesh.Protocol,
+	servicesInforomations map[string]xds_context.ServiceInformations,
 ) []envoy_common.Split {
 	return makeSplit(
 		proxy,
@@ -52,7 +53,7 @@ func MakeHTTPSplit(
 		clusterCache,
 		servicesAcc,
 		refs,
-		servicesProtocol,
+		servicesInforomations,
 	)
 }
 
@@ -62,7 +63,7 @@ func makeSplit(
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
-	servicesProtocol map[string]core_mesh.Protocol,
+	servicesInforomations map[string]xds_context.ServiceInformations,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
@@ -78,7 +79,8 @@ func makeSplit(
 			continue
 		}
 
-		if _, ok := protocols[servicesProtocol[service]]; !ok {
+		info := servicesInforomations[service]
+		if _, ok := protocols[info.Protocol]; !ok {
 			return nil
 		}
 

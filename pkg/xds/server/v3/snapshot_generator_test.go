@@ -128,18 +128,6 @@ var _ = Describe("GenerateSnapshot", func() {
 	}
 
 	generateSnapshot := func(name, mesh string) []byte {
-		create(&core_mesh.ServiceInsightResource{
-			Meta: &test_model.ResourceMeta{Name: "es-with-tls", Mesh: "demo"},
-			Spec: &mesh_proto.ServiceInsight{
-				Services: map[string]*mesh_proto.ServiceInsight_Service{
-					"es-with-tls": {
-						Status:      mesh_proto.ServiceInsight_Service_partially_degraded,
-						ServiceType: mesh_proto.ServiceInsight_Service_external,
-						Protocol:    mesh_proto.ServiceInsight_Service_http,
-					},
-				},
-			},
-		})
 		mCtx, err := mCtxBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
 

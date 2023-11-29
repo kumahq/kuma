@@ -74,31 +74,6 @@
                 },
                 "addressPort": {
                     "type": "string"
-                },
-                "protocol": {
-                    "enum": [
-                        "grpc",
-                        0,
-                        "http2",
-                        1,
-                        "http",
-                        2,
-                        "kafka",
-                        3,
-                        "tcp",
-                        4,
-                        "unknown",
-                        5
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ],
-                    "title": "Protocol"
                 }
             },
             "additionalProperties": true,

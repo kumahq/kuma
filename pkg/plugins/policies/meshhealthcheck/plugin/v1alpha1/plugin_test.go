@@ -84,12 +84,10 @@ var _ = Describe("MeshHealthCheck", func() {
 			context := *xds_builders.Context().
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
-				WithProtocols(map[string]core_mesh.Protocol{
-					httpServiceTag:      core_mesh.ProtocolHTTP,
-					tcpServiceTag:       core_mesh.ProtocolTCP,
-					grpcServiceTag:      core_mesh.ProtocolGRPC,
-					splitHttpServiceTag: core_mesh.ProtocolHTTP,
-				}).
+				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
+				AddServiceProtocol(tcpServiceTag, core_mesh.ProtocolTCP).
+				AddServiceProtocol(grpcServiceTag, core_mesh.ProtocolGRPC).
+				AddServiceProtocol(splitHttpServiceTag, core_mesh.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
@@ -258,9 +256,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			xdsCtx := *xds_builders.Context().
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(resources).
-				WithProtocols(map[string]core_mesh.Protocol{
-					"backend": core_mesh.ProtocolHTTP,
-				}).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).

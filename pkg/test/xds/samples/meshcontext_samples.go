@@ -19,8 +19,6 @@ func SampleContextWith(resources xds_context.Resources) xds_context.Context {
 			builders.EndpointMap().
 				AddEndpoint("some-service", builders.Endpoint().WithTags("app", "some-service")),
 		).
-		WithProtocols(map[string]core_mesh.Protocol{
-			"some-service": core_mesh.ProtocolUnknown,
-		}).
+		AddServiceProtocol("some-service", core_mesh.ProtocolUnknown).
 		Build()
 }

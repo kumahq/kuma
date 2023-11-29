@@ -193,9 +193,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 			},
-			ServiceInformations: xds_context.ServiceInformations{
-				Protocol: map[string]core_mesh.Protocol{
-					"api-http": core_mesh.ProtocolHTTP,
+			ServiceInformations: map[string]xds_context.ServiceInformations{
+				"api-http": {
+					Protocol: core_mesh.ProtocolHTTP,
 				},
 			},
 		},
@@ -564,25 +564,39 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			metrics, err := core_metrics.NewMetrics("Standalone")
 			Expect(err).ToNot(HaveOccurred())
 			given.ctx.Mesh.EndpointMap = outboundTargets
-			given.ctx.Mesh.ServiceInformations.TLSReadiness = map[string]bool{
-				"api-http":  true,
-				"api-tcp":   true,
-				"api-http2": true,
-				"api-grpc":  true,
-				"backend":   true,
-				"db":        true,
-				"es":        true,
-				"es2":       true,
-			}
-			given.ctx.Mesh.ServiceInformations.Protocol = map[string]core_mesh.Protocol{
-				"api-http":  core_mesh.ProtocolHTTP,
-				"api-tcp":   core_mesh.ProtocolTCP,
-				"api-http2": core_mesh.ProtocolHTTP2,
-				"api-grpc":  core_mesh.ProtocolGRPC,
-				"backend":   core_mesh.ProtocolUnknown,
-				"db":        core_mesh.ProtocolUnknown,
-				"es":        core_mesh.ProtocolHTTP,
-				"es2":       core_mesh.ProtocolHTTP2,
+			given.ctx.Mesh.ServiceInformations = map[string]xds_context.ServiceInformations{
+				"api-http": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"api-tcp": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolTCP,
+				},
+				"api-http2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
+				"api-grpc": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolGRPC,
+				},
+				"backend": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"db": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"es": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"es2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
@@ -848,9 +862,13 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// when
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
-		plainCtx.Mesh.ServiceInformations.Protocol = map[string]core_mesh.Protocol{
-			"backend.kuma-system": core_mesh.ProtocolUnknown,
-			"db.kuma-system":      core_mesh.ProtocolUnknown,
+		plainCtx.Mesh.ServiceInformations = map[string]xds_context.ServiceInformations{
+			"backend.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
+			"db.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
 		}
 		rs, err := gen.Generate(context.Background(), plainCtx, proxy)
 

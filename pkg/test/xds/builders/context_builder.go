@@ -17,8 +17,9 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:    samples.MeshDefault(),
-				EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{},
+				Resource:            samples.MeshDefault(),
+				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServiceInformations: map[string]xds_context.ServiceInformations{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -59,7 +60,14 @@ func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
 	return mc
 }
 
-func (mc *ContextBuilder) WithProtocols(protocols map[string]core_mesh.Protocol) *ContextBuilder {
-	mc.res.Mesh.ServiceInformations.Protocol = protocols
+func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_mesh.Protocol) *ContextBuilder {
+	if info, found := mc.res.Mesh.ServiceInformations[serviceName]; found {
+		info.Protocol = protocol
+		mc.res.Mesh.ServiceInformations[serviceName] = info
+	} else {
+		mc.res.Mesh.ServiceInformations[serviceName] = xds_context.ServiceInformations{
+			Protocol: protocol,
+		}
+	}
 	return mc
 }
