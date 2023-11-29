@@ -1,4 +1,4 @@
-# `MeshHTTPRoute` for `MeshGateway`
+# `MeshHTTPRoute`/`MeshTCPRoute` for `MeshGateway`
 
 - Status: accepted
 
@@ -6,9 +6,9 @@ Technical Story: #8142
 
 ## Context and Problem Statement
 
-We have two very similar resources, `MeshHTTPRoute` and `MeshGatewayRoute` that
+We have some very similar resources, `MeshHTTPRoute`/`MeshTCPRoute` and `MeshGatewayRoute` that
 both configure route matching, filtering and redirecting semantics.
-This MADR proposes adapting `MeshHTTPRoute` for use with
+This MADR proposes adapting `MeshHTTPRoute` and `MeshTCPRoute` for use with
 `MeshGateway.`
 
 ## Decision Drivers <!-- optional -->
@@ -19,17 +19,17 @@ This MADR proposes adapting `MeshHTTPRoute` for use with
 ## Considered Options
 
 - Keep two resources
-- Use `MeshHTTPRoute`
+- Use `MeshHTTPRoute`/`MeshTCPRoute`
 
 ## Decision Outcome
 
 Chosen option:
 
-- Adapt `MeshHTTPRoute`
-- Add `spec.to[].hostnames`
+- Adapt `MeshHTTPRoute`/`MeshTCPRoute`
+- Add `spec.to[].hostnames` to `MeshHTTPRoute`
 - Allow `spec.to[].targetRef` to be empty
 - Require `backendRefs` to be set
-- Don't support policy matching on `MeshHTTPRoute` if it attaches to a gateway
+- Don't support policy matching on `MeshHTTPRoute`/`MeshTCPRoute` if it attaches to a gateway
 
 ### Hostname
 
@@ -52,7 +52,7 @@ a disadvantage.
 
 ### `to.targetRef`
 
-When using `MeshHTTPRoute` for service to service communication, it's very
+When using `MeshHTTPRoute`/`MeshTCPRoute` for service to service communication, it's very
 useful to limit the effects based on request source and destination. We do
 this by setting `spec.targetRef`, the source, and `spec.to[].targetRef`, the destination.
 
@@ -65,13 +65,13 @@ This MADR proposes allowing `spec.to[].targetRef` to be omitted. Another
 possibility would be requiring `spec.to[].targetRef.kind: Mesh` but it's
 not clear that this has any advantages.
 
-### `MeshHTTPRoute` matching
+### Route matching
 
-This MADR doesn't address supporting policy matching of `MeshHTTPRoutes`
+This MADR doesn't address supporting policy matching of routes
 that attach to `MeshGateways` because we can't policy match on `MeshGatewayRoute` at
 the moment anyway. The feasability/details should be addressed in a separate MADR.
 
-### Example
+### `MeshHTTPRoute` example
 
 ```
 apiVersion: kuma.io/v1alpha1
@@ -94,6 +94,33 @@ spec:
         backendRefs:
         - kind: MeshService
           name: backend_demo_svc_8080
+```
+
+### `MeshTCPRoute` example
+
+```
+apiVersion: kuma.io/v1alpha1
+kind: MeshTCPRoute
+metadata:
+  name: edge-routes
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - rules:
+        - default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: "1.0"
+                weight: 90
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: "2.0"
+                weight: 10
 ```
 
 ### Positive Consequences <!-- optional -->
