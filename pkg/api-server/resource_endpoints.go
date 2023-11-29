@@ -28,8 +28,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -591,23 +591,18 @@ func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
 		}
 
 		// Get all the matching policies
-		allPlugins := core_plugins.Plugins().PolicyPlugins()
+		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
-		for _, policyName := range policies.Policies {
-			p, exists := allPlugins[policyName]
-			if !exists {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("policy type '%s' not installed", policyName), "")
-				continue
-			}
-			res, err := p.MatchedPolicies(dp, xds_context.Resources{
+		for _, policy := range allPlugins {
+			res, err := policy.Plugin.MatchedPolicies(dp, xds_context.Resources{
 				CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 				MeshLocalResources: baseMeshContext.ResourceMap,
 			})
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyName))
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policy.Name))
 			}
 			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyName))
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policy.Name))
 			}
 
 			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {

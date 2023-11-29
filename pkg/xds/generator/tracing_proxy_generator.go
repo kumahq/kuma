@@ -23,7 +23,7 @@ type TracingProxyGenerator struct{}
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
-func (t TracingProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (t TracingProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tracingBackend := xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
 	if tracingBackend == nil {
 		return nil, nil

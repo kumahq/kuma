@@ -15,7 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
@@ -171,7 +171,7 @@ var _ = Describe("EgressGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), xdsCtx, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xdsCtx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

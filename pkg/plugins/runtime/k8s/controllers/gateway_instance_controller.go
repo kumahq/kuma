@@ -71,7 +71,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
 	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
-	svc, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
+	svc, gateway, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
 	}
@@ -84,7 +84,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		}
 	}
 
-	updateStatus(gatewayInstance, mesh, svc, deployment)
+	updateStatus(gatewayInstance, gateway, mesh, svc, deployment)
 
 	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -106,10 +106,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	mesh string,
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
-) (*kube_core.Service, error) {
+) (*kube_core.Service, *core_mesh.MeshGatewayResource, error) {
 	gatewayList := &core_mesh.MeshGatewayResourceList{}
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
@@ -118,9 +118,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
-			// If we don't have a gateway, we don't want our Service anymore
+			// If we don't have a gateway, we don't change anything. If the Service was already created, we keep it.
+			// If there is no Service, we don't create one. We don't want to break the traffic if MeshGateway is absent
+			// for a short period of time (i.e. due to renaming).
 			if gateway == nil {
-				return nil, nil
+				return obj, nil
 			}
 
 			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
@@ -195,14 +197,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, gateway, err
 	}
 
 	if obj == nil {
-		return nil, nil
+		return nil, gateway, nil
 	}
 
-	return obj.(*kube_core.Service), nil
+	return obj.(*kube_core.Service), gateway, nil
 }
 
 // createOrUpdateDeployment can either return an error, a created Deployment or
@@ -360,12 +362,18 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
 }
 
-func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, mesh string, svc *kube_core.Service, deployment *kube_apps.Deployment) {
+func updateStatus(
+	gatewayInstance *mesh_k8s.MeshGatewayInstance,
+	gateway *core_mesh.MeshGatewayResource,
+	mesh string,
+	svc *kube_core.Service,
+	deployment *kube_apps.Deployment,
+) {
 	var status kube_meta.ConditionStatus
 	var reason string
 	var message string
 
-	if svc == nil {
+	if gateway == nil {
 		status, reason, message = kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceNoGatewayMatched, fmt.Sprintf("No Gateway matched by tags in mesh: '%s'", mesh)
 	} else {
 		status, reason = getCombinedReadiness(svc, deployment)
