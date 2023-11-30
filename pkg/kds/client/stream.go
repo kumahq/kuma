@@ -69,6 +69,7 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 					kds.MetadataFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
 						Values: []*structpb.Value{
 							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureZoneToken}},
+							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureHashSuffix}},
 						},
 					}}},
 				},
