@@ -181,7 +181,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 				}
 			}
 			return nil
-		}); err != nil {
+		}, manager.WithConflictRetry(500 * time.Millisecond, 3, 30)); err != nil {
 			return errors.Wrap(err, "unable to upsert insight")
 		}
 
