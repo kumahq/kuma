@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/api/generic"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -53,16 +55,10 @@ type subscriptionFinalizer struct {
 	tenants        multitenant.Tenants
 	metric         prometheus.Summary
 	extensions     context.Context
+	upsert         store.UpsertConfig
 }
 
-func NewSubscriptionFinalizer(
-	rm manager.ResourceManager,
-	tenants multitenant.Tenants,
-	newTicker func() *time.Ticker,
-	metrics core_metrics.Metrics,
-	extensions context.Context,
-	types ...core_model.ResourceType,
-) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, metrics core_metrics.Metrics, extensions context.Context, upsert store.UpsertConfig, types ...core_model.ResourceType) (component.Component, error) {
 	for _, typ := range types {
 		if !isInsightType(typ) {
 			return nil, errors.Errorf("%q type is not an Insight", typ)
@@ -86,6 +82,7 @@ func NewSubscriptionFinalizer(
 		tenants:        tenants,
 		metric:         metric,
 		extensions:     extensions,
+		upsert:         upsert,
 	}, nil
 }
 
@@ -181,7 +178,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 				}
 			}
 			return nil
-		}, manager.WithConflictRetry(500 * time.Millisecond, 3, 30)); err != nil {
+		}, manager.WithConflictRetry(f.upsert.ConflictRetryBaseBackoff.Duration, f.upsert.ConflictRetryMaxTimes, f.upsert.ConflictRetryJitterPercent)); err != nil {
 			return errors.Wrap(err, "unable to upsert insight")
 		}
 
