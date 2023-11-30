@@ -4,6 +4,7 @@ metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/builtin-dns: enabled
+    kuma.io/builtin-dns-logging: "false"
     kuma.io/builtin-dns-port: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
