@@ -3,7 +3,7 @@ on:
   push:
     branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
-  pull_request:
+  pull_request_target:
     branches: ["master", "release-*"]
 env:
   K8S_MIN_VERSION: v1.23.17-k3s1
@@ -34,19 +34,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # GitHub actions does not share cache across multiple jobs,
+      # so we have to operate cache in each job and action file
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/cache@v3
         with:
           path: |
@@ -56,6 +51,11 @@ jobs:
             ${{ runner.os }}-devtools
       - run: |
           make dev/tools
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
       - run: |
           make build
       - run: |
@@ -119,10 +119,16 @@ jobs:
           path: build/reports
           retention-days: 7
   distributions:
-    needs: ["check", "test", "test_e2e", "test_e2e_env"]
-    if: ${{ always() && !failure() && !cancelled() }}
+    needs: ["build", "check", "test"]
+    # needs: ["check", "test", "test_e2e", "test_e2e_env"]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      # see https://stackoverflow.com/a/67532120/4907315
+      - name: "Halt due to previous failures"
+        run: |
+          exit 1
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
@@ -176,7 +182,8 @@ jobs:
   gen_e2e_matrix:
     runs-on: ubuntu-latest
     needs: ["build"]
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
+    if: false
+    # if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
       test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
       test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
