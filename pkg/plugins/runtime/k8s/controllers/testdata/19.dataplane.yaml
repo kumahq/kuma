@@ -5,7 +5,8 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-    - port: 8080
+    - health: {}
+      port: 8080
       state: NOT_READY
       tags:
         app: example
@@ -16,7 +17,8 @@ spec:
         kuma.io/service: example_demo_svc_80
         kuma.io/zone: zone-1
         version: "0.1"
-    - port: 8443
+    - health: {}
+      port: 8443
       state: NOT_READY
       tags:
         app: example

@@ -38,6 +38,9 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 
 		tags := InboundTagsForService(zone, pod, service, &svcPort)
 		state := mesh_proto.Dataplane_Networking_Inbound_READY
+		health := mesh_proto.Dataplane_Networking_Inbound_Health{
+			Ready: true,
+		}
 
 		// if container is not equal nil then port is explicitly defined as containerPort so we're able
 		// to figure out which container implements which service. Since we know container we can check its status
@@ -45,26 +48,31 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		if container != nil {
 			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
 				state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+				health.Ready = false
 			}
 		}
 
 		// also we're checking whether kuma-sidecar container is ready
 		if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
 			state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			health.Ready = false
 		}
 
 		if pod.DeletionTimestamp != nil { // pod is in Termination state
 			state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			health.Ready = false
 		}
 
 		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
 			state = mesh_proto.Dataplane_Networking_Inbound_IGNORED
+			health.Ready = false
 		}
 
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
-			Port:  uint32(containerPort),
-			Tags:  tags,
-			State: state,
+			Port:   uint32(containerPort),
+			Tags:   tags,
+			State:  state,
+			Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
 		})
 	}
 
@@ -84,11 +92,15 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 
 	tags := InboundTagsForPod(zone, pod, name)
 	state := mesh_proto.Dataplane_Networking_Inbound_READY
+	health := mesh_proto.Dataplane_Networking_Inbound_Health{
+		Ready: true,
+	}
 
 	for _, container := range pod.Spec.Containers {
 		if container.Name != util_k8s.KumaSidecarContainerName {
 			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
 				state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+				health.Ready = false
 			}
 		}
 	}
@@ -96,12 +108,14 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	// also we're checking whether kuma-sidecar container is ready
 	if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
 		state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+		health.Ready = false
 	}
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
-		Port:  mesh_proto.TCPPortReserved,
-		Tags:  tags,
-		State: state,
+		Port:   mesh_proto.TCPPortReserved,
+		Tags:   tags,
+		State:  state,
+		Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
 	}
 }
 

@@ -210,9 +210,17 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 		}
 		if workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_NOT_READY {
 			inbound.State = mesh_proto.Dataplane_Networking_Inbound_READY
+			// write health for backwards compatibility with Kuma 2.5 and older
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: true,
+			}
 			changed = true
 		} else if !workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_READY {
 			inbound.State = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			// write health for backwards compatibility with Kuma 2.5 and older
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: false,
+			}
 			changed = false
 		}
 	}
