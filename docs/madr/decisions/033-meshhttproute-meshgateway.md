@@ -13,8 +13,8 @@ This MADR proposes adapting `MeshHTTPRoute` and `MeshTCPRoute` for use with
 
 ## Decision Drivers <!-- optional -->
 
-* Fewer CRDs
-* Parity with `MeshGatewayRoute`
+- Fewer CRDs
+- Parity with `MeshGatewayRoute`
 
 ## Considered Options
 
@@ -122,6 +122,189 @@ spec:
                   version: "2.0"
                 weight: 10
 ```
+
+### Merging example
+
+```
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: specific-hostname
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - hostnames:
+    - test.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: wildcard-hostname
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - hostnames:
+    - *.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+```
+
+results in the rules:
+
+```
+  to:
+  - hostnames:
+    - test.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+  - hostnames:
+    - *.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /v2
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v2
+```
+
+On the other hand:
+
+```
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: specific-hostname
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - hostnames:
+    - test.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: wildcard-hostname
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - hostnames:
+    - test.example.com
+    - *.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+```
+
+so that requests to `test.example.com/v2` are sent to `version: v1`!.
+
+gives
+
+```
+  to:
+  - hostnames:
+    - test.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v1
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /v2
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v2
+  - hostnames:
+    - *.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /v2
+      default:
+        backendRefs:
+        - kind: MeshServiceSubset
+          name: backend_demo_svc_8080
+          tags:
+            version: v2
+```
+
+so that requests to `test.example.com/v2` are sent to `version: v2`!. In other
+words, merging between hostnames is not semantic  and doesn't take into account wildcards,
+but rather is exact string based.
 
 ### Positive Consequences <!-- optional -->
 
