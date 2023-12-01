@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -35,7 +36,7 @@ var _ = Describe("Subscription Finalizer", func() {
 		Expect(err).ToNot(HaveOccurred())
 		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
-		}, metrics, context.Background(), system.ZoneInsightType)
+		}, metrics, context.Background(), store_config.DefaultUpsertConfig(), system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			stopped <- finalizer.Start(stop)
