@@ -154,9 +154,10 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
-			if status.Code(err) == codes.InvalidArgument {
+			switch status.Code(err) {
+			case codes.InvalidArgument, codes.Unauthenticated, codes.PermissionDenied:
 				logger.Info("stream interceptor terminating the stream", "cause", err)
-			} else {
+			default:
 				logger.Error(err, "stream interceptor terminating the stream")
 			}
 			return err
