@@ -93,7 +93,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 	log.Info("config has changed", "versions", changed)
 
-	if err := r.cacher.Cache(node, snapshot); err != nil {
+	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
 	}
 
@@ -191,7 +191,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 
 type snapshotCacher interface {
 	Get(*envoy_core.Node) (*envoy_cache.Snapshot, error)
-	Cache(*envoy_core.Node, *envoy_cache.Snapshot) error
+	Cache(context.Context, *envoy_core.Node, *envoy_cache.Snapshot) error
 	Clear(*envoy_core.Node)
 }
 
@@ -212,8 +212,8 @@ func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (*envoy_cache.Snapshot
 	return nil, err
 }
 
-func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
-	return s.store.SetSnapshot(context.TODO(), s.hasher.ID(node), snapshot)
+func (s *simpleSnapshotCacher) Cache(ctx context.Context, node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
+	return s.store.SetSnapshot(ctx, s.hasher.ID(node), snapshot)
 }
 
 func (s *simpleSnapshotCacher) Clear(node *envoy_core.Node) {
