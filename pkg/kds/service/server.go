@@ -90,7 +90,7 @@ func (g *GlobalKDSServiceServer) StreamClusters(stream mesh_proto.GlobalKDSServi
 func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.ZoneHealthCheckRequest) (*mesh_proto.ZoneHealthCheckResponse, error) {
 	zone, err := util.ClientIDFromIncomingCtx(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	clientID := ClientID(ctx, zone)
