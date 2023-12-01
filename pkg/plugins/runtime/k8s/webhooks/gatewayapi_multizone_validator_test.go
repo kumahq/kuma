@@ -62,7 +62,7 @@ var _ = Describe("Gateway API mutlizone validation webhook", func() {
 			// then
 			Expect(resp).To(Equal(given.response))
 		},
-		Entry("pass on standalone with Kuma gateway", testCase{
+		Entry("pass with Kuma gateway when gapi is supported", testCase{
 			gapiSupported: true,
 			gatewayClass:  KumaGatewayClass,
 			response:      kube_admission.Allowed(""),
