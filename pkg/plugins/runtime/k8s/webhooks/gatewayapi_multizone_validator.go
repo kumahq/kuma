@@ -23,7 +23,7 @@ func NewGatewayAPIMultizoneValidator(gapiSupported bool, scheme *runtime.Scheme)
 	}
 }
 
-var GatewayAPINotSupportedErr = errors.New("GatewayAPI of Kuma is only supported in Standalone deployments")
+var GatewayAPINotSupportedErr = errors.New("GatewayAPI of Kuma is only supported in a single-zone deployments")
 
 type GatewayAPIMultizoneValidator struct {
 	GAPISupported bool

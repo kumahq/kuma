@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 )
 
-func ResilienceStandaloneUniversal() {
+func ResilienceUniversal() {
 	const clusterName = "kuma-resilience"
 	var universal Cluster
 
