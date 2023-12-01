@@ -52,7 +52,7 @@ spec:
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Zone)).
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).

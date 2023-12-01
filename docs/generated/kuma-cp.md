@@ -3,8 +3,8 @@ Here are all options to configure the control-plane:
 ```yaml
 # Environment type. Available values are: "kubernetes" or "universal"
 environment: universal # ENV: KUMA_ENVIRONMENT
-# Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
-mode: standalone # ENV: KUMA_MODE
+# Mode in which Kuma CP is running. Available values are: "global", "zone", "standalone" (deprecated, use "zone")
+mode: zone # ENV: KUMA_MODE
 
 # Resource Store configuration
 store:

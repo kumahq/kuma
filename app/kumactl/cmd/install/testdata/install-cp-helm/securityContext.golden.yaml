@@ -411,7 +411,7 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "standalone"
+              value: "zone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT

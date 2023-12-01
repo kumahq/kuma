@@ -11,6 +11,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
@@ -50,6 +51,12 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			if err != nil {
 				runLog.Error(err, "could not load the configuration")
 				return err
+			}
+
+			// nolint:staticcheck
+			if cfg.Mode == config_core.Standalone {
+				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
+				cfg.Mode = config_core.Zone
 			}
 
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())

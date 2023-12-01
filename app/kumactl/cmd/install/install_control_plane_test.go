@@ -353,14 +353,6 @@ controlPlane:
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
 			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
 		}),
-		Entry("--kds-global-address is missing when installing zone", errTestCase{
-			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone'",
-		}),
-		Entry("--zone is missing when installing zone", errTestCase{
-			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone"},
-			errorMsg:  "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'",
-		}),
 		Entry("--zone is more than 253 characters", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
 			errorMsg:  "controlPlane.zone must be no more than 253 characters",
