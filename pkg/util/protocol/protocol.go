@@ -25,42 +25,33 @@ var protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
 // a common protocol between GRPC and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP2 is HTTP.
 func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
-	if one == another {
+	switch {
+	case one == another:
 		return one
-	}
-	if one == core_mesh.ProtocolIgnore {
-		return getProtocol(another)
-	}
-	if another == core_mesh.ProtocolIgnore {
-		return getProtocol(one)
-	}
-	if one == "" || another == "" {
+	case one == "" || another == "":
 		return core_mesh.ProtocolUnknown
-	}
-	if one == core_mesh.ProtocolUnknown || another == core_mesh.ProtocolUnknown {
+	case one == core_mesh.ProtocolIgnore:
+		return another
+	case another == core_mesh.ProtocolIgnore:
+		return one
+	case one == core_mesh.ProtocolUnknown || another == core_mesh.ProtocolUnknown:
 		return core_mesh.ProtocolUnknown
-	}
-	oneProtocolStack, exist := protocolStacks[one]
-	if !exist {
-		return core_mesh.ProtocolUnknown
-	}
-	anotherProtocolStack, exist := protocolStacks[another]
-	if !exist {
-		return core_mesh.ProtocolUnknown
-	}
-	for _, firstProtocol := range oneProtocolStack {
-		for _, secondProtocol := range anotherProtocolStack {
-			if firstProtocol == secondProtocol {
-				return firstProtocol
+	default:
+		oneProtocolStack, exist := protocolStacks[one]
+		if !exist {
+			return core_mesh.ProtocolUnknown
+		}
+		anotherProtocolStack, exist := protocolStacks[another]
+		if !exist {
+			return core_mesh.ProtocolUnknown
+		}
+		for _, firstProtocol := range oneProtocolStack {
+			for _, secondProtocol := range anotherProtocolStack {
+				if firstProtocol == secondProtocol {
+					return firstProtocol
+				}
 			}
 		}
-	}
-	return core_mesh.ProtocolUnknown
-}
-
-func getProtocol(one core_mesh.Protocol) core_mesh.Protocol {
-	if one == "" {
 		return core_mesh.ProtocolUnknown
 	}
-	return one
 }

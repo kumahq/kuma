@@ -22,7 +22,7 @@ func GenerateClusters(
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		serviceInfo := meshCtx.ServicesInformation[serviceName]
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
@@ -51,7 +51,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
-				switch serviceInfo.Protocol {
+				switch protocol {
 				case core_mesh.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
 				case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:

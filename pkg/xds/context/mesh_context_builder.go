@@ -195,7 +195,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		CrossMeshEndpoints:          crossMeshEndpointMap,
 		VIPDomains:                  domains,
 		VIPOutbounds:                outbounds,
-		ServicesInformation:         m.generateServicesInformations(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
 		DataSourceLoader:            loader,
 		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
 	}, nil
@@ -368,13 +368,13 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) generateServicesInformations(
+func (m *meshContextBuilder) generateServicesInformation(
 	mesh *core_mesh.MeshResource,
 	serviceInsights *core_mesh.ServiceInsightResourceList,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
-) map[string]ServiceInformation {
-	servicesInformation := map[string]ServiceInformation{}
+) map[string]*ServiceInformation {
+	servicesInformation := map[string]*ServiceInformation{}
 	m.resolveProtocol(mesh, endpointMap, esEndpointMap, servicesInformation)
 	m.resolveTLSReadiness(mesh, serviceInsights, servicesInformation)
 	return servicesInformation
@@ -384,19 +384,20 @@ func (m *meshContextBuilder) resolveProtocol(
 	mesh *core_mesh.MeshResource,
 	endpointMap xds.EndpointMap,
 	esEndpointMap xds.EndpointMap,
-	servicesInformation map[string]ServiceInformation,
+	servicesInformation map[string]*ServiceInformation,
 ) {
-	// when Egress is not enabled we are not adding egresses to the EndpointMap
+	// endpointMap has only informations about externalServices when egress is enabled
+	// that's why we have to iterate over second map with external services
 	if !mesh.ZoneEgressEnabled() {
 		for svc, endpoints := range esEndpointMap {
-			serviceInfo := getServiceInformations(servicesInformation, svc)
+			serviceInfo := getServiceInformation(servicesInformation, svc)
 			serviceInfo.Protocol = inferServiceProtocol(endpoints)
 			serviceInfo.IsExternalService = true
 			servicesInformation[svc] = serviceInfo
 		}
 	}
 	for svc, endpoints := range endpointMap {
-		serviceInfo := getServiceInformations(servicesInformation, svc)
+		serviceInfo := getServiceInformation(servicesInformation, svc)
 		serviceInfo.Protocol = inferServiceProtocol(endpoints)
 		serviceInfo.IsExternalService = isExternalService(endpoints)
 		servicesInformation[svc] = serviceInfo
@@ -406,7 +407,7 @@ func (m *meshContextBuilder) resolveProtocol(
 func (m *meshContextBuilder) resolveTLSReadiness(
 	mesh *core_mesh.MeshResource,
 	serviceInsights *core_mesh.ServiceInsightResourceList,
-	servicesInformation map[string]ServiceInformation,
+	servicesInformation map[string]*ServiceInformation,
 ) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
@@ -421,7 +422,7 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 		return
 	}
 	for svc, insight := range serviceInsights.Items[0].Spec.GetServices() {
-		serviceInfo := getServiceInformations(servicesInformation, svc)
+		serviceInfo := getServiceInformation(servicesInformation, svc)
 		if insight.ServiceType == mesh_proto.ServiceInsight_Service_external {
 			serviceInfo.TLSReadiness = true
 		} else {
@@ -496,12 +497,11 @@ func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext 
 	return hasher.Sum(nil)
 }
 
-func getServiceInformations(servicesInformation map[string]ServiceInformation, serviceName string) ServiceInformation {
+func getServiceInformation(servicesInformation map[string]*ServiceInformation, serviceName string) *ServiceInformation {
 	if info, found := servicesInformation[serviceName]; found {
 		return info
-	} else {
-		return ServiceInformation{}
 	}
+	return &ServiceInformation{}
 }
 
 func isExternalService(endpoints []xds.Endpoint) bool {

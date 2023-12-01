@@ -36,7 +36,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	clusters := policies_xds.GatherClusters(rs)
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, ctx.Mesh.ServicesInformation); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -52,13 +52,12 @@ func applyToOutbounds(
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
-	servicesInformation map[string]xds_context.ServiceInformation,
+	meshCtx xds_context.MeshContext,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
 	for cluster, serviceName := range targetedClusters {
-		info := servicesInformation[serviceName]
-		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), info.Protocol, cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}

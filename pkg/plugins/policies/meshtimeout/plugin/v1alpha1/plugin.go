@@ -48,22 +48,20 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh.ServicesInformation); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh.ServicesInformation); err != nil {
+	if err := applyToGateway(policies.ToRules, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
 		return err
 	}
 
 	for serviceName, cluster := range clusters.Outbound {
-		info := ctx.Mesh.ServicesInformation[serviceName]
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, info.Protocol, cluster); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
 	for serviceName, clusters := range clusters.OutboundSplit {
-		info := ctx.Mesh.ServicesInformation[serviceName]
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, info.Protocol, clusters...); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
 			return err
 		}
 	}
@@ -118,7 +116,7 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
 	dataplane *core_mesh.DataplaneResource,
-	servicesInformation map[string]xds_context.ServiceInformation,
+	meshCtx xds_context.MeshContext,
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
@@ -129,11 +127,9 @@ func applyToOutbounds(
 		}
 
 		serviceName := outbound.GetService()
-		info := servicesInformation[serviceName]
-
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
-			Protocol: info.Protocol,
+			Protocol: meshCtx.GetServiceProtocol(serviceName),
 			Subset:   core_rules.MeshService(serviceName),
 		}
 
@@ -170,7 +166,7 @@ func applyToGateway(
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
-	servicesInformation map[string]xds_context.ServiceInformation,
+	meshCtx xds_context.MeshContext,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		conf := getConf(toRules.Rules, core_rules.MeshSubset())
@@ -201,8 +197,6 @@ func applyToGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				info := servicesInformation[serviceName]
-
 				conf := getConf(toRules.Rules, core_rules.MeshService(serviceName))
 				if conf == nil {
 					continue
@@ -211,7 +205,7 @@ func applyToGateway(
 				if err := applyToClusters(
 					toRules.Rules,
 					serviceName,
-					info.Protocol,
+					meshCtx.GetServiceProtocol(serviceName),
 					cluster,
 				); err != nil {
 					return err

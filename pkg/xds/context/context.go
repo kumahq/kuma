@@ -67,7 +67,7 @@ type MeshContext struct {
 	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
 	VIPDomains                  []xds.VIPDomains
 	VIPOutbounds                []*mesh_proto.Dataplane_Networking_Outbound
-	ServicesInformation         map[string]ServiceInformation
+	ServicesInformation         map[string]*ServiceInformation
 	DataSourceLoader            datasource.Loader
 	ReachableServicesGraph      ReachableServicesGraph
 }
@@ -106,6 +106,25 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	} else {
 		return lb
 	}
+}
+
+func (mc *MeshContext) GetServiceProtocol(serviceName string) core_mesh.Protocol {
+	if info, found := mc.ServicesInformation[serviceName]; found {
+		return info.Protocol
+	}
+	return core_mesh.ProtocolUnknown
+}
+
+func (mc *MeshContext) GetTLSReadiness() map[string]bool {
+	tlsReady := map[string]bool{}
+	for serviceName, info := range mc.ServicesInformation {
+		if info != nil {
+			tlsReady[serviceName] = info.TLSReadiness
+		} else {
+			tlsReady[serviceName] = false
+		}
+	}
+	return tlsReady
 }
 
 // AggregatedMeshContexts is an aggregate of all MeshContext across all meshes
