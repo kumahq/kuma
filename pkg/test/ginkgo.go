@@ -54,6 +54,7 @@ func runSpecs(t *testing.T, description string) {
 }
 
 // EntriesForFolder returns all files in the folder as gingko table entries for files *.input.yaml this makes it easier to add test by only adding input and golden files
+// if you prefix the file with a `F` we'll focus this specific test
 func EntriesForFolder(folder string) []ginkgo.TableEntry {
 	var entries []ginkgo.TableEntry
 	testDir := path.Join("testdata", folder)
@@ -64,7 +65,14 @@ func EntriesForFolder(folder string) []ginkgo.TableEntry {
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), ".input.yaml") {
 			input := path.Join(testDir, f.Name())
-			entries = append(entries, ginkgo.Entry(input, input))
+			switch {
+			case strings.HasPrefix(f.Name(), "F"):
+				entries = append(entries, ginkgo.FEntry(input, input))
+			case strings.HasPrefix(f.Name(), "P"):
+				entries = append(entries, ginkgo.PEntry(input, input))
+			default:
+				entries = append(entries, ginkgo.Entry(input, input))
+			}
 		}
 	}
 	return entries

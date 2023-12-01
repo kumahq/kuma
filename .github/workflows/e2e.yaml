@@ -1,0 +1,308 @@
+on:
+  workflow_call:
+    inputs:
+      k8sVersion:
+        description: version of k3s to use or "kind" and "kindIpv6"
+        type: string
+        required: true
+      target:
+        description: makefile target without e2e prefix
+        type: string
+        required: true
+      arch:
+        description: The golang arch
+        type: string
+        required: true
+      legacyKDS:
+        description: if should run tests with new implementation of KDS
+        type: string
+        required: true
+      cniNetworkPlugin:
+        description: The CNI networking plugin to use [flannel | calico]
+        type: string
+        required: true
+      parallelism:
+        description: level of parallelization
+        type: string
+        required: true
+    secrets:
+      circleCIToken:
+        required: true
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Print parameters"
+        run: |
+          echo "All inputs:"
+          echo "Running with: \
+              k8s: ${{ inputs.k8sVersion }} \
+              target: ${{ inputs.target }} \
+              parallelism: ${{ inputs.parallelism }} \
+              arch: ${{ inputs.arch }} \
+              cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
+              "
+      - name: "GitHub Actions: check out code"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "GitHub Actions: setup go"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - name: "GitHub Actions: set up cache"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.kuma-dev
+          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-devtools
+      - name: "GitHub Actions: download build artifacts"
+        if: ${{ inputs.arch == 'amd64' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: build-output
+          path: build
+      - name: "GitHub Actions: extract artifacts"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          echo "Extracting artifacts..."
+          ARCH='${{ inputs.arch }}'
+          ARTIFACT=$(find build/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+          if [[ "$ARTIFACT" == "" ]]; then
+            echo "Could not find built artifact for linux($ARCH)."
+            exit 1
+          fi
+          cat $ARTIFACT.sha256 | sha256sum --check
+
+          mkdir build/distributions/artifacts
+          tar -xzf $ARTIFACT -C build/distributions/artifacts
+
+          SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
+          DEST_DIR=build/artifacts-linux-$ARCH
+          for BIN in $(ls $SRC_DIR); do
+            mkdir -p $DEST_DIR/$BIN
+            cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
+          done
+      - name: "GitHub Actions: setup helm"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          make dev/set-kuma-helm-repo
+      - name: "GitHub Actions: run E2E tests"
+        if: ${{ inputs.arch == 'amd64' }}
+        run: |
+          if [[ "${{ inputs.k8sVersion }}" == "kindIpv6" ]]; then
+            export IPV6=true
+            export K8S_CLUSTER_TOOL=kind
+            export KUMA_DEFAULT_RETRIES=60
+            export KUMA_DEFAULT_TIMEOUT="6s"
+          fi
+          if [[ "${{ inputs.k8sVersion }}" != "kind"* ]]; then
+            export CI_K3S_VERSION=${{ inputs.k8sVersion }}
+            export K3D_NETWORK_CNI=${{ inputs.cniNetworkPlugin }}
+          fi
+          if [[ "${{ inputs.arch }}" == "arm64" ]]; then
+            export MAKE_PARAMETERS="-j1"
+          else
+            export MAKE_PARAMETERS="-j2"
+          fi
+
+          if [[ "${{ inputs.legacyKDS }}" == true ]]; then
+            export KUMA_LEGACY_KDS=true
+          fi
+
+          if [[ "${{ inputs.target }}" == "" ]]; then
+            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+          fi
+          env
+          if [[ "${{ inputs.target }}" != "" ]]; then
+            target="test/e2e-${{ inputs.target }}"
+          else
+            target="test/e2e"
+          fi
+          make ${MAKE_PARAMETERS} CI=true "${target}"
+      - name: "CircleCI: expose github action artifact variables"
+        if: ${{ inputs.arch != 'amd64' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'])
+      - name: "CircleCI: install jq"
+        if: ${{ inputs.arch != 'amd64' }}
+        run: |
+          sudo apt-get install -y jq
+      - name: "CircleCI: trigger a new pipeline workflow on CircleCI"
+        if: ${{ inputs.arch != 'amd64' }}
+        id: circle-ci-trigger
+        run: |
+          # Trigger CircleCI manually, reference: https://github.com/CircleCI-Public/trigger-circleci-pipeline-action/blob/main/src/lib/CircleCIPipelineTrigger.ts#L82
+          set -e
+          if [ "${{ runner.debug }}" == "1" ]; then
+            set -x
+          fi
+
+          BUILD_OUTPUT_ARTIFACT_NAME=build-output
+          BODY='{"parameters": { "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  } }'
+          BODY=$(echo "$BODY" | jq -c ".parameters += { \"gh_action_build_artifact_name\": \"$BUILD_OUTPUT_ARTIFACT_NAME\", \"gh_action_runtime_token\": \"$ACTIONS_RUNTIME_TOKEN\", \"gh_action_artifact_list_url\": \"${ACTIONS_RUNTIME_URL}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview\" }")
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            BODY=$(echo $BODY | jq -rc '.+= {"tag": "${{ github.ref_name }}"}')
+          else
+            BODY=$(echo $BODY | jq -rc '.+= {"branch": "${{ github.ref_name }}"}')
+          fi
+
+          CIRCLE_CI_API_PATH=https://circleci.com/api/v2/project/gh/${{ github.repository }}/pipeline
+          echo "Calling CircleCI api with parameters:
+            URL: $CIRCLE_CI_API_PATH
+            BODY: $BODY"
+
+          if [ "${{ secrets.circleCIToken }}" == "" ]; then
+            echo "Skipping request CircleCI because secret 'CIRCLECI_TOKEN' not set."
+            exit 0
+          fi
+
+          function request(){
+            METHOD=$1
+            URL=$2
+            DATA=$3
+
+            if [ "$DATA" != "" ]; then
+              DATA="--data $DATA"
+            fi
+
+            OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            STATUS_CODE=
+            while [[ "$STATUS_CODE" == "" ]]; do
+              STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
+                --header "content-type: application/json" --header "accept: application/json" \
+                --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
+                --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+
+              if [[ "$STATUS_CODE" == "429" ]]; then
+                STATUS_CODE=
+                echo '' > $OUTPUT_FILE
+                sleep $((RANDOM % 3))
+              fi
+            done
+
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
+            if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
+              echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
+              exit 1
+            fi
+          }
+
+          PIPELINE_ID=$(request POST $CIRCLE_CI_API_PATH "$BODY" | jq -r '.id')
+          sleep 3
+          WORKFLOW_DETAILS=$(request GET https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow | jq -cr '.items[] | select(.name == "manual-e2e")')
+          PIPELINE_NUMBER=$(echo $WORKFLOW_DETAILS | jq -r '.pipeline_number')
+          WORKFLOW_ID=$(echo $WORKFLOW_DETAILS | jq -r '.id')
+
+          echo "pipeline_number=$PIPELINE_NUMBER" >> $GITHUB_OUTPUT
+          echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
+
+          if [[ "$WORKFLOW_ID" == "" ]]; then
+            echo "Could not trigger a workflow on CircleCI, check your .circleci/config.yaml"
+            exit 1
+          fi
+
+          echo ''
+          echo "CircleCI pipeline triggered successfully, pipeline id: $PIPELINE_ID"
+          echo "Check CircleCI workflow details at: https://app.circleci.com/pipelines/gh/${{ github.repository }}/$PIPELINE_NUMBER/workflows/$WORKFLOW_ID"
+      - name: "CircleCI: check run status of pipeline workflow on CircleCI"
+        if: ${{ inputs.arch != 'amd64' && steps.circle-ci-trigger.outputs.workflow_id != '' }}
+        run: |
+          set -e
+          if [ "${{ runner.debug }}" == "1" ]; then
+            set -x
+          fi
+
+          function request(){
+            METHOD=$1
+            URL=$2
+            DATA=$3
+
+            if [ "$DATA" != "" ]; then
+              DATA="--data $DATA"
+            fi
+
+            OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
+              --header "content-type: application/json" --header "accept: application/json" \
+              --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
+              --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
+            if [ "$STATUS_CODE" == "429" ]; then
+              # we are exceeding rate limit, try again later
+              echo '{"status": ""}'
+              return
+            fi
+            if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
+              echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
+              exit 1
+            fi
+          }
+
+          function check_workflow(){
+            WORKFLOW_ID=$1
+            STATUS=''
+            # status could be "success" "running" "not_run" "failed" "error" "failing" "on_hold" "canceled" "unauthorized"
+            # statuses to continue: "running" "on_hold"
+            # status completed: "success" "not_run" "failed" "error" "failing" "canceled" "unauthorized"
+            while [[ "$STATUS" == "" ]] || [[ "$STATUS" == "running" ]] || [[ "$STATUS" == "on_hold" ]]; do
+              sleep $((RANDOM % 5 + 25))
+              STATUS=$(request GET https://circleci.com/api/v2/workflow/$WORKFLOW_ID | jq -r '.status')
+              echo -n .
+            done
+
+            echo ''
+            if [[ "$STATUS" == "success" ]]; then
+              echo "CircleCI workflow has completed successfully."
+              exit 0
+            else
+              echo "CircleCI workflow has completed with status: '$STATUS'."
+              exit 1
+            fi
+          }
+
+          PIPELINE_NUMBER='${{ steps.circle-ci-trigger.outputs.pipeline_number }}'
+          WORKFLOW_ID='${{ steps.circle-ci-trigger.outputs.workflow_id }}'
+          echo "Check CircleCI workflow details at: https://app.circleci.com/pipelines/gh/${{ github.repository }}/$PIPELINE_NUMBER/workflows/$WORKFLOW_ID"
+          echo "Tracking workflow status:"
+          check_workflow '${{ steps.circle-ci-trigger.outputs.workflow_id }}'
+      - name: "CircleCI: cancel CircleCI running if requested"
+        if: ${{ inputs.arch != 'amd64' && cancelled() && steps.circle-ci-trigger.outputs.workflow_id != '' }}
+        run: |
+          set -e
+          if [ "${{ runner.debug }}" == "1" ]; then
+            set -x
+          fi
+
+          function request(){
+            METHOD=$1
+            URL=$2
+            DATA=$3
+
+            if [ "$DATA" != "" ]; then
+              DATA="--data $DATA"
+            fi
+
+            OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
+              --header "content-type: application/json" --header "accept: application/json" \
+              --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
+              --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
+          }
+
+          request POST https://circleci.com/api/v2/workflow/${{ steps.circle-ci-trigger.outputs.workflow_id }}/cancel

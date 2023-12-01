@@ -70,8 +70,9 @@ stringData:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
-				// it's required because we check if Kuma is ready,
-				// and we use "kubectl get mesh" which is not available in universal mode
+				// WithSkipDefaultMesh is required because we check if Kuma is ready by using "kubectl get mesh"
+				// here in the framework https://github.com/kumahq/kuma/blob/1633d34ad116dd1e618f4a27dd1526f5ff7d8bde/test/framework/k8s_cluster.go#L564
+				// but on universal mode we use postgres to manage resources so without this it will fail making the test suite fail
 				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),

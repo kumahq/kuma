@@ -147,6 +147,15 @@ func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
 	return ifaces
 }
 
+func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Networking_Inbound {
+	for _, inbound := range n.Inbound {
+		if port == inbound.Port {
+			return inbound
+		}
+	}
+	return nil
+}
+
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,

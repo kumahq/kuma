@@ -1,0 +1,10 @@
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  address: 1.1.1.1
+  inbound:
+    - port: 8080
+      tags:
+        k8s.kuma.io/service-name: demo-app
+        kuma.io/service: foo

@@ -11,9 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/plugins"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -95,7 +93,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 	log.Info("config has changed", "versions", changed)
 
-	if err := r.cacher.Cache(node, snapshot); err != nil {
+	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
 		return false, errors.Wrap(err, "failed to store snapshot")
 	}
 
@@ -172,17 +170,6 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
-	allPolicies := plugins.Plugins().PolicyPlugins()
-	for _, policyName := range policies.Policies {
-		policy, exists := allPolicies[policyName]
-		if !exists {
-			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
-			continue
-		}
-		if err := policy.Apply(rs, xdsCtx, proxy); err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
-		}
-	}
 	for _, hook := range s.ResourceSetHooks {
 		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
@@ -204,7 +191,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 
 type snapshotCacher interface {
 	Get(*envoy_core.Node) (*envoy_cache.Snapshot, error)
-	Cache(*envoy_core.Node, *envoy_cache.Snapshot) error
+	Cache(context.Context, *envoy_core.Node, *envoy_cache.Snapshot) error
 	Clear(*envoy_core.Node)
 }
 
@@ -225,8 +212,8 @@ func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (*envoy_cache.Snapshot
 	return nil, err
 }
 
-func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
-	return s.store.SetSnapshot(context.TODO(), s.hasher.ID(node), snapshot)
+func (s *simpleSnapshotCacher) Cache(ctx context.Context, node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
+	return s.store.SetSnapshot(ctx, s.hasher.ID(node), snapshot)
 }
 
 func (s *simpleSnapshotCacher) Clear(node *envoy_core.Node) {

@@ -90,7 +90,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			}
 
 			// when
-			resources, err := generator.Generate(context.Background(), ctx, proxy)
+			resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
