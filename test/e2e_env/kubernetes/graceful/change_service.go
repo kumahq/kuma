@@ -19,7 +19,6 @@ import (
 )
 
 func ChangeService() {
-	const name = "changesvc"
 	const namespace = "changesvc"
 	const mesh = "changesvc"
 
