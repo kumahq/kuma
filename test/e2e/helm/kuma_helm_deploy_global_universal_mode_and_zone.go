@@ -111,18 +111,18 @@ stringData:
 
 	It("should deploy Zone and Global on 2 clusters", func() {
 		// mesh is synced to zone
-		Eventually(func() string {
+		Eventually(func(g Gomega) {
 			output, err := zoneCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
-			Expect(err).ToNot(HaveOccurred())
-			return output
-		}, "5s", "500ms").Should(ContainSubstring("default"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(output).To(ContainSubstring("default"))
+		}, "5s", "500ms").Should(Succeed())
 
 		// and dataplanes are synced to global
-		Eventually(func() string {
+		Eventually(func(g Gomega) {
 			output, err := globalCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
-			Expect(err).ToNot(HaveOccurred())
-			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(output).To(ContainSubstring("kuma-2-zone.demo-client"))
+		}, "5s", "500ms").Should(Succeed())
 	})
 
 	It("communication in between apps in zone works", func() {
