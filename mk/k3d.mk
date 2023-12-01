@@ -1,7 +1,7 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
 
-KUMA_MODE ?= standalone
+KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 # Comment about PORT_PREFIX generation
 #

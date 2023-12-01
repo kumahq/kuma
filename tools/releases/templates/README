@@ -23,18 +23,18 @@ To get started with Kuma you can take a look at the official documentation:
 
 DEPLOYMENTS:
 
-Kuma supports both standalone and multi-zone deployments. To learn more:
+Kuma supports both single-zone and multi-zone deployments. To learn more:
 
-* Standalone: https://kuma.io/docs/latest/deployments/stand-alone
+* Single-Zone: https://kuma.io/docs/latest/deployments/stand-alone
 * Multi-Zone: https://kuma.io/docs/latest/deployments/multi-zone
 
 GETTING STARTED:
 
-To get started and read the quickstart, follow the instructions for your 
+To get started and read the quickstart, follow the instructions for your
 distribution at: https://kuma.io/install
 
-While we support different installation methods for both Kubernetes, VMs and 
-other containerized environments, you can also follow these simple commands to 
+While we support different installation methods for both Kubernetes, VMs and
+other containerized environments, you can also follow these simple commands to
 get up and running quickly:
 
 KUBERNETES (Standalone):
@@ -50,7 +50,7 @@ containerized environments), just run:
 
 $ kuma-cp run
 
-In Universal mode Kuma runs with the in-memory backend by default. 
+In Universal mode Kuma runs with the in-memory backend by default.
 To use Postgres instead please read the docs:
 
 * https://kuma.io/docs/latest/documentation/backends/
@@ -59,7 +59,7 @@ NEXT STEPS:
 
 You can now explore the Kuma GUI on `http://localhost:5681/gui`!
 
-Finally, you can start using Kuma by apply traffic policies to any service 
+Finally, you can start using Kuma by apply traffic policies to any service
 running in your system:
 
 * https://kuma.io/policies/

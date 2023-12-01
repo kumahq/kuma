@@ -8,6 +8,7 @@ import (
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -15,6 +16,7 @@ var _ = Describe("Resource", func() {
 	type testCase struct {
 		kdsFlag       model.KDSFlagType
 		mode          core.CpMode
+		federatedZone bool
 		isApiReadOnly bool
 		expected      bool
 	}
@@ -24,6 +26,9 @@ var _ = Describe("Resource", func() {
 			Mode: given.mode,
 			ApiServer: &config_api_server.ApiServerConfig{
 				ReadOnly: given.isApiReadOnly,
+			},
+			Multizone: &multizone.MultizoneConfig{
+				Zone: &multizone.ZoneConfig{},
 			},
 		}
 
@@ -87,6 +92,13 @@ var _ = Describe("Resource", func() {
 			ApiServer: &config_api_server.ApiServerConfig{
 				ReadOnly: given.isApiReadOnly,
 			},
+			Multizone: &multizone.MultizoneConfig{
+				Zone: &multizone.ZoneConfig{},
+			},
+		}
+		if given.federatedZone {
+			cfg.Multizone.Zone.Name = "x"
+			cfg.Multizone.Zone.GlobalAddress = "grpcs://global:5685"
 		}
 
 		// then
@@ -98,11 +110,19 @@ var _ = Describe("Resource", func() {
 			isApiReadOnly: true,
 			expected:      true,
 		}),
-		Entry("should be read only when kds from global to zone and api is not read only", testCase{
+		Entry("should be read only when kds from global to zone and api is not read only and zone is federated", testCase{
 			kdsFlag:       model.FromGlobalToZone,
 			mode:          core.Zone,
 			isApiReadOnly: false,
+			federatedZone: true,
 			expected:      true,
+		}),
+		Entry("shouldn't be read only when kds from global to zone and api is not read only and zone is not federated", testCase{
+			kdsFlag:       model.FromGlobalToZone,
+			mode:          core.Zone,
+			isApiReadOnly: false,
+			federatedZone: false,
+			expected:      false,
 		}),
 		Entry("should be read only when kds from zone to global and api is read only", testCase{
 			kdsFlag:       model.FromZoneToGlobal,

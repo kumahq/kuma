@@ -452,10 +452,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
-	switch cfg.Mode {
-	case config_core.Zone:
+	if cfg.IsFederatedZoneCP() {
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
-	default:
+	} else {
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}
 

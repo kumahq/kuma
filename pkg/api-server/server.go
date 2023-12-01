@@ -141,7 +141,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
-	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
+	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	addZoneEndpoints(ws, resManager)
@@ -158,8 +158,7 @@ func NewApiServer(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
-	enableGUI := cfg.ApiServer.GUI.Enabled && cfg.Mode != config_core.Zone
-	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI, guiUrl); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, cfg.ApiServer.GUI.Enabled, guiUrl); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	addWhoamiEndpoints(ws)
@@ -196,7 +195,7 @@ func NewApiServer(
 		basePath = u.Path
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
-	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{
+	guiHandler, err := NewGuiHandler(guiPath, cfg.ApiServer.GUI.Enabled, GuiConfig{
 		BaseGuiPath: basePath,
 		ApiUrl:      apiUrl,
 		Version:     version.Build.Version,
@@ -257,6 +256,7 @@ func addResourcesEndpoints(
 		endpoints := resourceEndpoints{
 			k8sMapper:          k8sMapper,
 			mode:               cfg.Mode,
+			federatedZone:      cfg.IsFederatedZoneCP(),
 			resManager:         resManager,
 			descriptor:         definition,
 			resourceAccess:     resourceAccess,
@@ -308,7 +308,7 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
 		return true
 	}
-	if cfg.Mode == config_core.Zone && !kdsFlag.Has(model.ProvidedByZone) {
+	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ProvidedByZone) {
 		return true
 	}
 	return false

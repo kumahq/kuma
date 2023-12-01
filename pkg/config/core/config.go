@@ -14,6 +14,7 @@ const (
 type CpMode = string
 
 const (
+	// Deprecated: use zone
 	Standalone CpMode = "standalone"
 	Zone       CpMode = "zone"
 	Global     CpMode = "global"

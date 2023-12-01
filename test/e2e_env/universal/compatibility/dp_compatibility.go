@@ -16,7 +16,7 @@ func UniversalCompatibility() {
 		cluster = NewUniversalCluster(NewTestingT(), "kuma-compat", Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Zone)).
 			Install(TestServerUniversal("test-server", "default",
 				WithArgs([]string{"echo", "--instance", "universal1"}),
 				WithDPVersion("1.5.0"))).

@@ -160,7 +160,7 @@ type testApiServerConfigurer struct {
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
 	t := &testApiServerConfigurer{
 		metrics: func() core_metrics.Metrics {
-			m, _ := core_metrics.NewMetrics("Standalone")
+			m, _ := core_metrics.NewMetrics("Zone")
 			return m
 		},
 		config: config_api_server.DefaultApiServerConfig(),
@@ -179,12 +179,6 @@ func (t *testApiServerConfigurer) WithZone(z string) *testApiServerConfigurer {
 func (t *testApiServerConfigurer) WithGlobal() *testApiServerConfigurer {
 	t.zone = ""
 	t.global = true
-	return t
-}
-
-func (t *testApiServerConfigurer) WithStandalone() *testApiServerConfigurer {
-	t.zone = ""
-	t.global = false
 	return t
 }
 
@@ -248,6 +242,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	if t.zone != "" {
 		cfg.Mode = config_core.Zone
 		cfg.Multizone.Zone.Name = t.zone
+		cfg.Multizone.Zone.GlobalAddress = "grpcs://global:5685"
 	} else if t.global {
 		cfg.Mode = config_core.Global
 	}

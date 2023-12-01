@@ -107,7 +107,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		s = memory.NewStore()
 		countingManager = &countingResourcesManager{store: s}
 		var err error
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		lookupIPFunc := func(s string) ([]net.IP, error) {

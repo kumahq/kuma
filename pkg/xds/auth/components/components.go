@@ -40,7 +40,7 @@ func NewUniversalAuthenticator(deps Deps) (auth.Authenticator, error) {
 		return nil, err
 	}
 	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(deps.ReadOnlyResourceManager, config.Store.Type)
-	zoneTokenValidator, err := builtin.NewZoneTokenValidator(deps.ReadOnlyResourceManager, config.Mode, config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
+	zoneTokenValidator, err := builtin.NewZoneTokenValidator(deps.ReadOnlyResourceManager, config.IsFederatedZoneCP(), config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
 	if err != nil {
 		return nil, err
 	}

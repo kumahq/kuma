@@ -36,8 +36,8 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of standalone,zone,global
-  mode: "standalone"
+  # -- Kuma CP modes: one of zone,global
+  mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
   zone:
