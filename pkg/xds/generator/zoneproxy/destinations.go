@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -22,7 +23,9 @@ func BuildMeshDestinations(
 	destForMesh := map[string][]envoy_tags.Tags{}
 	addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
 	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
+	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
+	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
@@ -109,7 +112,9 @@ func addMeshHTTPRouteDestinations(
 	policies []*meshhttproute_api.MeshHTTPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(policies, destinations)
+	if len(policies) > 0 {
+		addTrafficFlowByDefaultDestination(destinations)
+	}
 
 	// Note that we're not merging these resources, but that's OK because the
 	// set of destinations after merging is a subset of the set we get here by
@@ -118,6 +123,26 @@ func addMeshHTTPRouteDestinations(
 		for _, to := range policy.Spec.To {
 			if toTags, ok := tagsFromTargetRef(to.TargetRef); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
+			}
+		}
+	}
+}
+
+func addMeshTCPRouteDestinations(
+	policies []*meshtcproute_api.MeshTCPRouteResource,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	if len(policies) > 0 {
+		addTrafficFlowByDefaultDestination(destinations)
+	}
+
+	// Note that we're not merging these resources, but that's OK because the
+	// set of destinations after merging is a subset of the set we get here by
+	// iterating through them.
+	for _, policy := range policies {
+		for _, to := range policy.Spec.To {
+			if toTags, ok := tagsFromTargetRef(to.TargetRef); ok {
+				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
 	}
@@ -142,6 +167,25 @@ func addMeshHTTPRouteToDestinations(
 	}
 }
 
+func addMeshTCPRouteToDestinations(
+	rules []meshtcproute_api.Rule,
+	toTags envoy_tags.Tags,
+	destinations map[string][]envoy_tags.Tags,
+) {
+	for _, rule := range rules {
+		if rule.Default.BackendRefs == nil {
+			addDestination(toTags, destinations)
+			continue
+		}
+
+		for _, backendRef := range rule.Default.BackendRefs {
+			if tags, ok := tagsFromTargetRef(backendRef.TargetRef); ok {
+				addDestination(tags, destinations)
+			}
+		}
+	}
+}
+
 func addDestination(tags map[string]string, destinations map[string][]envoy_tags.Tags) {
 	service := tags[mesh_proto.ServiceTag]
 	destinations[service] = append(destinations[service], tags)
@@ -158,15 +202,9 @@ func addDestination(tags map[string]string, destinations map[string][]envoy_tags
 // at least one MeshHTTPRoute policy present, traffic between services will flow
 // by default, when there is none, it will flow, when appropriate TrafficRoute
 // policy will exist.
-func addTrafficFlowByDefaultDestinationIfMeshHTTPRoutesExist(
-	policies []*meshhttproute_api.MeshHTTPRouteResource,
+func addTrafficFlowByDefaultDestination(
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	// If there are no MeshHTTPRoutes, we are not modifying destinations
-	if len(policies) == 0 {
-		return
-	}
-
 	// We need to add a destination to route any service to any instance of
 	// that service
 	matchAllTags := envoy_tags.Tags{mesh_proto.ServiceTag: mesh_proto.MatchAllTag}
