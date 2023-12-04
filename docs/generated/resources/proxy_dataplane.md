@@ -146,11 +146,11 @@
         
             State describes the current state of the listener.
         
-            - `READY`
+            - `Ready`
         
-            - `NOT_READY`
+            - `NotReady`
         
-            - `IGNORED`    
+            - `Ignored`    
     
     - `outbound` (optional, repeated)
     

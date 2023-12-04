@@ -155,11 +155,11 @@
                 },
                 "state": {
                     "enum": [
-                        "READY",
+                        "Ready",
                         0,
-                        "NOT_READY",
+                        "NotReady",
                         1,
-                        "IGNORED",
+                        "Ignored",
                         2
                     ],
                     "oneOf": [
