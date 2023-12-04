@@ -152,7 +152,7 @@ var _ = Describe("Dataplane_Networking", func() {
 						ServicePort: 90,
 					},
 					{
-						State:       Dataplane_Networking_Inbound_READY,
+						State:       Dataplane_Networking_Inbound_Ready,
 						Port:        9091,
 						ServicePort: 91,
 					},
@@ -162,12 +162,12 @@ var _ = Describe("Dataplane_Networking", func() {
 						ServicePort: 70,
 					},
 					{
-						State:       Dataplane_Networking_Inbound_NOT_READY,
+						State:       Dataplane_Networking_Inbound_NotReady,
 						Port:        9092,
 						ServicePort: 92,
 					},
 					{
-						State:       Dataplane_Networking_Inbound_IGNORED,
+						State:       Dataplane_Networking_Inbound_Ignored,
 						Port:        9093,
 						ServicePort: 93,
 					},
@@ -183,7 +183,7 @@ var _ = Describe("Dataplane_Networking", func() {
 					ServicePort: 90,
 				},
 				&Dataplane_Networking_Inbound{
-					State:       Dataplane_Networking_Inbound_READY,
+					State:       Dataplane_Networking_Inbound_Ready,
 					Port:        9091,
 					ServicePort: 91,
 				},

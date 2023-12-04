@@ -8,4 +8,4 @@ networking:
       tags:
         kuma.io/service: web
         version: v1
-      state: IGNORED
+      state: Ignored

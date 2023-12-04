@@ -7,7 +7,7 @@ spec:
     inbound:
     - health: {}
       port: 8080
-      state: NOT_READY
+      state: NotReady
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -19,7 +19,7 @@ spec:
         version: "0.1"
     - health: {}
       port: 8443
-      state: NOT_READY
+      state: NotReady
       tags:
         app: example
         k8s.kuma.io/namespace: demo
@@ -31,7 +31,7 @@ spec:
         version: "0.1"
     - health: {}
       port: 7070
-      state: NOT_READY
+      state: NotReady
       tags:
         app: example
         k8s.kuma.io/namespace: demo

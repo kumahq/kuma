@@ -37,7 +37,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		}
 
 		tags := InboundTagsForService(zone, pod, service, &svcPort)
-		state := mesh_proto.Dataplane_Networking_Inbound_READY
+		state := mesh_proto.Dataplane_Networking_Inbound_Ready
 		health := mesh_proto.Dataplane_Networking_Inbound_Health{
 			Ready: true,
 		}
@@ -47,24 +47,24 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		// and map it to the Dataplane health
 		if container != nil {
 			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 				health.Ready = false
 			}
 		}
 
 		// also we're checking whether kuma-sidecar container is ready
 		if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
-			state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			health.Ready = false
 		}
 
 		if pod.DeletionTimestamp != nil { // pod is in Termination state
-			state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			health.Ready = false
 		}
 
 		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
-			state = mesh_proto.Dataplane_Networking_Inbound_IGNORED
+			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
 			health.Ready = false
 		}
 
@@ -91,7 +91,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	// including GUI and CLI changes
 
 	tags := InboundTagsForPod(zone, pod, name)
-	state := mesh_proto.Dataplane_Networking_Inbound_READY
+	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
 	}
@@ -99,7 +99,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	for _, container := range pod.Spec.Containers {
 		if container.Name != util_k8s.KumaSidecarContainerName {
 			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 				health.Ready = false
 			}
 		}
@@ -107,7 +107,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 
 	// also we're checking whether kuma-sidecar container is ready
 	if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
-		state = mesh_proto.Dataplane_Networking_Inbound_NOT_READY
+		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 		health.Ready = false
 	}
 

@@ -480,7 +480,7 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - state: NOT_READY
+            - state: NotReady
               health: {}
               port: 8080
               tags:
@@ -490,7 +490,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
-            - state: NOT_READY
+            - state: NotReady
               health: {}
               port: 6060
               tags:
@@ -562,7 +562,7 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - state: NOT_READY 
+            - state: NotReady 
               health: {}
               port: 8080
               tags:
@@ -572,7 +572,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
-            - state: NOT_READY
+            - state: NotReady
               health: {}
               port: 6060
               tags:
