@@ -55,7 +55,7 @@ func TestConformance(t *testing.T) {
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().
-			Install(Kuma(config_core.Standalone,
+			Install(Kuma(config_core.Zone,
 				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 			)).
 			Setup(cluster)

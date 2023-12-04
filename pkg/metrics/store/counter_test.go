@@ -43,7 +43,7 @@ var _ = Describe("Counter", func() {
 		stop = make(chan struct{})
 		tickCh = make(chan time.Time)
 
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		memoryStore := store_memory.NewStore()

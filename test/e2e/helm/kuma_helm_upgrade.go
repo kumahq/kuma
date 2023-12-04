@@ -39,6 +39,7 @@ func UpgradingWithHelmChart() {
 				strings.ToLower(random.UniqueId()),
 			)
 
+			// nolint:staticcheck
 			err := NewClusterSetup().
 				Install(Kuma(core.Standalone,
 					WithInstallationMode(HelmInstallationMode),
@@ -52,7 +53,7 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			err = k8sCluster.UpgradeKuma(core.Standalone,
+			err = k8sCluster.UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),

@@ -12,71 +12,67 @@ import (
 func LeaderElectionPostgres() {
 	const clusterName1 = "kuma-leader1"
 	const clusterName2 = "kuma-leader2"
-	var standalone1, standalone2 Cluster
+	var zone1, zone2 Cluster
 
 	BeforeEach(func() {
-		standalone1 = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
-		standalone2 = NewUniversalCluster(NewTestingT(), clusterName2, Silent)
+		zone1 = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
+		zone2 = NewUniversalCluster(NewTestingT(), clusterName2, Silent)
 
 		err := NewClusterSetup().
 			Install(postgres.Install(clusterName1)).
-			Setup(standalone1)
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		postgresInstance := postgres.From(standalone1, clusterName1)
+		postgresInstance := postgres.From(zone1, clusterName1)
 
-		// Standalone 1
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithPostgres(postgresInstance.GetEnvVars()))).
-			Setup(standalone1)
-
+			Install(Kuma(core.Zone, WithPostgres(postgresInstance.GetEnvVars()))).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Standalone 2
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithPostgres(postgresInstance.GetEnvVars()))).
-			Setup(standalone2)
-
+			Install(Kuma(core.Zone, WithPostgres(postgresInstance.GetEnvVars()))).
+			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		err := standalone1.DeleteKuma()
+		err := zone1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
-		err = standalone1.DismissCluster()
+		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = standalone2.DeleteKuma()
+		err = zone2.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
-		err = standalone2.DismissCluster()
+		err = zone2.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should elect only one leader and drop the leader on DB disconnect", func() {
 		// given two instances of the control plane connected to one postgres, only one is a leader
 		Eventually(func() (string, error) {
-			return standalone1.GetKuma().GetMetrics()
-		}, "30s", "1s").Should(ContainSubstring(`leader{zone="Standalone"} 1`))
+			return zone1.GetKuma().GetMetrics()
+		}, "30s", "1s").Should(ContainSubstring(`leader{zone="kuma-leader1"} 1`))
 
-		metrics, err := standalone2.GetKuma().GetMetrics()
+		metrics, err := zone2.GetKuma().GetMetrics()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(metrics).To(ContainSubstring(`leader{zone="Standalone"} 0`))
+		Expect(metrics).To(ContainSubstring(`leader{zone="kuma-leader2"} 0`))
 
 		// when CP 1 is killed
-		_, _, err = standalone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		_, _, err = zone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then CP 2 is leader
 		Eventually(func() (string, error) {
-			return standalone2.GetKuma().GetMetrics()
-		}, "30s", "1s").Should(ContainSubstring(`leader{zone="Standalone"} 1`))
+			return zone2.GetKuma().GetMetrics()
+		}, "30s", "1s").Should(ContainSubstring(`leader{zone="kuma-leader2"} 1`))
 
 		// when postgres is down
-		err = standalone1.DeleteDeployment(postgres.AppPostgres + clusterName1)
+		err = zone1.DeleteDeployment(postgres.AppPostgres + clusterName1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then CP 2 is not a leader anymore
 		Eventually(func() (string, error) {
-			return standalone2.GetKuma().GetMetrics()
-		}, "30s", "1s").Should(ContainSubstring(`leader{zone="Standalone"} 0`))
+			return zone2.GetKuma().GetMetrics()
+		}, "30s", "1s").Should(ContainSubstring(`leader{zone="kuma-leader2"} 0`))
 	})
 }

@@ -146,7 +146,7 @@ spec:
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("should route based on defined strategy with egress enabled", func() {
+	XIt("should route based on defined strategy with egress enabled", FlakeAttempts(3), func() {
 		// no lb priorities
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(300))

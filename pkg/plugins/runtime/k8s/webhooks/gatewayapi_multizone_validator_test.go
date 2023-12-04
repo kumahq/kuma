@@ -13,16 +13,15 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Gateway API mutlizone validation webhook", func() {
 	type testCase struct {
-		cpMode       config_core.CpMode
-		gatewayClass gatewayapi.GatewayClass
-		response     kube_admission.Response
+		gapiSupported bool
+		gatewayClass  gatewayapi.GatewayClass
+		response      kube_admission.Response
 	}
 
 	KumaGatewayClass := gatewayapi.GatewayClass{
@@ -35,8 +34,8 @@ var _ = Describe("Gateway API mutlizone validation webhook", func() {
 		func(given testCase) {
 			// given
 			validator := webhooks.GatewayAPIMultizoneValidator{
-				CpMode:  given.cpMode,
-				Decoder: decoder,
+				GAPISupported: given.gapiSupported,
+				Decoder:       decoder,
 			}
 
 			bytes, err := json.Marshal(&given.gatewayClass)
@@ -63,23 +62,18 @@ var _ = Describe("Gateway API mutlizone validation webhook", func() {
 			// then
 			Expect(resp).To(Equal(given.response))
 		},
-		Entry("pass on standalone with Kuma gateway", testCase{
-			cpMode:       config_core.Standalone,
-			gatewayClass: KumaGatewayClass,
-			response:     kube_admission.Allowed(""),
+		Entry("pass with Kuma gateway when gapi is supported", testCase{
+			gapiSupported: true,
+			gatewayClass:  KumaGatewayClass,
+			response:      kube_admission.Allowed(""),
 		}),
-		Entry("do not pass on Zone with Kuma gateway", testCase{
-			cpMode:       config_core.Zone,
-			gatewayClass: KumaGatewayClass,
-			response:     kube_admission.Errored(http.StatusBadRequest, webhooks.GatewayAPINotSupportedErr),
+		Entry("do not pass when gapi is not supported Kuma gateway", testCase{
+			gapiSupported: false,
+			gatewayClass:  KumaGatewayClass,
+			response:      kube_admission.Errored(http.StatusBadRequest, webhooks.GatewayAPINotSupportedErr),
 		}),
-		Entry("do not pass on Global with Kuma gateway", testCase{
-			cpMode:       config_core.Global,
-			gatewayClass: KumaGatewayClass,
-			response:     kube_admission.Errored(http.StatusBadRequest, webhooks.GatewayAPINotSupportedErr),
-		}),
-		Entry("pass unknown gateway on Global", testCase{
-			cpMode: config_core.Global,
+		Entry("pass unknown gateway when gapi is not supported", testCase{
+			gapiSupported: false,
 			gatewayClass: gatewayapi.GatewayClass{
 				Spec: gatewayapi.GatewayClassSpec{
 					ControllerName: "some-other-controller",
