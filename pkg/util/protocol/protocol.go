@@ -30,10 +30,6 @@ func GetCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 		return one
 	case one == "" || another == "":
 		return core_mesh.ProtocolUnknown
-	case one == core_mesh.ProtocolIgnore:
-		return another
-	case another == core_mesh.ProtocolIgnore:
-		return one
 	case one == core_mesh.ProtocolUnknown || another == core_mesh.ProtocolUnknown:
 		return core_mesh.ProtocolUnknown
 	default:

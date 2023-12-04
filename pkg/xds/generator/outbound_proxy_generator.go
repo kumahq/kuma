@@ -316,7 +316,7 @@ func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Clus
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
 		serviceProtocol := meshCtx.GetServiceProtocol(serviceName)
 		if idx == 0 {
-			protocol = util_protocol.GetCommonProtocol(core_mesh.ProtocolIgnore, serviceProtocol)
+			protocol = serviceProtocol
 			continue
 		}
 		protocol = util_protocol.GetCommonProtocol(serviceProtocol, protocol)
