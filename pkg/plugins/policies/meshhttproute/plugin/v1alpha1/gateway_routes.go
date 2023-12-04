@@ -4,10 +4,14 @@ import (
 	"slices"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -70,6 +74,96 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		entry.Action.Forward = append(entry.Action.Forward, target)
 	}
 
+	for _, f := range pointer.Deref(rule.Default.Filters) {
+		if r := f.RequestRedirect; r != nil {
+			redirection := &route.Redirection{
+				Status:     uint32(pointer.DerefOr(r.StatusCode, 302)),
+				Scheme:     pointer.Deref(r.Scheme),
+				Host:       string(pointer.Deref(r.Hostname)),
+				Port:       uint32(pointer.Deref(r.Port)),
+				StripQuery: true,
+			}
+			if p := r.Path; p != nil {
+				rewrite := &route.Rewrite{}
+				switch p.Type {
+				case api.ReplaceFullPathType:
+					rewrite.ReplaceFullPath = p.ReplaceFullPath
+				case api.ReplacePrefixMatchType:
+					rewrite.ReplacePrefixMatch = p.ReplacePrefixMatch
+				}
+				redirection.PathRewrite = rewrite
+			}
+			entry.Action.Redirect = redirection
+		} else if m := f.RequestMirror; m != nil {
+			decimal, err := common_api.NewDecimalFromIntOrString(
+				pointer.DerefOr(f.RequestMirror.Percentage, intstr.FromInt(100)),
+			)
+			if err != nil {
+				continue
+			}
+			tags, ok := tags.FromTargetRef(m.BackendRef)
+			if !ok {
+				continue
+			}
+			entry.Mirror = &route.Mirror{
+				Percentage: decimal.InexactFloat64(),
+				Forward: route.Destination{
+					Destination: tags,
+				},
+			}
+		} else if h := f.RequestHeaderModifier; h != nil {
+			if entry.RequestHeaders == nil {
+				entry.RequestHeaders = &route.Headers{}
+			}
+
+			for _, s := range h.Set {
+				entry.RequestHeaders.Replace = append(
+					entry.RequestHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
+			}
+
+			for _, s := range h.Add {
+				entry.RequestHeaders.Append = append(
+					entry.RequestHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
+			}
+
+			entry.RequestHeaders.Delete = append(
+				entry.RequestHeaders.Delete, h.Remove...)
+		} else if h := f.ResponseHeaderModifier; h != nil {
+			if entry.ResponseHeaders == nil {
+				entry.ResponseHeaders = &route.Headers{}
+			}
+
+			for _, s := range h.Set {
+				entry.ResponseHeaders.Replace = append(
+					entry.RequestHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
+			}
+
+			for _, s := range h.Add {
+				entry.ResponseHeaders.Append = append(
+					entry.RequestHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
+			}
+
+			entry.ResponseHeaders.Delete = append(
+				entry.ResponseHeaders.Delete, h.Remove...)
+		} else if r := f.URLRewrite; r != nil {
+			rewrite := route.Rewrite{}
+
+			if r.Path != nil {
+				switch r.Path.Type {
+				case api.ReplaceFullPathType:
+					rewrite.ReplaceFullPath = r.Path.ReplaceFullPath
+				case api.ReplacePrefixMatchType:
+					rewrite.ReplacePrefixMatch = r.Path.ReplacePrefixMatch
+				}
+			}
+
+			if r.Hostname != nil {
+				rewrite.ReplaceHostname = pointer.To(string(*r.Hostname))
+			}
+
+			entry.Rewrite = &rewrite
+		}
+	}
 	return entry
 }
 
