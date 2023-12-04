@@ -6,6 +6,18 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.6.x`
+
+### Unifying Default Connection Timeout Values
+
+To simplify configuration and provide a more consistent user experience, we've unified the default connection timeout values. When no `MeshTimeout` or `Timeout` policy is specified, the connection timeout will now be the same as the default `connectTimeout` values for `MeshTimeout` and `Timeout` policies. This value is now `5s`, which is a decrease from the previous default of `10s`.
+
+The connection timeout specifies the amount of time Envoy will wait for an upstream TCP connection to be established.
+
+The only users who need to take action are those who are explicitly relying on the previous default connection timeout value of `10s`. These users will need to create a new `MeshTimeout` policy with the appropriate `connectTimeout` value to maintain their desired behavior.
+
+We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
+
 ## Upgrade to `2.5.x`
 
 ### Transparent-proxy and CNI v1 removal
