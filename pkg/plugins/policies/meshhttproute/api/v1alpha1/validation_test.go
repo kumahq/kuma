@@ -40,6 +40,37 @@ to:
     kind: BlahBlah
     name: frontend
 `),
+		ErrorCase("spec.to.targetRef Mesh not allowed",
+			validators.Violation{
+				Field:   `spec.to[0].targetRef.kind`,
+				Message: `value is not supported`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: Mesh
+`),
+		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway",
+			validators.Violation{
+				Field:   `spec.to[0].targetRef.kind`,
+				Message: `value is not supported`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+`),
 		ErrorCases("incorrect path match value",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].matches[0].path.value`,
@@ -274,6 +305,33 @@ to:
               version: v1
 
 `),
+		ErrorCase("top level MeshGateway requires backendRefs",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].default.backendRefs`,
+				Message: `must not be empty`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
+`),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
@@ -343,6 +401,26 @@ to:
               path:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
+`),
+		Entry("MeshGateway to Mesh allowed", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  rules:
+    - matches:
+      - path:
+          value: /
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshService
+            name: backend
 `),
 	)
 })

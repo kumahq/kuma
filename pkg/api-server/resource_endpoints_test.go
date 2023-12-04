@@ -144,7 +144,7 @@ var _ = Describe("Resource Endpoints", func() {
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(func() core_metrics.Metrics {
-			m, _ := core_metrics.NewMetrics("Standalone")
+			m, _ := core_metrics.NewMetrics("Zone")
 			metrics = m
 			return m
 		}))

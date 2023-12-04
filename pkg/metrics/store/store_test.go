@@ -20,7 +20,7 @@ var _ = Describe("Metered Store", func() {
 	var store core_store.ResourceStore
 
 	BeforeEach(func() {
-		m, err := core_metrics.NewMetrics("Standalone")
+		m, err := core_metrics.NewMetrics("Zone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
 		memoryStore := store_memory.NewStore()

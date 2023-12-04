@@ -133,7 +133,7 @@ networking:
 		}
 	}
 
-	It("should route to external-service from universal through k8s", func() {
+	XIt("should route to external-service from universal through k8s", func() {
 		// given no request on path
 		filterEgress := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",

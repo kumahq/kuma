@@ -2,7 +2,7 @@ resources:
 - name: direct_access
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: direct_access
     type: ORIGINAL_DST

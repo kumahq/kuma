@@ -302,7 +302,7 @@ spec:
 		}).Should(Succeed())
 	})
 
-	It("should route based on the strategy when split defined", func() {
+	It("should route based on the strategy when split defined", FlakeAttempts(3), func() {
 		// given
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute

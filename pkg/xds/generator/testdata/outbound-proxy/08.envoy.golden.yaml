@@ -2,7 +2,7 @@ resources:
 - name: es2-b5516780eaf1ed13
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: es2-b5516780eaf1ed13
       endpoints:
@@ -31,7 +31,7 @@ resources:
 - name: es2-d79214c8b3a5805b
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: es2-d79214c8b3a5805b
       endpoints:

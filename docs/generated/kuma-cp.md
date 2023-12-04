@@ -3,8 +3,8 @@ Here are all options to configure the control-plane:
 ```yaml
 # Environment type. Available values are: "kubernetes" or "universal"
 environment: universal # ENV: KUMA_ENVIRONMENT
-# Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
-mode: standalone # ENV: KUMA_MODE
+# Mode in which Kuma CP is running. Available values are: "global", "zone", "standalone" (deprecated, use "zone")
+mode: zone # ENV: KUMA_MODE
 
 # Resource Store configuration
 store:
@@ -351,6 +351,8 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
+        # Enable coredns query logging if true
+        logging: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
       # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
       # installed using ebpf instead of iptables
       ebpf:

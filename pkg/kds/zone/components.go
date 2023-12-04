@@ -5,7 +5,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -35,7 +34,7 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	if rt.Config().Mode != config_core.Zone {
+	if !rt.Config().IsFederatedZoneCP() {
 		// Only run on zone
 		return nil
 	}

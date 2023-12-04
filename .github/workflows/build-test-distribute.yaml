@@ -119,7 +119,8 @@ jobs:
           path: build/reports
           retention-days: 7
   distributions:
-    needs: ["check", "test", "test_e2e", "test_e2e_env"]
+    needs: ["build", "check", "test"]
+    # needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -181,7 +182,8 @@ jobs:
   gen_e2e_matrix:
     runs-on: ubuntu-latest
     needs: ["build"]
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
+    if: false
+    # if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
       test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
       test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}

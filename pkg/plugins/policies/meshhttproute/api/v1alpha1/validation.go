@@ -13,7 +13,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.TargetRef, r.Spec.To))
 	return verr.OrNil()
 }
 
@@ -21,6 +21,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
+			common_api.MeshGateway,
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
@@ -28,34 +29,43 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	})
 }
 
-func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
-	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.MeshService,
-		},
-	})
+func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.ValidationError {
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.MeshService,
+			},
+		})
+	}
 }
 
-func validateTos(tos []To) validators.ValidationError {
+func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, to := range tos {
 		path := validators.Root().Index(i)
-		errs.AddErrorAt(path.Field("targetRef"), validateToRef(to.TargetRef))
-		errs.AddErrorAt(path.Field("rules"), validateRules(to.Rules))
+		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
+		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
 	}
 
 	return errs
 }
 
-func validateRules(rules []Rule) validators.ValidationError {
+func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
 		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(rule.Default.BackendRefs))
+		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(topTargetRef, rule.Default.BackendRefs))
 	}
 
 	return errs
@@ -255,10 +265,16 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 	return errs
 }
 
-func validateBackendRefs(backendRefs *[]common_api.BackendRef) validators.ValidationError {
+func validateBackendRefs(topTargetRef common_api.TargetRef, backendRefs *[]common_api.BackendRef) validators.ValidationError {
 	var errs validators.ValidationError
 
-	if backendRefs == nil {
+	if backendRefs == nil || len(*backendRefs) == 0 {
+		if topTargetRef.Kind == common_api.MeshGateway {
+			errs.AddViolationAt(
+				validators.Root(),
+				validators.MustNotBeEmpty,
+			)
+		}
 		return errs
 	}
 

@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -54,7 +53,7 @@ var _ = Describe("Authentication flow", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager, store_config.MemoryStore)
-		zoneTokenValidator, err := builtin.NewZoneTokenValidator(resManager, config_core.Global, store_config.MemoryStore, dp_server.ZoneTokenValidatorConfig{
+		zoneTokenValidator, err := builtin.NewZoneTokenValidator(resManager, false, store_config.MemoryStore, dp_server.ZoneTokenValidatorConfig{
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())

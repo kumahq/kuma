@@ -299,8 +299,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		if zoneName == "" {
 			zoneName = c.GetKumactlOptions().CPName
 		}
-		argsMap["--zone"] = zoneName
-		argsMap["--kds-global-address"] = c.opts.globalAddress
+		if c.opts.globalAddress != "" {
+			argsMap["--zone"] = zoneName
+			argsMap["--kds-global-address"] = c.opts.globalAddress
+		}
 	}
 	if !Config.UseLoadBalancer {
 		argsMap["--use-node-port"] = ""
@@ -401,9 +403,11 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		if zoneName == "" {
 			zoneName = c.GetKumactlOptions().CPName
 		}
-		values["controlPlane.zone"] = zoneName
-		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
-		values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
+		if c.opts.globalAddress != "" {
+			values["controlPlane.zone"] = zoneName
+			values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
+			values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
+		}
 	}
 
 	for _, value := range c.opts.noHelmOpts {
@@ -489,9 +493,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	switch mode {
 	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
@@ -626,13 +627,6 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	c.opts.apply(opt...)
 	if c.opts.cpReplicas != 0 {
 		c.controlplane.replicas = c.opts.cpReplicas
-	}
-
-	switch mode {
-	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
 	}
 
 	if err := c.upgradeKumaViaHelm(mode); err != nil {

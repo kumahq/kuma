@@ -29,7 +29,7 @@ func SetupAndGetState() []byte {
 	}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
 
 	Eventually(func() error {
-		return Cluster.Install(framework.Kuma(core.Standalone, kumaOptions...))
+		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
 	portFwd := Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd()
 
@@ -54,7 +54,7 @@ func RestoreState(bytes []byte) {
 	Cluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Verbose)
 	cp := framework.NewK8sControlPlane(
 		Cluster.GetTesting(),
-		core.Standalone,
+		core.Zone,
 		Cluster.Name(),
 		Cluster.GetKubectlOptions().ConfigPath,
 		Cluster,
