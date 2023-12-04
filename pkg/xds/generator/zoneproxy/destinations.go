@@ -5,7 +5,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
@@ -13,6 +12,7 @@ import (
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -121,7 +121,7 @@ func addMeshHTTPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range policy.Spec.To {
-			if toTags, ok := tagsFromTargetRef(to.TargetRef); ok {
+			if toTags, ok := tags.FromTargetRef(to.TargetRef); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -160,7 +160,7 @@ func addMeshHTTPRouteToDestinations(
 		}
 
 		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := tagsFromTargetRef(backendRef.TargetRef); ok {
+			if tags, ok := tags.FromTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}
 		}
@@ -243,26 +243,4 @@ func addVirtualOutboundDestinations(
 			destinations[service] = append(destinations[service], tags)
 		}
 	}
-}
-
-func tagsFromTargetRef(targetRef common_api.TargetRef) (envoy_tags.Tags, bool) {
-	var service string
-	tags := envoy_tags.Tags{}
-
-	switch targetRef.Kind {
-	case common_api.MeshService:
-		service = targetRef.Name
-	case common_api.MeshServiceSubset:
-		service = targetRef.Name
-		tags = targetRef.Tags
-	case common_api.Mesh:
-		service = mesh_proto.MatchAllTag
-	case common_api.MeshSubset:
-		service = mesh_proto.MatchAllTag
-		tags = targetRef.Tags
-	default:
-		return nil, false
-	}
-
-	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }

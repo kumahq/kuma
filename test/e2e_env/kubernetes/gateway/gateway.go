@@ -128,76 +128,116 @@ spec:
 `, name, path, destination, path, destination)
 	}
 
-	Context("Mesh service", func() {
-		BeforeAll(func() {
-			err := NewClusterSetup().
-				Install(testserver.Install(
-					testserver.WithName("echo-server"),
-					testserver.WithMesh(meshName),
-					testserver.WithNamespace(namespace),
-					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
-				)).
-				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80"))).
-				Setup(kubernetes.Cluster)
-			Expect(err).ToNot(HaveOccurred())
+	httpRoute := func(name, path, destination string) string {
+		return fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: simple-gateway
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "%s"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "%s"
+`, name, Config.KumaNamespace, path, destination)
+	}
+
+	basicRouting := func(name string, routeYAML string) {
+		Context(fmt.Sprintf("Mesh service - %s", name), func() {
+			BeforeAll(func() {
+				err := NewClusterSetup().
+					Install(testserver.Install(
+						testserver.WithName("echo-server"),
+						testserver.WithMesh(meshName),
+						testserver.WithNamespace(namespace),
+						testserver.WithEchoArgs("echo", "--instance", "echo-server"),
+					)).
+					Install(YamlK8s(routeYAML)).
+					Setup(kubernetes.Cluster)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterAll(func() {
+				Expect(NewClusterSetup().
+					Install(DeleteYamlK8s(routeYAML)).
+					Setup(kubernetes.Cluster),
+				).To(Succeed())
+			})
+
+			It("should proxy to service via HTTP without port in host", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectEchoResponse(
+						kubernetes.Cluster, "demo-client",
+						"http://simple-gateway.simple-gateway:8080/",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Instance).To(Equal("echo-server"))
+				}, "30s", "1s").Should(Succeed())
+			})
+			It("should proxy to service via HTTP with port in host", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectEchoResponse(
+						kubernetes.Cluster, "demo-client",
+						"http://simple-gateway.simple-gateway:8080/",
+						client.WithHeader("host", "example.kuma.io:8080"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Instance).To(Equal("echo-server"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			It("should proxy to service via HTTPS", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectEchoResponse(
+						kubernetes.Cluster, "demo-client",
+						"https://simple-gateway.simple-gateway:8081/",
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+						client.Insecure(),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Instance).To(Equal("echo-server"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			It("should automatically set host header from service address", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectEchoResponse(
+						kubernetes.Cluster, "demo-client",
+						"http://simple-gateway.simple-gateway:8082/",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+					g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
+				}, "30s", "1s").Should(Succeed())
+			})
 		})
+	}
 
-		It("should proxy to service via HTTP without port in host", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client",
-					"http://simple-gateway.simple-gateway:8080/",
-					client.WithHeader("host", "example.kuma.io"),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal("echo-server"))
-			}, "30s", "1s").Should(Succeed())
-		})
-		It("should proxy to service via HTTP with port in host", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client",
-					"http://simple-gateway.simple-gateway:8080/",
-					client.WithHeader("host", "example.kuma.io:8080"),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal("echo-server"))
-			}, "30s", "1s").Should(Succeed())
-		})
-
-		It("should proxy to service via HTTPS", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client",
-					"https://simple-gateway.simple-gateway:8081/",
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-					client.Insecure(),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal("echo-server"))
-			}, "30s", "1s").Should(Succeed())
-		})
-
-		It("should automatically set host header from service address", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client",
-					"http://simple-gateway.simple-gateway:8082/",
-					client.WithHeader("host", "example.kuma.io"),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
-				g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
-			}, "30s", "1s").Should(Succeed())
-		})
-	})
+	basicRouting("MeshGatewayRoute", route("internal-service", "/", "echo-server_simple-gateway_svc_80"))
+	basicRouting("MeshHTTPRoute", httpRoute("internal-service", "/", "echo-server_simple-gateway_svc_80"))
 
 	Context("Rate Limit", func() {
 		rt := `apiVersion: kuma.io/v1alpha1
