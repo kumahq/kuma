@@ -1,6 +1,6 @@
 commonLbConfig:
   localityWeightedLbConfig: {}
-connectTimeout: 10s
+connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}

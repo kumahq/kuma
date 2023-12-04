@@ -31,18 +31,19 @@ var _ = Describe("Validation", func() {
 	})
 
 	type testCase struct {
-		objTemplate core_model.ResourceSpec
-		obj         string
-		mode        core.CpMode
-		resp        kube_admission.Response
-		username    string
-		operation   admissionv1.Operation
+		objTemplate   core_model.ResourceSpec
+		obj           string
+		mode          core.CpMode
+		federatedZone bool
+		resp          kube_admission.Response
+		username      string
+		operation     admissionv1.Operation
 	}
 	DescribeTable("Validation",
 		func(given testCase) {
 			// given
 			allowedUsers := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
-			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, allowedUsers)
+			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, given.federatedZone, allowedUsers)
 			handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 			webhook := &kube_admission.Webhook{
 				Handler: handler,
@@ -75,9 +76,10 @@ var _ = Describe("Validation", func() {
 			Expect(resp).To(Equal(given.resp))
 		},
 		Entry("should pass validation", testCase{
-			mode:        core.Standalone,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "cli-user",
+			mode:          core.Zone,
+			federatedZone: false,
+			objTemplate:   &mesh_proto.TrafficRoute{},
+			username:      "cli-user",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -126,9 +128,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for synced policy from Global to Zone", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "system:serviceaccount:kuma-system:kuma-control-plane",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.TrafficRoute{},
+			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -180,9 +183,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for synced policy from Zone to Global", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.Dataplane{},
-			username:    "system:serviceaccount:kuma-system:kuma-control-plane",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.Dataplane{},
+			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -222,9 +226,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for not synced Dataplane in Zone", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.Dataplane{},
-			username:    "cli-user",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.Dataplane{},
+			username:      "cli-user",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -313,9 +318,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying policy manually on Zone CP", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "cli-user",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.TrafficRoute{},
+			username:      "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -421,9 +427,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying Zone on Zone CP", testCase{
-			mode:        core.Zone,
-			objTemplate: &system_proto.Zone{},
-			username:    "cli-user",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &system_proto.Zone{},
+			username:      "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -454,8 +461,8 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Create,
 		}),
-		Entry("should fail validation due to applying Zone on Standalone CP", testCase{
-			mode:        core.Standalone,
+		Entry("should fail validation due to applying Zone on non federated Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &system_proto.Zone{},
 			username:    "cli-user",
 			obj: `
@@ -489,9 +496,10 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation on missing mesh object", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "system:serviceaccount:kuma-system:kuma-control-plane",
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.TrafficRoute{},
+			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -556,8 +564,9 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation on DELETE in Zone CP", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.TrafficRoute{},
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.TrafficRoute{},
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
@@ -582,8 +591,9 @@ var _ = Describe("Validation", func() {
 			operation: admissionv1.Delete,
 		}),
 		Entry("should fail validation on UPDATE in Zone CP", testCase{
-			mode:        core.Zone,
-			objTemplate: &mesh_proto.TrafficRoute{},
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &mesh_proto.TrafficRoute{},
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",

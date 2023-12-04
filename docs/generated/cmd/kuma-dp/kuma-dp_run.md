@@ -27,6 +27,7 @@ kuma-dp run [flags]
       --dns-coredns-empty-port uint32             A port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS. (default 15055)
       --dns-coredns-path string                   A path to CoreDNS binary. (default "coredns")
       --dns-coredns-port uint32                   A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port. (default 15053)
+      --dns-enable-logging                        If true then CoreDNS logging is enabled
       --dns-enabled                               If true then builtin DNS functionality is enabled and CoreDNS server is started (default true)
       --dns-envoy-port uint32                     A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one (default 15054)
       --dns-prometheus-port uint32                A port for exposing Prometheus stats (default 19153)

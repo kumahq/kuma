@@ -556,7 +556,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 
 			// when
-			metrics, err := core_metrics.NewMetrics("Standalone")
+			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			given.ctx.Mesh.EndpointMap = outboundTargets
 			given.ctx.Mesh.ServiceTLSReadiness = map[string]bool{

@@ -6,11 +6,10 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly bool, defs []model.ResourceTypeDescriptor) {
+func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
 	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {
@@ -19,7 +18,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly b
 			}
 			response.Policies = append(response.Policies, types.PolicyEntry{
 				Name:                string(def.Name),
-				ReadOnly:            readOnly || core.Zone == mode || def.ReadOnly,
+				ReadOnly:            readOnly || federatedZone || def.ReadOnly,
 				Path:                def.WsPath,
 				SingularDisplayName: def.SingularDisplayName,
 				PluralDisplayName:   def.PluralDisplayName,

@@ -28,7 +28,7 @@ var _ = Describe("Stats callbacks", func() {
 		var currentTime time.Time
 
 		BeforeEach(func() {
-			m, err := core_metrics.NewMetrics("standalone")
+			m, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			metrics = m
 			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "xds")
@@ -167,7 +167,7 @@ var _ = Describe("Stats callbacks", func() {
 		var currentTime time.Time
 
 		BeforeEach(func() {
-			m, err := core_metrics.NewMetrics("standalone")
+			m, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			metrics = m
 			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "delta_xds")

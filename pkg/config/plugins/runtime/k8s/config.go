@@ -81,6 +81,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			BuiltinDNS: BuiltinDNS{
 				Enabled: true,
 				Port:    15053,
+				Logging: false,
 			},
 			EBPF: EBPF{
 				Enabled:              false,
@@ -339,6 +340,8 @@ type BuiltinDNS struct {
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
 	// Redirect port for DNS
 	Port uint32 `json:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
+	// Turn on query logging for DNS
+	Logging bool `json:"logging,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_logging"`
 }
 
 // EBPF defines configuration for the ebpf, when transparent proxy is marked to be

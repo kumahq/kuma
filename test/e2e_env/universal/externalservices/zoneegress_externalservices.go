@@ -47,7 +47,7 @@ networking:
 		cluster = NewUniversalCluster(NewTestingT(), clusterName, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Zone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 

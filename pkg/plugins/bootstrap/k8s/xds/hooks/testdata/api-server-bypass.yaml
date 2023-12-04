@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: plugins_bootstrap_k8s_hooks_apiServerBypass
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: plugins:bootstrap:k8s:hooks:apiServerBypass
     type: ORIGINAL_DST

@@ -80,7 +80,7 @@ var _ = Describe("Bootstrap Server", func() {
 		port, err := test.GetFreePort()
 		baseURL = "https://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{

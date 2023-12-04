@@ -1,7 +1,6 @@
 package builtin
 
 import (
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
@@ -77,7 +76,7 @@ func NewZoneIngressTokenValidator(resManager manager.ReadOnlyResourceManager, st
 	)
 }
 
-func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, mode config_core.CpMode, storeType store_config.StoreType, cfg dp_server.ZoneTokenValidatorConfig) (zone.Validator, error) {
+func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederatedZone bool, storeType store_config.StoreType, cfg dp_server.ZoneTokenValidatorConfig) (zone.Validator, error) {
 	publicKeys, err := tokens.PublicKeyFromConfig(cfg.PublicKeys)
 	if err != nil {
 		return nil, err
@@ -88,7 +87,7 @@ func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, mode conf
 	}
 	accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
 	if cfg.UseSecrets {
-		if mode == config_core.Zone {
+		if isFederatedZone {
 			accessors = append(accessors, tokens.NewSigningKeyFromPublicKeyAccessor(resManager, zone.SigningPublicKeyPrefix))
 		} else {
 			accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix))

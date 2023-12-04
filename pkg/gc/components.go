@@ -45,14 +45,6 @@ func setupFinalizer(rt runtime.Runtime) error {
 	var resourceTypes []model.ResourceType
 
 	switch rt.Config().Mode {
-	case config_core.Standalone:
-		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
-		}
-		resourceTypes = []model.ResourceType{
-			mesh.DataplaneInsightType,
-			mesh.ZoneEgressInsightType,
-		}
 	case config_core.Zone:
 		newTicker = func() *time.Ticker {
 			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)

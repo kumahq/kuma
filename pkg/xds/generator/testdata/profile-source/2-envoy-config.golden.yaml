@@ -2,7 +2,7 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -41,7 +41,7 @@ resources:
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -87,7 +87,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough:ipv4
     type: ORIGINAL_DST
@@ -99,7 +99,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_envoy_admin
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:envoy:admin
       endpoints:
@@ -135,7 +135,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough:ipv4
     type: ORIGINAL_DST
