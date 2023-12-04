@@ -221,7 +221,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
 				Ready: false,
 			}
-			changed = false
+			changed = true
 		}
 	}
 
