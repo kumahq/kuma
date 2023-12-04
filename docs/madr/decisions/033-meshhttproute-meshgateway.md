@@ -27,7 +27,7 @@ Chosen option:
 
 - Adapt `MeshHTTPRoute`/`MeshTCPRoute`
 - Add `spec.to[].hostnames` to `MeshHTTPRoute`
-- Allow `spec.to[].targetRef` to be empty
+- Require `spec.to[].targetRef.kind: Mesh`
 - Require `backendRefs` to be set
 - Don't support policy matching on `MeshHTTPRoute`/`MeshTCPRoute` if it attaches to a gateway
 
@@ -58,12 +58,14 @@ this by setting `spec.targetRef`, the source, and `spec.to[].targetRef`, the des
 
 With `MeshGateway`, once a request hits the gateway, the routing resources
 _define_ the destination. We have to put the rules somewhere, so this MADR
-proposes `spec.to` but there's no semantic value to a `spec.to[].targetRef`
-or for that matter, a `spec.from[].targetRef`.
+proposes `spec.to`. There's no real semantic value to a distinct
+`spec.to[].targetRef`, or for that matter, a `spec.from[].targetRef`.
 
-This MADR proposes allowing `spec.to[].targetRef` to be omitted. Another
-possibility would be requiring `spec.to[].targetRef.kind: Mesh` but it's
-not clear that this has any advantages.
+This MADR proposes requiring `spec.to[].targetRef.kind: Mesh`.
+
+Allowing `to[].targetRef` to be empty would be a break from all other policies.
+Eventually we can support it generally via a default value in the open API schema,
+see also [#6070](https://github.com/kumahq/kuma/issues/6070).
 
 ### Route matching
 
@@ -206,6 +208,8 @@ results in the rules:
             version: v2
 ```
 
+so that requests to `test.example.com/v2` are sent to `version: v1`!.
+
 On the other hand:
 
 ```
@@ -258,8 +262,6 @@ spec:
             version: v1
 ```
 
-so that requests to `test.example.com/v2` are sent to `version: v1`!.
-
 gives
 
 ```
@@ -303,8 +305,8 @@ gives
 ```
 
 so that requests to `test.example.com/v2` are sent to `version: v2`!. In other
-words, merging between hostnames is not semantic  and doesn't take into account wildcards,
-but rather is exact string based.
+words, merging between hostnames is not semantic and doesn't take into account wildcards.
+It's based on an exact string match..
 
 ### Positive Consequences <!-- optional -->
 
