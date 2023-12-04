@@ -91,10 +91,6 @@ The control-plane does not generate default `MeshTrafficPermissions`, `MeshHTTPR
 
 Under legacy policies, `ExternalServices` are filtered by `MeshTrafficPermissions`, potentially restricting user access to some services. However, in the new policies, we intend to change this approach.
 
-This raises a critical question:
-
-In scenarios where mTLS is enabled but there is no default `MeshTrafficPermission`, should we eliminate `ExternalServices` endpoints?
-
 This action would enable each dataplane to communicate with all `ExternalServices`, with the option to filter them out using either `reachableServices` or a new mechanism called `autoReachableServices`.
 
 #### Pros
