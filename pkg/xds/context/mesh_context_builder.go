@@ -501,7 +501,9 @@ func getServiceInformation(servicesInformation map[string]*ServiceInformation, s
 	if info, found := servicesInformation[serviceName]; found {
 		return info
 	}
-	return &ServiceInformation{}
+	return &ServiceInformation{
+		Protocol: core_mesh.ProtocolUnknown,
+	}
 }
 
 func isExternalService(endpoints []xds.Endpoint) bool {
