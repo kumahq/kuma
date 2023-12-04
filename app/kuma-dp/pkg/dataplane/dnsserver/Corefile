@@ -5,11 +5,13 @@
     # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
     alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:{{ .PrometheusPort }}
-    errors
+    errors{{ if .CoreDNSLogging}}
+    log{{end}}
 }
 
 .:{{ .CoreDNSEmptyPort }} {
     template ANY ANY . {
       rcode NXDOMAIN
-    }
+    }{{ if .CoreDNSLogging}}
+    log{{end}}
 }

@@ -69,6 +69,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH":                 "/tmp/Corefile",
 				"KUMA_DNS_CONFIG_DIR":                                    "/var/run/dnsserver",
 				"KUMA_DNS_PROMETHEUS_PORT":                               "6001",
+				"KUMA_DNS_ENABLE_LOGGING":                                "true",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -102,6 +103,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DNS.CoreDNSConfigTemplatePath).To(Equal("/tmp/Corefile"))
 			Expect(cfg.DNS.ConfigDir).To(Equal("/var/run/dnsserver"))
 			Expect(cfg.DNS.PrometheusPort).To(Equal(uint32(6001)))
+			Expect(cfg.DNS.CoreDNSLogging).To(BeTrue())
 		})
 	})
 
