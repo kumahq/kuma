@@ -2,7 +2,7 @@ resources:
 - name: es-be7aaa8dde77c2c8
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: es-be7aaa8dde77c2c8
       endpoints:
