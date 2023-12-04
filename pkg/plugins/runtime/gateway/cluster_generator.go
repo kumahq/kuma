@@ -167,8 +167,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 		endpoints = append(endpoints, *ep)
 	}
 	serviceName := dest.Destination[mesh_proto.ServiceTag]
-	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
-	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
+	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
