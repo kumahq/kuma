@@ -13,7 +13,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -673,27 +674,27 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					Resources: map[core_model.ResourceType]core_model.ResourceList{
-						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
-							Items: []*v1alpha1.MeshHTTPRouteResource{
+						meshhttproute_api.MeshHTTPRouteType: &meshhttproute_api.MeshHTTPRouteResourceList{
+							Items: []*meshhttproute_api.MeshHTTPRouteResource{
 								{
-									Spec: &v1alpha1.MeshHTTPRoute{
+									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: common_api.TargetRef{
 											Kind: common_api.MeshService,
 											Name: "frontend",
 										},
-										To: []v1alpha1.To{{
+										To: []meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},
-											Rules: []v1alpha1.Rule{{
-												Matches: []v1alpha1.Match{{
-													Path: &v1alpha1.PathMatch{
-														Type:  v1alpha1.PathPrefix,
+											Rules: []meshhttproute_api.Rule{{
+												Matches: []meshhttproute_api.Match{{
+													Path: &meshhttproute_api.PathMatch{
+														Type:  meshhttproute_api.PathPrefix,
 														Value: "/v1",
 													},
 												}},
-												Default: v1alpha1.RuleConf{
+												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
@@ -767,28 +768,117 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					Resources: map[core_model.ResourceType]core_model.ResourceList{
-						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
-							Items: []*v1alpha1.MeshHTTPRouteResource{
+						meshhttproute_api.MeshHTTPRouteType: &meshhttproute_api.MeshHTTPRouteResourceList{
+							Items: []*meshhttproute_api.MeshHTTPRouteResource{
 								{
-									Spec: &v1alpha1.MeshHTTPRoute{
+									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: common_api.TargetRef{
 											Kind: common_api.MeshService,
 											Name: "frontend",
 										},
-										To: []v1alpha1.To{{
+										To: []meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},
-											Rules: []v1alpha1.Rule{{
-												Matches: []v1alpha1.Match{{
-													Path: &v1alpha1.PathMatch{
-														Type:  v1alpha1.PathPrefix,
+											Rules: []meshhttproute_api.Rule{{
+												Matches: []meshhttproute_api.Match{{
+													Path: &meshhttproute_api.PathMatch{
+														Type:  meshhttproute_api.PathPrefix,
 														Value: "/v1",
 													},
 												}},
-												Default: v1alpha1.RuleConf{
+												Default: meshhttproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: common_api.TargetRef{
+															Kind: common_api.MeshServiceSubset,
+															Name: "backend",
+															Tags: map[string]string{
+																"version":      "v1",
+																"region":       "eu",
+																"kuma.io/zone": "zone",
+															},
+														},
+													}},
+												},
+											}},
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("with MeshTCPRoute and subsets", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+                  kuma.io/zone: zone
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+                  kuma.io/zone: zone
+`,
+			expected: "with-meshtcproute-subset.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v1",
+									"region":          "eu",
+									"mesh":            "mesh1",
+									"kuma.io/zone":    "zone",
+								},
+								Weight: 1,
+							},
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend",
+									"version":         "v2",
+									"region":          "us",
+									"mesh":            "mesh1",
+									"kuma.io/zone":    "zone",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						meshtcproute_api.MeshTCPRouteType: &meshtcproute_api.MeshTCPRouteResourceList{
+							Items: []*meshtcproute_api.MeshTCPRouteResource{
+								{
+									Spec: &meshtcproute_api.MeshTCPRoute{
+										TargetRef: common_api.TargetRef{
+											Kind: common_api.MeshService,
+											Name: "frontend",
+										},
+										To: []meshtcproute_api.To{{
+											TargetRef: common_api.TargetRef{
+												Kind: common_api.MeshService,
+												Name: "backend",
+											},
+											Rules: []meshtcproute_api.Rule{{
+												Default: meshtcproute_api.RuleConf{
+													BackendRefs: []common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
 															Name: "backend",
