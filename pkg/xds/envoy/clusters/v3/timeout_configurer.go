@@ -1,18 +1,15 @@
 package clusters
 
 import (
-	"time"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-const defaultConnectTimeout = 10 * time.Second
 
 type TimeoutConfigurer struct {
 	Protocol core_mesh.Protocol
@@ -22,7 +19,7 @@ type TimeoutConfigurer struct {
 var _ ClusterConfigurer = &TimeoutConfigurer{}
 
 func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	cluster.ConnectTimeout = util_proto.Duration(t.Conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
+	cluster.ConnectTimeout = util_proto.Duration(t.Conf.GetConnectTimeoutOrDefault(policies_defaults.DefaultConnectTimeout))
 	switch t.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {

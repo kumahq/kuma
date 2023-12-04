@@ -201,7 +201,7 @@ var _ = Describe("MeshTrace", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshtrace_zipkin
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshtrace:zipkin
@@ -335,7 +335,7 @@ var _ = Describe("MeshTrace", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshtrace_opentelemetry
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshtrace:opentelemetry
@@ -433,7 +433,7 @@ var _ = Describe("MeshTrace", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshtrace_datadog
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshtrace:datadog
@@ -529,7 +529,7 @@ var _ = Describe("MeshTrace", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshtrace_zipkin
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshtrace:zipkin

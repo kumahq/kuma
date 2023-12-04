@@ -1,11 +1,10 @@
 package mesh
 
 import (
-	"time"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -19,14 +18,14 @@ var DefaultTimeoutResource = func() model.Resource {
 				Match: mesh_proto.MatchAnyService(),
 			}},
 			Conf: &mesh_proto.Timeout_Conf{
-				ConnectTimeout: util_proto.Duration(5 * time.Second),
+				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
 				Tcp: &mesh_proto.Timeout_Conf_Tcp{
-					IdleTimeout: util_proto.Duration(1 * time.Hour),
+					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
 				},
 				Http: &mesh_proto.Timeout_Conf_Http{
-					IdleTimeout:       util_proto.Duration(1 * time.Hour),
-					RequestTimeout:    util_proto.Duration(15 * time.Second),
-					StreamIdleTimeout: util_proto.Duration(30 * time.Minute),
+					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
 				},
 			},
 		},
@@ -39,17 +38,16 @@ var DefaultTimeoutResource = func() model.Resource {
 // bigger than outbound side timeouts or disabled.
 var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
 	const factor = 2
-	upstream := DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf()
 
 	return &mesh_proto.Timeout_Conf{
-		ConnectTimeout: util_proto.Duration(factor * upstream.GetConnectTimeout().AsDuration()),
+		ConnectTimeout: util_proto.Duration(factor * policies_defaults.DefaultConnectTimeout),
 		Tcp: &mesh_proto.Timeout_Conf_Tcp{
-			IdleTimeout: util_proto.Duration(factor * upstream.GetTcp().GetIdleTimeout().AsDuration()),
+			IdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
 		},
 		Http: &mesh_proto.Timeout_Conf_Http{
 			RequestTimeout:    util_proto.Duration(0),
-			IdleTimeout:       util_proto.Duration(factor * upstream.GetHttp().GetIdleTimeout().AsDuration()),
-			StreamIdleTimeout: util_proto.Duration(factor * upstream.GetHttp().GetStreamIdleTimeout().AsDuration()),
+			IdleTimeout:       util_proto.Duration(factor * policies_defaults.DefaultIdleTimeout),
+			StreamIdleTimeout: util_proto.Duration(factor * policies_defaults.DefaultStreamIdleTimeout),
 			MaxStreamDuration: util_proto.Duration(0),
 		},
 	}
