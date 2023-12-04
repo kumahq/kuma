@@ -317,13 +317,20 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
+		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
+		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	}
 }
 
-func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceEndpoints) createResource(
+	ctx context.Context,
+	name string,
+	meshName string,
+	spec model.ResourceSpec,
+	response *restful.Response,
+	labels map[string]string,
+) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		model.ResourceKey{Mesh: meshName, Name: name},
@@ -337,7 +344,7 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
-	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
+	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
@@ -349,6 +356,7 @@ func (r *resourceEndpoints) updateResource(
 	currentRes model.Resource,
 	newSpec model.ResourceSpec,
 	response *restful.Response,
+	labels map[string]string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
@@ -364,7 +372,7 @@ func (r *resourceEndpoints) updateResource(
 
 	_ = currentRes.SetSpec(newSpec)
 
-	if err := r.resManager.Update(ctx, currentRes); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)

@@ -24,7 +24,7 @@ networking:
 endef
 
 POSTGRES_MODE = standard
-CP_STORE = memory
+CP_STORE = postgres
 CP_ENV += KUMA_ENVIRONMENT=universal KUMA_MULTIZONE_ZONE_NAME=zone-1 KUMA_STORE_TYPE=$(CP_STORE)
 ifeq ($(CP_STORE),postgres)
 CP_ENV += KUMA_STORE_POSTGRES_HOST=localhost \

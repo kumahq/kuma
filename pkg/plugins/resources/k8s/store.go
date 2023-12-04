@@ -58,6 +58,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
+	obj.GetObjectMeta().SetLabels(opts.Labels)
 
 	if opts.Owner != nil {
 		k8sOwner, err := s.Converter.ToKubernetesObject(opts.Owner)

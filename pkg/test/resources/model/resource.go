@@ -45,6 +45,7 @@ type ResourceMeta struct {
 	Version          string
 	CreationTime     time.Time
 	ModificationTime time.Time
+	Labels           map[string]string
 }
 
 func (m *ResourceMeta) GetMesh() string {
@@ -69,4 +70,8 @@ func (m *ResourceMeta) GetCreationTime() time.Time {
 
 func (m *ResourceMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
+}
+
+func (m *ResourceMeta) GetLabels() map[string]string {
+	return m.Labels
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -178,7 +179,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) {
+		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) || !maps.Equal(existing.GetMeta().GetLabels(), r.GetMeta().GetLabels()) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
@@ -206,16 +207,19 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 			creationTime := r.GetMeta().GetCreationTime()
-			// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
-			r.SetMeta(nil)
 
 			createOpts := []store.CreateOptionsFunc{
 				store.CreateBy(rk),
 				store.CreatedAt(creationTime),
+				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
 			if opts.Zone != "" {
 				createOpts = append(createOpts, store.CreateWithOwner(zone))
 			}
+
+			// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
+			r.SetMeta(nil)
+
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
 				return err
 			}
@@ -227,7 +231,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 			// from upstream store, because we update downstream only when resource have changed in upstream
-			if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
+			if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now), store.UpdateWithLabels(r.GetMeta().GetLabels())); err != nil {
 				return err
 			}
 		}

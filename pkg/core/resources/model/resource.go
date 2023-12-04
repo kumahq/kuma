@@ -351,6 +351,7 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+	GetLabels() map[string]string
 }
 
 // IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`

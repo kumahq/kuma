@@ -12,6 +12,7 @@ type CreateOptions struct {
 	Mesh         string
 	CreationTime time.Time
 	Owner        core_model.Resource
+	Labels       map[string]string
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -47,13 +48,26 @@ func CreateWithOwner(owner core_model.Resource) CreateOptionsFunc {
 	}
 }
 
+func CreateWithLabels(labels map[string]string) CreateOptionsFunc {
+	return func(opts *CreateOptions) {
+		opts.Labels = labels
+	}
+}
+
 type UpdateOptions struct {
 	ModificationTime time.Time
+	Labels           map[string]string
 }
 
 func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
 	return func(opts *UpdateOptions) {
 		opts.ModificationTime = modificationTime
+	}
+}
+
+func UpdateWithLabels(labels map[string]string) UpdateOptionsFunc {
+	return func(opts *UpdateOptions) {
+		opts.Labels = labels
 	}
 }
 
