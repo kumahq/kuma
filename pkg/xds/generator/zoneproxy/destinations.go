@@ -141,7 +141,7 @@ func addMeshTCPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range policy.Spec.To {
-			if toTags, ok := tagsFromTargetRef(to.TargetRef); ok {
+			if toTags, ok := tags.FromTargetRef(to.TargetRef); ok {
 				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -179,7 +179,7 @@ func addMeshTCPRouteToDestinations(
 		}
 
 		for _, backendRef := range rule.Default.BackendRefs {
-			if tags, ok := tagsFromTargetRef(backendRef.TargetRef); ok {
+			if tags, ok := tags.FromTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}
 		}
