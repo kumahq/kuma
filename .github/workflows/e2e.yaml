@@ -127,7 +127,7 @@ jobs:
           make ${MAKE_PARAMETERS} CI=true "${target}"
       - name: "CircleCI: expose github action artifact variables"
         if: ${{ inputs.arch != 'amd64' }}
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])

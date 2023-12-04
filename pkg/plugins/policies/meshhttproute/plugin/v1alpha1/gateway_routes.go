@@ -186,5 +186,44 @@ func makeRouteMatch(ruleMatch api.Match) route.Match {
 		match.PrefixPath = "/"
 	}
 
+	if m := ruleMatch.Method; m != nil {
+		match.Method = string(*m)
+	}
+
+	for _, h := range ruleMatch.Headers {
+		typ := pointer.DerefOr(h.Type, common_api.HeaderMatchExact)
+		switch typ {
+		case common_api.HeaderMatchExact:
+			match.ExactHeader = append(
+				match.ExactHeader, route.Pair(string(h.Name), string(h.Value)),
+			)
+		case common_api.HeaderMatchRegularExpression:
+			match.RegexHeader = append(
+				match.RegexHeader, route.Pair(string(h.Name), string(h.Value)),
+			)
+		case common_api.HeaderMatchAbsent:
+			match.AbsentHeader = append(match.AbsentHeader, string(h.Name))
+		case common_api.HeaderMatchPresent:
+			match.PresentHeader = append(match.PresentHeader, string(h.Name))
+		case common_api.HeaderMatchPrefix:
+			match.PrefixHeader = append(
+				match.PrefixHeader, route.Pair(string(h.Name), string(h.Value)),
+			)
+		}
+	}
+
+	for _, q := range ruleMatch.QueryParams {
+		switch q.Type {
+		case api.ExactQueryMatch:
+			match.ExactQuery = append(
+				match.ExactQuery, route.Pair(q.Name, q.Value),
+			)
+		case api.RegularExpressionQueryMatch:
+			match.RegexQuery = append(
+				match.ExactQuery, route.Pair(q.Name, q.Value),
+			)
+		}
+	}
+
 	return match
 }
