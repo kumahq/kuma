@@ -115,6 +115,10 @@ func GenerateVirtualHost(
 			routeBuilder.Configure(envoy_routes.RouteMatchPresentHeader(m, false))
 		}
 
+		for _, m := range e.Match.PrefixHeader {
+			routeBuilder.Configure(envoy_routes.RouteMatchPrefixHeader(m.Key, m.Value))
+		}
+
 		for _, m := range e.Match.ExactQuery {
 			routeBuilder.Configure(envoy_routes.RouteMatchExactQuery(m.Key, m.Value))
 		}

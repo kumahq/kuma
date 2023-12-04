@@ -72,6 +72,7 @@ type Match struct {
 	RegexHeader   []KeyValue // name -> regex
 	AbsentHeader  []string
 	PresentHeader []string
+	PrefixHeader  []KeyValue
 
 	ExactQuery []KeyValue // param -> value
 	RegexQuery []KeyValue // param -> regex
