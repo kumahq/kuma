@@ -53,9 +53,7 @@ Clusters:
             idleTimeout: 115s
             maxStreamDuration: 117s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
 Endpoints:
   Resources: {}
 Listeners:

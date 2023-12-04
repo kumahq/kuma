@@ -129,8 +129,8 @@ func (c *ClusterGenerator) generateMeshCluster(
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	serviceName := dest.Destination[mesh_proto.ServiceTag]
-	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
+	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
@@ -167,7 +167,8 @@ func (c *ClusterGenerator) generateExternalCluster(
 		endpoints = append(endpoints, *ep)
 	}
 	serviceName := dest.Destination[mesh_proto.ServiceTag]
-	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
+	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,

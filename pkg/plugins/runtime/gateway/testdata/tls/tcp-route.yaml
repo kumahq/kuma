@@ -45,13 +45,6 @@ Clusters:
                 resourceApiVersion: V3
           sni: api-service{mesh=default}
       type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     echo-service-6376c7d971a22370:
       circuitBreakers:
         thresholds:
@@ -97,13 +90,6 @@ Clusters:
                 resourceApiVersion: V3
           sni: echo-service{mesh=default}
       type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     external-tcp-httpbin-bcf553986bd60283:
       circuitBreakers:
         thresholds:

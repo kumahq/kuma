@@ -208,9 +208,7 @@ Clusters:
           commonHttpProtocolOptions:
             idleTimeout: 3600s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
     external-http2-httpbin-29c391043cf34cd7:
       circuitBreakers:
         thresholds:
@@ -263,9 +261,7 @@ Clusters:
           commonHttpProtocolOptions:
             idleTimeout: 3600s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
     external-http2-httpbin-db75d53333554288:
       circuitBreakers:
         thresholds:
@@ -318,9 +314,7 @@ Clusters:
           commonHttpProtocolOptions:
             idleTimeout: 3600s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
     echo-service-0ec9724567ed6087:
