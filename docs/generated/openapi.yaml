@@ -5,8 +5,24 @@ info:
   version: v1alpha1
   x-ref-schema-name: MeshTrafficPermission
 paths:
+  /_resources:
+    get:
+      operationId: get-resource-type-description
+      summary: A list of all resources that exist
+      description: Returns a Global Insight object
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceTypeDescriptionListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /global-insight:
     get:
+      operationId: get-global-insight
+      description: Returns a Global Insight object
       summary: Get Global Insight
       tags:
         - GlobalInsight
@@ -17,10 +33,13 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      operationId: get-global-insight
-      description: Returns a Global Insight object
   /meshes/{mesh}/dataplanes/{dataplaneName}/_rules:
     get:
+      operationId: inspect-dataplanes-rules
+      summary: Returns rules matching this dataplane
+      description: Returns rules matching this dataplane
+      tags:
+        - Inspect
       parameters:
         - in: path
           name: mesh
@@ -36,11 +55,6 @@ paths:
             type: string
           required: true
           description: The name of the dataplane
-      summary: Returns rules matching this dataplane
-      description: Returns rules matching this dataplane
-      tags:
-        - Inspect
-      operationId: inspect-dataplanes-rules
       responses:
         '200':
           $ref: '#/components/responses/InspectRulesForDataplaneResponse'
@@ -50,6 +64,13 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
+      operationId: inspect-resources
+      summary: Returns resources matched by this policy
+      description: >-
+        Returns resources matched by this policy. In the case of `targetRef`
+        policies we'll match using the top level `targetRef`
+      tags:
+        - Inspect
       parameters:
         - in: path
           name: mesh
@@ -90,12 +111,6 @@ paths:
             type: string
           required: false
           description: A sub string to filter resources by name
-      summary: Returns resources matched by this policy
-      description: >-
-        Returns resources matched by this policy. In the case of `targetRef`
-        policies we'll match using the top level `targetRef`
-      tags:
-        - Inspect
       responses:
         '200':
           $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
@@ -103,7 +118,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      operationId: inspect-resources
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       summary: Returns MeshAccessLog entity
@@ -1211,6 +1225,17 @@ paths:
           $ref: '#/components/responses/MeshTrafficPermissionList'
 components:
   schemas:
+    ResourceTypeDescriptionList:
+      type: object
+      title: ResourceTypeDescriptionList
+      description: A list of all resources install
+      required:
+        - resources
+      properties:
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceTypeDescription'
     InspectDataplanesForPolicy:
       type: object
       title: InspectDataplanesForPolicy
@@ -1402,6 +1427,64 @@ components:
           description: Mesh statistics
           allOf:
             - $ref: '#/components/schemas/MeshesStats'
+    PolicyDescription:
+      type: object
+      required:
+        - hasToTargetRef
+        - hasFromTargetRef
+        - isTargetRef
+      description: information about a policy
+      properties:
+        isTargetRef:
+          description: whether this policy uses targetRef matching
+          type: boolean
+        hasToTargetRef:
+          description: indicates that this policy can be used as an outbound policy
+          type: boolean
+        hasFromTargetRef:
+          description: indicates that this policy can be used as an inbound policy
+          type: boolean
+    ResourceTypeDescription:
+      description: >-
+        Description of a resource type, this is useful for dynamically generated
+        clients and the gui
+      type: object
+      required:
+        - name
+        - scope
+        - readOnly
+        - path
+        - singularDisplayName
+        - pluralDisplayName
+        - includeInDump
+      properties:
+        name:
+          description: the name of the resource type
+          type: string
+        scope:
+          type: string
+          enum:
+            - Global
+            - Mesh
+        readOnly:
+          type: boolean
+        path:
+          description: >-
+            the path to use for accessing this resource. If scope is `Global`
+            then it will be `/<path>` otherwise it will be `/meshes/<path>`
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        includeInDump:
+          description: >-
+            description resources of this type should be included in dump
+            (especially useful for moving from non-federated to federated or
+            migrating to a new global).
+          type: boolean
+        policy:
+          $ref: '#/components/schemas/PolicyDescription'
     InvalidParameters:
       type: object
       title: Invalid Parameters
@@ -6297,6 +6380,12 @@ components:
             - targetRef
           type: object
   responses:
+    ResourceTypeDescriptionListResponse:
+      description: A response containing a list of all resources installed in Kuma
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceTypeDescriptionList'
     GlobalInsightResponse:
       description: A response containing global insight.
       content:
