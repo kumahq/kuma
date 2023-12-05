@@ -177,9 +177,10 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
-		ResourceConverter: converter,
-		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter:            converter,
+		Persistence:                  vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		IgnoredServiceSelectorLabels: rt.Config().Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels,
 	}
 	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
