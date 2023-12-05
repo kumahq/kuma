@@ -21,7 +21,7 @@ var _ = E2EBeforeSuite(func() {
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
-	Expect(Kuma(config_core.Standalone,
+	Expect(Kuma(config_core.Zone,
 		WithEnv("KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS", "true"),
 		WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 	)(k8sCluster)).To(Succeed())

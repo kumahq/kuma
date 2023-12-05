@@ -18,7 +18,7 @@ var _ = E2EBeforeSuite(func() {
 	k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 	err := NewClusterSetup().
-		Install(Kuma(config_core.Standalone,
+		Install(Kuma(config_core.Zone,
 			WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).

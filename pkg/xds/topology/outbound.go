@@ -88,7 +88,7 @@ func BuildEdsEndpointMap(
 
 // endpointWeight defines default weight for in-cluster endpoint.
 // Examples of having service "backend":
-//  1. Standalone deployment, 2 instances in one cluster (zone1)
+//  1. Single-zone deployment, 2 instances in one cluster (zone1)
 //     All endpoints have to have the same weight (ex. 1) to achieve fair loadbalancing.
 //     Endpoints:
 //     * backend-zone1-1 - weight: 1

@@ -36,7 +36,7 @@ func ExcludeOutboundPort() {
 		releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
 
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Standalone,
+			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default

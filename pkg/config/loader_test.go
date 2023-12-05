@@ -526,6 +526,7 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
+        logging: false
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -830,6 +831,7 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING":                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",

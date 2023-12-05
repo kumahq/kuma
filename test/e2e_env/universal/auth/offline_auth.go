@@ -84,7 +84,7 @@ dpServer:
 	BeforeAll(func() {
 		universal = NewUniversalCluster(NewTestingT(), "kuma-offline-auth", Silent)
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Standalone,
+			Install(Kuma(core.Zone,
 				WithYamlConfig(cpCfg),
 			)).
 			Install(MeshUniversal(meshes[0])).

@@ -158,6 +158,8 @@ type ResourceTypeDescriptor struct {
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
 	Overview Resource
+	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
+	DumpForGlobal bool
 }
 
 func newObject(baseResource Resource) Resource {
@@ -374,7 +376,7 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 }
 
 func equalNames(mesh, n1, n2 string) bool {
-	// instead of dragging the info if it's Zone or Standalone we can simply check 3 possible combinations
+	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
 	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
 }
 

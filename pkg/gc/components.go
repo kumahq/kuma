@@ -45,14 +45,6 @@ func setupFinalizer(rt runtime.Runtime) error {
 	var resourceTypes []model.ResourceType
 
 	switch rt.Config().Mode {
-	case config_core.Standalone:
-		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
-		}
-		resourceTypes = []model.ResourceType{
-			mesh.DataplaneInsightType,
-			mesh.ZoneEgressInsightType,
-		}
 	case config_core.Zone:
 		newTicker = func() *time.Ticker {
 			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
@@ -73,7 +65,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
-	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, rt.Metrics(), rt.Extensions(), resourceTypes...)
+	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, rt.Metrics(), rt.Extensions(), rt.Config().Store.Upsert, resourceTypes...)
 	if err != nil {
 		return err
 	}

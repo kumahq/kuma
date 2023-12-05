@@ -23,7 +23,7 @@ var _ = Describe("API Manager", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
+		metrics, err := metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 		wsManager := customization.NewAPIList()
 

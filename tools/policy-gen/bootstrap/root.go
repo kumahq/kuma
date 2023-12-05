@@ -176,7 +176,7 @@ type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
-	// defined inplace.
+	// defined in-place.
 	TargetRef common_api.TargetRef` + " `json:\"targetRef\"`" + `
 	{{- end }}
 	{{- if .generateTo }}

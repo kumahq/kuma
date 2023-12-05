@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
 
@@ -137,6 +138,7 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           s,
+		ErrorLog:          adapter.ToStd(logger),
 	}
 
 	errCh := make(chan error)

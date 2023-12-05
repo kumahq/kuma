@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -154,6 +155,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	httpS := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           s.createHttpServicesHandler(),
+		ErrorLog:          adapter.ToStd(log),
 	}
 	errChanHttp := make(chan error)
 	go func() {

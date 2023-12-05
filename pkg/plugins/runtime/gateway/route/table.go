@@ -72,6 +72,7 @@ type Match struct {
 	RegexHeader   []KeyValue // name -> regex
 	AbsentHeader  []string
 	PresentHeader []string
+	PrefixHeader  []KeyValue
 
 	ExactQuery []KeyValue // param -> value
 	RegexQuery []KeyValue // param -> regex
@@ -140,6 +141,8 @@ type Rewrite struct {
 	// should be swapped with the hostname of the upstream host chosen by the
 	// Envoy's cluster manager.
 	HostToBackendHostname bool
+
+	ReplaceHostname *string
 }
 
 // Mirror specifies a traffic mirroring operation.
