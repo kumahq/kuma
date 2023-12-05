@@ -136,6 +136,25 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe",
                     "additionalProperties": true,
                     "description": "ServiceProbe defines parameters for probing the service next to sidecar. When service probe is defined, Envoy will periodically health check the application next to it and report the status to the control plane. On Kubernetes, Kuma deployments rely on Kubernetes probes so this is not used. See https://kuma.io/docs/latest/documentation/health for more information."
+                },
+                "state": {
+                    "enum": [
+                        "Ready",
+                        0,
+                        "NotReady",
+                        1,
+                        "Ignored",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "State"
                 }
             },
             "additionalProperties": true,

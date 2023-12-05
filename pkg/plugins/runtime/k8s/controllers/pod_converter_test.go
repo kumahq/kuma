@@ -277,6 +277,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherReplicaSets: "22.replicasets-for-pod.yaml",
 			dataplane:        "22.dataplane.yaml",
 		}),
+		Entry("23. Pod with ignored listener", testCase{
+			pod:            "23.pod.yaml",
+			servicesForPod: "23.services-for-pod.yaml",
+			dataplane:      "23.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

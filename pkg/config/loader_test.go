@@ -211,6 +211,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
+			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
 			Expect(cfg.Runtime.Kubernetes.ControllersConcurrency.PodController).To(Equal(10))
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
@@ -503,6 +504,7 @@ runtime:
         cgroupPath: /faz/daz/zaz
         tcAttachIface: veth1
         programsSourcePath: /kuma/baz
+      ignoredServiceSelectorLabels: ["x", "y"]
     controllersConcurrency: 
       podController: 10
     clientConfig:
@@ -774,6 +776,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH":                                        "/faz/daz/zaz",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE":                                    "veth1",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",

@@ -25,6 +25,7 @@ injector:
     labels:
       openshift.io/build.name: '*'
       openshift.io/deployer-pod-for.name: '*'
+  ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
   sidecarContainer:
