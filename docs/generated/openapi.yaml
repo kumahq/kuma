@@ -1807,7 +1807,7 @@ components:
               description: >-
                 TargetRef is a reference to the resource the policy takes an
                 effect on. The resource could be either a real store object or
-                virtual resource defined inplace.
+                virtual resource defined in-place.
               properties:
                 kind:
                   description: Kind of the referenced resource

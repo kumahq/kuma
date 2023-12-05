@@ -12,7 +12,7 @@ import (
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
-	// defined inplace.
+	// defined in-place.
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To []To `json:"to,omitempty"`
