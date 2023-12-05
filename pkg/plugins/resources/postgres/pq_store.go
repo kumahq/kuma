@@ -109,7 +109,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		return errors.Wrap(err, "failed to convert labels to json")
 	}
 
-	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),

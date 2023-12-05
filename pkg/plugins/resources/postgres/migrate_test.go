@@ -25,14 +25,14 @@ var _ = Describe("Migrate", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
+		Expect(ver).To(Equal(plugins.DbVersion(1701180642)))
 
 		// and when migrating again
 		ver, err = MigrateDb(cfg)
 
 		// then
 		Expect(err).To(Equal(plugins.AlreadyMigrated))
-		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
+		Expect(ver).To(Equal(plugins.DbVersion(1701180642)))
 	})
 
 	It("should throw an error when trying to run migrations on newer migration version of DB than in Kuma", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Migrate", func() {
 		_, err = MigrateDb(cfg)
 
 		// then
-		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1693473198. Run newer version of Kuma"))
+		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1701180642. Run newer version of Kuma"))
 	})
 
 	It("should indicate if db is migrated", func() {
