@@ -120,6 +120,8 @@ Thanks to usage of [PeriodicReader](https://pkg.go.dev/go.opentelemetry.io/otel/
 from OTEL SDK, we will be able to make these calls periodically. This reader can use both Prometheus and OTLP exporters 
 to publish metrics to desired backends.
 
+![meshmetric_diagram.png](assets/035/meshmetric_diagram.png)
+
 ### Using xDS to configure DPP
 In order to pick which backend we will be using for metrics collection, we need to somehow configure our data plane dynamically. 
 The easiest way to do this is to use xDS and create an Envoy listener that will serve configuration for DPP, 
