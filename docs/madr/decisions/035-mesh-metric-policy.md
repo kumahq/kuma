@@ -49,11 +49,11 @@ spec:
 #### Changes to the API
 1. I think the aggregation that [uses the aggregate name and pod annotations](https://kuma.io/docs/2.5.x/policies/traffic-metrics/#expose-metrics-from-applications) no longer makes sense, as we can use targetRef 
 policies to point to specific DPs. I imagine there would be a default wide policy (possibly `Mesh` scoped) and per app / framework / language overrides.
-2. What I also don’t like about this is that “filters” are under envoy - I’d probably rename it to filter and introduce 
+2. What I also don’t like about this is that “filters” are under envoy - We could rename it to `sidecar` and introduce 
 the concept of “profiles” like we discussed. Maybe something like this:
 
 ```yaml
-filter:
+sidecar:
   usedOnly: true # true or false
   profile: minimal # one of minimal, default, full
   regex: http2_act.* # only profile or regex can be defined
@@ -77,13 +77,14 @@ spec:
   targetRef:
     kind: Mesh | MeshSubset | MeshService | MeshServiceSubset
   default:
-    filter:
+    sidecar:
       profile: minimal
       regex: http2_act.* # only profile or regex can be defined
       usedOnly: true
-    aggregate:
+    application:
       - path: "/metrics/prometheus" # is name still needed since targetRef can just point to a name?
         port: 8888
+        regex: http.*
       - port: 8000 # default path is /metrics
     backends:
       - type: Prometheus
@@ -91,7 +92,7 @@ spec:
           port: 5670
           path: /metrics
           tls:
-            mode: disabled | providedTLS | activeMTLSBackend
+            mode: Disabled | ProvidedTLS | ActiveMTLSBackend
       - type: OpenTelemetry
         openTelemetry:
           endpoint: otel-collector:4317
