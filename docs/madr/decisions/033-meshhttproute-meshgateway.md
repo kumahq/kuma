@@ -85,7 +85,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - example.com
     rules:
     - matches:
@@ -110,19 +112,21 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-    - rules:
-        - default:
-            backendRefs:
-              - kind: MeshServiceSubset
-                name: backend_kuma-demo_svc_3001
-                tags:
-                  version: "1.0"
-                weight: 90
-              - kind: MeshServiceSubset
-                name: backend_kuma-demo_svc_3001
-                tags:
-                  version: "2.0"
-                weight: 10
+  - targetRef:
+      kind: Mesh
+    rules:
+      - default:
+          backendRefs:
+            - kind: MeshServiceSubset
+              name: backend_kuma-demo_svc_3001
+              tags:
+                version: "1.0"
+              weight: 90
+            - kind: MeshServiceSubset
+              name: backend_kuma-demo_svc_3001
+              tags:
+                version: "2.0"
+              weight: 10
 ```
 
 ### Merging example
@@ -138,7 +142,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - test.example.com
     rules:
     - matches:
@@ -161,7 +167,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - *.example.com
     rules:
     - matches:
@@ -180,7 +188,9 @@ results in the rules:
 
 ```
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - test.example.com
     rules:
     - matches:
@@ -193,7 +203,9 @@ results in the rules:
           name: backend_demo_svc_8080
           tags:
             version: v1
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - *.example.com
     rules:
     - matches:
@@ -223,7 +235,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - test.example.com
     rules:
     - matches:
@@ -246,7 +260,9 @@ spec:
     kind: MeshGateway
     name: edge-gateway
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - test.example.com
     - *.example.com
     rules:
@@ -266,7 +282,9 @@ gives
 
 ```
   to:
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - test.example.com
     rules:
     - matches:
@@ -289,7 +307,9 @@ gives
           name: backend_demo_svc_8080
           tags:
             version: v2
-  - hostnames:
+  - targetRef:
+      kind: Mesh
+    hostnames:
     - *.example.com
     rules:
     - matches:
