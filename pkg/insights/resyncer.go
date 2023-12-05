@@ -275,7 +275,15 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string
 		}
 
 		for _, inbound := range networking.GetInbound() {
+<<<<<<< HEAD
 			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, r.addressPortGenerator(inbound.GetService()))
+=======
+			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
+			// address port is empty to save space in the resource. It will be filled by the server on API response
+			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, "")
+>>>>>>> 2c973d798 (feat(dataplane): ignored listeners with ignored labels in selector (#8463))
 		}
 	}
 
@@ -436,6 +444,9 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, n
 		}
 
 		for _, inbound := range networking.GetInbound() {
+			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
 			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}

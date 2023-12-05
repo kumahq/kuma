@@ -204,7 +204,17 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
+<<<<<<< HEAD
 
+=======
+			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
+			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
+			Expect(cfg.Runtime.Kubernetes.ControllersConcurrency.PodController).To(Equal(10))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
+>>>>>>> 2c973d798 (feat(dataplane): ignored listeners with ignored labels in selector (#8463))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -469,6 +479,18 @@ runtime:
         cgroupPath: /faz/daz/zaz
         tcAttachIface: veth1
         programsSourcePath: /kuma/baz
+<<<<<<< HEAD
+=======
+      ignoredServiceSelectorLabels: ["x", "y"]
+    controllersConcurrency: 
+      podController: 10
+    clientConfig:
+      qps: 100
+      burstQps: 100
+    leaderElection:
+      leaseDuration: 199s
+      renewDeadline: 99s
+>>>>>>> 2c973d798 (feat(dataplane): ignored listeners with ignored labels in selector (#8463))
 reports:
   enabled: false
 general:
@@ -705,6 +727,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH":                                        "/faz/daz/zaz",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE":                                    "veth1",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",

@@ -112,8 +112,12 @@ func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource)
 
 func (m *dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {
 	for _, inbound := range dp.Spec.Networking.Inbound {
-		if inbound.ServiceProbe != nil && inbound.Health == nil {
-			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false}
+		if inbound.ServiceProbe != nil {
+			inbound.State = mesh_proto.Dataplane_Networking_Inbound_NotReady
+			// write health for backwards compatibility with Kuma 2.5 and older
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: false,
+			}
 		}
 	}
 }

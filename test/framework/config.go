@@ -188,9 +188,53 @@ var defaultConf = E2eConfig{
 	K8sType:                      KindK8sType,
 	DefaultClusterStartupRetries: 30,
 	DefaultClusterStartupTimeout: time.Second * 3,
+<<<<<<< HEAD
 
 	ZoneEgressApp:  "kuma-egress",
 	ZoneIngressApp: "kuma-ingress",
+=======
+	KumaCpConfig: KumaCpConfig{
+		Standalone: StandaloneConfig{
+			Kubernetes: ControlPlaneConfig{
+				Envs: map[string]string{
+					"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS": "changesvc-test-label",
+				},
+				AdditionalYamlConfig: "",
+			},
+			Universal: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+		},
+		Multizone: MultizoneConfig{
+			Global: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			KubeZone1: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			KubeZone2: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			UniZone1: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			UniZone2: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+		},
+	},
+	ZoneEgressApp:        "kuma-egress",
+	ZoneIngressApp:       "kuma-ingress",
+	UniversalE2ELogsPath: path.Join(os.TempDir(), "e2e"),
+	CleanupLogsOnSuccess: false,
+	KumaLegacyKDS:        false,
+>>>>>>> 2c973d798 (feat(dataplane): ignored listeners with ignored labels in selector (#8463))
 }
 
 func init() {

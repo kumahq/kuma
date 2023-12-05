@@ -175,9 +175,16 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
+<<<<<<< HEAD
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+=======
+		ResourceConverter:            converter,
+		Persistence:                  vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		IgnoredServiceSelectorLabels: rt.Config().Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels,
+>>>>>>> 2c973d798 (feat(dataplane): ignored listeners with ignored labels in selector (#8463))
 	}
 	return reconciler.SetupWithManager(mgr)
 }
