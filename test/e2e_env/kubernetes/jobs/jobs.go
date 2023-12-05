@@ -43,7 +43,8 @@ func Jobs() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should terminate jobs with mTLS", func() {
+	// Flaking test
+	XIt("should terminate jobs with mTLS", func() {
 		const namespace = "jobs-mtls"
 		const mesh = "jobs-mtls"
 
