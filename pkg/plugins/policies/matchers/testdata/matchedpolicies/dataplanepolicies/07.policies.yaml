@@ -1,0 +1,15 @@
+# 07. policies do not select anything because inbound is ignored
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow

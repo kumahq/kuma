@@ -141,6 +141,16 @@
             - `tcp` (optional)
             
                 Tcp checker tries to establish tcp connection with destination    
+        
+        - `state` (optional, enum)
+        
+            State describes the current state of the listener.
+        
+            - `Ready`
+        
+            - `NotReady`
+        
+            - `Ignored`    
     
     - `outbound` (optional, repeated)
     

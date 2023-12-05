@@ -90,6 +90,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				CgroupPath:           "/sys/fs/cgroup",
 				ProgramsSourcePath:   "/kuma/ebpf",
 			},
+			IgnoredServiceSelectorLabels: []string{},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -162,6 +163,11 @@ type Injector struct {
 	// EBPF is a configuration for ebpf if transparent proxy should be installed
 	// using ebpf instead of iptables
 	EBPF EBPF `json:"ebpf"`
+	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
+	// If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
+	// It is useful when you change Service selector and expect traffic to be sent immediately.
+	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
+	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
