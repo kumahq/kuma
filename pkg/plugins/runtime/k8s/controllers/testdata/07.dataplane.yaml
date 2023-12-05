@@ -10,7 +10,9 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-    - port: 7070
+    - health:
+        ready: true
+      port: 7070
       tags:
         app: example
         k8s.kuma.io/namespace: demo
