@@ -141,6 +141,8 @@ type Rewrite struct {
 	// should be swapped with the hostname of the upstream host chosen by the
 	// Envoy's cluster manager.
 	HostToBackendHostname bool
+
+	ReplaceHostname *string
 }
 
 // Mirror specifies a traffic mirroring operation.
