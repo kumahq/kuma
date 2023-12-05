@@ -174,14 +174,14 @@ spec:
     rules:
     - matches:
       - path:
-          type: PathPrefix
-          value: /
+          type: Exact
+          value: /v2
       default:
         backendRefs:
         - kind: MeshServiceSubset
           name: backend_demo_svc_8080
           tags:
-            version: v1
+            version: v2
 ```
 
 results in the rules:
@@ -210,7 +210,7 @@ results in the rules:
     rules:
     - matches:
       - path:
-          type: PathPrefix
+          type: Exact
           value: /v2
       default:
         backendRefs:
@@ -268,8 +268,8 @@ spec:
     rules:
     - matches:
       - path:
-          type: PathPrefix
-          value: /
+          type: Exact
+          value: /v2
       default:
         backendRefs:
         - kind: MeshServiceSubset
@@ -299,7 +299,7 @@ gives
             version: v1
     - matches:
       - path:
-          type: PathPrefix
+          type: Exact
           value: /v2
       default:
         backendRefs:
@@ -314,7 +314,7 @@ gives
     rules:
     - matches:
       - path:
-          type: PathPrefix
+          type: Exact
           value: /v2
       default:
         backendRefs:
