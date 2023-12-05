@@ -143,7 +143,6 @@ var _ = Describe("Dataplane_Networking", func() {
 			networking := &Dataplane_Networking{
 				Inbound: []*Dataplane_Networking_Inbound{
 					{
-						Health:      nil,
 						Port:        8080,
 						ServicePort: 80,
 					},
@@ -153,15 +152,30 @@ var _ = Describe("Dataplane_Networking", func() {
 						ServicePort: 90,
 					},
 					{
+						State:       Dataplane_Networking_Inbound_Ready,
+						Port:        9091,
+						ServicePort: 91,
+					},
+					{
 						Health:      &Dataplane_Networking_Inbound_Health{Ready: false},
 						Port:        7070,
 						ServicePort: 70,
+					},
+					{
+						State:       Dataplane_Networking_Inbound_NotReady,
+						Port:        9092,
+						ServicePort: 92,
+					},
+					{
+						State:       Dataplane_Networking_Inbound_Ignored,
+						Port:        9093,
+						ServicePort: 93,
 					},
 				},
 			}
 
 			actual := networking.GetHealthyInbounds()
-			Expect(actual).To(HaveLen(2))
+			Expect(actual).To(HaveLen(3))
 			Expect(actual).To(ConsistOf(
 				&Dataplane_Networking_Inbound{
 					Health:      &Dataplane_Networking_Inbound_Health{Ready: true},
@@ -169,9 +183,15 @@ var _ = Describe("Dataplane_Networking", func() {
 					ServicePort: 90,
 				},
 				&Dataplane_Networking_Inbound{
+					State:       Dataplane_Networking_Inbound_Ready,
+					Port:        9091,
+					ServicePort: 91,
+				},
+				&Dataplane_Networking_Inbound{
 					Port:        8080,
 					ServicePort: 80,
-				}))
+				}),
+			)
 		})
 	})
 })

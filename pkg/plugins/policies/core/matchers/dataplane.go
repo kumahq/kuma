@@ -192,6 +192,9 @@ func unresolve(rl []core_model.Resource) []core_model.Resource {
 func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_rules.InboundListener {
 	result := []core_rules.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
+		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
 		if mesh_proto.TagSelector(tags).Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			result = append(result, core_rules.InboundListener{

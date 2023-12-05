@@ -78,7 +78,7 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &k.opts.Replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": k.Name()},
+				MatchLabels: k.getLabels(),
 			},
 			Strategy: appsv1.DeploymentStrategy{
 				RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -188,7 +188,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      map[string]string{"app": k.Name()},
+			Labels:      k.getLabels(),
 			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
@@ -254,6 +254,15 @@ func (k *k8SDeployment) getAnnotations() map[string]string {
 	return annotations
 }
 
+func (k *k8SDeployment) getLabels() map[string]string {
+	labels := make(map[string]string)
+	labels["app"] = k.Name()
+	for key, value := range k.opts.PodLabels {
+		labels[key] = value
+	}
+	return labels
+}
+
 func meta(namespace string, name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
@@ -295,13 +304,17 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	} else {
 		funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
 	}
-	funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	if k.opts.EnableService {
+		funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	}
 	if k.opts.WaitingToBeReady {
 		funcs = append(funcs,
-			framework.WaitService(k.opts.Namespace, k.Name()),
 			framework.WaitNumPods(k.opts.Namespace, 1, k.Name()),
 			framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
 		)
+		if k.opts.EnableService {
+			funcs = append(funcs, framework.WaitService(k.opts.Namespace, k.Name()))
+		}
 	}
 	return framework.Combine(funcs...)(cluster)
 }

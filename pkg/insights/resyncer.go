@@ -346,6 +346,9 @@ func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, tenantId st
 		}
 
 		for _, inbound := range networking.GetInbound() {
+			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
 			// address port is empty to save space in the resource. It will be filled by the server on API response
 			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, "")
 		}
@@ -482,6 +485,9 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, tenantId strin
 		}
 
 		for _, inbound := range networking.GetInbound() {
+			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
 			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}
