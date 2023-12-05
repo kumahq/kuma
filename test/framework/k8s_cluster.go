@@ -3,6 +3,7 @@ package framework
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,16 +12,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -515,28 +519,43 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	err = c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas)
-	if err != nil {
-		return err
-	}
-
+	appsToInstall := make([]appInstallation, 0)
+	appsToInstall = append(appsToInstall, appInstallation{Config.KumaServiceName, Config.KumaNamespace, replicas})
 	if c.opts.cni {
-		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
-		if err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1})
 	}
-
 	if c.opts.zoneIngress {
-		if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1})
+	}
+	if c.opts.zoneEgress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1})
 	}
 
-	if c.opts.zoneEgress {
-		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
-			return err
-		}
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(appsToInstall))
+
+	// Iterate through tasks and execute them concurrently using goroutines
+	for _, app := range appsToInstall {
+		wg.Add(1)
+		go func(installation appInstallation) {
+			defer wg.Done()
+			if e := c.WaitApp(installation.Name, installation.Namespace, installation.Replicas); e != nil {
+				errCh <- e
+			}
+		}(app)
+	}
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	var allErrors []error
+	for err := range errCh {
+		allErrors = append(allErrors, err)
+	}
+	if len(allErrors) > 0 {
+		return multierr.Combine(allErrors...)
 	}
 
 	if c.opts.zoneEgressEnvoyAdminTunnel {
@@ -1084,7 +1103,7 @@ func (c *K8sCluster) DeleteDeployment(name string) error {
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
-	k8s.WaitUntilNumPodsCreated(c.t,
+	err := k8s.WaitUntilNumPodsCreatedE(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
@@ -1092,6 +1111,10 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		replicas,
 		c.defaultRetries,
 		c.defaultTimeout)
+	if err != nil {
+		printDeploymentConditions(c, namespace, name)
+		return err
+	}
 
 	pods := k8s.ListPods(c.t,
 		c.GetKubectlOptions(namespace),
@@ -1224,4 +1247,44 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 		c.t.Fatal(err)
 	}
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
+}
+
+func printDeploymentConditions(c *K8sCluster, namespace string, name string) {
+	condition := deployConditions{Name: name, Namespace: namespace, Conditions: make([]appsv1.DeploymentCondition, 0), Replicas: make([]replicaSetCondition, 0)}
+
+	deploy := k8s.GetDeployment(c.t, c.GetKubectlOptions(namespace), name)
+	condition.Conditions = deploy.Status.Conditions
+
+	// Extract status.conditions and marshal it back to JSON
+	replicaSets := k8s.ListReplicaSets(c.t, c.GetKubectlOptions(namespace), metav1.ListOptions{
+		LabelSelector: "app=" + name,
+	})
+
+	for _, ars := range replicaSets {
+		condition.Replicas = append(condition.Replicas, replicaSetCondition{Name: ars.Name, Conditions: ars.Status.Conditions})
+	}
+
+	deployConditionJson, err := json.Marshal(condition)
+	if err != nil {
+		deployConditionJson = []byte(fmt.Sprintf("error marshaling deployment conditions: '%s'", err.Error()))
+	}
+	logger.Default.Logf(c.t, "Conditions of deployment '%s/%s': %s", namespace, name, string(deployConditionJson))
+}
+
+type appInstallation struct {
+	Name      string
+	Namespace string
+	Replicas  int
+}
+
+type deployConditions struct {
+	Name       string                       `json:"name,omitempty"`
+	Namespace  string                       `json:"namespace,omitempty"`
+	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
+	Replicas   []replicaSetCondition        `json:"replicas,omitempty"`
+}
+
+type replicaSetCondition struct {
+	Name       string                       `json:"name,omitempty"`
+	Conditions []appsv1.ReplicaSetCondition `json:"conditions,omitempty"`
 }

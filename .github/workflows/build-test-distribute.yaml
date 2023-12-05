@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master", "release-*", "!*-merge-master", "e2e-fixing-publish-ipv6-ports"]
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
@@ -182,8 +182,7 @@ jobs:
   gen_e2e_matrix:
     runs-on: ubuntu-latest
     needs: ["build"]
-    if: false
-    # if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
       test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
       test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
@@ -247,6 +246,7 @@ jobs:
     if: needs.gen_e2e_matrix.outputs.test_e2e != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
+      fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
       k8sVersion: ${{ matrix.k8sVersion }}
@@ -263,6 +263,7 @@ jobs:
     if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
+      fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
       k8sVersion: ${{ matrix.k8sVersion }}

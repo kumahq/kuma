@@ -29,7 +29,11 @@ func GetPublishedDockerPorts(
 		if len(addresses) < 1 {
 			return nil, errors.Errorf("there are no addresses for port %d", port)
 		}
-		_, pubPortStr, err := net.SplitHostPort(addresses[0])
+		addr := addresses[0]
+		if strings.HasPrefix(addr, ":::") {
+			addr = "[::]:" + addr[3:]
+		}
+		_, pubPortStr, err := net.SplitHostPort(addr)
 		if err != nil {
 			return nil, err
 		}
