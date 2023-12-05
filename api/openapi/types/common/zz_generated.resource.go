@@ -15,6 +15,12 @@ type FromRule struct {
 	Rules   []Rule  `json:"rules"`
 }
 
+// HttpMatch defines model for HttpMatch.
+type HttpMatch struct {
+	Hash  string      `json:"hash"`
+	Match interface{} `json:"match"`
+}
+
 // Inbound defines model for Inbound.
 type Inbound struct {
 	Port int               `json:"port"`

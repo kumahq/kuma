@@ -2,8 +2,8 @@
  "httpMatches": [],
  "resource": {
   "mesh": "default",
-  "name": "dp-1",
-  "type": "Dataplane"
+  "name": "the-gateway",
+  "type": "MeshGateway"
  },
  "rules": [
   {

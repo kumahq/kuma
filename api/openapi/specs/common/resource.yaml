@@ -145,3 +145,12 @@ components:
         not:
           type: boolean
           description: whether we check on the absence of this key:value pair
+    HttpMatch:
+      type: object
+      required: [hash, match]
+      properties:
+        hash:
+          type: string
+        match:
+          type: object
+          x-go-type: interface{}

@@ -3,7 +3,7 @@ package v1alpha1
 import "slices"
 
 type PolicyDefault struct {
-	Rules []Rule `policyMerge:"mergeValuesByKey"`
+	Rules []Rule `json:"rules,omitempty" policyMerge:"mergeValuesByKey"`
 }
 
 func (x *To) GetDefault() interface{} {

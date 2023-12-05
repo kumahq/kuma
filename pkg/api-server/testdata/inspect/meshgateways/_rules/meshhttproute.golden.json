@@ -1,6 +1,17 @@
 {
  "httpMatches": [
   {
+   "hash": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs=",
+   "match": [
+    {
+     "path": {
+      "value": "/api/v2",
+      "type": "PathPrefix"
+     }
+    }
+   ]
+  },
+  {
    "hash": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU=",
    "match": [
     {
@@ -14,8 +25,8 @@
  ],
  "resource": {
   "mesh": "default",
-  "name": "dp-1",
-  "type": "Dataplane"
+  "name": "the-gateway",
+  "type": "MeshGateway"
  },
  "rules": [
   {
@@ -28,7 +39,7 @@
         "matches": [
          {
           "path": {
-           "value": "/api",
+           "value": "/api/v2",
            "type": "PathPrefix"
           }
          }
@@ -44,27 +55,7 @@
           }
          ]
         }
-       }
-      ]
-     },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
-      }
-     ],
-     "origin": [
-      {
-       "mesh": "default",
-       "name": "the-http-route",
-       "type": "MeshHTTPRoute"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "rules": [
+       },
        {
         "matches": [
          {
@@ -95,14 +86,13 @@
        }
       ]
      },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "other-svc"
-      }
-     ],
+     "matchers": [],
      "origin": [
+      {
+       "mesh": "default",
+       "name": "the-http-route",
+       "type": "MeshHTTPRoute"
+      },
       {
        "mesh": "default",
        "name": "the-other-http-route",
@@ -127,23 +117,18 @@
       {
        "key": "__rule-matches-hash__",
        "not": false,
-       "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
       },
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": "backend_kuma-demo_svc_3001"
+       "value": ""
       }
      ],
      "origin": [
       {
        "mesh": "default",
        "name": "on-route",
-       "type": "MeshTimeout"
-      },
-      {
-       "mesh": "default",
-       "name": "on-service",
        "type": "MeshTimeout"
       }
      ]
@@ -155,11 +140,6 @@
       }
      },
      "matchers": [
-      {
-       "key": "__rule-matches-hash__",
-       "not": true,
-       "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
-      },
       {
        "key": "kuma.io/service",
        "not": false,

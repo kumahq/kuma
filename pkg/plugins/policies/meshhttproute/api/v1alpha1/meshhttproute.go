@@ -2,9 +2,12 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 // MeshHTTPRoute
@@ -42,6 +45,12 @@ type Rule struct {
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
 	Default RuleConf `json:"default"`
+}
+
+func HashMatches(m []Match) string {
+	bytes, _ := json.Marshal(m)
+	h := sha256.Hash(string(bytes))
+	return h
 }
 
 type Match struct {
