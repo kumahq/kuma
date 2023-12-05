@@ -1626,6 +1626,11 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                       items:
                                         properties:
                                           key:
@@ -1635,8 +1640,12 @@ components:
                                         type: object
                                       type: array
                                     omitEmptyValues:
+                                      default: false
                                       type: boolean
                                     plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
                                       type: string
                                     type:
                                       enum:
@@ -1648,6 +1657,8 @@ components:
                                   type: object
                                 path:
                                   description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
                                   type: string
                               required:
                                 - path
@@ -1660,6 +1671,9 @@ components:
                                     Attributes can contain placeholders
                                     available on
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
                                   items:
                                     properties:
                                       key:
@@ -1675,6 +1689,12 @@ components:
                                     https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
                                     It can contain placeholders available on
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
                                   description: >-
@@ -1691,6 +1711,8 @@ components:
                               properties:
                                 address:
                                   description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
                                   type: string
                                 format:
                                   description: >-
@@ -1699,6 +1721,11 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                       items:
                                         properties:
                                           key:
@@ -1708,8 +1735,12 @@ components:
                                         type: object
                                       type: array
                                     omitEmptyValues:
+                                      default: false
                                       type: boolean
                                     plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
                                       type: string
                                     type:
                                       enum:
@@ -1833,6 +1864,11 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                       items:
                                         properties:
                                           key:
@@ -1842,8 +1878,12 @@ components:
                                         type: object
                                       type: array
                                     omitEmptyValues:
+                                      default: false
                                       type: boolean
                                     plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
                                       type: string
                                     type:
                                       enum:
@@ -1855,6 +1895,8 @@ components:
                                   type: object
                                 path:
                                   description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
                                   type: string
                               required:
                                 - path
@@ -1867,6 +1909,9 @@ components:
                                     Attributes can contain placeholders
                                     available on
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
                                   items:
                                     properties:
                                       key:
@@ -1882,6 +1927,12 @@ components:
                                     https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
                                     It can contain placeholders available on
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
                                   x-kubernetes-preserve-unknown-fields: true
                                 endpoint:
                                   description: >-
@@ -1898,6 +1949,8 @@ components:
                               properties:
                                 address:
                                   description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
                                   type: string
                                 format:
                                   description: >-
@@ -1906,6 +1959,11 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                       items:
                                         properties:
                                           key:
@@ -1915,8 +1973,12 @@ components:
                                         type: object
                                       type: array
                                     omitEmptyValues:
+                                      default: false
                                       type: boolean
                                     plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
                                       type: string
                                     type:
                                       enum:
