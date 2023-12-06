@@ -35,11 +35,11 @@ jobs:
       - name: "Print parameters"
         run: |
           echo "All inputs:"
-          echo "Running with: \
-              k8s: ${{ inputs.k8sVersion }} \
-              target: ${{ inputs.target }} \
-              parallelism: ${{ inputs.parallelism }} \
-              arch: ${{ inputs.arch }} \
+          echo "Running with:\n \
+              k8s: ${{ inputs.k8sVersion }}\n \
+              target: ${{ inputs.target }}\n \
+              parallelism: ${{ inputs.parallelism }}\n \
+              arch: ${{ inputs.arch }}\n \
               cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
               "
       - name: "GitHub Actions: check out code"
@@ -92,6 +92,18 @@ jobs:
         if: ${{ inputs.arch == 'amd64' }}
         run: |
           make dev/set-kuma-helm-repo
+      - name: "GitHub Actions: enable ipv6 for docker"
+        if: ${{ inputs.arch == 'amd64' && inputs.k8sVersion == 'kindIpv6' }}
+        run: |
+          cat <<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
       - name: "GitHub Actions: run E2E tests"
         if: ${{ inputs.arch == 'amd64' }}
         run: |
