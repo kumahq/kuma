@@ -76,6 +76,11 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
+	gr, err := core_rules.BuildGatewayRules(matchedPoliciesByInbound, resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
+	}
+
 	sr, err := core_rules.BuildSingleItemRules(dpPolicies)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
@@ -86,6 +91,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		DataplanePolicies: dpPolicies,
 		FromRules:         fr,
 		ToRules:           tr,
+		GatewayRules:      gr,
 		SingleItemRules:   sr,
 		Warnings:          warnings,
 	}, nil
