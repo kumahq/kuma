@@ -69,12 +69,22 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 		}
 	}
 
-	if opts.Labels == nil {
-		opts.Labels = map[string]string{}
-	}
-	opts.Labels[metadata.KumaMeshLabel] = opts.Mesh
+	return r.Store.Create(ctx, resource, append(fs,
+		store.CreatedAt(core.Now()),
+		store.CreateWithOwner(owner),
+		store.CreateWithLabels(addMeshLabel(resource, opts.Mesh, opts.Labels)))...,
+	)
+}
 
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner), store.CreateWithLabels(opts.Labels))...)
+func addMeshLabel(resource model.Resource, mesh string, labels map[string]string) map[string]string {
+	if resource.Descriptor().Scope != model.ScopeMesh {
+		return labels
+	}
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels[metadata.KumaMeshLabel] = mesh
+	return labels
 }
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -110,7 +120,10 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	}
 	opts.Labels[metadata.KumaMeshLabel] = resource.GetMeta().GetMesh()
 
-	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()), store.UpdateWithLabels(opts.Labels))...)
+	return r.Store.Update(ctx, resource, append(fs,
+		store.ModifiedAt(time.Now()),
+		store.UpdateWithLabels(addMeshLabel(resource, resource.GetMeta().GetMesh(), opts.Labels)))...,
+	)
 }
 
 type ConflictRetry struct {
