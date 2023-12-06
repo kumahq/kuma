@@ -1,5 +1,44 @@
 components:
   schemas:
+    ResourceTypeDescription:
+      description: Description of a resource type, this is useful for dynamically generated clients and the gui
+      type: object
+      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInDump]
+      properties:
+        name:
+          description: the name of the resource type
+          type: string
+        scope:
+          type: string
+          enum: [Global, Mesh]
+        readOnly:
+          type: boolean
+        path:
+          description: the path to use for accessing this resource. If scope is `Global` then it will be `/<path>` otherwise it will be `/meshes/<path>`
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        includeInDump:
+          description: description resources of this type should be included in dump (especially useful for moving from non-federated to federated or migrating to a new global).
+          type: boolean
+        policy:
+          $ref: "#/components/schemas/PolicyDescription"
+    PolicyDescription:
+      type: object
+      required: [hasToTargetRef, hasFromTargetRef, isTargetRef]
+      description: information about a policy
+      properties:
+        isTargetRef:
+          description: whether this policy uses targetRef matching
+          type: boolean
+        hasToTargetRef:
+          description: indicates that this policy can be used as an outbound policy
+          type: boolean
+        hasFromTargetRef:
+          description: indicates that this policy can be used as an inbound policy
+          type: boolean
     Meta:
       type: object
       required: [type, mesh, name]

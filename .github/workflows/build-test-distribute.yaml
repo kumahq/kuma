@@ -123,11 +123,12 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      # see https://stackoverflow.com/a/67532120/4907315
       - name: "Halt due to previous failures"
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
         run: |
           exit 1
-        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
+          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
+          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
@@ -245,6 +246,7 @@ jobs:
     if: needs.gen_e2e_matrix.outputs.test_e2e != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
+      fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
       k8sVersion: ${{ matrix.k8sVersion }}
@@ -261,6 +263,7 @@ jobs:
     if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
+      fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
       k8sVersion: ${{ matrix.k8sVersion }}

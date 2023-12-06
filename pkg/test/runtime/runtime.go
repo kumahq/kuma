@@ -98,7 +98,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
 
-	metrics, _ := metrics.NewMetrics("Standalone")
+	metrics, _ := metrics.NewMetrics("Zone")
 	builder.WithMetrics(metrics)
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))

@@ -18,7 +18,7 @@ func VirtualOutboundOnK8s() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone,
+			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).

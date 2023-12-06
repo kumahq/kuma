@@ -43,6 +43,7 @@ var DefaultConfig = func() Config {
 			CoreDNSConfigTemplatePath: "",
 			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
 			PrometheusPort:            19153,
+			CoreDNSLogging:            false,
 		},
 	}
 }
@@ -352,6 +353,8 @@ type DNS struct {
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
 	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
 	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
+	// If true then CoreDNS logging is enabled
+	CoreDNSLogging bool `json:"coreDNSLogging,omitempty" envconfig:"kuma_dns_enable_logging"`
 }
 
 func (d *DNS) Validate() error {

@@ -2,7 +2,7 @@ Clusters:
   Resources:
     tracing:jaeger-collector:
       altStatName: tracing_jaeger-collector
-      connectTimeout: 10s
+      connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: tracing:jaeger-collector

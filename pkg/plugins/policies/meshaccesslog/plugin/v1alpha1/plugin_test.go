@@ -506,7 +506,7 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshaccesslog_opentelemetry_0
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshaccesslog:opentelemetry:0
@@ -526,7 +526,7 @@ var _ = Describe("MeshAccessLog", func() {
                         http2ProtocolOptions: {}
             `, `
             altStatName: meshaccesslog_opentelemetry_1
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshaccesslog:opentelemetry:1

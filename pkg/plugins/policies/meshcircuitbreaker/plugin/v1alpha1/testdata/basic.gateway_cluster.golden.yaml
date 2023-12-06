@@ -5,7 +5,7 @@ circuitBreakers:
     maxPendingRequests: 3333
     maxRequests: 4444
     maxRetries: 5555
-connectTimeout: 10s
+connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}

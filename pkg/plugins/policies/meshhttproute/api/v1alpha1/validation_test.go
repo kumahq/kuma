@@ -40,6 +40,37 @@ to:
     kind: BlahBlah
     name: frontend
 `),
+		ErrorCase("spec.to.targetRef Mesh not allowed",
+			validators.Violation{
+				Field:   `spec.to[0].targetRef.kind`,
+				Message: `value is not supported`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: Mesh
+`),
+		ErrorCase("spec.to.targetRef MeshService not allowed with top MeshGateway",
+			validators.Violation{
+				Field:   `spec.to[0].targetRef.kind`,
+				Message: `value is not supported`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+`),
 		ErrorCases("incorrect path match value",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].matches[0].path.value`,
@@ -274,6 +305,33 @@ to:
               version: v1
 
 `),
+		ErrorCase("top level MeshGateway requires backendRefs",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].default.backendRefs`,
+				Message: `must not be empty`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
+`),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
@@ -302,6 +360,161 @@ to:
                 kind: MeshServiceSubset
                 tags:
                   version: v1
+`),
+		ErrorCases("invalid hostnames",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].rules[0].default.filters[0].requestRedirect.hostname",
+					Message: "cannot be an IP address",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[1].requestRedirect.hostname",
+					Message: "cannot be an IP address",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[2].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[3].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[4].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[5].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[6].requestRedirect.hostname",
+					Message: "must be no more than 253 characters",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[7].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[8].requestRedirect.hostname",
+					Message: "must be no more than 253 characters",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[8].requestRedirect.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[9].urlRewrite.hostname",
+					Message: "cannot be an IP address",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[10].urlRewrite.hostname",
+					Message: "cannot be an IP address",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[11].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[12].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[13].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[14].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[15].urlRewrite.hostname",
+					Message: "must be no more than 253 characters",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[16].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[17].urlRewrite.hostname",
+					Message: "must be no more than 253 characters",
+				},
+				{
+					Field:   "spec.to[0].rules[0].default.filters[17].urlRewrite.hostname",
+					Message: "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+				},
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: 127.0.0.1
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: 2001:db8:3333:4444:5555:6666:7777:8888
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: a..bc
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: ec2-35-160-210-253.us-west-2-.compute.amazonaws.com
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: -ec2_35$160%210-253.us-west-2-.compute.amazonaws.com
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: ec2-35-160-210-253.us-west-2-.compute.amazonaws.com.
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.com
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: mx.foo.com.
+          - type: RequestRedirect
+            requestRedirect:
+              hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345678.com.
+          - type: URLRewrite
+            urlRewrite:
+              hostname: 127.0.0.1
+          - type: URLRewrite
+            urlRewrite:
+              hostname: 2001:db8:3333:4444:5555:6666:7777:8888
+          - type: URLRewrite
+            urlRewrite:
+              hostname: a..bc
+          - type: URLRewrite
+            urlRewrite:
+              hostname: ec2-35-160-210-253.us-west-2-.compute.amazonaws.com
+          - type: URLRewrite
+            urlRewrite:
+              hostname: -ec2_35$160%210-253.us-west-2-.compute.amazonaws.com
+          - type: URLRewrite
+            urlRewrite:
+              hostname: ec2-35-160-210-253.us-west-2-.compute.amazonaws.com.
+          - type: URLRewrite
+            urlRewrite:
+              hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.com
+          - type: URLRewrite
+            urlRewrite:
+              hostname: mx.foo.com.
+          - type: URLRewrite
+            urlRewrite:
+              hostname: a23456789-a23456789-a234567890.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a23456789.a2345678.com.
 `),
 	)
 	DescribeValidCases(
@@ -343,6 +556,26 @@ to:
               path:
                 type: ReplacePrefixMatch
                 replacePrefixMatch: /other
+`),
+		Entry("MeshGateway to Mesh allowed", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  rules:
+    - matches:
+      - path:
+          value: /
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshService
+            name: backend
 `),
 	)
 })

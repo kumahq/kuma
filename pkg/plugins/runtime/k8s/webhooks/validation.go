@@ -25,23 +25,32 @@ import (
 	"github.com/kumahq/kuma/pkg/version"
 )
 
-func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, allowedUsers []string) k8s_common.AdmissionValidator {
+func NewValidatingWebhook(
+	converter k8s_common.Converter,
+	coreRegistry core_registry.TypeRegistry,
+	k8sRegistry k8s_registry.TypeRegistry,
+	mode core.CpMode,
+	federatedZone bool,
+	allowedUsers []string,
+) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry: coreRegistry,
-		k8sRegistry:  k8sRegistry,
-		converter:    converter,
-		mode:         mode,
-		allowedUsers: allowedUsers,
+		coreRegistry:  coreRegistry,
+		k8sRegistry:   k8sRegistry,
+		converter:     converter,
+		mode:          mode,
+		federatedZone: federatedZone,
+		allowedUsers:  allowedUsers,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry core_registry.TypeRegistry
-	k8sRegistry  k8s_registry.TypeRegistry
-	converter    k8s_common.Converter
-	decoder      *admission.Decoder
-	mode         core.CpMode
-	allowedUsers []string
+	coreRegistry  core_registry.TypeRegistry
+	k8sRegistry   k8s_registry.TypeRegistry
+	converter     k8s_common.Converter
+	decoder       *admission.Decoder
+	mode          core.CpMode
+	federatedZone bool
+	allowedUsers  []string
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
@@ -123,7 +132,7 @@ func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, 
 	if err != nil {
 		return syncErrorResponse(resType, h.mode)
 	}
-	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
+	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.federatedZone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
 		return syncErrorResponse(resType, h.mode)
 	}
 	return admission.Allowed("")

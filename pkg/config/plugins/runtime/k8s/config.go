@@ -81,6 +81,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			BuiltinDNS: BuiltinDNS{
 				Enabled: true,
 				Port:    15053,
+				Logging: false,
 			},
 			EBPF: EBPF{
 				Enabled:              false,
@@ -89,6 +90,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				CgroupPath:           "/sys/fs/cgroup",
 				ProgramsSourcePath:   "/kuma/ebpf",
 			},
+			IgnoredServiceSelectorLabels: []string{},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -207,6 +209,11 @@ type Injector struct {
 	// EBPF is a configuration for ebpf if transparent proxy should be installed
 	// using ebpf instead of iptables
 	EBPF EBPF `json:"ebpf"`
+	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
+	// If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
+	// It is useful when you change Service selector and expect traffic to be sent immediately.
+	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
+	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -333,6 +340,8 @@ type BuiltinDNS struct {
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
 	// Redirect port for DNS
 	Port uint32 `json:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
+	// Turn on query logging for DNS
+	Logging bool `json:"logging,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_logging"`
 }
 
 // EBPF defines configuration for the ebpf, when transparent proxy is marked to be

@@ -20,10 +20,10 @@ var _ = Describe("PostgresStore template", func() {
 			cfg.MaxListQueryElements = uint32(maxListQueryElements)
 			cfg.MaxOpenConnections = 2
 
-			pqMetrics, err := core_metrics.NewMetrics("Standalone")
+			pqMetrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 
-			pgxMetrics, err := core_metrics.NewMetrics("Standalone")
+			pgxMetrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = MigrateDb(*cfg)

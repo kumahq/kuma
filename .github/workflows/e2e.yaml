@@ -35,11 +35,11 @@ jobs:
       - name: "Print parameters"
         run: |
           echo "All inputs:"
-          echo "Running with: \
-              k8s: ${{ inputs.k8sVersion }} \
-              target: ${{ inputs.target }} \
-              parallelism: ${{ inputs.parallelism }} \
-              arch: ${{ inputs.arch }} \
+          echo "Running with:\n \
+              k8s: ${{ inputs.k8sVersion }}\n \
+              target: ${{ inputs.target }}\n \
+              parallelism: ${{ inputs.parallelism }}\n \
+              arch: ${{ inputs.arch }}\n \
               cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
               "
       - name: "GitHub Actions: check out code"
@@ -92,6 +92,18 @@ jobs:
         if: ${{ inputs.arch == 'amd64' }}
         run: |
           make dev/set-kuma-helm-repo
+      - name: "GitHub Actions: enable ipv6 for docker"
+        if: ${{ inputs.arch == 'amd64' && inputs.k8sVersion == 'kindIpv6' }}
+        run: |
+          cat <<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
       - name: "GitHub Actions: run E2E tests"
         if: ${{ inputs.arch == 'amd64' }}
         run: |
@@ -127,7 +139,7 @@ jobs:
           make ${MAKE_PARAMETERS} CI=true "${target}"
       - name: "CircleCI: expose github action artifact variables"
         if: ${{ inputs.arch != 'amd64' }}
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             core.exportVariable('ACTIONS_RUNTIME_URL', process.env['ACTIONS_RUNTIME_URL'])
@@ -150,10 +162,15 @@ jobs:
           BODY='{"parameters": { "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  } }'
           BODY=$(echo "$BODY" | jq -c ".parameters += { \"gh_action_build_artifact_name\": \"$BUILD_OUTPUT_ARTIFACT_NAME\", \"gh_action_runtime_token\": \"$ACTIONS_RUNTIME_TOKEN\", \"gh_action_artifact_list_url\": \"${ACTIONS_RUNTIME_URL}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview\" }")
 
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            BODY=$(echo $BODY | jq -rc '.+= {"tag": "${{ github.ref_name }}"}')
+          REF_NAME=
+          # use pull/<number>/head if it's PR from a fork,
+          # otherwise, always use the current SHA to make sure all CircleCI e2e runnings are using the same commit SHA with this GH Action run
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            REF_NAME=${REF_NAME#refs/}
+            BODY=$(echo $BODY | jq -rc ".+= {\"branch\": \"$REF_NAME\"}")
           else
-            BODY=$(echo $BODY | jq -rc '.+= {"branch": "${{ github.ref_name }}"}')
+            REF_NAME=${{ github.event.pull_request.head.sha || github.sha }}
+            BODY=$(echo $BODY | jq -rc ".+= {\"tag\": \"$REF_NAME\"}")
           fi
 
           CIRCLE_CI_API_PATH=https://circleci.com/api/v2/project/gh/${{ github.repository }}/pipeline

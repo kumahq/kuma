@@ -108,7 +108,7 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 }
 
 func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) store.ResourceStore {
-	metrics, err := core_metrics.NewMetrics("Standalone")
+	metrics, err := core_metrics.NewMetrics("Zone")
 	Expect(err).ToNot(HaveOccurred())
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
