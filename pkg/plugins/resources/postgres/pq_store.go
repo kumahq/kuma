@@ -65,13 +65,14 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
-	labelsBytes, err := json.Marshal(opts.Labels)
+
+	labels, err := prepareLabels(opts.Labels)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert labels to json")
+		return err
 	}
 
 	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
-		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType, string(labelsBytes))
+		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType, labels)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.Descriptor().Name, opts.Name, opts.Mesh)
@@ -104,9 +105,9 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 
-	labelsBytes, err := json.Marshal(opts.Labels)
+	labels, err := prepareLabels(opts.Labels)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert labels to json")
+		return err
 	}
 
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
@@ -115,7 +116,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
-		string(labelsBytes),
+		labels,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,

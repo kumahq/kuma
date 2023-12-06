@@ -3,13 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -101,6 +101,11 @@ func NewResourceSyncer(
 	}, nil
 }
 
+type OnUpdate struct {
+	r    core_model.Resource
+	opts []store.UpdateOptionsFunc
+}
+
 func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
 	now := core.Now()
 	defer func() {
@@ -172,18 +177,19 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 	// 2. create resources which are not represented in 'downstream' and update the rest of them
 	onCreate := []core_model.Resource{}
-	onUpdate := []core_model.Resource{}
+	onUpdate := []OnUpdate{}
 	for _, r := range upstream.GetItems() {
 		existing := indexedDownstream.get(core_model.MetaToResourceKey(r.GetMeta()))
 		if existing == nil {
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) || !maps.Equal(existing.GetMeta().GetLabels(), r.GetMeta().GetLabels()) {
+		newLabels := r.GetMeta().GetLabels()
+		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) || !maps.Equal(existing.GetMeta().GetLabels(), newLabels) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
-			onUpdate = append(onUpdate, r)
+			onUpdate = append(onUpdate, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(newLabels)}})
 		}
 	}
 
@@ -225,13 +231,13 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			}
 		}
 
-		for _, r := range onUpdate {
-			log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+		for _, upd := range onUpdate {
+			log.V(1).Info("updating a resource", "name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
 			now := time.Now()
 			// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 			// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 			// from upstream store, because we update downstream only when resource have changed in upstream
-			if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now), store.UpdateWithLabels(r.GetMeta().GetLabels())); err != nil {
+			if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(now))...); err != nil {
 				return err
 			}
 		}

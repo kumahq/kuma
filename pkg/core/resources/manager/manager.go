@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 type ReadOnlyResourceManager interface {
@@ -68,7 +69,12 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 		}
 	}
 
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner))...)
+	if opts.Labels == nil {
+		opts.Labels = map[string]string{}
+	}
+	opts.Labels[metadata.KumaMeshLabel] = opts.Mesh
+
+	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner), store.CreateWithLabels(opts.Labels))...)
 }
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -96,7 +102,15 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	if err := model.Validate(resource); err != nil {
 		return err
 	}
-	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
+
+	opts := store.NewUpdateOptions(fs...)
+
+	if opts.Labels == nil {
+		opts.Labels = map[string]string{}
+	}
+	opts.Labels[metadata.KumaMeshLabel] = resource.GetMeta().GetMesh()
+
+	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()), store.UpdateWithLabels(opts.Labels))...)
 }
 
 type ConflictRetry struct {

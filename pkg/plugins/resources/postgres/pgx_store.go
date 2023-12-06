@@ -97,9 +97,9 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
 
-	labelsBytes, err := json.Marshal(opts.Labels)
+	labels, err := prepareLabels(opts.Labels)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert labels to json")
+		return err
 	}
 
 	args := []any{
@@ -113,7 +113,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		ownerName,
 		ownerMesh,
 		ownerType,
-		string(labelsBytes),
+		labels,
 	}
 	tx, exist := store.TxFromCtx(ctx)
 	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
@@ -153,9 +153,9 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 
-	labelsBytes, err := json.Marshal(opts.Labels)
+	labels, err := prepareLabels(opts.Labels)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert labels to json")
+		return err
 	}
 
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
@@ -163,7 +163,7 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
-		string(labelsBytes),
+		labels,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
@@ -550,4 +550,12 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool, poolName 
 
 func (r *pgxResourceStore) Begin(ctx context.Context) (store.Transaction, error) {
 	return r.pool.Begin(ctx)
+}
+
+func prepareLabels(labels map[string]string) (string, error) {
+	lblBytes, err := json.Marshal(labels)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert labels to json")
+	}
+	return string(lblBytes), nil
 }
