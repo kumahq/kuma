@@ -68,8 +68,6 @@ policyEngine: TargetRef
 
 This approach enables the creation of new default target ref policies without enforcing users to only use new polcies. The control-plane will support both old and new policies, with the default `Mesh` being created using the new policies. New policies will not require `MeshTrafficPermissions`, `MeshHTTPRoute`, or `MeshTCPRoute` to enable traffic across the cluster.
 
-Potential future enhancements may include introducing another mode, such as `TargetRefOnly`, which disables old policies. This could be implemented in `MeshContext` by excluding existing legacy policies from the context. On the API level, checks could be performed to verify if the `Mesh` permits the creation of legacy resources.
-
 #### Existing users behaviour
 
 When a user already has a `Mesh` and doesn't define the `policyEngine` field, we treat it as an `Undefined` engine. Only when a user creates a new mesh does the mesh defaulter set an engine to `TargetRef`.
@@ -80,6 +78,13 @@ Protobuf, by default, takes the first value if there is no value provided. Witho
 
 This situation creates problem in discovering between cases where the user did not provide the definition or explicitly chose `Legacy`.
 Another issue is when retrieving the old mesh from the storage and there is no field provided. In this case we can treat `Undefined` as a `Legacy`.
+
+When the user updates the Mesh definition to use the `TargetRef` engine, we won't create default policies. Default policies are only generated upon the creation of a new Mesh.
+
+Problem:
+What if users update the mesh using CD/Terraform? 
+
+- Should we make a call to verify if the `Mesh` exists, and if it does, set the `policyEngine` to `Legacy`?
 
 #### New kuma users behaviour
 
