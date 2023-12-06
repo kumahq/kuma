@@ -93,7 +93,7 @@ func buildArgsForDocker(args map[string][]string, ports map[uint32]uint32) []str
 
 	for port := range ports {
 		port := strconv.Itoa(int(port))
-		opts = append(opts, "--publish="+port)
+		opts = append(opts, "--publish=0.0.0.0::"+port)
 	}
 
 	return opts

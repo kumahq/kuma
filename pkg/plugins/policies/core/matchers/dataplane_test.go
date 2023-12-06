@@ -161,7 +161,7 @@ var _ = Describe("MatchedPolicies", func() {
 			policies, err := matchers.MatchedPolicies(meshaccesslog_api.MeshAccessLogType, dpp, resources)
 			Expect(err).ToNot(HaveOccurred())
 
-			bytes, err := yaml.Marshal(policies.FromRules)
+			bytes, err := yaml.Marshal(policies.GatewayRules)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		},
