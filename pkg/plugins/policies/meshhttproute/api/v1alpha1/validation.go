@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -201,6 +203,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				hasAnyMatchesWithoutPrefix(matches) {
 				errs.AddViolationAt(path.Field("requestRedirect").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
+			errs.AddErrorAt(path.Field("requestRedirect").Field("hostname"), validatePreciseHostname(filter.RequestRedirect.Hostname))
 		case URLRewriteType:
 			if filter.URLRewrite == nil {
 				errs.AddViolationAt(path.Field("urlRewrite"), validators.MustBeDefined)
@@ -211,6 +214,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				hasAnyMatchesWithoutPrefix(matches) {
 				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
+			errs.AddErrorAt(path.Field("urlRewrite").Field("hostname"), validatePreciseHostname(filter.URLRewrite.Hostname))
 		case RequestMirrorType:
 			if filter.RequestMirror == nil {
 				errs.AddViolationAt(path.Field("requestMirror"), validators.MustBeDefined)
@@ -226,6 +230,32 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				}),
 			)
 		}
+	}
+
+	return errs
+}
+
+// PreciseHostname is the fully qualified domain name of a network host. This
+// matches the RFC 1123 definition of a hostname with 1 notable exception that
+// numeric IP addresses are not allowed.
+//
+// Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
+// alphanumeric characters or '-', and must start and end with an alphanumeric
+// character. No other punctuation is allowed.
+func validatePreciseHostname(hostname *PreciseHostname) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if hostname == nil {
+		return errs
+	}
+
+	if len(k8s_validation.IsValidIP(string(*hostname))) == 0 {
+		errs.AddViolationAt(validators.Root(), "cannot be an IP address")
+		return errs
+	}
+
+	for _, violation := range k8s_validation.IsDNS1123Subdomain(string(*hostname)) {
+		errs.AddViolationAt(validators.Root(), violation)
 	}
 
 	return errs
