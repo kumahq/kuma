@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -68,9 +69,15 @@ func GenerateVirtualHost(
 
 				route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
 				route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
-				envoy_routes.RouteSetRewriteHostToBackendHostname(e.Rewrite != nil && e.Rewrite.HostToBackendHostname),
 				envoy_routes.RouteActionIdleTimeout(DefaultStreamIdleTimeout),
 			)
+
+		if e.Rewrite != nil {
+			routeBuilder.Configure(
+				envoy_routes.RouteSetRewriteHostToBackendHostname(e.Rewrite.HostToBackendHostname),
+				envoy_routes.RouteReplaceHostHeader(pointer.Deref(e.Rewrite.ReplaceHostname)),
+			)
+		}
 
 		// Generate a retry policy for this route, if there is one.
 		routeBuilder.Configure(
@@ -113,6 +120,10 @@ func GenerateVirtualHost(
 
 		for _, m := range e.Match.AbsentHeader {
 			routeBuilder.Configure(envoy_routes.RouteMatchPresentHeader(m, false))
+		}
+
+		for _, m := range e.Match.PrefixHeader {
+			routeBuilder.Configure(envoy_routes.RouteMatchPrefixHeader(m.Key, m.Value))
 		}
 
 		for _, m := range e.Match.ExactQuery {

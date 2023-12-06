@@ -158,6 +158,8 @@ type ResourceTypeDescriptor struct {
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
 	Overview Resource
+	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
+	DumpForGlobal bool
 }
 
 func newObject(baseResource Resource) Resource {

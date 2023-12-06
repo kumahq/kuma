@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/exp/maps"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
@@ -18,10 +19,13 @@ import (
 
 type ServicePredicate func(*kube_core.Service) bool
 
-func MatchServiceThatSelectsPod(pod *kube_core.Pod) ServicePredicate {
+func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) ServicePredicate {
 	return func(svc *kube_core.Service) bool {
-		selector := kube_labels.SelectorFromSet(svc.Spec.Selector)
-		return selector.Matches(kube_labels.Set(pod.Labels))
+		selector := maps.Clone(svc.Spec.Selector)
+		for _, ignoredLabel := range ignoredLabels {
+			delete(selector, ignoredLabel)
+		}
+		return kube_labels.SelectorFromSet(selector).Matches(kube_labels.Set(pod.Labels))
 	}
 }
 

@@ -81,6 +81,11 @@ type PoliciesStats struct {
 	Total int `json:"total"`
 }
 
+// ResourceTypeDescriptionList A list of all resources install
+type ResourceTypeDescriptionList struct {
+	Resources []externalRef0.ResourceTypeDescription `json:"resources"`
+}
+
 // ServicesStats Services statistics
 type ServicesStats struct {
 	// External External services statistics
@@ -124,6 +129,9 @@ type InspectRulesForDataplaneResponse = InspectRulesForDataplane
 
 // InternalServerError standard error
 type InternalServerError = externalRef0.Error
+
+// ResourceTypeDescriptionListResponse A list of all resources install
+type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
 
 // InspectResourcesParams defines parameters for InspectResources.
 type InspectResourcesParams struct {

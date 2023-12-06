@@ -125,6 +125,24 @@ func RouteMatchPresentHeader(name string, presentMatch bool) RouteConfigurer {
 	})
 }
 
+// RouteMatchPrefixHeader appends a prefix match for the names HTTP request header
+func RouteMatchPrefixHeader(name string, match string) RouteConfigurer {
+	if name == "" {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteMustConfigureFunc(func(r *envoy_config_route_v3.Route) {
+		r.Match.Headers = append(r.Match.Headers,
+			&envoy_config_route_v3.HeaderMatcher{
+				Name: name,
+				HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_PrefixMatch{
+					PrefixMatch: match,
+				},
+			},
+		)
+	})
+}
+
 // RouteMatchExactQuery appends an exact match for the value of the named query parameter.
 func RouteMatchExactQuery(name string, value string) RouteConfigurer {
 	if name == "" || value == "" {
