@@ -127,3 +127,45 @@ In order to pick which backend we will be using for metrics collection, we need 
 The easiest way to do this is to use xDS and create an Envoy listener that will serve configuration for DPP, 
 then we will need to periodically make requests from DPP to it to check if configuration changed. This will enable us
 to not only configure metrics backend, but will make DPP easily configurable from control-plane with policies or any other mechanism.
+
+In case of metrics, this enables us to do basically anything with metrics itself: filter, combine, mutate etc.
+
+Our listener could expose `/dpp-config` endpoint, that can serve configuration. Right now we can start with providing only 
+monitoring configuration. Example payload:
+
+```json
+{
+  "observability": {
+    "metrics": {
+      "applications": [
+        {
+          "path": "/metrics/prometheus",
+          "port": "8888",
+          "regex": "http.*"
+        },
+        {
+          "port": "8000"
+        }
+      ],
+      "backends": [
+        {
+          "type": "Prometheus",
+          "prometheus": {
+            "port": "5670",
+            "path": "/metrics"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+The question is if we want to allow configuring multiple backends for a single DPP, I think that this is technically possible,
+and can be useful when migrating from `Prometheus` to `OTEL`.
+
+How to implement this: 
+
+We can add another generator like [prometheus_endpoint_generator](https://github.com/kumahq/kuma/blob/f8f5b40a649c4ea5b5dac4ea56ff4fc289da07bc/pkg/xds/generator/prometheus_endpoint_generator.go). 
+This generator will create some basic dataplane configuration. Then we can create new plugin type, eg. `DataplaneConfigurationPlugin` 
+that will be called in the generator to update the config.
