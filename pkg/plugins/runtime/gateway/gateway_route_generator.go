@@ -78,6 +78,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 		}
 	}
 
+	return HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
+}
+
+func HandlePrefixMatchesAndPopulatePolicies(host GatewayHost, exactEntries, prefixEntries map[string][]route.Entry, entries []route.Entry) []route.Entry {
 	// The Kubernetes Ingress and Gateway APIs define prefix matching
 	// to match in terms of path components, so we follow suit here.
 	// Envoy path prefix matching is byte-wise, so we need to do some

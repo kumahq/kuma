@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_metrics_hijacker
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:metrics:hijacker
       endpoints:

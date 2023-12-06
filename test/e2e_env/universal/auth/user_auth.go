@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"net/http"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -55,4 +57,23 @@ func UserAuth() {
 		Expect(kumactl.RunKumactl("get", "dataplanes")).To(Succeed())
 		Expect(kumactl.RunKumactl("get", "secrets")).ToNot(Succeed())
 	})
+
+	DescribeTable("should ignore auth data on unauthorized endpoints",
+		func(endpoint string) {
+			// given
+			req, err := http.NewRequest("GET", universal.Cluster.GetKuma().GetAPIServerAddress()+endpoint, nil)
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Add("authorization", "Bearer invliddata")
+
+			// when
+			resp, err := http.DefaultClient.Do(req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(200))
+		},
+		Entry("index", "/"),
+		Entry("gui", "/gui/"),
+	)
 }

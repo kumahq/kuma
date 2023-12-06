@@ -146,6 +146,19 @@ message Dataplane {
       // See https://kuma.io/docs/latest/documentation/health for more
       // information.
       ServiceProbe serviceProbe = 8;
+
+      enum State {
+        // Inbound is ready to serve the traffic.
+        Ready = 0;
+        // Inbound is not ready to serve the traffic.
+        NotReady = 1;
+        // Inbound is not created. It cannot be targeted by policies.
+        // However, a data plane proxy receives a certificate with identity of this inbound.
+        Ignored = 2;
+      }
+
+      // State describes the current state of the listener.
+      State state = 9;
     }
 
     // Outbound describes a service consumed by the data plane proxy.

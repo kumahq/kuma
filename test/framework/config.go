@@ -234,7 +234,9 @@ var defaultConf = E2eConfig{
 	KumaCpConfig: KumaCpConfig{
 		Standalone: StandaloneConfig{
 			Kubernetes: ControlPlaneConfig{
-				Envs:                 map[string]string{},
+				Envs: map[string]string{
+					"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS": "changesvc-test-label",
+				},
 				AdditionalYamlConfig: "",
 			},
 			Universal: ControlPlaneConfig{

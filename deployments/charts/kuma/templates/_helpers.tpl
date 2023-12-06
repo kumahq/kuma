@@ -217,6 +217,10 @@ env:
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+{{- if .Values.dataPlane.dnsLogging }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
+  value: "true"
+{{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION

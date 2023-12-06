@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -141,7 +142,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
-	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
+	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	addZoneEndpoints(ws, resManager)
@@ -348,6 +349,7 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 		ReadHeaderTimeout: time.Second,
 		Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
 		Handler:           a.mux,
+		ErrorLog:          adapter.ToStd(log),
 	}
 
 	go func() {
@@ -390,6 +392,7 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 		Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
 		Handler:           a.mux,
 		TLSConfig:         tlsConfig,
+		ErrorLog:          adapter.ToStd(log),
 	}
 
 	go func() {

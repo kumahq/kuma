@@ -3,7 +3,7 @@ commonLbConfig:
     value: 62.9
   zoneAwareLbConfig:
     failTrafficOnPanic: true
-connectTimeout: 10s
+connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}
