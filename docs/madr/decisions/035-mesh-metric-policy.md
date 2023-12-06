@@ -147,13 +147,13 @@ monitoring configuration. Example payload:
           "port": "8000"
         }
       ],
+      "sidecar": {
+        "port": "5670",
+        "path": "/metrics"
+      },
       "backends": [
         {
-          "type": "Prometheus",
-          "prometheus": {
-            "port": "5670",
-            "path": "/metrics"
-          }
+          "type": "Prometheus"
         }
       ]
     }
