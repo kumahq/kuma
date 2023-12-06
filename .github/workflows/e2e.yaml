@@ -35,11 +35,11 @@ jobs:
       - name: "Print parameters"
         run: |
           echo "All inputs:"
-          echo "Running with: \
-              k8s: ${{ inputs.k8sVersion }} \
-              target: ${{ inputs.target }} \
-              parallelism: ${{ inputs.parallelism }} \
-              arch: ${{ inputs.arch }} \
+          echo "Running with:\n \
+              k8s: ${{ inputs.k8sVersion }}\n \
+              target: ${{ inputs.target }}\n \
+              parallelism: ${{ inputs.parallelism }}\n \
+              arch: ${{ inputs.arch }}\n \
               cniNetworkPlugin: ${{ inputs.cniNetworkPlugin }} \
               "
       - name: "GitHub Actions: check out code"

@@ -534,7 +534,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	var wg sync.WaitGroup
 	errCh := make(chan error, len(appsToInstall))
 
-	// Iterate through tasks and execute them concurrently using goroutines
 	for _, app := range appsToInstall {
 		wg.Add(1)
 		go func(installation appInstallation) {
@@ -1255,7 +1254,6 @@ func printDeploymentConditions(c *K8sCluster, namespace string, name string) {
 	deploy := k8s.GetDeployment(c.t, c.GetKubectlOptions(namespace), name)
 	condition.Conditions = deploy.Status.Conditions
 
-	// Extract status.conditions and marshal it back to JSON
 	replicaSets := k8s.ListReplicaSets(c.t, c.GetKubectlOptions(namespace), metav1.ListOptions{
 		LabelSelector: "app=" + name,
 	})
