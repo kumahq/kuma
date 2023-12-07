@@ -118,4 +118,4 @@ This action would enable each dataplane to communicate with all `ExternalService
 
 #### Cons
 
-* Disabling the creation of legacy policies might necessitate an additional call for the `Mesh` object.
+* More complex configuration with 2 different places to set the configuration.
