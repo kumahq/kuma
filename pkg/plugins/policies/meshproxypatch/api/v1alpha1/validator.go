@@ -45,26 +45,43 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("appendModifications")
-	for i, modification := range conf.AppendModifications {
-		path := path.Index(i)
-		switch {
-		case modification.Cluster != nil:
-			verr.AddErrorAt(path, validateClusterMod(*modification.Cluster))
-		case modification.Listener != nil:
-			verr.AddErrorAt(path, validateListenerMod(*modification.Listener))
-		case modification.VirtualHost != nil:
-			verr.AddErrorAt(path, validateVirtualHostMod(*modification.VirtualHost))
-		case modification.NetworkFilter != nil:
-			verr.AddErrorAt(path, validateNetworkFilterMod(*modification.NetworkFilter))
-		case modification.HTTPFilter != nil:
-			verr.AddErrorAt(path, validateHTTPFilterMod(*modification.HTTPFilter))
-		default:
-			verr.AddViolationAt(path, "at least one modification has to be defined")
-		}
-	}
+
 	if len(conf.AppendModifications) == 0 {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
+
+	for i, modification := range conf.AppendModifications {
+		path := path.Index(i)
+
+		if modification.Cluster == nil &&
+			modification.Listener == nil &&
+			modification.VirtualHost == nil &&
+			modification.NetworkFilter == nil &&
+			modification.HTTPFilter == nil {
+			verr.AddViolationAt(path, "at least one modification has to be defined")
+		}
+
+		if modification.Cluster != nil {
+			verr.AddErrorAt(path, validateClusterMod(*modification.Cluster))
+		}
+
+		if modification.Listener != nil {
+			verr.AddErrorAt(path, validateListenerMod(*modification.Listener))
+		}
+
+		if modification.VirtualHost != nil {
+			verr.AddErrorAt(path, validateVirtualHostMod(*modification.VirtualHost))
+		}
+
+		if modification.NetworkFilter != nil {
+			verr.AddErrorAt(path, validateNetworkFilterMod(*modification.NetworkFilter))
+		}
+
+		if modification.HTTPFilter != nil {
+			verr.AddErrorAt(path, validateHTTPFilterMod(*modification.HTTPFilter))
+		}
+	}
+
 	return verr
 }
 
