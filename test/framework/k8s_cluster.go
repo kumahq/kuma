@@ -1111,7 +1111,7 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		c.defaultRetries,
 		c.defaultTimeout)
 	if err != nil {
-		printDeploymentConditions(c, namespace, name)
+		printDeploymentConditions(c.t, c.GetKubectlOptions(namespace), namespace, name)
 		return err
 	}
 
@@ -1126,13 +1126,14 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := 0; i < replicas; i++ {
-		err := k8s.WaitUntilPodAvailableE(c.t,
+		podError := k8s.WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
 			c.defaultTimeout)
-		if err != nil {
-			return err
+
+		if podError != nil {
+			return printDetailedPodInfo(c.t, c.GetKubectlOptions(namespace), podError, pods[i])
 		}
 	}
 	return nil
@@ -1248,13 +1249,38 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }
 
-func printDeploymentConditions(c *K8sCluster, namespace string, name string) {
+func printDetailedPodInfo(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, podError error, pod v1.Pod) error {
+	if podError == nil {
+		return podError
+	}
+
+	podCond, _ := json.Marshal(pod.Status.Conditions)
+	podLogs, _ := k8s.GetPodLogsE(testingT, kubectlOptions, &pod, "")
+	if podLogs != "" {
+		logLines := strings.Split(podLogs, "\n")
+		if len(logLines) > 30 {
+			podLogs = strings.Join(logLines[len(logLines)-30:], "\n")
+		}
+		podLogs = "; last lines of pod logs: " + podLogs
+	}
+
+	podError = errors.New(fmt.Sprintf("%s; pod name: %s; pod phase: %s; pod conditions: %s%s",
+		podError.Error(),
+		pod.GetName(),
+		pod.Status.Phase,
+		podCond,
+		podLogs))
+
+	return podError
+}
+
+func printDeploymentConditions(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, namespace string, name string) {
 	condition := deployConditions{Name: name, Namespace: namespace, Conditions: make([]appsv1.DeploymentCondition, 0), Replicas: make([]replicaSetCondition, 0)}
 
-	deploy := k8s.GetDeployment(c.t, c.GetKubectlOptions(namespace), name)
+	deploy := k8s.GetDeployment(testingT, kubectlOptions, name)
 	condition.Conditions = deploy.Status.Conditions
 
-	replicaSets := k8s.ListReplicaSets(c.t, c.GetKubectlOptions(namespace), metav1.ListOptions{
+	replicaSets := k8s.ListReplicaSets(testingT, kubectlOptions, metav1.ListOptions{
 		LabelSelector: "app=" + name,
 	})
 
@@ -1266,7 +1292,7 @@ func printDeploymentConditions(c *K8sCluster, namespace string, name string) {
 	if err != nil {
 		deployConditionJson = []byte(fmt.Sprintf("error marshaling deployment conditions: '%s'", err.Error()))
 	}
-	logger.Default.Logf(c.t, "Conditions of deployment '%s/%s': %s", namespace, name, string(deployConditionJson))
+	logger.Default.Logf(testingT, "Conditions of deployment '%s/%s': %s", namespace, name, string(deployConditionJson))
 }
 
 type appInstallation struct {
