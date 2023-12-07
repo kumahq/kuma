@@ -129,13 +129,17 @@ var HttpRetryOnEnumToEnvoyValue = map[HTTPRetryOn]string{
 }
 
 type HTTP struct {
-	// NumRetries is the number of attempts that will be made on failed (and retriable) requests
+	// NumRetries is the number of attempts that will be made on failed (and
+	// retriable) requests.  If not set, the default value is 1.
 	NumRetries *uint32 `json:"numRetries,omitempty"`
-	// PerTryTimeout is the amount of time after which retry attempt should timeout.
-	// Setting this timeout to 0 will disable it. Default is 15s.
+	// PerTryTimeout is the amount of time after which retry attempt should time out.
+	// If left unspecified, the global route timeout for the request will be used.
+	// Consequently, when using a 5xx based retry policy, a request that times out
+	// will not be retried as the total timeout budget would have been exhausted.
+	// Setting this timeout to 0 will disable it.
 	PerTryTimeout *k8s.Duration `json:"perTryTimeout,omitempty"`
 	// BackOff is a configuration of durations which will be used in exponential
-	// backoff strategy between retries
+	// backoff strategy between retries.
 	BackOff *BackOff `json:"backOff,omitempty"`
 	// RateLimitedBackOff is a configuration of backoff which will be used
 	// when the upstream returns one of the headers configured.
@@ -145,11 +149,12 @@ type HTTP struct {
 	// RefusedStream, Http3PostConnectFailure, HttpMethodConnect, HttpMethodDelete,
 	// HttpMethodGet, HttpMethodHead, HttpMethodOptions, HttpMethodPatch,
 	// HttpMethodPost, HttpMethodPut, HttpMethodTrace].
-	// Also, any HTTP status code (500, 503, etc).
+	// Also, any HTTP status code (500, 503, etc.).
+	// +kubebuilder:example={"5XX","GatewayError","Reset","Retriable4xx","ConnectFailure","EnvoyRatelimited","RefusedStream","Http3PostConnectFailure","HttpMethodConnect","HttpMethodDelete","HttpMethodGet","HttpMethodHead","HttpMethodOptions","HttpMethodPatch","HttpMethodPost","HttpMethodPut","HttpMethodTrace","500","503"}
 	RetryOn *[]HTTPRetryOn `json:"retryOn,omitempty"`
 	// RetriableResponseHeaders is an HTTP response headers that trigger a retry
 	// if present in the response. A retry will be triggered if any of the header
-	// matches match the upstream response headers.
+	// matches the upstream response headers.
 	RetriableResponseHeaders *[]common_api.HeaderMatch `json:"retriableResponseHeaders,omitempty"`
 	// RetriableRequestHeaders is an HTTP headers which must be present in the request
 	// for retries to be attempted.
@@ -162,11 +167,13 @@ type HTTP struct {
 	// be routed to. If unspecified, this will default to retrying once.
 	HostSelectionMaxAttempts *int64 `json:"hostSelectionMaxAttempts,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=Canceled;DeadlineExceeded;Internal;ResourceExhausted;Unavailable
 type GRPCRetryOn string
 
 var (
 	// Canceled means Envoy will attempt a retry if the gRPC status code in
-	// the response headers is “cancelled” (1)
+	// the response headers is “canceled” (1)
 	Canceled GRPCRetryOn = "Canceled"
 
 	// DeadlineExceeded Envoy will attempt a retry if the gRPC status code in
@@ -195,26 +202,28 @@ var GrpcRetryOnEnumToEnvoyValue = map[GRPCRetryOn]string{
 }
 
 type GRPC struct {
-	// NumRetries is the number of attempts that will be made on failed (and retriable) requests.
+	// NumRetries is the number of attempts that will be made on failed (and
+	// retriable) requests. If not set, the default value is 1.
 	NumRetries *uint32 `json:"numRetries,omitempty"`
-	// PerTryTimeout is the amount of time after which retry attempt should timeout.
-	// Setting this timeout to 0 will disable it. Default is 15s.
+	// PerTryTimeout is the maximum amount of time each retry attempt can take
+	// before it times out. If not set, the global request timeout for the route
+	// will be used. Setting this value to 0 will disable the per-try timeout.
 	PerTryTimeout *k8s.Duration `json:"perTryTimeout,omitempty"`
-	// BackOff is a configuration of durations which will be used in exponential
+	// BackOff is a configuration of durations which will be used in an exponential
 	// backoff strategy between retries.
 	BackOff *BackOff `json:"backOff,omitempty"`
-	// RateLimitedBackOff is a configuration of backoff which will be used
-	// when the upstream returns one of the headers configured.
+	// RateLimitedBackOff is a configuration of backoff which will be used when
+	// the upstream returns one of the headers configured.
 	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
-	// RetryOn is a list of conditions which will cause a retry. Available values are:
-	// [Canceled, DeadlineExceeded, Internal, ResourceExhausted, Unavailable].
+	// RetryOn is a list of conditions which will cause a retry.
+	// +kubebuilder:example={Canceled,DeadlineExceeded,Internal,ResourceExhausted,Unavailable}
 	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 
 type BackOff struct {
 	// BaseInterval is an amount of time which should be taken between retries.
 	// Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
-	// Default is 25ms.
+	// +kubebuilder:default="25ms"
 	BaseInterval *k8s.Duration `json:"baseInterval,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 10 times the "BaseInterval".
@@ -222,15 +231,17 @@ type BackOff struct {
 }
 
 type RateLimitedBackOff struct {
-	// ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset) to match against the response.
-	// Headers are tried in order, and matched case-insensitive. The first header to be parsed successfully is used.
+	// ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset)
+	// to match against the response. Headers are tried in order, and matched
+	// case-insensitive. The first header to be parsed successfully is used.
 	// If no headers match the default exponential BackOff is used instead.
 	ResetHeaders *[]ResetHeader `json:"resetHeaders,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
-	// Default is 300 seconds.
+	// +kubebuilder:default="300s"
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=OmitPreviousHosts;OmitHostsWithTags;OmitPreviousPriorities
 type PredicateType string
 
 var (
@@ -240,14 +251,14 @@ var (
 )
 
 type Predicate struct {
-	// Type is requested predicate mode. Available values are OmitPreviousHosts, OmitHostsWithTags,
-	// and OmitPreviousPriorities.
+	// Type is requested predicate mode.
 	PredicateType PredicateType `json:"predicate"`
 	// Tags is a map of metadata to match against for selecting the omitted hosts. Required if Type is
 	// OmitHostsWithTags
 	Tags map[string]string `json:"tags,omitempty"`
 	// UpdateFrequency is how often the priority load should be updated based on previously attempted priorities.
-	// Used for OmitPreviousPriorities. Default is 2 if not set.
+	// Used for OmitPreviousPriorities.
+	// +kubebuilder:default=2
 	UpdateFrequency int32 `json:"updateFrequency,omitempty"`
 }
 
@@ -270,6 +281,6 @@ var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolic
 type ResetHeader struct {
 	// The Name of the reset header.
 	Name common_api.HeaderName `json:"name"`
-	// The format of the reset header, either Seconds or UnixTimestamp.
+	// The format of the reset header.
 	Format RateLimitFormat `json:"format"`
 }
