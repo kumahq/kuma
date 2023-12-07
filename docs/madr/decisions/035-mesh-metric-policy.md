@@ -82,7 +82,7 @@ spec:
       regex: http2_act.* # only profile or regex can be defined
       usedOnly: true
     application:
-      - path: "/metrics/prometheus" # is name still needed since targetRef can just point to a name?
+      - path: "/metrics/prometheus"
         port: 8888
         regex: http.*
       - port: 8000 # default path is /metrics
@@ -97,6 +97,10 @@ spec:
         openTelemetry:
           endpoint: otel-collector:4317
 ```
+
+### Metrics profiles
+
+Metrics profiles configurable in section `sidecar.profile` will be fully described in separate MADR.
 
 ### Configure MADS based on policy data
 MADS server is responsible for aggregating information about dataplanes needed for Prometheus monitoring. 
@@ -147,13 +151,15 @@ monitoring configuration. Example payload:
           "port": "8000"
         }
       ],
-      "sidecar": {
-        "port": "5670",
-        "path": "/metrics"
-      },
       "backends": [
         {
           "type": "Prometheus"
+        },
+        {
+          "type": "OpenTelemetry",
+          "openTelemetry": {
+            "endpoint": "otel-collector:4317"
+          }
         }
       ]
     }
@@ -161,11 +167,29 @@ monitoring configuration. Example payload:
 }
 ```
 
-The question is if we want to allow configuring multiple backends for a single DPP, I think that this is technically possible,
-and can be useful when migrating from `Prometheus` to `OTEL`.
+We should allow configuring multiple metrics backends. 
 
 How to implement this: 
 
-We can add another generator like [prometheus_endpoint_generator](https://github.com/kumahq/kuma/blob/f8f5b40a649c4ea5b5dac4ea56ff4fc289da07bc/pkg/xds/generator/prometheus_endpoint_generator.go). 
+We can add another generator like [prometheus_endpoint_generator](https://github.com/kumahq/kuma/blob/f8f5b40a649c4ea5b5dac4ea56ff4fc289da07bc/pkg/xds/generator/prometheus_endpoint_generator.go). This generator will create separate listener for configuration.
+This listener should be only bound to localhost. We don't need to expose it to the world. In the future we can extend `DataplaneInsight` 
+with this dynamic configuration for debugging and GUI purposes.
 This generator will create some basic dataplane configuration. Then we can create new plugin type, eg. `DataplaneConfigurationPlugin` 
 that will be called in the generator to update the config.
+
+### Implementation roadmap
+
+1. New policy API + validation
+2. Move existing functionality to new policy
+   1. Move prometheus_endpoint_generator logic to policy plugin
+   2. Extend MADS to use information from `MeshMetric` plugin data instead of `Mesh` resource
+3. Extend MADS to allow using multiple Prometheus backends
+4. Implement sidecar metrics profiles
+5. Add possibility to dynamically configure DPP
+6. Migrate DPP metrics to OTEL sdk
+7. Add possibility to publish metrics to OTEL collector
+
+### Future considerations
+
+- add possibility to add custom labels to metrics from application and sidecar
+- add possibility to filter sidecar and application metrics more precisely
