@@ -157,9 +157,7 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 	case RoundRobinType:
 	case RandomType:
 	case LeastRequestType:
-		if conf.LeastRequest != nil {
-			verr.AddError("leastRequest", validateLeastRequest(conf.LeastRequest))
-		}
+		verr.AddError("leastRequest", validateLeastRequest(conf.LeastRequest))
 	}
 
 	return verr

@@ -149,11 +149,9 @@ func ValidateIntOrStringGreaterOrEqualThan(path PathBuilder, number *intstr.IntO
 		return verr
 	}
 
-	dec, err := common_api.NewDecimalFromIntOrString(*number)
-	if err != nil {
+	if dec, err := common_api.NewDecimalFromIntOrString(*number); err != nil {
 		verr.AddViolationAt(path, StringHasToBeValidNumber)
-	}
-	if dec.LessThan(decimal.NewFromInt(int64(minValue))) {
+	} else if dec.LessThan(decimal.NewFromInt(int64(minValue))) {
 		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeGreaterOrEqualThen, minValue))
 	}
 
