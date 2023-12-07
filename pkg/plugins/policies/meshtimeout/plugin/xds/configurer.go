@@ -15,21 +15,13 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-)
-
-const (
-	defaultConnectionTimeout     = time.Second * 5
-	defaultIdleTimeout           = time.Hour
-	defaultRequestTimeout        = time.Second * 15
-	defaultStreamIdleTimeout     = time.Minute * 30
-	defaultMaxStreamDuration     = 0
-	defaultMaxConnectionDuration = 0
 )
 
 type ListenerConfigurer struct {
@@ -54,7 +46,7 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
 		if conf := c.getConf(c.Subset); conf != nil {
-			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, defaultIdleTimeout)
+			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
 		}
 		return nil
 	}
@@ -121,7 +113,7 @@ func ClusterConfigurerFromConf(conf api.Conf, protocol core_mesh.Protocol) Clust
 }
 
 func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, defaultConnectionTimeout)
+	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, policies_defaults.DefaultConnectTimeout)
 	switch c.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		err := clusters_v3.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
@@ -129,9 +121,9 @@ func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
 			commonHttp := options.CommonHttpProtocolOptions
-			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.IdleTimeout, defaultIdleTimeout)
-			commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.HTTPMaxStreamDuration, defaultMaxStreamDuration)
-			commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.HTTPMaxConnectionDuration, defaultMaxConnectionDuration)
+			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.IdleTimeout, policies_defaults.DefaultIdleTimeout)
+			commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.HTTPMaxStreamDuration, policies_defaults.DefaultMaxStreamDuration)
+			commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.HTTPMaxConnectionDuration, policies_defaults.DefaultMaxConnectionDuration)
 		})
 		if err != nil {
 			return err
@@ -148,11 +140,11 @@ func ConfigureRouteAction(
 	if routeAction == nil {
 		return
 	}
-	routeAction.Timeout = toProtoDurationOrDefault(httpRequestTimeout, defaultRequestTimeout)
+	routeAction.Timeout = toProtoDurationOrDefault(httpRequestTimeout, policies_defaults.DefaultRequestTimeout)
 	if httpStreamIdleTimeout != nil {
-		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, defaultStreamIdleTimeout)
+		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, policies_defaults.DefaultStreamIdleTimeout)
 	} else if routeAction.IdleTimeout == nil {
-		routeAction.IdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
+		routeAction.IdleTimeout = util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout)
 	}
 }
 

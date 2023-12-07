@@ -19,7 +19,9 @@ type DeploymentOpts struct {
 	Replicas            int32
 	WaitingToBeReady    bool
 	EnableProbes        bool
+	EnableService       bool
 	PodAnnotations      map[string]string
+	PodLabels           map[string]string
 	NodeSelector        map[string]string
 	protocol            string
 	tlsKey              string
@@ -36,6 +38,7 @@ func DefaultDeploymentOpts() DeploymentOpts {
 		WaitingToBeReady: true,
 		PodAnnotations:   map[string]string{},
 		EnableProbes:     true,
+		EnableService:    true,
 		protocol:         "http",
 	}
 }
@@ -115,9 +118,21 @@ func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 	}
 }
 
+func WithPodLabels(labels map[string]string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.PodLabels = labels
+	}
+}
+
 func WithoutProbes() DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.EnableProbes = false
+	}
+}
+
+func WithoutService() DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.EnableService = false
 	}
 }
 

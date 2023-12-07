@@ -2,7 +2,7 @@ resources:
 - name: api-http-5637c619d2781fec_mesh2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}

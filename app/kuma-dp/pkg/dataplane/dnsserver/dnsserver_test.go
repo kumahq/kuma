@@ -187,5 +187,88 @@ var _ = Describe("DNS Server", func() {
 			})
 			Expect(err).To(HaveOccurred())
 		}))
+
+		It("should enable logging if requested", test.Within(10*time.Second, func() {
+			// given
+			cfg := kuma_dp.Config{
+				DNS: kuma_dp.DNS{
+					Enabled:           true,
+					CoreDNSPort:       16001,
+					CoreDNSEmptyPort:  16002,
+					EnvoyDNSPort:      16002,
+					PrometheusPort:    16003,
+					CoreDNSBinaryPath: filepath.Join("testdata", "binary-mock.exit-0.sh"),
+					ConfigDir:         configDir,
+					CoreDNSLogging:    true,
+				},
+			}
+
+			By("starting a mock DNS Server")
+			// when
+			dnsServer, err := New(&Opts{
+				Config: cfg,
+				Stdout: outWriter,
+				Stderr: errWriter,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			go func() {
+				errCh <- dnsServer.Start(stopCh)
+			}()
+
+			expectedConfigFile := filepath.Join(configDir, "Corefile")
+
+			By("waiting for mock DNS Server to complete")
+			// then
+			Eventually(func() bool {
+				select {
+				case err := <-errCh:
+					Expect(err).ToNot(HaveOccurred())
+					return true
+				default:
+					return false
+				}
+			}, "5s", "10ms").Should(BeTrue())
+
+			By("closing the write side of the pipe")
+			// when
+			err = outWriter.Close()
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			By("verifying the output of mock DNS Server")
+			// when
+			var buf bytes.Buffer
+			_, err = buf.ReadFrom(outReader)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-conf %s -quiet", expectedConfigFile)))
+
+			By("verifying the contents DNS Server config file")
+			// when
+			actual, err := os.ReadFile(expectedConfigFile)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(string(actual)).To(Equal(`.:16001 {
+    forward . 127.0.0.1:16002
+    # We want all requests to be sent to the Envoy DNS Filter, unsuccessful responses should be forwarded to the original DNS server.
+    # For example: requests other than A, AAAA and SRV will return NOTIMP when hitting the envoy filter and should be sent to the original DNS server.
+    # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
+    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
+    prometheus localhost:16003
+    errors
+    log
+}
+
+.:16002 {
+    template ANY ANY . {
+      rcode NXDOMAIN
+    }
+    log
+}
+`))
+		}))
 	})
 })
