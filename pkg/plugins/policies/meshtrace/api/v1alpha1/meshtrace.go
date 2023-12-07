@@ -24,6 +24,7 @@ type Conf struct {
 	// representing that would be just one object. Unfortunately due to the
 	// reasons explained in MADR 009-tracing-policy this has to be a one element
 	// array for now.
+	// +kubebuilder:validation:MaxItems=1
 	Backends *[]Backend `json:"backends,omitempty"`
 	// Sampling configuration.
 	// Sampling is the process by which a decision is made on whether to
@@ -65,18 +66,20 @@ type OpenTelemetryBackend struct {
 // Zipkin tracing backend configuration.
 type ZipkinBackend struct {
 	// Address of Zipkin collector.
+	// +kubebuilder:examle="http://jaeger-collector:9411/api/v2/spans"
 	Url string `json:"url"`
-	// Generate 128bit traces. Default: false
+	// Generate 128bit traces.
+	// +kubebuilder:default=false
 	TraceId128Bit *bool `json:"traceId128bit,omitempty"`
-	// Version of the API. values: httpJson, httpProto. Default:
-	// httpJson see
+	// Version of the API.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
 	// +kubebuilder:default="httpJson"
 	// +kubebuilder:validation:Enum=httpJson;httpProto
 	ApiVersion *string `json:"apiVersion,omitempty"`
 	// Determines whether client and server spans will share the same span
-	// context. Default: true.
+	// context.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
+	// +kubebuilder:default=true
 	SharedSpanContext *bool `json:"sharedSpanContext,omitempty"`
 }
 
@@ -84,12 +87,14 @@ type ZipkinBackend struct {
 type DatadogBackend struct {
 	// Address of Datadog collector, only host and port are allowed (no paths,
 	// fragments etc.)
+	// +kubebuilder:examle="http://my-agent:8080"
 	Url string `json:"url"`
 	// Determines if datadog service name should be split based on traffic
 	// direction and destination. For example, with `splitService: true` and a
 	// `backend` service that communicates with a couple of databases, you would
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
-	// `backend_OUTBOUND_db2` in Datadog. Default: false
+	// `backend_OUTBOUND_db2` in Datadog.
+	// +kubebuilder:default=false
 	SplitService *bool `json:"splitService,omitempty"`
 }
 
@@ -100,22 +105,24 @@ type Sampling struct {
 	// random sampling). This field functions as an upper limit on the total
 	// configured sampling rate. For instance, setting client_sampling to 100%
 	// but overall_sampling to 1% will result in only 1% of client requests with
-	// the appropriate headers to be force traced. Default: 100% Mirror of
+	// the appropriate headers to be force traced. Mirror of
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 	// Either int or decimal represented as string.
+	// +kubebuilder:default="100%"
 	Overall *intstr.IntOrString `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
-	// 'x-client-trace-id' header is set. Default: 100% Mirror of
-	// client_sampling in Envoy
+	// 'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 	// Either int or decimal represented as string.
+	// +kubebuilder:default="100%"
 	Client *intstr.IntOrString `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
-	// generation, if not requested by the client or not forced. Default: 100%
+	// generation, if not requested by the client or not forced.
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 	// Either int or decimal represented as string.
+	// +kubebuilder:default="100%"
 	Random *intstr.IntOrString `json:"random,omitempty"`
 }
 

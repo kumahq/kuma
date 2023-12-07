@@ -162,10 +162,15 @@ jobs:
           BODY='{"parameters": { "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  } }'
           BODY=$(echo "$BODY" | jq -c ".parameters += { \"gh_action_build_artifact_name\": \"$BUILD_OUTPUT_ARTIFACT_NAME\", \"gh_action_runtime_token\": \"$ACTIONS_RUNTIME_TOKEN\", \"gh_action_artifact_list_url\": \"${ACTIONS_RUNTIME_URL}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview\" }")
 
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            BODY=$(echo $BODY | jq -rc '.+= {"tag": "${{ github.ref_name }}"}')
+          REF_NAME=
+          # use pull/<number>/head if it's PR from a fork,
+          # otherwise, always use the current SHA to make sure all CircleCI e2e runnings are using the same commit SHA with this GH Action run
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+            REF_NAME=${REF_NAME#refs/}
+            BODY=$(echo $BODY | jq -rc ".+= {\"branch\": \"$REF_NAME\"}")
           else
-            BODY=$(echo $BODY | jq -rc '.+= {"branch": "${{ github.ref_name }}"}')
+            REF_NAME=${{ github.event.pull_request.head.sha || github.sha }}
+            BODY=$(echo $BODY | jq -rc ".+= {\"tag\": \"$REF_NAME\"}")
           fi
 
           CIRCLE_CI_API_PATH=https://circleci.com/api/v2/project/gh/${{ github.repository }}/pipeline

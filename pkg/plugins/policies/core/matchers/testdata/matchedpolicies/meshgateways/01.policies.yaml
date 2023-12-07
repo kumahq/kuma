@@ -5,7 +5,7 @@ name: mesh
 spec:
  targetRef:
   kind: Mesh
- from:
+ to:
   - targetRef:
      kind: Mesh
     default:
@@ -23,7 +23,7 @@ spec:
   name: edge-gateway
   tags:
     listener: two
- from:
+ to:
   - targetRef:
      kind: Mesh
     default:
@@ -39,7 +39,7 @@ spec:
  targetRef:
   kind: MeshGateway
   name: gateway-1
- from:
+ to:
   - targetRef:
      kind: Mesh
     default:
@@ -57,7 +57,7 @@ spec:
   name: gateway-1
   tags:
     listener: one
- from:
+ to:
   - targetRef:
      kind: Mesh
     default:
@@ -75,7 +75,7 @@ spec:
   name: other-gateway
   tags:
     listener: three
- from:
+ to:
   - targetRef:
      kind: Mesh
     default:

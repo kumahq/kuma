@@ -18,6 +18,7 @@ type TypedMatchingPolicies struct {
 	DataplanePolicies []core_model.Resource
 	FromRules         rules.FromRules
 	ToRules           rules.ToRules
+	GatewayRules      rules.GatewayRules
 	SingleItemRules   rules.SingleItemRules
 	Warnings          []string
 }
