@@ -184,6 +184,8 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 
 	record.Version = meta.Version
 	record.ModificationTime = meta.ModificationTime
+	record.Labels = meta.Labels
+
 	content, err := core_model.ToJSON(r.GetSpec())
 	if err != nil {
 		return err
