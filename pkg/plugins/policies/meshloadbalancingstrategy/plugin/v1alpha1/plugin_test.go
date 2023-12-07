@@ -9,6 +9,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -95,6 +96,16 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).MustBuild(),
 				},
 				{
+					Name:   "frontend",
+					Origin: generator.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "frontend").
+						Configure(clusters.ProvidedEndpointCluster(
+							false,
+							createEndpointWith("zone-1", "192.168.2.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.2.2", map[string]string{}),
+						)).MustBuild(),
+				},
+				{
 					Name:     "backend",
 					Origin:   generator.OriginOutbound,
 					Resource: backendListener(),
@@ -125,6 +136,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  "frontend",
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -134,6 +151,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
+									},
+								},
+							},
+							{
+								Subset: core_rules.MeshService("frontend"),
+								Conf: v1alpha1.Conf{
+									LoadBalancer: &v1alpha1.LoadBalancer{
+										Type: v1alpha1.LeastRequestType,
+										LeastRequest: &v1alpha1.LeastRequest{
+											ActiveRequestBias: &intstr.IntOrString{Type: intstr.String, StrVal: "10.1"},
+										},
 									},
 								},
 							},
