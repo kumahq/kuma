@@ -189,6 +189,8 @@ that will be called in the generator to update the config.
 6. Migrate DPP metrics to OTEL sdk
 7. Add possibility to publish metrics to OTEL collector
 
+We need to deliver two first points from this roadmap in next release to match old metrics functionality.
+
 ### Future considerations
 
 - add possibility to add custom labels to metrics from application and sidecar
