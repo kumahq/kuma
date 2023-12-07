@@ -53,31 +53,37 @@ func validateDefault(conf Conf) validators.ValidationError {
 	for i, modification := range conf.AppendModifications {
 		path := path.Index(i)
 
-		if modification.Cluster == nil &&
-			modification.Listener == nil &&
-			modification.VirtualHost == nil &&
-			modification.NetworkFilter == nil &&
-			modification.HTTPFilter == nil {
-			verr.AddViolationAt(path, "at least one modification has to be defined")
+		var modificationsAmount int
+		for _, m := range []bool{
+			modification.Cluster != nil,
+			modification.Listener != nil,
+			modification.VirtualHost != nil,
+			modification.NetworkFilter != nil,
+			modification.HTTPFilter != nil,
+		} {
+			if m {
+				modificationsAmount++
+			}
 		}
 
-		if modification.Cluster != nil {
+		switch {
+		case modificationsAmount != 1:
+			verr.AddViolationAt(
+				path,
+				fmt.Sprintf(
+					"exactly one modification can be defined at a time. Currently, %d modifications are defined",
+					modificationsAmount,
+				),
+			)
+		case modification.Cluster != nil:
 			verr.AddErrorAt(path, validateClusterMod(*modification.Cluster))
-		}
-
-		if modification.Listener != nil {
+		case modification.Listener != nil:
 			verr.AddErrorAt(path, validateListenerMod(*modification.Listener))
-		}
-
-		if modification.VirtualHost != nil {
+		case modification.VirtualHost != nil:
 			verr.AddErrorAt(path, validateVirtualHostMod(*modification.VirtualHost))
-		}
-
-		if modification.NetworkFilter != nil {
+		case modification.NetworkFilter != nil:
 			verr.AddErrorAt(path, validateNetworkFilterMod(*modification.NetworkFilter))
-		}
-
-		if modification.HTTPFilter != nil {
+		case modification.HTTPFilter != nil:
 			verr.AddErrorAt(path, validateHTTPFilterMod(*modification.HTTPFilter))
 		}
 	}
