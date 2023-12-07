@@ -44,6 +44,14 @@ func (mp *MatchedPoliciesBuilder) WithFromPolicy(resourceType core_model.Resourc
 	return mp
 }
 
+func (mp *MatchedPoliciesBuilder) WithGatewayPolicy(resourceType core_model.ResourceType, rules rules.GatewayRules) *MatchedPoliciesBuilder {
+	mp.res.Dynamic[resourceType] = xds.TypedMatchingPolicies{
+		Type:         resourceType,
+		GatewayRules: rules,
+	}
+	return mp
+}
+
 func (mp *MatchedPoliciesBuilder) WithSingleItemPolicy(resourceType core_model.ResourceType, singleItemRules rules.SingleItemRules) *MatchedPoliciesBuilder {
 	mp.res.Dynamic[resourceType] = xds.TypedMatchingPolicies{
 		SingleItemRules: singleItemRules,
