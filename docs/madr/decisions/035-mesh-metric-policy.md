@@ -131,13 +131,13 @@ to publish metrics to desired backends.
 ### Using xDS to configure DPP
 In order to pick which backend we will be using for metrics collection, we need to somehow configure our data plane dynamically. 
 The easiest way to do this is to use xDS and create an Envoy listener that will serve configuration for DPP, 
-then we will need to periodically make requests from DPP to it to check if configuration changed. This will enable us
-to not only configure metrics backend, but will make DPP easily configurable from control-plane with policies or any other mechanism.
+then we will need to periodically make requests from DPP to it to check if configuration changed. This functionality can be done
+in a form of Dataplane Proxy plugin, that we can introduce.
+This will enable us to not only configure metrics backend, but will make DPP easily configurable from control-plane with policies or any other mechanism.
 
 In case of metrics, this enables us to do basically anything with metrics itself: filter, combine, mutate etc.
 
-Our listener could expose `/dpp-config` endpoint, that can serve configuration. Right now we can start with providing only 
-monitoring configuration. Example payload:
+Our listener could expose `/meshmeetric` endpoint, that can serve configuration. Example payload:
 
 ```json
 {
@@ -173,11 +173,13 @@ We should allow configuring multiple metrics backends.
 
 How to implement this: 
 
-We can add another generator like [prometheus_endpoint_generator](https://github.com/kumahq/kuma/blob/f8f5b40a649c4ea5b5dac4ea56ff4fc289da07bc/pkg/xds/generator/prometheus_endpoint_generator.go). This generator will create separate listener for configuration.
+`MeshMetric` policy plugin will create separate listener with this configuration.
 This listener should use `unix socket` to avoid port collision. We don't need to expose it to the world. In the future we 
 can extend `DataplaneInsight` with this dynamic configuration for debugging and GUI purposes.
-This generator will create some basic dataplane configuration. Then we can create new plugin type, eg. `DataplaneConfigurationPlugin` 
-that will be called in the generator to update the config.
+
+We need to introduce dataplane proxy plugins for this. This plugin can be easily done in a form of `core.runtime.Component`.
+This plugin will scrape config endpoint regularly and will configure metrics accordingly.
+
 
 ### Implementation roadmap
 
