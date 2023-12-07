@@ -87,14 +87,15 @@ spec:
                           properties:
                             backOff:
                               description: BackOff is a configuration of durations
-                                which will be used in exponential backoff strategy
+                                which will be used in an exponential backoff strategy
                                 between retries.
                               properties:
                                 baseInterval:
+                                  default: 25ms
                                   description: BaseInterval is an amount of time which
                                     should be taken between retries. Must be greater
                                     than zero. Values less than 1 ms are rounded up
-                                    to 1 ms. Default is 25ms.
+                                    to 1 ms.
                                   type: string
                                 maxInterval:
                                   description: MaxInterval is a maximal amount of
@@ -104,13 +105,16 @@ spec:
                               type: object
                             numRetries:
                               description: NumRetries is the number of attempts that
-                                will be made on failed (and retriable) requests.
+                                will be made on failed (and retriable) requests. If
+                                not set, the default value is 1.
                               format: int32
                               type: integer
                             perTryTimeout:
-                              description: PerTryTimeout is the amount of time after
-                                which retry attempt should timeout. Setting this timeout
-                                to 0 will disable it. Default is 15s.
+                              description: PerTryTimeout is the maximum amount of
+                                time each retry attempt can take before it times out.
+                                If not set, the global request timeout for the route
+                                will be used. Setting this value to 0 will disable
+                                the per-try timeout.
                               type: string
                             rateLimitedBackOff:
                               description: RateLimitedBackOff is a configuration of
@@ -118,9 +122,9 @@ spec:
                                 one of the headers configured.
                               properties:
                                 maxInterval:
+                                  default: 300s
                                   description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries. Default
-                                    is 300 seconds.
+                                    time which will be taken between retries.
                                   type: string
                                 resetHeaders:
                                   description: ResetHeaders specifies the list of
@@ -133,8 +137,7 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either Seconds or UnixTimestamp.
+                                        description: The format of the reset header.
                                         enum:
                                         - Seconds
                                         - UnixTimestamp
@@ -152,10 +155,21 @@ spec:
                                   type: array
                               type: object
                             retryOn:
-                              description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [Canceled,
-                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable].'
+                              description: RetryOn is a list of conditions which will
+                                cause a retry.
+                              example:
+                              - Canceled
+                              - DeadlineExceeded
+                              - Internal
+                              - ResourceExhausted
+                              - Unavailable
                               items:
+                                enum:
+                                - Canceled
+                                - DeadlineExceeded
+                                - Internal
+                                - ResourceExhausted
+                                - Unavailable
                                 type: string
                               type: array
                           type: object
@@ -166,13 +180,14 @@ spec:
                             backOff:
                               description: BackOff is a configuration of durations
                                 which will be used in exponential backoff strategy
-                                between retries
+                                between retries.
                               properties:
                                 baseInterval:
+                                  default: 25ms
                                   description: BaseInterval is an amount of time which
                                     should be taken between retries. Must be greater
                                     than zero. Values less than 1 ms are rounded up
-                                    to 1 ms. Default is 25ms.
+                                    to 1 ms.
                                   type: string
                                 maxInterval:
                                   description: MaxInterval is a maximal amount of
@@ -188,8 +203,10 @@ spec:
                                 properties:
                                   predicate:
                                     description: Type is requested predicate mode.
-                                      Available values are OmitPreviousHosts, OmitHostsWithTags,
-                                      and OmitPreviousPriorities.
+                                    enum:
+                                    - OmitPreviousHosts
+                                    - OmitHostsWithTags
+                                    - OmitPreviousPriorities
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -199,10 +216,10 @@ spec:
                                       if Type is OmitHostsWithTags
                                     type: object
                                   updateFrequency:
+                                    default: 2
                                     description: UpdateFrequency is how often the
                                       priority load should be updated based on previously
                                       attempted priorities. Used for OmitPreviousPriorities.
-                                      Default is 2 if not set.
                                     format: int32
                                     type: integer
                                 required:
@@ -219,13 +236,18 @@ spec:
                               type: integer
                             numRetries:
                               description: NumRetries is the number of attempts that
-                                will be made on failed (and retriable) requests
+                                will be made on failed (and retriable) requests.  If
+                                not set, the default value is 1.
                               format: int32
                               type: integer
                             perTryTimeout:
                               description: PerTryTimeout is the amount of time after
-                                which retry attempt should timeout. Setting this timeout
-                                to 0 will disable it. Default is 15s.
+                                which retry attempt should time out. If left unspecified,
+                                the global route timeout for the request will be used.
+                                Consequently, when using a 5xx based retry policy,
+                                a request that times out will not be retried as the
+                                total timeout budget would have been exhausted. Setting
+                                this timeout to 0 will disable it.
                               type: string
                             rateLimitedBackOff:
                               description: RateLimitedBackOff is a configuration of
@@ -233,9 +255,9 @@ spec:
                                 one of the headers configured.
                               properties:
                                 maxInterval:
+                                  default: 300s
                                   description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries. Default
-                                    is 300 seconds.
+                                    time which will be taken between retries.
                                   type: string
                                 resetHeaders:
                                   description: ResetHeaders specifies the list of
@@ -248,8 +270,7 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either Seconds or UnixTimestamp.
+                                        description: The format of the reset header.
                                         enum:
                                         - Seconds
                                         - UnixTimestamp
@@ -306,7 +327,7 @@ spec:
                               description: RetriableResponseHeaders is an HTTP response
                                 headers that trigger a retry if present in the response.
                                 A retry will be triggered if any of the header matches
-                                match the upstream response headers.
+                                the upstream response headers.
                               items:
                                 description: HeaderMatch describes how to select an
                                   HTTP route by matching HTTP request headers.
@@ -346,7 +367,27 @@ spec:
                                 RefusedStream, Http3PostConnectFailure, HttpMethodConnect,
                                 HttpMethodDelete, HttpMethodGet, HttpMethodHead, HttpMethodOptions,
                                 HttpMethodPatch, HttpMethodPost, HttpMethodPut, HttpMethodTrace].
-                                Also, any HTTP status code (500, 503, etc).'
+                                Also, any HTTP status code (500, 503, etc.).'
+                              example:
+                              - 5XX
+                              - GatewayError
+                              - Reset
+                              - Retriable4xx
+                              - ConnectFailure
+                              - EnvoyRatelimited
+                              - RefusedStream
+                              - Http3PostConnectFailure
+                              - HttpMethodConnect
+                              - HttpMethodDelete
+                              - HttpMethodGet
+                              - HttpMethodHead
+                              - HttpMethodOptions
+                              - HttpMethodPatch
+                              - HttpMethodPost
+                              - HttpMethodPut
+                              - HttpMethodTrace
+                              - "500"
+                              - "503"
                               items:
                                 type: string
                               type: array
