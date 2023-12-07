@@ -122,11 +122,16 @@ We'll use `x-kuma-tags` headers to select traffic from origin. `MeshHealthCheck`
 
 #### To level
 
-We can allow configuration to different destinations.
+The `to` level is only allowed for `spec.kind: MeshGateway` and only `to[].targetRef.kind: Mesh` is permitted. This is because fault injection is configured on a listener and `MeshGateway`'s have only one kind of listener.
+
 ```yaml
-from:
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge
+to:
  - targetRef:
-     kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+     kind: Mesh
      name: ...
 ```
 
