@@ -338,7 +338,7 @@ default:
 				expected: `
                 violations:
                 - field: spec.default.appendModifications[0]
-                  message: at least one modification has to be defined`,
+                  message: exactly one modification can be defined at a time. Currently, 0 modifications are defined`,
 			}),
 			Entry("invalid cluster modifications", testCase{
 				inputYaml: `
