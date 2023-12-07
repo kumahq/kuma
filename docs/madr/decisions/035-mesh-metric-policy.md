@@ -81,14 +81,15 @@ spec:
       profile: minimal
       regex: http2_act.* # only profile or regex can be defined
       usedOnly: true
-    application:
+    applications:
       - path: "/metrics/prometheus"
         port: 8888
         regex: http.*
       - port: 8000 # default path is /metrics
     backends:
       - type: Prometheus
-        prometheus:
+        name: "main-prometheus-backend"
+        prometheus: 
           port: 5670
           path: /metrics
           tls:
@@ -110,7 +111,8 @@ We need to change the source of our information about monitored proxies from `Me
 new policy as usual in this context, we should not merge policies, but create different `MonitoringAssignment` for each 
 defined policy, this is needed for scenarios like migrating to a new backend. For example, when we define two `MeshMetric` 
 policies that target the same data plane proxy, we should create two separate `MonitoringAssignment` responses. 
-We can achieve this by extending Prometheus integration, so that it sends backend name with requests to MADS API.
+We can achieve this by extending Prometheus integration, so that it sends backend name with requests to MADS API, and we will
+create `MonitoringAssignment` based on `backends[].name` field.
 
 ### Pushing metrics from DP to OTEL collector
 In order to push metrics to the OTEL collector, and preserve current Prometheus metrics, we need to start using [OTEL metrics sdk](https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric). 
@@ -172,8 +174,8 @@ We should allow configuring multiple metrics backends.
 How to implement this: 
 
 We can add another generator like [prometheus_endpoint_generator](https://github.com/kumahq/kuma/blob/f8f5b40a649c4ea5b5dac4ea56ff4fc289da07bc/pkg/xds/generator/prometheus_endpoint_generator.go). This generator will create separate listener for configuration.
-This listener should be only bound to localhost. We don't need to expose it to the world. In the future we can extend `DataplaneInsight` 
-with this dynamic configuration for debugging and GUI purposes.
+This listener should use `unix socket` to avoid port collision. We don't need to expose it to the world. In the future we 
+can extend `DataplaneInsight` with this dynamic configuration for debugging and GUI purposes.
 This generator will create some basic dataplane configuration. Then we can create new plugin type, eg. `DataplaneConfigurationPlugin` 
 that will be called in the generator to update the config.
 
