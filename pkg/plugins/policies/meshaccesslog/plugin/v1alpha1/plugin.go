@@ -55,7 +55,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func applyToDirectAccess(
 }
 
 func applyToGateway(
-	rules core_rules.ToRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	rules core_rules.GatewayRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
 	backends *plugin_xds.EndpointAccumulator, path string,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
@@ -177,19 +177,24 @@ func applyToGateway(
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
 		address := dataplane.Spec.GetNetworking().Address
 		port := listener.GetPort()
-		listener, ok := gatewayListeners[core_rules.InboundListener{
+		rulesListener := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
-		}]
+		}
+		listener, ok := gatewayListeners[rulesListener]
 		if !ok {
 			continue
 		}
 
-		if err := configureOutbound(
-			rules,
+		listenerRules, ok := rules.Rules[rulesListener]
+		if !ok {
+			continue
+		}
+
+		if err := configureGatewayListener(
+			listenerRules,
 			dataplane,
 			core_rules.Subset{},
-			mesh_proto.MatchAllTag,
 			listener,
 			backends,
 			path,
@@ -210,11 +215,9 @@ func configureInbound(
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
-	var conf api.Conf
 	// `from` section of MeshAccessLog only allows Mesh targetRef
-	if computed := fromRules.Compute(core_rules.MeshSubset()); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
+	conf := core_rules.ComputeConf[api.Conf](fromRules, core_rules.MeshSubset())
+	if conf == nil {
 		return nil
 	}
 
@@ -240,7 +243,7 @@ func configureInbound(
 }
 
 func configureOutbound(
-	toRules core_rules.ToRules,
+	rules core_rules.ToRules,
 	dataplane *core_mesh.DataplaneResource,
 	subset core_rules.Subset,
 	destinationServiceName string,
@@ -250,10 +253,8 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	var conf api.Conf
-	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
+	conf := core_rules.ComputeConf[api.Conf](rules.Rules, subset)
+	if conf == nil {
 		return nil
 	}
 
@@ -263,6 +264,39 @@ func configureOutbound(
 			TrafficDirection:    envoy.TrafficDirectionOutbound,
 			SourceService:       sourceService,
 			DestinationService:  destinationServiceName,
+			Backend:             backend,
+			Dataplane:           dataplane,
+			AccessLogSocketPath: path,
+		}
+
+		for _, chain := range listener.FilterChains {
+			if err := configurer.Configure(chain, backendsAcc); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func configureGatewayListener(
+	rules core_rules.Rules,
+	dataplane *core_mesh.DataplaneResource,
+	subset core_rules.Subset,
+	listener *envoy_listener.Listener,
+	backendsAcc *plugin_xds.EndpointAccumulator,
+	path string,
+) error {
+	gatewayService := dataplane.Spec.GetIdentifyingService()
+
+	conf := core_rules.ComputeConf[api.Conf](rules, subset)
+
+	for _, backend := range pointer.Deref(conf.Backends) {
+		configurer := plugin_xds.Configurer{
+			Mesh:                dataplane.GetMeta().GetMesh(),
+			TrafficDirection:    envoy.TrafficDirectionOutbound,
+			SourceService:       gatewayService,
+			DestinationService:  mesh_proto.MatchAllTag,
 			Backend:             backend,
 			Dataplane:           dataplane,
 			AccessLogSocketPath: path,
