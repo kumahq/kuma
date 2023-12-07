@@ -35,6 +35,11 @@ fmt/ci:
 	$(CI_TOOLS_BIN_DIR)/yq -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
 	$(CI_TOOLS_BIN_DIR)/yq -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"build-test-distribute.yaml
 	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
+	@CHECKOUT_NOT_AT_ZERO=$$(cat .github/workflows/build-test-distribute.yaml  | $(CI_TOOLS_BIN_DIR)/yq '.jobs.*.steps[] | select(.uses | contains("actions/checkout@")) | path | .[-1]' | grep -v '0'); \
+	if [ ! -z "$$CHECKOUT_NOT_AT_ZERO" ]; then \
+		echo "Please make 'checkout' the first step in jobs of build-test-distribute.yaml." ; \
+		exit 1 ; \
+	fi
 
 .PHONY: helm-lint
 helm-lint:

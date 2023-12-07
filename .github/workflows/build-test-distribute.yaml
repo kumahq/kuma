@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master", "release-*", "!*-merge-master", "sync-gh-actions-to-km"]
     tags: ["*"]
   pull_request_target:
     branches: ["master", "release-*"]
@@ -53,6 +53,7 @@ jobs:
           make dev/tools
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
@@ -123,6 +124,9 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: "Halt due to previous failures"
         if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
         run: |
@@ -131,6 +135,7 @@ jobs:
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
@@ -143,9 +148,6 @@ jobs:
       - name: Install dependencies for cross builds
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -187,21 +189,26 @@ jobs:
       test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
       test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
     steps:
+      - name: Inject matrix hook
+        id: matrix-hook
+        run: echo 'Nothing to inject'
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        id: set-full-matrix-switches
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: Install jq
         run: |
           sudo apt-get install -y jq
       - id: generate-matrix
         name: Generate matrix
         run: |-
-          BASE_MATRIX_SLOW=$(cat <<-END
-          {
+          BASE_MATRIX_ALL=$(cat <<-END
+          {"test_e2e": {
             "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
             "arch": ["amd64", "arm64"]
-          }
-          END
-          )
-          BASE_MATRIX_ENV=$(cat <<-END
-          {
+          },
+          "test_e2e_env": {
             "target": ["kubernetes", "universal", "multizone"],
             "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
             "arch": ["amd64", "arm64"],
@@ -219,15 +226,19 @@ jobs:
               {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "cniNetworkPlugin": "flannel"},
               {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "legacyKDS": false}
             ]
-          }
+          }}
           END
           )
 
-          MATRIX_SLOW=$(echo $BASE_MATRIX_SLOW | jq -rc)
-          MATRIX_ENV=$(echo $BASE_MATRIX_ENV | jq -rc)
+          BASE_HOOK="${{ steps.matrix-hook.output.hook }}"
+          if [[ "$BASE_HOOK" != "" ]]; then
+            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -rc "$BASE_HOOK")
+          fi
 
-          RUN_FULL_MATRIX="${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}"
-          if [[ "$RUN_FULL_MATRIX" == "false" ]]; then
+          MATRIX_SLOW=$(echo $BASE_MATRIX_ALL | jq -rc ".test_e2e")
+          MATRIX_ENV=$(echo $BASE_MATRIX_ALL | jq -rc ".test_e2e_env")
+
+          if [[ "${RUN_FULL_MATRIX}" != "true" ]]; then
             echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
 
             MATRIX_SLOW=''  # target==""
