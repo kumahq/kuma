@@ -66,25 +66,25 @@ New configuration would look like:
 policyEngine: TargetRef
 ```
 
-This approach enables the creation of new default target ref policies without enforcing users to only use new polcies. The control-plane will support both old and new policies, with the default `Mesh` being created using the new policies. New policies will not require `MeshTrafficPermissions`, `MeshHTTPRoute`, or `MeshTCPRoute` to enable traffic across the cluster.
+This approach allows the creation of new default `TargetRef` policies without mandating users to solely adopt these new policies. To implement this, we need to introduce an environment variable called `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE`. This variable will define the default policy engine when no specific one is provided during the creation or loading process.
 
 #### Existing users behaviour
 
-When a user already has a `Mesh` and doesn't define the `policyEngine` field, we treat it as an `Undefined` engine. Only when a user creates a new mesh does the mesh defaulter set an engine to `TargetRef`.
+When a user already possesses a `Mesh` but doesn't define the `policyEngine` field, we consider it as being set to an `Undefined` engine state. The mesh defaulter only assigns an engine based on `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE` when a user creates a new mesh. By default, this variable is set to `false`, meaning each new mesh will use `policyEngine: TargetRef`.
 
 Why do we need `Undefined`?
 
 Protobuf, by default, takes the first value if there is no value provided. Without `Undefined`, we would default to `Legacy`. The issue arises when a user intends to create a new `Mesh` without specifying the `policyEngine` field, resulting in the selection of the first option due to the lack of an optional `policyEngine` field on the protobuf level.
 
 This situation creates problem in discovering between cases where the user did not provide the definition or explicitly chose `Legacy`.
-Another issue is when retrieving the old mesh from the storage and there is no field provided. In this case we can treat `Undefined` as a `Legacy`.
+An additional concern arises when fetching an older mesh from storage and there is no field provided. In such cases, we can interpret `Undefined` as a value determined by `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE`.
 
 When the user updates the Mesh definition to use the `TargetRef` engine, we won't create default policies. Default policies are only generated upon the creation of a new Mesh.
 
 Problem:
 What if users update the mesh using CD/Terraform? 
 
-- Should we make a call to verify if the `Mesh` exists, and if it does, set the `policyEngine` to `Legacy`?
+During an upgrade, existing users have the option to set `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE=true`. This setting will result in all existing meshes or newly created ones without the `policyEngine` field being treated as `Legacy`.
 
 #### New kuma users behaviour
 
