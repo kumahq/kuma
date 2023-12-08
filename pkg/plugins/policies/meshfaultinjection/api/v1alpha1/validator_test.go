@@ -162,7 +162,7 @@ from:
           limit: 1000
           percentage: "xyz"`,
 		),
-		ErrorCases("incorrect value in percentage",
+		ErrorCases("MeshGateway and targetRefs",
 			[]validators.Violation{
 				{
 					Field:   "spec.from",
@@ -196,6 +196,27 @@ to:
           httpStatus: 503
           percentage: 50
 from:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50`,
+		),
+		ErrorCases("top level Mesh and to",
+			[]validators.Violation{
+				{
+					Field:   "spec.to",
+					Message: "must not be defined",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+to:
   - targetRef:
       kind: Mesh
     default:
