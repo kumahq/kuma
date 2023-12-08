@@ -64,7 +64,7 @@
    "isExperimental": false,
    "isTargetRefBased": true,
    "isInbound": true,
-   "isOutbound": false
+   "isOutbound": true
   },
   {
    "name": "MeshGateway",
