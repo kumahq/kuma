@@ -71,7 +71,7 @@ func MeshTimeout() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
-		}, "30s", "1s").Should(Succeed())
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
