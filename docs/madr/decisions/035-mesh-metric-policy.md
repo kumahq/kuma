@@ -24,26 +24,26 @@ metadata:
   name: default
 spec:
   metrics:
-  enabledBackend: prometheus-1
-  backends:
-    - name: prometheus-1
-      type: prometheus
-      conf:
-        tls:
-          mode: disabled | providedTLS | activeMTLSBackend
-        port: 5670
-        path: /metrics
-        tags:
-          kuma.io/service: dataplane-metrics
-        envoy:
-          filterRegex: http2_act.*
-          usedOnly: true
-        aggregate:
-          - name: my-service
-            path: "/metrics/prometheus"
-            port: 8888
-          - name: other-sidecar
-            port: 8000
+    enabledBackend: prometheus-1
+    backends:
+      - name: prometheus-1
+        type: prometheus
+        conf:
+          tls:
+            mode: disabled | providedTLS | activeMTLSBackend
+          port: 5670
+          path: /metrics
+          tags:
+            kuma.io/service: dataplane-metrics
+          envoy:
+            filterRegex: http2_act.*
+            usedOnly: true
+          aggregate:
+            - name: my-service
+              path: "/metrics/prometheus"
+              port: 8888
+            - name: other-sidecar
+              port: 8000
 ```
 
 #### Changes to the API
