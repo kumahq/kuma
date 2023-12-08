@@ -37,7 +37,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 {
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.Rules) == 0 {
 		return nil
 	}
 
@@ -51,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, clusters.Gateway, routes.Gateway, proxy); err != nil {
+	if err := applyToGateway(policies.GatewayRules, clusters.Gateway, routes.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -163,13 +163,21 @@ func applyToClusters(
 }
 
 func applyToGateway(
-	toRules core_rules.ToRules,
+	rules core_rules.GatewayRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		conf := getConf(toRules.Rules, core_rules.MeshSubset())
+		rules, ok := rules.Rules[core_rules.InboundListener{
+			Address: proxy.Dataplane.Spec.GetNetworking().Address,
+			Port:    listenerInfo.Listener.Port,
+		}]
+		if !ok {
+			continue
+		}
+
+		conf := getConf(rules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 
 		if conf != nil && ok {
@@ -198,13 +206,13 @@ func applyToGateway(
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-				conf := getConf(toRules.Rules, core_rules.MeshService(serviceName))
+				conf := getConf(rules, core_rules.MeshService(serviceName))
 				if conf == nil {
 					continue
 				}
 
 				if err := applyToClusters(
-					toRules.Rules,
+					rules,
 					proxy.Routing,
 					serviceName,
 					cluster,
