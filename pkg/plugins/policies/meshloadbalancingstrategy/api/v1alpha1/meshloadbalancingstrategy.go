@@ -156,6 +156,12 @@ type LeastRequest struct {
 	// two-choice selection if the field is not set.
 	// +kubebuilder:validation:Minimum=2
 	ChoiceCount *uint32 `json:"choiceCount,omitempty"`
+	// ActiveRequestBias refers to dynamic weights applied when hosts have varying load
+	// balancing weights. A higher value here aggressively reduces the weight of endpoints
+	// that are currently handling active requests. In essence, the higher the ActiveRequestBias
+	// value, the more forcefully it reduces the load balancing weight of endpoints that are
+	// actively serving requests.
+	ActiveRequestBias *intstr.IntOrString `json:"activeRequestBias,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=XXHash;MurmurHash2

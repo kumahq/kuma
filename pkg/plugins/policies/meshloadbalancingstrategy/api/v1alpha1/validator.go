@@ -157,6 +157,7 @@ func validateLoadBalancer(conf *LoadBalancer) validators.ValidationError {
 	case RoundRobinType:
 	case RandomType:
 	case LeastRequestType:
+		verr.AddError("leastRequest", validateLeastRequest(conf.LeastRequest))
 	}
 
 	return verr
@@ -168,6 +169,15 @@ func validateRingHash(conf *RingHash) validators.ValidationError {
 		return verr
 	}
 	verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
+	return verr
+}
+
+func validateLeastRequest(conf *LeastRequest) validators.ValidationError {
+	var verr validators.ValidationError
+	if conf == nil {
+		return verr
+	}
+	verr.Add(validators.ValidateIntOrStringGreaterOrEqualThan(validators.RootedAt("activeRequestBias"), conf.ActiveRequestBias, 0))
 	return verr
 }
 

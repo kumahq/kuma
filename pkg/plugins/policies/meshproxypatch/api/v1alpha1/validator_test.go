@@ -338,7 +338,7 @@ default:
 				expected: `
                 violations:
                 - field: spec.default.appendModifications[0]
-                  message: at least one modification has to be defined`,
+                  message: exactly one modification can be defined at a time. Currently, 0 modifications are defined`,
 			}),
 			Entry("invalid cluster modifications", testCase{
 				inputYaml: `
@@ -614,6 +614,51 @@ default:
                 violations:
                 - field: spec.targetRef.kind
                   message: value is not supported`,
+			}),
+			Entry("multiple types in one modification", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: gateway
+default:
+  appendModifications:
+  - cluster:
+      operation: Patch
+      jsonPatches:
+        - op: replace
+          path: /foo/bar
+          value: baz
+        - op: replace
+          path: /foo
+          value:
+            bar: baz
+    listener:
+      operation: Add
+      value: |
+        name: xyz
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+    networkFilter:
+      operation: AddFirst
+      value: |
+        name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: backend
+    httpFilter:
+      operation: AddFirst
+      value: |
+        name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          dynamicStats: false
+`,
+				expected: `
+                violations:
+                - field: spec.default.appendModifications[0]
+                  message: exactly one modification can be defined at a time. Currently, 4 modifications are defined`,
 			}),
 		)
 	})
