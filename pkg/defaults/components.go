@@ -32,7 +32,6 @@ func Setup(runtime runtime.Runtime) error {
 	if !runtime.Config().IsFederatedZoneCP() { // Don't run defaults in Zone connected to global (it's done in Global)
 		defaultsComponent := NewDefaultsComponent(
 			runtime.Config().Defaults,
-			runtime.Config().Environment,
 			runtime.ResourceManager(),
 			runtime.ResourceStore(),
 			runtime.Extensions(),
@@ -63,10 +62,16 @@ func Setup(runtime runtime.Runtime) error {
 	}
 
 	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
-		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{
+		envoyAdminCaDefault := &EnvoyAdminCaDefaultComponent{
 			ResManager: runtime.ResourceManager(),
 			Extensions: runtime.Extensions(),
-		}); err != nil {
+		}
+		zoneDefault := &ZoneDefaultComponent{
+			ResManager: runtime.ResourceManager(),
+			Extensions: runtime.Extensions(),
+			ZoneName:   runtime.Config().ZoneName(),
+		}
+		if err := runtime.Add(envoyAdminCaDefault, zoneDefault); err != nil {
 			return err
 		}
 	}
@@ -75,28 +80,25 @@ func Setup(runtime runtime.Runtime) error {
 
 func NewDefaultsComponent(
 	config *kuma_cp.Defaults,
-	environment config_core.EnvironmentType,
 	resManager core_manager.ResourceManager,
 	resStore store.ResourceStore,
 	extensions context.Context,
 ) component.Component {
 	return &defaultsComponent{
-		environment: environment,
-		config:      config,
-		resManager:  resManager,
-		resStore:    resStore,
-		extensions:  extensions,
+		config:     config,
+		resManager: resManager,
+		resStore:   resStore,
+		extensions: extensions,
 	}
 }
 
 var _ component.Component = &defaultsComponent{}
 
 type defaultsComponent struct {
-	environment config_core.EnvironmentType
-	config      *kuma_cp.Defaults
-	resManager  core_manager.ResourceManager
-	resStore    store.ResourceStore
-	extensions  context.Context
+	config     *kuma_cp.Defaults
+	resManager core_manager.ResourceManager
+	resStore   store.ResourceStore
+	extensions context.Context
 }
 
 func (d *defaultsComponent) NeedLeaderElection() bool {

@@ -18,6 +18,8 @@ const (
 	Standalone CpMode = "standalone"
 	Zone       CpMode = "zone"
 	Global     CpMode = "global"
+
+	DefaultZoneName = "default"
 )
 
 // ValidateCpMode to check modes of kuma-cp

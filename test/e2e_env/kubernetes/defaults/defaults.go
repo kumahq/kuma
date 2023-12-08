@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -46,5 +47,9 @@ func Defaults() {
 		Eventually(policyCreated("timeout", "timeout-all-"+meshName), "30s", "1s").Should(BeTrue())
 		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-"+meshName), "30s", "1s").Should(BeTrue())
 		Eventually(policyCreated("retry", "retry-all-"+meshName), "30s", "1s").Should(BeTrue())
+	})
+
+	It("should create a zone", func() {
+		Eventually(policyCreated("zone", core.DefaultZoneName), "30s", "1s").Should(BeTrue())
 	})
 }

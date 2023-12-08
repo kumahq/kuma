@@ -426,7 +426,7 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Create,
 		}),
-		Entry("should fail validation due to applying Zone on Zone CP", testCase{
+		Entry("should pass validation due to applying Zone on Zone CP", testCase{
 			mode:          core.Zone,
 			federatedZone: true,
 			objTemplate:   &system_proto.Zone{},
@@ -450,18 +450,15 @@ var _ = Describe("Validation", func() {
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
-					Allowed: false,
+					Allowed: true,
 					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Zone resource can only be applied on CP with mode: [global]",
-						Reason:  "Forbidden",
-						Code:    403,
+						Code: 200,
 					},
 				},
 			},
 			operation: admissionv1.Create,
 		}),
-		Entry("should fail validation due to applying Zone on non federated Zone CP", testCase{
+		Entry("should pass validation due to applying Zone on non federated Zone CP", testCase{
 			mode:        core.Zone,
 			objTemplate: &system_proto.Zone{},
 			username:    "cli-user",
@@ -484,12 +481,9 @@ var _ = Describe("Validation", func() {
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
-					Allowed: false,
+					Allowed: true,
 					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Zone resource can only be applied on CP with mode: [global]",
-						Reason:  "Forbidden",
-						Code:    403,
+						Code: 200,
 					},
 				},
 			},

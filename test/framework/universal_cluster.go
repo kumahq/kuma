@@ -560,3 +560,7 @@ func (c *UniversalCluster) Install(fn InstallFunc) error {
 func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 	c.controlplane = cp
 }
+
+func (c *UniversalCluster) ZoneName() string {
+	return c.Name()
+}

@@ -1249,6 +1249,10 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }
 
+func (c *K8sCluster) ZoneName() string {
+	return c.GetKumactlOptions().CPName
+}
+
 func printDetailedPodInfo(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, podError error, pod v1.Pod) error {
 	if podError == nil {
 		return podError
