@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin-8490df2e58a77ae0:
+    external-http2-httpbin-b70cd456b09f96ac:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: external-httpbin-8490df2e58a77ae0
+      name: external-http2-httpbin-b70cd456b09f96ac
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -31,7 +31,7 @@ Clusters:
               defaultValidationContext:
                 matchTypedSubjectAltNames:
                 - matcher:
-                    exact: spiffe://default/external-httpbin
+                    exact: spiffe://default/external-http2-httpbin
                   sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
@@ -43,7 +43,7 @@ Clusters:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
-          sni: external-httpbin{mesh=default}
+          sni: external-http2-httpbin{mesh=default}
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -54,8 +54,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    external-httpbin-8490df2e58a77ae0:
-      clusterName: external-httpbin-8490df2e58a77ae0
+    external-http2-httpbin-b70cd456b09f96ac:
+      clusterName: external-http2-httpbin-b70cd456b09f96ac
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
@@ -143,7 +143,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-8490df2e58a77ae0
+              - name: external-http2-httpbin-b70cd456b09f96ac
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

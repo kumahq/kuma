@@ -36,7 +36,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	clusters := policies_xds.GatherClusters(rs)
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, proxy.Routing); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -47,13 +47,17 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-func applyToOutbounds(rules core_rules.ToRules, outboundClusters map[string]*envoy_cluster.Cluster, outboundSplitClusters map[string][]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
+func applyToOutbounds(
+	rules core_rules.ToRules,
+	outboundClusters map[string]*envoy_cluster.Cluster,
+	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
+	dataplane *core_mesh.DataplaneResource,
+	meshCtx xds_context.MeshContext,
+) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
 	for cluster, serviceName := range targetedClusters {
-		protocol := policies_xds.InferProtocol(routing, serviceName)
-
-		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), protocol, cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}

@@ -51,7 +51,12 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := xds_samples.SampleContext()
+		context := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
+			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
@@ -64,7 +69,7 @@ var _ = Describe("MeshTimeout", func() {
 					WithOutboundTargets(
 						xds_builders.EndpointMap().
 							AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()).
-							AddEndpoint("other-service-_0_", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("other-service-c72efb5be46fae6b", xds_samples.HttpEndpointBuilder()).
 							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
 					),
 			).
@@ -100,7 +105,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound-split",
 					Origin:   generator.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service-_0_"),
+					Resource: test_xds.ClusterWithName("other-service-c72efb5be46fae6b"),
 				},
 			},
 			toRules: core_rules.ToRules{
@@ -417,7 +422,12 @@ var _ = Describe("MeshTimeout", func() {
 			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
-		xdsCtx := xds_samples.SampleContextWith(resources)
+		xdsCtx := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(resources).
+			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithRouting(xds_builders.Routing().

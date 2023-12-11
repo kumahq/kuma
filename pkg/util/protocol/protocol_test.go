@@ -1,13 +1,14 @@
-package generator
+package protocol_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/util/protocol"
 )
 
-var _ = Describe("getCommonProtocol()", func() {
+var _ = Describe("GetCommonProtocol()", func() {
 	type testCase struct {
 		one      core_mesh.Protocol
 		another  core_mesh.Protocol
@@ -17,7 +18,7 @@ var _ = Describe("getCommonProtocol()", func() {
 	DescribeTable("should correctly determine common protocol",
 		func(given testCase) {
 			// when
-			actual := getCommonProtocol(given.one, given.another)
+			actual := GetCommonProtocol(given.one, given.another)
 			// then
 			Expect(actual).To(Equal(given.expected))
 		},
