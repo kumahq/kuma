@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"time"
 
@@ -268,6 +269,14 @@ func ValidateNil[T any](path PathBuilder, t *T, msg string) ValidationError {
 	var err ValidationError
 	if t != nil {
 		err.AddViolationAt(path, msg)
+	}
+	return err
+}
+
+func ValidatePort(path PathBuilder, value uint32) ValidationError {
+	var err ValidationError
+	if value == 0 || value > math.MaxUint16 {
+		err.AddViolationAt(path, "port must be a valid (1-65535)")
 	}
 	return err
 }

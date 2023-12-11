@@ -166,6 +166,7 @@ rules:
       - meshhealthchecks
       - meshhttproutes
       - meshloadbalancingstrategies
+      - meshmetrics
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -530,6 +531,7 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -581,6 +583,7 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -705,6 +708,7 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
