@@ -9,6 +9,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -95,6 +96,16 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).MustBuild(),
 				},
 				{
+					Name:   "frontend",
+					Origin: generator.OriginOutbound,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "frontend").
+						Configure(clusters.ProvidedEndpointCluster(
+							false,
+							createEndpointWith("zone-1", "192.168.2.1", map[string]string{}),
+							createEndpointWith("zone-2", "192.168.2.2", map[string]string{}),
+						)).MustBuild(),
+				},
+				{
 					Name:     "backend",
 					Origin:   generator.OriginOutbound,
 					Resource: backendListener(),
@@ -125,6 +136,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  "frontend",
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -134,6 +151,17 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
+									},
+								},
+							},
+							{
+								Subset: core_rules.MeshService("frontend"),
+								Conf: v1alpha1.Conf{
+									LoadBalancer: &v1alpha1.LoadBalancer{
+										Type: v1alpha1.LeastRequestType,
+										LeastRequest: &v1alpha1.LeastRequest{
+											ActiveRequestBias: &intstr.IntOrString{Type: intstr.String, StrVal: "10.1"},
+										},
 									},
 								},
 							},
@@ -1186,7 +1214,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 	type gatewayTestCase struct {
 		name        string
 		endpointMap *xds_builders.EndpointMapBuilder
-		toRules     core_rules.ToRules
+		rules       core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -1216,7 +1244,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region": "test",
 					})).
 				WithPolicies(
-					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, given.toRules),
+					xds_builders.MatchedPolicies().WithGatewayPolicy(v1alpha1.MeshLoadBalancingStrategyType, given.rules),
 				).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
@@ -1253,31 +1281,33 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{}),
 					createEndpointBuilderWith("test-zone-2", "192.168.1.2", map[string]string{}),
 				),
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: v1alpha1.Conf{
-							LoadBalancer: &v1alpha1.LoadBalancer{
-								Type: v1alpha1.RingHashType,
-								RingHash: &v1alpha1.RingHash{
-									MinRingSize:  pointer.To[uint32](100),
-									MaxRingSize:  pointer.To[uint32](1000),
-									HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-									HashPolicies: &[]v1alpha1.HashPolicy{
-										{
-											Type: v1alpha1.QueryParameterType,
-											QueryParameter: &v1alpha1.QueryParameter{
-												Name: "queryparam",
+			rules: core_rules.GatewayRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: v1alpha1.Conf{
+								LoadBalancer: &v1alpha1.LoadBalancer{
+									Type: v1alpha1.RingHashType,
+									RingHash: &v1alpha1.RingHash{
+										MinRingSize:  pointer.To[uint32](100),
+										MaxRingSize:  pointer.To[uint32](1000),
+										HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
+										HashPolicies: &[]v1alpha1.HashPolicy{
+											{
+												Type: v1alpha1.QueryParameterType,
+												QueryParameter: &v1alpha1.QueryParameter{
+													Name: "queryparam",
+												},
+												Terminal: pointer.To(true),
 											},
-											Terminal: pointer.To(true),
-										},
-										{
-											Type: v1alpha1.ConnectionType,
-											Connection: &v1alpha1.Connection{
-												SourceIP: pointer.To(true),
+											{
+												Type: v1alpha1.ConnectionType,
+												Connection: &v1alpha1.Connection{
+													SourceIP: pointer.To(true),
+												},
+												Terminal: pointer.To(false),
 											},
-											Terminal: pointer.To(false),
 										},
 									},
 								},
@@ -1300,49 +1330,51 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
 					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
 				),
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: v1alpha1.Conf{
-							LocalityAwareness: &v1alpha1.LocalityAwareness{
-								LocalZone: &v1alpha1.LocalZone{
-									AffinityTags: &[]v1alpha1.AffinityTag{
-										{
-											Key:    "k8s.io/node",
-											Weight: pointer.To[uint32](9000),
-										},
-										{
-											Key:    "k8s.io/az",
-											Weight: pointer.To[uint32](900),
-										},
-										{
-											Key:    "k8s.io/region",
-											Weight: pointer.To[uint32](90),
+			rules: core_rules.GatewayRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: v1alpha1.Conf{
+								LocalityAwareness: &v1alpha1.LocalityAwareness{
+									LocalZone: &v1alpha1.LocalZone{
+										AffinityTags: &[]v1alpha1.AffinityTag{
+											{
+												Key:    "k8s.io/node",
+												Weight: pointer.To[uint32](9000),
+											},
+											{
+												Key:    "k8s.io/az",
+												Weight: pointer.To[uint32](900),
+											},
+											{
+												Key:    "k8s.io/region",
+												Weight: pointer.To[uint32](90),
+											},
 										},
 									},
-								},
-								CrossZone: &v1alpha1.CrossZone{
-									Failover: []v1alpha1.Failover{
-										{
-											To: v1alpha1.ToZone{
-												Type:  v1alpha1.AnyExcept,
-												Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+									CrossZone: &v1alpha1.CrossZone{
+										Failover: []v1alpha1.Failover{
+											{
+												To: v1alpha1.ToZone{
+													Type:  v1alpha1.AnyExcept,
+													Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+												},
 											},
-										},
-										{
-											From: &v1alpha1.FromZone{
-												Zones: []string{"zone-1"},
+											{
+												From: &v1alpha1.FromZone{
+													Zones: []string{"zone-1"},
+												},
+												To: v1alpha1.ToZone{
+													Type:  v1alpha1.Only,
+													Zones: &[]string{"zone-3"},
+												},
 											},
-											To: v1alpha1.ToZone{
-												Type:  v1alpha1.Only,
-												Zones: &[]string{"zone-3"},
-											},
-										},
-										{
-											To: v1alpha1.ToZone{
-												Type:  v1alpha1.Only,
-												Zones: &[]string{"zone-4"},
+											{
+												To: v1alpha1.ToZone{
+													Type:  v1alpha1.Only,
+													Zones: &[]string{"zone-4"},
+												},
 											},
 										},
 									},

@@ -410,8 +410,8 @@ var _ = Describe("MeshTimeout", func() {
 	)
 
 	type gatewayTestCase struct {
-		toRules core_rules.ToRules
-		routes  []*core_mesh.MeshGatewayRouteResource
+		rules  core_rules.GatewayRules
+		routes []*core_mesh.MeshGatewayRouteResource
 	}
 	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
@@ -437,7 +437,7 @@ var _ = Describe("MeshTimeout", func() {
 						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
 				),
 			).
-			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTimeoutType, given.toRules)).
+			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshTimeoutType, given.rules)).
 			Build()
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
@@ -457,35 +457,39 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.cluster.golden.yaml", name))))
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 	}, Entry("basic", gatewayTestCase{
-		toRules: core_rules.ToRules{
-			Rules: []*core_rules.Rule{
-				{
-					Subset: core_rules.MeshSubset(),
-					Conf: api.Conf{
-						ConnectionTimeout: test.ParseDuration("10s"),
-						IdleTimeout:       test.ParseDuration("1h"),
-						Http: &api.Http{
-							RequestTimeout:        test.ParseDuration("5s"),
-							StreamIdleTimeout:     test.ParseDuration("1s"),
-							MaxStreamDuration:     test.ParseDuration("10m"),
-							MaxConnectionDuration: test.ParseDuration("10m"),
+		rules: core_rules.GatewayRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {
+					{
+						Subset: core_rules.MeshSubset(),
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
 						},
 					},
 				},
 			},
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
-		toRules: core_rules.ToRules{
-			Rules: []*core_rules.Rule{
-				{
-					Subset: core_rules.MeshSubset(),
-					Conf: api.Conf{
-						ConnectionTimeout: test.ParseDuration("10s"),
-						IdleTimeout:       test.ParseDuration("1h"),
-						Http: &api.Http{
-							RequestTimeout:        test.ParseDuration("5s"),
-							MaxStreamDuration:     test.ParseDuration("10m"),
-							MaxConnectionDuration: test.ParseDuration("10m"),
+		rules: core_rules.GatewayRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {
+					{
+						Subset: core_rules.MeshSubset(),
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
 						},
 					},
 				},
@@ -499,13 +503,15 @@ var _ = Describe("MeshTimeout", func() {
 				WithExactMatchHttpRoute("/", "backend", "other-service").
 				Build(),
 		},
-		toRules: core_rules.ToRules{
-			Rules: []*core_rules.Rule{
-				{
-					Subset: core_rules.MeshService("backend"),
-					Conf: api.Conf{
-						Http: &api.Http{
-							RequestTimeout: test.ParseDuration("24s"),
+		rules: core_rules.GatewayRules{
+			Rules: map[core_rules.InboundListener]core_rules.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {
+					{
+						Subset: core_rules.MeshService("backend"),
+						Conf: api.Conf{
+							Http: &api.Http{
+								RequestTimeout: test.ParseDuration("24s"),
+							},
 						},
 					},
 				},

@@ -728,6 +728,7 @@ plugins:
     meshhealthchecks: {}
     meshhttproutes: {}
     meshloadbalancingstrategies: {}
+    meshmetrics: {}
     meshproxypatches: {}
     meshratelimits: {}
     meshretries: {}

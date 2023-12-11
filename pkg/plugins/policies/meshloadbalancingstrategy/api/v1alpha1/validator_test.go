@@ -196,6 +196,29 @@ to:
                 ttl: 1s
                 path: relative-path
 `),
+		resources.ErrorCases(
+			"leastRequest error",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.loadBalancer.leastRequest.activeRequestBias",
+				Message: "must be greater or equal then: 0",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: -1
+`),
 		resources.ErrorCases("empty from in failover", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].from.zones",
 			Message: "must not be empty",
@@ -401,6 +424,27 @@ to:
                 name: cookie-name
                 ttl: 1s
                 path: /absolute-path
+`),
+		Entry(
+			"full spec leastRequest",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
 `),
 		Entry(
 			"full locality awareness spec",

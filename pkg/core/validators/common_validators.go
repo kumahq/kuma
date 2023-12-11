@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"time"
 
@@ -143,6 +144,21 @@ func ValidateIntOrStringGreaterThan(path PathBuilder, number *intstr.IntOrString
 	return verr
 }
 
+func ValidateIntOrStringGreaterOrEqualThan(path PathBuilder, number *intstr.IntOrString, minValue int) ValidationError {
+	var verr ValidationError
+	if number == nil {
+		return verr
+	}
+
+	if dec, err := common_api.NewDecimalFromIntOrString(*number); err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	} else if dec.LessThan(decimal.NewFromInt(int64(minValue))) {
+		verr.AddViolationAt(path, fmt.Sprintf("%s: %d", HasToBeGreaterOrEqualThen, minValue))
+	}
+
+	return verr
+}
+
 func ValidateIntOrStringLessThan(path PathBuilder, number *intstr.IntOrString, maxValue int) ValidationError {
 	var verr ValidationError
 	if number == nil {
@@ -253,6 +269,14 @@ func ValidateNil[T any](path PathBuilder, t *T, msg string) ValidationError {
 	var err ValidationError
 	if t != nil {
 		err.AddViolationAt(path, msg)
+	}
+	return err
+}
+
+func ValidatePort(path PathBuilder, value uint32) ValidationError {
+	var err ValidationError
+	if value == 0 || value > math.MaxUint16 {
+		err.AddViolationAt(path, "port must be a valid (1-65535)")
 	}
 	return err
 }

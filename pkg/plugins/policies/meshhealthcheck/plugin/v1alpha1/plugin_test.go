@@ -239,8 +239,8 @@ var _ = Describe("MeshHealthCheck", func() {
 	)
 
 	type gatewayTestCase struct {
-		name    string
-		toRules core_rules.ToRules
+		name  string
+		rules core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -260,7 +260,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshHealthCheckType, given.rules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
@@ -285,43 +285,45 @@ var _ = Describe("MeshHealthCheck", func() {
 		},
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
 			name: "basic",
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: api.Conf{
-							Interval:                     test.ParseDuration("10s"),
-							Timeout:                      test.ParseDuration("2s"),
-							UnhealthyThreshold:           pointer.To[int32](3),
-							HealthyThreshold:             pointer.To[int32](1),
-							InitialJitter:                test.ParseDuration("13s"),
-							IntervalJitter:               test.ParseDuration("15s"),
-							IntervalJitterPercent:        pointer.To[int32](10),
-							HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
-							FailTrafficOnPanic:           pointer.To(true),
-							EventLogPath:                 pointer.To("/tmp/log.txt"),
-							AlwaysLogHealthCheckFailures: pointer.To(false),
-							NoTrafficInterval:            test.ParseDuration("16s"),
-							Http: &api.HttpHealthCheck{
-								Disabled: pointer.To(false),
-								Path:     pointer.To("/health"),
-								RequestHeadersToAdd: &api.HeaderModifier{
-									Add: []api.HeaderKeyValue{
-										{
-											Name:  "x-some-header",
-											Value: "value",
+			rules: core_rules.GatewayRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: api.Conf{
+								Interval:                     test.ParseDuration("10s"),
+								Timeout:                      test.ParseDuration("2s"),
+								UnhealthyThreshold:           pointer.To[int32](3),
+								HealthyThreshold:             pointer.To[int32](1),
+								InitialJitter:                test.ParseDuration("13s"),
+								IntervalJitter:               test.ParseDuration("15s"),
+								IntervalJitterPercent:        pointer.To[int32](10),
+								HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+								FailTrafficOnPanic:           pointer.To(true),
+								EventLogPath:                 pointer.To("/tmp/log.txt"),
+								AlwaysLogHealthCheckFailures: pointer.To(false),
+								NoTrafficInterval:            test.ParseDuration("16s"),
+								Http: &api.HttpHealthCheck{
+									Disabled: pointer.To(false),
+									Path:     pointer.To("/health"),
+									RequestHeadersToAdd: &api.HeaderModifier{
+										Add: []api.HeaderKeyValue{
+											{
+												Name:  "x-some-header",
+												Value: "value",
+											},
+										},
+										Set: []api.HeaderKeyValue{
+											{
+												Name:  "x-some-other-header",
+												Value: "value",
+											},
 										},
 									},
-									Set: []api.HeaderKeyValue{
-										{
-											Name:  "x-some-other-header",
-											Value: "value",
-										},
-									},
+									ExpectedStatuses: &[]int32{200, 201},
 								},
-								ExpectedStatuses: &[]int32{200, 201},
+								ReuseConnection: pointer.To(true),
 							},
-							ReuseConnection: pointer.To(true),
 						},
 					},
 				},
