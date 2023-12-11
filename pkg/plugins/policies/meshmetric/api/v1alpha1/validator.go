@@ -28,6 +28,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("sidecar", validateSidecar(conf.Sidecar))
+	verr.AddError("applications", validateApplications(conf.Applications))
 	verr.AddError("backends", validateBackend(conf.Backends))
 	return verr
 }
@@ -48,6 +49,19 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 	return verr
 }
 
+func validateApplications(applications *[]Application) validators.ValidationError {
+	var verr validators.ValidationError
+	if applications == nil {
+		return verr
+	}
+
+	for idx, application := range *applications {
+		verr.Add(validators.ValidatePort(validators.RootedAt("application").Index(idx), application.Port))
+	}
+
+	return verr
+}
+
 func validateBackend(backends *[]Backend) validators.ValidationError {
 	var verr validators.ValidationError
 	if backends == nil {
@@ -60,6 +74,8 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 		case PrometheusBackendType:
 			if backend.Prometheus == nil {
 				verr.AddViolationAt(path.Field("prometheus"), validators.MustBeDefined)
+			} else {
+				verr.Add(validators.ValidatePort(path.Field("port"), backend.Prometheus.Port))
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")

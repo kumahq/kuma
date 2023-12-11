@@ -57,6 +57,43 @@ default:
       name: main-backend
 `),
 		resources.ErrorCase(
+			"invalid port for prometheus listener",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].port",
+				Message: "port must be a valid (1-65535)",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: Prometheus
+      name: main-backend
+      prometheus:
+        port: 95599
+`),
+		resources.ErrorCase(
+			"invalid port for application",
+			validators.Violation{
+				Field:   "spec.default.applications.application[0]",
+				Message: "port must be a valid (1-65535)",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  applications:
+    - port: 95599
+`),
+		resources.ErrorCase(
 			"invalid regex",
 			validators.Violation{
 				Field:   "spec.default.sidecar.regex",
