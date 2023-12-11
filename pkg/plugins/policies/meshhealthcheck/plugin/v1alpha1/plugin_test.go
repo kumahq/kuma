@@ -275,7 +275,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
 			name: "basic",
 			rules: core_rules.GatewayRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "192.168.0.1", Port: 8080}: {
 						{
 							Subset: core_rules.Subset{},

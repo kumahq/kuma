@@ -48,7 +48,7 @@ type ToRules struct {
 }
 
 type GatewayRules struct {
-	Rules map[InboundListener]Rules
+	ToRules map[InboundListener]Rules
 }
 
 type SingleItemRules struct {
@@ -269,7 +269,7 @@ func BuildGatewayRules(
 		}
 		rulesByInbound[inbound] = rules.Rules
 	}
-	return GatewayRules{Rules: rulesByInbound}, nil
+	return GatewayRules{ToRules: rulesByInbound}, nil
 }
 
 func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
