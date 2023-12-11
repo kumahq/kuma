@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestMeshLoadBalancingStrategy(t *testing.T) {
+func TestMeshMetric(t *testing.T) {
 	test.RunSpecs(t, "MeshMetric Suite")
 }
