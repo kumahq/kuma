@@ -18,6 +18,11 @@ The only users who need to take action are those who are explicitly relying on t
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
 
+### Deprecation of postgres driverName=postgres (lib/pq)
+
+The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future. 
+Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
+
 ## Upgrade to `2.5.x`
 
 ### Transparent-proxy and CNI v1 removal
