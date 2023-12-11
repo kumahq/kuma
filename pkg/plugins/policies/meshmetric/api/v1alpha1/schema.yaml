@@ -23,6 +23,7 @@ properties:
             items:
               properties:
                 path:
+                  default: /metrics/prometheus
                   description: Path on which an application expose HTTP endpoint with metrics.
                   type: string
                 port:
@@ -44,9 +45,11 @@ properties:
                   description: Prometheus backend configuration.
                   properties:
                     path:
+                      default: /metrics
                       description: Path on which a dataplane should expose HTTP endpoint with Prometheus metrics.
                       type: string
                     port:
+                      default: 5670
                       description: Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
                       format: int32
                       type: integer
@@ -54,6 +57,7 @@ properties:
                       description: Configuration of TLS for prometheus listener.
                       properties:
                         mode:
+                          default: Disabled
                           description: Configuration of TLS for Prometheus listener.
                           enum:
                             - Disabled
@@ -83,6 +87,7 @@ properties:
                 description: Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
                 type: string
               usedOnly:
+                default: false
                 description: UsedOnly will scrape only metrics that has been by sidecar (counters incremented at least once, gauges changed at least once, and histograms added to at least once).
                 type: boolean
             type: object

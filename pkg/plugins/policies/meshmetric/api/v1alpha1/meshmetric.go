@@ -30,11 +30,13 @@ type Sidecar struct {
 	// UsedOnly will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
 	// least once).
+	// +kubebuilder:default=false
 	UsedOnly *bool `json:"usedOnly,omitempty"`
 }
 
 type Application struct {
 	// Path on which an application expose HTTP endpoint with metrics.
+	// +kubebuilder:default="/metrics/prometheus"
 	Path *string `json:"path,omitempty"`
 	// Port on which an application expose HTTP endpoint with metrics.
 	Port uint32 `json:"port"`
@@ -56,8 +58,10 @@ const PrometheusBackendType BackendType = "Prometheus"
 
 type PrometheusBackend struct {
 	// Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+	// +kubebuilder:default=5670
 	Port uint32 `json:"port"`
 	// Path on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+	// +kubebuilder:default="/metrics"
 	Path string `json:"path"`
 	// Configuration of TLS for prometheus listener.
 	Tls *PrometheusTls `json:"tls,omitempty"`
@@ -65,6 +69,7 @@ type PrometheusBackend struct {
 
 type PrometheusTls struct {
 	// Configuration of TLS for Prometheus listener.
+	// +kubebuilder:default="Disabled"
 	Mode TlsMode `json:"mode"`
 }
 
