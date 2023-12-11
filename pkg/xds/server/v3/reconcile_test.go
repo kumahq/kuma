@@ -128,7 +128,7 @@ var _ = Describe("Reconcile", func() {
 			snapshots <- snapshot               // same Dataplane configuration
 			snapshots <- envoy_cache.Snapshot{} // new Dataplane configuration
 
-			metrics, err := core_metrics.NewMetrics("standalone")
+			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds")
 			Expect(err).ToNot(HaveOccurred())

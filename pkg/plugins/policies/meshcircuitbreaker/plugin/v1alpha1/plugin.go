@@ -52,7 +52,7 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToGateways(policies.ToRules, clusters.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -108,11 +108,18 @@ func applyToOutbounds(
 }
 
 func applyToGateways(
-	rules core_rules.ToRules,
+	gatewayRules core_rules.GatewayRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	proxy *core_xds.Proxy,
 ) error {
 	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
+		rules, ok := gatewayRules.Rules[core_rules.InboundListener{
+			Address: proxy.Dataplane.Spec.GetNetworking().Address,
+			Port:    listenerInfo.Listener.Port,
+		}]
+		if !ok {
+			continue
+		}
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway.RouteDestinationsMutable(hostInfo.Entries)
 			for _, dest := range destinations {
@@ -128,7 +135,7 @@ func applyToGateways(
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
 
 				if err := configure(
-					rules.Rules,
+					rules,
 					core_rules.MeshService(serviceName),
 					cluster,
 				); err != nil {

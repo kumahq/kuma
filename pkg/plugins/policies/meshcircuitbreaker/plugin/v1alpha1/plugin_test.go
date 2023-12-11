@@ -390,8 +390,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 	)
 
 	type gatewayTestCase struct {
-		name    string
-		toRules core_rules.ToRules
+		name  string
+		rules core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -407,7 +407,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshCircuitBreakerType, given.toRules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
@@ -432,9 +432,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		},
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{
 			name: "basic",
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
+			rules: core_rules.GatewayRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {{
 						Subset: core_rules.Subset{core_rules.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "backend",
@@ -442,7 +442,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Conf: api.Conf{
 							ConnectionLimits: genConnectionLimits(),
 						},
-					},
+					}},
 				},
 			},
 		}),

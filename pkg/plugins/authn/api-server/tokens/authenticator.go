@@ -18,6 +18,10 @@ var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").
 
 func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authenticator {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+		if authn.SkipAuth(request) {
+			chain.ProcessFilter(request, response)
+			return
+		}
 		authnHeader := request.Request.Header.Get("authorization")
 		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
 			authnHeader != "" &&

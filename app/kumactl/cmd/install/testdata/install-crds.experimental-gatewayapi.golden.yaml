@@ -457,6 +457,11 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                         items:
                                           properties:
                                             key:
@@ -466,8 +471,10 @@ spec:
                                           type: object
                                         type: array
                                       omitEmptyValues:
+                                        default: false
                                         type: boolean
                                       plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
                                         type: string
                                       type:
                                         enum:
@@ -480,6 +487,8 @@ spec:
                                   path:
                                     description: Path to a file that logs will be
                                       written to
+                                    example: /tmp/access.log
+                                    minLength: 1
                                     type: string
                                 required:
                                 - path
@@ -490,6 +499,9 @@ spec:
                                   attributes:
                                     description: Attributes can contain placeholders
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
                                     items:
                                       properties:
                                         key:
@@ -502,6 +514,12 @@ spec:
                                     description: Body is a raw string or an OTLP any
                                       value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
                                       It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                      kvlistValue:
+                                        values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
                                     description: Endpoint of OpenTelemetry collector.
@@ -517,12 +535,19 @@ spec:
                                 properties:
                                   address:
                                     description: Address of the TCP logging backend
+                                    example: 127.0.0.1:5000
+                                    minLength: 1
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                         items:
                                           properties:
                                             key:
@@ -532,8 +557,10 @@ spec:
                                           type: object
                                         type: array
                                       omitEmptyValues:
+                                        default: false
                                         type: boolean
                                       plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
                                         type: string
                                       type:
                                         enum:
@@ -594,7 +621,7 @@ spec:
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
                   an effect on. The resource could be either a real store object or
-                  virtual resource defined inplace.
+                  virtual resource defined in-place.
                 properties:
                   kind:
                     description: Kind of the referenced resource
@@ -642,6 +669,11 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                         items:
                                           properties:
                                             key:
@@ -651,8 +683,10 @@ spec:
                                           type: object
                                         type: array
                                       omitEmptyValues:
+                                        default: false
                                         type: boolean
                                       plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
                                         type: string
                                       type:
                                         enum:
@@ -665,6 +699,8 @@ spec:
                                   path:
                                     description: Path to a file that logs will be
                                       written to
+                                    example: /tmp/access.log
+                                    minLength: 1
                                     type: string
                                 required:
                                 - path
@@ -675,6 +711,9 @@ spec:
                                   attributes:
                                     description: Attributes can contain placeholders
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
                                     items:
                                       properties:
                                         key:
@@ -687,6 +726,12 @@ spec:
                                     description: Body is a raw string or an OTLP any
                                       value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
                                       It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                      kvlistValue:
+                                        values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
                                     x-kubernetes-preserve-unknown-fields: true
                                   endpoint:
                                     description: Endpoint of OpenTelemetry collector.
@@ -702,12 +747,19 @@ spec:
                                 properties:
                                   address:
                                     description: Address of the TCP logging backend
+                                    example: 127.0.0.1:5000
+                                    minLength: 1
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
                                         items:
                                           properties:
                                             key:
@@ -717,8 +769,10 @@ spec:
                                           type: object
                                         type: array
                                       omitEmptyValues:
+                                        default: false
                                         type: boolean
                                       plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
                                         type: string
                                       type:
                                         enum:
@@ -1680,6 +1734,122 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+              to:
+                description: To list makes a match between clients and corresponding
+                  configurations
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of destinations referenced in 'targetRef'
+                      properties:
+                        http:
+                          description: Http allows to define list of Http faults between
+                            dataplanes.
+                          items:
+                            description: FaultInjection defines the configuration
+                              of faults between dataplanes.
+                            properties:
+                              abort:
+                                description: Abort defines a configuration of not
+                                  delivering requests to destination service and replacing
+                                  the responses from destination dataplane by predefined
+                                  status code
+                                properties:
+                                  httpStatus:
+                                    description: HTTP status code which will be returned
+                                      to source side
+                                    format: int32
+                                    type: integer
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: Percentage of requests on which abort
+                                      will be injected, has to be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
+                                required:
+                                - httpStatus
+                                - percentage
+                                type: object
+                              delay:
+                                description: Delay defines configuration of delaying
+                                  a response from a destination
+                                properties:
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: Percentage of requests on which delay
+                                      will be injected, has to be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
+                                  value:
+                                    description: The duration during which the response
+                                      will be delayed
+                                    type: string
+                                required:
+                                - percentage
+                                - value
+                                type: object
+                              responseBandwidth:
+                                description: ResponseBandwidth defines a configuration
+                                  to limit the speed of responding to the requests
+                                properties:
+                                  limit:
+                                    description: Limit is represented by value measure
+                                      in gbps, mbps, kbps or bps, e.g. 10kbps
+                                    type: string
+                                  percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    description: Percentage of requests on which response
+                                      bandwidth limit will be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
+                                required:
+                                - limit
+                                - percentage
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  required:
+                  - targetRef
+                  type: object
+                type: array
             required:
             - targetRef
             type: object
@@ -3272,6 +3442,19 @@ spec:
                                 hosts as specified in 'choiceCount' (2 by default)
                                 and picks the host which has the fewest active requests
                               properties:
+                                activeRequestBias:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  description: ActiveRequestBias refers to dynamic
+                                    weights applied when hosts have varying load balancing
+                                    weights. A higher value here aggressively reduces
+                                    the weight of endpoints that are currently handling
+                                    active requests. In essence, the higher the ActiveRequestBias
+                                    value, the more forcefully it reduces the load
+                                    balancing weight of endpoints that are actively
+                                    serving requests.
+                                  x-kubernetes-int-or-string: true
                                 choiceCount:
                                   description: ChoiceCount is the number of random
                                     healthy hosts from which the host with the fewest
@@ -3697,6 +3880,175 @@ spec:
                   - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.13.0
+  name: meshmetrics.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshMetric
+    listKind: MeshMetricList
+    plural: meshmetrics
+    singular: meshmetric
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshMetric resource.
+            properties:
+              default:
+                description: MeshMetric configuration.
+                properties:
+                  applications:
+                    description: Applications is a list of application that Dataplane
+                      Proxy will scrape
+                    items:
+                      properties:
+                        path:
+                          default: /metrics/prometheus
+                          description: Path on which an application expose HTTP endpoint
+                            with metrics.
+                          type: string
+                        port:
+                          description: Port on which an application expose HTTP endpoint
+                            with metrics.
+                          format: int32
+                          type: integer
+                      required:
+                      - port
+                      type: object
+                    type: array
+                  backends:
+                    description: Backends list that will be used to collect metrics.
+                    items:
+                      properties:
+                        name:
+                          description: Name of the backend. Needed when using MADS
+                            for DP discovery.
+                          type: string
+                        prometheus:
+                          description: Prometheus backend configuration.
+                          properties:
+                            path:
+                              default: /metrics
+                              description: Path on which a dataplane should expose
+                                HTTP endpoint with Prometheus metrics.
+                              type: string
+                            port:
+                              default: 5670
+                              description: Port on which a dataplane should expose
+                                HTTP endpoint with Prometheus metrics.
+                              format: int32
+                              type: integer
+                            tls:
+                              description: Configuration of TLS for prometheus listener.
+                              properties:
+                                mode:
+                                  default: Disabled
+                                  description: Configuration of TLS for Prometheus
+                                    listener.
+                                  enum:
+                                  - Disabled
+                                  - ProvidedTLS
+                                  - ActiveMTLSBackend
+                                  type: string
+                              required:
+                              - mode
+                              type: object
+                          required:
+                          - path
+                          - port
+                          type: object
+                        type:
+                          description: Type of the backend that will be used to collect
+                            metrics. At the moment only Prometheus backend is available.
+                          enum:
+                          - Prometheus
+                          type: string
+                      required:
+                      - type
+                      type: object
+                    type: array
+                  sidecar:
+                    description: Sidecar metrics collection configuration
+                    properties:
+                      regex:
+                        description: Regex that will be used to filter sidecar metrics.
+                          It uses Google RE2 engine https://github.com/google/re2
+                        type: string
+                      usedOnly:
+                        default: false
+                        description: UsedOnly will scrape only metrics that has been
+                          by sidecar (counters incremented at least once, gauges changed
+                          at least once, and histograms added to at least once).
+                        type: boolean
+                    type: object
+                type: object
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined in-place.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
             required:
             - targetRef
             type: object
@@ -4541,14 +4893,15 @@ spec:
                           properties:
                             backOff:
                               description: BackOff is a configuration of durations
-                                which will be used in exponential backoff strategy
+                                which will be used in an exponential backoff strategy
                                 between retries.
                               properties:
                                 baseInterval:
+                                  default: 25ms
                                   description: BaseInterval is an amount of time which
                                     should be taken between retries. Must be greater
                                     than zero. Values less than 1 ms are rounded up
-                                    to 1 ms. Default is 25ms.
+                                    to 1 ms.
                                   type: string
                                 maxInterval:
                                   description: MaxInterval is a maximal amount of
@@ -4558,13 +4911,16 @@ spec:
                               type: object
                             numRetries:
                               description: NumRetries is the number of attempts that
-                                will be made on failed (and retriable) requests.
+                                will be made on failed (and retriable) requests. If
+                                not set, the default value is 1.
                               format: int32
                               type: integer
                             perTryTimeout:
-                              description: PerTryTimeout is the amount of time after
-                                which retry attempt should timeout. Setting this timeout
-                                to 0 will disable it. Default is 15s.
+                              description: PerTryTimeout is the maximum amount of
+                                time each retry attempt can take before it times out.
+                                If not set, the global request timeout for the route
+                                will be used. Setting this value to 0 will disable
+                                the per-try timeout.
                               type: string
                             rateLimitedBackOff:
                               description: RateLimitedBackOff is a configuration of
@@ -4572,9 +4928,9 @@ spec:
                                 one of the headers configured.
                               properties:
                                 maxInterval:
+                                  default: 300s
                                   description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries. Default
-                                    is 300 seconds.
+                                    time which will be taken between retries.
                                   type: string
                                 resetHeaders:
                                   description: ResetHeaders specifies the list of
@@ -4587,8 +4943,7 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either Seconds or UnixTimestamp.
+                                        description: The format of the reset header.
                                         enum:
                                         - Seconds
                                         - UnixTimestamp
@@ -4606,10 +4961,21 @@ spec:
                                   type: array
                               type: object
                             retryOn:
-                              description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [Canceled,
-                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable].'
+                              description: RetryOn is a list of conditions which will
+                                cause a retry.
+                              example:
+                              - Canceled
+                              - DeadlineExceeded
+                              - Internal
+                              - ResourceExhausted
+                              - Unavailable
                               items:
+                                enum:
+                                - Canceled
+                                - DeadlineExceeded
+                                - Internal
+                                - ResourceExhausted
+                                - Unavailable
                                 type: string
                               type: array
                           type: object
@@ -4620,13 +4986,14 @@ spec:
                             backOff:
                               description: BackOff is a configuration of durations
                                 which will be used in exponential backoff strategy
-                                between retries
+                                between retries.
                               properties:
                                 baseInterval:
+                                  default: 25ms
                                   description: BaseInterval is an amount of time which
                                     should be taken between retries. Must be greater
                                     than zero. Values less than 1 ms are rounded up
-                                    to 1 ms. Default is 25ms.
+                                    to 1 ms.
                                   type: string
                                 maxInterval:
                                   description: MaxInterval is a maximal amount of
@@ -4642,8 +5009,10 @@ spec:
                                 properties:
                                   predicate:
                                     description: Type is requested predicate mode.
-                                      Available values are OmitPreviousHosts, OmitHostsWithTags,
-                                      and OmitPreviousPriorities.
+                                    enum:
+                                    - OmitPreviousHosts
+                                    - OmitHostsWithTags
+                                    - OmitPreviousPriorities
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -4653,10 +5022,10 @@ spec:
                                       if Type is OmitHostsWithTags
                                     type: object
                                   updateFrequency:
+                                    default: 2
                                     description: UpdateFrequency is how often the
                                       priority load should be updated based on previously
                                       attempted priorities. Used for OmitPreviousPriorities.
-                                      Default is 2 if not set.
                                     format: int32
                                     type: integer
                                 required:
@@ -4673,13 +5042,18 @@ spec:
                               type: integer
                             numRetries:
                               description: NumRetries is the number of attempts that
-                                will be made on failed (and retriable) requests
+                                will be made on failed (and retriable) requests.  If
+                                not set, the default value is 1.
                               format: int32
                               type: integer
                             perTryTimeout:
                               description: PerTryTimeout is the amount of time after
-                                which retry attempt should timeout. Setting this timeout
-                                to 0 will disable it. Default is 15s.
+                                which retry attempt should time out. If left unspecified,
+                                the global route timeout for the request will be used.
+                                Consequently, when using a 5xx based retry policy,
+                                a request that times out will not be retried as the
+                                total timeout budget would have been exhausted. Setting
+                                this timeout to 0 will disable it.
                               type: string
                             rateLimitedBackOff:
                               description: RateLimitedBackOff is a configuration of
@@ -4687,9 +5061,9 @@ spec:
                                 one of the headers configured.
                               properties:
                                 maxInterval:
+                                  default: 300s
                                   description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries. Default
-                                    is 300 seconds.
+                                    time which will be taken between retries.
                                   type: string
                                 resetHeaders:
                                   description: ResetHeaders specifies the list of
@@ -4702,8 +5076,7 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either Seconds or UnixTimestamp.
+                                        description: The format of the reset header.
                                         enum:
                                         - Seconds
                                         - UnixTimestamp
@@ -4760,7 +5133,7 @@ spec:
                               description: RetriableResponseHeaders is an HTTP response
                                 headers that trigger a retry if present in the response.
                                 A retry will be triggered if any of the header matches
-                                match the upstream response headers.
+                                the upstream response headers.
                               items:
                                 description: HeaderMatch describes how to select an
                                   HTTP route by matching HTTP request headers.
@@ -4800,7 +5173,27 @@ spec:
                                 RefusedStream, Http3PostConnectFailure, HttpMethodConnect,
                                 HttpMethodDelete, HttpMethodGet, HttpMethodHead, HttpMethodOptions,
                                 HttpMethodPatch, HttpMethodPost, HttpMethodPut, HttpMethodTrace].
-                                Also, any HTTP status code (500, 503, etc).'
+                                Also, any HTTP status code (500, 503, etc.).'
+                              example:
+                              - 5XX
+                              - GatewayError
+                              - Reset
+                              - Retriable4xx
+                              - ConnectFailure
+                              - EnvoyRatelimited
+                              - RefusedStream
+                              - Http3PostConnectFailure
+                              - HttpMethodConnect
+                              - HttpMethodDelete
+                              - HttpMethodGet
+                              - HttpMethodHead
+                              - HttpMethodOptions
+                              - HttpMethodPatch
+                              - HttpMethodPost
+                              - HttpMethodPut
+                              - HttpMethodTrace
+                              - "500"
+                              - "503"
                               items:
                                 type: string
                               type: array
@@ -5348,13 +5741,14 @@ spec:
                           description: Datadog backend configuration.
                           properties:
                             splitService:
+                              default: false
                               description: 'Determines if datadog service name should
                                 be split based on traffic direction and destination.
                                 For example, with `splitService: true` and a `backend`
                                 service that communicates with a couple of databases,
                                 you would get service names like `backend_INBOUND`,
                                 `backend_OUTBOUND_db1`, and `backend_OUTBOUND_db2`
-                                in Datadog. Default: false'
+                                in Datadog.'
                               type: boolean
                             url:
                               description: Address of Datadog collector, only host
@@ -5385,18 +5779,19 @@ spec:
                           properties:
                             apiVersion:
                               default: httpJson
-                              description: 'Version of the API. values: httpJson,
-                                httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              description: Version of the API. https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
                               enum:
                               - httpJson
                               - httpProto
                               type: string
                             sharedSpanContext:
-                              description: 'Determines whether client and server spans
-                                will share the same span context. Default: true. https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63'
+                              default: true
+                              description: Determines whether client and server spans
+                                will share the same span context. https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
                               type: boolean
                             traceId128bit:
-                              description: 'Generate 128bit traces. Default: false'
+                              default: false
+                              description: Generate 128bit traces.
                               type: boolean
                             url:
                               description: Address of Zipkin collector.
@@ -5407,6 +5802,7 @@ spec:
                       required:
                       - type
                       type: object
+                    maxItems: 1
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -5417,34 +5813,36 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        description: 'Target percentage of requests that will be force
-                          traced if the ''x-client-trace-id'' header is set. Default:
-                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
-                          Either int or decimal represented as string.'
+                        default: 100%
+                        description: Target percentage of requests that will be force
+                          traced if the 'x-client-trace-id' header is set. Mirror
+                          of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
+                          Either int or decimal represented as string.
                         x-kubernetes-int-or-string: true
                       overall:
                         anyOf:
                         - type: integer
                         - type: string
-                        description: 'Target percentage of requests will be traced
+                        default: 100%
+                        description: Target percentage of requests will be traced
                           after all other sampling checks have been applied (client,
                           force tracing, random sampling). This field functions as
                           an upper limit on the total configured sampling rate. For
                           instance, setting client_sampling to 100% but overall_sampling
                           to 1% will result in only 1% of client requests with the
-                          appropriate headers to be force traced. Default: 100% Mirror
-                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
-                          Either int or decimal represented as string.'
+                          appropriate headers to be force traced. Mirror of overall_sampling
+                          in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
+                          Either int or decimal represented as string.
                         x-kubernetes-int-or-string: true
                       random:
                         anyOf:
                         - type: integer
                         - type: string
-                        description: 'Target percentage of requests that will be randomly
+                        default: 100%
+                        description: Target percentage of requests that will be randomly
                           selected for trace generation, if not requested by the client
-                          or not forced. Default: 100% Mirror of random_sampling in
-                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
-                          Either int or decimal represented as string.'
+                          or not forced. Mirror of random_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
+                          Either int or decimal represented as string.
                         x-kubernetes-int-or-string: true
                     type: object
                   tags:

@@ -136,6 +136,8 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 		return nil, err
 	}
 	var db *sql.DB
+
+	// make sure the server is reachable
 	Eventually(func() error {
 		var dbErr error
 		db, dbErr = postgres.ConnectToDb(*cfg)
@@ -151,6 +153,13 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 				return nil, err
 			}
 			cfg.DbName = dbName
+
+			// make sure the database instance is reachable
+			Eventually(func() error {
+				var dbAccessErr error
+				_, dbAccessErr = postgres.ConnectToDb(*cfg)
+				return dbAccessErr
+			}, "10s", "100ms").Should(Succeed())
 		}
 	}
 	return cfg, nil

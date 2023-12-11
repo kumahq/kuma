@@ -72,8 +72,9 @@ const (
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS     = "kuma.io/builtin-dns"
-	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
+	KumaBuiltinDNS        = "kuma.io/builtin-dns"
+	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
+	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
 	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"

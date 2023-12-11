@@ -581,11 +581,16 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	if err != nil {
 		return nil, err
 	}
+	logging, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Logging, metadata.KumaBuiltinDNSLogging)
+	if err != nil {
+		return nil, err
+	}
 
 	if enabled {
 		portVal := strconv.Itoa(int(port))
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
 		annotations[metadata.KumaBuiltinDNSPort] = portVal
+		annotations[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(logging)
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {

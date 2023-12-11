@@ -17,10 +17,10 @@ import (
 
 type (
 	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
-	ResourceMapper func(r model.Resource) (model.Resource, error)
+	ResourceMapper func(features kds.Features, r model.Resource) (model.Resource, error)
 )
 
-func NoopResourceMapper(r model.Resource) (model.Resource, error) {
+func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {
 	return r, nil
 }
 
@@ -66,7 +66,7 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 		return nil, err
 	}
 
-	resources, err := s.mapper(s.filter(ctx, rlist, node))
+	resources, err := s.mapper(s.filter(ctx, rlist, node), node)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +75,7 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 }
 
 func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
-	features := kds.Features{}
-	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
-		features[value.GetStringValue()] = true
-	}
+	features := getFeatures(node)
 
 	rv, _ := registry.Global().NewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
@@ -89,11 +86,12 @@ func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, n
 	return rv
 }
 
-func (s *snapshotGenerator) mapper(rs model.ResourceList) (model.ResourceList, error) {
-	rv, _ := registry.Global().NewList(rs.GetItemType())
+func (s *snapshotGenerator) mapper(rs model.ResourceList, node *envoy_core.Node) (model.ResourceList, error) {
+	features := getFeatures(node)
 
+	rv, _ := registry.Global().NewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
-		resource, err := s.resourceMapper(r)
+		resource, err := s.resourceMapper(features, r)
 		if err != nil {
 			return nil, err
 		}
@@ -104,4 +102,12 @@ func (s *snapshotGenerator) mapper(rs model.ResourceList) (model.ResourceList, e
 	}
 
 	return rv, nil
+}
+
+func getFeatures(node *envoy_core.Node) kds.Features {
+	features := kds.Features{}
+	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
+		features[value.GetStringValue()] = true
+	}
+	return features
 }

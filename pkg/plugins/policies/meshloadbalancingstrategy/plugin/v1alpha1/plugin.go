@@ -59,7 +59,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
+	if err := p.configureGateway(proxy, policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
@@ -157,7 +157,7 @@ func configureEndpoints(
 
 func (p plugin) configureGateway(
 	proxy *core_xds.Proxy,
-	rules core_rules.ToRules,
+	rules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
@@ -171,16 +171,23 @@ func (p plugin) configureGateway(
 
 	endpoints := policies_xds.GatherGatewayEndpoints(rs)
 
-	meshConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset())
-
 	for _, listenerInfo := range gatewayListenerInfos {
-		listener, ok := gatewayListeners[core_rules.InboundListener{
+		inboundListener := core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			Port:    listenerInfo.Listener.Port,
-		}]
+		}
+
+		listener, ok := gatewayListeners[inboundListener]
 		if !ok {
 			continue
 		}
+
+		rules, ok := rules.Rules[inboundListener]
+		if !ok {
+			continue
+		}
+
+		meshConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshSubset())
 
 		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
 			return err
@@ -199,7 +206,7 @@ func (p plugin) configureGateway(
 				}
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName))
+				localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
 				if localityConf == nil {
 					continue
 				}

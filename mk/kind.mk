@@ -34,7 +34,7 @@ endef
 
 CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb3529d9fba91b3951d461edfdb
 
-KUMA_MODE ?= standalone
+KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 
 .PHONY: kind/start

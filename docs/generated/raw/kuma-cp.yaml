@@ -1,7 +1,7 @@
 # Environment type. Available values are: "kubernetes" or "universal"
 environment: universal # ENV: KUMA_ENVIRONMENT
-# Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
-mode: standalone # ENV: KUMA_MODE
+# Mode in which Kuma CP is running. Available values are: "global", "zone", "standalone" (deprecated, use "zone")
+mode: zone # ENV: KUMA_MODE
 
 # Resource Store configuration
 store:
@@ -348,6 +348,8 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
+        # Enable coredns query logging if true
+        logging: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
       # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
       # installed using ebpf instead of iptables
       ebpf:
@@ -364,6 +366,11 @@ runtime:
         tcAttachIface: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
         # Path where compiled eBPF programs are placed
         programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
+      # IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
+      # If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
+      # It is useful when you change Service selector and expect traffic to be sent immediately.
+      # An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
+      ignoredServiceSelectorLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
     # Kubernetes's resources reconciliation concurrency configuration
     controllersConcurrency:
@@ -743,11 +750,6 @@ experimental:
   # If true then control plane computes reachable services automatically based on MeshTrafficPermission.
   # Lack of MeshTrafficPermission is treated as Deny the traffic.
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
-  # KDSSyncNameWithHashSuffix if true then during KDS sync resource name is going to be suffixed with hash.
-  # The hash is computed based on various resource characteristics like mesh, namespace, etc. The feature prevents name
-  # collisions when syncing policies with the same names but different meshes from Global(Universal) to Zone(Kubernetes).
-  # More extensive explanation of the problem and solution can be found in the MADR https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/029-kds-sync-hash-suffix.md
-  KDSSyncNameWithHashSuffix: false # ENV: KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX
 
 proxy:
   gateway:

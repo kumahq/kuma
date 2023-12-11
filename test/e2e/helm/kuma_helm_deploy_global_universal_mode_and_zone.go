@@ -60,8 +60,9 @@ stringData:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
-				// it's required because we check if Kuma is ready,
-				// and we use "kubectl get mesh" which is not available in universal mode
+				// WithSkipDefaultMesh is required because we check if Kuma is ready by using "kubectl get mesh"
+				// here in the framework https://github.com/kumahq/kuma/blob/1633d34ad116dd1e618f4a27dd1526f5ff7d8bde/test/framework/k8s_cluster.go#L564
+				// but on universal mode we use postgres to manage resources so without this it will fail making the test suite fail
 				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
@@ -110,18 +111,18 @@ stringData:
 
 	It("should deploy Zone and Global on 2 clusters", func() {
 		// mesh is synced to zone
-		Eventually(func() string {
+		Eventually(func(g Gomega) {
 			output, err := zoneCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
-			Expect(err).ToNot(HaveOccurred())
-			return output
-		}, "5s", "500ms").Should(ContainSubstring("default"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(output).To(ContainSubstring("default"))
+		}, "5s", "500ms").Should(Succeed())
 
 		// and dataplanes are synced to global
-		Eventually(func() string {
+		Eventually(func(g Gomega) {
 			output, err := globalCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
-			Expect(err).ToNot(HaveOccurred())
-			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(output).To(ContainSubstring("kuma-2-zone.demo-client"))
+		}, "5s", "500ms").Should(Succeed())
 	})
 
 	It("communication in between apps in zone works", func() {

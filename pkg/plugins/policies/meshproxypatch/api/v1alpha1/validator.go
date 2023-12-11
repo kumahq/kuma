@@ -45,9 +45,36 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("appendModifications")
+
+	if len(conf.AppendModifications) == 0 {
+		verr.AddViolationAt(path, validators.MustNotBeEmpty)
+	}
+
 	for i, modification := range conf.AppendModifications {
 		path := path.Index(i)
+
+		var modificationsAmount int
+		for _, m := range []bool{
+			modification.Cluster != nil,
+			modification.Listener != nil,
+			modification.VirtualHost != nil,
+			modification.NetworkFilter != nil,
+			modification.HTTPFilter != nil,
+		} {
+			if m {
+				modificationsAmount++
+			}
+		}
+
 		switch {
+		case modificationsAmount != 1:
+			verr.AddViolationAt(
+				path,
+				fmt.Sprintf(
+					"exactly one modification can be defined at a time. Currently, %d modifications are defined",
+					modificationsAmount,
+				),
+			)
 		case modification.Cluster != nil:
 			verr.AddErrorAt(path, validateClusterMod(*modification.Cluster))
 		case modification.Listener != nil:
@@ -58,13 +85,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 			verr.AddErrorAt(path, validateNetworkFilterMod(*modification.NetworkFilter))
 		case modification.HTTPFilter != nil:
 			verr.AddErrorAt(path, validateHTTPFilterMod(*modification.HTTPFilter))
-		default:
-			verr.AddViolationAt(path, "at least one modification has to be defined")
 		}
 	}
-	if len(conf.AppendModifications) == 0 {
-		verr.AddViolationAt(path, validators.MustNotBeEmpty)
-	}
+
 	return verr
 }
 

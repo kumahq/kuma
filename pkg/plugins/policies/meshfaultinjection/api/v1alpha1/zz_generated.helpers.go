@@ -29,3 +29,20 @@ func (x *MeshFaultInjection) GetFromList() []core_model.PolicyItem {
 	}
 	return result
 }
+
+func (x *To) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *To) GetDefault() interface{} {
+	return x.Default
+}
+
+func (x *MeshFaultInjection) GetToList() []core_model.PolicyItem {
+	var result []core_model.PolicyItem
+	for i := range x.To {
+		item := x.To[i]
+		result = append(result, &item)
+	}
+	return result
+}

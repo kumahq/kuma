@@ -169,6 +169,14 @@ type Config struct {
 	EventBus eventbus.Config `json:"eventBus"`
 }
 
+func (c Config) IsFederatedZoneCP() bool {
+	return c.Mode == core.Zone && c.Multizone.Zone.GlobalAddress != "" && c.Multizone.Zone.Name != ""
+}
+
+func (c Config) IsNonFederatedZoneCP() bool {
+	return c.Mode == core.Zone && !c.IsFederatedZoneCP()
+}
+
 func (c *Config) Sanitize() {
 	c.General.Sanitize()
 	c.Store.Sanitize()
@@ -204,7 +212,7 @@ func (c *Config) PostProcess() error {
 var DefaultConfig = func() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
-		Mode:                       core.Standalone,
+		Mode:                       core.Zone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
@@ -254,7 +262,6 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
 			},
-			KDSSyncNameWithHashSuffix: false,
 		},
 		Proxy:    xds.DefaultProxyConfig(),
 		InterCp:  intercp.DefaultInterCpConfig(),
@@ -270,25 +277,6 @@ func (c *Config) Validate() error {
 	case core.Global:
 		if err := c.Multizone.Global.Validate(); err != nil {
 			return errors.Wrap(err, "Multizone Global validation failed")
-		}
-	case core.Standalone:
-		if err := c.XdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "Xds Server validation failed")
-		}
-		if err := c.BootstrapServer.Validate(); err != nil {
-			return errors.Wrap(err, "Bootstrap Server validation failed")
-		}
-		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
-			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
-		}
-		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
-		}
-		if err := c.Runtime.Validate(c.Environment); err != nil {
-			return errors.Wrap(err, "Runtime validation failed")
-		}
-		if err := c.Metrics.Validate(); err != nil {
-			return errors.Wrap(err, "Metrics validation failed")
 		}
 	case core.Zone:
 		if err := c.Multizone.Zone.Validate(); err != nil {
@@ -418,9 +406,6 @@ type ExperimentalConfig struct {
 	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
 	// Lack of MeshTrafficPermission is treated as Deny the traffic.
 	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
-	// KDSSyncNameWithHashSuffix if true then during KDS sync resource name is going to be suffixed with hash.
-	// The hash is computed based on various resource characteristics like mesh, namespace, etc.
-	KDSSyncNameWithHashSuffix bool `json:"kdsSyncNameWithHashSuffix" envconfig:"KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

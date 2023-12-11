@@ -29,10 +29,9 @@ func Setup(runtime runtime.Runtime) error {
 		log.V(1).Info("skipping default tenant resources because KUMA_DEFAULTS_SKIP_TENANT_RESOURCES is set to true")
 		return nil
 	}
-	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
+	if !runtime.Config().IsFederatedZoneCP() { // Don't run defaults in Zone connected to global (it's done in Global)
 		defaultsComponent := NewDefaultsComponent(
 			runtime.Config().Defaults,
-			runtime.Config().Mode,
 			runtime.Config().Environment,
 			runtime.ResourceManager(),
 			runtime.ResourceStore(),
@@ -76,14 +75,12 @@ func Setup(runtime runtime.Runtime) error {
 
 func NewDefaultsComponent(
 	config *kuma_cp.Defaults,
-	cpMode config_core.CpMode,
 	environment config_core.EnvironmentType,
 	resManager core_manager.ResourceManager,
 	resStore store.ResourceStore,
 	extensions context.Context,
 ) component.Component {
 	return &defaultsComponent{
-		cpMode:      cpMode,
 		environment: environment,
 		config:      config,
 		resManager:  resManager,
@@ -95,7 +92,6 @@ func NewDefaultsComponent(
 var _ component.Component = &defaultsComponent{}
 
 type defaultsComponent struct {
-	cpMode      config_core.CpMode
 	environment config_core.EnvironmentType
 	config      *kuma_cp.Defaults
 	resManager  core_manager.ResourceManager

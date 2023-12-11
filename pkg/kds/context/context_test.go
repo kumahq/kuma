@@ -52,7 +52,7 @@ var _ = Describe("Context", func() {
 		DescribeTable("should zero generation field",
 			func(given testCase) {
 				// when
-				out, _ := mapper(given.resource)
+				out, _ := mapper(kds.Features{}, given.resource)
 
 				// then
 				Expect(out.GetMeta()).To(Equal(given.expect.GetMeta()))
@@ -451,6 +451,7 @@ var _ = Describe("Context", func() {
 			expectedName               string
 			isResourcePluginOriginated bool
 			scope                      model.ResourceScope
+			features                   kds.Features
 		}
 
 		genConfig := func(caseCfg config) kuma_cp.Config {
@@ -463,8 +464,6 @@ var _ = Describe("Context", func() {
 			if caseCfg.k8sSystemNamespace != "" {
 				cfg.Store.Kubernetes.SystemNamespace = caseCfg.k8sSystemNamespace
 			}
-
-			cfg.Experimental.KDSSyncNameWithHashSuffix = true
 
 			return cfg
 		}
@@ -490,7 +489,7 @@ var _ = Describe("Context", func() {
 				kdsCtx := context.DefaultContext(ctx, rm, cfg)
 
 				// when
-				out, err := kdsCtx.GlobalResourceMapper(resource(given))
+				out, err := kdsCtx.GlobalResourceMapper(given.features, resource(given))
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -506,6 +505,21 @@ var _ = Describe("Context", func() {
 				name:         "foo.custom-namespace",
 				expectedName: "foo-zxw6c95d42zfz9cc",
 				scope:        model.ScopeMesh,
+				features: map[string]bool{
+					kds.FeatureHashSuffix: true,
+				},
+			}),
+			Entry("should be removed when store type is kubernetes "+
+				"resource is plugin originated and no KDS hash-suffix feature", testCase{
+				isResourcePluginOriginated: true,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "custom-namespace",
+				},
+				name:         "foo.custom-namespace",
+				expectedName: "foo",
+				scope:        model.ScopeMesh,
+				features:     map[string]bool{},
 			}),
 			Entry("shouldn't be removed when store type is kubernetes "+
 				"and resource isn't plugin originated", testCase{
@@ -517,6 +531,9 @@ var _ = Describe("Context", func() {
 				name:         "foo.default",
 				expectedName: "foo.default",
 				scope:        model.ScopeGlobal,
+				features: map[string]bool{
+					kds.FeatureHashSuffix: true,
+				},
 			}),
 		)
 	})

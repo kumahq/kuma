@@ -747,6 +747,9 @@ workflows:
         equal: ["", << pipeline.parameters.gh_action_build_artifact_name >>]
     jobs:
       - e2e_testing:
+          filters:
+            tags:
+              only: /.*/
           k8sVersion: << pipeline.parameters.e2e_param_k8s_version >>
           target: << pipeline.parameters.e2e_param_target >>
           arch: << pipeline.parameters.e2e_param_arch >>

@@ -18,7 +18,7 @@ name: fi1
 targetRef:
   kind: MeshService
   name: backend
-to:
+from:
   - targetRef:
       kind: MeshService
       name: web-backend
@@ -47,7 +47,7 @@ name: fi1
 targetRef:
   kind: MeshService
   name: backend
-to:
+from:
   - targetRef:
       kind: MeshService
       name: web-backend
@@ -161,6 +161,69 @@ from:
       - responseBandwidth:
           limit: 1000
           percentage: "xyz"`,
+		),
+		ErrorCases("MeshGateway and targetRefs",
+			[]validators.Violation{
+				{
+					Field:   "spec.from",
+					Message: "must not be defined",
+				},
+				{
+					Field:   "spec.to[1].targetRef.kind",
+					Message: "value is not supported",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50`,
+		),
+		ErrorCases("top level Mesh and to",
+			[]validators.Violation{
+				{
+					Field:   "spec.to",
+					Message: "must not be defined",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+      - abort:
+          httpStatus: 503
+          percentage: 50`,
 		),
 	)
 })
