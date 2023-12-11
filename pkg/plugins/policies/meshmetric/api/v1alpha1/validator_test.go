@@ -1,9 +1,10 @@
 package v1alpha1
 
 import (
+	. "github.com/onsi/ginkgo/v2"
+
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/test/resources"
-	. "github.com/onsi/ginkgo/v2"
 )
 
 var _ = Describe("validation", func() {
