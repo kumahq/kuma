@@ -679,8 +679,8 @@ jobs:
 workflows:
   version: 2
   kuma-commit:
-    when:
-      equal: ["", << pipeline.parameters.gh_action_build_artifact_name >>]
+    when: false # Stop running for the moment (likely we'll remove this in the future.
+    # equal: ["", << pipeline.parameters.gh_action_build_artifact_name >>]
     jobs:
       - go_cache:
           name: go_cache-<< matrix.arch >>
