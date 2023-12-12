@@ -159,7 +159,8 @@ jobs:
           fi
 
           BUILD_OUTPUT_ARTIFACT_NAME=build-output
-          BODY='{"parameters": { "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  } }'
+          BODY='{}'
+          BODY=$(echo "$BODY" | jq -c '.parameters += { "e2e_param_k8s_version": "${{ inputs.k8sVersion }}", "e2e_param_arch": "${{ inputs.arch }}", "e2e_param_parallelism": ${{ inputs.parallelism }}, "e2e_param_target": "${{ inputs.target }}", "e2e_param_cni_network_plugin": "${{ inputs.cniNetworkPlugin }}", "e2e_param_legacy_kds": ${{ inputs.legacyKDS }}  }')
           BODY=$(echo "$BODY" | jq -c ".parameters += { \"gh_action_build_artifact_name\": \"$BUILD_OUTPUT_ARTIFACT_NAME\", \"gh_action_runtime_token\": \"$ACTIONS_RUNTIME_TOKEN\", \"gh_action_artifact_list_url\": \"${ACTIONS_RUNTIME_URL}_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview\" }")
 
           REF_NAME=
