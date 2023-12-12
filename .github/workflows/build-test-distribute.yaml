@@ -196,7 +196,6 @@ jobs:
     steps:
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        id: set-full-matrix-switches
         run: |
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: Install jq
@@ -252,7 +251,7 @@ jobs:
             EXCLUDE_ARM64='[{"arch": "arm64"}]'
             EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
             MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "del(.include) | .exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
-            if [[ "${RUN_FULL_MATRIX}" != "true" -a "${{ env.MATRIX_SKIP_HOOK }}" != "" ]]; then
+            if [[ "${{ env.MATRIX_SKIP_HOOK }}" != "" ]]; then
                 MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "${{ env.MATRIX_SKIP_HOOK }}")
             fi
           fi
