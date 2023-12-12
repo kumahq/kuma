@@ -2,7 +2,7 @@
 
 * Status: accepted
 
-Technical Story: none
+Technical Story: https://github.com/kumahq/kuma/issues/8467
 
 ## Context and Problem Statement
 
