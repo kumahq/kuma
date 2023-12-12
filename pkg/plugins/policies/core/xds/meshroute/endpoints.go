@@ -4,12 +4,13 @@ import (
 	"context"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/pkg/errors"
 )
 
 func GenerateEndpoints(
@@ -26,7 +27,7 @@ func GenerateEndpoints(
 		service := services[serviceName]
 		meshCtx := ctx.Mesh
 
-		if !service.HasExternalService() || meshCtx.Resource.ZoneEgressEnabled() {
+		if !ctx.Mesh.IsExternalService(serviceName) || meshCtx.Resource.ZoneEgressEnabled() {
 			for _, cluster := range service.Clusters() {
 				var endpoints core_xds.EndpointMap
 				if cluster.Mesh() != "" {

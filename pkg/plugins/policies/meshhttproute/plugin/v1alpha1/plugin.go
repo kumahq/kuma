@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -54,7 +55,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	// `ToRouteRule` type, where rules have been appended together.
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
 
-	if len(policies.ToRules.Rules) == 0 {
+	if proxy.ZoneEgressProxy != nil {
+		return nil
+	}
+
+	if len(proxy.Policies.TrafficRoutes) != 0 && len(policies.ToRules.Rules) == 0 {
 		return nil
 	}
 
@@ -95,11 +100,13 @@ func ApplyToOutbounds(
 	rs.AddSet(listeners)
 
 	services := servicesAcc.Services()
+	core.Log.Info("TEST", "services", services)
 
 	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
+	core.Log.Info("TEST", "clusters", clusters)
 	rs.AddSet(clusters)
 
 	// outbound_proxy_generator creates empty eds for ExternalService
@@ -107,7 +114,7 @@ func ApplyToOutbounds(
 	// snapshot won't be consistent because ExternalService cluster
 	// has STRICT_DNS and we are not generating EDS, so we need to remove it
 	// to keep snapshot consistent
-	meshroute.CleanupEDS(proxy, services, rs)
+	// meshroute.CleanupEDS(proxy, services, rs)
 	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
@@ -125,6 +132,9 @@ func ApplyToGateway(
 	rules []ToRouteRule,
 ) error {
 	var limits []plugin_gateway.RuntimeResoureLimitListener
+	if len(rules) == 0 {
+		return nil
+	}
 
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
 		var hostInfos []plugin_gateway.GatewayHostInfo

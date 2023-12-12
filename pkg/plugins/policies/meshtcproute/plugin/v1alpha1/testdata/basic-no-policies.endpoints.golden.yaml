@@ -1,8 +1,8 @@
 resources:
-- name: backend-bb38a94289f18fb9
+- name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend-bb38a94289f18fb9
+    clusterName: backend
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -19,12 +19,6 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: tcp
               region: eu
-- name: backend-c72efb5be46fae6b
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend-c72efb5be46fae6b
-    endpoints:
-    - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
@@ -39,11 +33,3 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               region: us
-- name: externalservice
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: externalservice
-- name: other-backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: other-backend

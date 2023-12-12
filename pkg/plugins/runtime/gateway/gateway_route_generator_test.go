@@ -10,10 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -21,12 +18,6 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
-
-type WithoutResource struct {
-	Resource core_model.ResourceType
-	Mesh     string
-	Name     string
-}
 
 var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
@@ -1606,13 +1597,7 @@ conf:
       - destination:
           kuma.io/service: echo-service
 `,
-			WithoutResource{
-				Resource: core_mesh.TimeoutType,
-				Mesh:     "default",
-				Name:     "timeout-all-default",
-			},
 		),
-
 		Entry("timeout policy works with external services without egress",
 			"external-service-with-timeout-no-egress.yaml", `
 type: Mesh
@@ -2025,12 +2010,6 @@ conf:
 	}
 	handleArg := func(arg interface{}) {
 		switch val := arg.(type) {
-		case WithoutResource:
-			obj, err := registry.Global().NewObject(val.Resource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(rt.ResourceManager().Delete(
-				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
-			)).To(Succeed())
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
 		}

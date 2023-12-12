@@ -1,24 +1,12 @@
 Clusters:
   Resources:
     api-service-4508437668c35ed8:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 20s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: api-service-4508437668c35ed8
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -29,24 +17,12 @@ Clusters:
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-mirror-3dd740a2de879d4c:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 300s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-mirror-3dd740a2de879d4c
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -57,24 +33,12 @@ Clusters:
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-9f149ed9e14091ca:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -211,13 +175,6 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 20s
             weightedClusters:
               clusters:
@@ -232,13 +189,6 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 20s
             weightedClusters:
               clusters:
@@ -258,13 +208,6 @@ Routes:
               runtimeFraction:
                 defaultValue:
                   numerator: 1
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 10s
             weightedClusters:
               clusters:

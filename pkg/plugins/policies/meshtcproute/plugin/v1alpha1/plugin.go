@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -34,6 +35,12 @@ func (p plugin) Apply(
 	proxy *core_xds.Proxy,
 ) error {
 	tcpRules := proxy.Policies.Dynamic[api.MeshTCPRouteType].ToRules.Rules
+	if proxy.ZoneEgressProxy != nil {
+		return nil
+	}
+	if len(proxy.Policies.TrafficRoutes) != 0 && len(tcpRules) == 0 {
+		return nil
+	}
 
 	tlsReady := ctx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
@@ -45,6 +52,7 @@ func (p plugin) Apply(
 	rs.AddSet(listeners)
 
 	services := servicesAccumulator.Services()
+	core.Log.Info("TEST", "services", services)
 
 	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
@@ -57,7 +65,7 @@ func (p plugin) Apply(
 	// snapshot won't be consistent because ExternalService cluster
 	// has STRICT_DNS and we are not generating EDS, so we need to remove it
 	// to keep snapshot consistent
-	meshroute.CleanupEDS(proxy, services, rs)
+	// meshroute.CleanupEDS(proxy, services, rs)
 	endpoints, err := meshroute.GenerateEndpoints(proxy, ctx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")

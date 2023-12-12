@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -11,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -57,52 +55,5 @@ func EnsureDefaultMeshResources(
 		return nil
 	}
 
-	defaultResourceBuilders := map[string]func() model.Resource{
-		"allow-all":           defaultTrafficPermissionResource,
-		"route-all":           defaultTrafficRouteResource,
-		"timeout-all":         DefaultTimeoutResource,
-		"circuit-breaker-all": defaultCircuitBreakerResource,
-		"retry-all":           defaultRetryResource,
-	}
-
-	for prefix, resourceBuilder := range defaultResourceBuilders {
-		key := model.ResourceKey{
-			Mesh: meshName,
-			Name: fmt.Sprintf("%s-%s", prefix, meshName),
-		}
-		resource := resourceBuilder()
-
-		var msg string
-		if !slices.Contains(skippedPolicies, string(resource.Descriptor().Name)) {
-			err, created := ensureDefaultResource(ctx, resManager, resource, key)
-			if err != nil {
-				return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
-			}
-
-			msg = fmt.Sprintf("default %s already exists", resource.Descriptor().Name)
-			if created {
-				msg = fmt.Sprintf("default %s created", resource.Descriptor().Name)
-			}
-		} else {
-			msg = fmt.Sprintf("skipping default %s creation", resource.Descriptor().Name)
-		}
-
-		logger.Info(msg, "name", key.Name)
-	}
-
 	return nil
-}
-
-func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
-	err := resManager.Get(ctx, res, store.GetBy(resourceKey), store.GetConsistent())
-	if err == nil {
-		return nil, false
-	}
-	if !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "could not retrieve a resource"), false
-	}
-	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey)); err != nil {
-		return errors.Wrap(err, "could not create a resource"), false
-	}
-	return nil, true
 }

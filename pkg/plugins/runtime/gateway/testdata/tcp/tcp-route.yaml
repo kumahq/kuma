@@ -1,24 +1,12 @@
 Clusters:
   Resources:
     api-service-4508437668c35ed8:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: api-service-4508437668c35ed8
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -46,24 +34,12 @@ Clusters:
           sni: api-service{mesh=default}
       type: EDS
     echo-service-9f149ed9e14091ca:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -91,24 +67,12 @@ Clusters:
           sni: echo-service{mesh=default}
       type: EDS
     external-no-protocol-httpbin-6a3325e78573377c:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: external-no-protocol-httpbin-6a3325e78573377c
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -184,7 +148,6 @@ Listeners:
         - name: envoy.filters.network.tcp_proxy
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-            maxConnectAttempts: 5
             statPrefix: gateway-default
             weightedClusters:
               clusters:

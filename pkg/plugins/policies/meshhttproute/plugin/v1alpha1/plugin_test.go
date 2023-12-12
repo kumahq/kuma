@@ -208,24 +208,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			externalServices := xds_builders.EndpointMap().AddEndpoint("external-service", xds_builders.Endpoint().
+				WithTarget("192.168.0.5").
+				WithPort(8085).
+				WithWeight(1).
+				WithExternalService(&core_xds.ExternalService{}).
+				WithTags(mesh_proto.ServiceTag, "external-service", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).WithExternalServicesEndpointMap(externalServices).
 					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("external-service", core_mesh.ProtocolHTTP).
+					AddExternalService("external-service").
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(samples.DataplaneWebBuilder().AddOutboundToService("external-service")).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					// This is a policy that doesn't apply to these services on
-					// purpose, so that the plugin is activated
-					// TODO: remove this when the plugin runs by default
-					WithPolicies(
-						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshService("some-nonexistent-service"),
-								Conf:   api.PolicyDefault{},
-							}},
-						}),
-					).
 					Build(),
 			}
 		}()),

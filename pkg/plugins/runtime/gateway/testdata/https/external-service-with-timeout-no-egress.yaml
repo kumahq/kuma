@@ -1,51 +1,38 @@
 Clusters:
   Resources:
     external-http2-httpbin-29c391043cf34cd7:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 113s
-      dnsLookupFamily: V4_ONLY
-      loadAssignment:
-        clusterName: external-http2-httpbin
-        endpoints:
-        - lbEndpoints:
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-http2-httpbin
-                  kuma.io/protocol: http2
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-http2-httpbin
-                  kuma.io/protocol: http2
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
       name: external-http2-httpbin-29c391043cf34cd7
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
-      transportSocketMatches:
-      - match:
-          kuma.io/external-service-name: external-http2-httpbin
-          kuma.io/protocol: http2
-        name: httpbin.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin.com
-      type: STRICT_DNS
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            alpnProtocols:
+            - kuma
+            combinedValidationContext:
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    exact: spiffe://default/external-http2-httpbin
+                  sanType: URI
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          sni: external-http2-httpbin{mesh=default}
+      type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -53,11 +40,11 @@ Clusters:
             idleTimeout: 115s
             maxStreamDuration: 117s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
 Endpoints:
-  Resources: {}
+  Resources:
+    external-http2-httpbin-29c391043cf34cd7:
+      clusterName: external-http2-httpbin-29c391043cf34cd7
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
@@ -135,34 +122,28 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 114s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 114s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
 Runtimes:
   Resources:
@@ -170,4 +151,16 @@ Runtimes:
       layer: {}
       name: gateway.listeners
 Secrets:
-  Resources: {}
+  Resources:
+    identity_cert:secret:default:
+      name: identity_cert:secret:default
+      tlsCertificate:
+        certificateChain:
+          inlineBytes: Q0VSVA==
+        privateKey:
+          inlineBytes: S0VZ
+    mesh_ca:secret:default:
+      name: mesh_ca:secret:default
+      validationContext:
+        trustedCa:
+          inlineBytes: Q0E=

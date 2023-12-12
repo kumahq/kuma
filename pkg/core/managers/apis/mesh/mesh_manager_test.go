@@ -96,14 +96,6 @@ var _ = Describe("Mesh Manager", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// and default TrafficPermission for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), store.GetByKey("allow-all-mesh-1", meshName))
-			Expect(err).ToNot(HaveOccurred())
-
-			// and default TrafficRoute for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
-			Expect(err).ToNot(HaveOccurred())
-
 			// and Dataplane Token Signing Key for the mesh exists
 			key := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
 			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))

@@ -5,10 +5,13 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -38,9 +41,31 @@ func generateListeners(
 		serviceName := outbound.GetService()
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 
-		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol)
-		if len(backendRefs) == 0 {
+		core.Log.Info("protocol for service", "serviceName", serviceName, "protocol", protocol)
+
+		core.Log.Info("TCP generateListeners", "serviceName", serviceName)
+		service := rules.MeshService(serviceName)
+		if matchingHTTPRuleExist(toRulesHTTP, service, protocol) {
 			continue
+		}
+
+		switch protocol {
+		case core_mesh.ProtocolTCP, core_mesh.ProtocolUnknown:
+		default:
+			continue
+		}
+
+		backendRefs := getTCPBackendRefs(toRulesTCP, service)
+		if len(backendRefs) == 0 {
+			backendRefs = append(backendRefs,
+				common_api.BackendRef{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: serviceName,
+					},
+					Weight: pointer.To[uint](1),
+				},
+			)
 		}
 
 		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, meshCtx)
@@ -68,7 +93,7 @@ func buildOutboundListener(
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
 	tags := outbound.GetTags()
-
+	core.Log.Info("building tcp outbound listeners", "outbound", outbound)
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(

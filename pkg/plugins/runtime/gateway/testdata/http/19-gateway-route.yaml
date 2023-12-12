@@ -1,62 +1,25 @@
 Clusters:
   Resources:
     external-http2-httpbin-b70cd456b09f96ac:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
       connectTimeout: 5s
-      dnsLookupFamily: V4_ONLY
-      loadAssignment:
-        clusterName: external-http2-httpbin
-        endpoints:
-        - lbEndpoints:
-          - endpoint:
-              address:
-                socketAddress:
-                  address: httpbin.com
-                  portValue: 443
-            loadBalancingWeight: 1
-            metadata:
-              filterMetadata:
-                envoy.lb:
-                  kuma.io/external-service-name: external-http2-httpbin
-                  kuma.io/protocol: http2
-                envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-http2-httpbin
-                  kuma.io/protocol: http2
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
       name: external-http2-httpbin-b70cd456b09f96ac
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
-      transportSocketMatches:
-      - match:
-          kuma.io/external-service-name: external-http2-httpbin
-          kuma.io/protocol: http2
-        name: httpbin.com
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin.com
-      type: STRICT_DNS
+      type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
+            idleTimeout: 0s
           explicitHttpConfig:
-            http2ProtocolOptions:
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
+            httpProtocolOptions: {}
 Endpoints:
-  Resources: {}
+  Resources:
+    external-http2-httpbin-b70cd456b09f96ac:
+      clusterName: external-http2-httpbin-b70cd456b09f96ac
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
@@ -134,17 +97,13 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-b70cd456b09f96ac
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
 Runtimes:
   Resources:
