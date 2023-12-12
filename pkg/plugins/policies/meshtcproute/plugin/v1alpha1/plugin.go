@@ -33,15 +33,16 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
-	tcpRules := proxy.Policies.Dynamic[api.MeshTCPRouteType].ToRules.Rules
-	if len(tcpRules) == 0 {
+	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
+	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
+	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.Rules) == 0 {
 		return nil
 	}
 
 	tlsReady := ctx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, tcpRules, servicesAccumulator, ctx.Mesh)
+	listeners, err := generateListeners(proxy, policies.ToRules.Rules, servicesAccumulator, ctx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}
