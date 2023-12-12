@@ -88,8 +88,8 @@ spec:
       - port: 8000 # default path is /metrics
     backends:
       - type: Prometheus
-        name: "main-prometheus-backend"
         prometheus: 
+          clientId: "main-prometheus-backend" 
           port: 5670
           path: /metrics
           tls:
@@ -111,8 +111,8 @@ We need to change the source of our information about monitored proxies from `Me
 new policy as usual in this context, we should not merge policies, but create different `MonitoringAssignment` for each 
 defined policy, this is needed for scenarios like migrating to a new backend. For example, when we define two `MeshMetric` 
 policies that target the same data plane proxy, we should create two separate `MonitoringAssignment` responses. 
-We can achieve this by extending Prometheus integration, so that it sends backend name with requests to MADS API, and we will
-create `MonitoringAssignment` based on `backends[].name` field.
+We can achieve this by extending Prometheus integration, so that it sends client id with requests to MADS API, and we will
+create `MonitoringAssignment` based on `backends[].prometheus.clientId` field.
 
 ### Pushing metrics from DP to OTEL collector
 In order to push metrics to the OTEL collector, and preserve current Prometheus metrics, we need to start using [OTEL metrics sdk](https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric). 
