@@ -75,7 +75,7 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 		-e USE_CLOUDSMITH=x \
 		-e USE_PULP=x \
 		-v $(TOP)/build/distributions/out:/files:ro \
-		-it \
+		-t \
 		$(PULP_RELEASE_IMAGE) \
 		release \
 		--file=/files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
