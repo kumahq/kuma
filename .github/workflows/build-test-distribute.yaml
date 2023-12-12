@@ -188,7 +188,6 @@ jobs:
           make docker/manifest
   gen_e2e_matrix:
     runs-on: ubuntu-latest
-    needs: ["build"]
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
       test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
@@ -260,7 +259,7 @@ jobs:
           echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
   test_e2e:
     name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
-    needs: ["gen_e2e_matrix"]
+    needs: ["gen_e2e_matrix", "build"]
     if: needs.gen_e2e_matrix.outputs.test_e2e != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
@@ -277,7 +276,7 @@ jobs:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
     name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
-    needs: ["gen_e2e_matrix"]
+    needs: ["gen_e2e_matrix", "build"]
     if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
