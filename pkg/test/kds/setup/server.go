@@ -25,6 +25,7 @@ import (
 type testRuntimeContext struct {
 	runtime.Runtime
 	rom                      manager.ReadOnlyResourceManager
+	rm                       manager.ResourceManager
 	cfg                      kuma_cp.Config
 	components               []component.Component
 	metrics                  core_metrics.Metrics
@@ -33,12 +34,20 @@ type testRuntimeContext struct {
 	eventBus                 events.EventBus
 }
 
+func (t *testRuntimeContext) GetInstanceId() string {
+	return "xyz"
+}
+
 func (t *testRuntimeContext) Config() kuma_cp.Config {
 	return t.cfg
 }
 
 func (t *testRuntimeContext) ReadOnlyResourceManager() manager.ReadOnlyResourceManager {
 	return t.rom
+}
+
+func (t *testRuntimeContext) ResourceManager() manager.ResourceManager {
+	return t.rm
 }
 
 func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
@@ -51,6 +60,10 @@ func (t *testRuntimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomiz
 
 func (t *testRuntimeContext) Tenants() multitenant.Tenants {
 	return t.tenants
+}
+
+func (t *testRuntimeContext) Transactions() store.Transactions {
+	return store.NoTransactions{}
 }
 
 func (t *testRuntimeContext) EventBus() events.EventBus {
@@ -75,14 +88,16 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 	if err != nil {
 		return nil, err
 	}
+	rm := manager.NewResourceManager(store)
 	rt := &testRuntimeContext{
-		rom:                      manager.NewResourceManager(store),
-		cfg:                      kuma_cp.Config{},
+		rom:                      rm,
+		rm:                       rm,
+		cfg:                      kuma_cp.DefaultConfig(),
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
 	}
-	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
+	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, 1*time.Second)
 }
 
 func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter, providedMapper reconcile.ResourceMapper) (kds_server_v2.Server, error) {
@@ -94,13 +109,15 @@ func StartDeltaServer(store store.ResourceStore, clusterID string, providedTypes
 	if err != nil {
 		return nil, err
 	}
+	rm := manager.NewResourceManager(store)
 	rt := &testRuntimeContext{
-		rom:                      manager.NewResourceManager(store),
-		cfg:                      kuma_cp.Config{},
+		rom:                      rm,
+		rm:                       rm,
+		cfg:                      kuma_cp.DefaultConfig(),
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
 		eventBus:                 eventBus,
 	}
-	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
+	return kds_server_v2.New(core.Log.WithName("kds-delta").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, 1*time.Second)
 }

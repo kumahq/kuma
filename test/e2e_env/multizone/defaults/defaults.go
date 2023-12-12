@@ -1,12 +1,9 @@
 package defaults
 
 import (
-	"encoding/json"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -15,13 +12,12 @@ func Defaults() {
 		for _, zone := range multizone.Zones() {
 			Eventually(func(g Gomega) {
 				// when
-				out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("get", "zone", zone.ZoneName(), "-ojson")
+				out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 
 				// then
 				g.Expect(err).ToNot(HaveOccurred())
-				meta := &v1alpha1.ResourceMeta{}
-				g.Expect(json.Unmarshal([]byte(out), meta)).To(Succeed())
-				g.Expect(meta.Name).To(Equal(zone.ZoneName()))
+				g.Expect(out).To(ContainSubstring(zone.ZoneName()))
+				g.Expect(out).To(ContainSubstring("Online"))
 			}, "30s", "1s").Should(Succeed())
 		}
 	})
