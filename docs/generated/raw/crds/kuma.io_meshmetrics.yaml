@@ -68,13 +68,13 @@ spec:
                     description: Backends list that will be used to collect metrics.
                     items:
                       properties:
-                        name:
-                          description: Name of the backend. Needed when using MADS
-                            for DP discovery.
-                          type: string
                         prometheus:
                           description: Prometheus backend configuration.
                           properties:
+                            clientId:
+                              description: ClientId of the Prometheus backend. Needed
+                                when using MADS for DP discovery.
+                              type: string
                             path:
                               default: /metrics
                               description: Path on which a dataplane should expose
@@ -102,6 +102,7 @@ spec:
                               - mode
                               type: object
                           required:
+                          - clientId
                           - path
                           - port
                           type: object

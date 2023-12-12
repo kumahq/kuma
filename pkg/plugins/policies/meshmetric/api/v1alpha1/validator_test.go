@@ -27,8 +27,8 @@ default:
     - port: 8000
   backends:
     - type: Prometheus
-      name: main-backend
       prometheus:
+        clientId: main-backend 
         port: 5670
         path: /metrics
         tls:
@@ -54,7 +54,6 @@ targetRef:
 default:
   backends:
     - type: Prometheus
-      name: main-backend
 `),
 		resources.ErrorCase(
 			"invalid port for prometheus listener",
@@ -72,7 +71,6 @@ targetRef:
 default:
   backends:
     - type: Prometheus
-      name: main-backend
       prometheus:
         port: 95599
 `),
