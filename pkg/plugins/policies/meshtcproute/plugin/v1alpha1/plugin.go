@@ -38,10 +38,10 @@ func (p plugin) Apply(
 		return nil
 	}
 
-	servicesAccumulator := envoy_common.NewServicesAccumulator(
-		ctx.Mesh.ServiceTLSReadiness)
+	tlsReady := ctx.Mesh.GetTLSReadiness()
+	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, tcpRules, servicesAccumulator)
+	listeners, err := generateListeners(proxy, tcpRules, servicesAccumulator, ctx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}

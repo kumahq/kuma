@@ -28,6 +28,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -264,7 +265,11 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", util_protocol.GetCommonProtocol(core_mesh.ProtocolTCP, core_mesh.ProtocolHTTP)).
+					AddServiceProtocol("other-backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("externalservice", core_mesh.ProtocolHTTP2).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(
@@ -309,7 +314,10 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("tcp-backend", core_mesh.ProtocolTCP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -384,7 +392,11 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("tcp-backend", core_mesh.ProtocolTCP).
+					AddServiceProtocol("http-backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -463,7 +475,11 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolTCP).
+					AddServiceProtocol("tcp-backend", core_mesh.ProtocolTCP).
+					AddServiceProtocol("http-backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).

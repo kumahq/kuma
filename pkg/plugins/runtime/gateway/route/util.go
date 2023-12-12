@@ -6,13 +6,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 )
 
-func InferServiceProtocol(endpoints []core_xds.Endpoint, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
-	protocol := generator.InferServiceProtocol(endpoints)
-
-	if protocol == core_mesh.ProtocolUnknown {
+func InferServiceProtocol(serviceProtocol core_mesh.Protocol, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
+	if serviceProtocol == core_mesh.ProtocolUnknown || serviceProtocol == "" {
 		switch routeProtocol {
 		case core_mesh.ProtocolHTTP:
 			return core_mesh.ProtocolHTTP
@@ -23,18 +21,19 @@ func InferServiceProtocol(endpoints []core_xds.Endpoint, routeProtocol core_mesh
 			return core_mesh.ProtocolHTTP
 		}
 	}
-
-	return protocol
+	return serviceProtocol
 }
 
-func InferForwardingProtocol(destinations []Destination) core_mesh.Protocol {
-	var endpoints []core_xds.Endpoint
-
+func InferForwardingProtocol(
+	destinations []Destination,
+) core_mesh.Protocol {
+	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
 	for _, d := range destinations {
-		endpoints = append(endpoints, core_xds.Endpoint{Tags: d.Destination})
+		currentProtocol := core_mesh.ParseProtocol(d.Destination[mesh_proto.ProtocolTag])
+		protocol = util_protocol.GetCommonProtocol(protocol, currentProtocol)
 	}
 
-	return InferServiceProtocol(endpoints, core_mesh.ProtocolHTTP)
+	return InferServiceProtocol(protocol, core_mesh.ProtocolHTTP)
 }
 
 func HasExternalServiceEndpoint(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, d Destination) bool {

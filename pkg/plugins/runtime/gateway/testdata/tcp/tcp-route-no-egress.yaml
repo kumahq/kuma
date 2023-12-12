@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin-8490df2e58a77ae0:
+    external-no-protocol-httpbin-6a3325e78573377c:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -10,7 +10,7 @@ Clusters:
       connectTimeout: 12s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
-        clusterName: external-httpbin
+        clusterName: external-no-protocol-httpbin
         endpoints:
         - lbEndpoints:
           - endpoint:
@@ -22,9 +22,9 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-1
+                  kuma.io/external-service-name: external-no-protocol-httpbin-1
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-1
+                  kuma.io/external-service-name: external-no-protocol-httpbin-1
           - endpoint:
               address:
                 socketAddress:
@@ -34,9 +34,9 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-2
+                  kuma.io/external-service-name: external-no-protocol-httpbin-2
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-2
+                  kuma.io/external-service-name: external-no-protocol-httpbin-2
           - endpoint:
               address:
                 socketAddress:
@@ -46,9 +46,9 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-3
+                  kuma.io/external-service-name: external-no-protocol-httpbin-3
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-3
+                  kuma.io/external-service-name: external-no-protocol-httpbin-3
           - endpoint:
               address:
                 socketAddress:
@@ -58,10 +58,10 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin-4
+                  kuma.io/external-service-name: external-no-protocol-httpbin-4
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin-4
-      name: external-httpbin-8490df2e58a77ae0
+                  kuma.io/external-service-name: external-no-protocol-httpbin-4
+      name: external-no-protocol-httpbin-6a3325e78573377c
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -71,7 +71,7 @@ Clusters:
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin-1
+          kuma.io/external-service-name: external-no-protocol-httpbin-1
         name: httpbin-1.com
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -79,7 +79,7 @@ Clusters:
             '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
             sni: httpbin-1.com
       - match:
-          kuma.io/external-service-name: external-httpbin-2
+          kuma.io/external-service-name: external-no-protocol-httpbin-2
         name: httpbin-2.com
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -87,7 +87,7 @@ Clusters:
             '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
             sni: httpbin-2.com
       - match:
-          kuma.io/external-service-name: external-httpbin-3
+          kuma.io/external-service-name: external-no-protocol-httpbin-3
         name: httpbin-3.com
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -95,7 +95,7 @@ Clusters:
             '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
             sni: httpbin-3.com
       - match:
-          kuma.io/external-service-name: external-httpbin-4
+          kuma.io/external-service-name: external-no-protocol-httpbin-4
         name: httpbin-4.com
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -118,7 +118,7 @@ Listeners:
         - name: envoy.filters.network.tcp_proxy
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-            cluster: external-httpbin-8490df2e58a77ae0
+            cluster: external-no-protocol-httpbin-6a3325e78573377c
             maxConnectAttempts: 5
             statPrefix: gateway-default
       listenerFilters:

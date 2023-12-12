@@ -942,9 +942,9 @@ conf:
 			"19-gateway-route.yaml", `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -966,7 +966,7 @@ conf:
           value: "/"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `,
 		),
 
@@ -1320,9 +1320,9 @@ routing:
   zoneEgress: true`, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1353,7 +1353,7 @@ conf:
           value: "/"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `,
 		),
 
@@ -1370,9 +1370,9 @@ routing:
   zoneEgress: true`, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1397,7 +1397,7 @@ conf:
           value: "/"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `,
 		),
 
@@ -1421,9 +1421,9 @@ mtls:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1468,7 +1468,7 @@ conf:
           value: "/ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
     - matches:
       - path:
           match: PREFIX
@@ -1496,7 +1496,7 @@ conf:
           value: "/hostname-ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
     - matches:
       - path:
           match: PREFIX
@@ -1523,7 +1523,7 @@ conf:
           value: "/hostname-and-hostname-on-listener-no-match-ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
     - matches:
       - path:
           match: PREFIX
@@ -1550,7 +1550,7 @@ conf:
           value: "/hostname-and-hostname-on-listener-match-ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
     - matches:
       - path:
           match: PREFIX
@@ -1625,9 +1625,9 @@ mtls:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1660,7 +1660,7 @@ conf:
           value: "/ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `, `
 type: Timeout
 mesh: default
@@ -1670,7 +1670,7 @@ sources:
     kuma.io/service: gateway-default
 destinations:
 - match:
-    kuma.io/service: external-httpbin
+    kuma.io/service: external-http2-httpbin
 conf:
   connect_timeout: 113s
   http:
@@ -1796,9 +1796,9 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-no-protocol-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin.com:443
   tls:
@@ -1815,7 +1815,7 @@ conf:
     rules:
     - backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-no-protocol-httpbin
       - destination:
           kuma.io/service: api-service
 `, `
@@ -1875,9 +1875,9 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-1
+name: external-no-protocol-httpbin-1
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-1.com:443
   tls:
@@ -1885,9 +1885,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-2
+name: external-no-protocol-httpbin-2
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-2.com:443
   tls:
@@ -1895,9 +1895,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-3
+name: external-no-protocol-httpbin-3
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-3.com:443
   tls:
@@ -1905,9 +1905,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-4
+name: external-no-protocol-httpbin-4
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-4.com:443
   tls:
@@ -1924,7 +1924,7 @@ conf:
     rules:
     - backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-no-protocol-httpbin
 `, `
 type: Timeout
 mesh: default
@@ -1984,9 +1984,9 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-tcp-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-tcp-httpbin
   kuma.io/protocol: tcp
 networking:
   address: httpbin.com:443
@@ -2004,7 +2004,7 @@ conf:
     rules:
     - backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-tcp-httpbin
       - destination:
           kuma.io/service: api-service
 `, `

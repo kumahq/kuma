@@ -45,7 +45,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateways(policies.FromRules, listeners.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -84,7 +84,7 @@ func applyToInbounds(
 }
 
 func applyToGateways(
-	fromRules core_rules.FromRules,
+	rules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
@@ -103,7 +103,7 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := fromRules.Rules[listenerKey]
+		rules, ok := rules.Rules[listenerKey]
 		if !ok {
 			continue
 		}

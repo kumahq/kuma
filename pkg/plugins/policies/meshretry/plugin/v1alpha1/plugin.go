@@ -38,7 +38,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	listeners := xds.GatherListeners(rs)
 	routes := xds.GatherRoutes(rs)
 
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
 	dataplane *core_mesh.DataplaneResource,
-	routing core_xds.Routing,
+	meshCtx xds_context.MeshContext,
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
@@ -61,7 +61,7 @@ func applyToOutbounds(
 
 		configurer := plugin_xds.Configurer{
 			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)),
-			Protocol: xds.InferProtocol(routing, serviceName),
+			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
 
 		listener, ok := outboundListeners[oface]
