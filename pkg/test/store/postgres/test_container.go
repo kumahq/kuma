@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"path"
@@ -114,6 +113,13 @@ const (
 )
 
 func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStoreConfig, error) {
+	withRandomDb := false
+	for _, o := range dbOpts {
+		switch o {
+		case WithRandomDb:
+			withRandomDb = true
+		}
+	}
 	cfg := pg_config.DefaultPostgresStoreConfig()
 	ip, err := v.container.Host(context.Background())
 	if err != nil {
@@ -135,32 +141,27 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 	if err := config.Load("", cfg); err != nil {
 		return nil, err
 	}
-	var db *sql.DB
-
 	// make sure the server is reachable
 	Eventually(func() error {
-		var dbErr error
-		db, dbErr = postgres.ConnectToDb(*cfg)
-		return dbErr
-	}, "10s", "100ms").Should(Succeed())
-	defer db.Close()
-	for _, o := range dbOpts {
-		switch o {
-		case WithRandomDb:
-			dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
-			statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
-			if _, err = db.Exec(statement); err != nil {
-				return nil, err
-			}
-			cfg.DbName = dbName
-
-			// make sure the database instance is reachable
-			Eventually(func() error {
-				var dbAccessErr error
-				_, dbAccessErr = postgres.ConnectToDb(*cfg)
-				return dbAccessErr
-			}, "10s", "100ms").Should(Succeed())
+		db, err := postgres.ConnectToDb(*cfg)
+		if err != nil {
+			return err
 		}
-	}
+		defer db.Close()
+		if withRandomDb {
+			cfg.DbName = fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
+		}
+		if _, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DbName)); err != nil {
+			return err
+		}
+		return nil
+	}, "10s", "100ms").Should(Succeed())
+	// make sure the database instance is reachable
+	Eventually(func() error {
+		db, err := postgres.ConnectToDb(*cfg)
+		defer db.Close()
+		return err
+	}, "10s", "100ms").Should(Succeed())
+	GinkgoLogr.Info("Database successfully created and started", "name", cfg.DbName)
 	return cfg, nil
 }
