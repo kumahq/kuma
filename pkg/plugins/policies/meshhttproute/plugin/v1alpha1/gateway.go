@@ -37,7 +37,12 @@ func generateGatewayListeners(
 	if info.Listener.CrossMesh {
 		protocol = mesh_proto.MeshGateway_Listener_HTTPS
 	}
-	res, filterChainBuilders, err := FilterChainGenerators[protocol].Generate(ctx, info, gatewayHosts)
+	filterGen, found := FilterChainGenerators[protocol]
+	if !found {
+		return resources, limit, nil
+	}
+
+	res, filterChainBuilders, err := filterGen.Generate(ctx, info, gatewayHosts)
 	if err != nil {
 		return nil, limit, err
 	}

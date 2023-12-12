@@ -27,6 +27,9 @@ func generateListeners(
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
 	clusterCache := map[common_api.TargetRefHash]string{}
+	if proxy == nil || proxy.Dataplane == nil || proxy.Dataplane.Spec.GetNetworking() == nil {
+		return resources, nil
+	}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
 		ToRules.Rules

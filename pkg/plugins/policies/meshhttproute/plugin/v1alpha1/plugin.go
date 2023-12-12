@@ -102,6 +102,12 @@ func ApplyToOutbounds(
 	}
 	rs.AddSet(clusters)
 
+	// outbound_proxy_generator creates empty eds for ExternalService
+	// in case we create a cluster for an ExternalService in meshhttproute
+	// snapshot won't be consistent because ExternalService cluster
+	// has STRICT_DNS and we are not generating EDS, so we need to remove it
+	// to keep snapshot consistent
+	meshroute.CleanupEDS(proxy, services, rs)
 	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
