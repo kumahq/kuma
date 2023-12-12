@@ -45,8 +45,6 @@ type Application struct {
 type Backend struct {
 	// Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
 	Type BackendType `json:"type"`
-	// Name of the backend. Needed when using MADS for DP discovery.
-	Name *string `json:"name,omitempty"`
 	// Prometheus backend configuration.
 	Prometheus *PrometheusBackend `json:"prometheus,omitempty"`
 }
@@ -57,6 +55,8 @@ type BackendType string
 const PrometheusBackendType BackendType = "Prometheus"
 
 type PrometheusBackend struct {
+	// ClientId of the Prometheus backend. Needed when using MADS for DP discovery.
+	ClientId *string `json:"clientId"`
 	// Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
 	// +kubebuilder:default=5670
 	Port uint32 `json:"port"`
