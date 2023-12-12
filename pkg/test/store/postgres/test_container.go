@@ -108,18 +108,7 @@ func (v *PostgresContainer) Stop() error {
 
 type DbOption string
 
-const (
-	WithRandomDb DbOption = "random-db"
-)
-
 func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStoreConfig, error) {
-	withRandomDb := false
-	for _, o := range dbOpts {
-		switch o {
-		case WithRandomDb:
-			withRandomDb = true
-		}
-	}
 	cfg := pg_config.DefaultPostgresStoreConfig()
 	ip, err := v.container.Host(context.Background())
 	if err != nil {
@@ -148,9 +137,7 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 			return err
 		}
 		defer db.Close()
-		if withRandomDb {
-			cfg.DbName = fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
-		}
+		cfg.DbName = fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
 		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DbName))
 		return err
 	}, "10s", "100ms").Should(Succeed())
