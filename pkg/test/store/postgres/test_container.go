@@ -151,16 +151,17 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 		if withRandomDb {
 			cfg.DbName = fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
 		}
-		if _, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DbName)); err != nil {
-			return err
-		}
-		return nil
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DbName))
+		return err
 	}, "10s", "100ms").Should(Succeed())
 	// make sure the database instance is reachable
 	Eventually(func() error {
 		db, err := postgres.ConnectToDb(*cfg)
+		if err != nil {
+			return err
+		}
 		defer db.Close()
-		return err
+		return nil
 	}, "10s", "100ms").Should(Succeed())
 	GinkgoLogr.Info("Database successfully created and started", "name", cfg.DbName)
 	return cfg, nil
