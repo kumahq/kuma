@@ -110,7 +110,10 @@ var _ = Describe("Zone Delta Sync", func() {
 	})
 
 	It("should sync policies from global store to the local", func() {
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1},
+			store.CreateByKey("mesh-1", model.NoMesh),
+			store.CreateWithLabels(map[string]string{"foo": "bar"}),
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -125,11 +128,15 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
 	})
 
 	It("should sync policies update and remove from global store to the local", func() {
 		// when create Mesh resource
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1},
+			store.CreateByKey("mesh-1", model.NoMesh),
+			store.CreateWithLabels(map[string]string{"foo": "bar"}),
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -145,6 +152,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
 
 		// get mesh
 		mesh1 := mesh.NewMeshResource()
@@ -153,7 +161,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		// when update mesh
 		mesh1.Spec = &mesh_proto.Mesh{}
-		err = globalStore.Update(context.Background(), mesh1)
+		err = globalStore.Update(context.Background(), mesh1, store.UpdateWithLabels(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -163,6 +171,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items).To(HaveLen(1))
 			// then zone store should have updated mesh
 			g.Expect(actual.Items[0].GetSpec().(*mesh_proto.Mesh).Mtls).To(BeNil())
+			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 		}, "5s", "100ms").Should(Succeed())
 
 		// when delete Mesh resource
