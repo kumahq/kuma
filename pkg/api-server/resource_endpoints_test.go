@@ -990,6 +990,41 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaTypeWithNewSchema.golden.json")))
 		})
+
+		It("should return 400 when labels are invalid", func() {
+			// given
+			json := `{
+				"type": "MeshTrafficPermission",
+				"name": "sample",
+				"mesh": "default",
+				"labels": {
+					"foo/bar/baz": "bar",
+					"": "bar",
+					"foo": "^*bar"
+				},
+				"spec": {
+					"targetRef": {
+						"kind": "Mesh"
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}, "default":{"action":"Allow"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidLabels.golden.json")))
+		})
 	})
 
 	Describe("On DELETE", func() {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -436,6 +437,9 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
+
+	err.AddError("labels", r.validateLabels(resourceMeta.Labels))
+
 	if create {
 		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
 	} else {
@@ -446,6 +450,19 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		}
 	}
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+	for k, v := range labels {
+		for _, msg := range validation.IsQualifiedName(k) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+		for _, msg := range validation.IsValidLabelValue(v) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+	}
+	return err
 }
 
 // The resource is prefixed with the zone name when it is synchronized
