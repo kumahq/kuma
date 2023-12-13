@@ -3,7 +3,6 @@ package reconcile
 import (
 	"context"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/mads/v1/meshmetrics"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -97,7 +96,7 @@ func (s *snapshotGenerator) getMeshMetricsWithCorrespondingPrometheusBackend(ctx
 	for _, meshMetric := range meshMetricsList.Items {
 		for _, backend := range *meshMetric.Spec.Default.Backends { // can backends be nil?
 			// match against client ID or fallback to "" when specified by user
-			if backend.Type == v1alpha1.PrometheusBackendType && (*backend.Prometheus.ClientId == clientId || *backend.Prometheus.ClientId == "") {
+			if backend.Type == v1alpha1.PrometheusBackendType && (backend.Prometheus.ClientId == nil || *backend.Prometheus.ClientId == clientId || *backend.Prometheus.ClientId == "") {
 				meshMetrics = append(meshMetrics, meshMetric)
 			}
 		}
@@ -106,23 +105,28 @@ func (s *snapshotGenerator) getMeshMetricsWithCorrespondingPrometheusBackend(ctx
 	return meshMetrics, nil
 }
 
-func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshMetrics []*v1alpha1.MeshMetricResource) (map[*v1alpha1.MeshMetricResource]*core_mesh.DataplaneResourceList, error) {
-	meshMetricToDataplanes := map[*v1alpha1.MeshMetricResource]*core_mesh.DataplaneResourceList{}
+func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshMetrics []*v1alpha1.MeshMetricResource) (map[*v1alpha1.MeshMetricResource][]*core_mesh.DataplaneResource, error) {
+	meshMetricToDataplanes := map[*v1alpha1.MeshMetricResource][]*core_mesh.DataplaneResource{}
+
+	dataplaneList := &core_mesh.DataplaneResourceList{}
+	err := s.resourceManager.List(ctx, dataplaneList)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not list dpps")
+	}
+
 
 	for _, meshMetric := range meshMetrics {
-		dataplaneList := &core_mesh.DataplaneResourceList{}
-		filter := func(rs model.Resource) bool {
-			dpp := rs.(*core_mesh.DataplaneResource)
-			res, _ := matchers.PolicyMatches(meshMetric, dpp, xds_context.NewResources()) // what are the dependant resources? do I need them?
-			return res
+		var filteredDataplaneList []*core_mesh.DataplaneResource
+		for _, dpp := range dataplaneList.Items {
+			matched, err := matchers.PolicyMatches(meshMetric, dpp, xds_context.NewResources()) // what are the dependant resources? do I need them?
+			if err != nil {
+				return nil, errors.Wrap(err, "errored out on matching dpp")
+			}
+			if matched {
+				filteredDataplaneList = append(filteredDataplaneList, dpp)
+			}
 		}
-		err := s.resourceManager.List(ctx, dataplaneList,
-			core_store.ListByFilterFunc(filter),
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not list dpps")
-		}
-		meshMetricToDataplanes[meshMetric] = dataplaneList
+		meshMetricToDataplanes[meshMetric] = filteredDataplaneList
 	}
 
 	return meshMetricToDataplanes, nil

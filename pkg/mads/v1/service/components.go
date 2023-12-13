@@ -87,6 +87,7 @@ func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotC
 type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
-	// in the very first implementation, we don't differentiate clients
-	return ""
+	// now that we start differentiating between clients are we ok with this config growing for old mechanism (under `mesh.metrics`)
+	// or should there be a switch here?
+	return node.Id
 }

@@ -10,7 +10,7 @@ import (
     "strconv"
 )
 
-func Generate(meshMetricToDataplanes map[*v1alpha1.MeshMetricResource]*core_mesh.DataplaneResourceList) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplanes map[*v1alpha1.MeshMetricResource][]*core_mesh.DataplaneResource) ([]*core_xds.Resource, error) {
     var resources []*core_xds.Resource
     for meshMetric, dataplanes := range meshMetricToDataplanes {
         for _, backend := range *meshMetric.Spec.Default.Backends {
@@ -25,7 +25,7 @@ func Generate(meshMetricToDataplanes map[*v1alpha1.MeshMetricResource]*core_mesh
                 schema = "https"
             }
 
-            for _, dataplane := range dataplanes.Items {
+            for _, dataplane := range dataplanes {
                 // TODO: could also group by service, and have one assignment per service
                 assignment := &observability_v1.MonitoringAssignment{
                     Mesh:    dataplane.Meta.GetMesh(),
@@ -47,6 +47,5 @@ func Generate(meshMetricToDataplanes map[*v1alpha1.MeshMetricResource]*core_mesh
         }
     }
 
-
-    return nil, nil
+    return resources, nil
 }
