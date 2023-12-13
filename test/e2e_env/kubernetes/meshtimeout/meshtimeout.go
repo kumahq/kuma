@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -28,8 +27,6 @@ func MeshTimeout() {
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

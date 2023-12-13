@@ -85,6 +85,7 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(waitingClientNamespace)).
 			Install(Namespace(curlingClientNamespace)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName))).
 			Install(democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName))).
 			Install(YamlK8s(meshGatewayWithoutLimit)).
@@ -96,7 +97,6 @@ spec:
 				testserver.WithName("test-server"),
 				testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
 			)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

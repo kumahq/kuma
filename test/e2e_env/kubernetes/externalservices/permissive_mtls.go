@@ -64,11 +64,7 @@ spec:
 				testserver.WithName("perm-tls-external-service"),
 				testserver.WithoutProbes(), // not compatible with TLS
 			)).
-			Install(CircuitBreakerKubernetes(meshName)).
-			Install(TimeoutKubernetes(meshName)).
-			Install(RetryKubernetes(meshName)).
-			Install(TrafficRouteKubernetes(meshName)).
-			Install(TrafficPermissionKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

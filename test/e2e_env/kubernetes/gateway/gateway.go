@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -84,11 +85,7 @@ type: system.kuma.io/secret
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(MkGatewayInstance("simple-gateway", namespace, meshName))).
-			Install(CircuitBreakerKubernetes(meshName)).
-			Install(TimeoutKubernetes(meshName)).
-			Install(RetryKubernetes(meshName)).
-			Install(TrafficRouteKubernetes(meshName)).
-			Install(TrafficPermissionKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -314,9 +311,14 @@ spec:
 					testserver.WithNamespace(clientNamespace),
 					testserver.WithEchoArgs("echo", "--instance", "es-echo-server"),
 				)).
+				Install(TrafficPermissionKubernetes(meshName)).
 				Install(YamlK8s(externalService)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should proxy to service via HTTP", func() {

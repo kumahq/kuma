@@ -59,6 +59,7 @@ func ChangeService() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),

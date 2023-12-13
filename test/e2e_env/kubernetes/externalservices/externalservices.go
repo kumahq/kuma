@@ -44,7 +44,6 @@ spec:
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
-			Install(TrafficRouteKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

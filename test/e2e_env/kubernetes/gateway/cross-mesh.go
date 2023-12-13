@@ -52,16 +52,10 @@ func CrossMeshGatewayOnKubernetes() {
 		setup := NewClusterSetup().
 			Install(MTLSMeshKubernetes(gatewayMesh)).
 			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
-			Install(CircuitBreakerKubernetes(gatewayMesh)).
-			Install(TimeoutKubernetes(gatewayMesh)).
-			Install(RetryKubernetes(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayOtherMesh)).
 			Install(TrafficRouteKubernetes(gatewayMesh)).
-			Install(TrafficPermissionKubernetes(gatewayMesh)).
-			Install(CircuitBreakerKubernetes(gatewayOtherMesh)).
-			Install(TimeoutKubernetes(gatewayOtherMesh)).
-			Install(RetryKubernetes(gatewayOtherMesh)).
 			Install(TrafficRouteKubernetes(gatewayOtherMesh)).
-			Install(TrafficPermissionKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace2)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).

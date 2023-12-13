@@ -126,9 +126,6 @@ spec:
 					testserver.WithNamespace(trafficNamespace),
 					testserver.WithMesh(meshName),
 					testserver.WithName(testServer))).
-				Install(CircuitBreakerKubernetes(meshName)).
-				Install(TimeoutKubernetes(meshName)).
-				Install(RetryKubernetes(meshName)).
 				Install(TrafficRouteKubernetes(meshName)).
 				Install(TrafficPermissionKubernetes(meshName)).
 				Setup(kubernetes.Cluster)
