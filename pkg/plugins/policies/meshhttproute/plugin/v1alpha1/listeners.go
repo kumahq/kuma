@@ -36,6 +36,7 @@ func generateListeners(
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetService()
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).
@@ -49,7 +50,6 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
-		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol) {
 			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)

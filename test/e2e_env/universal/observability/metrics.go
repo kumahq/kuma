@@ -50,6 +50,11 @@ func PrometheusMetrics() {
 				WithArgs([]string{"echo", "--instance", "test-server-no-tls"}),
 				WithServiceName("test-server-no-tls"),
 			)).
+			Install(TimeoutUniversal(mesh)).
+			Install(RetryUniversal(mesh)).
+			Install(TrafficRouteUniversal(mesh)).
+			Install(TrafficPermissionUniversal(mesh)).
+			Install(CircuitBreakerUniversal(mesh)).
 			Install(DemoClientUniversal(clientName, "", WithoutDataplane())).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

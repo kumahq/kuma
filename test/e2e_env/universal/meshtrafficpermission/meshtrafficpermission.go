@@ -21,10 +21,6 @@ func MeshTrafficPermissionUniversal() {
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
-
-		// remove default traffic permission
-		err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {

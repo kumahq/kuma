@@ -40,6 +40,11 @@ conf:
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
 			Install(TestServerExternalServiceUniversal("rate-limit", 80, false)).
+			Install(TimeoutUniversal(meshName)).
+			Install(RetryUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Install(CircuitBreakerUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {

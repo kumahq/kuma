@@ -91,6 +91,7 @@ networking:
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

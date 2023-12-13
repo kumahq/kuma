@@ -32,6 +32,12 @@ func GRPC() {
 				WithArgs([]string{"grpc", "client", "--unary", "--address", "test-server.mesh:80"}),
 				WithTransparentProxy(true),
 			)).
+			// remove after https://github.com/kumahq/kuma/issues/3325
+			Install(TimeoutUniversal(meshName)).
+			Install(RetryUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Install(CircuitBreakerUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 

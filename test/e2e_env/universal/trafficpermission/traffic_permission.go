@@ -9,12 +9,16 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
-func TrafficPermissionUniversal() {
+func TrafficPermissionTestUniversal() {
 	meshName := "trafficpermission"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
+			Install(TimeoutUniversal(meshName)).
+			Install(RetryUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(CircuitBreakerUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -80,8 +84,14 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+
+	addAllowAllTrafficPermission := func() {
+		Expect(NewClusterSetup().Install(TrafficPermissionUniversal(meshName)).Setup(universal.Cluster)).ToNot(HaveOccurred())
+	}
+
 	It("should allow the traffic with default traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
 
 		// then
 		trafficAllowed()
@@ -168,7 +178,10 @@ destinations:
 	})
 
 	It("should use most specific traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
+
+		// then
 		trafficAllowed()
 
 		// when more specific traffic permission on service tag is applied

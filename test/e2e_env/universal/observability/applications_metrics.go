@@ -132,6 +132,11 @@ metrics:
 				WithServiceName("test-server-dp-metrics-localhost"),
 				WithAppendDataplaneYaml(dpLocalhostBoundAggregateConfig),
 			)).
+			Install(TimeoutUniversal(mesh)).
+			Install(RetryUniversal(mesh)).
+			Install(TrafficRouteUniversal(mesh)).
+			Install(TrafficPermissionUniversal(mesh)).
+			Install(CircuitBreakerUniversal(mesh)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
