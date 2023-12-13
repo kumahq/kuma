@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -140,6 +141,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Detail: err.Error(),
 		}
 	case err == multitenant.TenantMissingErr:
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &admin.KDSTransportError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,

@@ -2,6 +2,8 @@ package admin
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -46,7 +48,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send XDSConfigRequest")
+		return nil, &KDSTransportError{requestType: "XDSConfigRequest"}
 	}
 
 	defer k.rpcs.XDSConfigDump.DeleteWatch(clientID, reqId)
@@ -64,7 +66,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 			return nil, errors.New("invalid request type")
 		}
 		if configResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", configResp.GetError())
+			return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: configResp.GetError()}
 		}
 		return configResp.GetConfig(), nil
 	}
@@ -84,7 +86,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send StatsRequest")
+		return nil, &KDSTransportError{requestType: "StatsRequest"}
 	}
 
 	defer k.rpcs.Stats.DeleteWatch(clientID, reqId)
@@ -102,7 +104,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			return nil, errors.New("invalid request type")
 		}
 		if statsResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", statsResp.GetError())
+			return nil, &KDSTransportError{requestType: "StatsRequest", reason: statsResp.GetError()}
 		}
 		return statsResp.GetStats(), nil
 	}
@@ -122,7 +124,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send ClustersRequest")
+		return nil, &KDSTransportError{requestType: "ClustersRequest"}
 	}
 
 	defer k.rpcs.Clusters.DeleteWatch(clientID, reqId)
@@ -140,7 +142,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 			return nil, errors.New("invalid request type")
 		}
 		if clustersResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", clustersResp.GetError())
+			return nil, &KDSTransportError{requestType: "ClustersRequest", reason: clustersResp.GetError()}
 		}
 		return clustersResp.GetClusters(), nil
 	}
@@ -162,4 +164,21 @@ func resNameInZone(nameInGlobal string, k8sStore bool) (string, string, error) {
 		nameInZone = strings.Join(parts[1:], ".")
 	}
 	return zone, nameInZone, nil
+}
+
+type KDSTransportError struct {
+	requestType string
+	reason      string
+}
+
+func (e *KDSTransportError) Error() string {
+	if e.reason == "" {
+		return fmt.Sprintf("could not send %s", e.requestType)
+	} else {
+		return fmt.Sprintf("could not send %s: %s", e.requestType, e.reason)
+	}
+}
+
+func (e *KDSTransportError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }
