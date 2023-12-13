@@ -29,7 +29,11 @@ func virtualOutbound(meshName string, meshBuilder *builders.MeshBuilder) {
 	namespace := meshName
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(ResourceUniversal(meshBuilder.WithName(meshName).Build()))).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().

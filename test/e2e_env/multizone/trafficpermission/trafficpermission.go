@@ -20,7 +20,10 @@ func TrafficPermission() {
 
 	BeforeAll(func() {
 		// Global
-		err := multizone.Global.Install(MTLSMeshUniversal(meshName))
+		err := NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

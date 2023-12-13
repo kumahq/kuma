@@ -21,7 +21,10 @@ func GatewayHybrid() {
 	const UniResponse = "universal"
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().

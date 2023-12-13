@@ -51,11 +51,11 @@ func MeshTrafficPermission() {
 
 	BeforeAll(func() {
 		// Global
-		err := multizone.Global.Install(mtlsAndEgressMeshUniversal(meshName))
+		err := NewClusterSetup().
+			Install(mtlsAndEgressMeshUniversal(meshName)).
+			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
-		// remove default traffic permission
-		Expect(multizone.Global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)).To(Succeed())
 
 		// Universal Zone 1
 		err = NewClusterSetup().

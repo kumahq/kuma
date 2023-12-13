@@ -26,6 +26,7 @@ func ZoneDisable() {
 		err := NewClusterSetup().
 			Install(Kuma(core.Global)).
 			Install(MTLSMeshUniversal(nonDefaultMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 

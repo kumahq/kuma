@@ -32,7 +32,10 @@ routing:
 
 	BeforeAll(func() {
 		// Global
-		err := multizone.Global.Install(YamlUniversal(mesh))
+		err := NewClusterSetup().
+			Install(YamlUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Setup(multizone.Global)			
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

@@ -18,8 +18,11 @@ func Test() {
 
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).
-			To(Succeed())
+		err := NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Setup(multizone.Global)			
+		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		Expect(NewClusterSetup().

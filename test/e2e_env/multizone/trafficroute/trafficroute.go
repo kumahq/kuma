@@ -20,10 +20,14 @@ func TrafficRoute() {
 
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		err := NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Setup(multizone.Global)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
+		err = NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),

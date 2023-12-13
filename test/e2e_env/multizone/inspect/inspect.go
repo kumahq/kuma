@@ -19,6 +19,8 @@ func Inspect() {
 
 	BeforeAll(func() {
 		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(multizone.Global.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
+		Expect(multizone.Global.Install(TimeoutUniversal(meshName))).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
