@@ -15,6 +15,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,7 +23,11 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mesh_metric_api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	mesh_metric "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type BootstrapGenerator interface {
@@ -207,6 +212,7 @@ func ISSANMismatchErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
 }
 
+// TODO: this is just a workaround until we implement dynamic config for DPP
 func (b *bootstrapGenerator) getMetricsConfig(
 	ctx context.Context,
 	dataplane *core_mesh.DataplaneResource,
@@ -217,26 +223,70 @@ func (b *bootstrapGenerator) getMetricsConfig(
 	if err != nil {
 		return err
 	}
-	config, err := dataplane.GetPrometheusConfig(meshResource)
+
+	policyConf, err := b.getMetricConfigFromPolicy(ctx, dataplane)
 	if err != nil {
 		return err
 	}
-	if config != nil {
+	if policyConf != nil {
+		if policyConf.Applications == nil {
+			return nil
+		}
 		aggregateConfig := []AggregateMetricsConfig{}
-		for _, config := range config.GetAggregate() {
-			if config.GetEnabled() != nil && !config.GetEnabled().GetValue() {
-				continue
-			}
+		for _, conf := range *policyConf.Applications {
 			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
-				Address: b.getMetricsAddress(config, dataplane),
-				Name:    config.Name,
-				Port:    config.Port,
-				Path:    config.Path,
+				Path:    pointer.DerefOr(conf.Path, "/metrics"),
+				Address: dataplane.Spec.GetNetworking().GetAddress(),
+				Port:    conf.Port,
 			})
 		}
 		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
+	} else {
+		if err != nil {
+			return err
+		}
+		config, err := dataplane.GetPrometheusConfig(meshResource)
+		if err != nil {
+			return err
+		}
+		if config != nil {
+			aggregateConfig := []AggregateMetricsConfig{}
+			for _, config := range config.GetAggregate() {
+				if config.GetEnabled() != nil && !config.GetEnabled().GetValue() {
+					continue
+				}
+				aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
+					Address: b.getMetricsAddress(config, dataplane),
+					Name:    config.Name,
+					Port:    config.Port,
+					Path:    config.Path,
+				})
+			}
+			kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
+		}
 	}
+
 	return nil
+}
+
+func (b *bootstrapGenerator) getMetricConfigFromPolicy(ctx context.Context, dataplane *core_mesh.DataplaneResource) (*mesh_metric_api.Conf, error) {
+	meshMetricPolicies := mesh_metric_api.MeshMetricResourceList{}
+	err := b.resManager.List(ctx, &meshMetricPolicies)
+	if err != nil {
+		return nil, err
+	}
+	meshMetricPlugin := mesh_metric.NewPlugin().(plugins.PolicyPlugin)
+	policies, err := meshMetricPlugin.MatchedPolicies(dataplane, xds_context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+		mesh_metric_api.MeshMetricType: &meshMetricPolicies,
+	}})
+	if err != nil {
+		return nil, err
+	}
+	if len(policies.SingleItemRules.Rules) == 0 {
+		return nil, nil
+	}
+	conf := policies.SingleItemRules.Rules[0].Conf.(mesh_metric_api.Conf)
+	return &conf, nil
 }
 
 func (b *bootstrapGenerator) getMetricsAddress(
