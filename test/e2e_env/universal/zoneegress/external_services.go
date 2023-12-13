@@ -77,11 +77,7 @@ func ExternalServices() {
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(ExternalServerUniversal("zef-test-server-v1")).
 			Install(ExternalServerUniversal("zef-test-server-v2")).
-			Install(TimeoutUniversal(meshName)).
-			Install(RetryUniversal(meshName)).
-			Install(TrafficRouteUniversal(meshName)).
-			Install(TrafficPermissionUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 

@@ -140,9 +140,9 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
   namespace: kuma-system
-  name: allow-all.kuma-system
+  name: allow-all-%[1]s.kuma-system
   labels:
-    kuma.io/mesh: %s
+    kuma.io/mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh
@@ -398,8 +398,8 @@ spec:
 func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 type: MeshTrafficPermission
-name: allow-all
-mesh: %s
+name: allow-all-%[1]s
+mesh: %[1]s
 spec:
   targetRef:
     kind: Mesh

@@ -72,17 +72,10 @@ func CrossMeshGatewayOnUniversal() {
 			Install(YamlUniversal(edgeGatewayYaml)).
 			Install(crossMeshGatewayDataplane).
 			Install(edgeGatewayDataplane).
-			// remove after https://github.com/kumahq/kuma/issues/3325
-			Install(TimeoutUniversal(gatewayMesh)).
-			Install(RetryUniversal(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh)).
 			Install(TrafficRouteUniversal(gatewayMesh)).
-			Install(TrafficPermissionUniversal(gatewayMesh)).
-			Install(CircuitBreakerUniversal(gatewayMesh)).
-			Install(TimeoutUniversal(gatewayOtherMesh)).
-			Install(RetryUniversal(gatewayOtherMesh)).
-			Install(TrafficRouteUniversal(gatewayOtherMesh)).
-			Install(TrafficPermissionUniversal(gatewayOtherMesh)).
-			Install(CircuitBreakerUniversal(gatewayOtherMesh))
+			Install(TrafficRouteUniversal(gatewayOtherMesh))
 
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})

@@ -53,11 +53,7 @@ networking:
 
 		err = NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(TimeoutUniversal("default")).
-			Install(RetryUniversal("default")).
-			Install(TrafficRouteUniversal("default")).
-			Install(TrafficPermissionUniversal("default")).
-			Install(CircuitBreakerUniversal("default")).
+			Install(MeshTrafficPermissionAllowAllUniversal("default")).
 			Install(TestServerExternalServiceUniversal("http-server", 80, false, WithDockerContainerName("kuma-es-ze_externalservice-http-server"))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Install(EgressUniversal(func(zone string) (string, error) {

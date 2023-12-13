@@ -64,11 +64,7 @@ mtls:
 				Install(YamlUniversal(meshYaml)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-				Install(TimeoutUniversal(meshName)).
-				Install(RetryUniversal(meshName)).
-				Install(TrafficRouteUniversal(meshName)).
-				Install(TrafficPermissionUniversal(meshName)).
-				Install(CircuitBreakerUniversal(meshName)).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
