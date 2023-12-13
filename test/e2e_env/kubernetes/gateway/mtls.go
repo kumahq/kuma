@@ -86,6 +86,11 @@ type: system.kuma.io/secret
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
+			Install(CircuitBreakerKubernetes(meshName)).
+			Install(TimeoutKubernetes(meshName)).
+			Install(RetryKubernetes(meshName)).
+			Install(TrafficRouteKubernetes(meshName)).
+			Install(TrafficPermissionKubernetes(meshName)).
 			Install(YamlK8s(MkGatewayInstance("mtls-edge-gateway", namespace, meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

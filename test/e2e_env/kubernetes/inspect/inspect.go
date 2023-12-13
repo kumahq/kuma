@@ -25,6 +25,7 @@ func Inspect() {
 			Install(NamespaceWithSidecarInjection(nsName)).
 			Install(MeshKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
+			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

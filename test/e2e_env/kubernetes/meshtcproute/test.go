@@ -3,7 +3,6 @@ package meshtcproute
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -54,13 +53,6 @@ func Test() {
 			)).
 			Setup(kubernetes.Cluster),
 		).To(Succeed())
-
-		Expect(k8s.RunKubectlE(
-			kubernetes.Cluster.GetTesting(),
-			kubernetes.Cluster.GetKubectlOptions(),
-			"delete", "trafficroute",
-			fmt.Sprintf("route-all-%s", namespace),
-		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -81,7 +73,7 @@ func Test() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should use MeshTCPRoute if any MeshTCPRoutes are present", func() {
+	It("should create default routes when no policies defined", func() {
 		// given
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
@@ -90,43 +82,7 @@ func Test() {
 				"test-http-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
-			g.Expect(err).To(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
-		// when
-		Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTCPRoute
-metadata:
-  name: route-1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
-  to:
-  - targetRef:
-      kind: MeshService
-      name: test-http-server_meshtcproute_svc_80
-    rules:
-    - default:
-        backendRefs:
-        - kind: MeshService
-          name: test-http-server_meshtcproute_svc_80
-`, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
-
-		// then
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("test-http-server"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -257,7 +213,7 @@ spec:
 				"test-client",
 				"test-http-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().To(HaveOccurred())
+			)).Error().ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
@@ -354,7 +310,7 @@ spec:
 				"test-client",
 				"test-tcp-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().To(HaveOccurred())
+			)).Error().ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`

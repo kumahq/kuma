@@ -96,6 +96,7 @@ spec:
 				testserver.WithName("test-server"),
 				testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
 			)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

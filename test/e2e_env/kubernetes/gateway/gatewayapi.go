@@ -44,6 +44,11 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(externalServicesNamespace)).
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(CircuitBreakerKubernetes(meshName)).
+			Install(TimeoutKubernetes(meshName)).
+			Install(RetryKubernetes(meshName)).
+			Install(TrafficRouteKubernetes(meshName)).
+			Install(TrafficPermissionKubernetes(meshName)).
 			Install(testserver.Install(
 				testserver.WithName("test-server-1"),
 				testserver.WithMesh(meshName),
