@@ -59,7 +59,7 @@ func (w *SimpleWatchdog) onTick(ctx context.Context) error {
 				var err error
 				switch typ := cause.(type) {
 				case error:
-					err = typ
+					err = errors.WithStack(typ)
 				default:
 					err = errors.Errorf("%v", cause)
 				}
