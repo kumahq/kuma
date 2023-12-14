@@ -4,6 +4,8 @@
 # IDE: VS Code
 .vscode/
 
+.ci_tools/
+
 # asdf
 .tool-versions
 
