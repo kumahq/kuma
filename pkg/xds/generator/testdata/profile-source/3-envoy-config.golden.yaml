@@ -2,7 +2,6 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -41,17 +40,10 @@ resources:
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    healthChecks:
-    - healthyThreshold: 2
-      interval: 5s
-      tcpHealthCheck: {}
-      timeout: 4s
-      unhealthyThreshold: 3
     name: elastic
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -409,7 +401,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
-          idleTimeout: 0s
           statPrefix: db
     metadata:
       filterMetadata:
@@ -430,7 +421,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: elastic
-          idleTimeout: 0s
           statPrefix: elastic
     metadata:
       filterMetadata:

@@ -74,6 +74,7 @@ resources:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
+                  autoHostRewrite: true
                   cluster: external-service
                   timeout: 0s
           statPrefix: external-service
