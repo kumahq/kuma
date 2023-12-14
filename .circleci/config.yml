@@ -22,7 +22,7 @@ parameters:
   gh_action_runtime_token:
     type: string
     default: ""
-  e2e_param_k8s_version:
+  e2e_param_k8sVersion:
     type: string
     default: "v1.28.1-k3s1"
   e2e_param_arch:
@@ -34,10 +34,10 @@ parameters:
   e2e_param_target:
     type: string
     default: ""
-  e2e_param_cni_network_plugin:
+  e2e_param_cniNetworkPlugin:
     type: string
     default: flannel
-  e2e_param_legacy_kds:
+  e2e_param_legacyKDS:
     type: boolean
     default: false
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
@@ -500,7 +500,7 @@ jobs:
 
             echo "Extracting files..."
             ARCH='<< parameters.arch >>'
-            ARTIFACT=$(find $BASE_DIR/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+            ARTIFACT=$(find $BASE_DIR/distributions/out/*-linux-$ARCH.tar.gz)
             if [[ "$ARTIFACT" == "" ]]; then
               echo "Could not find built artifact for linux($ARCH)."
               exit 1
@@ -750,9 +750,9 @@ workflows:
           filters:
             tags:
               only: /.*/
-          k8sVersion: << pipeline.parameters.e2e_param_k8s_version >>
+          k8sVersion: << pipeline.parameters.e2e_param_k8sVersion >>
           target: << pipeline.parameters.e2e_param_target >>
           arch: << pipeline.parameters.e2e_param_arch >>
-          legacyKDS: << pipeline.parameters.e2e_param_legacy_kds >>
-          cniNetworkPlugin: << pipeline.parameters.e2e_param_cni_network_plugin >>
+          legacyKDS: << pipeline.parameters.e2e_param_legacyKDS >>
+          cniNetworkPlugin: << pipeline.parameters.e2e_param_cniNetworkPlugin >>
           parallelism: << pipeline.parameters.e2e_param_parallelism >>
