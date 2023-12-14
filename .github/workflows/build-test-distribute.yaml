@@ -111,6 +111,8 @@ jobs:
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
+      - run: |
+          make dev/tools
       - name: Free up disk space for the Runner
         run: |
           echo "Disk usage before cleanup"
