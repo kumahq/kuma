@@ -140,16 +140,9 @@ jobs:
               'gh_action_runtime_token': process.env['ACTIONS_RUNTIME_TOKEN'],
               'gh_action_artifact_list_url': `${process.env['ACTIONS_RUNTIME_URL']}/_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview`
             };
-            Object.keys(process.env).forEach(function(key) {
-              if (key.startsWith('E2E_PARAM_')) {
-                let v = process.env[key];
-                if (key === 'E2E_PARAM_PARALLELISM') {
-                  v = parseInt(v, 10);
-                } else if (key === 'E2E_PARAM_LEGACY_KDS') {
-                  v = Boolean(v);
-                }
-                circleCIParams[key.toLowerCase()] = v
-              }
+            let inputs = JSON.parse(${{ toJSON(inputs.matrix) }});
+            Object.keys(inputs).forEach(function(key) {
+              circleCIParams[`e2e_param_${key}`] = inputs[key];
             });
             let circleCIBody = {
               "parameters": circleCIParams,
