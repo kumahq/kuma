@@ -47,17 +47,16 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			continue
 		}
 
-		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
-
+		isExternalService := xdsCtx.Mesh.IsExternalService(service)
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
 		// have mTLS enabled and traffic through zoneEgress is enabled.
-		isDirectExternalService := firstEndpointExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isDirectExternalService := isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		isExternalCluster := isDirectExternalService && len(matched) > 0
 
-		isExternalServiceThroughZoneEgress := firstEndpointExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isExternalServiceThroughZoneEgress := isExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 
 		var r *core_xds.Resource
 		var err error

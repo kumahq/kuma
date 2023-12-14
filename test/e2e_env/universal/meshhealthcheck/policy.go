@@ -294,12 +294,7 @@ spec:
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				// remove after https://github.com/kumahq/kuma/issues/3325
-				Install(TimeoutUniversal(meshName)).
-				Install(RetryUniversal(meshName)).
-				Install(TrafficRouteUniversal(meshName)).
-				Install(TrafficPermissionUniversal(meshName)).
-				Install(CircuitBreakerUniversal(meshName)).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
