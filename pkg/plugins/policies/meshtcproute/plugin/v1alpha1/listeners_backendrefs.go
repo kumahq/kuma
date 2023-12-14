@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -14,6 +15,7 @@ func getBackendRefs(
 	toRulesHTTP core_xds.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
+	tags map[string]string,
 ) []common_api.BackendRef {
 	service := core_xds.MeshService(serviceName)
 
@@ -40,11 +42,19 @@ func getBackendRefs(
 	if tcpConf != nil {
 		return tcpConf.Default.BackendRefs
 	}
-	return []common_api.BackendRef{{
-		TargetRef: common_api.TargetRef{
-			Kind: common_api.MeshService,
-			Name: serviceName,
+	targetRef := common_api.TargetRef{
+		Kind: common_api.MeshService,
+		Name: serviceName,
+	}
+	if mesh, ok := tags[mesh_proto.MeshTag]; ok {
+		targetRef.Tags = map[string]string{
+			mesh_proto.MeshTag: mesh,
+		}
+	}
+	return []common_api.BackendRef{
+		{
+			TargetRef: targetRef,
+			Weight:    pointer.To(uint(100)),
 		},
-		Weight: pointer.To(uint(100)),
-	}}
+	}
 }

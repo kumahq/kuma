@@ -35,7 +35,7 @@ func generateListeners(
 		serviceName := outbound.GetService()
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 
-		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol)
+		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, outbound.GetTags())
 		if len(backendRefs) == 0 {
 			continue
 		}
