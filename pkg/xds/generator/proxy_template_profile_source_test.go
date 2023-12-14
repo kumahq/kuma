@@ -57,6 +57,27 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				},
 			}
+
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.TrafficRouteType] = &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{{
+					Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
+					Spec: &mesh_proto.TrafficRoute{
+						Sources: []*mesh_proto.Selector{{
+							Match: mesh_proto.MatchAnyService(),
+						}},
+						Destinations: []*mesh_proto.Selector{{
+							Match: mesh_proto.MatchAnyService(),
+						}},
+						Conf: &mesh_proto.TrafficRoute_Conf{
+							Destination: mesh_proto.MatchAnyService(),
+							LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+								LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+							},
+						},
+					},
+				}},
+			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
@@ -69,6 +90,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
+					Resources: resources,
 					ServicesInformation: map[string]*xds_context.ServiceInformation{
 						"db": {
 							TLSReadiness: true,
@@ -125,28 +147,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					OutboundTargets: outboundTargets,
 				},
 				Policies: core_xds.MatchedPolicies{
-					TrafficRoutes: core_xds.RouteMap{
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 54321,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("db"),
-								},
-							},
-						},
-						mesh_proto.OutboundInterface{
-							DataplaneIP:   "127.0.0.1",
-							DataplanePort: 59200,
-						}: &core_mesh.TrafficRouteResource{
-							Spec: &mesh_proto.TrafficRoute{
-								Conf: &mesh_proto.TrafficRoute_Conf{
-									Destination: mesh_proto.MatchService("elastic"),
-								},
-							},
-						},
-					},
 					HealthChecks: core_xds.HealthCheckMap{
 						"elastic": &core_mesh.HealthCheckResource{
 							Spec: &mesh_proto.HealthCheck{
