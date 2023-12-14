@@ -18,6 +18,7 @@ env:
   E2E_PARAM_LEGACY_KDS: ${{ fromJSON(inputs.matrix).legacyKDS }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
@@ -50,7 +51,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
