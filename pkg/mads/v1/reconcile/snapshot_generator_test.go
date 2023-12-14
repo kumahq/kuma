@@ -363,6 +363,75 @@ var _ = Describe("snapshotGenerator", func() {
 				}),
 				expectedForNode2: mads_cache.NewSnapshot("", nil),
 			}),
+			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus for some dataplanes", testCase{
+				meshes: []*core_mesh.MeshResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					builders.Dataplane().
+						WithName("backend-01").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
+						WithServices("backend-01").
+						WithAddress("192.168.0.1").
+						Build(),
+					builders.Dataplane().
+						WithName("backend-02").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
+						WithAddress("192.168.0.2").
+						Build(),
+				},
+				meshMetrics: []*v1alpha1.MeshMetricResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+							Mesh: "default",
+						},
+						Spec: &v1alpha1.MeshMetric{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.MeshService,
+								Name: "backend-01",
+							},
+							Default:   v1alpha1.Conf{
+								Backends: &[]v1alpha1.Backend{
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											ClientId: &node1Id,
+											Port: 1234,
+											Path: "/custom",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.Disabled,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				expectedForNode1: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+					"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+						Mesh:    "default",
+						Service: "backend-01",
+						Targets: []*observability_v1.MonitoringAssignment_Target{{
+							Name:    "backend-01",
+							Address: "192.168.0.1:1234",
+							MetricsPath: "/custom",
+							Scheme:  "http",
+							Labels: map[string]string{
+								"kuma_io_service":  "backend-01",
+								"kuma_io_services": ",backend-01,",
+							},
+						}},
+					},
+				}),
+				expectedForNode2: mads_cache.NewSnapshot("", nil),
+			}),
 		)
 	})
 })
