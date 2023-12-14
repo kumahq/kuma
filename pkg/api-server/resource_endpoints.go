@@ -33,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -454,11 +455,11 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 
 func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
-	for k, v := range labels {
+	for _, k := range maps.SortedKeys(labels) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(v) {
+		for _, msg := range validation.IsValidLabelValue(labels[k]) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
