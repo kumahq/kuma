@@ -32,6 +32,39 @@ var _ = Describe("snapshotGenerator", func() {
 		var store core_store.ResourceStore
 		node1Id := "one"
 		node2Id := "two"
+		snapshotWithTwoAssignments := mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+			"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
+				Mesh:    "demo",
+				Service: "backend",
+				Targets: []*observability_v1.MonitoringAssignment_Target{{
+					Name:    "backend-02",
+					Address: "192.168.0.2:1234",
+					Scheme:  "http",
+					Labels: map[string]string{
+						"env":              "intg",
+						"envs":             ",intg,",
+						"kuma_io_service":  "backend",
+						"kuma_io_services": ",backend,",
+					},
+				}},
+			},
+			"/meshes/demo/dataplanes/web-01": &observability_v1.MonitoringAssignment{
+				Mesh:    "demo",
+				Service: "web",
+				Targets: []*observability_v1.MonitoringAssignment_Target{{
+					Name:        "web-01",
+					Address:     "192.168.0.3:8765",
+					Scheme:      "http",
+					MetricsPath: "/even-more-non-standard-path",
+					Labels: map[string]string{
+						"env":              "test",
+						"envs":             ",test,",
+						"kuma_io_service":  "web",
+						"kuma_io_services": ",web,",
+					},
+				}},
+			},
+		})
 
 		BeforeEach(func() {
 			store = memory.NewStore()
@@ -39,11 +72,11 @@ var _ = Describe("snapshotGenerator", func() {
 		})
 
 		type testCase struct {
-			meshes      []*core_mesh.MeshResource
-			meshMetrics []*v1alpha1.MeshMetricResource
-			dataplanes  []*core_mesh.DataplaneResource
-			expected    *mads_cache.Snapshot
-			expected2   *mads_cache.Snapshot
+			meshes           []*core_mesh.MeshResource
+			meshMetrics      []*v1alpha1.MeshMetricResource
+			dataplanes       []*core_mesh.DataplaneResource
+			expectedForNode1 *mads_cache.Snapshot
+			expectedForNode2 *mads_cache.Snapshot
 		}
 
 		DescribeTable("",
@@ -78,19 +111,20 @@ var _ = Describe("snapshotGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(snapshot).To(Equal(given.expected))
+				Expect(snapshot).To(Equal(given.expectedForNode1))
 
 				// when
 				snapshot2, err := snapshotter.GenerateSnapshot(context.Background(), &node2)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(snapshot2).To(Equal(given.expected))
+				Expect(snapshot2).To(Equal(given.expectedForNode2))
 			},
-			Entry("no Meshes, no Dataplanes", testCase{
-				expected: mads_cache.NewSnapshot("", nil),
+			Entry("no Meshes, no Dataplanes, no MeshMetrics", testCase{
+				expectedForNode1: mads_cache.NewSnapshot("", nil),
+				expectedForNode2: mads_cache.NewSnapshot("", nil),
 			}),
-			Entry("no Meshes with Prometheus enabled", testCase{
+			Entry("no Meshes with Prometheus enabled, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -104,9 +138,10 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-01").
 						Build(),
 				},
-				expected: mads_cache.NewSnapshot("", nil),
+				expectedForNode1: mads_cache.NewSnapshot("", nil),
+				expectedForNode2: mads_cache.NewSnapshot("", nil),
 			}),
-			Entry("Mesh with Prometheus enabled but no Dataplanes", testCase{
+			Entry("Mesh with Prometheus enabled but no Dataplanes, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -140,9 +175,10 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-01").
 						Build(),
 				},
-				expected: mads_cache.NewSnapshot("", nil),
+				expectedForNode1: mads_cache.NewSnapshot("", nil),
+				expectedForNode2: mads_cache.NewSnapshot("", nil),
 			}),
-			Entry("Mesh with Prometheus enabled and some Dataplanes", testCase{
+			Entry("Mesh with Prometheus enabled and some Dataplanes, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -194,41 +230,12 @@ var _ = Describe("snapshotGenerator", func() {
 						Build(),
 				},
 				// TODO: generate this resource map on the fly using the mads/v1/generator pkg
-				expected: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
-						Mesh:    "demo",
-						Service: "backend",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-02",
-							Address: "192.168.0.2:1234",
-							Scheme:  "http",
-							Labels: map[string]string{
-								"env":              "intg",
-								"envs":             ",intg,",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,",
-							},
-						}},
-					},
-					"/meshes/demo/dataplanes/web-01": &observability_v1.MonitoringAssignment{
-						Mesh:    "demo",
-						Service: "web",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "web-01",
-							Address:     "192.168.0.3:8765",
-							Scheme:      "http",
-							MetricsPath: "/even-more-non-standard-path",
-							Labels: map[string]string{
-								"env":              "test",
-								"envs":             ",test,",
-								"kuma_io_service":  "web",
-								"kuma_io_services": ",web,",
-							},
-						}},
-					},
-				}),
+				expectedForNode1: snapshotWithTwoAssignments,
+				// The pre-MeshMetric "mesh.metrics" code configures all prometheus clients (recognised as nodes here)
+				// the same way, that's why we have the same assignments for both nodes
+				expectedForNode2: snapshotWithTwoAssignments,
 			}),
-			FEntry("MeshMetric with Prometheus enabled", testCase{
+			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for node 1", testCase{
 				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -240,17 +247,18 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					samples.DataplaneBackendBuilder().
 						WithName("backend-01").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
+							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.Mesh,
-								Name: "default",
 							},
 							Default:   v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -258,10 +266,10 @@ var _ = Describe("snapshotGenerator", func() {
 										Type: v1alpha1.PrometheusBackendType,
 										Prometheus: &v1alpha1.PrometheusBackend{
 											ClientId: &node1Id,
-											Port: 5670,
-											Path: "/metrics",
+											Port: 1234,
+											Path: "/custom",
 											Tls: &v1alpha1.PrometheusTls{
-												Mode: v1alpha1.Disabled
+												Mode: v1alpha1.Disabled,
 											},
 										},
 									},
@@ -270,13 +278,14 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expected: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
-						Mesh:    "demo",
+				expectedForNode1: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+					"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+						Mesh:    "default",
 						Service: "backend",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-02",
-							Address: "192.168.0.2:1234",
+							Name:    "backend-01",
+							Address: "192.168.0.1:1234",
+							MetricsPath: "/custom",
 							Scheme:  "http",
 							Labels: map[string]string{
 								"env":              "intg",
@@ -287,6 +296,7 @@ var _ = Describe("snapshotGenerator", func() {
 						}},
 					},
 				}),
+				expectedForNode2: mads_cache.NewSnapshot("", nil),
 			}),
 		)
 	})
