@@ -34,10 +34,10 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
-	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
-	if proxy.ZoneEgressProxy != nil {
+	if proxy.Dataplane == nil {
 		return nil
 	}
+	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
 	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
 	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.Rules) == 0 {
 		return nil
