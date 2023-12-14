@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +12,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -166,29 +166,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				OnFinish:  cancelComponents,
 			}
 
-			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
-				dnsOpts := &dnsserver.Opts{
-					Config:   *cfg,
-					Stdout:   cmd.OutOrStdout(),
-					Stderr:   cmd.OutOrStderr(),
-					OnFinish: cancelComponents,
-				}
-
-				dnsServer, err := dnsserver.New(dnsOpts)
-				if err != nil {
-					return err
-				}
-
-				version, err := dnsServer.GetVersion()
-				if err != nil {
-					return err
-				}
-
-				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-
-				components = append(components, dnsServer)
-			}
-
 			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to get Envoy version")
@@ -225,6 +202,37 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
+				if cfg.DNS.CoreDNSConfigTemplatePath == "" && len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
+					templateFile, err := writeTempFile("kuma-dp-corefile-template-", "Corefile", kumaSidecarConfiguration.Networking.CorefileTemplate, 0644)
+					if err != nil {
+						return errors.Errorf("Failed to write corefile template to disk. %v", err)
+					}
+					cfg.DNS.CoreDNSConfigTemplatePath = templateFile
+				}
+
+				dnsOpts := &dnsserver.Opts{
+					Config:   *cfg,
+					Stdout:   cmd.OutOrStdout(),
+					Stderr:   cmd.OutOrStderr(),
+					OnFinish: cancelComponents,
+				}
+
+				dnsServer, err := dnsserver.New(dnsOpts)
+				if err != nil {
+					return err
+				}
+
+				version, err := dnsServer.GetVersion()
+				if err != nil {
+					return err
+				}
+
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+
+				components = append(components, dnsServer)
+			}
 
 			envoyComponent, err := envoy.New(opts)
 			if err != nil {
@@ -335,4 +343,17 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
+}
+
+func writeTempFile(dirPattern, filename string, data []byte, perm os.FileMode) (string, error) {
+	path, err := os.MkdirTemp("", dirPattern)
+	fullFileName := filepath.Join(path, filename)
+	if err != nil {
+		return "", errors.Errorf("Failed to create a containing directory for %s. %v", filename, err)
+	}
+	err = os.WriteFile(fullFileName, data, perm)
+	if err != nil {
+		return "", errors.Errorf("Failed to write %s to disk. %v", filename, err)
+	}
+	return fullFileName, nil
 }

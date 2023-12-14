@@ -117,7 +117,7 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 
-	configFile, err := GenerateConfigFile(dnsConfig, bs.Bytes())
+	configFile, err := GenerateCorefile(dnsConfig, bs.Bytes())
 	if err != nil {
 		return err
 	}
