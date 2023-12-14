@@ -73,9 +73,7 @@ func CrossMeshGatewayOnUniversal() {
 			Install(crossMeshGatewayDataplane).
 			Install(edgeGatewayDataplane).
 			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh)).
-			Install(TrafficRouteUniversal(gatewayMesh)).
-			Install(TrafficRouteUniversal(gatewayOtherMesh))
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh))
 
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})

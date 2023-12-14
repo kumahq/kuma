@@ -32,7 +32,6 @@ func virtualOutbound(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(NewClusterSetup().
 			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(TrafficRouteUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -109,7 +108,6 @@ conf:
 `, meshName)
 		err := multizone.Global.Install(YamlUniversal(virtualOutboundAll))
 		Expect(err).ToNot(HaveOccurred())
-
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "demo-client", fmt.Sprintf("test-server_%s_svc_80.test-server-0:8080", namespace),

@@ -63,7 +63,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.Rules) == 0 {
 		return nil
 	}
-	
+
 	var toRules []ToRouteRule
 	for _, policy := range policies.ToRules.Rules {
 		toRules = append(toRules, ToRouteRule{

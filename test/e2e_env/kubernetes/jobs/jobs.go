@@ -55,18 +55,14 @@ func Jobs() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(MTLSMeshKubernetes(mesh)).
-			Install(CircuitBreakerKubernetes(mesh)).
-			Install(TimeoutKubernetes(mesh)).
-			Install(RetryKubernetes(mesh)).
-			Install(TrafficRouteKubernetes(mesh)).
-			Install(TrafficPermissionKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		
+
 		// when
 		err = kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server_jobs-mtls_svc_80.mesh"))
 

@@ -84,7 +84,6 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-
 	addAllowAllTrafficPermission := func() {
 		Expect(NewClusterSetup().Install(TrafficPermissionUniversal(meshName)).Setup(universal.Cluster)).ToNot(HaveOccurred())
 	}

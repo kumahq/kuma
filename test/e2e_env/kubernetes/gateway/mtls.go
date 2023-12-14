@@ -190,7 +190,7 @@ spec:
 
 		BeforeEach(func() {
 			Expect(kubernetes.Cluster.Install(MeshTrafficPermissionAllowAllKubernetes(meshName))).To(Succeed())
-		})	
+		})
 
 		It("should proxy simple HTTP requests", func() {
 			Eventually(func(g Gomega) {

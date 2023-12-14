@@ -54,8 +54,6 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayOtherMesh)).
-			Install(TrafficRouteKubernetes(gatewayMesh)).
-			Install(TrafficRouteKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace2)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).

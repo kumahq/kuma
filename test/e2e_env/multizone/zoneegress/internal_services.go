@@ -35,7 +35,7 @@ routing:
 		err := NewClusterSetup().
 			Install(YamlUniversal(mesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Setup(multizone.Global)			
+			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
