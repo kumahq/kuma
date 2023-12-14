@@ -30,12 +30,11 @@ jobs:
           RUNNER="${{ fromJSON(inputs.runnersByArch)[env.E2E_PARAM_ARCH] }}"
           if [[ "$RUNNER" == "circleci" ]]; then
             RUN_TYPE="circleci"
-          elif [[ "$RUNNER" != "" ]]; then 
+          elif [[ "$RUNNER" != "" ]]; then
             RUN_TYPE="github"
           fi
           echo "Running with: ${{ toJSON(inputs) }} ${{ toJSON(env) }}"
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
-
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/checkout@v4

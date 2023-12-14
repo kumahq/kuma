@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: ["master", "release-*"]
 env:
+  # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
   K8S_MAX_VERSION: v1.28.1-k3s1
 jobs:
