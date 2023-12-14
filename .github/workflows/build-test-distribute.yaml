@@ -9,6 +9,7 @@ env:
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
   K8S_MAX_VERSION: v1.28.1-k3s1
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -22,7 +23,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
@@ -46,7 +47,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
@@ -107,7 +108,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
@@ -163,7 +164,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
