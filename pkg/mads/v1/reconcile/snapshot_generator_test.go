@@ -66,6 +66,25 @@ var _ = Describe("snapshotGenerator", func() {
 			},
 		})
 
+		meshMetricSnapshot := mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+			"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+				Mesh:    "default",
+				Service: "backend",
+				Targets: []*observability_v1.MonitoringAssignment_Target{{
+					Name:    "backend-01",
+					Address: "192.168.0.1:1234",
+					MetricsPath: "/custom",
+					Scheme:  "http",
+					Labels: map[string]string{
+						"env":              "intg",
+						"envs":             ",intg,",
+						"kuma_io_service":  "backend",
+						"kuma_io_services": ",backend,",
+					},
+				}},
+			},
+		})
+
 		BeforeEach(func() {
 			store = memory.NewStore()
 			resourceManager = core_manager.NewResourceManager(store)
@@ -234,6 +253,52 @@ var _ = Describe("snapshotGenerator", func() {
 				// The pre-MeshMetric "mesh.metrics" code configures all prometheus clients (recognised as nodes here)
 				// the same way, that's why we have the same assignments for both nodes
 				expectedForNode2: snapshotWithTwoAssignments,
+			}),
+			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for all nodes", testCase{
+				meshes: []*core_mesh.MeshResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					samples.DataplaneBackendBuilder().
+						WithName("backend-01").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
+						Build(),
+				},
+				meshMetrics: []*v1alpha1.MeshMetricResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+							Mesh: "default",
+						},
+						Spec: &v1alpha1.MeshMetric{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.Mesh,
+							},
+							Default:   v1alpha1.Conf{
+								Backends: &[]v1alpha1.Backend{
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											// ClientId: no client id passed, should configure all nodes the same
+											Port: 1234,
+											Path: "/custom",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.Disabled,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				expectedForNode1: meshMetricSnapshot,
+				expectedForNode2: meshMetricSnapshot,
 			}),
 			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for node 1", testCase{
 				meshes: []*core_mesh.MeshResource{
