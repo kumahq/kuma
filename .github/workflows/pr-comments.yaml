@@ -41,7 +41,7 @@ jobs:
           ref: ${{ env.BRANCH_NAME }}
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
       - uses: actions/cache@v3
