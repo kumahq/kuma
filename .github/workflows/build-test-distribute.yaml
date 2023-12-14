@@ -52,6 +52,14 @@ jobs:
             ${{ runner.os }}-devtools
       - run: |
           make dev/tools
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         id: set-full-matrix-switches

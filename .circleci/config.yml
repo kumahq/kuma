@@ -500,7 +500,7 @@ jobs:
 
             echo "Extracting files..."
             ARCH='<< parameters.arch >>'
-            ARTIFACT=$(find $BASE_DIR/distributions/out/kuma-*-linux-$ARCH.tar.gz)
+            ARTIFACT=$(find $BASE_DIR/distributions/out/*-linux-$ARCH.tar.gz)
             if [[ "$ARTIFACT" == "" ]]; then
               echo "Could not find built artifact for linux($ARCH)."
               exit 1

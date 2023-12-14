@@ -54,6 +54,19 @@ jobs:
           key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-devtools
+      - if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          make dev/tools
+      - name: Free up disk space for the Runner
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+
       - name: "GitHub Actions: download build artifacts"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/download-artifact@v3
@@ -64,7 +77,7 @@ jobs:
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
           echo "Extracting artifacts..."
-          ARTIFACT=$(find build/distributions/out/kuma-*-linux-${{ env.E2E_PARAM_ARCH }}.tar.gz)
+          ARTIFACT=$(find build/distributions/out/*-linux-${{ env.E2E_PARAM_ARCH }}.tar.gz)
           if [[ "$ARTIFACT" == "" ]]; then
             echo "Could not find built artifact for linux(${{ env.E2E_PARAM_ARCH }})."
             exit 1
