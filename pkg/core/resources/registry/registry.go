@@ -115,18 +115,18 @@ func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, 
 
 // MustNewObject implements TypeRegistry.
 func (t *typeRegistry) MustNewObject(resType model.ResourceType) model.Resource {
-	typDesc, ok := t.descriptors[resType]
-	if !ok {
-		panic(fmt.Sprintf("invalid resource type %q", resType))
+	res, err := t.NewObject(resType)
+	if err != nil {
+		panic(err)
 	}
-	return typDesc.NewObject()
+	return res
 }
 
 // MustNewList implements TypeRegistry.
 func (t *typeRegistry) MustNewList(resType model.ResourceType) model.ResourceList {
-	typDesc, ok := t.descriptors[resType]
-	if !ok {
-		panic(fmt.Sprintf("invalid resource type %q", resType))
+	resList, err := t.NewList(resType)
+	if err != nil {
+		panic(err)
 	}
-	return typDesc.NewList()
+	return resList
 }
