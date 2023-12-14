@@ -68,6 +68,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh, "true"))).
+			Install(MeshTrafficPermissionAllowAllUniversal(defaultMesh)).
 			Setup(global)).To(Succeed())
 
 		globalCP := global.GetKuma()

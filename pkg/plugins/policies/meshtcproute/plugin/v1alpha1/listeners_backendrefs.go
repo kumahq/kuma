@@ -50,6 +50,6 @@ func getBackendRefs(
 				Tags: tags,
 			},
 			Weight: pointer.To(uint(100)),
-	},
+		},
 	}
 }

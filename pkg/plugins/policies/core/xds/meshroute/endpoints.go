@@ -3,7 +3,6 @@ package meshroute
 import (
 	"context"
 
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -61,20 +60,4 @@ func GenerateEndpoints(
 	}
 
 	return resources, nil
-}
-
-func CleanupEDS(
-	proxy *core_xds.Proxy,
-	services envoy_common.Services,
-	rs *core_xds.ResourceSet,
-) {
-	for _, serviceName := range services.Sorted() {
-		// We are not allowed to add endpoints with DNS names through EDS.
-		service := services[serviceName]
-
-		endpoints, found := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
-		if service.HasExternalService() && (!found || (found && len(endpoints) == 0)) {
-			rs.Remove(envoy_resource.EndpointType, serviceName)
-		}
-	}
 }

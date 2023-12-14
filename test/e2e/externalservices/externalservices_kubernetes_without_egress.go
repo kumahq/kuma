@@ -54,6 +54,7 @@ spec:
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone)).
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
+			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(Namespace(externalServicesNamespace)).

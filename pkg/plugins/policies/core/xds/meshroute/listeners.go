@@ -5,9 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -17,14 +15,12 @@ import (
 )
 
 func MakeTCPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
 			core_mesh.ProtocolTCP:     {},
@@ -39,17 +35,16 @@ func MakeTCPSplit(
 }
 
 func MakeHTTPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
+			core_mesh.ProtocolGRPC: {},
 		},
 		clusterCache,
 		servicesAcc,
@@ -59,7 +54,6 @@ func MakeHTTPSplit(
 }
 
 func makeSplit(
-	proxy *core_xds.Proxy,
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
@@ -69,7 +63,6 @@ func makeSplit(
 	var split []envoy_common.Split
 
 	for _, ref := range refs {
-		core.Log.Info("makeSplit", "ref", ref)
 		switch ref.Kind {
 		case common_api.MeshService, common_api.MeshServiceSubset:
 		default:
@@ -82,7 +75,6 @@ func makeSplit(
 		}
 
 		protocol := meshCtx.GetServiceProtocol(service)
-		core.Log.Info("makeSplit", "protocol", protocol)
 		if _, ok := protocols[protocol]; !ok {
 			return nil
 		}
@@ -90,11 +82,6 @@ func makeSplit(
 		clusterName, _ := tags.Tags(ref.Tags).
 			WithTags(mesh_proto.ServiceTag, ref.Name).
 			DestinationClusterName(nil)
-
-		core.Log.Info("makeSplit", "clusterName", clusterName)
-		if val, ok := meshCtx.CrossMeshEndpoints[service]; ok {
-			core.Log.Info("makeSplit", "isCrossMesh", ok, "val", val)
-		}
 
 		// The mesh tag is present here if this destination is generated
 		// from a cross-mesh MeshGateway listener virtual outbound.
@@ -134,7 +121,6 @@ func makeSplit(
 			WithExternalService(isExternalService)
 
 		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-			core.Log.Info("LISTENER SET MESH", "mesh", mesh)
 			clusterBuilder.WithMesh(mesh)
 		}
 

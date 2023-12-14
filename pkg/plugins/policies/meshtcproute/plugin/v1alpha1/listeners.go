@@ -5,7 +5,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -39,15 +38,12 @@ func generateListeners(
 		serviceName := outbound.GetService()
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 
-		core.Log.Info("protocol for service", "serviceName", serviceName, "protocol", protocol)
-
-		core.Log.Info("TCP generateListeners", "serviceName", serviceName)
 		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, outbound.GetTags())
 		if len(backendRefs) == 0 {
 			continue
 		}
 
-		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, meshCtx)
+		splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
 		filterChain := buildFilterChain(proxy, serviceName, splits)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)
@@ -72,7 +68,6 @@ func buildOutboundListener(
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
 	tags := outbound.GetTags()
-	core.Log.Info("building tcp outbound listeners", "outbound", outbound)
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(

@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -53,20 +52,12 @@ func (p plugin) Apply(
 	rs.AddSet(listeners)
 
 	services := servicesAccumulator.Services()
-	core.Log.Info("TEST", "services", services)
-
 	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
 	rs.AddSet(clusters)
 
-	// outbound_proxy_generator creates empty eds for ExternalService
-	// in case we create a cluster for an ExternalService in meshtcproute
-	// snapshot won't be consistent because ExternalService cluster
-	// has STRICT_DNS and we are not generating EDS, so we need to remove it
-	// to keep snapshot consistent
-	// meshroute.CleanupEDS(proxy, services, rs)
 	endpoints, err := meshroute.GenerateEndpoints(proxy, ctx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")

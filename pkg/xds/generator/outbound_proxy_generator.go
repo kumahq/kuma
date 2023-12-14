@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -21,8 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
-
-var outboundLog = core.Log.WithName("outbound-proxy-generator")
 
 // OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginOutbound = "outbound"
@@ -348,7 +345,6 @@ func (OutboundProxyGenerator) determineRoutes(
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) []envoy_common.Cluster {
 		var clusters []envoy_common.Cluster
 		for _, destination := range splits {
-			core.Log.Info("clustersFromSplit", "destination", destination, "outbound", outbound)
 			service := destination.Destination[mesh_proto.ServiceTag]
 			if destination.GetWeight().GetValue() == 0 {
 				// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -100,13 +99,11 @@ func ApplyToOutbounds(
 	rs.AddSet(listeners)
 
 	services := servicesAcc.Services()
-	core.Log.Info("TEST", "services", services)
 
 	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
-	core.Log.Info("TEST", "clusters", clusters)
 	rs.AddSet(clusters)
 
 	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)

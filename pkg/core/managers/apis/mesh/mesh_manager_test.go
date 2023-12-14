@@ -49,8 +49,8 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := mesh.NewMeshValidator(caManagers, resStore)
-		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false, context.Background())
-		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true, context.Background())
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false, context.Background(), false)
+		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true, context.Background(), false)
 	})
 
 	Describe("Create()", func() {

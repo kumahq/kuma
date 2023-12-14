@@ -404,6 +404,8 @@ defaults:
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
   # If true, it skips creating the default tenant resources
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
+  # If true, it creates the default resources for a new Mesh
+  createMeshResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_RESOURCES
 
 # Metrics configuration
 metrics:

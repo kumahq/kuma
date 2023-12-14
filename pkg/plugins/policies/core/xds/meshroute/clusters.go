@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -25,10 +24,8 @@ func GenerateClusters(
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
-		core.Log.Info("GenerateClusters", "service", service)
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
-			core.Log.Info("GenerateClusters", "clusterName", clusterName)
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
@@ -87,7 +84,6 @@ func GenerateClusters(
 			if err != nil {
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
-			core.Log.Info("edsCluster", "edsCluster", edsCluster)
 			resources = resources.Add(&core_xds.Resource{
 				Name:     clusterName,
 				Origin:   generator.OriginOutbound,
