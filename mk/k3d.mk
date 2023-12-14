@@ -44,13 +44,13 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
 	--k3s-arg '--disable=servicelb@server:0' \
-    --volume '$(subst @,\@,$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
+    --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*'
 endif
 
