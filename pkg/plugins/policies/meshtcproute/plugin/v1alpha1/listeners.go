@@ -42,7 +42,7 @@ func generateListeners(
 		core.Log.Info("protocol for service", "serviceName", serviceName, "protocol", protocol)
 
 		core.Log.Info("TCP generateListeners", "serviceName", serviceName)
-		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol)
+		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, outbound.GetTags())
 		if len(backendRefs) == 0 {
 			continue
 		}

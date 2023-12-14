@@ -73,19 +73,3 @@ func GatherTargetedClusters(
 
 	return targetedClusters
 }
-
-func HasExternalService(routing core_xds.Routing, serviceName string) bool {
-	// We assume that all the targets are either ExternalServices or not
-	// therefore we check only the first one
-	if endpoints := routing.OutboundTargets[serviceName]; len(endpoints) > 0 {
-		if endpoints[0].IsExternalService() {
-			return true
-		}
-	}
-
-	if endpoints := routing.ExternalServiceOutboundTargets[serviceName]; len(endpoints) > 0 {
-		return true
-	}
-
-	return false
-}

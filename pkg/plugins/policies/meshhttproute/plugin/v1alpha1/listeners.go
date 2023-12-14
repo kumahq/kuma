@@ -7,6 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -49,9 +50,9 @@ func generateListeners(
 				ForwardClientCertDetails: false,
 				NormalizePath:            true,
 			}))
-
+		core.Log.Info("TEST LISTENERS", "oface", oface, "serviceName", serviceName, "outbound", outbound)
 		var routes []xds.OutboundRoute
-		for _, route := range prepareRoutes(rules, serviceName, protocol) {
+		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
 			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
@@ -110,6 +111,7 @@ func prepareRoutes(
 	toRules []ToRouteRule,
 	serviceName string,
 	protocol core_mesh.Protocol,
+	tags map[string]string,
 ) []Route {
 	var rules []api.Rule
 
@@ -164,13 +166,21 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
+			targetRef := common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+			}
+			if mesh, ok := tags[mesh_proto.MeshTag]; ok {
+				targetRef.Tags = map[string]string{
+					mesh_proto.MeshTag: mesh,
+				}
+			}
+
 			route.BackendRefs = []common_api.BackendRef{{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
-				},
+				TargetRef: targetRef,
 				Weight: pointer.To(uint(100)),
-			}}
+				},
+			}
 		}
 		if rule.Default.Filters != nil {
 			route.Filters = *rule.Default.Filters
