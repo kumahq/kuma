@@ -2,15 +2,14 @@ package reconcile_test
 
 import (
 	"context"
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/onsi/gomega/format"
 
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -20,6 +19,7 @@ import (
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -73,10 +73,10 @@ var _ = Describe("snapshotGenerator", func() {
 				Mesh:    "default",
 				Service: "backend",
 				Targets: []*observability_v1.MonitoringAssignment_Target{{
-					Name:    "backend-01",
-					Address: "192.168.0.1:1234",
+					Name:        "backend-01",
+					Address:     "192.168.0.1:1234",
 					MetricsPath: "/custom",
-					Scheme:  "http",
+					Scheme:      "http",
 					Labels: map[string]string{
 						"env":              "intg",
 						"envs":             ",intg,",
@@ -252,7 +252,7 @@ var _ = Describe("snapshotGenerator", func() {
 				},
 				// TODO: generate this resource map on the fly using the mads/v1/generator pkg
 				expectedForNode1: snapshotWithTwoAssignments,
-				// The pre-MeshMetric "mesh.metrics" code configures all prometheus clients (recognised as nodes here)
+				// The pre-MeshMetric "mesh.metrics" code configures all prometheus clients (recognized as nodes here)
 				// the same way, that's why we have the same assignments for both nodes
 				expectedForNode2: snapshotWithTwoAssignments,
 			}),
@@ -281,7 +281,7 @@ var _ = Describe("snapshotGenerator", func() {
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
-							Default:   v1alpha1.Conf{
+							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
 									{
 										Type: v1alpha1.PrometheusBackendType,
@@ -327,14 +327,14 @@ var _ = Describe("snapshotGenerator", func() {
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
-							Default:   v1alpha1.Conf{
+							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
 									{
 										Type: v1alpha1.PrometheusBackendType,
 										Prometheus: &v1alpha1.PrometheusBackend{
 											ClientId: &node1Id,
-											Port: 1234,
-											Path: "/custom",
+											Port:     1234,
+											Path:     "/custom",
 											Tls: &v1alpha1.PrometheusTls{
 												Mode: v1alpha1.Disabled,
 											},
@@ -350,10 +350,10 @@ var _ = Describe("snapshotGenerator", func() {
 						Mesh:    "default",
 						Service: "backend",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-01",
-							Address: "192.168.0.1:1234",
+							Name:        "backend-01",
+							Address:     "192.168.0.1:1234",
 							MetricsPath: "/custom",
-							Scheme:  "http",
+							Scheme:      "http",
 							Labels: map[string]string{
 								"env":              "intg",
 								"envs":             ",intg,",
@@ -398,14 +398,14 @@ var _ = Describe("snapshotGenerator", func() {
 								Kind: common_api.MeshService,
 								Name: "backend-01",
 							},
-							Default:   v1alpha1.Conf{
+							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
 									{
 										Type: v1alpha1.PrometheusBackendType,
 										Prometheus: &v1alpha1.PrometheusBackend{
 											ClientId: &node1Id,
-											Port: 1234,
-											Path: "/custom",
+											Port:     1234,
+											Path:     "/custom",
 											Tls: &v1alpha1.PrometheusTls{
 												Mode: v1alpha1.Disabled,
 											},
@@ -421,10 +421,10 @@ var _ = Describe("snapshotGenerator", func() {
 						Mesh:    "default",
 						Service: "backend-01",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-01",
-							Address: "192.168.0.1:1234",
+							Name:        "backend-01",
+							Address:     "192.168.0.1:1234",
 							MetricsPath: "/custom",
-							Scheme:  "http",
+							Scheme:      "http",
 							Labels: map[string]string{
 								"kuma_io_service":  "backend-01",
 								"kuma_io_services": ",backend-01,",
@@ -471,14 +471,14 @@ var _ = Describe("snapshotGenerator", func() {
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
-							Default:   v1alpha1.Conf{
+							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
 									{
 										Type: v1alpha1.PrometheusBackendType,
 										Prometheus: &v1alpha1.PrometheusBackend{
 											ClientId: &node1Id,
-											Port: 1234,
-											Path: "/custom",
+											Port:     1234,
+											Path:     "/custom",
 											Tls: &v1alpha1.PrometheusTls{
 												Mode: v1alpha1.Disabled,
 											},
@@ -498,14 +498,14 @@ var _ = Describe("snapshotGenerator", func() {
 								Kind: common_api.MeshService,
 								Name: "backend-02",
 							},
-							Default:   v1alpha1.Conf{
+							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
 									{
 										Type: v1alpha1.PrometheusBackendType,
 										Prometheus: &v1alpha1.PrometheusBackend{
 											ClientId: &node1Id,
-											Port: 5678,
-											Path: "/other",
+											Port:     5678,
+											Path:     "/other",
 											Tls: &v1alpha1.PrometheusTls{
 												Mode: v1alpha1.ProvidedTLS,
 											},
@@ -521,10 +521,10 @@ var _ = Describe("snapshotGenerator", func() {
 						Mesh:    "default",
 						Service: "backend-01",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-01",
-							Address: "192.168.0.1:1234",
+							Name:        "backend-01",
+							Address:     "192.168.0.1:1234",
 							MetricsPath: "/custom",
-							Scheme:  "http",
+							Scheme:      "http",
 							Labels: map[string]string{
 								"kuma_io_service":  "backend-01",
 								"kuma_io_services": ",backend-01,",
@@ -535,10 +535,10 @@ var _ = Describe("snapshotGenerator", func() {
 						Mesh:    "default",
 						Service: "backend-02",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-02",
-							Address: "192.168.0.2:5678",
+							Name:        "backend-02",
+							Address:     "192.168.0.2:5678",
 							MetricsPath: "/other",
-							Scheme:  "https",
+							Scheme:      "https",
 							Labels: map[string]string{
 								"kuma_io_service":  "backend-02",
 								"kuma_io_services": ",backend-02,",
@@ -549,10 +549,10 @@ var _ = Describe("snapshotGenerator", func() {
 						Mesh:    "default",
 						Service: "backend-03",
 						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:    "backend-03",
-							Address: "192.168.0.3:1234",
+							Name:        "backend-03",
+							Address:     "192.168.0.3:1234",
 							MetricsPath: "/custom",
-							Scheme:  "http",
+							Scheme:      "http",
 							Labels: map[string]string{
 								"kuma_io_service":  "backend-03",
 								"kuma_io_services": ",backend-03,",

@@ -2,22 +2,22 @@ package reconcile
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/mads/v1/meshmetrics"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/pkg/errors"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/mads/generator"
 	mads_v1_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
+	"github.com/kumahq/kuma/pkg/mads/v1/meshmetrics"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
@@ -113,7 +113,6 @@ func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshMetri
 	if err != nil {
 		return nil, errors.Wrap(err, "could not list dpps")
 	}
-
 
 	for _, meshMetric := range meshMetrics {
 		var filteredDataplaneList []*core_mesh.DataplaneResource

@@ -10,7 +10,7 @@ import (
 var _ = Describe("validation", func() {
 	resources.DescribeValidCases(
 		NewMeshMetricResource,
-		FEntry("full spec", `
+		Entry("full spec", `
 type: MeshMetric
 mesh: mesh-1
 name: metrics-1
