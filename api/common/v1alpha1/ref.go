@@ -29,6 +29,10 @@ var order = map[TargetRefKind]int{
 	MeshHTTPRoute:     6,
 }
 
+var OrderInArray = []TargetRefKind{
+	Mesh, MeshSubset, MeshGateway, MeshService, MeshServiceSubset, MeshHTTPRoute,
+}
+
 func (k TargetRefKind) Less(o TargetRefKind) bool {
 	return order[k] < order[o]
 }
