@@ -35,6 +35,10 @@ jobs:
           fi
           echo "Running with: ${{ toJSON(inputs) }} ${{ toJSON(env) }}"
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/checkout@v4
@@ -51,9 +55,10 @@ jobs:
         with:
           path: |
             ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: devtools-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}-${{ runner.os }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            devtools-${{ runner.os }}-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}
+            devtools-${{ runner.os }}
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools

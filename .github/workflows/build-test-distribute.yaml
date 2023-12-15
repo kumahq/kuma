@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master", "release-*", "!*-merge-master", "improve-ci-caching"]
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
@@ -14,6 +14,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -24,9 +28,10 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: devtools-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}-${{ runner.os }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            devtools-${{ runner.os }}-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}
+            devtools-${{ runner.os }}
       - run: |
           make dev/tools
       - run: |
@@ -36,8 +41,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -48,9 +55,10 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: devtools-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}-${{ runner.os }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            devtools-${{ runner.os }}-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}
+            devtools-${{ runner.os }}
       - run: |
           make dev/tools
       - name: Free up disk space for the Runner
@@ -61,8 +69,8 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+      - name: "Set switches based on if run full matrix"
+        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
@@ -99,6 +107,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     steps:
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -109,9 +121,10 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: devtools-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}-${{ runner.os }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            devtools-${{ runner.os }}-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}
+            devtools-${{ runner.os }}
       - run: |
           make dev/tools
       - name: Free up disk space for the Runner
@@ -142,11 +155,15 @@ jobs:
           exit 1
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+      - name: "Set switches based on if run full matrix"
+        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
@@ -165,9 +182,10 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: devtools-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}-${{ runner.os }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            devtools-${{ runner.os }}-${{ env.RUN_FULL_MATRIX && 'full-matrix' || 'normal' }}
+            devtools-${{ runner.os }}
       - uses: actions/download-artifact@v3
         with:
           name: build-output
