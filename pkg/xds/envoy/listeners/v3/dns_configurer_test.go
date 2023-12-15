@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -14,10 +13,8 @@ import (
 
 var _ = Describe("DNSConfigurer", func() {
 	type testCase struct {
-		vips         map[string][]string
-		emptyDnsPort uint32
-		envoyVersion string
-		expected     string
+		vips     map[string][]string
+		expected string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -25,7 +22,7 @@ var _ = Describe("DNSConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 1234, xds.SocketAddressProtocolUDP).
 				WithOverwriteName(names.GetDNSListenerName()).
-				Configure(DNS(given.vips, given.emptyDnsPort, &mesh_proto.EnvoyVersion{Version: given.envoyVersion})).
+				Configure(DNS(given.vips)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -42,8 +39,6 @@ var _ = Describe("DNSConfigurer", func() {
 				"something.com":  {"240.0.0.0"},
 				"backend.mesh":   {"240.0.0.1", "::2"},
 			},
-			emptyDnsPort: 53002,
-			envoyVersion: "1.20.0",
 			expected: `
             address:
               socketAddress:
@@ -55,16 +50,6 @@ var _ = Describe("DNSConfigurer", func() {
             - name: envoy.filters.udp.dns_filter
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3.DnsFilterConfig
-                clientConfig:
-                  maxPendingLookups: "256"
-                  typedDnsResolverConfig:
-                      name: envoy.network.dns_resolver.cares
-                      typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
-                          resolvers:
-                              - socketAddress:
-                                  address: 127.0.0.1
-                                  portValue: 53002
                 serverConfig:
                   inlineDnsTable:
                     virtualDomains:
