@@ -1,1 +1,1 @@
-ALTER TABLE resources ADD COLUMN labels JSONB;
+ALTER TABLE resources ADD COLUMN labels JSONB DEFAULT '{}'::jsonb;
