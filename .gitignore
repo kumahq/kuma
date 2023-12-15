@@ -7,8 +7,8 @@
 .ci_tools/
 mk/dependencies/*.versions
 
-# asdf
 .tool-versions
+.run-full-matrix
 
 # CI
 build/
