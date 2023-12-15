@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/gruntwork-io/terratest/modules/logger"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -25,17 +26,31 @@ var _ = Describe("PostgresStore template", func() {
 			pgxMetrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = MigrateDb(*cfg)
+			dbCfg := *cfg
+			_, err = MigrateDb(dbCfg)
+			if err != nil {
+				logger.Default.Logf(GinkgoT(), "error migrating database: %v", err)
+				c.PrintDebugInfo(dbCfg.DbName, dbCfg.Port)
+			}
 			Expect(err).ToNot(HaveOccurred())
 
 			var pStore store.ResourceStore
 			if storeName == "pgx" {
 				cfg.DriverName = postgres.DriverNamePgx
-				pStore, err = NewPgxStore(pgxMetrics, *cfg, config.NoopPgxConfigCustomizationFn)
+				pStore, err = NewPgxStore(pgxMetrics, dbCfg, config.NoopPgxConfigCustomizationFn)
 			} else {
 				cfg.DriverName = postgres.DriverNamePq
-				pStore, err = NewPqStore(pqMetrics, *cfg)
+				pStore, err = NewPqStore(pqMetrics, dbCfg)
 			}
+			if err != nil {
+				logger.Default.Logf(GinkgoT(), "error connecting to database: db name: %s, host: %s, port: %d, error: %v",
+					dbCfg.DbName,
+					dbCfg.Host,
+					dbCfg.Port,
+					err)
+				c.PrintDebugInfo(dbCfg.DbName, dbCfg.Port)
+			}
+
 			Expect(err).ToNot(HaveOccurred())
 			return pStore
 		}
