@@ -13,7 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/mads/generator"
 	mads_v1_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
-	"github.com/kumahq/kuma/pkg/mads/v1/meshmetrics"
+	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -77,7 +77,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 			return nil, err
 		}
 
-		resources, err = meshmetrics.Generate(dataplanes)
+		resources, err = meshmetrics_generator.Generate(dataplanes)
 		if err != nil {
 			return nil, err
 		}

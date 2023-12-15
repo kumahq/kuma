@@ -1,4 +1,4 @@
-package meshmetrics
+package generator
 
 import (
 	"net"
@@ -16,7 +16,7 @@ func Generate(meshMetricToDataplanes map[*v1alpha1.MeshMetricResource][]*core_me
 	var resources []*core_xds.Resource
 	assignmentNameToAssignment := map[string]*observability_v1.MonitoringAssignment{}
 
-	// this is not a great way of sorting, we should get the policies from the store already sorted
+	// this is not a great way of sorting, we could get the policies from the store already sorted
 	for _, targetRefKind := range common_api.OrderInArray {
 		for meshMetric, dataplanes := range meshMetricToDataplanes {
 			if meshMetric.Spec.TargetRef.Kind != targetRefKind {
