@@ -5,6 +5,7 @@
 .vscode/
 
 .ci_tools/
+mk/dependencies/*.versions
 
 # asdf
 .tool-versions
