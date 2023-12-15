@@ -24,7 +24,6 @@ kuma-dp run [flags]
       --dataplane-token-file string               Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
   -v, --dataplane-var stringToString              Variables to replace Dataplane template (default [])
       --dns-coredns-config-template-path string   A path to a CoreDNS config template.
-      --dns-coredns-empty-port uint32             A port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS. (default 15055)
       --dns-coredns-path string                   A path to CoreDNS binary. (default "coredns")
       --dns-coredns-port uint32                   A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port. (default 15053)
       --dns-enable-logging                        If true then CoreDNS logging is enabled
