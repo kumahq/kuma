@@ -39,8 +39,8 @@ github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d h1:Byv0BzEl
 github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/aws/aws-sdk-go v1.44.187 h1:D5CsRomPnlwDHJCanL2mtaLIcbhjiWxNh5j8zvaWdJA=
 github.com/aws/aws-sdk-go v1.44.187/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
-github.com/bakito/go-log-logr-adapter v0.0.2 h1:epK+VaMPkK7dK+Vs78xo0BABqN1lIXD3IXX1VUj4PcM=
-github.com/bakito/go-log-logr-adapter v0.0.2/go.mod h1:B2tvB31L1Sxpkfhpj13QkJEisDNNKcC9FoYU8KL87AA=
+github.com/bakito/go-log-logr-adapter v0.0.0-20231211113354-bfa42fa7e121 h1:P3an0ERl3SIyXtPKZ4zcJ18qrB635x0CjdsTdz5tMAU=
+github.com/bakito/go-log-logr-adapter v0.0.0-20231211113354-bfa42fa7e121/go.mod h1:0I6DOlUOuXiVency29rZX1chhXtuZBH1p9TVzKkMw60=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
