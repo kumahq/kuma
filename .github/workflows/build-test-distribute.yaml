@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master", "improve-ci-caching"]
+    branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
@@ -34,8 +34,6 @@ jobs:
             devtools-${{ runner.os }}
       - run: |
           make dev/tools
-      - run: |
-          make clean
       - run: |
           make check
   build:
