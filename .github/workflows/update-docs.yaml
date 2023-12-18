@@ -36,7 +36,7 @@ jobs:
             echo "${b} ${name}"
             git checkout --force "${b}"
             mkdir -p ../docs-build/${name}/raw
-            cp -R docs/generated/raw/* ../docs-build/${name}/raw/
+            cp -R docs/generated/raw ../docs-build/${name}/
             mkdir -p ../docs-build/raw
             if [[ "${b}" == "master" ]]; then
               if [[ -f UPGRADE.md ]]; then
