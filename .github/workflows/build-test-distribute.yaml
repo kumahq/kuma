@@ -290,7 +290,6 @@ jobs:
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
-    name: "${{ matrix.arch }}-${{ matrix.k8sVersion }}"
     needs: ["gen_e2e_matrix", "build"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
@@ -302,7 +301,6 @@ jobs:
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
-    name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
     needs: ["gen_e2e_matrix", "build"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
