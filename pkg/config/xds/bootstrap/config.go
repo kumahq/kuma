@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"github.com/kumahq/kuma/pkg/util/files"
 	"net"
 	"os"
 	"time"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 var _ config.Config = &BootstrapServerConfig{}

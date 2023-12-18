@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -205,7 +205,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				if cfg.DNS.CoreDNSConfigTemplatePath == "" && len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
-					templateFile, err := writeTempFile("kuma-dp-corefile-template-", "Corefile", kumaSidecarConfiguration.Networking.CorefileTemplate, 0644)
+					templateFile, err := writeTempFile("kuma-dp-corefile-template-", "Corefile", kumaSidecarConfiguration.Networking.CorefileTemplate, 0o644)
 					if err != nil {
 						return errors.Errorf("Failed to write corefile template to disk. %v", err)
 					}

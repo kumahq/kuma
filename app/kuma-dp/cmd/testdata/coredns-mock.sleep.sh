@@ -8,7 +8,7 @@ fi
 
 echo $$ >"${COREDNS_MOCK_PID_FILE}"
 for arg in "$@"; do
-    echo "$arg" >> "${ENVOY_MOCK_CMDLINE_FILE}"
+    echo "$arg" >> "${COREDNS_MOCK_CMDLINE_FILE}"
 done
 
 # Send logs for Cmd#Wait to finish

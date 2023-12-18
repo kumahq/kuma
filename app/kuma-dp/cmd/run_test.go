@@ -133,7 +133,7 @@ var _ = Describe("run", func() {
 			})
 
 			corednsPid := verifyComponentProcess("coredns", corednsPidFile, corednsCmdlineFile, func(actualArgs []string) {
-				Expect(len(actualArgs)).To(Equal(3))
+				Expect(len(actualArgs)).To(HaveLen(3))
 				Expect(actualArgs[0]).To(Equal("-conf"))
 				Expect(actualArgs[2]).To(Equal("-quiet"))
 			})
@@ -361,17 +361,19 @@ func verifyComponentProcess(processDescription, pidfile string, cmdlinefile stri
 		pid, err = strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
 		return err == nil
 	}, "5s", "100ms").Should(BeTrue())
-	// and
 	Expect(pid).ToNot(BeZero())
 
 	By(fmt.Sprintf("verifying the arguments %s was launched with", processDescription))
 	// when
 	cmdline, err := os.ReadFile(cmdlinefile)
+
 	// then
 	Expect(err).ToNot(HaveOccurred())
 	// and
 	if argsVerifier != nil {
-		actualArgs := strings.Split(string(cmdline), "\n")
+		actualArgs := strings.FieldsFunc(string(cmdline), func(c rune) bool {
+			return c == '\n'
+		})
 		argsVerifier(actualArgs)
 	}
 	return pid
