@@ -19,8 +19,6 @@ func AdditionalInbounds(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.
 	return inbounds, nil
 }
 
-// TODO: is this even used?
-// TODO: how to replace this with MeshMetric policy?
 func PrometheusInbound(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*mesh_proto.Dataplane_Networking_Inbound, error) {
 	cfg, err := dataplane.GetPrometheusConfig(mesh)
 	if err != nil {

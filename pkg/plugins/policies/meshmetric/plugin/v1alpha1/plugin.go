@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -14,10 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var (
-	_   core_plugins.PolicyPlugin = &plugin{}
-	log                           = core.Log.WithName("MeshMetric")
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -30,7 +26,6 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	log.V(1).Info("apply is not implemented")
 	policies, ok := proxy.Policies.Dynamic[api.MeshMetricType]
 	if !ok || len(policies.SingleItemRules.Rules) == 0 {
 		return nil
