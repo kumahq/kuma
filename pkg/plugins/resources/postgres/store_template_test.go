@@ -9,13 +9,12 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
-	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("PostgresStore template", func() {
 	createStore := func(storeName string, maxListQueryElements int) func() store.ResourceStore {
 		return func() store.ResourceStore {
-			cfg, err := c.Config(test_postgres.WithRandomDb)
+			cfg, err := c.Config()
 			Expect(err).ToNot(HaveOccurred())
 			cfg.MaxListQueryElements = uint32(maxListQueryElements)
 			cfg.MaxOpenConnections = 2

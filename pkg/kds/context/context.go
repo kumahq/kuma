@@ -67,10 +67,7 @@ func DefaultContext(
 			cfg.Store.Type,
 			cfg.Store.Kubernetes.SystemNamespace,
 		),
-	}
-
-	if cfg.Experimental.KDSSyncNameWithHashSuffix {
-		mappers = append(mappers, AddHashSuffix)
+		AddHashSuffix,
 	}
 
 	return &Context{

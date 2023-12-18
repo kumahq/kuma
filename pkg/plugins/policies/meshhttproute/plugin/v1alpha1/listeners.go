@@ -10,11 +10,11 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -26,6 +26,7 @@ func generateListeners(
 	proxy *core_xds.Proxy,
 	rules []ToRouteRule,
 	servicesAcc envoy_common.ServicesAccumulator,
+	meshCtx xds_context.MeshContext,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
@@ -48,10 +49,10 @@ func generateListeners(
 				NormalizePath:            true,
 			}))
 
-		protocol := plugins_xds.InferProtocol(proxy.Routing, serviceName)
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
-		for _, route := range prepareRoutes(rules, serviceName, protocol) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs)
+		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
+			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
 			}
@@ -63,7 +64,9 @@ func generateListeners(
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
-						}})
+						}},
+						meshCtx,
+					)
 				}
 			}
 			routes = append(routes, xds.OutboundRoute{
@@ -107,6 +110,7 @@ func prepareRoutes(
 	toRules []ToRouteRule,
 	serviceName string,
 	protocol core_mesh.Protocol,
+	tags map[string]string,
 ) []Route {
 	var rules []api.Rule
 
@@ -161,13 +165,21 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
-			route.BackendRefs = []common_api.BackendRef{{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
+			targetRef := common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+			}
+			if mesh, ok := tags[mesh_proto.MeshTag]; ok {
+				targetRef.Tags = map[string]string{
+					mesh_proto.MeshTag: mesh,
+				}
+			}
+			route.BackendRefs = []common_api.BackendRef{
+				{
+					TargetRef: targetRef,
+					Weight:    pointer.To(uint(100)),
 				},
-				Weight: pointer.To(uint(100)),
-			}}
+			}
 		}
 		if rule.Default.Filters != nil {
 			route.Filters = *rule.Default.Filters

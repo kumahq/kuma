@@ -137,6 +137,6 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Mesh Fault Injections",
 	IsPluginOriginated:  true,
 	IsTargetRefBased:    true,
-	HasToTargetRef:      false,
+	HasToTargetRef:      true,
 	HasFromTargetRef:    true,
 }

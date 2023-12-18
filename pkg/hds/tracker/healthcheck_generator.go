@@ -121,7 +121,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 			},
 		}
 
-		if dp.IsUsingTransparentProxy() && (intf.WorkloadIP != mesh.IPv4Loopback.String() || intf.WorkloadIP != mesh.IPv6Loopback.String()) {
+		if dp.IsUsingTransparentProxy() && (intf.WorkloadIP != mesh.IPv4Loopback.String() && intf.WorkloadIP != mesh.IPv6Loopback.String()) {
 			if net.IsAddressIPv6(intf.WorkloadIP) {
 				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv6, 0)
 			} else {

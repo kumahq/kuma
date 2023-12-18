@@ -193,6 +193,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 			},
+			ServicesInformation: map[string]*xds_context.ServiceInformation{
+				"api-http": {
+					Protocol: core_mesh.ProtocolHTTP,
+				},
+			},
 		},
 	}
 
@@ -559,15 +564,39 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			given.ctx.Mesh.EndpointMap = outboundTargets
-			given.ctx.Mesh.ServiceTLSReadiness = map[string]bool{
-				"api-http":  true,
-				"api-tcp":   true,
-				"api-http2": true,
-				"api-grpc":  true,
-				"backend":   true,
-				"db":        true,
-				"es":        true,
-				"es2":       true,
+			given.ctx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
+				"api-http": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"api-tcp": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolTCP,
+				},
+				"api-http2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
+				"api-grpc": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolGRPC,
+				},
+				"backend": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"db": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"es": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"es2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
@@ -833,6 +862,14 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// when
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
+		plainCtx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
+			"backend.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
+			"db.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
+		}
 		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)
 
 		// then

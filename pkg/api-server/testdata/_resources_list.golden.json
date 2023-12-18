@@ -122,7 +122,7 @@
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
     "hasFromTargetRef": true,
-    "hasToTargetRef": false,
+    "hasToTargetRef": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -207,6 +207,20 @@
    "readOnly": false,
    "scope": "Mesh",
    "singularDisplayName": "Mesh Load Balancing Strategy"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshMetric",
+   "path": "meshmetrics",
+   "pluralDisplayName": "Mesh Metrics",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Metric"
   },
   {
    "includeInDump": false,

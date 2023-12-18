@@ -564,7 +564,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			return false
 		}
-		dppList, _ := registry.Global().NewList(mesh.DataplaneType)
+		dppList := registry.Global().MustNewList(mesh.DataplaneType)
 		err = r.resManager.List(request.Request.Context(), dppList,
 			store.ListByMesh(meshName),
 			store.ListByNameContains(nameContains),

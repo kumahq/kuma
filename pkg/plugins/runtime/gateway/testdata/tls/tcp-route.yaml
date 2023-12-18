@@ -90,7 +90,7 @@ Clusters:
                 resourceApiVersion: V3
           sni: echo-service{mesh=default}
       type: EDS
-    external-httpbin-0928d0264bbd5638:
+    external-tcp-httpbin-bcf553986bd60283:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -102,7 +102,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: external-httpbin-0928d0264bbd5638
+      name: external-tcp-httpbin-bcf553986bd60283
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -121,7 +121,7 @@ Clusters:
               defaultValidationContext:
                 matchTypedSubjectAltNames:
                 - matcher:
-                    exact: spiffe://default/external-httpbin
+                    exact: spiffe://default/external-tcp-httpbin
                   sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
@@ -133,7 +133,7 @@ Clusters:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
-          sni: external-httpbin{mesh=default}
+          sni: external-tcp-httpbin{mesh=default}
       type: EDS
 Endpoints:
   Resources:
@@ -169,8 +169,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    external-httpbin-0928d0264bbd5638:
-      clusterName: external-httpbin-0928d0264bbd5638
+    external-tcp-httpbin-bcf553986bd60283:
+      clusterName: external-tcp-httpbin-bcf553986bd60283
 Listeners:
   Resources:
     edge-gateway:TLS:8443:
@@ -194,7 +194,7 @@ Listeners:
               clusters:
               - name: api-service-ec4b46e15b91ec0d
               - name: echo-service-6376c7d971a22370
-              - name: external-httpbin-0928d0264bbd5638
+              - name: external-tcp-httpbin-bcf553986bd60283
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:
@@ -223,7 +223,7 @@ Listeners:
               clusters:
               - name: api-service-ec4b46e15b91ec0d
               - name: echo-service-6376c7d971a22370
-              - name: external-httpbin-0928d0264bbd5638
+              - name: external-tcp-httpbin-bcf553986bd60283
         transportSocket:
           name: envoy.transport_sockets.tls
           typedConfig:
