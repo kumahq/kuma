@@ -1,8 +1,7 @@
 package xds
 
 import (
-	"github.com/labstack/gommon/log"
-
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -10,6 +9,8 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
+
+var log = core.Log.WithName("MeshMetric")
 
 type PrometheusConfigurer struct {
 	Backend         *api.PrometheusBackend
