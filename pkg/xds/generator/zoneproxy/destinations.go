@@ -21,11 +21,12 @@ func BuildMeshDestinations(
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {
 	destForMesh := map[string][]envoy_tags.Tags{}
-	addTrafficRouteDestinations(res.TrafficRoutes().Items, destForMesh)
+	trafficRoutes := res.TrafficRoutes().Items
+	addTrafficRouteDestinations(trafficRoutes, destForMesh)
 	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
 	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
-	addMeshHTTPRouteDestinations(meshHTTPRoutes, destForMesh)
-	addMeshTCPRouteDestinations(meshTCPRoutes, destForMesh)
+	addMeshHTTPRouteDestinations(trafficRoutes, meshHTTPRoutes, destForMesh)
+	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
 	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
 	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
 	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
@@ -109,10 +110,11 @@ func addTrafficRouteDestinations(
 }
 
 func addMeshHTTPRouteDestinations(
+	trafficRoutes []*core_mesh.TrafficRouteResource,
 	policies []*meshhttproute_api.MeshHTTPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	if len(policies) > 0 {
+	if len(trafficRoutes) == 0 {
 		addTrafficFlowByDefaultDestination(destinations)
 	}
 
@@ -129,10 +131,11 @@ func addMeshHTTPRouteDestinations(
 }
 
 func addMeshTCPRouteDestinations(
+	trafficRoutes []*core_mesh.TrafficRouteResource,
 	policies []*meshtcproute_api.MeshTCPRouteResource,
 	destinations map[string][]envoy_tags.Tags,
 ) {
-	if len(policies) > 0 {
+	if len(trafficRoutes) == 0 {
 		addTrafficFlowByDefaultDestination(destinations)
 	}
 

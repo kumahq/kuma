@@ -14,9 +14,9 @@ unexport KUBECONFIG
 METRICS_SERVER_VERSION := 0.4.1
 
 ifdef IPV6
-KIND_CONFIG ?= $(TOP)/test/kind/cluster-ipv6.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
 else
-KIND_CONFIG ?= $(TOP)/test/kind/cluster.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
 endif
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)

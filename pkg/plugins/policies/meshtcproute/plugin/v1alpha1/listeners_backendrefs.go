@@ -2,55 +2,59 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
-
-func matchingHTTPRuleExist(
-	toRulesHTTP core_xds.Rules,
-	service core_xds.Subset,
-	protocol core_mesh.Protocol,
-) bool {
-	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-	default:
-		return false
-	}
-
-	return core_xds.ComputeConf[meshhttproute_api.PolicyDefault](
-		toRulesHTTP,
-		service,
-	) != nil
-}
-
-func getTCPBackendRefs(
-	toRulesTCP core_xds.Rules,
-	service core_xds.Subset,
-) []common_api.BackendRef {
-	conf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
-	if conf != nil {
-		return conf.Default.BackendRefs
-	}
-
-	return nil
-}
 
 func getBackendRefs(
 	toRulesTCP core_xds.Rules,
 	toRulesHTTP core_xds.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
+	tags map[string]string,
 ) []common_api.BackendRef {
 	service := core_xds.MeshService(serviceName)
+
+	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
 
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
 	// precedence over the latter
-	if matchingHTTPRuleExist(toRulesHTTP, service, protocol) {
-		return nil
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		// If we have an >= HTTP service, don't manage routing with
+		// MeshTCPRoutes if we either don't have any MeshTCPRoutes or we have
+		// MeshHTTPRoutes
+		httpConf := core_xds.ComputeConf[meshhttproute_api.PolicyDefault](
+			toRulesHTTP,
+			service,
+		)
+		if tcpConf == nil || httpConf != nil {
+			return nil
+		}
+	default:
 	}
 
-	return getTCPBackendRefs(toRulesTCP, service)
+	if tcpConf != nil {
+		return tcpConf.Default.BackendRefs
+	}
+	targetRef := common_api.TargetRef{
+		Kind: common_api.MeshService,
+		Name: serviceName,
+	}
+	if mesh, ok := tags[mesh_proto.MeshTag]; ok {
+		targetRef.Tags = map[string]string{
+			mesh_proto.MeshTag: mesh,
+		}
+	}
+	return []common_api.BackendRef{
+		{
+			TargetRef: targetRef,
+			Weight:    pointer.To(uint(100)),
+		},
+	}
 }

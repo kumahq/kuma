@@ -41,9 +41,6 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if !ok {
 		return nil
 	}
-	if len(policies.SingleItemRules.Rules) == 0 {
-		return nil
-	}
 
 	listeners := policies_xds.GatherListeners(rs)
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
@@ -55,7 +52,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.GatewayRules.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
 		return err
 	}
 
@@ -63,7 +60,10 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 }
 
 func applyToGateway(
-	rules core_rules.SingleItemRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	listenerRules map[core_rules.InboundListener]core_rules.SingleItemRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	resources xds_context.ResourceMap,
+	dataplane *core_mesh.DataplaneResource,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -80,10 +80,15 @@ func applyToGateway(
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
 		address := dataplane.Spec.GetNetworking().Address
 		port := listener.GetPort()
-		listener, ok := gatewayListeners[core_rules.InboundListener{
+		inboundListener := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
-		}]
+		}
+		listener, ok := gatewayListeners[inboundListener]
+		if !ok {
+			continue
+		}
+		rules, ok := listenerRules[inboundListener]
 		if !ok {
 			continue
 		}
@@ -132,6 +137,9 @@ func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[me
 
 func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
+	if len(rules.Rules) == 0 {
+		return nil
+	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
@@ -153,6 +161,9 @@ func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.Da
 }
 
 func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	if len(rules.Rules) == 0 {
+		return nil
+	}
 	rawConf := rules.Rules[0].Conf
 
 	conf := rawConf.(api.Conf)
