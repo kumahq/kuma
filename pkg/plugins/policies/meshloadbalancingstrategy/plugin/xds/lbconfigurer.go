@@ -2,9 +2,12 @@ package xds
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -21,11 +24,22 @@ func (c *LoadBalancerConfigurer) Configure(cluster *envoy_cluster.Cluster) error
 		if c.LoadBalancer.LeastRequest == nil {
 			return nil
 		}
+		leastRequests := &envoy_cluster.Cluster_LeastRequestLbConfig{}
+		if arb := c.LoadBalancer.LeastRequest.ActiveRequestBias; arb != nil {
+			decimal, err := common_api.NewDecimalFromIntOrString(pointer.Deref(arb))
+			if err != nil {
+				return err
+			}
+			leastRequests.ActiveRequestBias = &corev3.RuntimeDouble{
+				DefaultValue: decimal.InexactFloat64(),
+			}
+		}
 		if cc := c.LoadBalancer.LeastRequest.ChoiceCount; cc != nil {
+			leastRequests.ChoiceCount = util_proto.UInt32(*cc)
+		}
+		if leastRequests.ChoiceCount != nil || leastRequests.ActiveRequestBias != nil {
 			cluster.LbConfig = &envoy_cluster.Cluster_LeastRequestLbConfig_{
-				LeastRequestLbConfig: &envoy_cluster.Cluster_LeastRequestLbConfig{
-					ChoiceCount: util_proto.UInt32(*cc),
-				},
+				LeastRequestLbConfig: leastRequests,
 			}
 		}
 	case api.RandomType:

@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh1_backend
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -86,6 +86,16 @@ resources:
             filterMetadata:
               envoy.lb:
                 kuma.io/instance: ins-1
+          statPrefix: mesh1_backend
+    - filterChainMatch:
+        serverNames:
+        - backend{mesh=mesh1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh1:backend
           statPrefix: mesh1_backend
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector

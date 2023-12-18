@@ -47,7 +47,7 @@ kumactl install control-plane [flags]
       --ingress-use-node-port                        use NodePort instead of LoadBalancer for the Ingress Service
       --injector-failure-policy string               failure policy of the mutating web hook implemented by the Kuma Injector component (default "Fail")
       --kds-global-address string                    URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
-      --mode string                                  kuma cp modes: one of standalone|zone|global (default "standalone")
+      --mode string                                  kuma cp modes: one of standalone|zone|global (default "zone")
       --namespace string                             namespace to install Kuma Control Plane to (default "kuma-system")
       --registry string                              registry for all images (default "docker.io/kumahq")
       --set helm template <chart> --set ...          set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to helm template <chart> --set ... to use set-file or set-string just use helm instead

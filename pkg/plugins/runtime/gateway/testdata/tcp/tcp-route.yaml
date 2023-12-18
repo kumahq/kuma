@@ -90,7 +90,7 @@ Clusters:
                 resourceApiVersion: V3
           sni: echo-service{mesh=default}
       type: EDS
-    external-httpbin-8490df2e58a77ae0:
+    external-no-protocol-httpbin-6a3325e78573377c:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -102,7 +102,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: external-httpbin-8490df2e58a77ae0
+      name: external-no-protocol-httpbin-6a3325e78573377c
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -121,7 +121,7 @@ Clusters:
               defaultValidationContext:
                 matchTypedSubjectAltNames:
                 - matcher:
-                    exact: spiffe://default/external-httpbin
+                    exact: spiffe://default/external-no-protocol-httpbin
                   sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
@@ -133,7 +133,7 @@ Clusters:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
-          sni: external-httpbin{mesh=default}
+          sni: external-no-protocol-httpbin{mesh=default}
       type: EDS
 Endpoints:
   Resources:
@@ -169,8 +169,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    external-httpbin-8490df2e58a77ae0:
-      clusterName: external-httpbin-8490df2e58a77ae0
+    external-no-protocol-httpbin-6a3325e78573377c:
+      clusterName: external-no-protocol-httpbin-6a3325e78573377c
 Listeners:
   Resources:
     edge-gateway:TCP:8080:
@@ -190,7 +190,7 @@ Listeners:
               clusters:
               - name: api-service-4508437668c35ed8
               - name: echo-service-9f149ed9e14091ca
-              - name: external-httpbin-8490df2e58a77ae0
+              - name: external-no-protocol-httpbin-6a3325e78573377c
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:

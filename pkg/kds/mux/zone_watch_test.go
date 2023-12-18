@@ -192,4 +192,28 @@ var _ = Describe("ZoneWatch", func() {
 			Zone:     zone,
 		})))
 	})
+	It("should timeout if the zone is deleted", func() {
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
+		})
+
+		// wait for opened stream to be registered
+		// in real conditions the interval will be large enough
+		// that these events will almost certainly be handled
+		// by the ZoneWatch loop between polls and before the timeout
+		time.Sleep(pollInterval)
+
+		sendHealthCheckPing(rm, zone)
+		Expect(rm.Delete(
+			context.Background(),
+			system.NewZoneInsightResource(),
+			store.DeleteByKey(zone, core_model.NoMesh),
+		)).To(Succeed())
+
+		Eventually(timeouts.Recv(), zoneWentOfflineCheckTimeout).Should(Receive(Equal(service.ZoneWentOffline{
+			TenantID: "",
+			Zone:     zone,
+		})))
+	})
 })

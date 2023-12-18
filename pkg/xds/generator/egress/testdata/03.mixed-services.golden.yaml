@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-1
-    connectTimeout: 10s
+    connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: mesh-1:externalservice-1
@@ -34,7 +34,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-2
-    connectTimeout: 10s
+    connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: mesh-1:externalservice-2
@@ -89,7 +89,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_service-1-zone-2
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -100,7 +100,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_service-2-zone-2
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}

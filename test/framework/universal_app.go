@@ -232,7 +232,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 	dockerExtraOptions := []string{
 		"--network", "kind",
 	}
-	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker(isipv6)...)
+	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
 	if !isipv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
 		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
@@ -301,17 +301,17 @@ func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	}
 }
 
-func (s *UniversalApp) publishPortsForDocker(isipv6 bool) []string {
+func (s *UniversalApp) publishPortsForDocker() []string {
 	// If we aren't using IPv6 in the container then we only want to listen on
 	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
 	// the container and having the container not respond.
-	ip := "0.0.0.0::"
-	if isipv6 {
-		ip = ""
-	}
+	// We only use the ipv4 address to access the container services
+	// even if ipv6 is enabled in the container to prevent port number conflicts
+	// between ipv4 and ipv6 addresses.
+	ipv4Ip := "0.0.0.0::"
 	var args []string
 	for port := range s.ports {
-		args = append(args, "--publish="+ip+port)
+		args = append(args, "--publish="+ipv4Ip+port)
 	}
 	return args
 }

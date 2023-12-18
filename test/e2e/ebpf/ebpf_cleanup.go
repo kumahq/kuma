@@ -35,7 +35,7 @@ func CleanupEbpfConfigFromNode() {
 			WithRetries(60)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone,
+			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("experimental.ebpf.enabled", "true"))).

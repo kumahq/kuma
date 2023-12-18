@@ -1,0 +1,522 @@
+{
+ "resources": [
+  {
+   "includeInDump": false,
+   "name": "CircuitBreaker",
+   "path": "circuit-breakers",
+   "pluralDisplayName": "Circuit Breakers",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Circuit Breaker"
+  },
+  {
+   "includeInDump": false,
+   "name": "Dataplane",
+   "path": "dataplanes",
+   "pluralDisplayName": "Dataplanes",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Dataplane"
+  },
+  {
+   "includeInDump": false,
+   "name": "DataplaneInsight",
+   "path": "dataplane-insights",
+   "pluralDisplayName": "Dataplane Insights",
+   "readOnly": true,
+   "scope": "Mesh",
+   "singularDisplayName": "Dataplane Insight"
+  },
+  {
+   "includeInDump": false,
+   "name": "ExternalService",
+   "path": "external-services",
+   "pluralDisplayName": "External Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "External Service"
+  },
+  {
+   "includeInDump": false,
+   "name": "FaultInjection",
+   "path": "fault-injections",
+   "pluralDisplayName": "Fault Injections",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Fault Injection"
+  },
+  {
+   "includeInDump": false,
+   "name": "GlobalSecret",
+   "path": "global-secrets",
+   "pluralDisplayName": "",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": ""
+  },
+  {
+   "includeInDump": false,
+   "name": "HealthCheck",
+   "path": "health-checks",
+   "pluralDisplayName": "Health Checks",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Health Check"
+  },
+  {
+   "includeInDump": false,
+   "name": "Mesh",
+   "path": "meshes",
+   "pluralDisplayName": "Meshes",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": "Mesh"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshAccessLog",
+   "path": "meshaccesslogs",
+   "pluralDisplayName": "Mesh Access Logs",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Access Log"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshCircuitBreaker",
+   "path": "meshcircuitbreakers",
+   "pluralDisplayName": "Mesh Circuit Breakers",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Circuit Breaker"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshFaultInjection",
+   "path": "meshfaultinjections",
+   "pluralDisplayName": "Mesh Fault Injections",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Fault Injection"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshGateway",
+   "path": "meshgateways",
+   "pluralDisplayName": "Mesh Gateways",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Gateway"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshGatewayRoute",
+   "path": "meshgatewayroutes",
+   "pluralDisplayName": "Mesh Gateway Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Gateway Route"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshHTTPRoute",
+   "path": "meshhttproutes",
+   "pluralDisplayName": "Mesh HTTP Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh HTTP Route"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshHealthCheck",
+   "path": "meshhealthchecks",
+   "pluralDisplayName": "Mesh Health Checks",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Health Check"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshInsight",
+   "path": "mesh-insights",
+   "pluralDisplayName": "Mesh Insights",
+   "readOnly": true,
+   "scope": "Global",
+   "singularDisplayName": "Mesh Insight"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshLoadBalancingStrategy",
+   "path": "meshloadbalancingstrategies",
+   "pluralDisplayName": "Mesh Load Balancing Strategies",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Load Balancing Strategy"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshMetric",
+   "path": "meshmetrics",
+   "pluralDisplayName": "Mesh Metrics",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Metric"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshProxyPatch",
+   "path": "meshproxypatches",
+   "pluralDisplayName": "Mesh Proxy Patches",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Proxy Patch"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshRateLimit",
+   "path": "meshratelimits",
+   "pluralDisplayName": "Mesh Rate Limits",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Rate Limit"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshRetry",
+   "path": "meshretries",
+   "pluralDisplayName": "Mesh Retries",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Retry"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshTCPRoute",
+   "path": "meshtcproutes",
+   "pluralDisplayName": "Mesh TCP Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh TCP Route"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshTimeout",
+   "path": "meshtimeouts",
+   "pluralDisplayName": "Mesh Timeouts",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": true,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Timeout"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshTrace",
+   "path": "meshtraces",
+   "pluralDisplayName": "Mesh Traces",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Trace"
+  },
+  {
+   "includeInDump": false,
+   "name": "MeshTrafficPermission",
+   "path": "meshtrafficpermissions",
+   "pluralDisplayName": "Mesh Traffic Permissions",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Traffic Permission"
+  },
+  {
+   "includeInDump": false,
+   "name": "ProxyTemplate",
+   "path": "proxytemplates",
+   "pluralDisplayName": "Proxy Templates",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Proxy Template"
+  },
+  {
+   "includeInDump": false,
+   "name": "RateLimit",
+   "path": "rate-limits",
+   "pluralDisplayName": "Rate Limits",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Rate Limit"
+  },
+  {
+   "includeInDump": false,
+   "name": "Retry",
+   "path": "retries",
+   "pluralDisplayName": "Retries",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Retry"
+  },
+  {
+   "includeInDump": false,
+   "name": "Secret",
+   "path": "secrets",
+   "pluralDisplayName": "Secrets",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Secret"
+  },
+  {
+   "includeInDump": false,
+   "name": "ServiceInsight",
+   "path": "service-insights",
+   "pluralDisplayName": "Service Insights",
+   "readOnly": true,
+   "scope": "Mesh",
+   "singularDisplayName": "Service Insight"
+  },
+  {
+   "includeInDump": false,
+   "name": "Timeout",
+   "path": "timeouts",
+   "pluralDisplayName": "Timeouts",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Timeout"
+  },
+  {
+   "includeInDump": false,
+   "name": "TrafficLog",
+   "path": "traffic-logs",
+   "pluralDisplayName": "Traffic Logs",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Traffic Log"
+  },
+  {
+   "includeInDump": false,
+   "name": "TrafficPermission",
+   "path": "traffic-permissions",
+   "pluralDisplayName": "Traffic Permissions",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Traffic Permission"
+  },
+  {
+   "includeInDump": false,
+   "name": "TrafficRoute",
+   "path": "traffic-routes",
+   "pluralDisplayName": "Traffic Routes",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Traffic Route"
+  },
+  {
+   "includeInDump": false,
+   "name": "TrafficTrace",
+   "path": "traffic-traces",
+   "pluralDisplayName": "Traffic Traces",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Traffic Trace"
+  },
+  {
+   "includeInDump": false,
+   "name": "VirtualOutbound",
+   "path": "virtual-outbounds",
+   "pluralDisplayName": "Virtual Outbounds",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": false
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Virtual Outbound"
+  },
+  {
+   "includeInDump": false,
+   "name": "Zone",
+   "path": "zones",
+   "pluralDisplayName": "Zones",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": "Zone"
+  },
+  {
+   "includeInDump": false,
+   "name": "ZoneEgress",
+   "path": "zoneegresses",
+   "pluralDisplayName": "Zone Egresses",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": "Zone Egress"
+  },
+  {
+   "includeInDump": false,
+   "name": "ZoneEgressInsight",
+   "path": "zoneegressinsights",
+   "pluralDisplayName": "Zone Egress Insights",
+   "readOnly": true,
+   "scope": "Global",
+   "singularDisplayName": "Zone Egress Insight"
+  },
+  {
+   "includeInDump": false,
+   "name": "ZoneIngress",
+   "path": "zone-ingresses",
+   "pluralDisplayName": "Zone Ingresses",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": "Zone Ingress"
+  },
+  {
+   "includeInDump": false,
+   "name": "ZoneIngressInsight",
+   "path": "zone-ingress-insights",
+   "pluralDisplayName": "Zone Ingress Insights",
+   "readOnly": true,
+   "scope": "Global",
+   "singularDisplayName": "Zone Ingress Insight"
+  },
+  {
+   "includeInDump": false,
+   "name": "ZoneInsight",
+   "path": "zone-insights",
+   "pluralDisplayName": "Zone Insights",
+   "readOnly": true,
+   "scope": "Global",
+   "singularDisplayName": "Zone Insight"
+  }
+ ]
+}

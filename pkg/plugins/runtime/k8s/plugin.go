@@ -132,7 +132,7 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if rt.Config().Mode == config_core.Zone {
+	if rt.Config().IsFederatedZoneCP() {
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
@@ -177,9 +177,10 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
-		ResourceConverter: converter,
-		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter:            converter,
+		Persistence:                  vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		IgnoredServiceSelectorLabels: rt.Config().Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels,
 	}
 	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
@@ -238,7 +239,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 
 	allowedUsers := append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector")
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, allowedUsers)
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().IsFederatedZoneCP(), allowedUsers)
 	composite.AddValidator(handler)
 
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)
@@ -292,7 +293,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if gatewayAPICRDsPresent(mgr) {
-		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode, mgr.GetScheme())
+		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().IsNonFederatedZoneCP(), mgr.GetScheme())
 		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
 	}
 

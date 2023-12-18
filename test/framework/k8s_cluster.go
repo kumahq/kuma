@@ -3,6 +3,7 @@ package framework
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,16 +12,19 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -299,8 +303,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		if zoneName == "" {
 			zoneName = c.GetKumactlOptions().CPName
 		}
-		argsMap["--zone"] = zoneName
-		argsMap["--kds-global-address"] = c.opts.globalAddress
+		if c.opts.globalAddress != "" {
+			argsMap["--zone"] = zoneName
+			argsMap["--kds-global-address"] = c.opts.globalAddress
+		}
 	}
 	if !Config.UseLoadBalancer {
 		argsMap["--use-node-port"] = ""
@@ -401,9 +407,11 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		if zoneName == "" {
 			zoneName = c.GetKumactlOptions().CPName
 		}
-		values["controlPlane.zone"] = zoneName
-		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
-		values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
+		if c.opts.globalAddress != "" {
+			values["controlPlane.zone"] = zoneName
+			values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
+			values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
+		}
 	}
 
 	for _, value := range c.opts.noHelmOpts {
@@ -489,9 +497,6 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	switch mode {
 	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
@@ -514,28 +519,42 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	err = c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas)
-	if err != nil {
-		return err
-	}
-
+	appsToInstall := make([]appInstallation, 0)
+	appsToInstall = append(appsToInstall, appInstallation{Config.KumaServiceName, Config.KumaNamespace, replicas})
 	if c.opts.cni {
-		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
-		if err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1})
 	}
-
 	if c.opts.zoneIngress {
-		if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1})
+	}
+	if c.opts.zoneEgress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1})
 	}
 
-	if c.opts.zoneEgress {
-		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
-			return err
-		}
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(appsToInstall))
+
+	for _, app := range appsToInstall {
+		wg.Add(1)
+		go func(installation appInstallation) {
+			defer wg.Done()
+			if e := c.WaitApp(installation.Name, installation.Namespace, installation.Replicas); e != nil {
+				errCh <- e
+			}
+		}(app)
+	}
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	var allErrors []error
+	for err := range errCh {
+		allErrors = append(allErrors, err)
+	}
+	if len(allErrors) > 0 {
+		return multierr.Combine(allErrors...)
 	}
 
 	if c.opts.zoneEgressEnvoyAdminTunnel {
@@ -626,13 +645,6 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	c.opts.apply(opt...)
 	if c.opts.cpReplicas != 0 {
 		c.controlplane.replicas = c.opts.cpReplicas
-	}
-
-	switch mode {
-	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
 	}
 
 	if err := c.upgradeKumaViaHelm(mode); err != nil {
@@ -1090,7 +1102,7 @@ func (c *K8sCluster) DeleteDeployment(name string) error {
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
-	k8s.WaitUntilNumPodsCreated(c.t,
+	err := k8s.WaitUntilNumPodsCreatedE(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
@@ -1098,6 +1110,10 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		replicas,
 		c.defaultRetries,
 		c.defaultTimeout)
+	if err != nil {
+		printDeploymentConditions(c.t, c.GetKubectlOptions(namespace), namespace, name)
+		return err
+	}
 
 	pods := k8s.ListPods(c.t,
 		c.GetKubectlOptions(namespace),
@@ -1110,13 +1126,14 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := 0; i < replicas; i++ {
-		err := k8s.WaitUntilPodAvailableE(c.t,
+		podError := k8s.WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
 			c.defaultTimeout)
-		if err != nil {
-			return err
+
+		if podError != nil {
+			return printDetailedPodInfo(c.t, c.GetKubectlOptions(namespace), podError, pods[i])
 		}
 	}
 	return nil
@@ -1230,4 +1247,68 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 		c.t.Fatal(err)
 	}
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
+}
+
+func printDetailedPodInfo(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, podError error, pod v1.Pod) error {
+	if podError == nil {
+		return podError
+	}
+
+	podCond, _ := json.Marshal(pod.Status.Conditions)
+	podLogs, _ := k8s.GetPodLogsE(testingT, kubectlOptions, &pod, "")
+	if podLogs != "" {
+		logLines := strings.Split(podLogs, "\n")
+		if len(logLines) > 30 {
+			podLogs = strings.Join(logLines[len(logLines)-30:], "\n")
+		}
+		podLogs = "; last lines of pod logs: " + podLogs
+	}
+
+	podError = errors.New(fmt.Sprintf("%s; pod name: %s; pod phase: %s; pod conditions: %s%s",
+		podError.Error(),
+		pod.GetName(),
+		pod.Status.Phase,
+		podCond,
+		podLogs))
+
+	return podError
+}
+
+func printDeploymentConditions(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, namespace string, name string) {
+	condition := deployConditions{Name: name, Namespace: namespace, Conditions: make([]appsv1.DeploymentCondition, 0), Replicas: make([]replicaSetCondition, 0)}
+
+	deploy := k8s.GetDeployment(testingT, kubectlOptions, name)
+	condition.Conditions = deploy.Status.Conditions
+
+	replicaSets := k8s.ListReplicaSets(testingT, kubectlOptions, metav1.ListOptions{
+		LabelSelector: "app=" + name,
+	})
+
+	for _, ars := range replicaSets {
+		condition.Replicas = append(condition.Replicas, replicaSetCondition{Name: ars.Name, Conditions: ars.Status.Conditions})
+	}
+
+	deployConditionJson, err := json.Marshal(condition)
+	if err != nil {
+		deployConditionJson = []byte(fmt.Sprintf("error marshaling deployment conditions: '%s'", err.Error()))
+	}
+	logger.Default.Logf(testingT, "Conditions of deployment '%s/%s': %s", namespace, name, string(deployConditionJson))
+}
+
+type appInstallation struct {
+	Name      string
+	Namespace string
+	Replicas  int
+}
+
+type deployConditions struct {
+	Name       string                       `json:"name,omitempty"`
+	Namespace  string                       `json:"namespace,omitempty"`
+	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
+	Replicas   []replicaSetCondition        `json:"replicas,omitempty"`
+}
+
+type replicaSetCondition struct {
+	Name       string                       `json:"name,omitempty"`
+	Conditions []appsv1.ReplicaSetCondition `json:"conditions,omitempty"`
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -506,7 +507,7 @@ var _ = Describe("MeshAccessLog", func() {
 			expectedClusters: []string{
 				`
             altStatName: meshaccesslog_opentelemetry_0
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshaccesslog:opentelemetry:0
@@ -526,7 +527,7 @@ var _ = Describe("MeshAccessLog", func() {
                         http2ProtocolOptions: {}
             `, `
             altStatName: meshaccesslog_opentelemetry_1
-            connectTimeout: 10s
+            connectTimeout: 5s
             dnsLookupFamily: V4_ONLY
             loadAssignment:
                 clusterName: meshaccesslog:opentelemetry:1
@@ -918,8 +919,8 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		routes  []*core_mesh.MeshGatewayRouteResource
-		toRules core_rules.ToRules
+		routes []*core_mesh.MeshGatewayRouteResource
+		rules  core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateway Dataplanes",
 		func(given gatewayTestCase) {
@@ -951,7 +952,12 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: given.routes,
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithMetadata(&core_xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/foo",
@@ -962,7 +968,7 @@ var _ = Describe("MeshAccessLog", func() {
 						WithMesh("default").
 						WithBuiltInGateway("gateway"),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshAccessLogType, given.toRules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshAccessLogType, given.rules)).
 				Build()
 
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
@@ -991,16 +997,18 @@ var _ = Describe("MeshAccessLog", func() {
 					WithExactMatchHttpRoute("/", "backend", "other-service").
 					Build(),
 			},
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: api.Conf{
-							Backends: &[]api.Backend{{
-								File: &api.FileBackend{
-									Path: "/tmp/log",
-								},
-							}},
+			rules: core_rules.GatewayRules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "127.0.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
 						},
 					},
 				},

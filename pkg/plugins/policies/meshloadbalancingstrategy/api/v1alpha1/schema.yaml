@@ -53,6 +53,12 @@ properties:
                     leastRequest:
                       description: LeastRequest selects N random available hosts as specified in 'choiceCount' (2 by default) and picks the host which has the fewest active requests
                       properties:
+                        activeRequestBias:
+                          anyOf:
+                            - type: integer
+                            - type: string
+                          description: ActiveRequestBias refers to dynamic weights applied when hosts have varying load balancing weights. A higher value here aggressively reduces the weight of endpoints that are currently handling active requests. In essence, the higher the ActiveRequestBias value, the more forcefully it reduces the load balancing weight of endpoints that are actively serving requests.
+                          x-kubernetes-int-or-string: true
                         choiceCount:
                           description: ChoiceCount is the number of random healthy hosts from which the host with the fewest active requests will be chosen. Defaults to 2 so that Envoy performs two-choice selection if the field is not set.
                           format: int32

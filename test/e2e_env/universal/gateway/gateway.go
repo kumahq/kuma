@@ -241,9 +241,9 @@ mesh: "%s"
 name: mesh-fault-injection-all-sources
 spec:
   targetRef:
-    kind: MeshService
+    kind: MeshGateway
     name: edge-gateway
-  from:
+  to:
     - targetRef:
         kind: Mesh
       default:

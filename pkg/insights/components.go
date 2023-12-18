@@ -1,14 +1,13 @@
 package insights
 
 import (
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 func Setup(rt runtime.Runtime) error {
-	if rt.Config().Mode == config_core.Zone {
+	if rt.Config().IsFederatedZoneCP() {
 		return nil
 	}
 	minResyncInterval := rt.Config().Metrics.Mesh.MinResyncInterval.Duration

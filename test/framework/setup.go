@@ -221,15 +221,20 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallFunc {
 	return func(c Cluster) error {
 		ck8s := c.(*K8sCluster)
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
+		testingT := c.GetTesting()
+		kubectlOptions := c.GetKubectlOptions(namespace)
+
+		pods, err := k8s.ListPodsE(testingT, kubectlOptions,
 			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", labelKey, labelValue)})
 		if err != nil {
 			return err
 		}
+
+		var podError error
 		for _, p := range pods {
-			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
-			if err != nil {
-				return err
+			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			if podError != nil {
+				return printDetailedPodInfo(testingT, kubectlOptions, podError, p)
 			}
 		}
 		return nil
@@ -282,11 +287,7 @@ func universalZoneRelatedResource(
 		publicAddress := app.ip
 		dpYAML := resourceManifestFunc(publicAddress, universalKDSPort, universalKDSPort)
 
-		zone := uniCluster.name
-		if uniCluster.controlplane.mode == core.Standalone {
-			zone = ""
-		}
-		token, err := tokenProvider(zone)
+		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
 			return err
 		}

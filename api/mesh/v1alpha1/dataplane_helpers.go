@@ -186,6 +186,9 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
 	var inbounds []*Dataplane_Networking_Inbound
 	for _, inbound := range n.GetInbound() {
+		if inbound.GetState() != Dataplane_Networking_Inbound_Ready {
+			continue
+		}
 		if inbound.Health != nil && !inbound.Health.Ready {
 			continue
 		}

@@ -1,0 +1,27 @@
+# This policy has ShadowDeny for all services except a few selected ones
+type: MeshTrafficPermission
+name: mtp
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: AllowWithShadowDeny
+    - targetRef:
+        kind: MeshService
+        name: a
+      default:
+        action: Deny
+    - targetRef:
+        kind: MeshService
+        name: b
+      default:
+        action: Deny
+    - targetRef:
+        kind: MeshService
+        name: c
+      default:
+        action: Allow

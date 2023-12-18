@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"path"
@@ -109,10 +108,6 @@ func (v *PostgresContainer) Stop() error {
 
 type DbOption string
 
-const (
-	WithRandomDb DbOption = "random-db"
-)
-
 func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStoreConfig, error) {
 	cfg := pg_config.DefaultPostgresStoreConfig()
 	ip, err := v.container.Host(context.Background())
@@ -135,23 +130,26 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 	if err := config.Load("", cfg); err != nil {
 		return nil, err
 	}
-	var db *sql.DB
+	// make sure the server is reachable
 	Eventually(func() error {
-		var dbErr error
-		db, dbErr = postgres.ConnectToDb(*cfg)
-		return dbErr
-	}, "10s", "100ms").Should(Succeed())
-	defer db.Close()
-	for _, o := range dbOpts {
-		switch o {
-		case WithRandomDb:
-			dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
-			statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
-			if _, err = db.Exec(statement); err != nil {
-				return nil, err
-			}
-			cfg.DbName = dbName
+		db, err := postgres.ConnectToDb(*cfg)
+		if err != nil {
+			return err
 		}
-	}
+		defer db.Close()
+		cfg.DbName = fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DbName))
+		return err
+	}, "10s", "100ms").Should(Succeed())
+	// make sure the database instance is reachable
+	Eventually(func() error {
+		db, err := postgres.ConnectToDb(*cfg)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		return nil
+	}, "10s", "100ms").Should(Succeed())
+	GinkgoLogr.Info("Database successfully created and started", "name", cfg.DbName)
 	return cfg, nil
 }

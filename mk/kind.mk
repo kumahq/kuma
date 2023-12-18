@@ -14,9 +14,9 @@ unexport KUBECONFIG
 METRICS_SERVER_VERSION := 0.4.1
 
 ifdef IPV6
-KIND_CONFIG ?= $(TOP)/test/kind/cluster-ipv6.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
 else
-KIND_CONFIG ?= $(TOP)/test/kind/cluster.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
 endif
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
@@ -34,7 +34,7 @@ endef
 
 CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb3529d9fba91b3951d461edfdb
 
-KUMA_MODE ?= standalone
+KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 
 .PHONY: kind/start

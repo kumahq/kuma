@@ -162,8 +162,6 @@ func (c E2eConfig) AutoConfigure() error {
 	Config.Arch = runtime.GOARCH
 	Config.OS = runtime.GOOS
 
-	Config.KumaCpConfig.Multizone.Global.Envs["KUMA_EXPERIMENTAL_KDS_SYNC_NAME_WITH_HASH_SUFFIX"] = "true"
-
 	return nil
 }
 
@@ -234,7 +232,9 @@ var defaultConf = E2eConfig{
 	KumaCpConfig: KumaCpConfig{
 		Standalone: StandaloneConfig{
 			Kubernetes: ControlPlaneConfig{
-				Envs:                 map[string]string{},
+				Envs: map[string]string{
+					"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS": "changesvc-test-label",
+				},
 				AdditionalYamlConfig: "",
 			},
 			Universal: ControlPlaneConfig{

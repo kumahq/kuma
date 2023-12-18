@@ -18,7 +18,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
-	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 	"github.com/kumahq/kuma/pkg/util/channels"
 )
 
@@ -26,7 +25,7 @@ var _ = Describe("Events", func() {
 	var cfg postgres_config.PostgresStoreConfig
 
 	BeforeEach(func() {
-		c, err := c.Config(test_postgres.WithRandomDb)
+		c, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
 		cfg = *c
 		ver, err := MigrateDb(cfg)
@@ -108,7 +107,7 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 }
 
 func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) store.ResourceStore {
-	metrics, err := core_metrics.NewMetrics("Standalone")
+	metrics, err := core_metrics.NewMetrics("Zone")
 	Expect(err).ToNot(HaveOccurred())
 	var pStore store.ResourceStore
 	if driverName == "pgx" {

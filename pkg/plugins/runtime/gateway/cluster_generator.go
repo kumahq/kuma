@@ -28,7 +28,7 @@ type ClusterGenerator struct {
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_context.Context, info GatewayListenerInfo, hostInfo GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_context.Context, info GatewayListenerInfo, hostEntries []route.Entry, hostTags map[string]string) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	// If there is a service name conflict between external services
@@ -39,7 +39,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range RouteDestinationsMutable(hostInfo.Entries) {
+	for _, dest := range RouteDestinationsMutable(hostEntries) {
 		service := dest.Destination[mesh_proto.ServiceTag]
 
 		if service == UnresolvedBackendServiceTag {
@@ -67,7 +67,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				"service", service,
 			)
 
-			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostInfo.Host.Tags)
+			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostTags)
 		} else {
 			log.V(1).Info("generating mesh cluster resource",
 				"service", service,
@@ -78,7 +78,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				upstreamServiceName = mesh_proto.ZoneEgressServiceName
 			}
 
-			r, err = c.generateMeshCluster(xdsCtx.Mesh.Resource, info, dest, upstreamServiceName, hostInfo.Host.Tags)
+			r, err = c.generateMeshCluster(xdsCtx.Mesh, info, dest, upstreamServiceName, hostTags)
 		}
 
 		if err != nil {
@@ -123,20 +123,19 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
-	mesh *core_mesh.MeshResource,
+	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
-		Tags: dest.Destination,
-	}}, dest.RouteProtocol)
+	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 
@@ -167,12 +166,12 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 		endpoints = append(endpoints, *ep)
 	}
-
-	protocol := route.InferServiceProtocol(endpoints, dest.RouteProtocol)
+	serviceName := dest.Destination[mesh_proto.ServiceTag]
+	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
-		newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
 			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),

@@ -26,6 +26,10 @@ for PID in "${PIDS[@]}"; do
     wait "${PID}"
 done
 
+DYNAMIC_VERSION_FILES=$(find "${TOOLS_DEPS_DIRS[@]}" -name '*.versions' | sort)
+for i in ${DYNAMIC_VERSION_FILES}; do
+  FILES+=" "${i}
+done
 # use dev.mk to calculate the hash
 FILES+=" "${TOOLS_MAKEFILE}
 for i in ${FILES}; do cat "${i}"; done | git hash-object --stdin > "$TOOLS_DEPS_LOCK_FILE"

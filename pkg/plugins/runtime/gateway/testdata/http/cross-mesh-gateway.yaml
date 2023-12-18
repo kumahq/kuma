@@ -156,7 +156,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    external-httpbin-7a2f998ac9979f97:
+    external-http2-httpbin-9e3c7c6b9435d9a4:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -166,7 +166,7 @@ Clusters:
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
-        clusterName: external-httpbin
+        clusterName: external-http2-httpbin
         endpoints:
         - lbEndpoints:
           - endpoint:
@@ -178,12 +178,12 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-7a2f998ac9979f97
+      name: external-http2-httpbin-9e3c7c6b9435d9a4
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -193,7 +193,7 @@ Clusters:
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin
+          kuma.io/external-service-name: external-http2-httpbin
           kuma.io/protocol: http2
         name: httpbin.com
         transportSocket:
@@ -211,7 +211,7 @@ Clusters:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
               initialStreamWindowSize: 65536
-    external-httpbin-823fa8131cdd67fa:
+    external-http2-httpbin-29c391043cf34cd7:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -221,7 +221,7 @@ Clusters:
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
-        clusterName: external-httpbin
+        clusterName: external-http2-httpbin
         endpoints:
         - lbEndpoints:
           - endpoint:
@@ -233,12 +233,12 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-823fa8131cdd67fa
+      name: external-http2-httpbin-29c391043cf34cd7
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -248,7 +248,7 @@ Clusters:
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin
+          kuma.io/external-service-name: external-http2-httpbin
           kuma.io/protocol: http2
         name: httpbin.com
         transportSocket:
@@ -266,7 +266,7 @@ Clusters:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
               initialStreamWindowSize: 65536
-    external-httpbin-eda12214e05805ce:
+    external-http2-httpbin-db75d53333554288:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -276,7 +276,7 @@ Clusters:
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
-        clusterName: external-httpbin
+        clusterName: external-http2-httpbin
         endpoints:
         - lbEndpoints:
           - endpoint:
@@ -288,12 +288,12 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-eda12214e05805ce
+      name: external-http2-httpbin-db75d53333554288
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -303,7 +303,7 @@ Clusters:
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin
+          kuma.io/external-service-name: external-http2-httpbin
           kuma.io/protocol: http2
         name: httpbin.com
         transportSocket:
@@ -665,7 +665,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-823fa8131cdd67fa
+              - name: external-http2-httpbin-29c391043cf34cd7
                 weight: 1
         - match:
             prefix: /echo/
@@ -703,7 +703,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-823fa8131cdd67fa
+              - name: external-http2-httpbin-29c391043cf34cd7
                 weight: 1
     edge-gateway:HTTP:8081:
       ignorePortInHostMatching: true
@@ -758,7 +758,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-eda12214e05805ce
+              - name: external-http2-httpbin-db75d53333554288
                 weight: 1
         - match:
             path: /echo
@@ -796,7 +796,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-eda12214e05805ce
+              - name: external-http2-httpbin-db75d53333554288
                 weight: 1
         - match:
             prefix: /hostname-and-hostname-on-listener-match-echo/
@@ -834,7 +834,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-eda12214e05805ce
+              - name: external-http2-httpbin-db75d53333554288
                 weight: 1
         - match:
             prefix: /echo/
@@ -872,7 +872,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-eda12214e05805ce
+              - name: external-http2-httpbin-db75d53333554288
                 weight: 1
     edge-gateway:HTTP:8082:
       ignorePortInHostMatching: true
@@ -927,7 +927,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
         - match:
             prefix: /hostname-echo/
@@ -965,7 +965,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
       - domains:
         - cross-mesh.mesh
@@ -1013,7 +1013,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
         - match:
             prefix: /hostname-echo/
@@ -1051,7 +1051,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
       - domains:
         - '*'
@@ -1099,7 +1099,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
         - match:
             prefix: /echo/
@@ -1137,7 +1137,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-7a2f998ac9979f97
+              - name: external-http2-httpbin-9e3c7c6b9435d9a4
                 weight: 1
 Runtimes:
   Resources:

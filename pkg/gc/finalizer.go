@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/api/generic"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -53,16 +54,10 @@ type subscriptionFinalizer struct {
 	tenants        multitenant.Tenants
 	metric         prometheus.Summary
 	extensions     context.Context
+	upsert         store.UpsertConfig
 }
 
-func NewSubscriptionFinalizer(
-	rm manager.ResourceManager,
-	tenants multitenant.Tenants,
-	newTicker func() *time.Ticker,
-	metrics core_metrics.Metrics,
-	extensions context.Context,
-	types ...core_model.ResourceType,
-) (component.Component, error) {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Tenants, newTicker func() *time.Ticker, metrics core_metrics.Metrics, extensions context.Context, upsert store.UpsertConfig, types ...core_model.ResourceType) (component.Component, error) {
 	for _, typ := range types {
 		if !isInsightType(typ) {
 			return nil, errors.Errorf("%q type is not an Insight", typ)
@@ -86,6 +81,7 @@ func NewSubscriptionFinalizer(
 		tenants:        tenants,
 		metric:         metric,
 		extensions:     extensions,
+		upsert:         upsert,
 	}, nil
 }
 
@@ -127,7 +123,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 
 func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
 	// get all the insights for provided type
-	insights, _ := registry.Global().NewList(typ)
+	insights := registry.Global().MustNewList(typ)
 	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
@@ -169,7 +165,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			}
 		}
 
-		upsertInsight, _ := registry.Global().NewObject(typ)
+		upsertInsight := registry.Global().MustNewObject(typ)
 		if err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
 			insight := upsertInsight.GetSpec().(generic.Insight)
 			for id := range subsToFinalize {
@@ -181,7 +177,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 				}
 			}
 			return nil
-		}); err != nil {
+		}, manager.WithConflictRetry(f.upsert.ConflictRetryBaseBackoff.Duration, f.upsert.ConflictRetryMaxTimes, f.upsert.ConflictRetryJitterPercent)); err != nil {
 			return errors.Wrap(err, "unable to upsert insight")
 		}
 
