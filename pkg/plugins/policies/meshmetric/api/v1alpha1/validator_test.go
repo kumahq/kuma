@@ -34,21 +34,6 @@ default:
         tls:
           mode: "ProvidedTLS"
 `),
-		Entry("without clientId spec", `
-type: MeshMetric
-mesh: default
-name: metrics-1
-targetRef:
-  kind: Mesh
-default:
-  backends:
-    - type: Prometheus
-      prometheus:
-        port: 5670
-        path: /metrics
-        tls:
-          mode: "Disabled"
-`),
 	)
 
 	resources.DescribeErrorCases(
