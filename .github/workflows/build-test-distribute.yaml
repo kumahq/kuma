@@ -207,9 +207,9 @@ jobs:
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
       - name: Publish distributions to Pulp
         env:
-          PULP_USERNAME: ${vars.PULP_USERNAME}
-          PULP_PASSWORD: ${secrets.PULP_PASSWORD}
-          CLOUDSMITH_API_KEY: ${secrets.CLOUDSMITH_API_KEY}
+          PULP_USERNAME: ${{ vars.PULP_USERNAME }}
+          PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
           make publish/pulp
       - name: Load images
@@ -217,8 +217,8 @@ jobs:
           make docker/load
       - name: Publish images
         env:
-          DOCKER_API_KEY: ${secrets.DOCKER_API_KEY}
-          DOCKER_USERNAME: ${vars.DOCKER_USERNAME}
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
         run: |-
           make docker/login
           # ensure we always logout
