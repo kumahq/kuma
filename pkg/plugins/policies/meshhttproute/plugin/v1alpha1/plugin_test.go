@@ -71,6 +71,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(getResource(resourceSet, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 			Expect(getResource(resourceSet, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 			Expect(getResource(resourceSet, envoy_resource.EndpointType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".endpoints.golden.yaml")))
+			Expect(getResource(resourceSet, envoy_resource.RouteType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".routes.golden.yaml")))
 		},
 		Entry("default-route", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
