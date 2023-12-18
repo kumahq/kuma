@@ -46,7 +46,7 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 		cancelFn()
 	}()
 
-	var retries = 0
+	retries := 0
 	for {
 		log.Info("waiting for lock")
 		err := p.lockClient.Do(ctx, kumaLockName, func(ctx context.Context, lock *pglock.Lock) error {
