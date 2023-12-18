@@ -133,7 +133,7 @@ var _ = Describe("run", func() {
 			})
 
 			corednsPid := verifyComponentProcess("coredns", corednsPidFile, corednsCmdlineFile, func(actualArgs []string) {
-				Expect(len(actualArgs)).To(HaveLen(3))
+				Expect(actualArgs).To(HaveLen(3))
 				Expect(actualArgs[0]).To(Equal("-conf"))
 				Expect(actualArgs[2]).To(Equal("-quiet"))
 			})
