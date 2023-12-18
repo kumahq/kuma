@@ -32,9 +32,9 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - run: |
@@ -62,9 +62,9 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - name: Free up disk space for the Runner
@@ -131,9 +131,9 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - name: Free up disk space for the Runner
@@ -195,9 +195,9 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - uses: actions/download-artifact@v3
         with:
           name: build-output

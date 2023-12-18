@@ -48,11 +48,10 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - name: format
