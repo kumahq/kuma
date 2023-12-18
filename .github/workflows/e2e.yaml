@@ -60,9 +60,9 @@ jobs:
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools
