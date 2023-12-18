@@ -2,12 +2,12 @@ package service
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 
 	"github.com/kumahq/kuma/pkg/config/mads"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type service struct {

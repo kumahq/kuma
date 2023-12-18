@@ -2,8 +2,8 @@ package reconcile
 
 import (
 	"context"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
@@ -25,7 +26,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 	return &snapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
-		meshCache: meshCache,
+		meshCache:         meshCache,
 	}
 }
 

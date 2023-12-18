@@ -2,12 +2,6 @@ package reconcile_test
 
 import (
 	"context"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/server"
 	"net"
 	"time"
 
@@ -20,21 +14,27 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
+	"github.com/kumahq/kuma/pkg/metrics"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute" // to match any custom policy resource type you need to register MeshHTTPRoute manually
-	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric" // to match custom policy resource type like MeshMetric you need to register it manually in tests
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric"    // to match custom policy resource type like MeshMetric you need to register it manually in tests
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var _ = Describe("snapshotGenerator", func() {

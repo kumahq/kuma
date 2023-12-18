@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -18,6 +17,7 @@ import (
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) util_xds_v3.SnapshotGenerator {
