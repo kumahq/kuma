@@ -103,7 +103,7 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := rules.Rules[listenerKey]
+		rules, ok := rules.ToRules[listenerKey]
 		if !ok {
 			continue
 		}
