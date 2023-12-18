@@ -219,7 +219,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	if config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
-		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1))
+		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1), rt.MeshCache())
 		grpcServices = append(grpcServices, svc)
 		httpServices = append(httpServices, svc)
 	}

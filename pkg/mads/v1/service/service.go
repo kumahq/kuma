@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 
 	"github.com/kumahq/kuma/pkg/config/mads"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -15,9 +16,9 @@ type service struct {
 	log    logr.Logger
 }
 
-func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger) *service {
+func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache) *service {
 	hasher, cache := NewXdsContext(log)
-	generator := NewSnapshotGenerator(rm)
+	generator := NewSnapshotGenerator(rm, meshCache)
 	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval.Duration, log)

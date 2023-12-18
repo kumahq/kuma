@@ -126,7 +126,7 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{})
+				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, nil)
 				// when
 				snapshot, err := snapshotter.GenerateSnapshot(context.Background(), &node1)
 				// then
