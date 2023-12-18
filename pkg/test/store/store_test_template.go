@@ -43,7 +43,7 @@ func ExecuteStoreTests(
 		}
 	})
 
-	createResource := func(name string) *core_mesh.TrafficRouteResource {
+	createResource := func(name string, keyAndValues ...string) *core_mesh.TrafficRouteResource {
 		res := core_mesh.TrafficRouteResource{
 			Spec: &v1alpha1.TrafficRoute{
 				Conf: &v1alpha1.TrafficRoute_Conf{
@@ -53,7 +53,14 @@ func ExecuteStoreTests(
 				},
 			},
 		}
-		err := s.Create(context.Background(), &res, store.CreateByKey(name, mesh), store.CreatedAt(time.Now()))
+		labels := map[string]string{}
+		for i := 0; i < len(keyAndValues); i += 2 {
+			labels[keyAndValues[i]] = keyAndValues[i+1]
+		}
+
+		err := s.Create(context.Background(), &res, store.CreateByKey(name, mesh),
+			store.CreatedAt(time.Now()),
+			store.CreateWithLabels(labels))
 		Expect(err).ToNot(HaveOccurred())
 		return &res
 	}
@@ -65,7 +72,7 @@ func ExecuteStoreTests(
 				name := "resource1.demo"
 
 				// when
-				created := createResource(name)
+				created := createResource(name, "foo", "bar")
 
 				// when retrieve created object
 				resource := core_mesh.NewTrafficRouteResource()
@@ -80,6 +87,7 @@ func ExecuteStoreTests(
 				Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
 				Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
 				Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
+				Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
 				Expect(resource.Spec).To(MatchProto(created.Spec))
 			})
 
@@ -123,19 +131,24 @@ func ExecuteStoreTests(
 			It("should update an existing resource", func() {
 				// given a resources in storage
 				name := "to-be-updated.demo"
-				resource := createResource(name)
+				resource := createResource(name, "foo", "bar")
 				modificationTime := time.Now().Add(time.Second)
 				versionBeforeUpdate := resource.Meta.GetVersion()
 
 				// when
 				resource.Spec.Conf.Destination["path"] = "new-path"
-				err := s.Update(context.Background(), resource, store.ModifiedAt(modificationTime))
+				newLabels := map[string]string{
+					"foo":      "barbar",
+					"newlabel": "newvalue",
+				}
+				err := s.Update(context.Background(), resource, store.ModifiedAt(modificationTime), store.UpdateWithLabels(newLabels))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// and meta is updated (version and modification time)
 				Expect(resource.Meta.GetVersion()).ToNot(Equal(versionBeforeUpdate))
+				Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 				if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
 					Expect(resource.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
 				}
@@ -149,6 +162,8 @@ func ExecuteStoreTests(
 
 				// and
 				Expect(res.Spec.Conf.Destination["path"]).To(Equal("new-path"))
+
+				Expect(res.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 
 				// and modification time is updated
 				// on K8S modification time is always the creation time, because there is no data for modification time
