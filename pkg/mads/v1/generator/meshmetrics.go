@@ -11,11 +11,10 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-func Generate(meshMetricToDataplanes map[*v1alpha1.Conf]*core_mesh.DataplaneResource) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
-	// this is not a great way of sorting, we could get the policies from the store already sorted
-	for meshMetricConf, dataplane := range meshMetricToDataplanes {
+	for meshMetricConf, dataplane := range meshMetricToDataplane {
 		for _, backend := range *meshMetricConf.Backends {
 			if backend.Type != v1alpha1.PrometheusBackendType {
 				continue
