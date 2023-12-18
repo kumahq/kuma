@@ -2,11 +2,8 @@ package reconcile
 
 import (
 	"context"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -90,19 +87,19 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
 }
 
-func (s *snapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context, clientId string) (map[string][]*v1alpha1.MeshMetricResource, error) {
+func (s *snapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context, clientId string) ([]string, error) {
 	meshMetricsList := v1alpha1.MeshMetricResourceList{}
 	if err := s.resourceManager.List(ctx, &meshMetricsList); err != nil {
 		return nil, err
 	}
 
-	var meshToMeshMetrics map[string][]*v1alpha1.MeshMetricResource
+	var meshToMeshMetrics []string
 	for _, meshMetric := range meshMetricsList.Items {
 		for _, backend := range *meshMetric.Spec.Default.Backends { // can backends be nil?
 			// match against client ID or fallback to "" when specified by user
 			if backend.Type == v1alpha1.PrometheusBackendType && (backend.Prometheus.ClientId == nil || *backend.Prometheus.ClientId == clientId || *backend.Prometheus.ClientId == "") {
 				meshName := meshMetric.GetMeta().GetMesh()
-				meshToMeshMetrics[meshName] = append(meshToMeshMetrics[meshName], meshMetric)
+				meshToMeshMetrics = append(meshToMeshMetrics, meshName)
 			}
 		}
 	}
@@ -110,29 +107,23 @@ func (s *snapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context, client
 	return meshToMeshMetrics, nil
 }
 
-func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshToMeshMetrics map[string][]*v1alpha1.MeshMetricResource) (map[*v1alpha1.Conf]*core_mesh.DataplaneResource, error) {
+func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWithMeshMetrics []string) (map[*v1alpha1.Conf]*core_mesh.DataplaneResource, error) {
 	meshMetricConfToDataplanes := map[*v1alpha1.Conf]*core_mesh.DataplaneResource{}
-	for meshName, meshMetrics := range meshToMeshMetrics {
+	for _, meshName := range meshesWithMeshMetrics {
 		meshContext, err := s.meshCache.GetMeshContext(ctx, meshName)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get mesh context")
 		}
 
-		resources := xds_context.Resources{
-			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-				v1alpha1.MeshMetricType: &v1alpha1.MeshMetricResourceList{
-					Items: meshMetrics,
-				},
-			},
-		}
-
 		for _, dp := range meshContext.DataplanesByName {
-			matchedPolicies, err := matchers.MatchedPolicies(v1alpha1.MeshMetricType, dp, resources)
+			matchedPolicies, err := matchers.MatchedPolicies(v1alpha1.MeshMetricType, dp, meshContext.Resources)
 			if err != nil {
 				return nil, errors.Wrap(err, "error on matching dpp")
 			}
-			conf := matchedPolicies.SingleItemRules.Rules[0].Conf.(*v1alpha1.Conf)
-			meshMetricConfToDataplanes[conf] = dp
+			if len(matchedPolicies.SingleItemRules.Rules) == 1 {
+				conf := matchedPolicies.SingleItemRules.Rules[0].Conf.(v1alpha1.Conf)
+				meshMetricConfToDataplanes[&conf] = dp
+			}
 		}
 	}
 

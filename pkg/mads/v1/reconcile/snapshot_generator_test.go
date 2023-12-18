@@ -27,6 +27,8 @@ import (
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute" // to match any custom policy resource type you need to register MeshHTTPRoute manually
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric" // to match custom policy resource type like MeshMetric you need to register it manually in tests
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -111,6 +113,23 @@ var _ = Describe("snapshotGenerator", func() {
 		DescribeTable("",
 			func(given testCase) {
 				// setup
+				zone := ""
+				cacheExpirationTime := time.Millisecond
+				meshContextBuilder := xds_context.NewMeshContextBuilder(
+					resourceManager,
+					server.MeshResourceTypes(),
+					net.LookupIP,
+					zone,
+					vips.NewPersistence(resourceManager, config_manager.NewConfigManager(store), false),
+					".mesh",
+					80,
+					xds_context.AnyToAnyReachableServicesGraphBuilder,
+				)
+				newMetrics, err := metrics.NewMetrics(zone)
+				Expect(err).ToNot(HaveOccurred())
+				cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
+				Expect(err).ToNot(HaveOccurred())
+
 				ctx := context.Background()
 				node1 := corev3.Node{Id: node1Id}
 				node2 := corev3.Node{Id: node2Id}
@@ -133,22 +152,6 @@ var _ = Describe("snapshotGenerator", func() {
 					Expect(err).ToNot(HaveOccurred())
 				}
 
-				zone := ""
-				cacheExpirationTime := time.Millisecond
-				meshContextBuilder := xds_context.NewMeshContextBuilder(
-					resourceManager,
-					server.MeshResourceTypes(),
-					net.LookupIP,
-					zone,
-					vips.NewPersistence(resourceManager, config_manager.NewConfigManager(store), false),
-					".mesh",
-					80,
-					xds_context.AnyToAnyReachableServicesGraphBuilder,
-				)
-				newMetrics, err := metrics.NewMetrics(zone)
-				Expect(err).ToNot(HaveOccurred())
-				cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
-				Expect(err).ToNot(HaveOccurred())
 				// given
 				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, cache)
 				// when
