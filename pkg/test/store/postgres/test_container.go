@@ -158,15 +158,15 @@ func (v *PostgresContainer) Config() (*pg_config.PostgresStoreConfig, error) {
 	return cfg, nil
 }
 
-func (v *PostgresContainer) PrintDebugInfo(exportDbName string, expectedDbPort int) {
-	logEntries := make([]string, 0)
+func (v *PostgresContainer) PrintDebugInfo(expectedDbName string, expectedDbPort int) {
 	container := v.container
-	state, _ := container.State(context.TODO())
-	logEntries = append(logEntries, "db container details:")
-	logEntries = append(logEntries, fmt.Sprintf("trying to connect db %s on port %d, latest container: %s",
-		exportDbName, expectedDbPort, container.GetContainerID()))
+	logEntries := []string{
+		"db container details:",
+		fmt.Sprintf("trying to connect db %s on port %d, latest container: %s",
+			expectedDbName, expectedDbPort, container.GetContainerID()),
+	}
 
-	if state != nil {
+	if state, _ := container.State(context.TODO()); state != nil {
 		logEntries = append(logEntries, fmt.Sprintf("container state: %s", state.Status))
 	}
 
@@ -189,10 +189,10 @@ func (v *PostgresContainer) PrintDebugInfo(exportDbName string, expectedDbPort i
 	if err == nil {
 		output, _ := io.ReadAll(resultReader)
 		logEntries = append(logEntries, fmt.Sprintf("psql list database(exitCode: %d): %s", exitCode, output))
-		if strings.Contains(string(output), exportDbName) {
-			logEntries = append(logEntries, fmt.Sprintf("database %s found in this container %s", exportDbName, container.GetContainerID()))
+		if strings.Contains(string(output), expectedDbName) {
+			logEntries = append(logEntries, fmt.Sprintf("database %s found in this container %s", expectedDbName, container.GetContainerID()))
 		} else {
-			logEntries = append(logEntries, fmt.Sprintf("database %s does not exist in this container %s", exportDbName, container.GetContainerID()))
+			logEntries = append(logEntries, fmt.Sprintf("database %s does not exist in this container %s", expectedDbName, container.GetContainerID()))
 		}
 	} else {
 		logEntries = append(logEntries, fmt.Sprintf("error executing psql list database: %v", err))

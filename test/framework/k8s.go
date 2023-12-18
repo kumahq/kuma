@@ -2,7 +2,10 @@ package framework
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -116,4 +119,235 @@ func UpdateKubeObject(
 		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}
 	return nil
+}
+
+type K8sObjectDetailPrinter struct {
+	testingT        testing.TestingT
+	kubectlOptions  *k8s.KubectlOptions
+	objectNamespace string
+	objectName      string
+
+	isDeployKind bool
+	isPodKind    bool
+	podObject    *v1.Pod
+}
+
+func NewK8sDeploymentDetailPrinter(testingT testing.TestingT,
+	kubectlOptions *k8s.KubectlOptions, namespace string, name string) *K8sObjectDetailPrinter {
+	return &K8sObjectDetailPrinter{
+		testingT:        testingT,
+		kubectlOptions:  kubectlOptions,
+		objectNamespace: namespace,
+		objectName:      name,
+		isDeployKind:    true,
+	}
+}
+func NewK8sPodDetailPrinter(testingT testing.TestingT,
+	kubectlOptions *k8s.KubectlOptions, podObject *v1.Pod) *K8sObjectDetailPrinter {
+	return &K8sObjectDetailPrinter{
+		testingT:        testingT,
+		kubectlOptions:  kubectlOptions,
+		objectNamespace: podObject.Namespace,
+		objectName:      podObject.Name,
+		podObject:       podObject,
+		isPodKind:       true,
+	}
+}
+
+func (p *K8sObjectDetailPrinter) Print() string {
+	if p.isDeployKind {
+		return p.printDeploymentDetails()
+	}
+
+	if p.isPodKind {
+		return p.printPodDetails()
+	}
+
+	return ""
+}
+
+func (p *K8sObjectDetailPrinter) printDeploymentDetails() string {
+	deploy, err := k8s.GetDeploymentE(p.testingT, p.kubectlOptions, p.objectName)
+	if err != nil {
+		// might not be a Deployment, let's ignore it
+		return ""
+	}
+
+	deployDetails := deploymentDetails{Namespace: p.objectNamespace,
+		Kind: "Deployment",
+		objectDetails: newObjectDetails(p.objectName,
+			fromDeploymentCondition(deploy.Status.Conditions),
+			getObjectEvents(p.testingT, p.kubectlOptions, "Deployment", p.objectName)),
+	}
+
+	replicaSets, _ := k8s.ListReplicaSetsE(p.testingT, p.kubectlOptions, metav1.ListOptions{
+		LabelSelector: "app=" + p.objectName,
+	})
+	for _, ars := range replicaSets {
+		rsDetails := newObjectDetails(ars.Name,
+			fromReplicaSetCondition(ars.Status.Conditions),
+			getObjectEvents(p.testingT, p.kubectlOptions, "ReplicaSet", ars.Name))
+		deployDetails.ReplicaSets = append(deployDetails.ReplicaSets, rsDetails)
+	}
+
+	pods, _ := k8s.ListPodsE(p.testingT, p.kubectlOptions, metav1.ListOptions{
+		LabelSelector: "app=" + p.objectName,
+	})
+	for _, pod := range pods {
+		pDetail := &podDetails{
+			objectDetails: newObjectDetails(pod.Name,
+				fromPodCondition(pod.Status.Conditions),
+				getObjectEvents(p.testingT, p.kubectlOptions, "Pod", pod.Name)),
+		}
+		deployDetails.Pods = append(deployDetails.Pods, pDetail)
+	}
+
+	deployDetailsJson, err := json.Marshal(deployDetails)
+	if err != nil {
+		deployDetailsJson = []byte(fmt.Sprintf("error marshaling deployment details: '%s'", err.Error()))
+	}
+	return string(deployDetailsJson)
+}
+
+func (p *K8sObjectDetailPrinter) printPodDetails() string {
+	pDetails := &podDetails{
+		objectDetails: newObjectDetails(p.objectName,
+			fromPodCondition(p.podObject.Status.Conditions),
+			getObjectEvents(p.testingT, p.kubectlOptions, "Pod", p.objectName)),
+	}
+	podDetailsJson, err := json.Marshal(pDetails)
+	if err != nil {
+		podDetailsJson = []byte(fmt.Sprintf("error marshaling pod details: '%s'", err.Error()))
+	}
+
+	return string(podDetailsJson)
+}
+
+type objectDetails struct {
+	Name       string             `json:"name,omitempty"`
+	Conditions []*objectCondition `json:"conditions,omitempty"`
+	Events     []*simplifiedEvent `json:"events,omitempty"`
+}
+
+type deploymentDetails struct {
+	*objectDetails `json:",inline"`
+	Kind           string           `json:"kind,omitempty"`
+	Namespace      string           `json:"namespace,omitempty"`
+	ReplicaSets    []*objectDetails `json:"replicaSets,omitempty"`
+	Pods           []*podDetails    `json:"pods,omitempty"`
+}
+
+type podDetails struct {
+	*objectDetails `json:",inline"`
+	Phase          string `json:"phase,omitempty"`
+	Logs           string `json:"logs,omitempty"`
+}
+
+type objectCondition struct {
+	// Type of replica set condition.
+	Type string `json:"type"`
+	// Status of the condition, one of True, False, Unknown.
+	Status v1.ConditionStatus `json:"status"`
+	// The last time the condition transitioned from one status to another.
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// The reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty"`
+}
+
+type simplifiedEvent struct {
+	LastSeen *time.Time `json:"lastSeen,omitempty"`
+	Type     string     `json:"type,omitempty"`
+	Object   string     `json:"object,omitempty"`
+	Reason   string     `json:"reason,omitempty"`
+	Message  string     `json:"message,omitempty"`
+}
+
+func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, kind string, name string) []*simplifiedEvent {
+	events, _ := k8s.ListEventsE(testingT, kubectlOptions, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name)})
+	return simplifyK8sEvents(events)
+}
+
+func newObjectDetails(name string, conditions []*objectCondition, events []*simplifiedEvent) *objectDetails {
+	return &objectDetails{
+		Name:       name,
+		Conditions: conditions,
+		Events:     events,
+	}
+}
+
+func fromDeploymentCondition(deploymentConditions []appsv1.DeploymentCondition) []*objectCondition {
+	objectConditions := make([]*objectCondition, len(deploymentConditions))
+	for i, condition := range deploymentConditions {
+		objectConditions[i] = &objectCondition{
+			Type:               string(condition.Type),
+			Status:             condition.Status,
+			LastTransitionTime: condition.LastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		}
+	}
+	return objectConditions
+}
+
+func fromReplicaSetCondition(replicaSetConditions []appsv1.ReplicaSetCondition) []*objectCondition {
+	objectConditions := make([]*objectCondition, len(replicaSetConditions))
+	for i, condition := range replicaSetConditions {
+		objectConditions[i] = &objectCondition{
+			Type:               string(condition.Type),
+			Status:             condition.Status,
+			LastTransitionTime: condition.LastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		}
+	}
+	return objectConditions
+}
+
+func fromPodCondition(replicaSetConditions []v1.PodCondition) []*objectCondition {
+	objectConditions := make([]*objectCondition, len(replicaSetConditions))
+	for i, condition := range replicaSetConditions {
+		objectConditions[i] = &objectCondition{
+			Type:               string(condition.Type),
+			Status:             condition.Status,
+			LastTransitionTime: condition.LastTransitionTime,
+			Reason:             condition.Reason,
+			Message:            condition.Message,
+		}
+	}
+	return objectConditions
+}
+
+func simplifyK8sEvents(v1Events []v1.Event) []*simplifiedEvent {
+	if v1Events == nil {
+		return nil
+	}
+
+	simplifiedEvents := make([]*simplifiedEvent, len(v1Events))
+	for i, v1Event := range v1Events {
+		simplifiedEvents[i] = simplifySingleK8sEvent(&v1Event)
+	}
+	return simplifiedEvents
+}
+
+func simplifySingleK8sEvent(v1Event *v1.Event) *simplifiedEvent {
+	var lastSeen *time.Time
+	if !v1Event.LastTimestamp.IsZero() {
+		lastSeen = &v1Event.LastTimestamp.Time
+	} else {
+		lastSeen = &v1Event.ObjectMeta.CreationTimestamp.Time
+	}
+
+	return &simplifiedEvent{
+		LastSeen: lastSeen,
+		Type:     v1Event.Type,
+		Object:   fmt.Sprintf("%s/%s", v1Event.InvolvedObject.Kind, v1Event.InvolvedObject.Name),
+		Reason:   v1Event.Reason,
+		Message:  v1Event.Message,
+	}
 }
