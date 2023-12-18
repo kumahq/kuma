@@ -458,7 +458,7 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 	}, Entry("basic", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshSubset(),
@@ -478,7 +478,7 @@ var _ = Describe("MeshTimeout", func() {
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshSubset(),
@@ -504,7 +504,7 @@ var _ = Describe("MeshTimeout", func() {
 				Build(),
 		},
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshService("backend"),
