@@ -3,7 +3,6 @@ package framework
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -24,7 +23,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1111,7 +1109,9 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		c.defaultRetries,
 		c.defaultTimeout)
 	if err != nil {
-		printDeploymentConditions(c.t, c.GetKubectlOptions(namespace), namespace, name)
+		deployPrinter := NewK8sDeploymentDetailPrinter(c.t, c.GetKubectlOptions(namespace), namespace, name)
+		logger.Default.Logf(c.t, "Details of deployment '%s/%s': %s",
+			namespace, name, deployPrinter.Print())
 		return err
 	}
 
@@ -1133,7 +1133,9 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			c.defaultTimeout)
 
 		if podError != nil {
-			return printDetailedPodInfo(c.t, c.GetKubectlOptions(namespace), podError, pods[i])
+			podPrinter := NewK8sPodDetailPrinter(c.t, c.GetKubectlOptions(namespace), &pods[i])
+			podError = errors.New(podError.Error() + "\nPod details:\n" + podPrinter.Print())
+			return podError
 		}
 	}
 	return nil
@@ -1249,66 +1251,8 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }
 
-func printDetailedPodInfo(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, podError error, pod v1.Pod) error {
-	if podError == nil {
-		return podError
-	}
-
-	podCond, _ := json.Marshal(pod.Status.Conditions)
-	podLogs, _ := k8s.GetPodLogsE(testingT, kubectlOptions, &pod, "")
-	if podLogs != "" {
-		logLines := strings.Split(podLogs, "\n")
-		if len(logLines) > 30 {
-			podLogs = strings.Join(logLines[len(logLines)-30:], "\n")
-		}
-		podLogs = "; last lines of pod logs: " + podLogs
-	}
-
-	podError = errors.New(fmt.Sprintf("%s; pod name: %s; pod phase: %s; pod conditions: %s%s",
-		podError.Error(),
-		pod.GetName(),
-		pod.Status.Phase,
-		podCond,
-		podLogs))
-
-	return podError
-}
-
-func printDeploymentConditions(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, namespace string, name string) {
-	condition := deployConditions{Name: name, Namespace: namespace, Conditions: make([]appsv1.DeploymentCondition, 0), Replicas: make([]replicaSetCondition, 0)}
-
-	deploy := k8s.GetDeployment(testingT, kubectlOptions, name)
-	condition.Conditions = deploy.Status.Conditions
-
-	replicaSets := k8s.ListReplicaSets(testingT, kubectlOptions, metav1.ListOptions{
-		LabelSelector: "app=" + name,
-	})
-
-	for _, ars := range replicaSets {
-		condition.Replicas = append(condition.Replicas, replicaSetCondition{Name: ars.Name, Conditions: ars.Status.Conditions})
-	}
-
-	deployConditionJson, err := json.Marshal(condition)
-	if err != nil {
-		deployConditionJson = []byte(fmt.Sprintf("error marshaling deployment conditions: '%s'", err.Error()))
-	}
-	logger.Default.Logf(testingT, "Conditions of deployment '%s/%s': %s", namespace, name, string(deployConditionJson))
-}
-
 type appInstallation struct {
 	Name      string
 	Namespace string
 	Replicas  int
-}
-
-type deployConditions struct {
-	Name       string                       `json:"name,omitempty"`
-	Namespace  string                       `json:"namespace,omitempty"`
-	Conditions []appsv1.DeploymentCondition `json:"conditions,omitempty"`
-	Replicas   []replicaSetCondition        `json:"replicas,omitempty"`
-}
-
-type replicaSetCondition struct {
-	Name       string                       `json:"name,omitempty"`
-	Conditions []appsv1.ReplicaSetCondition `json:"conditions,omitempty"`
 }
