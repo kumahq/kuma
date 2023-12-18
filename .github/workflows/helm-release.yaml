@@ -27,6 +27,7 @@ env:
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   package:
     name: Package
@@ -46,7 +47,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-            ~/.kuma-dev
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-go-
