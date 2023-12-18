@@ -181,8 +181,8 @@ func (v *PostgresContainer) PrintDebugInfo(expectedDbName string, expectedDbPort
 	rDir := resourceDir()
 	clientKey, _ := os.ReadFile(path.Join(rDir, "certs/postgres.client.key"))
 	clientCert, _ := os.ReadFile(path.Join(rDir, "certs/postgres.client.crt"))
-	_ = container.CopyToContainer(context.Background(), clientKey, "/tmp/postgres.client.key", 0600)
-	_ = container.CopyToContainer(context.Background(), clientCert, "/tmp/postgres.client.crt", 0600)
+	_ = container.CopyToContainer(context.Background(), clientKey, "/tmp/postgres.client.key", 0o600)
+	_ = container.CopyToContainer(context.Background(), clientCert, "/tmp/postgres.client.crt", 0o600)
 	listCmd := []string{"sh", "-c", "export PGSSLMODE=verify-full; export PGSSLROOTCERT=/var/lib/postgresql/rootCA.crt; " +
 		"export PGSSLCERT=/tmp/postgres.client.crt; export PGSSLKEY=/tmp/postgres.client.key; psql -h localhost --no-password -l -U kuma -P pager=off"}
 	exitCode, resultReader, err := container.Exec(context.Background(), listCmd)

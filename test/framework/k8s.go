@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -133,7 +133,8 @@ type K8sObjectDetailPrinter struct {
 }
 
 func NewK8sDeploymentDetailPrinter(testingT testing.TestingT,
-	kubectlOptions *k8s.KubectlOptions, namespace string, name string) *K8sObjectDetailPrinter {
+	kubectlOptions *k8s.KubectlOptions, namespace string, name string,
+) *K8sObjectDetailPrinter {
 	return &K8sObjectDetailPrinter{
 		testingT:        testingT,
 		kubectlOptions:  kubectlOptions,
@@ -142,8 +143,10 @@ func NewK8sDeploymentDetailPrinter(testingT testing.TestingT,
 		isDeployKind:    true,
 	}
 }
+
 func NewK8sPodDetailPrinter(testingT testing.TestingT,
-	kubectlOptions *k8s.KubectlOptions, podObject *v1.Pod) *K8sObjectDetailPrinter {
+	kubectlOptions *k8s.KubectlOptions, podObject *v1.Pod,
+) *K8sObjectDetailPrinter {
 	return &K8sObjectDetailPrinter{
 		testingT:        testingT,
 		kubectlOptions:  kubectlOptions,
@@ -173,8 +176,9 @@ func (p *K8sObjectDetailPrinter) printDeploymentDetails() string {
 		return ""
 	}
 
-	deployDetails := deploymentDetails{Namespace: p.objectNamespace,
-		Kind: "Deployment",
+	deployDetails := deploymentDetails{
+		Namespace: p.objectNamespace,
+		Kind:      "Deployment",
 		objectDetails: newObjectDetails(p.objectName,
 			fromDeploymentCondition(deploy.Status.Conditions),
 			getObjectEvents(p.testingT, p.kubectlOptions, "Deployment", p.objectName)),
@@ -269,7 +273,8 @@ type simplifiedEvent struct {
 
 func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, kind string, name string) []*simplifiedEvent {
 	events, _ := k8s.ListEventsE(testingT, kubectlOptions, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name)})
+		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name),
+	})
 	return simplifyK8sEvents(events)
 }
 
@@ -330,12 +335,12 @@ func simplifyK8sEvents(v1Events []v1.Event) []*simplifiedEvent {
 
 	simplifiedEvents := make([]*simplifiedEvent, len(v1Events))
 	for i, v1Event := range v1Events {
-		simplifiedEvents[i] = simplifySingleK8sEvent(&v1Event)
+		simplifiedEvents[i] = simplifySingleK8sEvent(v1Event)
 	}
 	return simplifiedEvents
 }
 
-func simplifySingleK8sEvent(v1Event *v1.Event) *simplifiedEvent {
+func simplifySingleK8sEvent(v1Event v1.Event) *simplifiedEvent {
 	var lastSeen *time.Time
 	if !v1Event.LastTimestamp.IsZero() {
 		lastSeen = &v1Event.LastTimestamp.Time
