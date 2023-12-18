@@ -2,6 +2,14 @@ package reconcile_test
 
 import (
 	"context"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/server"
+	"net"
+	"time"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -125,8 +133,24 @@ var _ = Describe("snapshotGenerator", func() {
 					Expect(err).ToNot(HaveOccurred())
 				}
 
+				zone := ""
+				cacheExpirationTime := time.Millisecond
+				meshContextBuilder := xds_context.NewMeshContextBuilder(
+					resourceManager,
+					server.MeshResourceTypes(),
+					net.LookupIP,
+					zone,
+					vips.NewPersistence(resourceManager, config_manager.NewConfigManager(store), false),
+					".mesh",
+					80,
+					xds_context.AnyToAnyReachableServicesGraphBuilder,
+				)
+				newMetrics, err := metrics.NewMetrics(zone)
+				Expect(err).ToNot(HaveOccurred())
+				cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
+				Expect(err).ToNot(HaveOccurred())
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, nil)
+				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, cache)
 				// when
 				snapshot, err := snapshotter.GenerateSnapshot(context.Background(), &node1)
 				// then
