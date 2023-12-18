@@ -170,10 +170,8 @@ func (v *PostgresContainer) PrintDebugInfo(expectedDbName string, expectedDbPort
 		logEntries = append(logEntries, fmt.Sprintf("container state: %s", state.Status))
 	}
 
-	logReader, _ := container.Logs(context.Background())
-	if logReader != nil {
-		logs, _ := io.ReadAll(logReader)
-		if len(logs) > 0 {
+	if logReader, _ := container.Logs(context.Background()); logReader != nil {
+		if logs, _ := io.ReadAll(logReader); len(logs) > 0 {
 			logEntries = append(logEntries, fmt.Sprintf("container logs: %s", logs))
 		}
 	}
@@ -185,8 +183,7 @@ func (v *PostgresContainer) PrintDebugInfo(expectedDbName string, expectedDbPort
 	_ = container.CopyToContainer(context.Background(), clientCert, "/tmp/postgres.client.crt", 0o600)
 	listCmd := []string{"sh", "-c", "export PGSSLMODE=verify-full; export PGSSLROOTCERT=/var/lib/postgresql/rootCA.crt; " +
 		"export PGSSLCERT=/tmp/postgres.client.crt; export PGSSLKEY=/tmp/postgres.client.key; psql -h localhost --no-password -l -U kuma -P pager=off"}
-	exitCode, resultReader, err := container.Exec(context.Background(), listCmd)
-	if err == nil {
+	if exitCode, resultReader, err := container.Exec(context.Background(), listCmd); err == nil {
 		output, _ := io.ReadAll(resultReader)
 		logEntries = append(logEntries, fmt.Sprintf("psql list database(exitCode: %d): %s", exitCode, output))
 		if strings.Contains(string(output), expectedDbName) {

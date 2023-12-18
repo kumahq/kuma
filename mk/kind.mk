@@ -59,8 +59,8 @@ kind/start: ${KUBECONFIG_DIR}
 .PHONY: kind/wait
 kind/wait:
 	@TIMES_TRIED=0; \
-	MAX_ALLOWED_TRIES=20; \
-	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods || [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; do \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
     	echo "Waiting for the cluster to come up" && sleep 1; \
   		TIMES_TRIED=$$((TIMES_TRIED+1)); \
   		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
@@ -90,8 +90,8 @@ kind/deploy/kuma: build/kumactl kind/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	@TIMES_TRIED=0; \
-	MAX_ALLOWED_TRIES=20; \
-	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods  || [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; do \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
     	echo "Waiting for the cluster to come up" && sleep 1; \
   		TIMES_TRIED=$$((TIMES_TRIED+1)); \
   		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
