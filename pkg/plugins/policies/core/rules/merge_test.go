@@ -39,7 +39,7 @@ var _ = Describe("MergeConfs", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(merged.(policy)).To(Equal(given.expected))
+			Expect(merged).To(Equal([]interface{}{given.expected}))
 		},
 		Entry("should replace slices by default but append slices that start with append", testCase{
 			policies: []policy{
@@ -221,13 +221,14 @@ var _ = Describe("MergeConfs", func() {
 		Default mergeConf `json:"default"`
 	}
 	type testPolicy struct {
-		MergeValues []mergeEntry     `policyMerge:"mergeValuesByKey"`
-		OtherValues *[]nonMergeEntry `json:"otherValues,omitempty"`
+		MergeValues       []mergeEntry     `policyMerge:"mergeValuesByKey"`
+		DirectMergeValues []string         `policyMerge:"mergeValues"`
+		OtherValues       *[]nonMergeEntry `json:"otherValues,omitempty"`
 	}
 
 	type mergeValuesByKeyCase struct {
 		policies []testPolicy
-		expected testPolicy
+		expected []testPolicy
 	}
 
 	t := true
@@ -240,8 +241,12 @@ var _ = Describe("MergeConfs", func() {
 			}
 
 			merged, err := rules.MergeConfs(givens)
+			var values []testPolicy
+			for _, mergedConf := range merged {
+				values = append(values, mergedConf.(testPolicy))
+			}
 			Expect(err).ToNot(HaveOccurred())
-			Expect(merged).To(Equal(given.expected))
+			Expect(values).To(Equal(given.expected))
 		},
 		Entry("should work with a basic policy", mergeValuesByKeyCase{
 			policies: []testPolicy{{
@@ -266,7 +271,7 @@ var _ = Describe("MergeConfs", func() {
 					Key: mergeKey{Left: true}, Default: mergeConf{B: &f},
 				}},
 			}},
-			expected: testPolicy{
+			expected: []testPolicy{{
 				MergeValues: []mergeEntry{{
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}, {
@@ -279,10 +284,66 @@ var _ = Describe("MergeConfs", func() {
 				}, {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},
-			},
+			}},
+		}), Entry("should work with a direct merge values", mergeValuesByKeyCase{
+			policies: []testPolicy{{
+				DirectMergeValues: []string{"a", "b"},
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				DirectMergeValues: []string{"b"},
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Right: true, Left: true}, Default: mergeConf{B: &t},
+				}},
+			}},
+			expected: []testPolicy{{
+				DirectMergeValues: []string{"a"},
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				DirectMergeValues: []string{"b"},
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Right: true, Left: true}, Default: mergeConf{B: &t},
+				}},
+			}},
 		}), Entry("should work with an empty list of key values", mergeValuesByKeyCase{
 			policies: []testPolicy{{}},
-			expected: testPolicy{},
+			expected: []testPolicy{{}},
 		}),
 	)
 })

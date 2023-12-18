@@ -10,57 +10,74 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // indicates that all slices that start with this prefix will be appended, not replaced
 const appendSlicesPrefix = "Append"
 
-func MergeConfs(confs []interface{}) (interface{}, error) {
+func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
 
-	resultBytes := []byte{}
-	for _, conf := range confs {
-		confBytes, err := json.Marshal(conf)
-		if err != nil {
-			return nil, err
-		}
-		if len(resultBytes) == 0 {
-			resultBytes = confBytes
-			continue
-		}
-		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	confType := reflect.TypeOf(confs[0])
-	result, err := newConf(confType)
+	// Sort the confs (potentially) into sets grouped by `mergeValues` fields
+	mapped, sortedMapKeys, setMergeValuesField, err := handleMergeValues(confs)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(resultBytes, result); err != nil {
-		return nil, err
+	var interfaces []interface{}
+
+	// Merge each tagged sets of confs
+	for _, key := range sortedMapKeys {
+		confs := mapped[key]
+
+		resultBytes := []byte{}
+		for i := 0; i < len(confs); i++ {
+			conf := confs[i].Interface()
+			confBytes, err := json.Marshal(conf)
+			if err != nil {
+				return nil, err
+			}
+			if len(resultBytes) == 0 {
+				resultBytes = confBytes
+				continue
+			}
+			resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		confType := confs[0].Type()
+		result, err := newConf(confType)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal(resultBytes, result); err != nil {
+			return nil, err
+		}
+
+		valueResult := reflect.ValueOf(result)
+		// clear appendable slices, so we won't duplicate values of the last conf
+		clearAppendSlices(valueResult)
+		for i := 0; i < len(confs); i++ {
+			appendSlices(valueResult, confs[i])
+		}
+
+		if err := handleMergeByKeyFields(valueResult); err != nil {
+			return nil, err
+		}
+
+		// Set the mergeValues field on the merged confs
+		setMergeValuesField(valueResult, key)
+
+		interfaces = append(interfaces, valueResult.Elem().Interface())
 	}
 
-	valueResult := reflect.ValueOf(result)
-	// clear appendable slices, so we won't duplicate values of the last conf
-	clearAppendSlices(valueResult)
-	for i := range confs {
-		// call .Elem() to unwrap interface{}
-		appendSlices(valueResult, reflect.ValueOf(&confs[i]).Elem())
-	}
-
-	if err := handleMergeByKeyFields(valueResult); err != nil {
-		return nil, err
-	}
-
-	v := valueResult.Elem().Interface()
-
-	return v, nil
+	return interfaces, nil
 }
 
 type acc struct {
@@ -77,6 +94,7 @@ const (
 	defaultFieldName = "Default"
 	policyMergeTag   = "policyMerge"
 	mergeValuesByKey = "mergeValuesByKey"
+	mergeValues      = "mergeValues"
 	mergeKey         = "mergeKey"
 )
 
@@ -110,18 +128,83 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 	return nil
 }
 
-func mergeByKey(confs reflect.Value) (reflect.Value, error) {
-	if confs.Len() == 0 {
-		return reflect.Zero(confs.Type()), nil
+type SetConfField func(reflect.Value, string)
+
+// handleMergeValues takes conf objects and returns
+// * a map of the confs keyed by `mergeValues` tagged fields
+// * sorted keys of the map
+// * a function to set the `mergeValues` field on a conf, after merging confs
+// See merge_test.go for an example.
+func handleMergeValues(confs []interface{}) (map[string][]reflect.Value, []string, SetConfField, error) {
+	confType := reflect.TypeOf(confs[0])
+
+	// We construct a map of strings to confs
+	mergeValueMap := map[string][]reflect.Value{}
+	var keyFieldIndex *int
+	// Find a field tagged with `mergeValues`
+	for fieldIndex := 0; fieldIndex < confType.NumField(); fieldIndex++ {
+		field := confType.Field(fieldIndex)
+		if field.Tag.Get(policyMergeTag) != mergeValues {
+			continue
+		}
+		if field.Type.Kind() != reflect.Slice || field.Type.Elem().Kind() != reflect.String {
+			return nil, nil, nil, fmt.Errorf("a mergeValues field must be a slice of strings")
+		}
+
+		keyFieldIndex = pointer.To(fieldIndex)
 	}
-	valType := confs.Index(0).Type()
+
+	// Track ordered mergeValues field values
+	var orderedKeys []string
+	// Put every conf into the map for every `mergeValues` field value it has
+	for _, conf := range confs {
+		confVal := reflect.ValueOf(conf)
+		// If there is no such `mergeValues` field, put everything under the
+		// empty string
+		keys := reflect.ValueOf([]string{""})
+		if keyFieldIndex != nil {
+			confKeys := confVal.Field(*keyFieldIndex)
+			// Treat the empty list of values like "" in our map
+			if confKeys.Len() > 0 {
+				keys = confKeys
+			}
+		}
+
+		for i := 0; i < keys.Len(); i++ {
+			values, ok := mergeValueMap[keys.Index(i).String()]
+			if !ok {
+				orderedKeys = append(orderedKeys, keys.Index(i).String())
+			}
+			mergeValueMap[keys.Index(i).String()] = append(values, confVal)
+		}
+	}
+
+	// If we don't have a mergeValues field, do nothing
+	setMergeValuesField := func(reflect.Value, string) {}
+	if keyFieldIndex != nil {
+		setMergeValuesField = func(conf reflect.Value, fieldValue string) {
+			// Don't do anything if our value is "" (or the empty list)
+			if fieldValue == "" {
+				return
+			}
+			conf.Elem().Field(*keyFieldIndex).Set(reflect.ValueOf([]string{fieldValue}))
+		}
+	}
+	return mergeValueMap, orderedKeys, setMergeValuesField, nil
+}
+
+func mergeByKey(vals reflect.Value) (reflect.Value, error) {
+	if vals.Len() == 0 {
+		return reflect.Zero(vals.Type()), nil
+	}
+	valType := vals.Index(0).Type()
 	key, ok := findMergeKeyField(valType)
 	if !ok {
 		return reflect.Value{}, fmt.Errorf("a merge by key field must have a field tagged as %s and a Default field", mergeKey)
 	}
 	var defaultsByKey []acc
-	for i := 0; i < confs.Len(); i++ {
-		value := confs.Index(i)
+	for i := 0; i < vals.Len(); i++ {
+		value := vals.Index(i)
 
 		mergeKeyValue := value.FieldByName(key.Name).Interface()
 		valueDef := []interface{}{value.FieldByName(defaultFieldName).Interface()}
@@ -148,7 +231,7 @@ func mergeByKey(confs reflect.Value) (reflect.Value, error) {
 			Defaults: valueDef,
 		})
 	}
-	keyValues := reflect.Zero(confs.Type())
+	keyValues := reflect.Zero(vals.Type())
 	for _, confs := range defaultsByKey {
 		if confs.Skip {
 			continue
@@ -158,13 +241,15 @@ func mergeByKey(confs reflect.Value) (reflect.Value, error) {
 			return reflect.Value{}, err
 		}
 
-		keyValueP := reflect.New(valType)
-		keyValue := keyValueP.Elem()
+		for _, mergedConf := range merged {
+			keyValueP := reflect.New(valType)
+			keyValue := keyValueP.Elem()
 
-		keyValue.FieldByName(key.Name).Set(reflect.ValueOf(confs.Key))
-		keyValue.FieldByName(defaultFieldName).Set(reflect.ValueOf(merged))
+			keyValue.FieldByName(key.Name).Set(reflect.ValueOf(confs.Key))
+			keyValue.FieldByName(defaultFieldName).Set(reflect.ValueOf(mergedConf))
 
-		keyValues = reflect.Append(keyValues, keyValue)
+			keyValues = reflect.Append(keyValues, keyValue)
+		}
 	}
 	return keyValues, nil
 }
