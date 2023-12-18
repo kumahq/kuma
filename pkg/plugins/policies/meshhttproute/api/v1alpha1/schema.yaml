@@ -44,6 +44,11 @@ properties:
         description: To matches destination services of requests and holds configuration.
         items:
           properties:
+            hostnames:
+              description: Hostnames limits the effects of the rules to requests to this hostname. Given hostnames must intersect with the hostname of the listeners the route attaches to.
+              items:
+                type: string
+              type: array
             rules:
               description: Rules contains the routing rules applies to a combination of top-level targetRef and the targetRef in this entry.
               items:
