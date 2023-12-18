@@ -22,7 +22,7 @@ jobs:
         run: |
           echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -52,7 +52,7 @@ jobs:
         run: |
           echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -121,7 +121,7 @@ jobs:
         run: |
           echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -185,7 +185,7 @@ jobs:
       - name: Install dependencies for cross builds
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: |
