@@ -5,6 +5,9 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 env:
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
