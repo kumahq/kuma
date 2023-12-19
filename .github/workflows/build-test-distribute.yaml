@@ -155,7 +155,7 @@ jobs:
         if: always()
         with:
           name: Unit Tests
-          path: build/reports/results.xml
+          path: build/reports/*results.xml
           reporter: java-junit
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
