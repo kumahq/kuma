@@ -27,18 +27,24 @@ var _ component.Component = &ZoneDefaultComponent{}
 
 func (e *ZoneDefaultComponent) Start(stop <-chan struct{}) error {
 	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	defer cancelFn()
+	logger := kuma_log.AddFieldsFromCtx(log, ctx, e.Extensions)
+	errChan := make(chan error)
 	go func() {
-		<-stop
-		cancelFn()
+		errChan <- retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
+			if err := EnsureOnlyOneZoneExists(ctx, e.ResManager, e.ZoneName, logger); err != nil {
+				log.V(1).Info("could not ensure that Zone exists. Retrying.", "err", err)
+				return retry.RetryableError(err)
+			}
+			return nil
+		})
 	}()
-	return retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-		logger := kuma_log.AddFieldsFromCtx(log, ctx, e.Extensions)
-		if err := EnsureOnlyOneZoneExists(ctx, e.ResManager, e.ZoneName, logger); err != nil {
-			log.V(1).Info("could not ensure that Zone exists. Retrying.", "err", err)
-			return retry.RetryableError(err)
-		}
+	select {
+	case <-stop:
 		return nil
-	})
+	case err := <-errChan:
+		return err
+	}
 }
 
 func (e ZoneDefaultComponent) NeedLeaderElection() bool {
