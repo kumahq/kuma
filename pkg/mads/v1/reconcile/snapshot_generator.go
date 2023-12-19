@@ -48,7 +48,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	}
 
 	if len(meshes) > 0 && len(meshesWithMeshMetrics) > 0 {
-		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
+		log.Info("it is not supported to use both MeshMetrics policy and 'metrics' under Mesh resource. For now MeshMetrics will take precedence. If migrating please remove the 'metrics' section and apply an equivalent MeshMetrics resource")
 	}
 
 	var resources []*core_xds.Resource
