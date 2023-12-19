@@ -123,7 +123,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 
 func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
 	// get all the insights for provided type
-	insights, _ := registry.Global().NewList(typ)
+	insights := registry.Global().MustNewList(typ)
 	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 			}
 		}
 
-		upsertInsight, _ := registry.Global().NewObject(typ)
+		upsertInsight := registry.Global().MustNewObject(typ)
 		if err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
 			insight := upsertInsight.GetSpec().(generic.Insight)
 			for id := range subsToFinalize {

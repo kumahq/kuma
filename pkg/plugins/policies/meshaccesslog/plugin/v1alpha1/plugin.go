@@ -186,7 +186,7 @@ func applyToGateway(
 			continue
 		}
 
-		listenerRules, ok := rules.Rules[rulesListener]
+		listenerRules, ok := rules.ToRules[rulesListener]
 		if !ok {
 			continue
 		}

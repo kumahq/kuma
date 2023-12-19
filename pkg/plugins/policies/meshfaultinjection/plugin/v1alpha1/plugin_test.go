@@ -194,8 +194,8 @@ var _ = Describe("MeshFaultInjection", func() {
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
-		fromRules := core_rules.FromRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+		rules := core_rules.GatewayRules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
 					Subset: core_rules.Subset{},
 					Conf: api.Conf{
@@ -231,7 +231,7 @@ var _ = Describe("MeshFaultInjection", func() {
 		xdsCtx := xds_samples.SampleContextWith(resources)
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshFaultInjectionType, fromRules)).
+			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, rules)).
 			Build()
 		for n, p := range core_plugins.Plugins().ProxyPlugins() {
 			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)

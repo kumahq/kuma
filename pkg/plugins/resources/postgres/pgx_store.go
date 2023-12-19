@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/maps"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -93,7 +95,13 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 	}
 
 	version := 0
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
+	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
+
+	labels, err := prepareLabels(opts.Labels)
+	if err != nil {
+		return err
+	}
+
 	args := []any{
 		opts.Name,
 		opts.Mesh,
@@ -105,6 +113,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		ownerName,
 		ownerMesh,
 		ownerType,
+		labels,
 	}
 	tx, exist := store.TxFromCtx(ctx)
 	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
@@ -125,6 +134,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		Version:          strconv.Itoa(version),
 		CreationTime:     opts.CreationTime,
 		ModificationTime: opts.CreationTime,
+		Labels:           maps.Clone(opts.Labels),
 	})
 	return nil
 }
@@ -142,11 +152,18 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
-	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
+
+	labels, err := prepareLabels(opts.Labels)
+	if err != nil {
+		return err
+	}
+
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
 	args := []any{
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
+		labels,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
@@ -172,6 +189,7 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		Mesh:             resource.GetMeta().GetMesh(),
 		Version:          strconv.Itoa(newVersion),
 		ModificationTime: opts.ModificationTime,
+		Labels:           maps.Clone(opts.Labels),
 	})
 
 	return nil
@@ -203,7 +221,7 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
+	statement := `SELECT spec, version, creation_time, modification_time, labels FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
 	args := []any{opts.Name, opts.Mesh, resource.Descriptor().Name}
 	tx, exist := store.TxFromCtx(ctx)
 	var row pgx.Row
@@ -220,7 +238,8 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	var spec string
 	var version int
 	var creationTime, modificationTime time.Time
-	err := row.Scan(&spec, &version, &creationTime, &modificationTime)
+	var labels string
+	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels)
 	if err == pgx.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
@@ -238,7 +257,12 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 		Version:          strconv.Itoa(version),
 		CreationTime:     creationTime.Local(),
 		ModificationTime: modificationTime.Local(),
+		Labels:           map[string]string{},
 	}
+	if err := json.Unmarshal([]byte(labels), &meta.Labels); err != nil {
+		return errors.Wrap(err, "failed to convert json to labels")
+	}
+
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
@@ -261,7 +285,7 @@ func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
 func (r *pgxResourceStore) List(ctx context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, mesh, spec, version, creation_time, modification_time FROM resources WHERE type=$1`
+	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
@@ -349,7 +373,8 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 	var name, mesh, spec string
 	var version int
 	var creationTime, modificationTime time.Time
-	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime); err != nil {
+	var labels string
+	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime, &labels); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
@@ -364,6 +389,10 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 		Version:          strconv.Itoa(version),
 		CreationTime:     creationTime.Local(),
 		ModificationTime: modificationTime.Local(),
+		Labels:           map[string]string{},
+	}
+	if err := json.Unmarshal([]byte(labels), &meta.Labels); err != nil {
+		return nil, errors.Wrap(err, "failed to convert json to labels")
 	}
 	item.SetMeta(meta)
 
@@ -521,4 +550,12 @@ func registerMetrics(metrics core_metrics.Metrics, pool *pgxpool.Pool, poolName 
 
 func (r *pgxResourceStore) Begin(ctx context.Context) (store.Transaction, error) {
 	return r.pool.Begin(ctx)
+}
+
+func prepareLabels(labels map[string]string) (string, error) {
+	lblBytes, err := json.Marshal(labels)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert labels to json")
+	}
+	return string(lblBytes), nil
 }

@@ -22,7 +22,7 @@ func GenerateClusters(
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		protocol := generator.InferProtocol(proxy, service.Clusters())
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {

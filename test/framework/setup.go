@@ -232,9 +232,11 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 
 		var podError error
 		for _, p := range pods {
-			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			pod := p
+			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if podError != nil {
-				return printDetailedPodInfo(testingT, kubectlOptions, podError, p)
+				podPrinter := NewK8sPodDetailPrinter(testingT, c.GetKubectlOptions(namespace), &pod)
+				return errors.New(podError.Error() + "\nPod details:\n" + podPrinter.Print())
 			}
 		}
 		return nil

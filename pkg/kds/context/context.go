@@ -67,10 +67,7 @@ func DefaultContext(
 			cfg.Store.Type,
 			cfg.Store.Kubernetes.SystemNamespace,
 		),
-	}
-
-	if cfg.Experimental.KDSSyncNameWithHashSuffix {
-		mappers = append(mappers, AddHashSuffix)
+		AddHashSuffix,
 	}
 
 	return &Context{
@@ -213,7 +210,10 @@ func AddHashSuffix(features kds.Features, r model.Resource) (model.Resource, err
 	// When syncing mesh-scoped resources from Global to Zone, the only possible namespace on Global is system namespace.
 	// We always trim system namespace in RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper,
 	// that's why r.GetMeta().GetName() never has a namespace suffix, so we can safely call SyncedNameInZone with it.
-	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
+	newObj.SetMeta(util.CloneResourceMetaWithNewName(
+		r.GetMeta(),
+		hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()),
+	))
 	_ = newObj.SetSpec(r.GetSpec())
 
 	return newObj, nil

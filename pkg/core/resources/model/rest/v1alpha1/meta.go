@@ -7,11 +7,12 @@ import (
 )
 
 type ResourceMeta struct {
-	Type             string    `json:"type"`
-	Mesh             string    `json:"mesh,omitempty"`
-	Name             string    `json:"name"`
-	CreationTime     time.Time `json:"creationTime"`
-	ModificationTime time.Time `json:"modificationTime"`
+	Type             string            `json:"type"`
+	Mesh             string            `json:"mesh,omitempty"`
+	Name             string            `json:"name"`
+	CreationTime     time.Time         `json:"creationTime"`
+	ModificationTime time.Time         `json:"modificationTime"`
+	Labels           map[string]string `json:"labels,omitempty"`
 }
 
 var _ core_model.ResourceMeta = ResourceMeta{}
@@ -38,4 +39,8 @@ func (r ResourceMeta) GetCreationTime() time.Time {
 
 func (r ResourceMeta) GetModificationTime() time.Time {
 	return r.ModificationTime
+}
+
+func (r ResourceMeta) GetLabels() map[string]string {
+	return r.Labels
 }

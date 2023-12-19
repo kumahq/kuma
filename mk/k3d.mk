@@ -44,13 +44,13 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
 	--k3s-arg '--disable=servicelb@server:0' \
-    --volume '$(subst @,\@,$(TOP))/test/framework/deployments:/tmp/deployments@server:0' \
+    --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*'
 endif
 
@@ -113,9 +113,13 @@ k3d/configure/metallb:
 
 .PHONY: k3d/wait
 k3d/wait:
-	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; \
-	do echo "Waiting for the cluster to come up" && sleep 1; done
+	@TIMES_TRIED=0; \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
+    	echo "Waiting for the cluster to come up" && sleep 1; \
+  		TIMES_TRIED=$$((TIMES_TRIED+1)); \
+  		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
+    done
 
 .PHONY: k3d/stop
 k3d/stop:

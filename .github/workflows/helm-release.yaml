@@ -27,6 +27,7 @@ env:
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   package:
     name: Package
@@ -38,18 +39,16 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-            ~/.kuma-dev
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - name: Install dependencies
         run: |
           make dev/tools

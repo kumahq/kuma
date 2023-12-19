@@ -81,7 +81,14 @@ var _ = Describe("MeshHealthCheck", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_samples.SampleContext()
+			context := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(xds_context.NewResources()).
+				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
+				AddServiceProtocol(tcpServiceTag, core_mesh.ProtocolTCP).
+				AddServiceProtocol(grpcServiceTag, core_mesh.ProtocolGRPC).
+				AddServiceProtocol(splitHttpServiceTag, core_mesh.ProtocolHTTP).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					samples.DataplaneBackendBuilder().
@@ -246,7 +253,11 @@ var _ = Describe("MeshHealthCheck", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshHealthCheckType, given.rules)).
@@ -275,7 +286,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
 			name: "basic",
 			rules: core_rules.GatewayRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "192.168.0.1", Port: 8080}: {
 						{
 							Subset: core_rules.Subset{},

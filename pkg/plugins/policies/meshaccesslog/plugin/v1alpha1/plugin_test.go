@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -951,7 +952,12 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: given.routes,
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithMetadata(&core_xds.DataplaneMetadata{
 					AccessLogSocketPath: "/tmp/foo",
@@ -992,7 +998,7 @@ var _ = Describe("MeshAccessLog", func() {
 					Build(),
 			},
 			rules: core_rules.GatewayRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 8080}: {
 						{
 							Subset: core_rules.Subset{},

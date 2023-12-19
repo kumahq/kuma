@@ -46,6 +46,7 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 		cancelFn()
 	}()
 
+	retries := 0
 	for {
 		log.Info("waiting for lock")
 		err := p.lockClient.Do(ctx, kumaLockName, func(ctx context.Context, lock *pglock.Lock) error {
@@ -56,8 +57,17 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 		})
 		// in case of error (ex. connection to postgres is dropped) we want to retry the lock with some backoff
 		// returning error here would shut down the CP
+		// according to https://github.com/cirello-io/pglock/blob/d0d1ce72df710b5da6bdc27f9c44d9ae7bf1d3a2/errors.go#L86
+		// ErrNotAcquired could be normal lock contestation
 		if err != nil {
-			log.Error(err, "error waiting for lock")
+			if retries >= 3 {
+				log.Error(err, "error waiting for lock", "retries", retries)
+			} else {
+				log.V(1).Info("error waiting for lock", "err", err, "retries", retries)
+			}
+			retries += 1
+		} else {
+			retries = 0
 		}
 
 		if util_channels.IsClosed(stop) {

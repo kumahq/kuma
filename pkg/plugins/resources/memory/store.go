@@ -29,6 +29,7 @@ type memoryStoreRecord struct {
 	CreationTime     time.Time
 	ModificationTime time.Time
 	Children         []*resourceKey
+	Labels           map[string]string
 }
 type memoryStoreRecords = []*memoryStoreRecord
 
@@ -40,6 +41,7 @@ type memoryMeta struct {
 	Version          memoryVersion
 	CreationTime     time.Time
 	ModificationTime time.Time
+	Labels           map[string]string
 }
 
 func (m memoryMeta) GetName() string {
@@ -64,6 +66,10 @@ func (m memoryMeta) GetCreationTime() time.Time {
 
 func (m memoryMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
+}
+
+func (m memoryMeta) GetLabels() map[string]string {
+	return m.Labels
 }
 
 type memoryVersion uint64
@@ -117,6 +123,7 @@ func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...sto
 		Version:          initialVersion(),
 		CreationTime:     opts.CreationTime,
 		ModificationTime: opts.CreationTime,
+		Labels:           opts.Labels,
 	}
 
 	// fill the meta
@@ -172,10 +179,13 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
+	meta.Labels = opts.Labels
 	r.SetMeta(meta)
 
 	record.Version = meta.Version
 	record.ModificationTime = meta.ModificationTime
+	record.Labels = meta.Labels
+
 	content, err := core_model.ToJSON(r.GetSpec())
 	if err != nil {
 		return err
@@ -329,6 +339,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec c
 		Spec:             string(content),
 		CreationTime:     meta.CreationTime,
 		ModificationTime: meta.ModificationTime,
+		Labels:           meta.Labels,
 	}, nil
 }
 
@@ -339,6 +350,7 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resourc
 		Version:          s.Version,
 		CreationTime:     s.CreationTime,
 		ModificationTime: s.ModificationTime,
+		Labels:           s.Labels,
 	})
 	return core_model.FromJSON([]byte(s.Spec), r.GetSpec())
 }
