@@ -6,8 +6,8 @@ on:
       - versions.yml
       - UPGRADE.md
       - docs/generated/raw/**
-    branches-ignore:
-      - release-*
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
   workflow_dispatch: {}
   schedule:
     - cron: 0 8 * * *
