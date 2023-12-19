@@ -56,7 +56,7 @@ const PrometheusBackendType BackendType = "Prometheus"
 
 type PrometheusBackend struct {
 	// ClientId of the Prometheus backend. Needed when using MADS for DP discovery.
-	ClientId *string `json:"clientId"`
+	ClientId *string `json:"clientId,omitempty"`
 	// Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
 	// +kubebuilder:default=5670
 	Port uint32 `json:"port"`

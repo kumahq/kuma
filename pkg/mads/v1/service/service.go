@@ -7,6 +7,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type service struct {
@@ -15,9 +16,9 @@ type service struct {
 	log    logr.Logger
 }
 
-func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger) *service {
+func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache) *service {
 	hasher, cache := NewXdsContext(log)
-	generator := NewSnapshotGenerator(rm)
+	generator := NewSnapshotGenerator(rm, meshCache)
 	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval.Duration, log)

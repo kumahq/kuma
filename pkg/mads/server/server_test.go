@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type testRuntime struct {
@@ -30,6 +31,7 @@ type testRuntime struct {
 	config     kuma_cp.Config
 	components []component.Component
 	metrics    metrics.Metrics
+	meshCache  *mesh.Cache
 }
 
 func (t *testRuntime) ReadOnlyResourceManager() manager.ReadOnlyResourceManager {
@@ -47,6 +49,10 @@ func (t *testRuntime) Config() kuma_cp.Config {
 
 func (t *testRuntime) Metrics() metrics.Metrics {
 	return t.metrics
+}
+
+func (t *testRuntime) MeshCache() *mesh.Cache {
+	return t.meshCache
 }
 
 var _ = Describe("MADS Server", func() {
