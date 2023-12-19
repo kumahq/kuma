@@ -3,10 +3,16 @@ package v1alpha1
 import (
 	"fmt"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -15,7 +21,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshMetric")
+)
 
 type plugin struct{}
 
@@ -39,6 +48,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
+	listeners := policies_xds.GatherListeners(rs)
+	clusters := policies_xds.GatherClusters(rs)
+	removeResourcesConfiguredByMesh(rs, listeners.Prometheus, clusters.Prometheus)
+
 	backend := pointer.Deref(conf.Backends)[0]
 	if backend.Type == api.PrometheusBackendType && backend.Prometheus != nil {
 		err := configurePrometheus(rs, proxy, backend.Prometheus, conf)
@@ -48,6 +61,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	return nil
+}
+
+func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_listener.Listener, cluster *envoy_cluster.Cluster) {
+	if cluster != nil && listener != nil {
+		log.Info("You should not use MeshMetric policy together with metrics configured in Mesh. MeshMetric will take precedence over Mesh configuration")
+		rs.Remove(envoy_resource.ClusterType, cluster.Name)
+		rs.Remove(envoy_resource.ListenerType, listener.Name)
+	}
 }
 
 func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackend *api.PrometheusBackend, conf api.Conf) error {
