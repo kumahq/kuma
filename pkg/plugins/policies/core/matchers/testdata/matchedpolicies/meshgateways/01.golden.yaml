@@ -10,7 +10,7 @@ ToRules:
   - Conf:
       backends:
       - file:
-          path: /gateway
+          path: /gateway-listener
         type: File
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
