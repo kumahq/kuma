@@ -1251,6 +1251,10 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }
 
+func (c *K8sCluster) ZoneName() string {
+	return c.GetKumactlOptions().CPName
+}
+
 type appInstallation struct {
 	Name      string
 	Namespace string

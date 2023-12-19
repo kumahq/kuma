@@ -28,7 +28,6 @@ func New(
 	refresh time.Duration,
 	filter reconcile.ResourceFilter,
 	mapper reconcile.ResourceMapper,
-	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hashFn, cache := newKDSContext(log)
@@ -50,9 +49,7 @@ func New(
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)), todo(jakubdyszkiewicz) temporarily disable to see if it's a reason for E2E flakes.
 		syncTracker,
-	}
-	if insight {
-		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
+		DefaultStatusTracker(rt, log),
 	}
 	return NewServer(cache, callbacks, log), nil
 }
