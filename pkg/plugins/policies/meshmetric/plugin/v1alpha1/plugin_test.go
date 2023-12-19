@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -73,37 +72,6 @@ var _ = Describe("MeshMetric", func() {
 											Prometheus: &api.PrometheusBackend{
 												Path: "/metrics",
 												Port: 5670,
-											},
-										},
-									},
-								},
-							},
-						},
-					}),
-				).
-				Build(),
-		}),
-		Entry("mesh_mtls", testCase{
-			context: *xds_builders.Context().WithMesh(samples.MeshMTLSBuilder()).Build(),
-			proxy: xds_builders.Proxy().
-				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
-				WithSecretsTracker(envoy_common.NewSecretsTracker("default", []string{"default"})).
-				WithPolicies(xds_builders.MatchedPolicies().
-					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
-						Rules: []*core_rules.Rule{
-							{
-								Subset: []core_rules.Tag{},
-								Conf: api.Conf{
-									Backends: &[]api.Backend{
-										{
-											Type: api.PrometheusBackendType,
-											Prometheus: &api.PrometheusBackend{
-												Path: "/metrics",
-												Port: 5670,
-												Tls: &api.PrometheusTls{
-													Mode: api.ActiveMTLSBackend,
-												},
 											},
 										},
 									},

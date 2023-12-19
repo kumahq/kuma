@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -39,7 +41,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	backend := pointer.Deref(conf.Backends)[0]
 	if backend.Type == api.PrometheusBackendType && backend.Prometheus != nil {
-		err := configurePrometheus(rs, proxy, ctx.Mesh.Resource, backend.Prometheus, conf)
+		err := configurePrometheus(rs, proxy, backend.Prometheus, conf)
 		if err != nil {
 			return err
 		}
@@ -48,12 +50,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, mesh *core_mesh.MeshResource, prometheusBackend *api.PrometheusBackend, conf api.Conf) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackend *api.PrometheusBackend, conf api.Conf) error {
 	configurer := &xds.PrometheusConfigurer{
 		Backend:         prometheusBackend,
-		ListenerName:    envoy_names.GetPrometheusListenerName(),
+		ListenerName:    fmt.Sprintf("_%s", envoy_names.GetPrometheusListenerName()),
 		EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-		ClusterName:     envoy_names.GetMetricsHijackerClusterName(),
+		ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 		StatsPath:       "/" + envoyMetricsFilter(conf),
 	}
 
@@ -67,7 +69,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, mesh *
 		Resource: cluster,
 	})
 
-	listener, err := configurer.ConfigureListener(proxy, mesh)
+	listener, err := configurer.ConfigureListener(proxy)
 	if err != nil {
 		return err
 	}

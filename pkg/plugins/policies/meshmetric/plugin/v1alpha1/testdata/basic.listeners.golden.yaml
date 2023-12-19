@@ -1,5 +1,5 @@
 resources:
-- name: kuma:metrics:prometheus
+- name: _kuma:metrics:prometheus
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -21,13 +21,13 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kuma:metrics:prometheus
+              name: _kuma:metrics:prometheus
               routes:
               - match:
                   prefix: /metrics
                 route:
-                  cluster: kuma:metrics:hijacker
+                  cluster: _kuma:metrics:hijacker
                   prefixRewrite: /?filter=http.*&usedonly
-          statPrefix: kuma_metrics_prometheus
-    name: kuma:metrics:prometheus
+          statPrefix: _kuma_metrics_prometheus
+    name: _kuma:metrics:prometheus
     trafficDirection: INBOUND

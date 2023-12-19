@@ -2,7 +2,6 @@ package xds
 
 import (
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -31,17 +30,11 @@ func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_c
 		Build()
 }
 
-func (pc *PrometheusConfigurer) ConfigureListener(proxy *core_xds.Proxy, mesh *core_mesh.MeshResource) (envoy_common.NamedResource, error) {
+func (pc *PrometheusConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	var listener envoy_common.NamedResource
 	var err error
 
-	// nolint:gocritic
-	if pc.useMeshMtls(mesh) {
-		listener, err = pc.mtlsListener(proxy, mesh)
-		if err != nil {
-			return nil, err
-		}
-	} else if pc.useProvidedTls(proxy.Metadata) {
+	if pc.useProvidedTls(proxy.Metadata) {
 		listener, err = pc.providedTlsListener(proxy)
 		if err != nil {
 			return nil, err
@@ -56,10 +49,6 @@ func (pc *PrometheusConfigurer) ConfigureListener(proxy *core_xds.Proxy, mesh *c
 	return listener, nil
 }
 
-func (pc *PrometheusConfigurer) useMeshMtls(mesh *core_mesh.MeshResource) bool {
-	return pc.Backend.Tls != nil && pc.Backend.Tls.Mode == api.ActiveMTLSBackend && mesh.MTLSEnabled()
-}
-
 func (pc *PrometheusConfigurer) useProvidedTls(metadata *core_xds.DataplaneMetadata) bool {
 	return pc.Backend.Tls != nil && pc.Backend.Tls.Mode == api.ProvidedTLS && certsConfigured(metadata)
 }
@@ -70,18 +59,6 @@ func certsConfigured(metadata *core_xds.DataplaneMetadata) bool {
 		return false
 	}
 	return true
-}
-
-func (pc *PrometheusConfigurer) mtlsListener(proxy *core_xds.Proxy, mesh *core_mesh.MeshResource) (envoy_common.NamedResource, error) {
-	match := envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address)
-	return pc.baseSecuredListenerBuilder(proxy, match).
-		Configure(envoy_listeners.FilterChain(
-			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-				envoy_listeners.ServerSideMTLS(mesh, proxy.SecretsTracker),
-				envoy_listeners.StaticEndpoints(pc.ListenerName, pc.staticEndpoint()),
-			),
-		)).
-		Build()
 }
 
 func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
