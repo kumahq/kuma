@@ -13,12 +13,6 @@ unexport KUBECONFIG
 
 METRICS_SERVER_VERSION := 0.4.1
 
-ifdef IPV6
-KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
-else
-KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
-endif
-
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
@@ -39,10 +33,10 @@ KUMA_NAMESPACE ?= kuma-system
 
 .PHONY: kind/start
 kind/start: ${KUBECONFIG_DIR}
-	@$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
+	$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		($(KIND) create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
-			--config "$(KIND_CONFIG)" \
+			--config "$(KUMA_DIR)/test/kind/cluster-$(if $(IPV6),ipv6-,)$(KIND_CLUSTER_NAME).yaml" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
