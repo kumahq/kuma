@@ -144,5 +144,97 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 			},
 		},
 	},
+}), Entry("tie-breaking", policiesTestCase{
+	dataplane: samples.DataplaneWeb(),
+	resources: xds_context.Resources{
+		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+			api.MeshHTTPRouteType: &api.MeshHTTPRouteResourceList{
+				Items: []*api.MeshHTTPRouteResource{{
+					Meta: &test_model.ResourceMeta{
+						Mesh: core_model.DefaultMesh,
+						Name: "a-route",
+					},
+					Spec: &api.MeshHTTPRoute{
+						TargetRef: builders.TargetRefMesh(),
+						To: []api.To{{
+							TargetRef: builders.TargetRefService("backend"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/v1",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefServiceSubset("a-backend", "version", "v1"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}},
+						}},
+					},
+				}, {
+					Meta: &test_model.ResourceMeta{
+						Mesh: core_model.DefaultMesh,
+						Name: "b-route",
+					},
+					Spec: &api.MeshHTTPRoute{
+						TargetRef: builders.TargetRefMesh(),
+						To: []api.To{{
+							TargetRef: builders.TargetRefService("backend"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/v1",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefServiceSubset("b-backend", "version", "v1"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}},
+						}},
+					},
+				}},
+			},
+		},
+	},
+	expectedRoutes: core_rules.ToRules{
+		Rules: core_rules.Rules{
+			{
+				Subset: core_rules.MeshService("backend"),
+				Conf: api.PolicyDefault{
+					Rules: []api.Rule{{
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/v1",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefServiceSubset("b-backend", "version", "v1"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}},
+				},
+				Origin: []core_model.ResourceMeta{
+					&test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "a-route",
+					},
+					&test_model.ResourceMeta{
+						Mesh: "default",
+						Name: "b-route",
+					},
+				},
+			},
+		},
+	},
 }),
 )
