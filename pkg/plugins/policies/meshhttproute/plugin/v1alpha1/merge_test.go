@@ -217,7 +217,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						}},
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefServiceSubset("b-backend", "version", "v1"),
+								TargetRef: builders.TargetRefServiceSubset("a-backend", "version", "v1"),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
