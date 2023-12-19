@@ -150,12 +150,13 @@ jobs:
       - name: Run tests
         run: |
           make test TEST_REPORTS=1
-      - name: Save test reports
-        uses: actions/upload-artifact@v3
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
         with:
-          name: test-reports
-          path: build/reports
-          retention-days: 7
+          name: Unit Tests
+          path: build/reports/results.xml
+          reporter: java-junit
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
