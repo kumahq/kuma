@@ -1,16 +1,11 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
-
 reusable:
-
   constants:
-    - &go_version "1.21.4"
-
+    - &go_version "1.21.5"
   docker_images:
-    - &golang_image "cimg/go:1.21.4"
-
+    - &golang_image "cimg/go:1.21.5"
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
-
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -26,89 +21,83 @@ commands:
         type: string
         default: *go_version
     steps:
-    - run:
-        # `unzip`    is necessary to install `protoc`
-        # `gcc`      is necessary to run `go test -race`
-        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils` is necessary to decompress xz files
-        name: "Install basic tools"
-        command: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
+      - run:
+          # `unzip`    is necessary to install `protoc`
+          # `gcc`      is necessary to run `go test -race`
+          # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+          # `xz-utils` is necessary to decompress xz files
+          name: "Install basic tools"
+          command: |
+            if [ -r /etc/os-release ]; then source /etc/os-release; fi
+            case "$ID" in
+            ubuntu)
+              if ! command -v sudo 2>&1 >/dev/null; then
+                apt update
+                apt install -y sudo
+              fi
 
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
-            ;;
-          esac
-    - run:
-        name: "Install Go"
-        # See https://golang.org/doc/install#tarball
-        command: |
-          curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
-          echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
-          # if GOPATH is not set, `golang-ci` fails with an obscure message
-          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
-          echo 'export GOPATH=$HOME/go' >> $BASH_ENV
-    - run:
-        name: "Update runc"
-        # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
-        command: |
-          if [[ `uname -s` == "Linux" ]]; then
-            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
-            sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
-          fi
+              sudo apt update
+              sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
+              ;;
+            esac
+      - run:
+          name: "Install Go"
+          # See https://golang.org/doc/install#tarball
+          command: |
+            curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
+            echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+            # if GOPATH is not set, `golang-ci` fails with an obscure message
+            # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+            echo 'export GOPATH=$HOME/go' >> $BASH_ENV
+      - run:
+          name: "Update runc"
+          # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
+          command: |
+            if [[ `uname -s` == "Linux" ]]; then
+              sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
+              sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
+            fi
   skip_on_branch:
     description: "Skip the job on the branch"
     steps:
-    - run:
-        name: "Skip the job on the branch"
-        command: |
-          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
-            circleci-agent step halt
-            exit 0
-          fi
-
+      - run:
+          name: "Skip the job on the branch"
+          command: |
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
+              circleci-agent step halt
+              exit 0
+            fi
 executors:
   golang:
     resource_class: xlarge
     docker:
-    - image: *golang_image
+      - image: *golang_image
     environment:
       GO_VERSION: *go_version
-
   vm-amd64:
     resource_class: large
     machine:
       image: *ubuntu_vm_image
     environment:
       GO_VERSION: *go_version
-
   vm-arm64:
     resource_class: arm.large
     machine:
       image: *ubuntu_vm_image
     environment:
       GO_VERSION: *go_version
-
   linux:
     resource_class: large
     machine:
       image: *ubuntu_vm_image
     environment:
       GO_VERSION: *go_version
-
   darwin:
     resource_class: macos.x86.medium.gen2
     macos:
       xcode: "12.5.1"
     environment:
       GO_VERSION: *go_version
-
 jobs:
   dev:
     executor: << parameters.executor >>
@@ -118,26 +107,25 @@ jobs:
         type: string
         default: linux
     steps:
-    - checkout
-    - install_build_tools:
-        go_os: << parameters.executor >>
-    - run:
-        name: "Install all development tools"
-        command: |
-          make dev/tools
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: |
-          make check BUILD_INFO_VERSION=latest
-    - run:
-        name: "Build all binaries"
-        command: |
-          make build
-    - run:
-        name: "Run unit tests"
-        command: |
-          make test
-
+      - checkout
+      - install_build_tools:
+          go_os: << parameters.executor >>
+      - run:
+          name: "Install all development tools"
+          command: |
+            make dev/tools
+      - run:
+          name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+          command: |
+            make check BUILD_INFO_VERSION=latest
+      - run:
+          name: "Build all binaries"
+          command: |
+            make build
+      - run:
+          name: "Run unit tests"
+          command: |
+            make test
   go_cache:
     executor: << parameters.executor >>
     parameters:
@@ -146,44 +134,42 @@ jobs:
         type: string
         default: golang
     steps:
-    - when:
-        condition: {equal: [vm-amd64, << parameters.executor >>]}
-        steps:
-          - install_build_tools:
-              go_arch: amd64
-    - when:
-        condition: {equal: [vm-arm64, << parameters.executor >>]}
-        steps:
-          - install_build_tools:
-              go_arch: arm64
-    - checkout
-    - restore_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        command: make dev/tools
-    - run:
-        name: "Download Go modules"
-        command: |
-          go mod download -x
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-        paths:
-        - "/home/circleci/go/pkg/mod"
-        - "/home/circleci/.kuma-dev"
-
+      - when:
+          condition: {equal: [vm-amd64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: amd64
+      - when:
+          condition: {equal: [vm-arm64, << parameters.executor >>]}
+          steps:
+            - install_build_tools:
+                go_arch: arm64
+      - checkout
+      - restore_cache:
+          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          command: make dev/tools
+      - run:
+          name: "Download Go modules"
+          command: |
+            go mod download -x
+      # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+      - save_cache:
+          key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
+            - "/home/circleci/.kuma-dev"
   check:
     executor: golang
     steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: make check
-
+      - checkout
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+          command: make check
   test:
     parameters:
       target:
@@ -197,53 +183,52 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
-    - checkout
-    - when:
-        condition: {equal: [arm64, << parameters.arch >>]}
-        steps:
-          - skip_on_branch
-    - run:
-        # Label based skip-test runs
-        name: "Check if skip"
-        command: |
-          if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
-            echo "Not running tests as the PR has label: ci/skip-test"
-            circleci-agent step halt
-            exit 0
-          fi
-    - install_build_tools:
-        go_arch: << parameters.arch >>
-        go_os: linux
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        name: "Run tests"
-        command: |
-          make << parameters.target >>
-    - run:
-        # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
-        name: "Push coverage to Codecov"
-        when: always
-        command: |
-          set -o errexit
-          curl --fail --location --silent --output codecov https://codecov.io/bash
-          readonly VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2)
-          readonly URL="https://raw.githubusercontent.com/codecov/codecov-bash"
-          for i in 1 256 512 ; do
-            echo checking SHA${i}SUM for version ${VERSION}
-            shasum --algorithm $i --check --ignore-missing <(
-              curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
-            )
-          done
-          bash ./codecov -f "build/reports/*.out"
-    - store_artifacts:
-        path: build/reports
-        destination: /reports
-    - store_test_results:
-        path: build/reports
-
+      - checkout
+      - when:
+          condition: {equal: [arm64, << parameters.arch >>]}
+          steps:
+            - skip_on_branch
+      - run:
+          # Label based skip-test runs
+          name: "Check if skip"
+          command: |
+            if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
+              echo "Not running tests as the PR has label: ci/skip-test"
+              circleci-agent step halt
+              exit 0
+            fi
+      - install_build_tools:
+          go_arch: << parameters.arch >>
+          go_os: linux
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          name: "Run tests"
+          command: |
+            make << parameters.target >>
+      - run:
+          # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
+          name: "Push coverage to Codecov"
+          when: always
+          command: |
+            set -o errexit
+            curl --fail --location --silent --output codecov https://codecov.io/bash
+            readonly VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2)
+            readonly URL="https://raw.githubusercontent.com/codecov/codecov-bash"
+            for i in 1 256 512 ; do
+              echo checking SHA${i}SUM for version ${VERSION}
+              shasum --algorithm $i --check --ignore-missing <(
+                curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
+              )
+            done
+            bash ./codecov -f "build/reports/*.out"
+      - store_artifacts:
+          path: build/reports
+          destination: /reports
+      - store_test_results:
+          path: build/reports
   e2e:
     parameters:
       k8sVersion:
@@ -296,7 +281,7 @@ jobs:
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
-            
+
             # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
@@ -304,12 +289,12 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            
+
             # Handle force run tests on labels
             if [[ $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
               exit 0
             fi
-            
+
             # Handle legacy tests on branch
             if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
               if [[ "<< parameters.target >>" == "test/e2e" ]]; then
@@ -384,7 +369,6 @@ jobs:
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
-
   build:
     parameters:
       arch:
@@ -394,78 +378,75 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
-    - checkout
-    - when:
-        condition: {equal: [arm64, << parameters.arch >>]}
-        steps:
-          - skip_on_branch
-    - install_build_tools:
-        go_arch: <<parameters.arch>>
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
-        command: make build
-    - run:
-        name: Build Docker images
-        command: |
-          make images
-    - run:
-        name: Save Docker images into TAR archives
-        command: |
-          make docker/save
-    # Persist the specified paths into the workspace for use in downstream jobs
-    - persist_to_workspace:
-        root: build
-        paths:
-        - docker-images-<<parameters.arch>>
-        - artifacts-linux-<<parameters.arch>>
-
+      - checkout
+      - when:
+          condition: {equal: [arm64, << parameters.arch >>]}
+          steps:
+            - skip_on_branch
+      - install_build_tools:
+          go_arch: <<parameters.arch>>
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+      - run:
+          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
+          command: make build
+      - run:
+          name: Build Docker images
+          command: |
+            make images
+      - run:
+          name: Save Docker images into TAR archives
+          command: |
+            make docker/save
+      # Persist the specified paths into the workspace for use in downstream jobs
+      - persist_to_workspace:
+          root: build
+          paths:
+            - docker-images-<<parameters.arch>>
+            - artifacts-linux-<<parameters.arch>>
   release:
     executor: vm-amd64
     steps:
-    - install_build_tools
-    - checkout
-    - run:
-        name: "Download Go modules"
-        command: go mod download
-    - run: # allows to build both arch on AMD
-        name: "Install quem'u to support ARM build"
-        command: |
-          sudo apt-get install -y qemu-user-static
-          sudo apt-get install -y binfmt-support
-    - run:
-        name: Build Packages
-        command: |
-          ./tools/releases/distros.sh --package
-    - run:
-        name: Push Packages
-        command: |
-          ./tools/releases/distros.sh --release
-    - run:
-        name: Build Docker
-        command: |
-          ./tools/releases/docker.sh --build
-    - run:
-        name: Push Docker
-        command: |
-          ./tools/releases/docker.sh --push
-    - run:
-        name: Create and Push multiarch manifest for Docker images
-        command: |
-          ./tools/releases/docker.sh --manifest
-
+      - install_build_tools
+      - checkout
+      - run:
+          name: "Download Go modules"
+          command: go mod download
+      - run: # allows to build both arch on AMD
+          name: "Install quem'u to support ARM build"
+          command: |
+            sudo apt-get install -y qemu-user-static
+            sudo apt-get install -y binfmt-support
+      - run:
+          name: Build Packages
+          command: |
+            ./tools/releases/distros.sh --package
+      - run:
+          name: Push Packages
+          command: |
+            ./tools/releases/distros.sh --release
+      - run:
+          name: Build Docker
+          command: |
+            ./tools/releases/docker.sh --build
+      - run:
+          name: Push Docker
+          command: |
+            ./tools/releases/docker.sh --push
+      - run:
+          name: Create and Push multiarch manifest for Docker images
+          command: |
+            ./tools/releases/docker.sh --manifest
 workflows:
   version: 2
-
   kuma-commit:
     jobs:
       - dev:
           # Avoids running expensive workflow on PRs
-          filters: &expensive_workflow_filter # only run on tags, master and release-* branches
-            branches:
+          filters: &expensive_workflow_filter
+            branches: # only run on tags, master and release-* branches
               only:
                 - master
                 - /^release-.*/
@@ -475,60 +456,60 @@ workflows:
           matrix:
             alias: dev
             parameters:
-              executor: [ linux, darwin]
+              executor: [linux, darwin]
       - go_cache:
           name: go_cache-<< matrix.executor >>
           matrix:
             alias: go_cache
             parameters:
-              executor: [ golang, vm-amd64, vm-arm64 ]
+              executor: [golang, vm-amd64, vm-arm64]
       - check:
-          requires: [ go_cache ]
+          requires: [go_cache]
       - build:
           name: build-<< matrix.arch >>
           matrix:
             alias: build
             parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ go_cache-golang ]
+              arch: [amd64, arm64]
+          requires: [go_cache-golang]
       - test:
           name: test-<< matrix.arch >>
           matrix:
             alias: test
             parameters:
-              arch: [ amd64, arm64 ]
-          requires: [ check ]
+              arch: [amd64, arm64]
+          requires: [check]
       - e2e:
           name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-              arch: [ amd64, arm64 ]
+              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6]
+              arch: [amd64, arm64]
           parallelism: 3
           target: test/e2e
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [build-<< matrix.arch >>, check]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
-              arch: [ amd64, arm64 ]
+              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6]
+              target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
+              arch: [amd64, arm64]
           parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [build-<< matrix.arch >>, check]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
             alias: test/e2e-calico
             parameters:
-              k8sVersion: [ v1.21.7-k3s1 ]
-              target: [ test/e2e-multizone ]
-              arch: [ amd64 ]
-              cniNetworkPlugin: [ calico ]
+              k8sVersion: [v1.21.7-k3s1]
+              target: [test/e2e-multizone]
+              arch: [amd64]
+              cniNetworkPlugin: [calico]
           parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
+          requires: [build-<< matrix.arch >>, check]
       - release:
           # publish artifacts speculatively for normal commits
           filters: # only on master and release-* branches (never on PRs and tags)
@@ -538,7 +519,7 @@ workflows:
                 - /^release-.*/
             tags:
               ignore: /.*/
-          requires: [ build ]
+          requires: [build]
       - release:
           # only publish tagged artifacts if everything passes
           filters: # only on tags
@@ -546,4 +527,4 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev, test, test/e2e, test/e2e-legacy ]
+          requires: [dev, test, test/e2e, test/e2e-legacy]
