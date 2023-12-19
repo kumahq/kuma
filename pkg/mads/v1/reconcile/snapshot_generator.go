@@ -96,6 +96,9 @@ func (s *snapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context, client
 
 	var meshToMeshMetrics []string
 	for _, meshMetric := range meshMetricsList.Items {
+		if meshMetric.Spec.Default.Backends == nil {
+			continue
+		}
 		for _, backend := range *meshMetric.Spec.Default.Backends { // can backends be nil?
 			// match against client ID or fallback to "" when specified by user
 			if backend.Type == v1alpha1.PrometheusBackendType && (backend.Prometheus.ClientId == nil || *backend.Prometheus.ClientId == clientId || *backend.Prometheus.ClientId == "") {
