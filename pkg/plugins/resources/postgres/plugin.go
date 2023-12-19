@@ -25,7 +25,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	if !ok {
 		return nil, nil, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
-	migrated, err := isDbMigrated(*cfg)
+	migrated, err := IsDbMigrated(*cfg)
 	if err != nil {
 		return nil, nil, err
 	}

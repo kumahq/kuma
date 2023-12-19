@@ -109,15 +109,15 @@ func (v *PostgresContainer) Stop() error {
 
 type DbOption string
 
-func (v *PostgresContainer) Config() (*pg_config.PostgresStoreConfig, error) {
+func (v *PostgresContainer) Config() (pg_config.PostgresStoreConfig, error) {
 	cfg := pg_config.DefaultPostgresStoreConfig()
 	ip, err := v.container.Host(context.Background())
 	if err != nil {
-		return nil, err
+		return pg_config.PostgresStoreConfig{}, err
 	}
 	port, err := v.container.MappedPort(context.Background(), "5432")
 	if err != nil {
-		return nil, err
+		return pg_config.PostgresStoreConfig{}, err
 	}
 	cfg.Host = ip
 	cfg.Port = port.Int()
@@ -129,7 +129,7 @@ func (v *PostgresContainer) Config() (*pg_config.PostgresStoreConfig, error) {
 		cfg.TLS.CAPath = path.Join(rDir, "certs/rootCA.crt")
 	}
 	if err := config.Load("", cfg); err != nil {
-		return nil, err
+		return pg_config.PostgresStoreConfig{}, err
 	}
 	// make sure the server is reachable
 	Eventually(func() error {
@@ -155,7 +155,7 @@ func (v *PostgresContainer) Config() (*pg_config.PostgresStoreConfig, error) {
 		return nil
 	}, "10s", "100ms").Should(Succeed())
 	GinkgoLogr.Info("Database successfully created and started", "name", cfg.DbName)
-	return cfg, nil
+	return *cfg, nil
 }
 
 func (v *PostgresContainer) PrintDebugInfo(expectedDbName string, expectedDbPort int) {
