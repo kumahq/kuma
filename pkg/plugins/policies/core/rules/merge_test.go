@@ -285,7 +285,7 @@ var _ = Describe("MergeConfs", func() {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},
 			}},
-		}), Entry("should work with a direct merge values", mergeValuesByKeyCase{
+		}), Entry("should only merge based on set of merge values", mergeValuesByKeyCase{
 			policies: []testPolicy{{
 				DirectMergeValues: []string{"a", "b"},
 				MergeValues: []mergeEntry{{

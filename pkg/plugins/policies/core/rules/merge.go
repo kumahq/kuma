@@ -22,7 +22,7 @@ func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	}
 
 	// Sort the confs (potentially) into sets grouped by `mergeValues` fields
-	mapped, sortedMapKeys, setMergeValuesField, err := handleMergeValues(confs)
+	taggedConfsList, err := handleMergeValues(confs)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	var interfaces []interface{}
 
 	// Merge each tagged sets of confs
-	for _, key := range sortedMapKeys {
-		confs := mapped[key]
+	for _, taggedConfs := range taggedConfsList {
+		confs := taggedConfs.Confs
 
 		resultBytes := []byte{}
 		for i := 0; i < len(confs); i++ {
@@ -70,9 +70,6 @@ func MergeConfs(confs []interface{}) ([]interface{}, error) {
 		if err := handleMergeByKeyFields(valueResult); err != nil {
 			return nil, err
 		}
-
-		// Set the mergeValues field on the merged confs
-		setMergeValuesField(valueResult, key)
 
 		interfaces = append(interfaces, valueResult.Elem().Interface())
 	}
@@ -128,18 +125,21 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 	return nil
 }
 
-type SetConfField func(reflect.Value, string)
+type SetConfField func(reflect.Value, []string)
+
+type GroupedConfs struct {
+	Confs []reflect.Value
+}
 
 // handleMergeValues takes conf objects and returns
-// * a map of the confs keyed by `mergeValues` tagged fields
-// * sorted keys of the map
-// * a function to set the `mergeValues` field on a conf, after merging confs
+// * a list of the confs keyed by `mergeValues` tagged fields
+// Note that if there is no `mergeValues` field, given values are returned in a
+// single element list.
 // See merge_test.go for an example.
-func handleMergeValues(confs []interface{}) (map[string][]reflect.Value, []string, SetConfField, error) {
+func handleMergeValues(confs []interface{}) ([]GroupedConfs, error) {
 	confType := reflect.TypeOf(confs[0])
 
 	// We construct a map of strings to confs
-	mergeValueMap := map[string][]reflect.Value{}
 	var keyFieldIndex *int
 	// Find a field tagged with `mergeValues`
 	for fieldIndex := 0; fieldIndex < confType.NumField(); fieldIndex++ {
@@ -148,49 +148,61 @@ func handleMergeValues(confs []interface{}) (map[string][]reflect.Value, []strin
 			continue
 		}
 		if field.Type.Kind() != reflect.Slice || field.Type.Elem().Kind() != reflect.String {
-			return nil, nil, nil, fmt.Errorf("a mergeValues field must be a slice of strings")
+			return nil, fmt.Errorf("a mergeValues field must be a slice of strings")
 		}
 
 		keyFieldIndex = pointer.To(fieldIndex)
 	}
 
+	intermediateMergeMap := map[string][]reflect.Value{}
+
 	// Track ordered mergeValues field values
-	var orderedKeys []string
+	var orderedIntermediateKeys []string
+
 	// Put every conf into the map for every `mergeValues` field value it has
 	for _, conf := range confs {
 		confVal := reflect.ValueOf(conf)
 		// If there is no such `mergeValues` field, put everything under the
 		// empty string
-		keys := reflect.ValueOf([]string{""})
+		keys := []string{""}
 		if keyFieldIndex != nil {
 			confKeys := confVal.Field(*keyFieldIndex)
 			// Treat the empty list of values like "" in our map
 			if confKeys.Len() > 0 {
-				keys = confKeys
+				keys = confKeys.Interface().([]string)
 			}
 		}
 
-		for i := 0; i < keys.Len(); i++ {
-			values, ok := mergeValueMap[keys.Index(i).String()]
+		for _, key := range keys {
+			keyedConf := reflect.New(confVal.Type())
+			keyedConf.Elem().Set(confVal)
+			values, ok := intermediateMergeMap[key]
 			if !ok {
-				orderedKeys = append(orderedKeys, keys.Index(i).String())
+				orderedIntermediateKeys = append(orderedIntermediateKeys, key)
 			}
-			mergeValueMap[keys.Index(i).String()] = append(values, confVal)
+			// Set the singular key on copies of these confs and add them to the
+			// accumulator
+			if key != "" {
+				singleKeys := reflect.ValueOf([]string{key})
+				keyedConf.Elem().Field(*keyFieldIndex).Set(singleKeys)
+			}
+			intermediateMergeMap[key] = append(values, keyedConf.Elem())
 		}
 	}
 
-	// If we don't have a mergeValues field, do nothing
-	setMergeValuesField := func(reflect.Value, string) {}
-	if keyFieldIndex != nil {
-		setMergeValuesField = func(conf reflect.Value, fieldValue string) {
-			// Don't do anything if our value is "" (or the empty list)
-			if fieldValue == "" {
-				return
-			}
-			conf.Elem().Field(*keyFieldIndex).Set(reflect.ValueOf([]string{fieldValue}))
+	var taggedValues []GroupedConfs
+	for _, key := range orderedIntermediateKeys {
+		confs, ok := intermediateMergeMap[key]
+		if !ok {
+			panic("internal merge error")
 		}
+
+		taggedValues = append(taggedValues, GroupedConfs{
+			Confs: confs,
+		})
 	}
-	return mergeValueMap, orderedKeys, setMergeValuesField, nil
+
+	return taggedValues, nil
 }
 
 func mergeByKey(vals reflect.Value) (reflect.Value, error) {
