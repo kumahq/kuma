@@ -218,6 +218,8 @@ func (p *K8sObjectDetailPrinter) printPodDetails() string {
 		objectDetails: newObjectDetails(p.objectName,
 			fromPodCondition(p.podObject.Status.Conditions),
 			getObjectEvents(p.testingT, p.kubectlOptions, "Pod", p.objectName)),
+		Phase: string(p.podObject.Status.Phase),
+		Logs:  getPodLogs(p.testingT, p.kubectlOptions, p.podObject),
 	}
 	podDetailsJson, err := json.Marshal(pDetails)
 	if err != nil {
@@ -243,8 +245,8 @@ type deploymentDetails struct {
 
 type podDetails struct {
 	*objectDetails `json:",inline"`
-	Phase          string `json:"phase,omitempty"`
-	Logs           string `json:"logs,omitempty"`
+	Phase          string            `json:"phase,omitempty"`
+	Logs           map[string]string `json:"logs,omitempty"`
 }
 
 type objectCondition struct {
@@ -276,6 +278,24 @@ func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptio
 		FieldSelector: fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s", kind, name),
 	})
 	return simplifyK8sEvents(events)
+}
+
+func getPodLogs(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, pod *v1.Pod) map[string]string {
+	var allLogs map[string]string
+
+	for _, c := range pod.Status.ContainerStatuses {
+		logs, err := k8s.GetPodLogsE(testingT, kubectlOptions, pod, c.Name)
+		if err != nil {
+			continue
+		}
+
+		if allLogs == nil {
+			allLogs = make(map[string]string)
+		}
+		allLogs[c.Name] = logs
+	}
+
+	return allLogs
 }
 
 func newObjectDetails(name string, conditions []*objectCondition, events []*simplifiedEvent) *objectDetails {
