@@ -111,7 +111,7 @@ func (r *ZoneConfig) Validate() error {
 func DefaultZoneConfig() *ZoneConfig {
 	return &ZoneConfig{
 		GlobalAddress: "",
-		Name:          "",
+		Name:          "default",
 		KDS: &KdsClientConfig{
 			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			MaxMsgSize:      10 * 1024 * 1024,

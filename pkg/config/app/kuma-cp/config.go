@@ -177,13 +177,6 @@ func (c Config) IsNonFederatedZoneCP() bool {
 	return c.Mode == core.Zone && !c.IsFederatedZoneCP()
 }
 
-func (c Config) ZoneName() string {
-	if c.Multizone.Zone.Name == "" {
-		return core.DefaultZoneName
-	}
-	return c.Multizone.Zone.Name
-}
-
 func (c *Config) Sanitize() {
 	c.General.Sanitize()
 	c.Store.Sanitize()

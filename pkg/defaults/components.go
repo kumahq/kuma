@@ -69,7 +69,7 @@ func Setup(runtime runtime.Runtime) error {
 		zoneDefault := &ZoneDefaultComponent{
 			ResManager: runtime.ResourceManager(),
 			Extensions: runtime.Extensions(),
-			ZoneName:   runtime.Config().ZoneName(),
+			ZoneName:   runtime.Config().Multizone.Zone.Name,
 		}
 		if err := runtime.Add(envoyAdminCaDefault, zoneDefault); err != nil {
 			return err
