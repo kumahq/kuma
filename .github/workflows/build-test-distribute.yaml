@@ -249,7 +249,7 @@ jobs:
             {
               "test_e2e": {
                 "target": [""],
-                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64", "arm64"],
                 "parallelism": [3],
                 "cniNetworkPlugin": ["flannel"],
@@ -265,6 +265,7 @@ jobs:
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
+                  {"arch": "arm64", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
@@ -274,18 +275,14 @@ jobs:
                 ]
               }
             }
-          OVERRIDE_MATRIX: |-
-            {
-              "test_e2e": false,
-              "test_e2e_env": {
-                "include": [],
-                "exclude": [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
-              }
-            }
+          OVERRIDE_JQ_CMD: |-
+            .test_e2e = false
+            | .test_e2e_env.include = []
+            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
         run: |-
           BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
           if [[ "${RUN_FULL_MATRIX}" != "true" ]]; then
-            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '. * ${{ env.OVERRIDE_MATRIX }}')
+            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
           fi
 
           echo "final matrix: $BASE_MATRIX_ALL"
