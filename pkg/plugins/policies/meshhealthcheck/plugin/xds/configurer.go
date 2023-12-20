@@ -302,7 +302,7 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 		hc.IntervalJitterPercent = uint32(*conf.IntervalJitterPercent)
 	}
 	if conf.EventLogPath != nil {
-		hc.EventLogPath = *conf.EventLogPath
+		hc.EventLogPath = *conf.EventLogPath //nolint:staticcheck
 	}
 	if conf.AlwaysLogHealthCheckFailures != nil {
 		hc.AlwaysLogHealthCheckFailures = *conf.AlwaysLogHealthCheckFailures
