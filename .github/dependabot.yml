@@ -30,3 +30,4 @@ updates:
     open-pull-requests-limit: 15
     labels:
       - "dependencies"      
+      - "ci/skip-test" # No need to run tests on github actions updates

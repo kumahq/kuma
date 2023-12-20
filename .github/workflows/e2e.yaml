@@ -18,6 +18,7 @@ env:
   E2E_PARAM_LEGACY_KDS: ${{ fromJSON(inputs.matrix).legacyKDS }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
@@ -35,6 +36,11 @@ jobs:
           fi
           echo "Running with: ${{ toJSON(inputs) }} ${{ toJSON(env) }}"
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/checkout@v4
@@ -42,18 +48,21 @@ jobs:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools
@@ -68,7 +77,7 @@ jobs:
           sudo df -h
       - name: "GitHub Actions: download build artifacts"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-output
           path: build

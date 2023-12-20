@@ -205,7 +205,13 @@ func (b ByTargetRef) Less(i, j int) bool {
 		return tr1.Kind.Less(tr2.Kind)
 	}
 
-	return b[i].GetMeta().GetName() < b[j].GetMeta().GetName()
+	if tr1.Kind == common_api.MeshGateway {
+		if len(tr1.Tags) != len(tr2.Tags) {
+			return len(tr1.Tags) < len(tr2.Tags)
+		}
+	}
+
+	return b[i].GetMeta().GetName() > b[j].GetMeta().GetName()
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }

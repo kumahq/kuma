@@ -18,6 +18,7 @@ message KumaResource {
     string name = 1;
     string mesh = 2;
     string version = 5;
+    map<string, string> labels = 6;
   }
   Meta meta = 1;
   google.protobuf.Any spec = 2;

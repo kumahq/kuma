@@ -20,6 +20,7 @@ type Listeners struct {
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
 	DirectAccess    map[generator.Endpoint]*envoy_listener.Listener
+	Prometheus      *envoy_listener.Listener
 }
 
 func GatherListeners(rs *xds.ResourceSet) Listeners {
@@ -64,6 +65,8 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
+		case generator.OriginPrometheus:
+			listeners.Prometheus = listener
 		default:
 			continue
 		}

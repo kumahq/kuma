@@ -17,7 +17,7 @@ Rules:
     Value: another-test-server
 - Conf:
     http:
-      requestTimeout: 3s
+      requestTimeout: 1s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1

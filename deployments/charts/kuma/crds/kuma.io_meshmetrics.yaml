@@ -102,7 +102,6 @@ spec:
                               - mode
                               type: object
                           required:
-                          - clientId
                           - path
                           - port
                           type: object

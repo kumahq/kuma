@@ -51,7 +51,7 @@ func generateListeners(
 
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
-		for _, route := range prepareRoutes(rules, serviceName, protocol) {
+		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
 			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
@@ -110,6 +110,7 @@ func prepareRoutes(
 	toRules []ToRouteRule,
 	serviceName string,
 	protocol core_mesh.Protocol,
+	tags map[string]string,
 ) []Route {
 	var rules []api.Rule
 
@@ -164,13 +165,21 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
-			route.BackendRefs = []common_api.BackendRef{{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
+			targetRef := common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+			}
+			if mesh, ok := tags[mesh_proto.MeshTag]; ok {
+				targetRef.Tags = map[string]string{
+					mesh_proto.MeshTag: mesh,
+				}
+			}
+			route.BackendRefs = []common_api.BackendRef{
+				{
+					TargetRef: targetRef,
+					Weight:    pointer.To(uint(100)),
 				},
-				Weight: pointer.To(uint(100)),
-			}}
+			}
 		}
 		if rule.Default.Filters != nil {
 			route.Filters = *rule.Default.Filters

@@ -1,0 +1,66 @@
+resources:
+- name: _kuma:metrics:prometheus
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 5670
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:metrics:prometheus
+              routes:
+              - match:
+                  prefix: /metrics
+                route:
+                  cluster: _kuma:metrics:hijacker
+                  prefixRewrite: /
+          statPrefix: _kuma_metrics_prometheus
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:metrics:prometheus
+              routes:
+              - match:
+                  prefix: /metrics
+                route:
+                  cluster: _kuma:metrics:hijacker
+                  prefixRewrite: /
+          statPrefix: _kuma_metrics_prometheus
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificates:
+            - certificateChain:
+                filename: /path/cert
+              privateKey:
+                filename: /path/key
+    name: _kuma:metrics:prometheus
+    trafficDirection: INBOUND

@@ -55,6 +55,11 @@ func (p *ProxyBuilder) WithMetadata(metadata *xds.DataplaneMetadata) *ProxyBuild
 	return p
 }
 
+func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker) *ProxyBuilder {
+	p.res.SecretsTracker = secretsTracker
+	return p
+}
+
 func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuilder {
 	p.res.Policies = *policies.Build()
 	return p

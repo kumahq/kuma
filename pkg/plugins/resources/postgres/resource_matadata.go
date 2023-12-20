@@ -12,6 +12,7 @@ type resourceMetaObject struct {
 	Mesh             string
 	CreationTime     time.Time
 	ModificationTime time.Time
+	Labels           map[string]string
 }
 
 var _ core_model.ResourceMeta = &resourceMetaObject{}
@@ -38,4 +39,8 @@ func (r *resourceMetaObject) GetCreationTime() time.Time {
 
 func (r *resourceMetaObject) GetModificationTime() time.Time {
 	return r.ModificationTime
+}
+
+func (r *resourceMetaObject) GetLabels() map[string]string {
+	return r.Labels
 }
