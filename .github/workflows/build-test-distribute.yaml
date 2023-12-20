@@ -103,7 +103,7 @@ jobs:
           rm -rf ./build/oapitmp
           rm -rf ./build/ebpf/
       - name: Upload build output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: build
@@ -151,7 +151,7 @@ jobs:
         run: |
           make test TEST_REPORTS=1
       - name: Save test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-reports
           path: build/reports
