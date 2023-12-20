@@ -99,6 +99,7 @@ func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) 
 
 	state := c.streams[streamID]
 	if state == nil {
+		c.log.Info("[WARNING] OnDeltaStreamClosed but no state in the status_tracker", "streamid", streamID)
 		return
 	}
 
