@@ -231,6 +231,7 @@ var _ = Describe("MergeConfs", func() {
 	}
 
 	t := true
+	f := false
 	DescribeTable("mergeValuesByKey",
 		func(given mergeValuesByKeyCase) {
 			var givens []interface{}
@@ -260,10 +261,14 @@ var _ = Describe("MergeConfs", func() {
 				MergeValues: []mergeEntry{{
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},
+			}, {
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &f},
+				}},
 			}},
 			expected: testPolicy{
 				MergeValues: []mergeEntry{{
-					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &t},
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &f},
 				}, {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},

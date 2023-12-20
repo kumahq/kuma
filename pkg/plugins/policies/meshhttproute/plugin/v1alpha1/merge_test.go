@@ -28,7 +28,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	routes, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).MatchedPolicies(given.dataplane, given.resources)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(routes.ToRules).To(Equal(given.expectedRoutes))
-}, Entry("basic", policiesTestCase{
+}, Entry("basic-kind-specificity", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
 	resources: xds_context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
@@ -106,13 +106,12 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
-								Value: "/v1",
+								Value: "/v2",
 							},
 						}},
 						Default: api.RuleConf{
-							Filters: &[]api.Filter{{}},
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
@@ -120,12 +119,13 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
-								Value: "/v2",
+								Value: "/v1",
 							},
 						}},
 						Default: api.RuleConf{
+							Filters: &[]api.Filter{{}},
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
@@ -330,32 +330,6 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
-								Value: "/b-first-prefix",
-							},
-						}},
-						Default: api.RuleConf{
-							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
-								Weight:    pointer.To(uint(100)),
-							}},
-						},
-					}, {
-						Matches: []api.Match{{
-							Path: &api.PathMatch{
-								Type:  api.PathPrefix,
-								Value: "/b-second-prefix",
-							},
-						}},
-						Default: api.RuleConf{
-							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
-								Weight:    pointer.To(uint(100)),
-							}},
-						},
-					}, {
-						Matches: []api.Match{{
-							Path: &api.PathMatch{
-								Type:  api.PathPrefix,
 								Value: "/a-first-prefix",
 							},
 						}},
@@ -370,6 +344,32 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
 								Value: "/a-second-prefix",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefService("backend"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}, {
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/b-first-prefix",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefService("backend"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}, {
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/b-second-prefix",
 							},
 						}},
 						Default: api.RuleConf{

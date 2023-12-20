@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 // indicates that all slices that start with this prefix will be appended, not replaced
@@ -91,6 +93,9 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 			return err
 		}
 		entriesValue.Set(merged)
+	}
+	if withSet, ok := valueResult.Interface().(core_model.TransformDefaultAfterMerge); ok {
+		withSet.Transform()
 	}
 	return nil
 }

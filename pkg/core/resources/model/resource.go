@@ -474,6 +474,10 @@ type PolicyItem interface {
 	GetDefault() interface{}
 }
 
+type TransformDefaultAfterMerge interface {
+	Transform()
+}
+
 type Policy interface {
 	ResourceSpec
 	GetTargetRef() common_api.TargetRef
