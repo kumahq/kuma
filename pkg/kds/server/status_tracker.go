@@ -105,6 +105,9 @@ func (c *statusTracker) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 	defer c.mu.Unlock()
 
 	state := c.streams[streamID]
+	if state == nil {
+		return
+	}
 
 	delete(c.streams, streamID)
 
