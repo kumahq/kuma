@@ -50,6 +50,23 @@ The second option might be feasible but it only makes sense if the cost of havin
 host matching separate is very high. It also differs from Gateway API, which is
 a disadvantage.
 
+#### Precedence
+
+Note that the order of matching requests to hostnames is always
+dependent on the specified hostnames themselves, not the order of the routes
+they are specified in.
+
+Precedence is given to rules attached to hostnames in order:
+
+* Characters in a matching non-wildcard hostname
+* Characters in a matching hostname
+
+Basically, rules are first applied without wildcards in the hostname are applied before
+rules with a wildcard hostname.
+
+Only if rules can't be sorted according to this order does the order of policies
+come into play.
+
 ### `to.targetRef`
 
 When using `MeshHTTPRoute`/`MeshTCPRoute` for service to service communication, it's very
