@@ -282,8 +282,9 @@ func getObjectEvents(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptio
 
 func getPodLogs(testingT testing.TestingT, kubectlOptions *k8s.KubectlOptions, pod *v1.Pod) map[string]string {
 	var allLogs map[string]string
-
-	for _, c := range pod.Status.ContainerStatuses {
+	allContainers := append([]v1.ContainerStatus{}, pod.Status.InitContainerStatuses...)
+	allContainers = append(allContainers, pod.Status.ContainerStatuses...)
+	for _, c := range allContainers {
 		logs, err := k8s.GetPodLogsE(testingT, kubectlOptions, pod, c.Name)
 		if err != nil {
 			continue
