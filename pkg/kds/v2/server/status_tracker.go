@@ -98,6 +98,10 @@ func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) 
 	defer c.mu.Unlock()
 
 	state := c.streams[streamID]
+	if state == nil {
+		c.log.Info("[WARNING] OnDeltaStreamClosed but no state in the status_tracker", "streamid", streamID)
+		return
+	}
 
 	delete(c.streams, streamID)
 
