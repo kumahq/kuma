@@ -211,7 +211,7 @@ func (b ByTargetRef) Less(i, j int) bool {
 		}
 	}
 
-	return nameToCompare(b[i].GetMeta()) < nameToCompare(b[j].GetMeta())
+	return nameToCompare(b[i].GetMeta()) > nameToCompare(b[j].GetMeta())
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
