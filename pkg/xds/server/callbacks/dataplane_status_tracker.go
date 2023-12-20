@@ -95,7 +95,6 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 	if state == nil {
 		statusTrackerLog.Info("[WARNING] proxy disconnected but no state in the status_tracker", "streamID", streamID)
 		return
-
 	}
 
 	delete(c.streams, streamID)
