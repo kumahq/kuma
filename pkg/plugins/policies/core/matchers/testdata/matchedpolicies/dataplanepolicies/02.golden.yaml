@@ -2,19 +2,6 @@ items:
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: 1-my-policy
-  spec:
-    from:
-    - default:
-        action: Allow
-      targetRef:
-        kind: Mesh
-    targetRef:
-      kind: Mesh
-  type: MeshTrafficPermission
-- creationTime: "0001-01-01T00:00:00Z"
-  mesh: mesh-1
-  modificationTime: "0001-01-01T00:00:00Z"
   name: 2-my-policy
   spec:
     from:
@@ -28,7 +15,7 @@ items:
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: "111"
+  name: 1-my-policy
   spec:
     from:
     - default:
@@ -36,9 +23,7 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshSubset
-      tags:
-        version: v1
+      kind: Mesh
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
@@ -58,7 +43,7 @@ items:
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: my-policy-1
+  name: "111"
   spec:
     from:
     - default:
@@ -66,8 +51,9 @@ items:
       targetRef:
         kind: Mesh
     targetRef:
-      kind: MeshService
-      name: web
+      kind: MeshSubset
+      tags:
+        version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
@@ -86,7 +72,21 @@ items:
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: aaa
+  name: my-policy-1
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshService
+      name: web
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: bbb
   spec:
     from:
     - default:
@@ -102,7 +102,7 @@ items:
 - creationTime: "0001-01-01T00:00:00Z"
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: bbb
+  name: aaa
   spec:
     from:
     - default:
