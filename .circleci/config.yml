@@ -423,6 +423,7 @@ jobs:
               legacyKDS:<< parameters.legacyKDS >> \
               cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
             "
+            set +x
 
             GH_ARTIFACT_LIST_URL=<< pipeline.parameters.gh_action_artifact_list_url >>
             GH_ACTIONS_RUNTIME_TOKEN=<< pipeline.parameters.gh_action_runtime_token >>
@@ -477,9 +478,10 @@ jobs:
                     echo "$OUTPUT_FILE"
                 fi
             }
-
+            echo "Listing artifacts..."
             LIST_RESP=$(request GET "$GH_ARTIFACT_LIST_URL")
             if [[ "${LIST_RESP:0:5}" == "Error" ]]; then
+              echo "List response seems to be an error"
               echo "$LIST_RESP"
               exit 1
             fi
