@@ -18,10 +18,17 @@ type resourceMeta struct {
 }
 
 func CloneResourceMetaWithNewName(meta model.ResourceMeta, name string) model.ResourceMeta {
+	labels := maps.Clone(meta.GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if labels[mesh_proto.DisplayName] == "" {
+		labels[mesh_proto.DisplayName] = meta.GetName()
+	}
 	return &resourceMeta{
 		name:   name,
 		mesh:   meta.GetMesh(),
-		labels: maps.Clone(meta.GetLabels()),
+		labels: labels,
 	}
 }
 
