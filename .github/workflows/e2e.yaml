@@ -160,8 +160,7 @@ jobs:
           script: |
             let circleCIParams = {
               'gh_action_build_artifact_name': 'build-output',
-              'gh_action_runtime_token': process.env['ACTIONS_RUNTIME_TOKEN'],
-              'gh_action_artifact_list_url': `${process.env['ACTIONS_RUNTIME_URL']}/_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview`
+              'gh_action_run_id': '${{ github.run_id }}'
             };
             let inputs = JSON.parse(${{ toJSON(inputs.matrix) }});
             Object.keys(inputs).forEach(function(key) {
@@ -210,6 +209,7 @@ jobs:
             fi
 
             OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            touch $OUTPUT_FILE
             STATUS_CODE=
             while [[ "$STATUS_CODE" == "" ]]; do
               STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
@@ -224,19 +224,19 @@ jobs:
               fi
             done
 
-            cat $OUTPUT_FILE
-            rm $OUTPUT_FILE
             if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
               echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
-              exit 1
+              cat $OUTPUT_FILE
             fi
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
           }
 
-          PIPELINE_ID=$(request POST $CIRCLE_CI_API_PATH '${{ steps.circleci-gen-params.outputs.result }}' | jq -r '.id')
+          PIPELINE_ID=$(request POST $CIRCLE_CI_API_PATH '${{ steps.circleci-gen-params.outputs.result }}' | tr '\n' ' ' | jq -Rrc 'fromjson | .id')
           sleep 3
-          WORKFLOW_DETAILS=$(request GET https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow | jq -cr '.items[] | select(.name == "manual-e2e")')
-          PIPELINE_NUMBER=$(echo $WORKFLOW_DETAILS | jq -r '.pipeline_number')
-          WORKFLOW_ID=$(echo $WORKFLOW_DETAILS | jq -r '.id')
+          WORKFLOW_DETAILS=$(request GET https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow | tr '\n' ' ' | jq -Rrc 'fromjson | .items[] | select(.name == "manual-e2e")')
+          PIPELINE_NUMBER=$(echo $WORKFLOW_DETAILS | tr '\n' ' ' | jq -Rrc 'fromjson | .pipeline_number')
+          WORKFLOW_ID=$(echo $WORKFLOW_DETAILS | tr '\n' ' ' | jq -Rrc 'fromjson | .id')
 
           echo "pipeline_number=$PIPELINE_NUMBER" >> $GITHUB_OUTPUT
           echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
@@ -267,13 +267,12 @@ jobs:
             fi
 
             OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            touch $OUTPUT_FILE
             STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
               --header "content-type: application/json" --header "accept: application/json" \
               --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
               --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
 
-            cat $OUTPUT_FILE
-            rm $OUTPUT_FILE
             if [ "$STATUS_CODE" == "429" ]; then
               # we are exceeding rate limit, try again later
               echo '{"status": ""}'
@@ -281,8 +280,10 @@ jobs:
             fi
             if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
               echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
-              exit 1
+              cat $OUTPUT_FILE
             fi
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
           }
 
           function check_workflow(){
@@ -293,7 +294,7 @@ jobs:
             # status completed: "success" "not_run" "failed" "error" "failing" "canceled" "unauthorized"
             while [[ "$STATUS" == "" ]] || [[ "$STATUS" == "running" ]] || [[ "$STATUS" == "on_hold" ]]; do
               sleep $((RANDOM % 5 + 25))
-              STATUS=$(request GET https://circleci.com/api/v2/workflow/$WORKFLOW_ID | jq -r '.status')
+              STATUS=$(request GET https://circleci.com/api/v2/workflow/$WORKFLOW_ID | tr '\n' ' ' | jq -Rrc 'fromjson | .status')
               echo -n .
             done
 
@@ -303,9 +304,7 @@ jobs:
               exit 0
             else
               echo "CircleCI workflow has completed with status: '$STATUS'."
-              # temporarily not make circleci failure fail the entire build until we stabilize things
-              # exit 1
-              exit 0
+              exit 1
             fi
           }
 
