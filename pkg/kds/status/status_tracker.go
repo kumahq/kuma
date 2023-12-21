@@ -1,4 +1,4 @@
-package server
+package status
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -17,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -33,7 +34,7 @@ type StatusAccessor interface {
 	GetStatus() (string, *system_proto.KDSSubscription)
 }
 
-type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) kds_server.ZoneInsightSink
+type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) ZoneInsightSink
 
 func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 	createStatusSink ZoneInsightSinkFactoryFunc, log logr.Logger,
@@ -65,9 +66,7 @@ type streamState struct {
 	ctx          context.Context
 }
 
-// OnDeltaStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
-func (c *statusTracker) OnDeltaStreamOpen(ctx context.Context, streamID int64, typ string) error {
+func (c *statusTracker) onStreamOpen(ctx context.Context, streamID int64, typ string) error {
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
@@ -88,25 +87,36 @@ func (c *statusTracker) OnDeltaStreamOpen(ctx context.Context, streamID int64, t
 	}
 	// initialize state per ADS stream
 	state := &streamState{
-		ctx:          ctx,
 		stop:         make(chan struct{}),
 		subscription: subscription,
+		ctx:          ctx,
 	}
 	// save
 	c.streams[streamID] = state
 
-	c.log.V(1).Info("OnDeltaStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
+	c.log.V(1).Info("onStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
 	return nil
 }
 
-// OnDeltaStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
+// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
+	return c.onStreamOpen(ctx, streamID, typ)
+}
+
+// OnDeltaStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
+func (c *statusTracker) OnDeltaStreamOpen(ctx context.Context, streamID int64, typ string) error {
+	return c.onStreamOpen(ctx, streamID, typ)
+}
+
+func (c *statusTracker) onStreamClosed(streamID int64, _ *envoy_core.Node) {
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
 	state := c.streams[streamID]
 	if state == nil {
-		c.log.Info("[WARNING] OnDeltaStreamClosed but no state in the status_tracker", "streamid", streamID)
+		c.log.Info("[WARNING] OnStreamClosed but no state in the status_tracker", "streamid", streamID)
 		return
 	}
 
@@ -121,14 +131,35 @@ func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) 
 	// trigger final flush
 	state.Close()
 
-	c.log.V(1).Info("OnDeltaStreamClosed", "streamid", streamID, "subscription", subscription)
+	c.log.V(1).Info("onStreamClosed", "streamid", streamID, "subscription", subscription)
 }
 
-// OnStreamDeltaRequest is called once a request is received on a stream.
-// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
-func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.DeltaDiscoveryRequest) error {
+// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+func (c *statusTracker) OnStreamClosed(streamID int64, node *envoy_core.Node) {
+	c.onStreamClosed(streamID, node)
+}
+
+// OnDeltaStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
+func (c *statusTracker) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
+	c.onStreamClosed(streamID, node)
+}
+
+type DiscoveryRequestInfo interface {
+	GetNode() *envoy_core.Node
+	GetTypeUrl() string
+	GetResponseNonce() string
+	GetErrorDetail() *status.Status
+}
+
+// OnStreamRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo) error {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
+	node := req.GetNode()
+	if node == nil {
+		return errors.New("Node not set, this should never happen")
+	}
 
 	state := c.streams[streamID]
 
@@ -137,35 +168,47 @@ func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.Delta
 
 	// infer zone
 	if state.zone == "" {
-		state.zone = req.Node.Id
-		if err := readVersion(req.Node.GetMetadata(), state.subscription.Version); err != nil {
-			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.GetMetadata())
+		state.zone = node.Id
+		if err := readVersion(node.GetMetadata(), state.subscription.Version); err != nil {
+			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", node.GetMetadata())
 		}
 		go c.createStatusSink(state, c.log).Start(state.ctx, state.stop)
 	}
 
 	// update Dataplane status
 	subscription := state.subscription
-	if req.ResponseNonce != "" {
+	if req.GetResponseNonce() != "" {
 		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
-		if req.ErrorDetail != nil {
+		if req.GetErrorDetail() != nil {
 			subscription.Status.Total.ResponsesRejected++
-			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesRejected++
+			util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesRejected++
 		} else {
 			subscription.Status.Total.ResponsesAcknowledged++
-			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesAcknowledged++
+			util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesAcknowledged++
 		}
 	}
-	if subscription.Config == "" && req.Node.Metadata != nil && req.Node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
-		subscription.Config = req.Node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
+	if subscription.Config == "" && node.Metadata != nil && node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
+		subscription.Config = node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
 	}
 
-	c.log.V(1).Info("OnStreamDeltaRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
-// OnStreamDeltaResponse is called immediately prior to sending a response on a stream.
-func (c *statusTracker) OnStreamDeltaResponse(streamID int64, req *envoy_sd.DeltaDiscoveryRequest, resp *envoy_sd.DeltaDiscoveryResponse) {
+// OnStreamRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
+func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryRequest) error {
+	return c.onStreamRequest(streamID, req)
+}
+
+// OnStreamDeltaRequest is called once a request is received on a stream.
+// Returning an error will end processing and close the stream. OnDeltaStreamClosed will still be called.
+func (c *statusTracker) OnStreamDeltaRequest(streamID int64, req *envoy_sd.DeltaDiscoveryRequest) error {
+	return c.onStreamRequest(streamID, req)
+}
+
+// OnStreamResponse is called immediately prior to sending a response on a stream.
+func (c *statusTracker) onStreamResponse(streamID int64, req DiscoveryRequestInfo, resp interface{}) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -178,9 +221,18 @@ func (c *statusTracker) OnStreamDeltaResponse(streamID int64, req *envoy_sd.Delt
 	subscription := state.subscription
 	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 	subscription.Status.Total.ResponsesSent++
-	util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesSent++
+	util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesSent++
 
-	c.log.V(1).Info("OnStreamDeltaResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+	c.log.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+}
+
+func (c *statusTracker) OnStreamResponse(_ context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
+	c.onStreamResponse(streamID, req, resp)
+}
+
+// OnStreamDeltaResponse is called immediately prior to sending a response on a stream.
+func (c *statusTracker) OnStreamDeltaResponse(streamID int64, req *envoy_sd.DeltaDiscoveryRequest, resp *envoy_sd.DeltaDiscoveryResponse) {
+	c.onStreamResponse(streamID, req, resp)
 }
 
 func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool) {
