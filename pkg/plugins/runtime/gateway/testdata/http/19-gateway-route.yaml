@@ -2,24 +2,49 @@ Clusters:
   Resources:
     external-http2-httpbin-b70cd456b09f96ac:
       connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
+      dnsLookupFamily: V4_ONLY
+      loadAssignment:
+        clusterName: external-http2-httpbin
+        endpoints:
+        - lbEndpoints:
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-http2-httpbin
+                  kuma.io/protocol: http2
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-http2-httpbin
+                  kuma.io/protocol: http2
       name: external-http2-httpbin-b70cd456b09f96ac
       perConnectionBufferLimitBytes: 32768
-      type: EDS
+      transportSocketMatches:
+      - match:
+          kuma.io/external-service-name: external-http2-httpbin
+          kuma.io/protocol: http2
+        name: httpbin.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin.com
+      type: STRICT_DNS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 0s
           explicitHttpConfig:
-            httpProtocolOptions: {}
+            http2ProtocolOptions:
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
 Endpoints:
-  Resources:
-    external-http2-httpbin-b70cd456b09f96ac:
-      clusterName: external-http2-httpbin-b70cd456b09f96ac
+  Resources: {}
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:

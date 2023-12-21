@@ -2,13 +2,26 @@ Clusters:
   Resources:
     external-httpbin-8490df2e58a77ae0:
       connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
+      dnsLookupFamily: V4_ONLY
+      loadAssignment:
+        clusterName: external-httpbin
+        endpoints:
+        - lbEndpoints:
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin.com
+                  portValue: 80
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/protocol: http
+                envoy.transport_socket_match:
+                  kuma.io/protocol: http
       name: external-httpbin-8490df2e58a77ae0
       perConnectionBufferLimitBytes: 32768
-      type: EDS
+      type: STRICT_DNS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -17,9 +30,7 @@ Clusters:
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
-  Resources:
-    external-httpbin-8490df2e58a77ae0:
-      clusterName: external-httpbin-8490df2e58a77ae0
+  Resources: {}
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:

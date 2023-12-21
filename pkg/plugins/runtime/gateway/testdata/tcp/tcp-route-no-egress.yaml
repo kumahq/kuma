@@ -2,41 +2,97 @@ Clusters:
   Resources:
     external-no-protocol-httpbin-6a3325e78573377c:
       connectTimeout: 12s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
+      dnsLookupFamily: V4_ONLY
+      loadAssignment:
+        clusterName: external-no-protocol-httpbin
+        endpoints:
+        - lbEndpoints:
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-1.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-1
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-1
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-2.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-2
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-2
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-3.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-3
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-3
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-4.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-4
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-no-protocol-httpbin-4
       name: external-no-protocol-httpbin-6a3325e78573377c
       perConnectionBufferLimitBytes: 32768
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - kuma
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    exact: spiffe://default/external-no-protocol-httpbin
-                  sanType: URI
-              validationContextSdsSecretConfig:
-                name: mesh_ca:secret:default
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert:secret:default
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-          sni: external-no-protocol-httpbin{mesh=default}
-      type: EDS
+      transportSocketMatches:
+      - match:
+          kuma.io/external-service-name: external-no-protocol-httpbin-1
+        name: httpbin-1.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-1.com
+      - match:
+          kuma.io/external-service-name: external-no-protocol-httpbin-2
+        name: httpbin-2.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-2.com
+      - match:
+          kuma.io/external-service-name: external-no-protocol-httpbin-3
+        name: httpbin-3.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-3.com
+      - match:
+          kuma.io/external-service-name: external-no-protocol-httpbin-4
+        name: httpbin-4.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-4.com
+      type: STRICT_DNS
 Endpoints:
-  Resources:
-    external-no-protocol-httpbin-6a3325e78573377c:
-      clusterName: external-no-protocol-httpbin-6a3325e78573377c
+  Resources: {}
 Listeners:
   Resources:
     edge-gateway:TCP:8080:
@@ -67,16 +123,4 @@ Runtimes:
       layer: {}
       name: gateway.listeners
 Secrets:
-  Resources:
-    identity_cert:secret:default:
-      name: identity_cert:secret:default
-      tlsCertificate:
-        certificateChain:
-          inlineBytes: Q0VSVA==
-        privateKey:
-          inlineBytes: S0VZ
-    mesh_ca:secret:default:
-      name: mesh_ca:secret:default
-      validationContext:
-        trustedCa:
-          inlineBytes: Q0E=
+  Resources: {}
