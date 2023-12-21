@@ -793,6 +793,45 @@ _kumactl_delete()
     noun_aliases=()
 }
 
+_kumactl_export()
+{
+    last_command="kumactl_export"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--format=")
+    two_word_flags+=("--format")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--format")
+    local_nonpersistent_flags+=("--format=")
+    local_nonpersistent_flags+=("-f")
+    flags+=("--profile=")
+    two_word_flags+=("--profile")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--profile")
+    local_nonpersistent_flags+=("--profile=")
+    local_nonpersistent_flags+=("-p")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_generate_dataplane-token()
 {
     last_command="kumactl_generate_dataplane-token"
@@ -5812,6 +5851,7 @@ _kumactl_root_command()
     commands+=("completion")
     commands+=("config")
     commands+=("delete")
+    commands+=("export")
     commands+=("generate")
     commands+=("get")
     commands+=("help")
