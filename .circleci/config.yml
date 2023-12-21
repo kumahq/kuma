@@ -429,94 +429,24 @@ jobs:
             GH_ACTIONS_RUN_ID=<< pipeline.parameters.gh_action_run_id >>
             GH_ACTIONS_BUILD_ARTIFACT_NAME=<< pipeline.parameters.gh_action_build_artifact_name >>
             ARCH='<< parameters.arch >>'
-            BASE_DIR=build
 
-            if [[ "$BASE_DIR" == "" ]]; then
-                BASE_DIR="."
-            fi
-
-            function request(){
-                URL=$1
-                IS_STREAM=$2
-
-                if [[ "$URL" == "" ]]; then
-                    echo "Error: unknown URL"
-            	    return
-                fi
-
-                ACCEPT=application/vnd.github+json
-                if [[ "$IS_STREAM" == "1" ]]; then
-                    ACCEPT="*/*"
-                fi
-
-                OUTPUT_FILE=/tmp/gh-response-$RANDOM
-                touch $OUTPUT_FILE
-                STATUS_CODE=
-                while [[ "$STATUS_CODE" == "" ]]; do
-                    STATUS_CODE=$(curl --compressed -o $OUTPUT_FILE -sL -w "%{http_code}" $URL \
-                    --header "accept: $ACCEPT" --header "Authorization: Bearer ${GITHUB_TOKEN}" --header "X-GitHub-Api-Version: 2022-11-28")
-
-                    if [[ "$STATUS_CODE" == "429" ]]; then
-                        STATUS_CODE=
-                        echo '' > $OUTPUT_FILE
-                        sleep $((RANDOM % 3))
-                    fi
-                done
-
-                if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
-                    echo "Error requesting $URL (status $STATUS_CODE)"
-                    return
-                fi
-                if [[ "$IS_STREAM" != "1" ]]; then
-                    cat $OUTPUT_FILE | tr '\n' ' ' | jq -Rc "fromjson | ."
-                    rm $OUTPUT_FILE
-                else
-                    echo "$OUTPUT_FILE"
-                fi
-            }
-
-            echo "Listing artifacts..."
-            GITHUB_PROJECT="$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
-            LIST_RESP=$(request "https://api.github.com/repos/$GITHUB_PROJECT/actions/runs/$GH_ACTIONS_RUN_ID/artifacts")
-            if [[ "${LIST_RESP:0:5}" == "Error" ]]; then
-              echo "List response seems to be an error"
-              echo "$LIST_RESP"
-              exit 1
-            fi
-
-            TARGET_ARTIFACT=$(echo "$LIST_RESP" | tr '\n' ' ' | jq -Rrc "fromjson | .artifacts[] | select(.name==\"$GH_ACTIONS_BUILD_ARTIFACT_NAME\") //empty")
-            if [[ "$TARGET_ARTIFACT" == "" ]]; then
-              echo "Could not find artifact $GH_ACTIONS_BUILD_ARTIFACT_NAME in run $GH_ACTIONS_RUN_ID."
-              exit 1
-            fi
-            if [[ "$(echo $TARGET_ARTIFACT | jq -rc '.expired')" == "true" ]]; then
-              echo "Artifact $GH_ACTIONS_BUILD_ARTIFACT_NAME in run $GH_ACTIONS_RUN_ID has expired."
-              exit 1
-            fi
-
-            DOWNLOAD_URL=$(echo $TARGET_ARTIFACT | jq -rc ".archive_download_url")
-            FILE_SIZE=$(echo $TARGET_ARTIFACT | jq -rc ".size_in_bytes")
-
-            echo "Downloading... (size: $FILE_SIZE)"
-            FILE_SAVED=$(request "$DOWNLOAD_URL" 1)
-            mv $FILE_SAVED ${FILE_SAVED}.zip
+            echo "Downloading..."
+            gh run download $GH_ACTIONS_RUN_ID --name $GH_ACTIONS_BUILD_ARTIFACT_NAME -D build \
+              --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME 
             echo "Downloading complete."
 
             echo "Extracting files..."
-            unzip ${FILE_SAVED}.zip -d $BASE_DIR
-
-            TARBALL=$(find $BASE_DIR/distributions/out/*-linux-$ARCH.tar.gz)
+            TARBALL=$(find build/distributions/out/*-linux-$ARCH.tar.gz)
             if [[ "$TARBALL" == "" ]]; then
               echo "Could not find built artifact for linux($ARCH)."
               exit 1
             fi
             cat ${TARBALL}.sha256 | sha256sum --check
 
-            mkdir $BASE_DIR/distributions/artifacts
-            tar -xzf $TARBALL -C $BASE_DIR/distributions/artifacts
-
+            mkdir build/distributions/artifacts
+            tar -xzf $TARBALL -C build/distributions/artifacts
             SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
-            DEST_DIR=$BASE_DIR/artifacts-linux-$ARCH
+            DEST_DIR=build/artifacts-linux-$ARCH
             for BIN in $(ls $SRC_DIR); do
               mkdir -p $DEST_DIR/$BIN
               cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
