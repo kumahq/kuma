@@ -1,4 +1,6 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
+orbs:
+  gh: circleci/github-cli@2.0
 parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
@@ -409,6 +411,7 @@ jobs:
     parallelism: << parameters.parallelism >>
     steps:
       - checkout
+      - gh/install
       - run:
           name: Download build output from GitHub action
           command: |
@@ -432,7 +435,7 @@ jobs:
 
             echo "Downloading..."
             gh run download $GH_ACTIONS_RUN_ID --name $GH_ACTIONS_BUILD_ARTIFACT_NAME -D build \
-              --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME 
+              --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
             echo "Downloading complete."
 
             echo "Extracting files..."
