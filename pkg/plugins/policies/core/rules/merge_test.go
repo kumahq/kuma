@@ -268,9 +268,9 @@ var _ = Describe("MergeConfs", func() {
 			}},
 			expected: testPolicy{
 				MergeValues: []mergeEntry{{
-					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &f},
-				}, {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &f},
 				}},
 				OtherValues: &[]nonMergeEntry{{
 					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},

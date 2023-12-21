@@ -106,19 +106,6 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
-								Value: "/v2",
-							},
-						}},
-						Default: api.RuleConf{
-							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
-								Weight:    pointer.To(uint(100)),
-							}},
-						},
-					}, {
-						Matches: []api.Match{{
-							Path: &api.PathMatch{
-								Type:  api.PathPrefix,
 								Value: "/v1",
 							},
 						}},
@@ -126,6 +113,19 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 							Filters: &[]api.Filter{{}},
 							BackendRefs: &[]common_api.BackendRef{{
 								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}, {
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/v2",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},

@@ -64,7 +64,12 @@ func MergeConfs(confs []interface{}) (interface{}, error) {
 }
 
 type acc struct {
-	Key      interface{}
+	// Skip defines whether this item can be ignored because it appears later in
+	// the list
+	Skip bool
+	// The value of the `mergeKey`
+	Key interface{}
+	// The `Default` value
 	Defaults []interface{}
 }
 
@@ -94,45 +99,60 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 		}
 		entriesValue.Set(merged)
 	}
+	// Some policies transform their values when `GetDefault` is called. See
+	// `MeshHTTPRoute`. Basically the order when merging is increasing
+	// precedence but with MeshHTTPRoute/Gateway API we have "the first rule"
+	// wins as a fallback ordering.
+	// So we need to basically unreverse the transformed rules.
 	if withSet, ok := valueResult.Interface().(core_model.TransformDefaultAfterMerge); ok {
 		withSet.Transform()
 	}
 	return nil
 }
 
-func mergeByKey(vals reflect.Value) (reflect.Value, error) {
-	if vals.Len() == 0 {
-		return reflect.Zero(vals.Type()), nil
+func mergeByKey(confs reflect.Value) (reflect.Value, error) {
+	if confs.Len() == 0 {
+		return reflect.Zero(confs.Type()), nil
 	}
-	valType := vals.Index(0).Type()
-	key, ok := findKeyAndSpec(valType)
+	valType := confs.Index(0).Type()
+	key, ok := findMergeKeyField(valType)
 	if !ok {
 		return reflect.Value{}, fmt.Errorf("a merge by key field must have a field tagged as %s and a Default field", mergeKey)
 	}
 	var defaultsByKey []acc
-	for valueIndex := 0; valueIndex < vals.Len(); valueIndex++ {
-		value := vals.Index(valueIndex)
+	for i := 0; i < confs.Len(); i++ {
+		value := confs.Index(i)
+
 		mergeKeyValue := value.FieldByName(key.Name).Interface()
-		var found bool
+		valueDef := []interface{}{value.FieldByName(defaultFieldName).Interface()}
+
+		// We can't have a map keyed by matches so we use a slice and call
+		// search through it calling `DeepEqual`. We define the order of matches
+		// by where it appears with the most precedence (i.e. the last appearance)
 		for accIndex, accRule := range defaultsByKey {
+			if accRule.Skip {
+				continue
+			}
 			if !reflect.DeepEqual(accRule.Key, mergeKeyValue) {
 				continue
 			}
+			valueDef = append(accRule.Defaults, valueDef...)
+			// Later rules overwrite earlier ones but we also want the order of
+			// the later rule to take priority so we skip this in the future
 			defaultsByKey[accIndex] = acc{
-				Key:      accRule.Key,
-				Defaults: append(accRule.Defaults, value.FieldByName(defaultFieldName).Interface()),
+				Skip: true,
 			}
-			found = true
 		}
-		if !found {
-			defaultsByKey = append(defaultsByKey, acc{
-				Key:      mergeKeyValue,
-				Defaults: []interface{}{value.FieldByName(defaultFieldName).Interface()},
-			})
-		}
+		defaultsByKey = append(defaultsByKey, acc{
+			Key:      mergeKeyValue,
+			Defaults: valueDef,
+		})
 	}
-	keyValues := reflect.Zero(vals.Type())
+	keyValues := reflect.Zero(confs.Type())
 	for _, confs := range defaultsByKey {
+		if confs.Skip {
+			continue
+		}
 		merged, err := MergeConfs(confs.Defaults)
 		if err != nil {
 			return reflect.Value{}, err
@@ -149,7 +169,7 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 	return keyValues, nil
 }
 
-func findKeyAndSpec(typ reflect.Type) (reflect.StructField, bool) {
+func findMergeKeyField(typ reflect.Type) (reflect.StructField, bool) {
 	var key *reflect.StructField
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
