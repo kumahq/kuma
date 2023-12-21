@@ -1,12 +1,24 @@
 Clusters:
   Resources:
     external-http2-httpbin-b70cd456b09f96ac:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: external-http2-httpbin-b70cd456b09f96ac
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -37,7 +49,7 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -161,6 +173,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-b70cd456b09f96ac

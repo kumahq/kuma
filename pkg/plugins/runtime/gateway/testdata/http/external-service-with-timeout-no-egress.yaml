@@ -1,6 +1,12 @@
 Clusters:
   Resources:
     external-http2-httpbin-29c391043cf34cd7:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 113s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
@@ -22,6 +28,12 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-29c391043cf34cd7
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -123,28 +135,34 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 114s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 114s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
 Runtimes:
   Resources:

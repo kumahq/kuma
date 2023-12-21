@@ -1,6 +1,12 @@
 Clusters:
   Resources:
     external-no-protocol-httpbin-6a3325e78573377c:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 12s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
@@ -56,6 +62,12 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-no-protocol-httpbin-4
       name: external-no-protocol-httpbin-6a3325e78573377c
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -107,6 +119,7 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
             cluster: external-no-protocol-httpbin-6a3325e78573377c
+            maxConnectAttempts: 5
             statPrefix: gateway-default
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector

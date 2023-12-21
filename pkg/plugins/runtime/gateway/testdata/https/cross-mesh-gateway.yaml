@@ -1,12 +1,24 @@
 Clusters:
   Resources:
     echo-service-0ec9724567ed6087:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-0ec9724567ed6087
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -37,16 +49,28 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-8acee1c4ccf209c2:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-8acee1c4ccf209c2
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -77,16 +101,28 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-bfae5b64a0fe8b74:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-bfae5b64a0fe8b74
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -117,10 +153,16 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
     external-http2-httpbin-9e3c7c6b9435d9a4:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
@@ -142,6 +184,12 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-9e3c7c6b9435d9a4
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -158,12 +206,18 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
               initialStreamWindowSize: 65536
     external-http2-httpbin-29c391043cf34cd7:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
@@ -185,6 +239,12 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-29c391043cf34cd7
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -201,12 +261,18 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
               initialStreamWindowSize: 65536
     external-http2-httpbin-db75d53333554288:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
@@ -228,6 +294,12 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-db75d53333554288
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -244,7 +316,7 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
@@ -562,6 +634,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-bfae5b64a0fe8b74
@@ -575,19 +655,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-bfae5b64a0fe8b74
@@ -601,13 +693,17 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
     edge-gateway:HTTP:8081:
       ignorePortInHostMatching: true
@@ -631,6 +727,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-0ec9724567ed6087
@@ -644,19 +748,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-db75d53333554288
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             path: /echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-0ec9724567ed6087
@@ -670,19 +786,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-db75d53333554288
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /hostname-and-hostname-on-listener-match-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-0ec9724567ed6087
@@ -696,19 +824,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-db75d53333554288
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-0ec9724567ed6087
@@ -722,13 +862,17 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-db75d53333554288
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
     edge-gateway:HTTP:8082:
       ignorePortInHostMatching: true
@@ -752,6 +896,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -765,19 +917,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /hostname-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -791,13 +955,17 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
       - domains:
         - cross-mesh.mesh
@@ -814,6 +982,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -827,19 +1003,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /hostname-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -853,13 +1041,17 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
       - domains:
         - '*'
@@ -876,6 +1068,14 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -889,19 +1089,31 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-8acee1c4ccf209c2
@@ -915,13 +1127,17 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-9e3c7c6b9435d9a4
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
 Runtimes:
   Resources:
