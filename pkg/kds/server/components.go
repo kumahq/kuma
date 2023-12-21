@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/status"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -49,32 +50,9 @@ func New(
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)), todo(jakubdyszkiewicz) temporarily disable to see if it's a reason for E2E flakes.
 		syncTracker,
-		DefaultStatusTracker(rt, log),
+		status.DefaultStatusTracker(rt, log),
 	}
 	return NewServer(cache, callbacks, log), nil
-}
-
-func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
-	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
-		return NewZoneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-			},
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-			},
-			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
-			NewZonesInsightStore(
-				rt.ResourceManager(),
-				rt.Config().Store.Upsert,
-				rt.Config().Metrics.Zone.CompactFinishedSubscriptions,
-				rt.Transactions(),
-			),
-			l,
-			rt.Extensions(),
-		)
-	}, log)
 }
 
 func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {

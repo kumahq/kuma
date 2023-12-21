@@ -526,7 +526,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration sent",
           "refId": "A"
@@ -537,7 +537,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[$__rate_interval]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Configuration accepted",
@@ -549,7 +549,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration rejected",
           "refId": "C"
@@ -560,7 +560,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "RPC Errors",
           "refId": "D"
@@ -571,7 +571,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[$__rate_interval]))",
           "hide": true,
           "interval": "",
           "legendFormat": "Rate",
@@ -663,13 +663,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(xds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(xds_generation_count{instance=~\"$instance\"}[$__rate_interval])) - sum(rate(xds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Success",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Errors",
           "refId": "B"
@@ -929,19 +929,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit Wait",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Miss",
           "refId": "B"
@@ -1031,19 +1031,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit Wait",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Miss",
           "refId": "B"
@@ -1141,13 +1141,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "endpoint health responses",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "health check requests",
           "refId": "B"
@@ -1317,7 +1317,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[$__rate_interval])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Success",
           "refId": "A"
@@ -1328,7 +1328,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Errors",
           "refId": "B"
@@ -1516,7 +1516,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(api_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(api_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$__rate_interval])))",
           "interval": "",
           "legendFormat": "{{handler}}",
           "refId": "A"
@@ -1617,7 +1617,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (code) (rate(api_server_http_request_duration_seconds_count{instance=~\"$instance\"}[1m]))",
+          "expr": "sum by (code) (rate(api_server_http_request_duration_seconds_count{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{code}}",
           "refId": "A"
@@ -1720,7 +1720,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$__rate_interval])))",
           "interval": "",
           "legendFormat": "{{handler}}",
           "refId": "A"
@@ -1821,7 +1821,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
+          "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{code}}",
           "refId": "A"
@@ -2204,7 +2204,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration sent",
           "refId": "A"
@@ -2215,7 +2215,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "hide": true,
           "interval": "",
           "legendFormat": "Configuration accepted",
@@ -2227,7 +2227,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration rejected",
           "refId": "C"
@@ -2237,7 +2237,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "RPC Errors",
           "refId": "D"
@@ -2247,7 +2247,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "hide": true,
           "interval": "",
           "legendFormat": "Rate",
@@ -2338,13 +2338,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Success",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Errors",
           "refId": "B"
@@ -2708,7 +2708,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration sent",
           "refId": "A"
@@ -2719,7 +2719,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "hide": true,
           "interval": "",
           "legendFormat": "Configuration accepted",
@@ -2731,7 +2731,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Configuration rejected",
           "refId": "C"
@@ -2741,7 +2741,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "RPC Errors",
           "refId": "D"
@@ -2751,7 +2751,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "hide": true,
           "interval": "",
           "legendFormat": "Rate",
@@ -2842,13 +2842,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone!=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Success",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+          "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Errors",
           "refId": "B"
@@ -3122,7 +3122,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (operation, le) (rate(store_bucket{instance=~\"$instance\"}[1m])))",
+          "expr": "histogram_quantile(0.99, sum by (operation, le) (rate(store_bucket{instance=~\"$instance\"}[$__rate_interval])))",
           "interval": "",
           "legendFormat": "{{operation}}",
           "refId": "A"
@@ -3211,19 +3211,19 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(store_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(store_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(store_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(store_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Hit Wait",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(store_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "expr": "sum(rate(store_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "Miss",
           "refId": "B"
@@ -3313,7 +3313,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (operation, resource_type) (rate(store_count{instance=~\"$instance\"}[1m]))",
+          "expr": "sum by (operation, resource_type) (rate(store_count{instance=~\"$instance\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{operation}} - {{resource_type}}",
           "refId": "A"

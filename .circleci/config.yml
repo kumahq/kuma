@@ -1,4 +1,6 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
+orbs:
+  gh: circleci/github-cli@2.0
 parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
@@ -16,10 +18,7 @@ parameters:
   gh_action_build_artifact_name:
     type: string
     default: ""
-  gh_action_artifact_list_url:
-    type: string
-    default: ""
-  gh_action_runtime_token:
+  gh_action_run_id:
     type: string
     default: ""
   e2e_param_k8sVersion:
@@ -412,9 +411,11 @@ jobs:
     parallelism: << parameters.parallelism >>
     steps:
       - checkout
+      - gh/install
       - run:
           name: Download build output from GitHub action
           command: |
+            set -e
             echo "Running with: \
               k8s:<< parameters.k8sVersion >> \
               target:<< parameters.target >> \
@@ -423,97 +424,32 @@ jobs:
               legacyKDS:<< parameters.legacyKDS >> \
               cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
             "
-            set +x
-
-            GH_ARTIFACT_LIST_URL=<< pipeline.parameters.gh_action_artifact_list_url >>
-            GH_ACTIONS_RUNTIME_TOKEN=<< pipeline.parameters.gh_action_runtime_token >>
-            GH_ACTIONS_BUILD_ARTIFACT_NAME=<< pipeline.parameters.gh_action_build_artifact_name >>
-            BASE_DIR=build
-
-            if [[ "$GH_ACTIONS_RUNTIME_TOKEN" == "" ]]; then
-                echo "Please set these environment variables: GH_ACTIONS_RUNTIME_TOKEN"
+            if [[ "${GITHUB_TOKEN}" == "" ]]; then
+                echo "Please set value for environment variables: GITHUB_TOKEN"
                 exit 1
             fi
 
-            if [[ "$BASE_DIR" == "" ]]; then
-                BASE_DIR="."
-            fi
+            GH_ACTIONS_RUN_ID=<< pipeline.parameters.gh_action_run_id >>
+            GH_ACTIONS_BUILD_ARTIFACT_NAME=<< pipeline.parameters.gh_action_build_artifact_name >>
+            ARCH='<< parameters.arch >>'
 
-            function request(){
-                METHOD=$1
-                URL=$2
-                IS_STREAM=$3
-
-                if [[ "$URL" == "" ]]; then
-                    echo "Unknown URL"
-                    exit 1
-                fi
-
-                ACCEPT=application/json
-                if [[ "$IS_STREAM" == "1" ]]; then
-                    ACCEPT="*/*"
-                fi
-
-                OUTPUT_FILE=/tmp/gh-response-$RANDOM
-                STATUS_CODE=
-                while [[ "$STATUS_CODE" == "" ]]; do
-                    STATUS_CODE=$(curl --compressed -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
-                    --header "accept: $ACCEPT" --header "Authorization: Bearer $GH_ACTIONS_RUNTIME_TOKEN")
-
-                    if [[ "$STATUS_CODE" == "429" ]]; then
-                        STATUS_CODE=
-                        echo '' > $OUTPUT_FILE
-                        sleep $((RANDOM % 3))
-                    fi
-                done
-
-                if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
-                    echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
-                    exit 1
-                fi
-                if [[ "$IS_STREAM" != "1" ]]; then
-                    cat $OUTPUT_FILE
-                    rm $OUTPUT_FILE
-                else
-                    echo "$OUTPUT_FILE"
-                fi
-            }
-            echo "Listing artifacts..."
-            LIST_RESP=$(request GET "$GH_ARTIFACT_LIST_URL")
-            if [[ "${LIST_RESP:0:5}" == "Error" ]]; then
-              echo "List response seems to be an error"
-              echo "$LIST_RESP"
-              exit 1
-            fi
-            FILE_LIST_URL=$(echo "$LIST_RESP" | jq -rc '.value[0].fileContainerResourceUrl //empty')
-            LIST_JSON_FILE=$(request GET "$FILE_LIST_URL" 1)
-            while read FILE_PATH; do
-              DOWNLOAD_URL=$(cat $LIST_JSON_FILE | jq -rc ".value[] | select(.path==\"$FILE_PATH\") | .contentLocation")
-              FILE_SIZE=$(cat $LIST_JSON_FILE | jq -rc ".value[] | select(.path==\"$FILE_PATH\") | .fileLength")
-
-              FILE_PATH=${FILE_PATH#*/}
-              echo "Downloading $FILE_PATH (size: $FILE_SIZE)"
-              mkdir -p $(dirname $BASE_DIR/$FILE_PATH)
-              FILE_SAVED=$(request GET "$DOWNLOAD_URL" 1)
-              mv $FILE_SAVED $BASE_DIR/$FILE_PATH
-            done < <(cat $LIST_JSON_FILE | jq -rc ".value[] | select((.itemType==\"file\") and (.path|startswith(\"$GH_ACTIONS_BUILD_ARTIFACT_NAME/\"))) | .path")
-
+            echo "Downloading..."
+            gh run download $GH_ACTIONS_RUN_ID --name $GH_ACTIONS_BUILD_ARTIFACT_NAME -D build \
+              --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
             echo "Downloading complete."
 
             echo "Extracting files..."
-            ARCH='<< parameters.arch >>'
-            ARTIFACT=$(find $BASE_DIR/distributions/out/*-linux-$ARCH.tar.gz)
-            if [[ "$ARTIFACT" == "" ]]; then
+            TARBALL=$(find build/distributions/out/*-linux-$ARCH.tar.gz)
+            if [[ "$TARBALL" == "" ]]; then
               echo "Could not find built artifact for linux($ARCH)."
               exit 1
             fi
-            cat $ARTIFACT.sha256 | sha256sum --check
+            cat ${TARBALL}.sha256 | sha256sum --check
 
-            mkdir $BASE_DIR/distributions/artifacts
-            tar -xzf $ARTIFACT -C $BASE_DIR/distributions/artifacts
-
+            mkdir build/distributions/artifacts
+            tar -xzf $TARBALL -C build/distributions/artifacts
             SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
-            DEST_DIR=$BASE_DIR/artifacts-linux-$ARCH
+            DEST_DIR=build/artifacts-linux-$ARCH
             for BIN in $(ls $SRC_DIR); do
               mkdir -p $DEST_DIR/$BIN
               cp $SRC_DIR/$BIN $DEST_DIR/$BIN/

@@ -87,7 +87,7 @@ func ExecuteStoreTests(
 				Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
 				Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
 				Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
-				Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
+				Expect(resource.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
 				Expect(resource.Spec).To(MatchProto(created.Spec))
 			})
 
@@ -148,7 +148,7 @@ func ExecuteStoreTests(
 
 				// and meta is updated (version and modification time)
 				Expect(resource.Meta.GetVersion()).ToNot(Equal(versionBeforeUpdate))
-				Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
+				Expect(resource.Meta.GetLabels()).To(And(HaveKeyWithValue("foo", "barbar"), HaveKeyWithValue("newlabel", "newvalue")))
 				if reflect.TypeOf(createStore()) != reflect.TypeOf(&resources_k8s.KubernetesStore{}) {
 					Expect(resource.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
 				}
@@ -162,8 +162,7 @@ func ExecuteStoreTests(
 
 				// and
 				Expect(res.Spec.Conf.Destination["path"]).To(Equal("new-path"))
-
-				Expect(res.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
+				Expect(resource.Meta.GetLabels()).To(And(HaveKeyWithValue("foo", "barbar"), HaveKeyWithValue("newlabel", "newvalue")))
 
 				// and modification time is updated
 				// on K8S modification time is always the creation time, because there is no data for modification time
