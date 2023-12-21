@@ -10,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -230,7 +231,7 @@ var _ = Describe("Global Sync", func() {
 			zoneStores = []store.ResourceStore{}
 			for i := 0; i < numOfZones; i++ {
 				zoneStore := memory.NewStore()
-				srv, err := kds_setup.StartDeltaServer(zoneStore, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+				srv, err := kds_setup.StartDeltaServer(zoneStore, config_core.Zone, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
 				Expect(err).ToNot(HaveOccurred())
 				serverStream := grpc.NewMockDeltaServerStream()
 				wg.Add(1)

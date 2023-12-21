@@ -14,7 +14,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func SyncV2() {
+func SyncLegacy() {
 	var zone1, zone2, global *UniversalCluster
 	const clusterNameGlobal = "kuma-sync-v2-global"
 	const clusterName1 = "kuma-sync-v2-1"
@@ -38,7 +38,7 @@ func SyncV2() {
 		// Zone1 cluster
 		zone1Options := append(
 			[]framework.KumaDeploymentOption{
-				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "false"),
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			},
@@ -60,7 +60,7 @@ func SyncV2() {
 		// Zone2 cluster
 		zone2Options := append(
 			[]framework.KumaDeploymentOption{
-				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED", "false"),
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			},
