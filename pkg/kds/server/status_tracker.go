@@ -8,7 +8,6 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -73,7 +72,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return errors.Errorf("request has no metadata")
+		md = metadata.New(map[string]string{})
 	}
 
 	// initialize subscription
@@ -84,7 +83,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 		ConnectTime:       util_proto.MustTimestampProto(now),
 		Status:            system_proto.NewSubscriptionStatus(now),
 		Version:           system_proto.NewVersion(),
-		AuthTokenProvided: containsAuthToken(md),
+		AuthTokenProvided: len(md.Get("authorization")) == 1,
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -106,7 +105,7 @@ func (c *statusTracker) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 
 	state := c.streams[streamID]
 	if state == nil {
-		c.log.Info("[WARNING] OnDeltaStreamClosed but no state in the status_tracker", "streamid", streamID)
+		c.log.Info("[WARNING] OnStreamClosed but no state in the status_tracker", "streamid", streamID)
 		return
 	}
 
@@ -213,9 +212,4 @@ func readVersion(metadata *structpb.Struct, version *system_proto.Version) error
 		version.KumaCp.KumaCpGlobalCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaCp.GetVersion())
 	}
 	return nil
-}
-
-func containsAuthToken(md metadata.MD) bool {
-	values := md.Get("authorization")
-	return len(values) == 1
 }

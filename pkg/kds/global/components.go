@@ -44,7 +44,6 @@ var (
 )
 
 func Setup(rt runtime.Runtime) error {
-	var err error
 	if rt.Config().Mode != config_core.Global {
 		// Only run on global
 		return nil
