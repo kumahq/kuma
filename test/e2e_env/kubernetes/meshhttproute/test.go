@@ -50,10 +50,11 @@ func Test() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should create default routes when no policies defined", func() {
+	It("should use MeshHTTPRoute if no TrafficRoutes are present", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			response, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(HavePrefix("test-server"))
 		}, "30s", "1s").Should(Succeed())
 	})
 

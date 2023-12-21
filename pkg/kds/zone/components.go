@@ -49,7 +49,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
-		false,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -64,7 +63,6 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
-		false,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
 	)
 	if err != nil {

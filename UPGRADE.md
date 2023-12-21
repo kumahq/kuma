@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upgrade to `2.6.x`
 
+### Policy sorting
+
+Policy merging now gives precedence to policies lexicographically before
+other policies.
+
 ### Unifying Default Connection Timeout Values
 
 To simplify configuration and provide a more consistent user experience, we've unified the default connection timeout values. When no `MeshTimeout` or `Timeout` policy is specified, the connection timeout will now be the same as the default `connectTimeout` values for `MeshTimeout` and `Timeout` policies. This value is now `5s`, which is a decrease from the previous default of `10s`.

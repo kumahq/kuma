@@ -57,7 +57,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				},
 			}
-
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.TrafficRouteType] = &core_mesh.TrafficRouteResourceList{
 				Items: []*core_mesh.TrafficRouteResource{{

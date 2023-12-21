@@ -70,7 +70,7 @@ func newMigrate(cfg postgres_cfg.PostgresStoreConfig) (*migrate.Migrate, error) 
 	return m, nil
 }
 
-func isDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
+func IsDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	m, err := newMigrate(cfg)
 	if err != nil {
 		return false, err

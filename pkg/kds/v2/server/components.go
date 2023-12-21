@@ -34,7 +34,6 @@ func New(
 	refresh time.Duration,
 	filter reconcile.ResourceFilter,
 	mapper reconcile.ResourceMapper,
-	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
@@ -66,9 +65,7 @@ func New(
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
 		newKdsRetryForcer(log, cache, hasher),
 		syncTracker,
-	}
-	if insight {
-		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
+		DefaultStatusTracker(rt, log),
 	}
 	return NewServer(cache, callbacks, log), nil
 }

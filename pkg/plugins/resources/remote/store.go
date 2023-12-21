@@ -38,9 +38,10 @@ type remoteStore struct {
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	meta := rest_v1alpha1.ResourceMeta{
-		Type: string(res.Descriptor().Name),
-		Name: opts.Name,
-		Mesh: opts.Mesh,
+		Type:   string(res.Descriptor().Name),
+		Name:   opts.Name,
+		Mesh:   opts.Mesh,
+		Labels: opts.Labels,
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
@@ -49,10 +50,12 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
+	opts := store.NewUpdateOptions(fs...)
 	meta := rest_v1alpha1.ResourceMeta{
-		Type: string(res.Descriptor().Name),
-		Name: res.GetMeta().GetName(),
-		Mesh: res.GetMeta().GetMesh(),
+		Type:   string(res.Descriptor().Name),
+		Name:   res.GetMeta().GetName(),
+		Mesh:   res.GetMeta().GetMesh(),
+		Labels: opts.Labels,
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err

@@ -58,7 +58,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
-		true,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -73,7 +72,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
-		true,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
 	)
 	if err != nil {

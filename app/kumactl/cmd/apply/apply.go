@@ -161,7 +161,7 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	meta := res.GetMeta()
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
+			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
 		} else {
 			return err
 		}
@@ -169,5 +169,5 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
 		return err
 	}
-	return rs.Update(ctx, newRes)
+	return rs.Update(ctx, newRes, store.UpdateWithLabels(meta.GetLabels()))
 }

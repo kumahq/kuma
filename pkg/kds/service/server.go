@@ -104,7 +104,9 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 
 		insight.Spec.HealthCheck.Time = timestamppb.Now()
 		return nil
-	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)); err != nil {
+	}, manager.WithConflictRetry(
+		g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent,
+	)); err != nil && !errors.Is(err, context.Canceled) {
 		log.Error(err, "couldn't update zone insight", "zone", zone)
 	}
 

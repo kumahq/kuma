@@ -14,6 +14,10 @@ type TypeRegistry interface {
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
+
+	MustNewObject(model.ResourceType) model.Resource
+	MustNewList(model.ResourceType) model.ResourceList
+
 	DescriptorFor(resourceType model.ResourceType) (model.ResourceTypeDescriptor, error)
 
 	ObjectTypes(filters ...model.TypeFilter) []model.ResourceType
@@ -107,4 +111,22 @@ func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, 
 		return nil, errors.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc.NewList(), nil
+}
+
+// MustNewObject implements TypeRegistry.
+func (t *typeRegistry) MustNewObject(resType model.ResourceType) model.Resource {
+	res, err := t.NewObject(resType)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// MustNewList implements TypeRegistry.
+func (t *typeRegistry) MustNewList(resType model.ResourceType) model.ResourceList {
+	resList, err := t.NewList(resType)
+	if err != nil {
+		panic(err)
+	}
+	return resList
 }

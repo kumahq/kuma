@@ -58,7 +58,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
 
 	// Only fallback if we have TrafficRoutes & No MeshHTTPRoutes
-	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.Rules) == 0 {
+	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
 		return nil
 	}
 
@@ -122,6 +122,9 @@ func ApplyToGateway(
 	xdsCtx xds_context.Context,
 	rules []ToRouteRule,
 ) error {
+	if len(rules) == 0 {
+		return nil
+	}
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 	if len(rules) == 0 {
 		return nil

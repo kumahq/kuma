@@ -73,16 +73,16 @@ func Test() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should create default routes when no policies defined", func() {
-		// given
+	It("should use MeshTCPRoute if no TrafficRoutes are present", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
+			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
 				"test-client",
 				"test-http-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(HavePrefix("test-http-server"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -207,15 +207,6 @@ spec:
 	It("should use MeshHTTPRoute if both MeshTCPRoute and MeshHTTPRoute "+
 		"are present and point to the same source and http destination", func() {
 		// given
-		Eventually(func(g Gomega) {
-			g.Expect(client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
@@ -304,15 +295,6 @@ spec:
 	It("should use MeshTCPRoute if both MeshTCPRoute and MeshHTTPRoute "+
 		"are present and point to the same source and tcp destination", func() {
 		// given
-		Eventually(func(g Gomega) {
-			g.Expect(client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-tcp-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService

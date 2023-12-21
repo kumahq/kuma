@@ -944,6 +944,25 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.TrafficRouteType: &core_mesh.TrafficRouteResourceList{
+							Items: []*core_mesh.TrafficRouteResource{{
+								Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
+								Spec: &mesh_proto.TrafficRoute{
+									Sources: []*mesh_proto.Selector{{
+										Match: mesh_proto.MatchAnyService(),
+									}},
+									Destinations: []*mesh_proto.Selector{{
+										Match: mesh_proto.MatchAnyService(),
+									}},
+									Conf: &mesh_proto.TrafficRoute_Conf{
+										Destination: mesh_proto.MatchAnyService(),
+										LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+											LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+										},
+									},
+								},
+							}},
+						},
 						core_mesh.VirtualOutboundType: &core_mesh.VirtualOutboundResourceList{
 							Items: []*core_mesh.VirtualOutboundResource{
 								{

@@ -329,5 +329,19 @@ var _ = Describe("ExternalService", func() {
                 - field: networking.tls.clientKey
                   message: data source cannot be empty`,
 		}),
+		Entry("kuma.io/service and networking address clash", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                networking:
+                  address: httpbin.org:80
+                tags:
+                  kuma.io/service: httpbin.org`,
+			expected: `
+                violations:
+                - field: tags["kuma.io/service"]
+                  message: cannot be the same as networking.address`,
+		}),
 	)
 })

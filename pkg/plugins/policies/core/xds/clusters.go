@@ -18,6 +18,7 @@ type Clusters struct {
 	OutboundSplit map[string][]*envoy_cluster.Cluster
 	Gateway       map[string]*envoy_cluster.Cluster
 	Egress        map[string]*envoy_cluster.Cluster
+	Prometheus    *envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
@@ -46,6 +47,8 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			clusters.Gateway[cluster.Name] = cluster
 		case egress.OriginEgress:
 			clusters.Egress[cluster.Name] = cluster
+		case generator.OriginPrometheus:
+			clusters.Prometheus = cluster
 		default:
 			continue
 		}

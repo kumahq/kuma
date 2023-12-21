@@ -213,7 +213,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						WithPort(8005).
 						WithWeight(1).
 						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us")).
-				AddEndpoint("other-service", xds_builders.Endpoint().
+				AddEndpoint("other-backend", xds_builders.Endpoint().
 					WithTarget("192.168.0.6").
 					WithPort(8006).
 					WithWeight(1).
@@ -228,6 +228,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -274,7 +275,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					AddExternalService("externalservice").
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(
+						samples.DataplaneWebBuilder().
+							AddOutboundToService("other-backend").
+							AddOutboundToService("externalservice"),
+					).
 					WithRouting(
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets).
@@ -344,6 +349,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -366,7 +372,10 @@ var _ = Describe("MeshTCPRoute", func() {
 					AddServiceProtocol("tcp-backend", core_mesh.ProtocolTCP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(
+						samples.DataplaneWebBuilder().
+							AddOutboundToService("tcp-backend"),
+					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
@@ -393,6 +402,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -412,6 +422,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -445,7 +456,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					AddServiceProtocol("http-backend", core_mesh.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(
+						samples.DataplaneWebBuilder().
+							AddOutboundToService("tcp-backend").
+							AddOutboundToService("http-backend"),
+					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -476,6 +491,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -495,6 +511,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Subset: core_rules.MeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -528,7 +545,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					AddServiceProtocol("http-backend", core_mesh.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(
+						samples.DataplaneWebBuilder().
+							AddOutboundToService("tcp-backend").
+							AddOutboundToService("http-backend"),
+					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
