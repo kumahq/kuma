@@ -146,12 +146,14 @@ conf:
 
 			// then
 			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
-			Eventually(func() (string, error) {
-				return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
-			Eventually(func() (string, error) {
-				return zone2.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
-			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
+			for _, zone := range []*UniversalCluster{zone1, zone2} {
+				Eventually(func(g Gomega) {
+					output, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(output).To(ContainSubstring(`weight: 101`))
+					g.Expect(output).To(ContainSubstring(`kuma.io/display-name: ` + name))
+				}, "30s", "1s").Should(Succeed())
+			}
 		})
 
 		Context("Deny", func() {
