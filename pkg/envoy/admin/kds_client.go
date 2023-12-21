@@ -48,7 +48,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, &KDSTransportError{requestType: "XDSConfigRequest"}
+		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.XDSConfigDump.DeleteWatch(clientID, reqId)
@@ -86,7 +86,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, &KDSTransportError{requestType: "StatsRequest"}
+		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.Stats.DeleteWatch(clientID, reqId)
@@ -124,7 +124,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, &KDSTransportError{requestType: "ClustersRequest"}
+		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.Clusters.DeleteWatch(clientID, reqId)
