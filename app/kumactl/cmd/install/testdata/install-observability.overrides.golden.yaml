@@ -1187,7 +1187,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -1278,7 +1278,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -1367,7 +1367,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -1454,7 +1454,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -1545,25 +1545,25 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_rbac_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_rbac_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "Allowed - {{listener}}",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_rbac_shadow_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_rbac_shadow_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "Shadow allowed - {{listener}}",
               "refId": "D",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_rbac_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_rbac_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "Denied - {{listener}}",
               "refId": "B",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_rbac_shadow_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_rbac_shadow_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "Shadow denied - {{listener}}",
               "refId": "C",
               "datasource": "Prometheus"
@@ -1654,51 +1654,51 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "hide": true,
               "legendFormat": "connection destroyed by the client - {{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "connection timeout - {{envoy_cluster_name}}",
               "refId": "B",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "hide": true,
               "legendFormat": "connection destroyed by local Envoy - {{envoy_cluster_name}}",
               "refId": "C",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
               "refId": "D",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "pending overflow - {{envoy_cluster_name}}",
               "refId": "E",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "request timeout - {{envoy_cluster_name}}",
               "refId": "F",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "response reset by the client - {{envoy_cluster_name}}",
               "refId": "G",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[$__rate_interval])",
               "legendFormat": "request reset by local Envoy - {{envoy_cluster_name}}",
               "refId": "H",
               "datasource": "Prometheus"
@@ -1895,7 +1895,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -1986,7 +1986,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -2077,7 +2077,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -2166,7 +2166,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
@@ -2316,51 +2316,51 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "hide": true,
               "legendFormat": "destroyed by remote Envoy - {{envoy_cluster_name}}",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "connection timeout - {{envoy_cluster_name}}",
               "refId": "B",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "hide": true,
               "legendFormat": "destroyed by local Envoy - {{envoy_cluster_name}}",
               "refId": "C",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
               "refId": "D",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "pending overflow - {{envoy_cluster_name}}",
               "refId": "E",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "request timeout - {{envoy_cluster_name}}",
               "refId": "F",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "request reset by other Envoy - {{envoy_cluster_name}}",
               "refId": "G",
               "datasource": "Prometheus"
             },
             {
-              "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+              "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[$__rate_interval])",
               "legendFormat": "response reset by local Envoy - {{envoy_cluster_name}}",
               "refId": "H",
               "datasource": "Prometheus"
@@ -2458,7 +2458,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
@@ -2466,7 +2466,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
@@ -2474,7 +2474,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -2560,7 +2560,7 @@ data:
           "targets": [
             {
               "datasource": "Prometheus",
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming",
@@ -2568,7 +2568,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -2653,7 +2653,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming {{envoy_response_code_class}}xx",
@@ -2661,7 +2661,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
@@ -2966,14 +2966,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Connection overflow",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Pending request overflow",
@@ -2981,7 +2981,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Retry overflow",
@@ -3359,7 +3359,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
+              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval]))) by (kuma_io_service)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service }}",
@@ -3451,7 +3451,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])) by (kuma_io_service)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service }}",
@@ -3543,7 +3543,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[$__rate_interval])) by (kuma_io_service,envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
@@ -3660,7 +3660,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))))",
+              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))))",
               "legendFormat": "Success rate",
               "refId": "A"
             }
@@ -3767,20 +3767,20 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Connection overflow",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Pending request overflow",
               "refId": "B"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Retry overflow",
@@ -4223,12 +4223,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Sent",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Received",
               "refId": "B"
             }
@@ -4326,44 +4326,44 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "hide": true,
               "legendFormat": "Connection destroyed by the client",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Connection timeout",
               "refId": "B"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "hide": true,
               "legendFormat": "Connection destroyed by local Envoy",
               "refId": "C"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Pending failure ejection",
               "refId": "D"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Pending overflow",
               "refId": "E"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Request timeout",
               "refId": "F"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Response reset",
               "refId": "G"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[$__rate_interval]))",
               "legendFormat": "Request reset",
               "refId": "H"
             }
@@ -4606,13 +4606,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Bytes sent",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Bytes received",
               "refId": "B",
               "datasource": "Prometheus"
@@ -4703,51 +4703,51 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": true,
               "legendFormat": "Connection destroyed by the client",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Connection timeout",
               "refId": "B",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": true,
               "legendFormat": "Connection destroyed by local Envoy",
               "refId": "C",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Pending failure ejection",
               "refId": "D",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Pending overflow",
               "refId": "E",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Request timeout",
               "refId": "F",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Response reset",
               "refId": "G",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "legendFormat": "Request reset",
               "refId": "H",
               "datasource": "Prometheus"
@@ -4924,7 +4924,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])))",
               "legendFormat": "Time",
               "refId": "A",
               "datasource": "Prometheus"
@@ -5015,7 +5015,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval])))",
               "legendFormat": "Time",
               "refId": "A",
               "datasource": "Prometheus"
@@ -5115,7 +5115,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
@@ -5123,7 +5123,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
@@ -5131,7 +5131,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -5217,7 +5217,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Requests",
@@ -5304,7 +5304,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{envoy_response_code_class}}xx",
@@ -5519,14 +5519,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Connection overflow",
               "refId": "A",
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Pending request overflow",
@@ -5534,7 +5534,7 @@ data:
               "datasource": "Prometheus"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Retry overflow",
@@ -6346,7 +6346,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
@@ -6357,7 +6357,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Configuration accepted",
@@ -6369,7 +6369,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
@@ -6380,7 +6380,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
@@ -6391,7 +6391,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[$__rate_interval]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Rate",
@@ -6483,13 +6483,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(xds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(xds_generation_count{instance=~\"$instance\"}[$__rate_interval])) - sum(rate(xds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Success",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Errors",
               "refId": "B"
@@ -6749,19 +6749,19 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit Wait",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Miss",
               "refId": "B"
@@ -6851,19 +6851,19 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit Wait",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Miss",
               "refId": "B"
@@ -6961,13 +6961,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "endpoint health responses",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "health check requests",
               "refId": "B"
@@ -7137,7 +7137,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[$__rate_interval])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Success",
               "refId": "A"
@@ -7148,7 +7148,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Errors",
               "refId": "B"
@@ -7336,7 +7336,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(api_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(api_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$__rate_interval])))",
               "interval": "",
               "legendFormat": "{{handler}}",
               "refId": "A"
@@ -7437,7 +7437,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (code) (rate(api_server_http_request_duration_seconds_count{instance=~\"$instance\"}[1m]))",
+              "expr": "sum by (code) (rate(api_server_http_request_duration_seconds_count{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "{{code}}",
               "refId": "A"
@@ -7540,7 +7540,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$__rate_interval])))",
               "interval": "",
               "legendFormat": "{{handler}}",
               "refId": "A"
@@ -7641,7 +7641,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
+              "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "{{code}}",
               "refId": "A"
@@ -8024,7 +8024,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
@@ -8035,7 +8035,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Configuration accepted",
@@ -8047,7 +8047,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
@@ -8057,7 +8057,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
@@ -8067,7 +8067,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Rate",
@@ -8158,13 +8158,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Success",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Errors",
               "refId": "B"
@@ -8528,7 +8528,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
@@ -8539,7 +8539,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Configuration accepted",
@@ -8551,7 +8551,7 @@ data:
                 "uid": "Prometheus"
               },
               "exemplar": true,
-              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
@@ -8561,7 +8561,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
@@ -8571,7 +8571,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Rate",
@@ -8662,13 +8662,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone!=\"Global\"}[1m])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_generation_count{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval])) - sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Success",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "expr": "sum(rate(kds_generation_errors{instance=~\"$instance\",zone!=\"Global\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Errors",
               "refId": "B"
@@ -8942,7 +8942,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum by (operation, le) (rate(store_bucket{instance=~\"$instance\"}[1m])))",
+              "expr": "histogram_quantile(0.99, sum by (operation, le) (rate(store_bucket{instance=~\"$instance\"}[$__rate_interval])))",
               "interval": "",
               "legendFormat": "{{operation}}",
               "refId": "A"
@@ -9031,19 +9031,19 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(store_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(store_cache{result=\"hit\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(store_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(store_cache{result=\"hit-wait\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Hit Wait",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(store_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+              "expr": "sum(rate(store_cache{result=\"miss\",instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "Miss",
               "refId": "B"
@@ -9133,7 +9133,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (operation, resource_type) (rate(store_count{instance=~\"$instance\"}[1m]))",
+              "expr": "sum by (operation, resource_type) (rate(store_count{instance=~\"$instance\"}[$__rate_interval]))",
               "interval": "",
               "legendFormat": "{{operation}} - {{resource_type}}",
               "refId": "A"
@@ -9833,7 +9833,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+              "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -9898,7 +9898,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -9977,21 +9977,21 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
               "refId": "A"
             },
             {
-              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
               "refId": "C"
             },
             {
-              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -10089,14 +10089,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+              "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -10194,7 +10194,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class,envoy_cluster_name)",
+              "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[$__rate_interval])) by (envoy_response_code_class,envoy_cluster_name)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{envoy_cluster_name}}:{{envoy_response_code_class}}xx",
@@ -10306,7 +10306,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits{resource=\"cpu\",unit=\"core\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
+              "expr": "max(sum(rate(container_cpu_usage_seconds_total[$__rate_interval])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits{resource=\"cpu\",unit=\"core\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ dataplane }}",
@@ -10903,7 +10903,7 @@ data:
           "pluginVersion": "8.5.2",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -10967,7 +10967,7 @@ data:
           "pluginVersion": "8.5.2",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -11038,21 +11038,21 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
               "refId": "A"
             },
             {
-              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
               "refId": "C"
             },
             {
-              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -11137,14 +11137,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -11230,14 +11230,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[$__rate_interval])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming {{envoy_response_code_class}}xx",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
@@ -11343,7 +11343,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits{resource=\"cpu\",unit=\"core\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "expr": "max(sum(rate(container_cpu_usage_seconds_total[$__rate_interval])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits{resource=\"cpu\",unit=\"core\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ dataplane }}",
