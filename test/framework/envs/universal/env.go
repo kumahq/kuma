@@ -19,6 +19,7 @@ func SetupAndGetState() []byte {
 		[]framework.KumaDeploymentOption{
 			framework.WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
 			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"),         // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_RESOURCES", "false"),          // remove when default is to not create default policies
 		}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Universal)...)
 	Expect(Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))).To(Succeed())
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {

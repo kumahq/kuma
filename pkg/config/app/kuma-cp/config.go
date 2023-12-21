@@ -221,7 +221,7 @@ var DefaultConfig = func() Config {
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
-		Defaults: DefaultDefaultsConfig(),
+		Defaults:                   DefaultDefaultsConfig(),
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				SubscriptionLimit: 2,
@@ -382,7 +382,7 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
-		SkipMeshCreation: false,
+		SkipMeshCreation:    false,
 		CreateMeshResources: true,
 	}
 }

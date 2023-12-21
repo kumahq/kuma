@@ -234,7 +234,6 @@ var defaultConf = E2eConfig{
 			Kubernetes: ControlPlaneConfig{
 				Envs: map[string]string{
 					"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS": "changesvc-test-label",
-					"KUMA_DEFAULTS_CREATE_MESH_RESOURCES": "false",  // we should remove it when default changed to false
 				},
 				AdditionalYamlConfig: "",
 			},
@@ -245,9 +244,7 @@ var defaultConf = E2eConfig{
 		},
 		Multizone: MultizoneConfig{
 			Global: ControlPlaneConfig{
-				Envs:                 map[string]string{
-					"KUMA_DEFAULTS_CREATE_MESH_RESOURCES": "false",  // we should remove it when default changed to false
-				},
+				Envs:                 map[string]string{},
 				AdditionalYamlConfig: "",
 			},
 			KubeZone1: ControlPlaneConfig{
