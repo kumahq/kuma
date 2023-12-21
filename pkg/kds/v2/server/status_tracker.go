@@ -8,6 +8,7 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -70,14 +71,20 @@ func (c *statusTracker) OnDeltaStreamOpen(ctx context.Context, streamID int64, t
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		md = metadata.New(map[string]string{})
+	}
+
 	// initialize subscription
 	now := core.Now()
 	subscription := &system_proto.KDSSubscription{
-		Id:               core.NewUUID(),
-		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:      util_proto.MustTimestampProto(now),
-		Status:           system_proto.NewSubscriptionStatus(now),
-		Version:          system_proto.NewVersion(),
+		Id:                core.NewUUID(),
+		GlobalInstanceId:  c.runtimeInfo.GetInstanceId(),
+		ConnectTime:       util_proto.MustTimestampProto(now),
+		Status:            system_proto.NewSubscriptionStatus(now),
+		Version:           system_proto.NewVersion(),
+		AuthTokenProvided: len(md.Get("authorization")) == 1,
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -98,6 +105,10 @@ func (c *statusTracker) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) 
 	defer c.mu.Unlock()
 
 	state := c.streams[streamID]
+	if state == nil {
+		c.log.Info("[WARNING] OnDeltaStreamClosed but no state in the status_tracker", "streamid", streamID)
+		return
+	}
 
 	delete(c.streams, streamID)
 

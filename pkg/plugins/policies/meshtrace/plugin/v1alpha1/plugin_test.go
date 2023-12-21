@@ -1,21 +1,32 @@
 package v1alpha1_test
 
 import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -593,4 +604,67 @@ var _ = Describe("MeshTrace", func() {
             trafficDirection: OUTBOUND`},
 		}),
 	)
+	type gatewayTestCase struct {
+		rules map[core_rules.InboundListener]core_rules.SingleItemRules
+	}
+	DescribeTable("should generate proper Envoy config for gateways",
+		func(given gatewayTestCase) {
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			}
+
+			xdsCtx := xds_samples.SampleContextWith(resources)
+
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshTraceType, core_rules.GatewayRules{
+					SingleItemRules: given.rules,
+				})).
+				Build()
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+
+			nameSplit := strings.Split(GinkgoT().Name(), " ")
+			name := nameSplit[len(nameSplit)-1]
+			// then
+			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", name))))
+		},
+		Entry("simple-gateway", gatewayTestCase{
+			rules: map[core_rules.InboundListener]core_rules.SingleItemRules{
+				{Address: "192.168.0.1", Port: 8080}: {
+					Rules: []*core_rules.Rule{{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: pointer.To(true),
+									TraceId128Bit:     pointer.To(true),
+								},
+							}},
+						},
+					}},
+				},
+			},
+		}),
+	)
 })
+
+func getResourceYaml(list core_xds.ResourceList) []byte {
+	actualResource, err := util_proto.ToYAML(list[0].Resource)
+	Expect(err).ToNot(HaveOccurred())
+	return actualResource
+}

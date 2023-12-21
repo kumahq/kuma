@@ -4,8 +4,11 @@
 # IDE: VS Code
 .vscode/
 
-# asdf
+.ci_tools/
+mk/dependencies/*.versions
+
 .tool-versions
+.run-full-matrix
 
 # CI
 build/

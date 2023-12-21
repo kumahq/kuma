@@ -195,7 +195,7 @@ var _ = Describe("MeshFaultInjection", func() {
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
 		rules := core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
 					Subset: core_rules.Subset{},
 					Conf: api.Conf{

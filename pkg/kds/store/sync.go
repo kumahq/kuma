@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"maps"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -65,6 +66,11 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 	}
 }
 
+type OnUpdate struct {
+	r    core_model.Resource
+	opts []store.UpdateOptionsFunc
+}
+
 func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(context.TODO(), user.ControlPlane)
@@ -105,18 +111,19 @@ func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOpt
 
 	// 2. create resources which are not represented in 'downstream' and update the rest of them
 	onCreate := []core_model.Resource{}
-	onUpdate := []core_model.Resource{}
+	onUpdate := []OnUpdate{}
 	for _, r := range upstream.GetItems() {
 		existing := indexedDownstream.get(core_model.MetaToResourceKey(r.GetMeta()))
 		if existing == nil {
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) {
+		newLabels := r.GetMeta().GetLabels()
+		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) || !maps.Equal(existing.GetMeta().GetLabels(), newLabels) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
-			onUpdate = append(onUpdate, r)
+			onUpdate = append(onUpdate, OnUpdate{r: r, opts: []store.UpdateOptionsFunc{store.UpdateWithLabels(newLabels)}})
 		}
 	}
 
@@ -139,28 +146,30 @@ func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOpt
 		rk := core_model.MetaToResourceKey(r.GetMeta())
 		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		creationTime := r.GetMeta().GetCreationTime()
-		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
-		r.SetMeta(nil)
 
 		createOpts := []store.CreateOptionsFunc{
 			store.CreateBy(rk),
 			store.CreatedAt(creationTime),
+			store.CreateWithLabels(r.GetMeta().GetLabels()),
 		}
 		if opts.Zone != "" {
 			createOpts = append(createOpts, store.CreateWithOwner(zone))
 		}
+		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
+		r.SetMeta(nil)
+
 		if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
 			return err
 		}
 	}
 
-	for _, r := range onUpdate {
-		log.V(1).Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+	for _, upd := range onUpdate {
+		log.V(1).Info("updating a resource", "name", upd.r.GetMeta().GetName(), "mesh", upd.r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 		// from upstream store, because we update downstream only when resource have changed in upstream
-		if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
+		if err := s.resourceStore.Update(ctx, upd.r, append(upd.opts, store.ModifiedAt(now))...); err != nil {
 			return err
 		}
 	}

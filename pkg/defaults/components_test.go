@@ -8,7 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -29,7 +28,7 @@ var _ = Describe("Defaults Component", func() {
 			}
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, core.UniversalEnvironment, manager, store, context.Background())
+			component = defaults.NewDefaultsComponent(cfg, manager, store, context.Background())
 		})
 
 		It("should create default mesh", func() {
@@ -82,7 +81,7 @@ var _ = Describe("Defaults Component", func() {
 			}
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, core.UniversalEnvironment, manager, store, context.Background())
+			component = defaults.NewDefaultsComponent(cfg, manager, store, context.Background())
 		})
 
 		It("should not create default mesh", func() {

@@ -17,8 +17,7 @@ type DNSGenerator struct{}
 
 func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	dnsPort := proxy.Metadata.GetDNSPort()
-	emptyDnsPort := proxy.Metadata.GetEmptyDNSPort()
-	if dnsPort == 0 || emptyDnsPort == 0 {
+	if dnsPort == 0 {
 		return nil, nil
 	}
 
@@ -50,7 +49,7 @@ func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xds
 
 	listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP).
 		WithOverwriteName(names.GetDNSListenerName()).
-		Configure(envoy_listeners.DNS(vips, emptyDnsPort, proxy.Metadata.Version.Envoy)).
+		Configure(envoy_listeners.DNS(vips)).
 		Build()
 	if err != nil {
 		return nil, err

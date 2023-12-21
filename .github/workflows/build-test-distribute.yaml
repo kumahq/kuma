@@ -5,9 +5,14 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 env:
+  # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
   K8S_MAX_VERSION: v1.28.1-k3s1
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,16 +20,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v4
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - run: |
@@ -34,25 +47,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # GitHub actions does not share cache across multiple jobs,
-      # so we have to operate cache in each job and action file
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v4
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - name: "Set switches based on if run full matrix"
+        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
@@ -76,7 +105,7 @@ jobs:
           rm -rf ./build/oapitmp
           rm -rf ./build/ebpf/
       - name: Upload build output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: build
@@ -92,21 +121,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v4
+      - name: "Check if should run on all arch/os combinations"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
       - name: Free up disk space for the Runner
         run: |
           echo "Disk usage before cleanup"
           sudo df -h
+          echo "Removing big directories"
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
@@ -114,7 +155,7 @@ jobs:
         run: |
           make test TEST_REPORTS=1
       - name: Save test reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-reports
           path: build/reports
@@ -124,17 +165,22 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: "Halt due to previous failures"
         if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
         run: |
           exit 1
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
+      - name: "Set switches based on if run full matrix"
+        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
@@ -146,17 +192,20 @@ jobs:
       - name: Install dependencies for cross builds
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.kuma-dev
-          key: ${{ runner.os }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-devtools
-      - uses: actions/download-artifact@v3
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - uses: actions/download-artifact@v4
         with:
           name: build-output
           path: build
@@ -165,9 +214,9 @@ jobs:
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
       - name: Publish distributions to Pulp
         env:
-          PULP_USERNAME: ${vars.PULP_USERNAME}
-          PULP_PASSWORD: ${secrets.PULP_PASSWORD}
-          CLOUDSMITH_API_KEY: ${secrets.CLOUDSMITH_API_KEY}
+          PULP_USERNAME: ${{ vars.PULP_USERNAME }}
+          PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
           make publish/pulp
       - name: Load images
@@ -175,8 +224,8 @@ jobs:
           make docker/load
       - name: Publish images
         env:
-          DOCKER_API_KEY: ${secrets.DOCKER_API_KEY}
-          DOCKER_USERNAME: ${vars.DOCKER_USERNAME}
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
         run: |-
           make docker/login
           # ensure we always logout
@@ -188,108 +237,81 @@ jobs:
           make docker/manifest
   gen_e2e_matrix:
     runs-on: ubuntu-latest
-    needs: ["build"]
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') }}
     outputs:
-      test_e2e: ${{ steps.generate-matrix.outputs.test_e2e }}
-      test_e2e_env: ${{ steps.generate-matrix.outputs.test_e2e_env }}
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        id: set-full-matrix-switches
         run: |
+          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - name: Install jq
-        run: |
-          sudo apt-get install -y jq
       - id: generate-matrix
         name: Generate matrix
         env:
-          # Used in child repo for potential overrides
-          BASE_HOOK: ''
-          MATRIX_SKIP_HOOK: ''
+          BASE_MATRIX: |-
+            {
+              "test_e2e": {
+                "target": [""],
+                "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "arch": ["amd64", "arm64"],
+                "parallelism": [3],
+                "cniNetworkPlugin": ["flannel"],
+                "legacyKDS": [false]
+              },
+              "test_e2e_env": {
+                "target": ["kubernetes", "universal", "multizone"],
+                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "arch": ["amd64", "arm64"],
+                "parallelism": [1],
+                "cniNetworkPlugin": ["flannel"],
+                "legacyKDS": [false],
+                "exclude":[
+                  {"target": "kubernetes", "k8sVersion":"kind"},
+                  {"target": "multizone", "k8sVersion":"kind"},
+                  {"arch": "arm64", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
+                  {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
+                  {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+                ],
+                "include":[
+                  {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
+                ]
+              }
+            }
+          OVERRIDE_JQ_CMD: |-
+            .test_e2e = false
+            | .test_e2e_env.include = []
+            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
         run: |-
-          BASE_MATRIX_ALL=$(cat <<-END
-          {"test_e2e": {
-            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-            "arch": ["amd64", "arm64"]
-          },
-          "test_e2e_env": {
-            "target": ["kubernetes", "universal", "multizone"],
-            "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-            "arch": ["amd64", "arm64"],
-            "cniNetworkPlugin": ["flannel", "calico"],
-            "legacyKDS": [false, true],
-            "exclude":[
-              {"cniNetworkPlugin": "calico"},
-              {"legacyKDS": true},
-              {"target": "kubernetes", "k8sVersion":"kind"},
-              {"target": "multizone", "k8sVersion":"kind"},
-              {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
-              {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
-            ],
-            "include":[
-              {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "cniNetworkPlugin": "flannel"},
-              {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64", "legacyKDS": false}
-            ]
-          }}
-          END
-          )
-
-          if [[ "${{ env.BASE_HOOK}}" != "" ]]; then
-            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -rc "${{ env.BASE_HOOK}}")
-          fi
-
-          MATRIX_SLOW=$(echo $BASE_MATRIX_ALL | jq -rc ".test_e2e")
-          MATRIX_ENV=$(echo $BASE_MATRIX_ALL | jq -rc ".test_e2e_env")
-
+          BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
           if [[ "${RUN_FULL_MATRIX}" != "true" ]]; then
-            echo "Skipping non priority e2e tests, because no label 'ci/run-full-matrix' was found on the pull request and not pushing on a releasable branch."
-
-            MATRIX_SLOW=''  # target==""
-
-            # non priority main e2e
-            EXCLUDE_ARM64='[{"arch": "arm64"}]'
-            EXCLUDE_MAIN_NON_PRIORITY='[{"k8sVersion":"kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION }}"}]'
-            MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "del(.include) | .exclude += $EXCLUDE_ARM64 | .exclude += $EXCLUDE_MAIN_NON_PRIORITY")
-            if [[ "${RUN_FULL_MATRIX}" != "true" -a "${{ env.MATRIX_SKIP_HOOK }}" != "" ]]; then
-                MATRIX_ENV=$(echo $MATRIX_ENV | jq -rc "${{ env.MATRIX_SKIP_HOOK }}")
-            fi
+            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
           fi
 
-          echo "test_e2e=$MATRIX_SLOW" >> $GITHUB_OUTPUT
-          echo "test_e2e_env=$MATRIX_ENV" >> $GITHUB_OUTPUT
+          echo "final matrix: $BASE_MATRIX_ALL"
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
-    name: "legacy-k8s:${{ matrix.arch }}-${{ matrix.k8sVersion }}"
-    needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.test_e2e != ''
+    needs: ["gen_e2e_matrix", "build"]
+    if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e) }}
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
-      k8sVersion: ${{ matrix.k8sVersion }}
-      target: ""
-      arch: ${{ matrix.arch }}
-      legacyKDS: 'false'
-      cniNetworkPlugin: 'flannel'
-      parallelism: '3'
+      matrix: ${{ toJSON(matrix) }}
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
-    name: "${{ matrix.target }}${{ matrix.cniNetworkPlugin == 'calico' && '-calico' || '' }}:${{ matrix.arch }}-${{ matrix.k8sVersion }}${{ matrix.legacyKDS && '(legacy-kds)' || '' }}"
-    needs: ["gen_e2e_matrix"]
-    if: needs.gen_e2e_matrix.outputs.test_e2e_env != ''
+    needs: ["gen_e2e_matrix", "build"]
+    if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
-      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.test_e2e_env) }}
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     uses: ./.github/workflows/e2e.yaml
     with:
-      k8sVersion: ${{ matrix.k8sVersion }}
-      target: ${{ matrix.target }}
-      arch: ${{ matrix.arch }}
-      legacyKDS: ${{ matrix.legacyKDS }}
-      cniNetworkPlugin: ${{ matrix.cniNetworkPlugin }}
-      parallelism: '1'
+      matrix: ${{ toJSON(matrix) }}
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}

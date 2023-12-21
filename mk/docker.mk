@@ -101,9 +101,9 @@ docker/%/manifest:
 ALL_RELEASE_WITH_ARCH=$(foreach arch,$(ENABLED_GOARCHES),$(patsubst %,%/$(arch),$(IMAGES_RELEASE)))
 ALL_TEST_WITH_ARCH=$(foreach arch,$(ENABLED_GOARCHES),$(patsubst %,%/$(arch),$(IMAGES_TEST)))
 .PHONY: docker/save
-docker/save: $(patsubst %,docker/%/save,$(ALL_RELEASE_WITH_ARCH) $(ALL_TEST_WITH_ARCH))
+docker/save: $(patsubst %,docker/%/save,$(ALL_RELEASE_WITH_ARCH))
 .PHONY: docker/load
-docker/load: $(patsubst %,docker/%/load,$(ALL_RELEASE_WITH_ARCH) $(ALL_TEST_WITH_ARCH))
+docker/load: $(patsubst %,docker/%/load,$(ALL_RELEASE_WITH_ARCH))
 .PHONY: docker/tag
 docker/tag: docker/tag/test docker/tag/release ## Tag local arch containers with the version with the arch (this is mostly to use non multi-arch images as if they were released images in e2e tests)
 .PHONY: docker/tag/release

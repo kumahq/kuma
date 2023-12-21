@@ -180,12 +180,12 @@ var _ = Describe("Reachable Services Graph", func() {
 		Entry("equal subsets matching is preserved because of the names", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
-					WithName("aaa").
+					WithName("bbb").
 					WithTargetRef(builders.TargetRefMeshSubset("kuma.io/zone", "east")).
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Deny).
 					Build(),
 				builders.MeshTrafficPermission().
-					WithName("bbb").
+					WithName("aaa").
 					WithTargetRef(builders.TargetRefMeshSubset("version", "v1")).
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build(),

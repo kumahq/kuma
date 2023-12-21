@@ -1,42 +1,40 @@
-package postgres
+package postgres_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
 )
 
 var _ = Describe("Migrate", func() {
-	var cfg postgres.PostgresStoreConfig
-
-	BeforeEach(func() {
-		c, err := c.Config()
-		Expect(err).ToNot(HaveOccurred())
-		cfg = *c
-	})
-
 	It("should migrate DB", func() {
+		// given
+		cfg, err := c.Config()
+		Expect(err).ToNot(HaveOccurred())
+
 		// when
-		ver, err := MigrateDb(cfg)
+		ver, err := postgres.MigrateDb(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
+		Expect(ver).To(Equal(dbVersion))
 
 		// and when migrating again
-		ver, err = MigrateDb(cfg)
+		ver, err = postgres.MigrateDb(cfg)
 
 		// then
 		Expect(err).To(Equal(plugins.AlreadyMigrated))
-		Expect(ver).To(Equal(plugins.DbVersion(1693473198)))
+		Expect(ver).To(Equal(dbVersion))
 	})
 
 	It("should throw an error when trying to run migrations on newer migration version of DB than in Kuma", func() {
-		// setup
-		_, err := MigrateDb(cfg)
+		// given
+		cfg, err := c.Config()
+		Expect(err).ToNot(HaveOccurred())
+		_, err = postgres.MigrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		sql, err := common_postgres.ConnectToDb(cfg)
@@ -46,28 +44,32 @@ var _ = Describe("Migrate", func() {
 		Expect(res.RowsAffected()).To(Equal(int64(1)))
 
 		// when
-		_, err = MigrateDb(cfg)
+		_, err = postgres.MigrateDb(cfg)
 
 		// then
-		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1693473198. Run newer version of Kuma"))
+		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1701180642. Run newer version of Kuma"))
 	})
 
 	It("should indicate if db is migrated", func() {
+		// given
+		cfg, err := c.Config()
+		Expect(err).ToNot(HaveOccurred())
+
 		// when
-		migrated, err := isDbMigrated(cfg)
+		migrated, err := postgres.IsDbMigrated(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(migrated).To(BeFalse())
 
 		// when
-		_, err = MigrateDb(cfg)
+		_, err = postgres.MigrateDb(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		migrated, err = isDbMigrated(cfg)
+		migrated, err = postgres.IsDbMigrated(cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
