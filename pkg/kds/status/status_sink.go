@@ -1,4 +1,4 @@
-package server
+package status
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
@@ -24,6 +25,29 @@ type ZoneInsightSink interface {
 
 type ZoneInsightStore interface {
 	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
+}
+
+func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
+	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
+		return NewZoneInsightSink(
+			accessor,
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
+			},
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
+			},
+			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
+			NewZonesInsightStore(
+				rt.ResourceManager(),
+				rt.Config().Store.Upsert,
+				rt.Config().Metrics.Zone.CompactFinishedSubscriptions,
+				rt.Transactions(),
+			),
+			l,
+			rt.Extensions(),
+		)
+	}, log)
 }
 
 func NewZoneInsightSink(
