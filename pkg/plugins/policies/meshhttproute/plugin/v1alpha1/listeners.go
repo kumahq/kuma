@@ -90,7 +90,7 @@ func generateListeners(
 			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
 
 		// TODO: https://github.com/kumahq/kuma/issues/3325
-		switch protocol{
+		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
 		}
@@ -169,7 +169,6 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
-<<<<<<< HEAD
 			route.BackendRefs = []common_api.BackendRef{
 				{
 					TargetRef: common_api.TargetRef{
@@ -178,21 +177,6 @@ func prepareRoutes(
 						Tags: tags,
 					},
 					Weight: pointer.To(uint(100)),
-=======
-			targetRef := common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-			}
-			if mesh, ok := tags[mesh_proto.MeshTag]; ok {
-				targetRef.Tags = map[string]string{
-					mesh_proto.MeshTag: mesh,
-				}
-			}
-			route.BackendRefs = []common_api.BackendRef{
-				{
-					TargetRef: targetRef,
-					Weight:    pointer.To(uint(100)),
->>>>>>> master
 				},
 			}
 		}
