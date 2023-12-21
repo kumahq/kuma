@@ -272,7 +272,46 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: builders.TargetRefService("first-time-in-list-backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}, {
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/should-be-first-shared-prefix",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("a-backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}, {
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/should-be-second-shared-prefix",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("a-backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}, {
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/a-second-prefix",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("second-time-in-list-backend"),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -298,6 +337,32 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
 										TargetRef: builders.TargetRefService("backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}, {
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/should-be-second-shared-prefix",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("b-backend"),
+										Weight:    pointer.To(uint(100)),
+									}},
+								},
+							}, {
+								Matches: []api.Match{{
+									Path: &api.PathMatch{
+										Type:  api.PathPrefix,
+										Value: "/should-be-first-shared-prefix",
+									},
+								}},
+								Default: api.RuleConf{
+									BackendRefs: &[]common_api.BackendRef{{
+										TargetRef: builders.TargetRefService("b-backend"),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -348,7 +413,33 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						}},
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
+								TargetRef: builders.TargetRefService("first-time-in-list-backend"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}, {
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/should-be-first-shared-prefix",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefService("a-backend"),
+								Weight:    pointer.To(uint(100)),
+							}},
+						},
+					}, {
+						Matches: []api.Match{{
+							Path: &api.PathMatch{
+								Type:  api.PathPrefix,
+								Value: "/should-be-second-shared-prefix",
+							},
+						}},
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								TargetRef: builders.TargetRefService("a-backend"),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
