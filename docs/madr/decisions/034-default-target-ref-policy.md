@@ -16,6 +16,7 @@ The legacy policies currently serve as the defaults. However, starting from rele
 ## Considered Options
 
 1. Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
+2. Introduce a `policyEngine` field within the `Mesh` object, allowing the selection of the default policy version.
 
 ## Decision Outcome
 
@@ -36,6 +37,8 @@ The decision is to stop creating default policies and utilize plugin code in cas
 ### Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
 
 As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases where there is no existing policy, we generate the configuration using the plugin code.
+
+To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with default policies.
 
 #### Existing users behaviour
 
@@ -65,3 +68,68 @@ This action would enable each dataplane to communicate with all `ExternalService
 #### Cons
 
 * Continuous Delivery (CD) users should incorporate default `Timeout`, `CircuitBreaker`, and `Retry` policies prior to performing an upgrade.
+* New env `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`
+
+### Introduce a `policyEngine` field within the `Mesh` object, allowing the selection of the default policy version.
+
+The proposed addition to the Mesh object would appear as follows in the protobuf definition:
+
+```protobuf
+// Mesh defines configuration of a single mesh.
+message Mesh {
+  // ...
+    
+  enum PolicyEngine {
+    // An Undefined mode means that the policy engine wasn't defined.
+    // When creating, the default is set to TargetRef.
+    // During retrieval of old settings, distinguishing it as Legacy.
+    Undefined = 0;
+    // A Legacy mode creates old default policies.
+    Legacy = 0;
+    // A TargetRef mode creates new default targetRef policies.
+    TargetRef = 1;
+  }
+  // policyEngine implies which policy engine should be used as a default.
+  PolicyEngine policyEngine = 9;
+}
+```
+
+New configuration would look like:
+
+```yaml
+policyEngine: TargetRef
+```
+
+This approach allows the creation of new default `TargetRef` policies without mandating users to solely adopt these new policies. To implement this, we need to introduce an environment variable called `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE`. This variable will define the default policy engine when no specific one is provided during the creation or loading process.
+
+#### Existing users behaviour
+
+When a user already possesses a `Mesh` but doesn't define the `policyEngine` field, we consider it as being set to an `Undefined` engine state. The mesh defaulter only assigns an engine based on `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE` when a user creates a new mesh. By default, this variable is set to `false`, meaning each new mesh will use `policyEngine: TargetRef`.
+
+Why do we need `Undefined`?
+
+Protobuf, by default, takes the first value if there is no value provided. Without `Undefined`, we would default to `Legacy`. The issue arises when a user intends to create a new `Mesh` without specifying the `policyEngine` field, resulting in the selection of the first option due to the lack of an optional `policyEngine` field on the protobuf level.
+
+This situation creates problem in discovering between cases where the user did not provide the definition or explicitly chose `Legacy`.
+
+An additional concern arises when fetching an older mesh from storage and there is no field provided. In such cases, we can interpret `Undefined` as a value determined by `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE`.
+
+When the user updates the Mesh definition to use the `TargetRef` engine, we won't create default policies. Default policies are only generated upon the creation of a new Mesh.
+
+Problem:
+What if users update the mesh using CD/Terraform? 
+
+During an upgrade, existing users have the option to set `KUMA_DEFAULTS_USE_LEGACY_POLICY_ENGINE=true`. This setting will result in all existing meshes or newly created ones without the `policyEngine` field being treated as `Legacy`.
+
+#### New kuma users behaviour
+
+When a new user creates a `Mesh` and does not define the `policyEngine` field, it defaults to a `TargetRef` engine.
+The control-plane does not generate default `MeshTrafficPermissions`, `MeshHTTPRoute`, or `MeshTCPRoute` because they are not necessary for the traffic to function.
+
+#### Pros
+* Greater flexibility in switching between policy engines.
+* Users can create new meshes exclusively with new policies while existing meshes continue to use the legacy engine.
+* Possibility to extend the mode by introducing support for only new policies in specific Mesh instances.
+#### Cons
+* Disabling the creation of legacy policies might necessitate an additional call for the `Mesh` object.
+* Problem when global is newer than a zone
