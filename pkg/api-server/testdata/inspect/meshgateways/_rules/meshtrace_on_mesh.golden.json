@@ -2,8 +2,8 @@
  "httpMatches": [],
  "resource": {
   "mesh": "default",
-  "name": "dp-1",
-  "type": "Dataplane"
+  "name": "the-gateway",
+  "type": "MeshGateway"
  },
  "rules": [
   {
@@ -17,36 +17,12 @@
         "url": "http://jaeger-collector:9411/api/v2/spans"
        }
       }
-     ],
-     "tags": [
-      {
-       "name": "team",
-       "literal": "core"
-      },
-      {
-       "name": "env",
-       "header": {
-        "name": "x-env",
-        "default": "prod"
-       }
-      },
-      {
-       "name": "version",
-       "header": {
-        "name": "x-version"
-       }
-      }
      ]
     },
     "origin": [
      {
       "mesh": "default",
       "name": "default",
-      "type": "MeshTrace"
-     },
-     {
-      "mesh": "default",
-      "name": "override",
       "type": "MeshTrace"
      }
     ]

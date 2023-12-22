@@ -9,6 +9,12 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
+// Defines values for InspectDataplanesRulesParamsResourceType.
+const (
+	Dataplanes   InspectDataplanesRulesParamsResourceType = "dataplanes"
+	Meshgateways InspectDataplanesRulesParamsResourceType = "meshgateways"
+)
+
 // BaseStatus defines model for BaseStatus.
 type BaseStatus struct {
 	Online int `json:"online"`
@@ -63,10 +69,11 @@ type InspectDataplanesForPolicy struct {
 	Total int                 `json:"total"`
 }
 
-// InspectRulesForDataplane A list of rules for a dataplane
-type InspectRulesForDataplane struct {
-	Resource externalRef0.Meta          `json:"resource"`
-	Rules    []externalRef0.InspectRule `json:"rules"`
+// InspectRules A list of rules for a dataplane
+type InspectRules struct {
+	HttpMatches []externalRef0.HttpMatch   `json:"httpMatches"`
+	Resource    externalRef0.Meta          `json:"resource"`
+	Rules       []externalRef0.InspectRule `json:"rules"`
 }
 
 // MeshesStats Mesh statistics
@@ -124,8 +131,8 @@ type GlobalInsightResponse = GlobalInsight
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
 
-// InspectRulesForDataplaneResponse A list of rules for a dataplane
-type InspectRulesForDataplaneResponse = InspectRulesForDataplane
+// InspectRulesResponse A list of rules for a dataplane
+type InspectRulesResponse = InspectRules
 
 // InternalServerError standard error
 type InternalServerError = externalRef0.Error
@@ -144,3 +151,6 @@ type InspectResourcesParams struct {
 	// Name A sub string to filter resources by name
 	Name *string `form:"name,omitempty" json:"name,omitempty"`
 }
+
+// InspectDataplanesRulesParamsResourceType defines parameters for InspectDataplanesRules.
+type InspectDataplanesRulesParamsResourceType string

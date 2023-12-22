@@ -129,7 +129,9 @@ func prepareRoutes(
 	}
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
-	catchAllMatch := []api.Match{{Path: pointer.To(catchAllPathMatch)}}
+	catchAllMatch := []api.Match{
+		{Path: pointer.To(catchAllPathMatch)},
+	}
 
 	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
 		return reflect.DeepEqual(rule.Matches, catchAllMatch)
