@@ -1,6 +1,8 @@
 package trafficpermission
 
 import (
+	"fmt"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -100,17 +102,17 @@ destinations:
 		trafficBlocked()
 
 		// when
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: TrafficPermission
 mesh: tp-test
 name: example-on-zone
 sources:
  - match:
-     kuma.io/zone: kuma-1-zone
+     kuma.io/zone: %s 
 destinations:
  - match:
-     kuma.io/zone: kuma-4
-`
+     kuma.io/zone: %s 
+`, multizone.KubeZone1.ZoneName(), multizone.UniZone1.ZoneName())
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 

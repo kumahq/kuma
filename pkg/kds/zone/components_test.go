@@ -180,7 +180,10 @@ var _ = Describe("Zone Sync", func() {
 			cfg.Multizone.Zone.Name = "global"
 
 			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
-			srv, err := setup.StartServer(globalStore, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
+			srv, err := setup.NewKdsServerBuilder(globalStore).
+				WithKdsContext(kdsCtx).
+				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))).
+				Sotw()
 			Expect(err).ToNot(HaveOccurred())
 			serverStream := grpc.NewMockServerStream()
 			wg.Add(1)
@@ -253,7 +256,10 @@ var _ = Describe("Zone Sync", func() {
 			cfg.Multizone.Zone.Name = "global"
 
 			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
-			srv, err := setup.StartDeltaServer(globalStore, config_core.Global, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
+			srv, err := setup.NewKdsServerBuilder(globalStore).
+				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))).
+				WithKdsContext(kdsCtx).
+				Delta()
 			Expect(err).ToNot(HaveOccurred())
 			serverStream := grpc.NewMockDeltaServerStream()
 			wg.Add(1)
