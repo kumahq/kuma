@@ -48,7 +48,8 @@ type ToRules struct {
 }
 
 type GatewayRules struct {
-	Rules map[InboundListener]Rules
+	ToRules         map[InboundListener]Rules
+	SingleItemRules map[InboundListener]SingleItemRules
 }
 
 type SingleItemRules struct {
@@ -261,6 +262,7 @@ func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
 	httpRoutes []core_model.Resource,
 ) (GatewayRules, error) {
+	singleItemRules := map[InboundListener]SingleItemRules{}
 	rulesByInbound := map[InboundListener]Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		rules, err := BuildToRules(policies, httpRoutes)
@@ -268,8 +270,16 @@ func BuildGatewayRules(
 			return GatewayRules{}, err
 		}
 		rulesByInbound[inbound] = rules.Rules
+
+		singleItemRules[inbound], err = BuildSingleItemRules(policies)
+		if err != nil {
+			return GatewayRules{}, err
+		}
 	}
-	return GatewayRules{Rules: rulesByInbound}, nil
+	return GatewayRules{
+		ToRules:         rulesByInbound,
+		SingleItemRules: singleItemRules,
+	}, nil
 }
 
 func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {

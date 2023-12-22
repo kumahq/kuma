@@ -42,6 +42,11 @@ const (
 
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
+
+	// DisplayName is a standard label that can be used to easier recognize policy name.
+	// On Kubernetes, Kuma resource name contains namespace. Display name is original name without namespace.
+	// The name contains hash when the resource is synced from global to zone. In this case, display name is original name from originated CP.
+	DisplayName = "kuma.io/display-name"
 )
 
 type ProxyType string

@@ -404,7 +404,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			}
 
-			xdsCtx := xds_samples.SampleContextWith(resources)
+			xdsCtx := *xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules)).
@@ -433,7 +437,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{
 			name: "basic",
 			rules: core_rules.GatewayRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "192.168.0.1", Port: 8080}: {{
 						Subset: core_rules.Subset{core_rules.Tag{
 							Key:   mesh_proto.ServiceTag,

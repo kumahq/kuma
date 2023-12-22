@@ -55,32 +55,7 @@ func Test() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should use MeshHTTPRoute if any MeshHTTPRoutes are present", func() {
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
-			g.Expect(err).To(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
-		// when
-		Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: route-1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
-  to:
-    - targetRef:
-        kind: MeshService
-        name: nonexistent-service-that-activates-default
-      rules: []
-`, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
-
+	It("should use MeshHTTPRoute if no TrafficRoutes are present", func() {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())

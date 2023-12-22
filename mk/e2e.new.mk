@@ -10,8 +10,8 @@ E2E_DEPS_TARGETS ?=
 # Environment veriables the tests should run with
 E2E_ENV_VARS ?=
 
-E2E_K8S_BIN_DEPS =
-E2E_UNIVERSAL_BIN_DEPS =
+E2E_K8S_BIN_DEPS = images/test
+E2E_UNIVERSAL_BIN_DEPS = images/test
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
 E2E_K8S_BIN_DEPS+= docker/load
@@ -19,7 +19,7 @@ E2E_UNIVERSAL_BIN_DEPS+= docker/load
 E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
 E2E_K8S_BIN_DEPS+= build/kumactl images
-E2E_UNIVERSAL_BIN_DEPS+= build/kumactl images/test
+E2E_UNIVERSAL_BIN_DEPS+= build/kumactl
 E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
 endif
 

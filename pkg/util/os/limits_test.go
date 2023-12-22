@@ -14,6 +14,9 @@ var _ = Describe("File limits", func() {
 	})
 
 	It("should raise the open file limit", func() {
+		if runtime.GOOS == "darwin" {
+			Skip("skipping on darwin because it requires priviledges")
+		}
 		initialLimits := unix.Rlimit{}
 		Expect(unix.Getrlimit(unix.RLIMIT_NOFILE, &initialLimits)).Should(Succeed())
 
@@ -21,12 +24,7 @@ var _ = Describe("File limits", func() {
 
 		Expect(RaiseFileLimit()).Should(Succeed())
 
-		// After raising, the current limit should be the 4096 on Darwin and max elsewhere.
-		if runtime.GOOS == "darwin" {
-			Expect(CurrentFileLimit()).Should(BeNumerically("==", 10240))
-		} else {
-			Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Max))
-		}
+		Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Max))
 
 		// Restore the original limit.
 		Expect(setFileLimit(initialLimits.Cur)).Should(Succeed())

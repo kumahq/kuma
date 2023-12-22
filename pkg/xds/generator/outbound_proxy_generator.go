@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -37,7 +38,8 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceTLSReadiness)
+	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
+	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
@@ -50,7 +52,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
-		protocol := InferProtocol(proxy, clusters)
+		protocol := inferProtocol(xdsCtx.Mesh, clusters)
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			if hasMeshRoutes {
@@ -86,7 +88,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		return nil, err
 	}
 	resources.AddSet(edsResources)
-
 	return resources, nil
 }
 
@@ -188,7 +189,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := InferProtocol(proxy, service.Clusters())
+		protocol := ctx.Mesh.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
 
 		for _, c := range service.Clusters() {
@@ -309,18 +310,18 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-// InferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
-// Deprecated: for new policies use InferProtocol from pkg/plugins/policies/xds/clusters.go
-func InferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
-	var allEndpoints []model.Endpoint
-	for _, cluster := range clusters {
+func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Cluster) core_mesh.Protocol {
+	var protocol core_mesh.Protocol = core_mesh.ProtocolUnknown
+	for idx, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
-		endpoints := model.EndpointList(proxy.Routing.OutboundTargets[serviceName])
-		allEndpoints = append(allEndpoints, endpoints...)
-		endpoints = proxy.Routing.ExternalServiceOutboundTargets[serviceName]
-		allEndpoints = append(allEndpoints, endpoints...)
+		serviceProtocol := meshCtx.GetServiceProtocol(serviceName)
+		if idx == 0 {
+			protocol = serviceProtocol
+			continue
+		}
+		protocol = util_protocol.GetCommonProtocol(serviceProtocol, protocol)
 	}
-	return InferServiceProtocol(allEndpoints)
+	return protocol
 }
 
 func (OutboundProxyGenerator) determineRoutes(
@@ -334,7 +335,9 @@ func (OutboundProxyGenerator) determineRoutes(
 
 	route := proxy.Routing.TrafficRoutes[oface]
 	if route == nil {
-		outboundLog.Info("there is no selected TrafficRoute for the outbound interface, which means that the traffic won't be routed. Visit https://kuma.io/docs/latest/policies/traffic-route/ to check how to introduce the routing.", "dataplane", proxy.Dataplane.Meta.GetName(), "mesh", proxy.Dataplane.Meta.GetMesh(), "outbound", oface)
+		if len(proxy.Policies.TrafficRoutes) > 0 {
+			outboundLog.Info("there is no selected TrafficRoute for the outbound interface, which means that the traffic won't be routed. Visit https://kuma.io/docs/latest/policies/traffic-route/ to check how to introduce the routing.", "dataplane", proxy.Dataplane.Meta.GetName(), "mesh", proxy.Dataplane.Meta.GetMesh(), "outbound", oface)
+		}
 		return nil
 	}
 

@@ -205,7 +205,23 @@ func (b ByTargetRef) Less(i, j int) bool {
 		return tr1.Kind.Less(tr2.Kind)
 	}
 
-	return b[i].GetMeta().GetName() < b[j].GetMeta().GetName()
+	if tr1.Kind == common_api.MeshGateway {
+		if len(tr1.Tags) != len(tr2.Tags) {
+			return len(tr1.Tags) < len(tr2.Tags)
+		}
+	}
+
+	return nameToCompare(b[i].GetMeta()) > nameToCompare(b[j].GetMeta())
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+
+func nameToCompare(meta core_model.ResourceMeta) string {
+	// prefer display name as it's more predictable, because
+	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
+	// * When policies are synced to Zone, hash suffix also breaks sorting
+	if labels := meta.GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+		return labels[mesh_proto.DisplayName]
+	}
+	return meta.GetName()
+}

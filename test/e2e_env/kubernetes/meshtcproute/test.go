@@ -81,43 +81,7 @@ func Test() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should use MeshTCPRoute if any MeshTCPRoutes are present", func() {
-		// given
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)
-			g.Expect(err).To(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
-		// when
-		Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTCPRoute
-metadata:
-  name: route-1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: test-client_%s_svc_80
-  to:
-  - targetRef:
-      kind: MeshService
-      name: test-http-server_meshtcproute_svc_80
-    rules:
-    - default:
-        backendRefs:
-        - kind: MeshService
-          name: test-http-server_meshtcproute_svc_80
-`, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
-
-		// then
+	It("should use MeshTCPRoute if no TrafficRoutes are present", func() {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster,
@@ -251,15 +215,6 @@ spec:
 	It("should use MeshHTTPRoute if both MeshTCPRoute and MeshHTTPRoute "+
 		"are present and point to the same source and http destination", func() {
 		// given
-		Eventually(func(g Gomega) {
-			g.Expect(client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().To(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
@@ -348,15 +303,6 @@ spec:
 	It("should use MeshTCPRoute if both MeshTCPRoute and MeshHTTPRoute "+
 		"are present and point to the same source and tcp destination", func() {
 		// given
-		Eventually(func(g Gomega) {
-			g.Expect(client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-tcp-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)).Error().To(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
 		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService

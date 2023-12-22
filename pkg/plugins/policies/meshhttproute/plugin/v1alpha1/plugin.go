@@ -49,12 +49,17 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.Dataplane == nil {
+		return nil
+	}
+
 	// These policies have already been merged using the custom `GetDefault`
 	// method and therefore are of the
 	// `ToRouteRule` type, where rules have been appended together.
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
 
-	if len(policies.ToRules.Rules) == 0 {
+	// Only fallback if we have TrafficRoutes & No MeshHTTPRoutes
+	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
 		return nil
 	}
 
@@ -85,9 +90,10 @@ func ApplyToOutbounds(
 	xdsCtx xds_context.Context,
 	rules []ToRouteRule,
 ) error {
-	servicesAcc := envoy_common.NewServicesAccumulator(xdsCtx.Mesh.ServiceTLSReadiness)
+	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
+	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, rules, servicesAcc)
+	listeners, err := generateListeners(proxy, rules, servicesAcc, xdsCtx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}
@@ -117,6 +123,9 @@ func ApplyToGateway(
 	xdsCtx xds_context.Context,
 	rules []ToRouteRule,
 ) error {
+	if len(rules) == 0 {
+		return nil
+	}
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {

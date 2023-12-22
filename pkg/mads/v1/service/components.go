@@ -17,10 +17,11 @@ import (
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
-func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager) util_xds_v3.SnapshotGenerator {
-	return mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{})
+func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) util_xds_v3.SnapshotGenerator {
+	return mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{}, meshCache)
 }
 
 func NewVersioner() util_xds_v3.SnapshotVersioner {
@@ -87,6 +88,7 @@ func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotC
 type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
-	// in the very first implementation, we don't differentiate clients
-	return ""
+	// now that we start differentiating between clients are we ok with this config growing for old mechanism (under `mesh.metrics`)
+	// or should there be a switch here?
+	return node.Id
 }

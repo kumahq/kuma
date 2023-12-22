@@ -16,7 +16,7 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	"github.com/kumahq/kuma/pkg/kds/status"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/v2/util"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
@@ -34,7 +34,6 @@ func New(
 	refresh time.Duration,
 	filter reconcile.ResourceFilter,
 	mapper reconcile.ResourceMapper,
-	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
@@ -66,26 +65,9 @@ func New(
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
 		newKdsRetryForcer(log, cache, hasher),
 		syncTracker,
-	}
-	if insight {
-		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
+		status.DefaultStatusTracker(rt, log),
 	}
 	return NewServer(cache, callbacks, log), nil
-}
-
-func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
-	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) kds_server.ZoneInsightSink {
-		return kds_server.NewZoneInsightSink(accessor, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-		}, func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-		}, rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10, kds_server.NewZonesInsightStore(
-			rt.ResourceManager(),
-			rt.Config().Store.Upsert,
-			rt.Config().Metrics.Zone.CompactFinishedSubscriptions,
-			rt.Transactions(),
-		), l, rt.Extensions())
-	}, log)
 }
 
 func newSyncTracker(

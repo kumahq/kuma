@@ -47,4 +47,8 @@ func Defaults() {
 		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-"+meshName), "30s", "1s").Should(BeTrue())
 		Eventually(policyCreated("retry", "retry-all-"+meshName), "30s", "1s").Should(BeTrue())
 	})
+
+	It("should create a zone", func() {
+		Eventually(policyCreated("zone", "default"), "30s", "1s").Should(BeTrue())
+	})
 }

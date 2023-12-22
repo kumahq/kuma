@@ -113,7 +113,7 @@ func applyToGateways(
 	proxy *core_xds.Proxy,
 ) error {
 	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
-		rules, ok := gatewayRules.Rules[core_rules.InboundListener{
+		rules, ok := gatewayRules.ToRules[core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
 		}]

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -32,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -317,13 +319,20 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
+		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
+		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	}
 }
 
-func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceEndpoints) createResource(
+	ctx context.Context,
+	name string,
+	meshName string,
+	spec model.ResourceSpec,
+	response *restful.Response,
+	labels map[string]string,
+) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		model.ResourceKey{Mesh: meshName, Name: name},
@@ -337,7 +346,7 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
-	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
+	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
@@ -349,6 +358,7 @@ func (r *resourceEndpoints) updateResource(
 	currentRes model.Resource,
 	newSpec model.ResourceSpec,
 	response *restful.Response,
+	labels map[string]string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
@@ -364,7 +374,7 @@ func (r *resourceEndpoints) updateResource(
 
 	_ = currentRes.SetSpec(newSpec)
 
-	if err := r.resManager.Update(ctx, currentRes); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
@@ -428,6 +438,9 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
+
+	err.AddError("labels", r.validateLabels(resourceMeta.Labels))
+
 	if create {
 		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
 	} else {
@@ -438,6 +451,19 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		}
 	}
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+	for _, k := range maps.SortedKeys(labels) {
+		for _, msg := range validation.IsQualifiedName(k) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+		for _, msg := range validation.IsValidLabelValue(labels[k]) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+	}
+	return err
 }
 
 // The resource is prefixed with the zone name when it is synchronized
@@ -538,7 +564,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			return false
 		}
-		dppList, _ := registry.Global().NewList(mesh.DataplaneType)
+		dppList := registry.Global().MustNewList(mesh.DataplaneType)
 		err = r.resManager.List(request.Request.Context(), dppList,
 			store.ListByMesh(meshName),
 			store.ListByNameContains(nameContains),

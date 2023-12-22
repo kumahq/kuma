@@ -15,7 +15,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -24,7 +23,6 @@ import (
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -43,133 +41,6 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshHTTPRoute", func() {
-	type policiesTestCase struct {
-		dataplane      *core_mesh.DataplaneResource
-		resources      xds_context.Resources
-		expectedRoutes core_rules.ToRules
-	}
-	DescribeTable("MatchedPolicies", func(given policiesTestCase) {
-		routes, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).MatchedPolicies(given.dataplane, given.resources)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(routes.ToRules).To(Equal(given.expectedRoutes))
-	}, Entry("basic", policiesTestCase{
-		dataplane: samples.DataplaneWeb(),
-		resources: xds_context.Resources{
-			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-				api.MeshHTTPRouteType: &api.MeshHTTPRouteResourceList{
-					Items: []*api.MeshHTTPRouteResource{{
-						Meta: &test_model.ResourceMeta{
-							Mesh: core_model.DefaultMesh,
-							Name: "route-1",
-						},
-						Spec: &api.MeshHTTPRoute{
-							TargetRef: builders.TargetRefMesh(),
-							To: []api.To{{
-								TargetRef: builders.TargetRefService("backend"),
-								Rules: []api.Rule{{
-									Matches: []api.Match{{
-										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
-											Value: "/v1",
-										},
-									}},
-									Default: api.RuleConf{
-										Filters: &[]api.Filter{{}},
-									},
-								}},
-							}},
-						},
-					}, {
-						Meta: &test_model.ResourceMeta{
-							Mesh: core_model.DefaultMesh,
-							Name: "route-2",
-						},
-						Spec: &api.MeshHTTPRoute{
-							TargetRef: builders.TargetRefService("web"),
-							To: []api.To{{
-								TargetRef: builders.TargetRefService("backend"),
-								Rules: []api.Rule{{
-									Matches: []api.Match{{
-										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
-											Value: "/v1",
-										},
-									}},
-									Default: api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
-											Weight:    pointer.To(uint(100)),
-										}},
-									},
-								}, {
-									Matches: []api.Match{{
-										Path: &api.PathMatch{
-											Type:  api.PathPrefix,
-											Value: "/v2",
-										},
-									}},
-									Default: api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
-											Weight:    pointer.To(uint(100)),
-										}},
-									},
-								}},
-							}},
-						},
-					}},
-				},
-			},
-		},
-		expectedRoutes: core_rules.ToRules{
-			Rules: core_rules.Rules{
-				{
-					Subset: core_rules.MeshService("backend"),
-					Conf: api.PolicyDefault{
-						Rules: []api.Rule{{
-							Matches: []api.Match{{
-								Path: &api.PathMatch{
-									Type:  api.PathPrefix,
-									Value: "/v1",
-								},
-							}},
-							Default: api.RuleConf{
-								Filters: &[]api.Filter{{}},
-								BackendRefs: &[]common_api.BackendRef{{
-									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
-									Weight:    pointer.To(uint(100)),
-								}},
-							},
-						}, {
-							Matches: []api.Match{{
-								Path: &api.PathMatch{
-									Type:  api.PathPrefix,
-									Value: "/v2",
-								},
-							}},
-							Default: api.RuleConf{
-								BackendRefs: &[]common_api.BackendRef{{
-									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
-									Weight:    pointer.To(uint(100)),
-								}},
-							},
-						}},
-					},
-					Origin: []core_model.ResourceMeta{
-						&test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "route-1",
-						},
-						&test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "route-2",
-						},
-					},
-				},
-			},
-		},
-	}),
-	)
 	type outboundsTestCase struct {
 		proxy      *core_xds.Proxy
 		xdsContext xds_context.Context
@@ -209,7 +80,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -241,7 +114,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithWeight(1).
 						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -322,7 +197,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "other-tcp", mesh_proto.ProtocolTag, core_mesh.ProtocolTCP, "region", "eu"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("other-tcp", core_mesh.ProtocolTCP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -360,7 +238,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -436,7 +316,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -481,7 +363,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
@@ -536,7 +420,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "payments", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us", "version", "v1", "env", "dev"))
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).Build(),
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("payments", core_mesh.ProtocolHTTP).
+					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
