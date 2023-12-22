@@ -109,6 +109,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 		},
 	}
 	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: "%s"`, profileFederation))
-	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: "%q"`, formatUniversal))
+	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: "%s"`, formatUniversal))
 	return cmd
 }
