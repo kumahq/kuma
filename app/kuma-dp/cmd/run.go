@@ -204,19 +204,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
-				if cfg.DNS.CoreDNSConfigTemplatePath == "" && len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
-					templateFile, err := writeTempFile("kuma-dp-corefile-template-", "Corefile", kumaSidecarConfiguration.Networking.CorefileTemplate, 0o644)
-					if err != nil {
-						return errors.Errorf("Failed to write corefile template to disk. %v", err)
-					}
-					cfg.DNS.CoreDNSConfigTemplatePath = templateFile
-				}
-
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
 					Stdout:   cmd.OutOrStdout(),
 					Stderr:   cmd.OutOrStderr(),
 					OnFinish: cancelComponents,
+				}
+
+				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
+					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)
@@ -349,11 +345,11 @@ func writeTempFile(dirPattern, filename string, data []byte, perm os.FileMode) (
 	path, err := os.MkdirTemp("", dirPattern)
 	fullFileName := filepath.Join(path, filename)
 	if err != nil {
-		return "", errors.Errorf("Failed to create a containing directory for %s. %v", filename, err)
+		return "", errors.Errorf("failed to create a containing directory for %s. %v", filename, err)
 	}
 	err = os.WriteFile(fullFileName, data, perm)
 	if err != nil {
-		return "", errors.Errorf("Failed to write %s to disk. %v", filename, err)
+		return "", errors.Errorf("failed to write %s to disk. %v", filename, err)
 	}
 	return fullFileName, nil
 }

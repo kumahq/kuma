@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("Corefile", func() {
-	Describe("GenerateCorefile(..)", func() {
+	Describe("WriteCorefile(..)", func() {
 		var configDir string
 
 		BeforeEach(func() {
@@ -39,7 +39,7 @@ var _ = Describe("Corefile", func() {
 			}
 
 			// when
-			filename, err := GenerateCorefile(dnsConfig, []byte(config))
+			filename, err := WriteCorefile(dnsConfig, []byte(config))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

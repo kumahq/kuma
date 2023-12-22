@@ -13,7 +13,7 @@ import (
 //go:embed Corefile
 var config embed.FS
 
-func GenerateCorefile(cfg kuma_dp.DNS, config []byte) (string, error) {
+func WriteCorefile(cfg kuma_dp.DNS, config []byte) (string, error) {
 	configFile := filepath.Join(cfg.ConfigDir, "Corefile")
 	if err := writeFile(configFile, config, 0o600); err != nil {
 		return "", errors.Wrap(err, "failed to persist coredns Corefile on disk")
