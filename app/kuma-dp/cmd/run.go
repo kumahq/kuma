@@ -340,16 +340,3 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	}
 	return os.WriteFile(filename, data, perm)
 }
-
-func writeTempFile(dirPattern, filename string, data []byte, perm os.FileMode) (string, error) {
-	path, err := os.MkdirTemp("", dirPattern)
-	fullFileName := filepath.Join(path, filename)
-	if err != nil {
-		return "", errors.Errorf("failed to create a containing directory for %s. %v", filename, err)
-	}
-	err = os.WriteFile(fullFileName, data, perm)
-	if err != nil {
-		return "", errors.Errorf("failed to write %s to disk. %v", filename, err)
-	}
-	return fullFileName, nil
-}
