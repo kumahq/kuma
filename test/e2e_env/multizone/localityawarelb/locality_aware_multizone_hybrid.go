@@ -364,8 +364,7 @@ spec:
 		// TODO fix this (I believe it's just the wrong metric name now)
 		_, _ = collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
 
-		//Expect(failedRequests).To(BeNumerically("~", 100, 25))
-		//successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-f3615f466e37e855.upstream_rq_2xx")
+		// successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-f3615f466e37e855.upstream_rq_2xx")
 		//Expect(err).ToNot(HaveOccurred())
 		//Expect(successRequests).To(BeNumerically("~", 100, 25))
 	})
