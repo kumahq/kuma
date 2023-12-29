@@ -771,7 +771,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "08.envoy.golden.yaml",
 		}),
-		Entry("cross-mesh", testCase{
+		Entry("09. cross-mesh", testCase{
 			ctx: crossMeshCtx,
 			dataplane: `
             networking:
@@ -886,5 +886,118 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// and output matches golden files
 		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml")))
+	})
+
+	It("Should skip generate cluster for external services with no endpoints", func() {
+		// setup
+		dp := `
+            networking:
+              address: 10.0.0.1
+              outbound:
+              - port: 18081
+                tags:
+                  kuma.io/service: httpbin
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`
+
+		gen := &generator.OutboundProxyGenerator{}
+		dataplane := &mesh_proto.Dataplane{}
+		Expect(util_proto.FromYAML([]byte(dp), dataplane)).To(Succeed())
+
+		ratelimitPolicies := make(map[mesh_proto.OutboundInterface]*core_mesh.RateLimitResource)
+		oface := mesh_proto.OutboundInterface{
+			DataplaneIP:   "127.0.0.1",
+			DataplanePort: 18081,
+		}
+		ratelimitPolicies[oface] = &core_mesh.RateLimitResource{
+			Spec: &mesh_proto.RateLimit{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"kuma.io/service": "web",
+						},
+					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"kuma.io/service": "httpbin",
+						},
+					},
+				},
+				Conf: &mesh_proto.RateLimit_Conf{
+					Http: &mesh_proto.RateLimit_Conf_Http{
+						Requests: 100,
+						Interval: util_proto.Duration(time.Second * 10),
+					},
+				},
+			},
+		}
+		proxy := &model.Proxy{
+			Id: *model.BuildProxyId("default", "side-car"),
+			Dataplane: &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Version: "1",
+				},
+				Spec: dataplane,
+			},
+			Policies: model.MatchedPolicies{
+				RateLimitsOutbound: ratelimitPolicies,
+			},
+			APIVersion: envoy_common.APIV3,
+			Routing: model.Routing{
+				TrafficRoutes: model.RouteMap{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 18081,
+					}: &core_mesh.TrafficRouteResource{
+						Spec: &mesh_proto.TrafficRoute{
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Destination: mesh_proto.MatchService("httpbin"),
+								LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+									LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+								},
+							},
+						},
+					},
+				},
+				OutboundTargets:                model.EndpointMap{},
+				ExternalServiceOutboundTargets: model.EndpointMap{},
+				ExternalServiceUnavailable: map[string]struct{}{
+					"httpbin": {},
+				},
+			},
+			Metadata: &model.DataplaneMetadata{},
+		}
+
+		// when
+		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: model.EndpointMap{}}
+		plainCtx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
+			"httpbin": {
+				Protocol:          core_mesh.ProtocolHTTP,
+				IsExternalService: true,
+			},
+		}
+		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resp, err := rs.List().ToDeltaDiscoveryResponse()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).ToNot(BeNil())
+
+		// when
+		actual, err := util_proto.ToYAML(resp)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and output matches golden files
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy",
+			"external-services-no-endpoints.envoy.golden.yaml")))
 	})
 })

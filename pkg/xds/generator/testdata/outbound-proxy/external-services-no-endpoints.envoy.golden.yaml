@@ -1,0 +1,17 @@
+resources:
+- name: outbound:127.0.0.1:18081
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18081
+    bindToPort: false
+    filterChains:
+      - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: httpbin
+    name: outbound:127.0.0.1:18081
+    trafficDirection: OUTBOUND

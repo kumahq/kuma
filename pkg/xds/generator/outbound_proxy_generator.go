@@ -367,11 +367,22 @@ func (OutboundProxyGenerator) determineRoutes(
 			// We assume that all the targets are either ExternalServices or not
 			// therefore we check only the first one
 			var isExternalService bool
+			var hasEndpoints bool
 			if endpoints := proxy.Routing.OutboundTargets[service]; len(endpoints) > 0 {
+				hasEndpoints = true
 				isExternalService = endpoints[0].IsExternalService()
 			}
 			if endpoints := proxy.Routing.ExternalServiceOutboundTargets[service]; len(endpoints) > 0 {
+				hasEndpoints = true
 				isExternalService = true
+			}
+			if _, ok := proxy.Routing.ExternalServiceUnavailable[service]; ok {
+				isExternalService = true
+			}
+
+			// skip external services without any endpoints (instead of generating EDS as internal clusters)
+			if isExternalService && !hasEndpoints {
+				continue
 			}
 
 			allTags := envoy_tags.Tags(destination.Destination)
