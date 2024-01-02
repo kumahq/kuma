@@ -30,10 +30,11 @@ type DNSServer struct {
 var _ component.GracefulComponent = &DNSServer{}
 
 type Opts struct {
-	Config   kuma_dp.Config
-	Stdout   io.Writer
-	Stderr   io.Writer
-	OnFinish context.CancelFunc
+	Config                   kuma_dp.Config
+	Stdout                   io.Writer
+	Stderr                   io.Writer
+	OnFinish                 context.CancelFunc
+	ProvidedCorefileTemplate []byte
 }
 
 func lookupDNSServerPath(configuredPath string) (string, error) {
@@ -89,39 +90,10 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 
 	dnsConfig := s.opts.Config.DNS
 
-	var tmpl *template.Template
-
-	if dnsConfig.CoreDNSConfigTemplatePath != "" {
-		t, err := template.ParseFiles(dnsConfig.CoreDNSConfigTemplatePath)
-		if err != nil {
-			return err
-		}
-
-		tmpl = t
-	} else {
-		corefile, err := config.ReadFile("Corefile")
-		if err != nil {
-			return errors.Wrap(err, "couldn't open embedded Corefile")
-		}
-		t, err := template.New("Corefile").Parse(string(corefile))
-		if err != nil {
-			return err
-		}
-
-		tmpl = t
-	}
-
-	bs := bytes.NewBuffer([]byte{})
-
-	if err := tmpl.Execute(bs, dnsConfig); err != nil {
-		return err
-	}
-
-	configFile, err := GenerateConfigFile(dnsConfig, bs.Bytes())
+	configFile, err := s.generateCoreFile(dnsConfig)
 	if err != nil {
 		return err
 	}
-	runLog.Info("configuration saved to a file", "file", configFile)
 
 	args := []string{
 		"-conf", configFile,
@@ -149,6 +121,50 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("DNS Server terminated successfully")
 	return nil
+}
+
+func (s *DNSServer) generateCoreFile(dnsConfig kuma_dp.DNS) (string, error) {
+	var tmpl *template.Template
+
+	if dnsConfig.CoreDNSConfigTemplatePath != "" {
+		t, err := template.ParseFiles(dnsConfig.CoreDNSConfigTemplatePath)
+		if err != nil {
+			return "", err
+		}
+
+		tmpl = t
+	} else {
+		var corefileTemplate []byte
+		if len(s.opts.ProvidedCorefileTemplate) > 0 {
+			corefileTemplate = s.opts.ProvidedCorefileTemplate
+		} else {
+			embedded, err := config.ReadFile("Corefile")
+			if err != nil {
+				return "", errors.Wrap(err, "couldn't open embedded Corefile")
+			}
+			corefileTemplate = embedded
+		}
+
+		t, err := template.New("Corefile").Parse(string(corefileTemplate))
+		if err != nil {
+			return "", err
+		}
+
+		tmpl = t
+	}
+
+	bs := bytes.NewBuffer([]byte{})
+
+	if err := tmpl.Execute(bs, dnsConfig); err != nil {
+		return "", err
+	}
+
+	configFile, err := WriteCorefile(dnsConfig, bs.Bytes())
+	if err != nil {
+		return "", err
+	}
+	runLog.Info("configuration saved to a file", "file", configFile)
+	return configFile, nil
 }
 
 func (s *DNSServer) WaitForDone() {
