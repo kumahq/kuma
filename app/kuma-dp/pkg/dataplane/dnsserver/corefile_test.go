@@ -10,8 +10,8 @@ import (
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
-var _ = Describe("Config File", func() {
-	Describe("GenerateConfigFile(..)", func() {
+var _ = Describe("Corefile", func() {
+	Describe("WriteCorefile(..)", func() {
 		var configDir string
 
 		BeforeEach(func() {
@@ -39,7 +39,7 @@ var _ = Describe("Config File", func() {
 			}
 
 			// when
-			filename, err := GenerateConfigFile(dnsConfig, []byte(config))
+			filename, err := WriteCorefile(dnsConfig, []byte(config))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

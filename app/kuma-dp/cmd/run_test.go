@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -72,13 +73,17 @@ var _ = Describe("run", func() {
 			given := givenFunc()
 
 			// setup
-			pidFile := filepath.Join(tmpDir, "envoy-mock.pid")
-			cmdlineFile := filepath.Join(tmpDir, "envoy-mock.cmdline")
+			envoyPidFile := filepath.Join(tmpDir, "envoy-mock.pid")
+			envoyCmdlineFile := filepath.Join(tmpDir, "envoy-mock.cmdline")
+			corednsPidFile := filepath.Join(tmpDir, "coredns-mock.pid")
+			corednsCmdlineFile := filepath.Join(tmpDir, "coredns-mock.cmdline")
 
 			// and
 			env := given.envVars
-			env["ENVOY_MOCK_PID_FILE"] = pidFile
-			env["ENVOY_MOCK_CMDLINE_FILE"] = cmdlineFile
+			env["ENVOY_MOCK_PID_FILE"] = envoyPidFile
+			env["ENVOY_MOCK_CMDLINE_FILE"] = envoyCmdlineFile
+			env["COREDNS_MOCK_PID_FILE"] = corednsPidFile
+			env["COREDNS_MOCK_CMDLINE_FILE"] = corednsCmdlineFile
 			for key, value := range env {
 				Expect(os.Setenv(key, value)).To(Succeed())
 			}
@@ -116,35 +121,22 @@ var _ = Describe("run", func() {
 			}()
 
 			// then
-			var pid int64
-			By("waiting for dataplane (Envoy) to get started")
-			Eventually(func() bool {
-				data, err := os.ReadFile(pidFile)
-				if err != nil {
-					return false
+			var actualConfigFile string
+			envoyPid := verifyComponentProcess("Envoy", envoyPidFile, envoyCmdlineFile, func(actualArgs []string) {
+				Expect(actualArgs[0]).To(Equal("--version"))
+				Expect(actualArgs[1]).To(Equal("--config-path"))
+				actualConfigFile = actualArgs[2]
+				Expect(actualConfigFile).To(BeARegularFile())
+				if given.expectedFile != "" {
+					Expect(actualArgs[2]).To(Equal(given.expectedFile))
 				}
-				pid, err = strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
-				return err == nil
-			}, "5s", "100ms").Should(BeTrue())
-			// and
-			Expect(pid).ToNot(BeZero())
+			})
 
-			By("verifying the arguments Envoy was launched with")
-			// when
-			cmdline, err := os.ReadFile(cmdlineFile)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			actualArgs := strings.Split(string(cmdline), "\n")
-			Expect(actualArgs[0]).To(Equal("--version"))
-			Expect(actualArgs[1]).To(Equal("--config-path"))
-			actualConfigFile := actualArgs[2]
-			Expect(actualConfigFile).To(BeARegularFile())
-
-			// then
-			if given.expectedFile != "" {
-				Expect(actualArgs[2]).To(Equal(given.expectedFile))
-			}
+			corednsPid := verifyComponentProcess("coredns", corednsPidFile, corednsCmdlineFile, func(actualArgs []string) {
+				Expect(actualArgs).To(HaveLen(3))
+				Expect(actualArgs[0]).To(Equal("-conf"))
+				Expect(actualArgs[2]).To(Equal("-quiet"))
+			})
 
 			// when
 			By("signaling the dataplane manager to stop")
@@ -153,13 +145,20 @@ var _ = Describe("run", func() {
 			cancel()
 
 			// then
-			err = <-errCh
+			err := <-errCh
 			Expect(err).ToNot(HaveOccurred())
 
 			By("waiting for dataplane (Envoy) to get stopped")
 			Eventually(func() bool {
 				// send sig 0 to check whether Envoy process still exists
-				err := syscall.Kill(int(pid), syscall.Signal(0))
+				err := syscall.Kill(int(envoyPid), syscall.Signal(0))
+				// we expect Envoy process to get killed by now
+				return err != nil
+			}, "5s", "100ms").Should(BeTrue())
+			By("waiting for dataplane (coredns) to get stopped")
+			Eventually(func() bool {
+				// send sig 0 to check whether Envoy process still exists
+				err := syscall.Kill(int(corednsPid), syscall.Signal(0))
 				// we expect Envoy process to get killed by now
 				return err != nil
 			}, "5s", "100ms").Should(BeTrue())
@@ -288,6 +287,23 @@ var _ = Describe("run", func() {
 				expectedFile: "",
 			}
 		}),
+		Entry("can be launched with given coredns configuration path", func() testCase {
+			corefileTemplate := filepath.Join(tmpDir, "Corefile")
+			_ = os.WriteFile(corefileTemplate, []byte("abcd"), 0o600)
+			return testCase{
+				envVars: map[string]string{
+					"KUMA_CONTROL_PLANE_API_SERVER_URL":      "http://localhost:1234",
+					"KUMA_DATAPLANE_NAME":                    "example",
+					"KUMA_DATAPLANE_MESH":                    "default",
+					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":     filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":      tmpDir,
+					"KUMA_DNS_CORE_DNS_BINARY_PATH":          filepath.Join("testdata", "coredns-mock.sleep.sh"),
+					"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH": corefileTemplate,
+				},
+				args:         []string{},
+				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
+			}
+		}),
 	)
 
 	It("should fail when name and mesh is provided with dataplane definition", func() {
@@ -333,3 +349,32 @@ var _ = Describe("run", func() {
 		Expect(err.Error()).To(ContainSubstring("invalid proxy type"))
 	})
 }, Ordered)
+
+func verifyComponentProcess(processDescription, pidfile string, cmdlinefile string, argsVerifier func(expectedArgs []string)) int64 {
+	var pid int64
+	By(fmt.Sprintf("waiting for dataplane (%s) to get started", processDescription))
+	Eventually(func() bool {
+		data, err := os.ReadFile(pidfile)
+		if err != nil {
+			return false
+		}
+		pid, err = strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+		return err == nil
+	}, "5s", "100ms").Should(BeTrue())
+	Expect(pid).ToNot(BeZero())
+
+	By(fmt.Sprintf("verifying the arguments %s was launched with", processDescription))
+	// when
+	cmdline, err := os.ReadFile(cmdlinefile)
+
+	// then
+	Expect(err).ToNot(HaveOccurred())
+	// and
+	if argsVerifier != nil {
+		actualArgs := strings.FieldsFunc(string(cmdline), func(c rune) bool {
+			return c == '\n'
+		})
+		argsVerifier(actualArgs)
+	}
+	return pid
+}
