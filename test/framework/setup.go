@@ -139,8 +139,8 @@ func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
-  namespace: kuma-system
-  name: allow-all-%[1]s.kuma-system
+  namespace: %[2]s
+  name: allow-all-%[1]s.%[2]s
   labels:
     kuma.io/mesh: %[1]s
 spec:
@@ -150,7 +150,7 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        action: Allow`, name)
+        action: Allow`, name, Config.KumaNamespace)
 	return YamlK8s(mtp)
 }
 
