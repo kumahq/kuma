@@ -13,10 +13,10 @@ import (
 //go:embed Corefile
 var config embed.FS
 
-func GenerateConfigFile(cfg kuma_dp.DNS, config []byte) (string, error) {
+func WriteCorefile(cfg kuma_dp.DNS, config []byte) (string, error) {
 	configFile := filepath.Join(cfg.ConfigDir, "Corefile")
 	if err := writeFile(configFile, config, 0o600); err != nil {
-		return "", errors.Wrap(err, "failed to persist Envoy bootstrap config on disk")
+		return "", errors.Wrap(err, "failed to persist coredns Corefile on disk")
 	}
 	return configFile, nil
 }

@@ -166,29 +166,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				OnFinish:  cancelComponents,
 			}
 
-			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
-				dnsOpts := &dnsserver.Opts{
-					Config:   *cfg,
-					Stdout:   cmd.OutOrStdout(),
-					Stderr:   cmd.OutOrStderr(),
-					OnFinish: cancelComponents,
-				}
-
-				dnsServer, err := dnsserver.New(dnsOpts)
-				if err != nil {
-					return err
-				}
-
-				version, err := dnsServer.GetVersion()
-				if err != nil {
-					return err
-				}
-
-				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-
-				components = append(components, dnsServer)
-			}
-
 			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to get Envoy version")
@@ -225,6 +202,33 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Errorf("could not convert to yaml. %v", err)
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
+
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
+				dnsOpts := &dnsserver.Opts{
+					Config:   *cfg,
+					Stdout:   cmd.OutOrStdout(),
+					Stderr:   cmd.OutOrStderr(),
+					OnFinish: cancelComponents,
+				}
+
+				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
+					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
+				}
+
+				dnsServer, err := dnsserver.New(dnsOpts)
+				if err != nil {
+					return err
+				}
+
+				version, err := dnsServer.GetVersion()
+				if err != nil {
+					return err
+				}
+
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+
+				components = append(components, dnsServer)
+			}
 
 			envoyComponent, err := envoy.New(opts)
 			if err != nil {
