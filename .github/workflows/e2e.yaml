@@ -304,9 +304,7 @@ jobs:
               exit 0
             else
               echo "CircleCI workflow has completed with status: '$STATUS'."
-              # temporarily not make circleci failure fail the entire build until we stabilize things
-              # exit 1
-              exit 0
+              exit 1
             fi
           }
 
