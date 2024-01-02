@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/api"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/bootstrap"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
@@ -49,6 +50,7 @@ var _ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.Resto
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var (
+	_ = Describe("Corefile Template", bootstrap.CorefileTemplate, Ordered)
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
