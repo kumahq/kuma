@@ -36,7 +36,7 @@ The decision is to stop creating default policies and utilize plugin code in cas
 
 ### Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
 
-As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases where there is no existing policy, we generate the configuration using the plugin code (targetRef).
+As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases when there is no existing legacy policy, we generate the configuration using the code for targetRef policies.
 
 To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with default policies.
 
