@@ -51,17 +51,17 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		// and all resources are in place
+		// and all resources are not present
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), core_store.GetByKey("allow-all-default", model.DefaultMesh))
-		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
-		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
-		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		err = resManager.Get(context.Background(), core_mesh.NewTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
-		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		err = resManager.Get(context.Background(), core_mesh.NewCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
-		Expect(err).To(HaveOccurred())
+		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
 	It("should create default resources", func() {

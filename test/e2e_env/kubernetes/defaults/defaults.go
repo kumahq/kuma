@@ -33,11 +33,11 @@ func Defaults() {
 	}
 
 	It("should not create default policies for default mesh", func() {
-		Eventually(policyCreated("trafficpermission", "allow-all-default"), "30s", "1s").Should(BeFalse())
-		Eventually(policyCreated("trafficroute", "route-all-default"), "30s", "1s").Should(BeFalse())
-		Eventually(policyCreated("timeout", "timeout-all-default"), "30s", "1s").Should(BeFalse())
-		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-default"), "30s", "1s").Should(BeFalse())
-		Eventually(policyCreated("retry", "retry-all-default"), "30s", "1s").Should(BeFalse())
+		Eventually(policyCreated("trafficpermission", "allow-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("trafficroute", "route-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("timeout", "timeout-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("retry", "retry-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
 	})
 
 	It("should not create default policies for non-default mesh", func() {

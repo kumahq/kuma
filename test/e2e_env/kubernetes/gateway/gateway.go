@@ -311,13 +311,13 @@ spec:
 					testserver.WithNamespace(clientNamespace),
 					testserver.WithEchoArgs("echo", "--instance", "es-echo-server"),
 				)).
-				Install(TrafficPermissionKubernetes(meshName)).
+				Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 				Install(YamlK8s(externalService)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		AfterAll(func() {
+		E2EAfterAll(func() {
 			Expect(DeleteMeshResources(kubernetes.Cluster, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 

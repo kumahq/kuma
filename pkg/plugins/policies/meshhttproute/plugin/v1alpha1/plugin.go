@@ -126,10 +126,6 @@ func ApplyToGateway(
 		return nil
 	}
 	var limits []plugin_gateway.RuntimeResoureLimitListener
-	if len(rules) == 0 {
-		return nil
-	}
-
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
