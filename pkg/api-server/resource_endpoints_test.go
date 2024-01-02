@@ -1101,4 +1101,9 @@ var _ = Describe("Resource Endpoints", func() {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("inspect/dataplanes/_rules"))
+
+	DescribeTable("inspect meshgateway rules /meshes/{mesh}/meshgateways/{gwName}/_rules", func(inputFile string) {
+		format.MaxLength = 0
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("inspect/meshgateways/_rules"))
 })

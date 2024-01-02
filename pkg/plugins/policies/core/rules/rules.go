@@ -17,7 +17,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -308,10 +307,7 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range mhr.Spec.To {
 		for _, mhrRule := range mhrRules.Rules {
-			matchesHash, err := sha256.HashAny(mhrRule.Matches)
-			if err != nil {
-				return nil, err
-			}
+			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
 				rv = append(rv, &artificialPolicyItem{
 					targetRef: common_api.TargetRef{
