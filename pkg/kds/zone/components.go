@@ -118,7 +118,7 @@ func Setup(rt core_runtime.Runtime) error {
 		syncClient := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-			kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
+			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
 				stream.Context(),
 				rt.KDSContext().Configs,

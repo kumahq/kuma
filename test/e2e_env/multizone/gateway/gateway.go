@@ -76,7 +76,7 @@ conf:
       hostname: example.kuma.io
 `,
 					)).
-					Install(YamlUniversal(`
+					Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGatewayRoute
 mesh: gateway-hybrid
 name: edge-gateway
@@ -93,7 +93,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: test-server_gateway-hybrid_svc_80
-          kuma.io/zone: kuma-1-zone
+          kuma.io/zone: %s 
     - matches:
       - path:
           match: PREFIX
@@ -109,7 +109,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: test-server_gateway-hybrid_svc_80
-`)).
+`, multizone.KubeZone1.ZoneName()))).
 					Setup(multizone.Global)
 				Expect(err).ToNot(HaveOccurred())
 

@@ -24,6 +24,24 @@ func Zones() []Cluster {
 	return []Cluster{KubeZone1, KubeZone2, UniZone1, UniZone2}
 }
 
+type ZoneInfo struct {
+	Mesh      string
+	KubeZone1 string
+	KubeZone2 string
+	UniZone1  string
+	UniZone2  string
+}
+
+func ZoneInfoForMesh(mesh string) ZoneInfo {
+	return ZoneInfo{
+		Mesh:      mesh,
+		KubeZone1: KubeZone1.ZoneName(),
+		KubeZone2: KubeZone2.ZoneName(),
+		UniZone1:  UniZone1.ZoneName(),
+		UniZone2:  UniZone2.ZoneName(),
+	}
+}
+
 type State struct {
 	Global    UniversalNetworkingState
 	UniZone1  UniversalNetworkingState
