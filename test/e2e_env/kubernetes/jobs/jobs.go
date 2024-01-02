@@ -66,6 +66,7 @@ func Jobs() {
 		// when
 		err = kubernetes.Cluster.Install(DemoClientJobK8s(namespace, mesh, "test-server_jobs-mtls_svc_80.mesh"))
 
+		// then CP terminates the job by sending /quitquitquit to Envoy Admin and verifies connection using mTLS certs
 		Expect(err).ToNot(HaveOccurred())
 	})
 }
