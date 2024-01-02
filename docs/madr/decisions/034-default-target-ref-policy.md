@@ -36,9 +36,13 @@ The decision is to stop creating default policies and utilize plugin code in cas
 
 ### Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
 
-As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases where there is no existing policy, we generate the configuration using the plugin code.
+As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases where there is no existing policy, we generate the configuration using the plugin code (targetRef).
 
 To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with default policies.
+
+Why do we need need `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`?
+
+When global is newer than a zone, and a new mesh is created it won't have default policies. Without default policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and create the new mesh that will work with the old zone.
 
 #### Existing users behaviour
 
