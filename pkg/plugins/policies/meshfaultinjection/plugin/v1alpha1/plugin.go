@@ -8,6 +8,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util "github.com/kumahq/kuma/pkg/plugins/policies/core/egress"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -40,12 +41,10 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return applyToEgress(rs, proxy, ctx)
+		return applyToEgress(rs, proxy)
 	}
 
 	if proxy.Dataplane == nil {
-		// MeshRateLimit policy is applied only on DPP
-		// todo: add support for ExternalService and ZoneEgress, https://github.com/kumahq/kuma/issues/5050
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshFaultInjectionType]
@@ -132,19 +131,15 @@ func applyToGateways(
 	return nil
 }
 
-func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ctx xds_context.Context) error {
+func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, es := range resource.ExternalServices {
 			meshName := resource.Mesh.GetMeta().GetName()
-			if ctx.Mesh.MeshName != meshName {
-				continue
-			}
 			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
 			if !ok {
 				continue
 			}
-			protocol := ctx.Mesh.GetServiceProtocol(esName)
 			policies, ok := resource.Dynamic[esName]
 			if !ok {
 				continue
@@ -160,6 +155,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ctx xds_cont
 				)
 				return nil
 			}
+			protocol := util.GetExternalServiceProtocol(es)
 			for _, rule := range mfi.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {

@@ -176,11 +176,8 @@ mesh: ze-external-services
 name: mesh-fault-injecton-402
 spec:
   targetRef:
-    kind: MeshServiceSubset
+    kind: MeshService
     name: external-service
-    tags:
-      version: v2
-      kuma.io/protocol: http
   from:
     - targetRef:
         kind: MeshService

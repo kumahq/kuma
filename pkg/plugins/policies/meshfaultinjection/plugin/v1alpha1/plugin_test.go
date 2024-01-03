@@ -248,17 +248,6 @@ var _ = Describe("MeshFaultInjection", func() {
 				WithBuiltinMTLSBackend("builtin-1").
 				WithEnabledMTLSBackend("builtin-1").
 				WithEgressRoutingEnabled()).
-			AddServiceProtocol("external-service-1", core_mesh.ProtocolHTTP).
-			AddServiceProtocol("external-service-2", core_mesh.ProtocolTCP).
-			Build()
-		ctxMesh2 := xds_builders.Context().
-			WithMesh(builders.Mesh().
-				WithName("mesh-2").
-				WithBuiltinMTLSBackend("builtin-2").
-				WithEnabledMTLSBackend("builtin-2").
-				WithEgressRoutingEnabled()).
-			AddServiceProtocol("external-service-1", core_mesh.ProtocolTCP).
-			AddServiceProtocol("external-service-2", core_mesh.ProtocolHTTP).
 			Build()
 
 		proxy := &core_xds.Proxy{
@@ -285,7 +274,8 @@ var _ = Describe("MeshFaultInjection", func() {
 								},
 								Spec: &mesh_proto.ExternalService{
 									Tags: map[string]string{
-										"kuma.io/service": "external-service-1",
+										"kuma.io/service":  "external-service-1",
+										"kuma.io/protocol": "http",
 									},
 									Networking: &mesh_proto.ExternalService_Networking{
 										Address: "externalservice-1.org",
@@ -353,7 +343,8 @@ var _ = Describe("MeshFaultInjection", func() {
 								},
 								Spec: &mesh_proto.ExternalService{
 									Tags: map[string]string{
-										"kuma.io/service": "external-service-2",
+										"kuma.io/service":  "external-service-2",
+										"kuma.io/protocol": "http",
 									},
 									Networking: &mesh_proto.ExternalService_Networking{
 										Address: "externalservice-2.org",
@@ -437,10 +428,6 @@ var _ = Describe("MeshFaultInjection", func() {
 		// when
 		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 		err = p.Apply(rs, *ctxMesh1, proxy)
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		err = p.Apply(rs, *ctxMesh2, proxy)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
