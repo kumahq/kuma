@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +15,7 @@ import (
 )
 
 func CorefileTemplate() {
-	var zoneCluster Cluster
+	var k8sCluster *K8sCluster
 	appNamespace := "dns-app"
 	appName := "demo-dp-app"
 	expectedTestText := "# this dummy corefile template is loaded from control plane"
@@ -37,9 +36,7 @@ data:
 
 	dnsConfigDir := "/tmp/kuma-dp-config/coredns"
 	BeforeAll(func() {
-		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
-			WithTimeout(6 * time.Second).
-			WithRetries(60)
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Namespace(Config.KumaNamespace)).
@@ -62,20 +59,21 @@ data:
 					"kuma.io/sidecar-env-vars": fmt.Sprintf("KUMA_DNS_CONFIG_DIR=%s", dnsConfigDir),
 				}),
 			)).
-			Setup(zoneCluster),
+			Setup(k8sCluster),
 		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(zoneCluster.DeleteKuma()).To(Succeed())
-		Expect(zoneCluster.DismissCluster()).To(Succeed())
+		Expect(k8sCluster.TriggerDeleteNamespace(appNamespace)).To(Succeed())
+		Expect(k8sCluster.DeleteKuma()).To(Succeed())
+		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should use Corefile template from control plane at data plane", func() {
-		dpPod, err := PodNameOfApp(zoneCluster, appName, appNamespace)
+		dpPod, err := PodNameOfApp(k8sCluster, appName, appNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, stderr, err := zoneCluster.Exec(
+		stdout, stderr, err := k8sCluster.Exec(
 			appNamespace, dpPod, k8s_util.KumaSidecarContainerName, "cat", dnsConfigDir+"/Corefile")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(BeEmpty())
