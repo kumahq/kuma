@@ -10,8 +10,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	mfi_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 )
@@ -77,7 +77,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.EgressMatchedPolicies(mfi_api.MeshFaultInjectionType, es.Spec.Tags, resources)
+			policies, err := matchers.EgressMatchedPolicies(mt_api.MeshTimeoutType, es.Spec.Tags, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
