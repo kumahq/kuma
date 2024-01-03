@@ -77,12 +77,16 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      - name: "GitHub Actions: download build artifacts"
-        if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/download-artifact@v4
+      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
+      - name: "GitHub Actions: download build artifacts with retry"
+        uses: Wandalen/wretry.action@master
         with:
-          name: build-output
-          path: build
+          action: actions/download-artifact@v4
+          with: |
+            path: build
+            name: build-output
+          attempt_limit: 5
+          attempt_delay: 1000
       - name: "GitHub Actions: extract artifacts"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
