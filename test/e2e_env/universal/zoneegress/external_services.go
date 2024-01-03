@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
@@ -186,6 +187,47 @@ conf:
     requests: 1
     interval: 10s
 `
+			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(429))
+			}).Should(Succeed())
+		})
+	})
+
+	Context("MeshRateLimit", func() {
+		AfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshName, meshratelimit_api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should rate limit requests to external service", func() {
+			specificRateLimitPolicy := `
+type: MeshRateLimit
+mesh: ze-external-services
+name: rate-limit-demo-client
+spec:
+  targetRef:
+    kind: MeshService
+    name: external-service
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 1
+              interval: 10s
+            onRateLimit:
+              status: 429
+              headers:
+                add:
+                - name: "x-kuma-rate-limited"
+                  value: "true"`
 			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {

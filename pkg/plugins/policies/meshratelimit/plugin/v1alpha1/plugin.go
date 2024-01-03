@@ -4,6 +4,8 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -14,9 +16,13 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshRateLimit")
+)
 
 type plugin struct{}
 
@@ -28,10 +34,15 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshRateLimitType, dataplane, resources)
 }
 
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshRateLimitType, tags, resources)
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.ZoneEgressProxy != nil {
+		return applyToEgress(rs, proxy)
+	}
 	if proxy.Dataplane == nil {
-		// MeshRateLimit policy is applied only on DPP
-		// todo: add support for ExternalService and ZoneEgress, https://github.com/kumahq/kuma/issues/5050
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshRateLimitType]
@@ -110,6 +121,60 @@ func applyToInbounds(
 
 		if err := configure(rules, listener, nil); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	listeners := xds.GatherListeners(rs)
+	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
+		for _, es := range resource.ExternalServices {
+			log.Info("TEST", "es", es)
+			meshName := resource.Mesh.GetMeta().GetName()
+			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
+			if !ok {
+				continue
+			}
+			policies, ok := resource.Dynamic[esName]
+			log.Info("TEST", "policies", policies, "ok", ok)
+			if !ok {
+				continue
+			}
+			mrl, ok := policies[api.MeshRateLimitType]
+			log.Info("TEST", "mrl", mrl, "ok", ok)
+			if !ok {
+				continue
+			}
+			if listeners.Egress == nil {
+				log.V(1).Info("skip applying MeshRateLimit, Egress has no listener",
+					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+					"mesh", resource.Mesh.GetMeta().GetName(),
+				)
+				return nil
+			}
+			for _, rule := range mrl.FromRules.Rules {
+				log.Info("TEST", "rule", rule)
+				for _, filterChain := range listeners.Egress.FilterChains {
+					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
+						var conf api.Conf
+						if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
+							conf = computed.Conf.(api.Conf)
+							log.Info("TEST", "conf", conf)
+						} else {
+							log.Info("TEST exit")
+							continue
+						}
+						configurer := plugin_xds.Configurer{
+							Http: conf.Local.HTTP,
+							Tcp:  conf.Local.TCP,
+						}
+						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
+							return err
+						}
+					}
+				}
+			}
 		}
 	}
 	return nil
