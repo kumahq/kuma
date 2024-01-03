@@ -29,7 +29,8 @@ type MeshHTTPRoute struct {
 }
 
 type To struct {
-	// Hostnames limits the effects of the rules to requests to this hostname.
+	// Hostnames is only valid when targeting MeshGateway and limits the
+	// effects of the rules to requests to this hostname.
 	// Given hostnames must intersect with the hostname of the listeners the
 	// route attaches to.
 	Hostnames []string `json:"hostnames,omitempty"`
