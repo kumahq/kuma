@@ -2,6 +2,7 @@ package generator_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -99,6 +100,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Meta: meta,
 			},
+			ExternalServicesEndpointMap: createExternalServiceEndpointMap("es", "es2"),
 		},
 	}
 
@@ -965,9 +967,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				OutboundTargets:                model.EndpointMap{},
 				ExternalServiceOutboundTargets: model.EndpointMap{},
-				ExternalServiceUnavailable: map[string]struct{}{
-					"httpbin": {},
-				},
 			},
 			Metadata: &model.DataplaneMetadata{},
 		}
@@ -980,6 +979,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				IsExternalService: true,
 			},
 		}
+		plainCtx.Mesh.ExternalServicesEndpointMap = createExternalServiceEndpointMap("httpbin")
 		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)
 
 		// then
@@ -999,5 +999,25 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		// and output matches golden files
 		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy",
 			"external-services-no-endpoints.envoy.golden.yaml")))
+
+		// restore context
+		plainCtx.ControlPlane.CLACache = nil
+		plainCtx.Mesh.ServicesInformation = nil
+		plainCtx.Mesh.ExternalServicesEndpointMap = nil
 	})
 })
+
+func createExternalServiceEndpointMap(serviceNames ...string) model.EndpointMap {
+	epMap := model.EndpointMap{}
+	for idx, serviceName := range serviceNames {
+		epMap[serviceName] = []model.Endpoint{
+			{
+				Target: fmt.Sprintf("240.0.0.%d", idx),
+				Port:   80,
+				Tags:   map[string]string{},
+				Weight: 1,
+			},
+		}
+	}
+	return epMap
+}

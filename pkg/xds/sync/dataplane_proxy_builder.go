@@ -95,13 +95,11 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
-	unavailableExternalServices := diffExternalServices(meshContext.Resources.ExternalServices(), endpointMap)
 
 	routing := &core_xds.Routing{
 		TrafficRoutes:                  routes,
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
-		ExternalServiceUnavailable:     unavailableExternalServices,
 	}
 	return routing, destinations
 }
@@ -186,17 +184,4 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
-}
-
-func diffExternalServices(allExternalServices *core_mesh.ExternalServiceResourceList, endpointMap core_xds.EndpointMap) map[string]struct{} {
-	diff := make(map[string]struct{})
-
-	for _, external := range allExternalServices.Items {
-		service := external.Spec.GetService()
-		if _, ok := endpointMap[service]; !ok {
-			diff[service] = struct{}{}
-		}
-	}
-
-	return diff
 }

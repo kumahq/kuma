@@ -233,8 +233,6 @@ type Routing struct {
 	// Since we take into account TrafficPermission to exclude external services from the map,
 	// it is specific for each data plane proxy.
 	ExternalServiceOutboundTargets EndpointMap
-	// Map to mark services are external even if there are no endpoints for them
-	ExternalServiceUnavailable map[string]struct{}
 }
 
 type CaSecret struct {

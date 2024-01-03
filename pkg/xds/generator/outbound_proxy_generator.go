@@ -49,7 +49,8 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+		routes := g.determineRoutes(proxy, outbound, clusterCache,
+			xdsCtx.Mesh.ExternalServicesEndpointMap, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
 		protocol := inferProtocol(xdsCtx.Mesh, clusters)
@@ -324,11 +325,8 @@ func inferProtocol(meshCtx xds_context.MeshContext, clusters []envoy_common.Clus
 	return protocol
 }
 
-func (OutboundProxyGenerator) determineRoutes(
-	proxy *model.Proxy,
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
-	clusterCache map[string]string,
-	hasEgress bool,
+func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound,
+	clusterCache map[string]string, externalServiceMap model.EndpointMap, hasEgress bool,
 ) envoy_common.Routes {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
@@ -364,20 +362,17 @@ func (OutboundProxyGenerator) determineRoutes(
 				name = fmt.Sprintf("%s_%s", name, mesh)
 			}
 
-			// We assume that all the targets are either ExternalServices or not
-			// therefore we check only the first one
 			var isExternalService bool
 			var hasEndpoints bool
+
+			if _, ok := externalServiceMap[service]; ok {
+				isExternalService = true
+			}
 			if endpoints := proxy.Routing.OutboundTargets[service]; len(endpoints) > 0 {
 				hasEndpoints = true
-				isExternalService = endpoints[0].IsExternalService()
 			}
 			if endpoints := proxy.Routing.ExternalServiceOutboundTargets[service]; len(endpoints) > 0 {
 				hasEndpoints = true
-				isExternalService = true
-			}
-			if _, ok := proxy.Routing.ExternalServiceUnavailable[service]; ok {
-				isExternalService = true
 			}
 
 			// skip external services without any endpoints (instead of generating EDS as internal clusters)
