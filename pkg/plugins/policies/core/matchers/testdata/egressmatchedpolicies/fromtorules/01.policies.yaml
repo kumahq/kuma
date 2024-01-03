@@ -1,39 +1,31 @@
-type: MeshFaultInjection
+type: MeshTimeout
 mesh: mesh-1
-name: mtp-1
+name: mt-1
 spec:
   targetRef:
     kind: MeshServiceSubset
     name: external-database
     tags:
-      version: v1
+      version: v1  
   from:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 33s
+        http:
+          requestTimeout: 33s
+  to:
     - targetRef:
         kind: MeshService
         name: backend
       default:
+        connectionTimeout: 77s
         http:
-        - delay:
-            percentage: 50
-            value: 5s
-    - targetRef:
-        kind: MeshService
-        name: orders
-      default:
-        http:
-        - abort:
-            httpStatus: 500
-            percentage: 2
-        - abort:
-            httpStatus: 500
-            percentage: 10
-        - delay:
-            value: 5s
-            percentage: 5
+          requestTimeout: 77s
 ---
-type: MeshFaultInjection
+type: MeshTimeout
 mesh: mesh-1
-name: mtp-2
+name: mt-2
 spec:
   targetRef:
     kind: Mesh
@@ -41,7 +33,6 @@ spec:
     - targetRef:
         kind: Mesh
       default:
+        connectionTimeout: 22s
         http:
-        - abort:
-            httpStatus: 555
-            percentage: 2
+          requestTimeout: 22s
