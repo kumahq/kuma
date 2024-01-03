@@ -175,6 +175,7 @@ tags:
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshGateway,
 				},
+				GatewayListenerTagsAllowed: true,
 			},
 		}),
 		Entry("MeshHTTPRoute", testCase{
@@ -611,6 +612,24 @@ kind: MeshGatewayRoute
 violations:
   - field: targetRef.kind
     message: value is not supported
+`,
+		}),
+		Entry("MeshGateway and no tags allowed", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: edge
+tags:
+  port: http
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: must not be set with kind MeshGateway
 `,
 		}),
 	)
