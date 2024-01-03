@@ -2,12 +2,12 @@ package rules
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -16,6 +16,9 @@ import (
 // indicates that all slices that start with this prefix will be appended, not replaced
 const appendSlicesPrefix = "Append"
 
+// MergeConfs returns list of confs that may be apply to separate sets of refs.
+// In the usual case it has a single element but for MeshHTTPRoute it is keyed
+// by hostname.
 func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	if len(confs) == 0 {
 		return nil, nil
@@ -33,31 +36,9 @@ func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	for _, taggedConfs := range taggedConfsList {
 		confs := taggedConfs.Confs
 
-		resultBytes := []byte{}
-		for i := 0; i < len(confs); i++ {
-			conf := confs[i].Interface()
-			confBytes, err := json.Marshal(conf)
-			if err != nil {
-				return nil, err
-			}
-			if len(resultBytes) == 0 {
-				resultBytes = confBytes
-				continue
-			}
-			resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		confType := confs[0].Type()
-		result, err := newConf(confType)
+		result, err := mergeJSONPatches(confs)
 		if err != nil {
-			return nil, err
-		}
-
-		if err := json.Unmarshal(resultBytes, result); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "couldn't merge JSON patches")
 		}
 
 		valueResult := reflect.ValueOf(result)
@@ -75,6 +56,38 @@ func MergeConfs(confs []interface{}) ([]interface{}, error) {
 	}
 
 	return interfaces, nil
+}
+
+// mergeJSONPatches merges a list of confs to a single conf using the algorithm described in https://www.rfc-editor.org/rfc/rfc7396
+func mergeJSONPatches(confs []reflect.Value) (interface{}, error) {
+	resultBytes := []byte{}
+	for i := 0; i < len(confs); i++ {
+		conf := confs[i].Interface()
+		confBytes, err := json.Marshal(conf)
+		if err != nil {
+			return nil, err
+		}
+		if len(resultBytes) == 0 {
+			resultBytes = confBytes
+			continue
+		}
+		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	confType := confs[0].Type()
+	result, err := newConf(confType)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(resultBytes, result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 type acc struct {
