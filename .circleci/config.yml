@@ -434,9 +434,26 @@ jobs:
             ARCH='<< parameters.arch >>'
 
             echo "Downloading..."
-            gh run download $GH_ACTIONS_RUN_ID --name $GH_ACTIONS_BUILD_ARTIFACT_NAME -D build \
-              --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-            echo "Downloading complete."
+            MAX_ATTEMPTS=5
+            ATTEMPTS=0
+
+            while [[ $ATTEMPTS -lt $MAX_ATTEMPTS ]]; do
+              if [[ $ATTEMPTS -gt 0 ]]; then echo "Retrying..."; fi
+              gh run download $GH_ACTIONS_RUN_ID --name $GH_ACTIONS_BUILD_ARTIFACT_NAME -D build \
+                --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME || true
+              if [ ! -z "$(ls build/distributions/out)" ]; then
+                break
+              else
+                ATTEMPTS=$((ATTEMPTS + 1))
+                sleep $(( RANDOM % 5 ))
+              fi
+            done
+            if [ ! -z "$(ls build/distributions/out)" ]; then
+              echo "Downloading complete."
+            else
+              echo "Could not download build output artifacts from GitHub."
+              exit 1
+            fi
 
             echo "Extracting files..."
             TARBALL=$(find build/distributions/out/*-linux-$ARCH.tar.gz)
