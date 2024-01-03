@@ -1,0 +1,66 @@
+Rules:
+  :0:
+  - Conf:
+      http:
+      - abort:
+          httpStatus: 500
+          percentage: 2
+      - abort:
+          httpStatus: 500
+          percentage: 10
+      - delay:
+          percentage: 5
+          value: 5s
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshFaultInjection
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshFaultInjection
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: orders
+  - Conf:
+      http:
+      - delay:
+          percentage: 50
+          value: 5s
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshFaultInjection
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshFaultInjection
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+  - Conf:
+      http:
+      - abort:
+          httpStatus: 555
+          percentage: 2
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshFaultInjection
+    Subset:
+    - Key: kuma.io/service
+      Not: true
+      Value: backend
+    - Key: kuma.io/service
+      Not: true
+      Value: orders

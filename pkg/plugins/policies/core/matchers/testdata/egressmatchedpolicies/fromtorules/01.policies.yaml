@@ -1,0 +1,47 @@
+type: MeshFaultInjection
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: external-database
+    tags:
+      version: v1
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        http:
+        - delay:
+            percentage: 50
+            value: 5s
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        http:
+        - abort:
+            httpStatus: 500
+            percentage: 2
+        - abort:
+            httpStatus: 500
+            percentage: 10
+        - delay:
+            value: 5s
+            percentage: 5
+---
+type: MeshFaultInjection
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+        - abort:
+            httpStatus: 555
+            percentage: 2
