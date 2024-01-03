@@ -186,7 +186,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	return &MeshContext{
-		MeshName:                    meshName,
 		Hash:                        newHash,
 		Resource:                    mesh,
 		Resources:                   resources,

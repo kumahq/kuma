@@ -58,7 +58,6 @@ func (g BaseMeshContext) Hash() string {
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	MeshName                    string
 	Hash                        string
 	Resource                    *core_mesh.MeshResource
 	Resources                   Resources
