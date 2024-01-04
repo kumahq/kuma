@@ -5,7 +5,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-// this method should be only used for zone egress because context in empty. In other
+// this method should be only used for zone egress because context is empty. In other
 // cases informations about protocol are available in MeshContext
 func GetExternalServiceProtocol(externalService *core_mesh.ExternalServiceResource) core_mesh.Protocol {
 	if externalService == nil {
