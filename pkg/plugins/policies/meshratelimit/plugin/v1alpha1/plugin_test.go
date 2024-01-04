@@ -629,8 +629,8 @@ var _ = Describe("MeshRateLimit", func() {
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
-		fromRules := core_rules.FromRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+		gatewayRules := core_rules.GatewayRules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {{
 					Subset: core_rules.Subset{},
 					Conf: api.Conf{
@@ -674,7 +674,7 @@ var _ = Describe("MeshRateLimit", func() {
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithPolicies(
-				xds_builders.MatchedPolicies().WithFromPolicy(api.MeshRateLimitType, fromRules),
+				xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshRateLimitType, gatewayRules),
 			).
 			Build()
 		for n, p := range core_plugins.Plugins().ProxyPlugins() {
