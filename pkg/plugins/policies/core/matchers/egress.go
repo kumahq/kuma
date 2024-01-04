@@ -35,11 +35,20 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 
 	var fr core_rules.FromRules
 	var err error
-	if isFrom {
+
+	// in case the policy support
+	switch {
+	case isFrom && isTo:
+		// we intentionally choose From
 		fr, err = processFromRules(tags, policies)
-	} else {
+	case isFrom:
+		// choose From
+		fr, err = processFromRules(tags, policies)
+	case isTo:
+		// choose To
 		fr, err = processToRules(tags, policies)
 	}
+
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
