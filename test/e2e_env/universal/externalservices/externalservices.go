@@ -90,20 +90,16 @@ networking:
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("demo-client-no-defaults", meshName, WithTransparentProxy(true))).
 			Install(TrafficPermissionUniversal(meshName)).
 			Setup(universal.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// remove default traffic permission
-		err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshNameNoDefaults, meshNameNoDefaults)
-		Expect(err).ToNot(HaveOccurred())
-		// remove default traffic route
-		err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-route", "route-all-"+meshNameNoDefaults, meshNameNoDefaults)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
