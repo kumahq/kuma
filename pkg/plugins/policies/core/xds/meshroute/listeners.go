@@ -96,7 +96,7 @@ func makeSplit(
 			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
 		}
 
-		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
+		isExternalService := meshCtx.IsExternalService(service)
 		refHash := ref.TargetRef.Hash()
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {
