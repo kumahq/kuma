@@ -1,7 +1,6 @@
 package kubernetes_test
 
 import (
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -26,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhttproute"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"

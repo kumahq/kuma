@@ -3,9 +3,10 @@ package meshmetric
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"net"
 
 	mads "github.com/kumahq/kuma/api/observability/v1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
