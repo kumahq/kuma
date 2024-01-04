@@ -20,7 +20,7 @@ import (
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z-_]*$`)
+	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)

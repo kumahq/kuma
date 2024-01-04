@@ -178,6 +178,17 @@ tags:
 				GatewayListenerTagsAllowed: true,
 			},
 		}),
+		Entry("MeshGateway with period", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway.namespace
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+		}),
 		Entry("MeshHTTPRoute", testCase{
 			inputYaml: `
 kind: MeshHTTPRoute
