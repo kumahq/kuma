@@ -97,8 +97,7 @@ networking:
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-no-defaults", meshName, WithTransparentProxy(true))).
-			Install(TrafficPermissionUniversal(meshName)).
+			Install(DemoClientUniversal("demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -125,7 +124,7 @@ networking:
 			It("should route to external-service", func() {
 				err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, meshName, false, nil)))
 				Expect(err).ToNot(HaveOccurred())
-				// time.Sleep(1*time.Hour)
+
 				checkSuccessfulRequest("ext-srv-1.mesh", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
