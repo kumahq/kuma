@@ -62,6 +62,7 @@ func GRPC() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
+	// todo switch to MeshGRPCRoute when https://github.com/kumahq/kuma/issues/3325 is implemented
 	It("MeshHTTPRoute does split the traffic between two gRPC services", func() {
 		yaml := `
 type: MeshHTTPRoute

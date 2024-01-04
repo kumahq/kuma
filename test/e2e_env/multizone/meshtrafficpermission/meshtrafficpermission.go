@@ -141,7 +141,7 @@ spec:
 		trafficBlocked("test-server.mesh")
 
 		// when mesh traffic permission with MeshService
-		yaml := `
+		yaml := fmt.Sprintf(`
 type: MeshTrafficPermission
 name: mtp-2
 mesh: mtp-test
@@ -153,10 +153,10 @@ spec:
    - targetRef:
        kind: MeshSubset
        tags:
-         kuma.io/zone: kuma-1-zone
+         kuma.io/zone: %s 
      default:
        action: Allow
-`
+`, multizone.KubeZone1.ZoneName())
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 

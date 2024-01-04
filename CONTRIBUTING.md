@@ -10,7 +10,7 @@ contributors and maintainers.
 
 [Slack](https://kuma-mesh.slack.com) is the main chat channel used by the
 community and the maintainers of this project. If you do not have an
-existing account, please follow this [link](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1rcll3y6t-DkV_CAItZUoy0IvCwQ~jlQ) to sign
+existing account, please follow this [link](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1tu98qcw4-pJNW9lRdBqx1I9kF9rvImA) to sign
 up for free.
 
 **Please avoid opening GitHub issues for general questions or help**, as those

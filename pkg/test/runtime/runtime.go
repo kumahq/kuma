@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -56,6 +57,11 @@ type TestRuntimeInfo struct {
 	InstanceId string
 	ClusterId  string
 	StartTime  time.Time
+	Mode       config_core.CpMode
+}
+
+func (i *TestRuntimeInfo) GetMode() config_core.CpMode {
+	return i.Mode
 }
 
 func (i *TestRuntimeInfo) GetInstanceId() string {

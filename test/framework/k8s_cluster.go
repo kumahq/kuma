@@ -297,12 +297,8 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	switch mode {
 	case core.Zone:
-		zoneName := c.opts.zoneName
-		if zoneName == "" {
-			zoneName = c.GetKumactlOptions().CPName
-		}
 		if c.opts.globalAddress != "" {
-			argsMap["--zone"] = zoneName
+			argsMap["--zone"] = c.ZoneName()
 			argsMap["--kds-global-address"] = c.opts.globalAddress
 		}
 	}
@@ -401,12 +397,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
 	case core.Zone:
-		zoneName := c.opts.zoneName
-		if zoneName == "" {
-			zoneName = c.GetKumactlOptions().CPName
-		}
 		if c.opts.globalAddress != "" {
-			values["controlPlane.zone"] = zoneName
+			values["controlPlane.zone"] = c.ZoneName()
 			values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
 			values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
 		}
@@ -1249,7 +1241,10 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 }
 
 func (c *K8sCluster) ZoneName() string {
-	return c.GetKumactlOptions().CPName
+	if c.opts.zoneName != "" {
+		return c.opts.zoneName
+	}
+	return c.Name()
 }
 
 type appInstallation struct {

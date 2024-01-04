@@ -137,7 +137,7 @@ func Setup(rt runtime.Runtime) error {
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)),

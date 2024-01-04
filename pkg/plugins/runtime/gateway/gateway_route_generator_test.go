@@ -1401,6 +1401,40 @@ conf:
 `,
 		),
 
+		Entry("external service works without default traffic permission policy",
+			"external-service-without-default-traffic-permission.yaml", `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http
+networking:
+  address: httpbin.com:80
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+`, WithoutResource{
+				Resource: core_mesh.TrafficPermissionType,
+				Mesh:     "default",
+				Name:     "allow-all-default",
+			},
+		),
+
 		Entry("generates cross mesh gateway listeners",
 			"cross-mesh-gateway.yaml", `
 type: Mesh
