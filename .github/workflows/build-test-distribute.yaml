@@ -207,10 +207,16 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      - uses: actions/download-artifact@v4
+      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
+      - name: Download artifacts with retry
+        uses: Wandalen/wretry.action@master
         with:
-          name: build-output
-          path: build
+          action: actions/download-artifact@v4
+          with: |
+            path: build
+            name: build-output
+          attempt_limit: 5
+          attempt_delay: 1000
       - name: Inspect created tars
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done

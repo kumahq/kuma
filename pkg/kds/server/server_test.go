@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -41,7 +40,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		srv, err := kds_setup.StartServer(s, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+		srv, err := kds_setup.NewKdsServerBuilder(s).AsZone("test-cluster").Sotw()
 		Expect(err).ToNot(HaveOccurred())
 		stream := grpc.NewMockServerStream()
 		go func() {

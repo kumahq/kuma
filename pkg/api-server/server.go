@@ -35,6 +35,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -45,6 +46,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	secrets_k8s "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -243,11 +245,14 @@ func addResourcesEndpoints(
 	globalInsightEndpoint.addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
+	var k8sSecretMapper k8s.ResourceMapperFunc
 	switch cfg.Store.Type {
 	case config_store.KubernetesStore:
 		k8sMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
+		k8sSecretMapper = secrets_k8s.NewKubernetesMapper()
 	default:
 		k8sMapper = k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace, k8s.NewSimpleKubeFactory())
+		k8sSecretMapper = secrets_k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace)
 	}
 	for _, definition := range defs {
 		defType := definition.Name
@@ -266,6 +271,9 @@ func addResourcesEndpoints(
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
+		}
+		if defType == system.SecretType || defType == system.GlobalSecretType {
+			endpoints.k8sMapper = k8sSecretMapper
 		}
 		switch defType {
 		case mesh.ServiceInsightType:

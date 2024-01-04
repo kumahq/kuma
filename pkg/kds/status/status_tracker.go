@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -47,8 +48,6 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 	}
 }
 
-var _ StatusTracker = &statusTracker{}
-
 type statusTracker struct {
 	util_xds_v3.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
@@ -79,11 +78,16 @@ func (c *statusTracker) onStreamOpen(ctx context.Context, streamID int64, typ st
 	now := core.Now()
 	subscription := &system_proto.KDSSubscription{
 		Id:                core.NewUUID(),
-		GlobalInstanceId:  c.runtimeInfo.GetInstanceId(),
 		ConnectTime:       util_proto.MustTimestampProto(now),
 		Status:            system_proto.NewSubscriptionStatus(now),
 		Version:           system_proto.NewVersion(),
 		AuthTokenProvided: len(md.Get("authorization")) == 1,
+	}
+	switch c.runtimeInfo.GetMode() {
+	case config_core.Global:
+		subscription.GlobalInstanceId = c.runtimeInfo.GetInstanceId()
+	case config_core.Zone:
+		subscription.ZoneInstanceId = c.runtimeInfo.GetInstanceId()
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -187,8 +191,26 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 			util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesAcknowledged++
 		}
 	}
-	if subscription.Config == "" && node.Metadata != nil && node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
-		subscription.Config = node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
+	remoteInstanceId := ""
+	if node.Metadata != nil {
+		if subscription.Config == "" && node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
+			subscription.Config = node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
+		}
+		if node.Metadata.Fields[kds.MetadataControlPlaneId] != nil {
+			remoteInstanceId = node.Metadata.Fields[kds.MetadataControlPlaneId].GetStringValue()
+		}
+	}
+	switch c.runtimeInfo.GetMode() {
+	case config_core.Global:
+		subscription.GlobalInstanceId = c.runtimeInfo.GetInstanceId()
+		if remoteInstanceId != "" {
+			subscription.ZoneInstanceId = remoteInstanceId
+		}
+	case config_core.Zone:
+		subscription.ZoneInstanceId = c.runtimeInfo.GetInstanceId()
+		if remoteInstanceId != "" {
+			subscription.GlobalInstanceId = remoteInstanceId
+		}
 	}
 
 	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)

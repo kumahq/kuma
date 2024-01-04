@@ -9,14 +9,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_config "github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var _ core_config.Config = E2eConfig{}
+var _ config.Config = E2eConfig{}
 
 type E2eConfig struct {
-	core_config.BaseConfig
+	config.BaseConfig
 
 	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
 	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
@@ -274,7 +274,7 @@ var defaultConf = E2eConfig{
 
 func init() {
 	Config = defaultConf
-	if err := core_config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
+	if err := config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
 		panic(err)
 	}
 

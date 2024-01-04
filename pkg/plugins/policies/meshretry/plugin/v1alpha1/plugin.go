@@ -42,7 +42,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := applyToGateway(policies.ToRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
+	if err := applyToGateway(policies.GatewayRules, routes.Gateway, listeners.Gateway, proxy); err != nil {
 		return err
 	}
 
@@ -78,23 +78,29 @@ func applyToOutbounds(
 }
 
 func applyToGateway(
-	rules core_rules.ToRules,
+	rules core_rules.GatewayRules,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		configurer := plugin_xds.Configurer{
-			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshSubset()),
-			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),
-		}
-
-		listener, ok := gatewayListeners[core_rules.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			Port:    listenerInfo.Listener.Port,
-		}]
+		}
+		listener, ok := gatewayListeners[listenerKey]
 		if !ok {
 			continue
+		}
+
+		toRules := rules.ToRules[listenerKey]
+		if !ok {
+			continue
+		}
+
+		configurer := plugin_xds.Configurer{
+			Retry:    core_rules.ComputeConf[api.Conf](toRules, core_rules.MeshSubset()),
+			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {

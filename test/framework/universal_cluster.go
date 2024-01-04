@@ -152,11 +152,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if mode == core.Zone {
-		zoneName := c.opts.zoneName
-		if zoneName == "" {
-			zoneName = c.name
-		}
-		env["KUMA_MULTIZONE_ZONE_NAME"] = zoneName
+		env["KUMA_MULTIZONE_ZONE_NAME"] = c.ZoneName()
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
@@ -562,5 +558,8 @@ func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 }
 
 func (c *UniversalCluster) ZoneName() string {
+	if c.opts.zoneName != "" {
+		return c.opts.zoneName
+	}
 	return c.Name()
 }
