@@ -32,6 +32,7 @@ type K8sControlPlane struct {
 	kumactl    *kumactl.KumactlOptions
 	cluster    *K8sCluster
 	portFwd    PortFwd
+	madsFwd    PortFwd
 	verbose    bool
 	replicas   int
 	apiHeaders []string
@@ -85,6 +86,10 @@ func (c *K8sControlPlane) PortForwardKumaCP() {
 			c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
 			c.portFwd.apiServerTunnel.ForwardPort(c.t)
 			c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
+
+			c.madsFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5676)
+			c.madsFwd.apiServerTunnel.ForwardPort(c.t)
+			c.madsFwd.ApiServerEndpoint = c.madsFwd.apiServerTunnel.Endpoint()
 			return
 		}
 	}
@@ -292,6 +297,27 @@ func (c *K8sControlPlane) GetAPIServerAddress() string {
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
 	panic("not implemented")
+}
+
+func (c *K8sControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
+	if c.madsFwd.ApiServerEndpoint == "" {
+		panic("MADS port forward wasn't setup!")
+	}
+	madsEndpoint := "http://" + c.madsFwd.ApiServerEndpoint
+
+	return http_helper.HTTPDoWithRetryE(
+		c.t,
+		"POST",
+		madsEndpoint+"/v3/discovery:monitoringassignments",
+		[]byte(fmt.Sprintf(`{"type_url": "type.googleapis.com/kuma.observability.v1.MonitoringAssignment","node": {"id": "%s"}}`, clientId)),
+		map[string]string{
+			"content-type": "application/json",
+		},
+		200,
+		DefaultRetries,
+		DefaultTimeout,
+		&tls.Config{MinVersion: tls.VersionTLS12},
+	)
 }
 
 func (c *K8sControlPlane) Exec(cmd ...string) (string, string, error) {

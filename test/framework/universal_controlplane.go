@@ -112,6 +112,10 @@ func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	})
 }
 
+func (c *UniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
+	panic("not implemented")
+}
+
 func (c *UniversalControlPlane) generateToken(
 	tokenPath string,
 	data string,

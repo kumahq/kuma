@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -82,6 +83,7 @@ var (
 	_ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 	_ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
 	_ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
+	_ = Describe("MeshMetric", meshmetric.MeshMetric, Ordered)
 	_ = Describe("MeshRetry", meshretry.API, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)

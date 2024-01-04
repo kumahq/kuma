@@ -4,6 +4,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/kumahq/kuma/pkg/util/pointer"
+
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -11,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for meshMetricConf, dataplane := range meshMetricToDataplane {
@@ -19,8 +21,11 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 			if backend.Type != v1alpha1.PrometheusBackendType {
 				continue
 			}
-
 			prometheusEndpoint := backend.Prometheus
+
+			if pointer.Deref(prometheusEndpoint.ClientId) != "" && pointer.Deref(prometheusEndpoint.ClientId) != clientId {
+				continue
+			}
 
 			schema := "http"
 			if prometheusEndpoint.Tls != nil && prometheusEndpoint.Tls.Mode == v1alpha1.ProvidedTLS {

@@ -46,11 +46,11 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 		return errors.Errorf("expecting a v3 Node, got: %v", nodei)
 	}
 
-	// only reconcile if there is not a valid response present
-	if !r.reconciler.NeedsReconciliation(node) {
-		return nil
-	}
-
+	// TODO we need to reconcile on demand because if we us MeshMetric we will only reconcile in watchdog for single client
+	// that send request first because of watchdog callback implementation: pkg/util/xds/v3/watchdog_callbacks.go:48
+	// Moreover grpc sotw server is never used in real world scenario so we probably need to thing of different syncing cache mechanism
+	// if performance of ondemand reconcile will turn out to be poor.
+	// Also we probably can remove sync tracker since it will run and recompute MADS response that won't be used
 	return r.reconciler.Reconcile(ctx, node)
 }
 
