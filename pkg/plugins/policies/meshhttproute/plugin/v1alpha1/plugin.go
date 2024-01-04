@@ -2,6 +2,8 @@ package v1alpha1
 
 import (
 	"context"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -146,17 +148,31 @@ func ApplyToGateway(
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
-			var matchedRules []ToRouteRule
-			for _, hostname := range keys {
-				if info.Host.Hostname == "*" || hostname == "*" || match.Hostnames(info.Host.Hostname, hostname) {
-					matchedRules = append(matchedRules, rulesByHostname[hostname]...)
+			listenerHostname := info.Host.Hostname
+			separateHostnames := map[string][]ToRouteRule{}
+			for _, routeHostname := range keys {
+				if !(listenerHostname == "*" || routeHostname == "*" || match.Hostnames(listenerHostname, routeHostname)) {
+					continue
 				}
+				// We need to take the most specific hostname
+				hostnameKey := listenerHostname
+				if strings.HasPrefix(listenerHostname, "*") && !strings.HasPrefix(routeHostname, "*") {
+					hostnameKey = routeHostname
+				}
+				separateHostnames[hostnameKey] = append(separateHostnames[hostnameKey], rulesByHostname[routeHostname]...)
 			}
-			hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
-				Host:    info.Host,
-				Entries: GenerateEnvoyRouteEntries(info.Host, matchedRules),
-			})
+			for hostname, rules := range separateHostnames {
+				host := info.Host
+				host.Hostname = hostname
+				hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
+					Host:    host,
+					Entries: GenerateEnvoyRouteEntries(host, rules),
+				})
+			}
 		}
+		sort.Slice(hostInfos, func(i, j int) bool {
+			return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
+		})
 
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
 		if err != nil {
