@@ -29,10 +29,6 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	_, isFrom := p.GetSpec().(core_model.PolicyWithFromList)
 	_, isTo := p.GetSpec().(core_model.PolicyWithToList)
 
-	if isFrom && isTo {
-		return core_xds.TypedMatchingPolicies{}, errors.Errorf("zone egress doesn't support policies that have both 'from' and 'to'")
-	}
-
 	if !isFrom && !isTo {
 		return core_xds.TypedMatchingPolicies{}, nil
 	}
