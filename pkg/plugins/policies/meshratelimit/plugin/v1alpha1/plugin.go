@@ -130,19 +130,16 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, es := range resource.ExternalServices {
-			log.Info("TEST", "es", es)
 			meshName := resource.Mesh.GetMeta().GetName()
 			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
 			if !ok {
 				continue
 			}
 			policies, ok := resource.Dynamic[esName]
-			log.Info("TEST", "policies", policies, "ok", ok)
 			if !ok {
 				continue
 			}
 			mrl, ok := policies[api.MeshRateLimitType]
-			log.Info("TEST", "mrl", mrl, "ok", ok)
 			if !ok {
 				continue
 			}
@@ -154,15 +151,12 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 				return nil
 			}
 			for _, rule := range mrl.FromRules.Rules {
-				log.Info("TEST", "rule", rule)
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
 						var conf api.Conf
 						if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
 							conf = computed.Conf.(api.Conf)
-							log.Info("TEST", "conf", conf)
 						} else {
-							log.Info("TEST exit")
 							continue
 						}
 						configurer := plugin_xds.Configurer{
