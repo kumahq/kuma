@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -52,6 +53,7 @@ type RuntimeInfo interface {
 	SetClusterId(clusterId string)
 	GetClusterId() string
 	GetStartTime() time.Time
+	GetMode() core.CpMode
 }
 
 type RuntimeContext interface {
@@ -121,6 +123,7 @@ type runtimeInfo struct {
 	instanceId string
 	clusterId  string
 	startTime  time.Time
+	mode       core.CpMode
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
@@ -141,6 +144,10 @@ func (i *runtimeInfo) GetClusterId() string {
 
 func (i *runtimeInfo) GetStartTime() time.Time {
 	return i.startTime
+}
+
+func (i *runtimeInfo) GetMode() core.CpMode {
+	return i.mode
 }
 
 var _ RuntimeContext = &runtimeContext{}

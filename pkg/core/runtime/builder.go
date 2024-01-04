@@ -119,6 +119,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 			startTime:  time.Now(),
+			mode:       cfg.Mode,
 		},
 		appCtx: appCtx,
 	}, nil

@@ -11,6 +11,7 @@ import (
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
@@ -31,6 +32,7 @@ type stream struct {
 	latestReceived map[core_model.ResourceType]*latestReceived
 	clientId       string
 	cpConfig       string
+	runtimeInfo    core_runtime.RuntimeInfo
 }
 
 type KDSSyncServiceStream interface {
@@ -38,9 +40,10 @@ type KDSSyncServiceStream interface {
 	Recv() (*envoy_sd.DeltaDiscoveryResponse, error)
 }
 
-func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, cpConfig string) DeltaKDSStream {
+func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
 	return &stream{
 		streamClient:   s,
+		runtimeInfo:    runtimeInfo,
 		latestACKed:    make(map[core_model.ResourceType]string),
 		latestReceived: make(map[core_model.ResourceType]*latestReceived),
 		clientId:       clientId,
@@ -67,8 +70,9 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 			Id: s.clientId,
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					kds.MetadataFieldVersion: {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
-					kds.MetadataFieldConfig:  {Kind: &structpb.Value_StringValue{StringValue: s.cpConfig}},
+					kds.MetadataFieldVersion:   {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
+					kds.MetadataFieldConfig:    {Kind: &structpb.Value_StringValue{StringValue: s.cpConfig}},
+					kds.MetadataControlPlaneId: {Kind: &structpb.Value_StringValue{StringValue: s.runtimeInfo.GetInstanceId()}},
 					kds.MetadataFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
 						Values: []*structpb.Value{
 							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureZoneToken}},

@@ -76,6 +76,9 @@ message KDSSubscription {
 
   // Indicates if subscription provided auth token
   bool auth_token_provided = 9;
+
+  // Zone CP instance that handled the given subscription (This is the leader at time of connection).
+  string zone_instance_id = 10;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.

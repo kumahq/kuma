@@ -48,7 +48,8 @@ type ValidateSelectorsOpts struct {
 }
 
 type ValidateTargetRefOpts struct {
-	SupportedKinds []common_api.TargetRefKind
+	SupportedKinds             []common_api.TargetRefKind
+	GatewayListenerTagsAllowed bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -361,6 +362,9 @@ func ValidateTargetRef(
 		err.Add(validateName(ref.Name))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
+			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		}
 	}
 
 	return err
