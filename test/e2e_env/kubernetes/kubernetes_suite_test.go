@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalname-services"
+	externalname_services "github.com/kumahq/kuma/test/e2e_env/kubernetes/externalname-services"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
