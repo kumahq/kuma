@@ -29,6 +29,11 @@ type MeshHTTPRoute struct {
 }
 
 type To struct {
+	// Hostnames is only valid when targeting MeshGateway and limits the
+	// effects of the rules to requests to this hostname.
+	// Given hostnames must intersect with the hostname of the listeners the
+	// route attaches to.
+	Hostnames []string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`

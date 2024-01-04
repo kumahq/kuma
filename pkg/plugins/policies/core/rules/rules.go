@@ -464,11 +464,13 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				sort.Slice(origins, func(i, j int) bool {
 					return origins[i].GetName() < origins[j].GetName()
 				})
-				rules = append(rules, &Rule{
-					Subset: ss,
-					Conf:   merged,
-					Origin: origins,
-				})
+				for _, mergedRule := range merged {
+					rules = append(rules, &Rule{
+						Subset: ss,
+						Conf:   mergedRule,
+						Origin: origins,
+					})
+				}
 			}
 		}
 	}

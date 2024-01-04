@@ -56,6 +56,7 @@ func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.Validat
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
 		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
+		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
 	}
 
 	return errs
@@ -71,6 +72,20 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(topTargetRef, rule.Default.BackendRefs))
 	}
 
+	return errs
+}
+
+func validateHostnames(topTargetRef common_api.TargetRef, hostnames []string) validators.ValidationError {
+	var errs validators.ValidationError
+
+	path := validators.Root()
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+	default:
+		if len(hostnames) > 0 {
+			errs.AddViolationAt(path, validators.MustNotBeDefined)
+		}
+	}
 	return errs
 }
 
