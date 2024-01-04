@@ -44,6 +44,7 @@ func MakeHTTPSplit(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
+			core_mesh.ProtocolGRPC:  {},
 		},
 		clusterCache,
 		servicesAcc,

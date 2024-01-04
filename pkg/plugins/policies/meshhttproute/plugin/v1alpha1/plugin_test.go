@@ -407,6 +407,49 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("grpc-service", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolGRPC, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolGRPC).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: api.RuleConf{
+													BackendRefs: &[]common_api.BackendRef{{
+														TargetRef: builders.TargetRefService("backend"),
+														Weight:    pointer.To(uint(100)),
+													}},
+												},
+											}},
+										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("request-mirror", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend", xds_builders.Endpoint().

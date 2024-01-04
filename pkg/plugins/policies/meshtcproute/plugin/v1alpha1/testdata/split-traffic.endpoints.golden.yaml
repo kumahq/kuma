@@ -39,6 +39,10 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               region: us
+- name: externalservice
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: externalservice
 - name: other-backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
