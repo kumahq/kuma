@@ -44,14 +44,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateways(policies.FromRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
+	if err := applyToGateways(policies.GatewayRules, listeners.Gateway, routes.Gateway, proxy); err != nil {
 		return err
 	}
 	return nil
 }
 
 func applyToGateways(
-	fromRules core_rules.FromRules,
+	toRules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
@@ -67,7 +67,7 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := fromRules.Rules[listenerKey]
+		rules, ok := toRules.ToRules[listenerKey]
 		if !ok {
 			continue
 		}
