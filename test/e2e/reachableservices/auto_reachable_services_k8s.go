@@ -48,7 +48,7 @@ func AutoReachableServices() {
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(k8sCluster, "default", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
-	
+
 	It("should not connect to non auto reachable service", func() {
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
