@@ -83,6 +83,9 @@ const (
 
 	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
 	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag | ZoneFlag
+
+	// KDSEnabledSelector is selector for all flags that indicate resource can be synced using KDS.
+	KDSEnabledSelector = ZoneToGlobalFlag | GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
@@ -263,7 +266,7 @@ func HasKDSFlag(flagType KDSFlagType) TypeFilter {
 
 func HasKdsEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags != 0
+		return descriptor.KDSFlags.Has(KDSEnabledSelector)
 	})
 }
 
