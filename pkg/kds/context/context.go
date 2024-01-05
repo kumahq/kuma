@@ -278,7 +278,8 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 		case r.Descriptor().Name == system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
 				zoneingress.ZoneIngressSigningKeyPrefix,
-				zone_tokens.SigningKeyPrefix}...)
+				zone_tokens.SigningKeyPrefix,
+			}...)
 		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			zoneTag := util.ZoneTag(r)
 
