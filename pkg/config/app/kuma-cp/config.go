@@ -168,7 +168,7 @@ type Config struct {
 	// EventBus is a configuration of the event bus which is local to one instance of CP.
 	EventBus eventbus.Config `json:"eventBus"`
 	// Configuration of enabled policies
-	PluginPoliciesEnabled string `json:"-" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED" default:"meshaccesslog;meshcircuitbreaker;meshfaultinjection;meshhealthcheck;meshhttproute;meshloadbalancingstrategy;meshmetric;meshproxypatch;meshratelimit;meshretry;meshtcproute;meshtimeout;meshtrace;meshtrafficpermission"`
+	PluginPoliciesEnabled []string `json:"-" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED" default:"meshaccesslog,meshcircuitbreaker,meshfaultinjection,meshhealthcheck,meshhttproute,meshloadbalancingstrategy,meshmetric,meshproxypatch,meshratelimit,meshretry,meshtcproute,meshtimeout,meshtrace,meshtrafficpermission"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {

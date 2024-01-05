@@ -1,8 +1,6 @@
 package policies
 
 import (
-	"strings"
-
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection"
@@ -36,8 +34,7 @@ var nameToModule = map[string]func(bool){
 	"meshtrafficpermission":     meshtrafficpermission.InitPlugin,
 }
 
-func InitPolicies(enabledPolicies string) {
-	enabledPluginPolicies := strings.Split(enabledPolicies, ";")
+func InitPolicies(enabledPluginPolicies []string) {
 	for _, policy := range enabledPluginPolicies {
 		initializer, ok := nameToModule[policy]
 		if ok {
