@@ -298,7 +298,7 @@ env:
   value: "true"
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
-  value: {{- include "kuma.pluginPoliciesEnabled" }}
+  value: {{- include "kuma.pluginPoliciesEnabled" . }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
