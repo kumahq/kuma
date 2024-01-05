@@ -184,6 +184,16 @@ returns: formatted image string
 {{- define "kuma.parentSecrets" -}}
 {{- end -}}
 
+{{- define "kuma.pluginPoliciesEnabled" -}}
+{{- $list := list -}}
+{{- range $k, $v := .Values.plugins.policies -}}
+{{- if $v }}
+{{- $list = append $list (printf "%s=\"%s\"" $k $v) -}}
+{{- end -}}
+{{- end -}}
+{{ join "," $list }}
+{{- end -}}
+
 {{- define "kuma.defaultEnv" -}}
 env:
 {{ include "kuma.parentEnv" . }}
@@ -287,6 +297,8 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
 {{- end }}
+- name: KUMA_PLUGIN_POLICIES_ENABLED
+  value: {{- include "kuma.pluginPoliciesEnabled" }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
