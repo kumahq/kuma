@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -28,7 +29,8 @@ type exportContext struct {
 const (
 	profileFederation = "federation"
 
-	formatUniversal = "universal"
+	formatUniversal  = "universal"
+	formatKubernetes = "kubernetes"
 )
 
 var profiles = map[string][]model.ResourceType{
@@ -60,7 +62,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.New("invalid profile")
 			}
 
-			if ctx.args.format != formatUniversal {
+			if ctx.args.format != formatUniversal && ctx.args.format != formatKubernetes {
 				return errors.New("invalid format")
 			}
 
@@ -97,18 +99,37 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				}
 			}
 
-			for _, res := range resources {
-				if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
+			switch ctx.args.format {
+			case formatUniversal:
+				for _, res := range resources {
+					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
+						return err
+					}
+					if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
+						return err
+					}
+				}
+			case formatKubernetes:
+				k8sResources, err := pctx.CurrentKubernetesResourcesClient()
+				if err != nil {
 					return err
 				}
-				if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
-					return err
+				yamlPrinter := yaml.NewPrinter()
+				for _, res := range resources {
+					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
+					if err != nil {
+						return err
+					}
+					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
+						return err
+					}
 				}
 			}
+
 			return nil
 		},
 	}
 	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: "%s"`, profileFederation))
-	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: "%s"`, formatUniversal))
+	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: %q, %q`, formatUniversal, formatKubernetes))
 	return cmd
 }

@@ -4,9 +4,11 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util "github.com/kumahq/kuma/pkg/plugins/policies/core/egress"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -15,9 +17,13 @@ import (
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshFaultInjection")
+)
 
 type plugin struct{}
 
@@ -29,10 +35,16 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshFaultInjectionType, dataplane, resources)
 }
 
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshFaultInjectionType, tags, resources)
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.ZoneEgressProxy != nil {
+		return applyToEgress(rs, proxy)
+	}
+
 	if proxy.Dataplane == nil {
-		// MeshRateLimit policy is applied only on DPP
-		// todo: add support for ExternalService and ZoneEgress, https://github.com/kumahq/kuma/issues/5050
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshFaultInjectionType]
@@ -76,8 +88,10 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configure(rules, listener, protocol); err != nil {
-			return err
+		for _, filterChain := range listener.FilterChains {
+			if err := configure(rules, filterChain, protocol); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -108,8 +122,49 @@ func applyToGateways(
 			continue
 		}
 
-		if err := configure(rules, gatewayListener, protocol); err != nil {
-			return err
+		for _, filterChain := range gatewayListener.FilterChains {
+			if err := configure(rules, filterChain, protocol); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	listeners := policies_xds.GatherListeners(rs)
+	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
+		for _, es := range resource.ExternalServices {
+			meshName := resource.Mesh.GetMeta().GetName()
+			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
+			if !ok {
+				continue
+			}
+			policies, ok := resource.Dynamic[esName]
+			if !ok {
+				continue
+			}
+			mfi, ok := policies[api.MeshFaultInjectionType]
+			if !ok {
+				continue
+			}
+			if listeners.Egress == nil {
+				log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
+					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+					"mesh", resource.Mesh.GetMeta().GetName(),
+				)
+				return nil
+			}
+			protocol := util.GetExternalServiceProtocol(es)
+			for _, rule := range mfi.FromRules.Rules {
+				for _, filterChain := range listeners.Egress.FilterChains {
+					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
+						if err := configure(rule, filterChain, protocol); err != nil {
+							return err
+						}
+					}
+				}
+			}
 		}
 	}
 	return nil
@@ -117,7 +172,7 @@ func applyToGateways(
 
 func configure(
 	fromRules core_rules.Rules,
-	listener *envoy_listener.Listener,
+	filterChain *envoy_listener.FilterChain,
 	protocol core_mesh.Protocol,
 ) error {
 	switch protocol {
@@ -131,10 +186,8 @@ func configure(
 				From:            from,
 			}
 
-			for _, chain := range listener.FilterChains {
-				if err := configurer.ConfigureHttpListener(chain); err != nil {
-					return err
-				}
+			if err := configurer.ConfigureHttpListener(filterChain); err != nil {
+				return err
 			}
 		}
 	}

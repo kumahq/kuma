@@ -23,29 +23,31 @@ func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRout
 	exactEntries := map[string][]route.Entry{}
 	prefixEntries := map[string][]route.Entry{}
 
-	for _, rule := range toRules[0].Rules {
-		var names []string
-		for _, orig := range toRules[0].Origin {
-			names = append(names, orig.GetName())
-		}
-		slices.Sort(names)
-		entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
+	for _, rules := range toRules {
+		for _, rule := range rules.Rules {
+			var names []string
+			for _, orig := range rules.Origin {
+				names = append(names, orig.GetName())
+			}
+			slices.Sort(names)
+			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
 
-		// The rule matches if any of the matches is successful (it has OR
-		// semantics). That means that we have to duplicate the route table
-		// entry for each repeated match so that the rule can match any of
-		// the criteria.
-		for _, m := range rule.Matches {
-			routeEntry := entry // Shallow copy.
-			routeEntry.Match = makeRouteMatch(m)
+			// The rule matches if any of the matches is successful (it has OR
+			// semantics). That means that we have to duplicate the route table
+			// entry for each repeated match so that the rule can match any of
+			// the criteria.
+			for _, m := range rule.Matches {
+				routeEntry := entry // Shallow copy.
+				routeEntry.Match = makeRouteMatch(m)
 
-			switch {
-			case routeEntry.Match.ExactPath != "":
-				exactEntries[routeEntry.Match.ExactPath] = append(exactEntries[routeEntry.Match.ExactPath], routeEntry)
-			case routeEntry.Match.PrefixPath != "":
-				prefixEntries[routeEntry.Match.PrefixPath] = append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
-			default:
-				entries = append(entries, routeEntry)
+				switch {
+				case routeEntry.Match.ExactPath != "":
+					exactEntries[routeEntry.Match.ExactPath] = append(exactEntries[routeEntry.Match.ExactPath], routeEntry)
+				case routeEntry.Match.PrefixPath != "":
+					prefixEntries[routeEntry.Match.PrefixPath] = append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
+				default:
+					entries = append(entries, routeEntry)
+				}
 			}
 		}
 	}
