@@ -303,13 +303,13 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.ApiServer.ReadOnly {
 		return true
 	}
-	if kdsFlag == model.KDSDisabled {
+	if kdsFlag == model.KDSDisabledFlag {
 		return false
 	}
-	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
+	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.GlobalToAllZonesFlag) {
 		return true
 	}
-	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ProvidedByZone) {
+	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ZoneToGlobalFlag) {
 		return true
 	}
 	return false

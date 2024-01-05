@@ -9,11 +9,8 @@ import (
 	k8s_strings "k8s.io/utils/strings"
 )
 
-// SyncedNameInZone returns the resource's name after syncing from Global to Zone.
-// It creates a new name by adding a hash suffix constructed from the 'mesh' and
-// the original 'name'.
-func SyncedNameInZone(mesh, name string) string {
-	return addSuffix(name, hash(mesh, name))
+func HashedName(mesh, name string, additionalValuesToHash ...string) string {
+	return addSuffix(name, hash(append([]string{mesh, name}, additionalValuesToHash...)))
 }
 
 func addSuffix(name, hash string) string {
@@ -23,7 +20,7 @@ func addSuffix(name, hash string) string {
 	return fmt.Sprintf("%s-%s", shortenName, hash)
 }
 
-func hash(ss ...string) string {
+func hash(ss []string) string {
 	hasher := fnv.New64a()
 	for _, s := range ss {
 		_, _ = hasher.Write([]byte(s))

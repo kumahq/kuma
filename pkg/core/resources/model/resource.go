@@ -11,6 +11,8 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
@@ -48,13 +50,25 @@ const (
 type KDSFlagType uint32
 
 const (
-	KDSDisabled      = KDSFlagType(0)
-	ConsumedByZone   = KDSFlagType(1)
-	ConsumedByGlobal = KDSFlagType(1 << 2)
-	ProvidedByZone   = KDSFlagType(1 << 3)
-	ProvidedByGlobal = KDSFlagType(1 << 4)
-	FromZoneToGlobal = ConsumedByGlobal | ProvidedByZone
-	FromGlobalToZone = ProvidedByGlobal | ConsumedByZone
+	// KDSDisabledFlag is a flag that indicates that this resource type is not sent using KDS.
+	KDSDisabledFlag = KDSFlagType(0)
+
+	// ZoneToGlobalFlag is a flag that indicates that this resource type is sent from Zone CP to Global CP.
+	ZoneToGlobalFlag = KDSFlagType(1)
+
+	// GlobalToAllZonesFlag is a flag that indicates that this resource type is sent from Global CP to all zones.
+	GlobalToAllZonesFlag = KDSFlagType(1 << 2)
+
+	// GlobalToAllButOriginalZoneFlag is a flag that indicates that this resource type is sent from Global CP to
+	// all zones except the zone where the resource was originally created. Today the only resource that has this
+	// flag is ZoneIngress.
+	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
+)
+
+const (
+	// GlobalToZoneSelector is selector for all flags that indicate resource sync from Global to Zone.
+	// Can't be used as KDS flag for resource type.
+	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
@@ -376,9 +390,22 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
 }
 
+func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+	switch mode {
+	case config_core.Global:
+		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		return !ok || origin == mesh_proto.ResourceOriginGlobal
+	case config_core.Zone:
+		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		return !ok || origin == mesh_proto.ResourceOriginZone
+	default:
+		return true
+	}
+}
+
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
-	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
+	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
