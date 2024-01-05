@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"net"
 	"net/http"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 
 	"github.com/pkg/errors"
 
@@ -50,6 +51,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
