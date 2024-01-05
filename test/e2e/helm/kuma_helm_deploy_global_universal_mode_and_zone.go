@@ -121,7 +121,7 @@ stringData:
 		Eventually(func(g Gomega) {
 			output, err := globalCluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(output).To(ContainSubstring("kuma-2-zone.demo-client"))
+			g.Expect(output).To(ContainSubstring("kuma-2.demo-client"))
 		}, "5s", "500ms").Should(Succeed())
 	})
 
