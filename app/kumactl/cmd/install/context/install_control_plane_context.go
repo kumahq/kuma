@@ -55,9 +55,9 @@ type InstallControlPlaneArgs struct {
 	Egress_service_type                          string            `helm:"egress.service.type"`
 	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
-	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
-	EnabledPluginPolicies 		                 map[string]bool   `helm:"plugins.policies"`
+	WithoutKubernetesConnection                  bool // there is no HELM equivalent, HELM always require connection to Kubernetes
+	ExperimentalGatewayAPI                       bool                       `helm:"experimental.gatewayAPI"`
+	PluginPoliciesEnabled                        map[string]bool            `helm:"plugins.policies"`
 	ValueFiles                                   []string
 	Values                                       []string
 	SkipKinds                                    []string

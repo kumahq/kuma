@@ -137,6 +137,12 @@ This command requires that the KUBECONFIG environment is set`,
 				mesh_k8s.RegisterK8sGatewayAPITypes()
 			}
 
+			for policyName, enabled := range args.PluginPoliciesEnabled {
+				if enabled {
+					args.ControlPlane_envVars["KUMA_PLUGIN_POLICIES_ENABLED"] += policyName + ";"
+				}
+			}
+
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")

@@ -167,6 +167,8 @@ type Config struct {
 	Tracing tracing.Config `json:"tracing"`
 	// EventBus is a configuration of the event bus which is local to one instance of CP.
 	EventBus eventbus.Config `json:"eventBus"`
+	// Configuration of enabled policies
+	PluginPoliciesEnabled string `json:"-" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
