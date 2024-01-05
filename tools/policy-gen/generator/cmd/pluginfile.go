@@ -79,7 +79,10 @@ import (
 {{- end}}
 )
 
-func init() {
+func InitPlugin(enabled bool) {
+	if !enabled {
+		return
+	}
 	{{- range $idx, $version := .Versions}}
 	core.Register(
 		api_{{ $version }}.{{ $name }}ResourceTypeDescriptor,

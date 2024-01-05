@@ -147,8 +147,10 @@ rules:
   {{- if .Values.experimental.gatewayAPI }}
       - meshgatewayconfigs
   {{- end }}
-  {{- range $policy, $empty := .Values.plugins.policies }}
+  {{- range $policy, $enabled := .Values.plugins.policies }}
+      {{- if $enabled}}
       - {{ $policy }}
+      {{- end}}
   {{- end}}
     verbs:
       - get
