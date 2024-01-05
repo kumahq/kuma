@@ -325,6 +325,7 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.GlobalFlag | model.ZoneFlag,
 	WsPath:              "zones",
 	KumactlArg:          "zone",
 	KumactlListArg:      "zones",

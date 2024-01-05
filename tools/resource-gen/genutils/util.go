@@ -121,6 +121,9 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	case r.Kds.SendToZone:
 		out.KdsDirection = "model.GlobalToAllZonesFlag"
 	}
+	if out.ResourceType == "Zone" {
+		out.KdsDirection = "model.GlobalFlag | model.ZoneFlag"
+	}
 
 	if p := desc.Parent(); p != nil {
 		if _, ok := p.(protoreflect.MessageDescriptor); ok {

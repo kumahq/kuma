@@ -63,12 +63,26 @@ const (
 	// all zones except the zone where the resource was originally created. Today the only resource that has this
 	// flag is ZoneIngress.
 	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
+
+	// 	GlobalFlag = KDSFlagType(1 << 4) is a flag that indicates that this resource type is created on Global CP and is not synced,
+	// i.e. Zone resource.
+	GlobalFlag = KDSFlagType(1 << 4)
+
+	// ZoneFlag is a flag that indicates that this resource type is created on Zone CP and is not synced,
+	// i.e. Zone resource.
+	ZoneFlag = KDSFlagType(1 << 5)
 )
 
 const (
 	// GlobalToZoneSelector is selector for all flags that indicate resource sync from Global to Zone.
 	// Can't be used as KDS flag for resource type.
 	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
+
+	// AllowedOnGlobalSelector is selector for all flags that indicate resource can be created on Global.
+	AllowedOnGlobalSelector = GlobalToAllZonesFlag | GlobalFlag
+
+	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
+	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag | ZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
