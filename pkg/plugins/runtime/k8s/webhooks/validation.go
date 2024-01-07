@@ -127,6 +127,9 @@ func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, 
 	if err != nil {
 		return syncErrorResponse(resType, h.mode)
 	}
+	if descriptor.KDSFlags == core_model.KDSDisabledFlag {
+		return admission.Allowed("")
+	}
 	if (h.mode == core.Global && !descriptor.KDSFlags.Has(core_model.AllowedOnGlobalSelector)) || (h.federatedZone && !descriptor.KDSFlags.Has(core_model.AllowedOnZoneSelector)) {
 		return syncErrorResponse(resType, h.mode)
 	}

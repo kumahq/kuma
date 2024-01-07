@@ -63,14 +63,6 @@ const (
 	// all zones except the zone where the resource was originally created. Today the only resource that has this
 	// flag is ZoneIngress.
 	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
-
-	// 	GlobalFlag = KDSFlagType(1 << 4) is a flag that indicates that this resource type is created on Global CP and is not synced,
-	// i.e. Zone resource.
-	GlobalFlag = KDSFlagType(1 << 4)
-
-	// ZoneFlag is a flag that indicates that this resource type is created on Zone CP and is not synced,
-	// i.e. Zone resource.
-	ZoneFlag = KDSFlagType(1 << 5)
 )
 
 const (
@@ -79,13 +71,10 @@ const (
 	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
 
 	// AllowedOnGlobalSelector is selector for all flags that indicate resource can be created on Global.
-	AllowedOnGlobalSelector = GlobalToAllZonesFlag | GlobalFlag
+	AllowedOnGlobalSelector = GlobalToAllZonesFlag
 
 	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
-	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag | ZoneFlag
-
-	// KDSEnabledSelector is selector for all flags that indicate resource can be synced using KDS.
-	KDSEnabledSelector = ZoneToGlobalFlag | GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
+	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
@@ -266,7 +255,7 @@ func HasKDSFlag(flagType KDSFlagType) TypeFilter {
 
 func HasKdsEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags.Has(KDSEnabledSelector)
+		return descriptor.KDSFlags != KDSDisabledFlag
 	})
 }
 
