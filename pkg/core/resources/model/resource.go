@@ -420,6 +420,16 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 	}
 }
 
+func GetDisplayName(r Resource) string {
+	// prefer display name as it's more predictable, because
+	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
+	// * When policies are synced to Zone, hash suffix also breaks sorting
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+		return labels[mesh_proto.DisplayName]
+	}
+	return r.GetMeta().GetName()
+}
+
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
 	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1

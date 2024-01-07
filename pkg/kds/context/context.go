@@ -246,7 +246,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 			return r, nil
 		}
 
-		name := r.GetMeta().GetLabels()[mesh_proto.DisplayName]
+		name := core_model.GetDisplayName(r)
 		values := make([]string, 0, len(labelsToUse))
 		for _, lbl := range labelsToUse {
 			values = append(values, r.GetMeta().GetLabels()[lbl])
