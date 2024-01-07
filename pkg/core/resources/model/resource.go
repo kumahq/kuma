@@ -419,6 +419,17 @@ func GetDisplayName(r Resource) string {
 	return r.GetMeta().GetName()
 }
 
+// ZoneOfResource returns zone from which the resource was synced to Global CP
+// There is no information in the resource itself whether the resource is synced or created on the CP.
+// Therefore, it's a caller responsibility to make use it only on synced resources.
+func ZoneOfResource(res Resource) string {
+	if labels := res.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
+		return labels[mesh_proto.ZoneTag]
+	}
+	parts := strings.Split(res.GetMeta().GetName(), ".")
+	return parts[0]
+}
+
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
 	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
@@ -502,14 +513,6 @@ func ErrorInvalidItemType(expected, actual interface{}) error {
 type ResourceWithAddress interface {
 	Resource
 	AdminAddress(defaultAdminPort uint32) string
-}
-
-// ZoneOfResource returns zone from which the resource was synced to Global CP
-// There is no information in the resource itself whether the resource is synced or created on the CP.
-// Therefore, it's a caller responsibility to make use it only on synced resources.
-func ZoneOfResource(res Resource) string {
-	parts := strings.Split(res.GetMeta().GetName(), ".")
-	return parts[0]
 }
 
 type PolicyItem interface {
