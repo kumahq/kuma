@@ -57,9 +57,11 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	secret.Namespace = s.namespace
 	secret.Name = opts.Name
 	if r.Descriptor().Name == secret_model.SecretType {
-		labels := map[string]string{
-			metadata.KumaMeshLabel: opts.Mesh,
+		labels := opts.Labels
+		if labels == nil {
+			labels = map[string]string{}
 		}
+		labels[metadata.KumaMeshLabel] = opts.Mesh
 		secret.SetLabels(labels)
 	}
 
@@ -87,11 +89,21 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 }
 
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
+	opts := core_store.NewUpdateOptions(fs...)
+
 	secret, err := s.secretsConverter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
 	secret.Namespace = s.namespace
+	if r.Descriptor().Name == secret_model.SecretType {
+		labels := opts.Labels
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[metadata.KumaMeshLabel] = r.GetMeta().GetMesh()
+		secret.SetLabels(labels)
+	}
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, secret.Name, r.GetMeta().GetMesh())
@@ -247,12 +259,6 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.
 		secret.Type = common_k8s.MeshSecretType
 		secret.Data = map[string][]byte{
 			"value": r.(*secret_model.SecretResource).Spec.GetData().GetValue(),
-		}
-		if r.GetMeta() != nil {
-			labels := map[string]string{
-				metadata.KumaMeshLabel: r.GetMeta().GetMesh(),
-			}
-			secret.SetLabels(labels)
 		}
 	case secret_model.GlobalSecretType:
 		secret.Type = common_k8s.GlobalSecretType

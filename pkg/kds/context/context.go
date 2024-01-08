@@ -236,7 +236,7 @@ func If(condition func(core_model.Resource) bool, m reconcile.ResourceMapper) re
 
 // AddHashSuffix is a mapper responsible for adding hash suffix to the name of the resource
 func AddHashSuffix(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
-	if features.HasFeature(kds.FeatureHashSuffix) {
+	if !features.HasFeature(kds.FeatureHashSuffix) {
 		return r, nil
 	}
 
