@@ -40,7 +40,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithSpecificPrometheusBackend(policyName string, mesh string, clientId string) InstallFunc {
+func MeshMetricWithSpecificPrometheusClientId(policyName string, mesh string, clientId string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -108,7 +108,7 @@ func MeshMetric() {
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 2; i++ {
 			Expect(
 				kubernetes.Cluster.Install(testserver.Install(
 					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
@@ -117,7 +117,7 @@ func MeshMetric() {
 				)),
 			).To(Succeed())
 		}
-		for i := 3; i < 6; i++ {
+		for i := 2; i < 4; i++ {
 			Expect(
 				kubernetes.Cluster.Install(testserver.Install(
 					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
@@ -139,7 +139,7 @@ func MeshMetric() {
 		Expect(kubernetes.Cluster.DeleteMesh(secondaryMesh)).To(Succeed())
 	})
 
-	It("Basic MeshMetric", func() {
+	It("Basic MeshMetric policy exposes Envoy metrics on correct port", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(BasicMeshMetricForMesh("mesh-policy", mainMesh))).To(Succeed())
 		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
@@ -159,7 +159,7 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	It("Default MADS server response", func() {
+	It("MADS server response contains DPPs from all meshes when prometheus client id is empty", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(BasicMeshMetricForMesh("main-mesh-policy", mainMesh))).To(Succeed())
 		Expect(kubernetes.Cluster.Install(BasicMeshMetricForMesh("secondary-mesh-policy", secondaryMesh))).To(Succeed())
@@ -172,7 +172,9 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from both meshes in single MADS response
-			g.Expect(madsResponse.Resources).To(HaveLen(6))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
+				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80", "test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+			))
 		}).Should(Succeed())
 
 		// and same response for secondary backend
@@ -183,14 +185,16 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from both meshes in single MADS response
-			g.Expect(madsResponse.Resources).To(HaveLen(6))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
+				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80", "test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+			))
 		}).Should(Succeed())
 	})
 
-	It("MADS server response for specific Prometheus backend", func() {
+	It("MADS server response contains DPPs from corresponding meshes when prometheus client id is set", func() {
 		// given
-		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackend("main-mesh-policy", mainMesh, mainPrometheusId))).To(Succeed())
-		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackend("secondary-mesh-policy", secondaryMesh, secondaryPrometheusId))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusClientId("main-mesh-policy", mainMesh, mainPrometheusId))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusClientId("secondary-mesh-policy", secondaryMesh, secondaryPrometheusId))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
@@ -200,7 +204,9 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from primaryMesh for primary Prometheus backend
-			g.Expect(madsResponse.Resources).To(HaveLen(3))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
+				"test-server-0_meshmetric_svc_80", "test-server-1_meshmetric_svc_80",
+			))
 		}).Should(Succeed())
 
 		// and
@@ -211,13 +217,15 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// all DPPs from secondaryMesh for secondary Prometheus backend
-			g.Expect(madsResponse.Resources).To(HaveLen(3))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf(
+				"test-server-2_meshmetric_svc_80", "test-server-3_meshmetric_svc_80",
+			))
 		}).Should(Succeed())
 	})
 
 	It("override MADS response for single DPP in mesh", func() {
 		// given
-		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackend("main-mesh-policy", mainMesh, mainPrometheusId))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusClientId("main-mesh-policy", mainMesh, mainPrometheusId))).To(Succeed())
 		Expect(kubernetes.Cluster.Install(MeshMetricWithSpecificPrometheusBackendForMeshService(mainMesh, secondaryPrometheusId, "test-server-1_meshmetric_svc_80"))).To(Succeed())
 
 		// then
@@ -228,7 +236,7 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// two DPPs configured by Mesh targetRef
-			g.Expect(madsResponse.Resources).To(HaveLen(2))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-0_meshmetric_svc_80"))
 		}).Should(Succeed())
 
 		// and
@@ -239,9 +247,17 @@ func MeshMetric() {
 			madsResponse := MonitoringAssignmentResponse{}
 			g.Expect(json.Unmarshal([]byte(assignment), &madsResponse)).To(Succeed())
 			// single DPP overridden by MeshService targetRef
-			g.Expect(madsResponse.Resources).To(HaveLen(1))
+			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-1_meshmetric_svc_80"))
 		}).Should(Succeed())
 	})
+}
+
+func getServicesFrom(response MonitoringAssignmentResponse) []string {
+	var services []string
+	for _, assignment := range response.Resources {
+		services = append(services, assignment.Service)
+	}
+	return services
 }
 
 type MonitoringAssignmentResponse struct {

@@ -51,6 +51,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 	// Moreover grpc sotw server is never used in real world scenario so we probably need to thing of different syncing cache mechanism
 	// if performance of ondemand reconcile will turn out to be poor.
 	// Also we probably can remove sync tracker since it will run and recompute MADS response that won't be used
+	// Issue: https://github.com/kumahq/kuma/issues/8764
 	return r.reconciler.Reconcile(ctx, node)
 }
 
