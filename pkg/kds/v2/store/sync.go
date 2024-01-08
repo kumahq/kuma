@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
@@ -319,13 +320,24 @@ func GlobalSyncCallback(
 
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
-			if !supportsHashSuffixes {
+			rs := upstream.AddedResources.GetItems()
+
+			for _, r := range rs {
+				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
+					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				))
+			}
+
+			if supportsHashSuffixes {
+				for _, r := range rs {
+					r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
+						util.WithName(hashedNameUsingLabels(r, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag))))
+				}
+			} else {
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
 				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
-				for _, r := range upstream.AddedResources.GetItems() {
-					r.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId)))
-				}
 			}
 
 			if k8sStore {
@@ -364,4 +376,13 @@ func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v
 		upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, ns)
 	}
 	return nil
+}
+
+func hashedNameUsingLabels(r core_model.Resource, labelsToUse ...string) string {
+	name := core_model.GetDisplayName(r)
+	values := make([]string, 0, len(labelsToUse))
+	for _, lbl := range labelsToUse {
+		values = append(values, r.GetMeta().GetLabels()[lbl])
+	}
+	return hash.HashedName(r.GetMeta().GetMesh(), name, values...)
 }

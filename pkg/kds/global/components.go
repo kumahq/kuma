@@ -2,6 +2,8 @@ package global
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -224,14 +226,7 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
-			if isOldZone(rs) {
-				// todo: remove in 2 releases after 2.6.x
-				util.AddPrefixToNames(rs.GetItems(), clusterName)
-				for _, r := range rs.GetItems() {
-					r.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithLabel(mesh_proto.ZoneTag, clusterName)))
-				}
-			}
-
+			util.AddPrefixToNames(rs.GetItems(), clusterName)
 			if k8sStore {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
@@ -255,19 +250,8 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
+				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
 			}), sync_store.Zone(clusterName))
 		},
 	}
-}
-
-func isOldZone(rs model.ResourceList) bool {
-	if len(rs.GetItems()) == 0 {
-		// if there are no resources it doesn't matter if it's old or new Zone
-		return false
-	}
-
-	r := rs.GetItems()[0]
-	_, exist := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-	return !exist
 }

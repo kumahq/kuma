@@ -80,19 +80,14 @@ func DefaultContext(
 				ScopeIs(core_model.ScopeMesh),
 				Not(TypeIs(system.SecretType)),
 			),
-			HashSuffixMapper(true)),
+			AddHashSuffix),
 	}
 
 	zoneMappers := []reconcile.ResourceMapper{
-		UpdateResourceMeta(
-			util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
-			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
-		),
 		MapInsightResourcesZeroGeneration,
 		If(
 			IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
-		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 
 	return &Context{
@@ -239,26 +234,18 @@ func If(condition func(core_model.Resource) bool, m reconcile.ResourceMapper) re
 	}
 }
 
-// HashSuffixMapper returns mapper that adds a hash suffix to the name during KDS sync
-func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.ResourceMapper {
-	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		if checkKDSFeature && !features.HasFeature(kds.FeatureHashSuffix) {
-			return r, nil
-		}
-
-		name := core_model.GetDisplayName(r)
-		values := make([]string, 0, len(labelsToUse))
-		for _, lbl := range labelsToUse {
-			values = append(values, r.GetMeta().GetLabels()[lbl])
-		}
-
-		newObj := r.Descriptor().NewObject()
-		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...)))
-		newObj.SetMeta(newMeta)
-		_ = newObj.SetSpec(r.GetSpec())
-
-		return newObj, nil
+// AddHashSuffix is a mapper responsible for adding hash suffix to the name of the resource
+func AddHashSuffix(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
+	if features.HasFeature(kds.FeatureHashSuffix) {
+		return r, nil
 	}
+
+	newObj := r.Descriptor().NewObject()
+	newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(hash.HashedName(r.GetMeta().GetMesh(), core_model.GetDisplayName(r))))
+	newObj.SetMeta(newMeta)
+	_ = newObj.SetSpec(r.GetSpec())
+
+	return newObj, nil
 }
 
 func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
