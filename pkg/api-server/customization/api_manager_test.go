@@ -59,6 +59,6 @@ var _ = Describe("API Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		Expect(string(body)).To(Equal("\"bar\"\n"))
+		Expect(string(body)).To(Equal("\"bar\""))
 	})
 })

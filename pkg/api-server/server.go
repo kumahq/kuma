@@ -1,13 +1,10 @@
 package api_server
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -72,24 +69,6 @@ func (a *ApiServer) Address() string {
 
 func (a *ApiServer) Config() api_server.ApiServerConfig {
 	return a.config
-}
-
-func init() {
-	// turn off escape & character so the link in "next" fields for resources is user friendly
-	restful.NewEncoder = func(w io.Writer) *json.Encoder {
-		encoder := json.NewEncoder(w)
-		encoder.SetEscapeHTML(false)
-		return encoder
-	}
-	restful.MarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
-		var buf bytes.Buffer
-		encoder := restful.NewEncoder(&buf)
-		encoder.SetIndent(prefix, indent)
-		if err := encoder.Encode(v); err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
-	}
 }
 
 func NewApiServer(
