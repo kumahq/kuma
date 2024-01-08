@@ -261,5 +261,5 @@ func getServicesFrom(response MonitoringAssignmentResponse) []string {
 }
 
 type MonitoringAssignmentResponse struct {
-	Resources []mads.MonitoringAssignment `json:"resources"`
+	Resources []*mads.MonitoringAssignment `json:"resources"`
 }
