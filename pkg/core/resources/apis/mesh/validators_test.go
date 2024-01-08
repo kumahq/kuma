@@ -178,6 +178,17 @@ tags:
 				GatewayListenerTagsAllowed: true,
 			},
 		}),
+		Entry("MeshGateway with period", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway.namespace
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+		}),
 		Entry("MeshHTTPRoute", testCase{
 			inputYaml: `
 kind: MeshHTTPRoute
@@ -466,7 +477,7 @@ name: "*"
 			expected: `
 violations:
   - field: targetRef.name
-    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshGateway when it's not supported", testCase{
@@ -529,7 +540,7 @@ name: "*"
 			expected: `
 violations:
   - field: targetRef.name
-    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshServiceSubset when it's not supported", testCase{
@@ -577,7 +588,7 @@ tags: {}
 			expected: `
 violations:
  - field: targetRef.name
-   message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+   message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshServiceSubset with mesh", testCase{
