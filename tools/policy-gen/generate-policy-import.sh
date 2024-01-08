@@ -11,7 +11,15 @@ if [[ $imports == "" ]]; then
   exit 0
 fi
 
-mappings=$(for i in "${@:2}"; do [[ -f pkg/plugins/policies/${i}/zz_generated.plugin.go ]] && echo "\"${i}\": ${i}.InitPlugin,"; done)
+mappings=$(for i in "${@:2}"; do
+  if [[ -f pkg/plugins/policies/${i}/zz_generated.plugin.go ]]; then
+    policy_dir="pkg/plugins/policies/${i}"
+    policy_crd_dir="${policy_dir}/k8s/crd"
+    policy_crd_file="$(find "${policy_crd_dir}" -type f)"
+    plural=$(yq e '.spec.names.plural' "$policy_crd_file")
+    echo "\"$plural\": ${i}.InitPlugin,"
+  fi
+done)
 
 echo "package policies
 

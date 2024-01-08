@@ -21,20 +21,20 @@ import (
 )
 
 var nameToModule = map[string]func(){
-	"meshaccesslog":             meshaccesslog.InitPlugin,
-	"meshcircuitbreaker":        meshcircuitbreaker.InitPlugin,
-	"meshfaultinjection":        meshfaultinjection.InitPlugin,
-	"meshhealthcheck":           meshhealthcheck.InitPlugin,
-	"meshhttproute":             meshhttproute.InitPlugin,
-	"meshloadbalancingstrategy": meshloadbalancingstrategy.InitPlugin,
-	"meshmetric":                meshmetric.InitPlugin,
-	"meshproxypatch":            meshproxypatch.InitPlugin,
-	"meshratelimit":             meshratelimit.InitPlugin,
-	"meshretry":                 meshretry.InitPlugin,
-	"meshtcproute":              meshtcproute.InitPlugin,
-	"meshtimeout":               meshtimeout.InitPlugin,
-	"meshtrace":                 meshtrace.InitPlugin,
-	"meshtrafficpermission":     meshtrafficpermission.InitPlugin,
+	"meshaccesslogs":              meshaccesslog.InitPlugin,
+	"meshcircuitbreakers":         meshcircuitbreaker.InitPlugin,
+	"meshfaultinjections":         meshfaultinjection.InitPlugin,
+	"meshhealthchecks":            meshhealthcheck.InitPlugin,
+	"meshhttproutes":              meshhttproute.InitPlugin,
+	"meshloadbalancingstrategies": meshloadbalancingstrategy.InitPlugin,
+	"meshmetrics":                 meshmetric.InitPlugin,
+	"meshproxypatches":            meshproxypatch.InitPlugin,
+	"meshratelimits":              meshratelimit.InitPlugin,
+	"meshretries":                 meshretry.InitPlugin,
+	"meshtcproutes":               meshtcproute.InitPlugin,
+	"meshtimeouts":                meshtimeout.InitPlugin,
+	"meshtraces":                  meshtrace.InitPlugin,
+	"meshtrafficpermissions":      meshtrafficpermission.InitPlugin,
 }
 
 func initAllPolicies() {
