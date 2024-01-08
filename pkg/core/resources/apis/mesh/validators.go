@@ -376,7 +376,7 @@ func validateName(value string) validators.ValidationError {
 	if !nameCharacterSet.MatchString(value) {
 		err.AddViolation(
 			"name",
-			"invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.",
+			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",
 		)
 	}
 
