@@ -181,13 +181,18 @@ func (c *K8sControlPlane) PortFwd() PortFwd {
 	return c.portFwd
 }
 
-func (c *K8sControlPlane) FinalizeAdd() error {
-	c.PortForwardKumaCP()
-	return c.FinalizeAddWithPortFwd(c.portFwd)
+func (c *K8sControlPlane) MadsPortFwd() PortFwd {
+	return c.madsFwd
 }
 
-func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
+func (c *K8sControlPlane) FinalizeAdd() error {
+	c.PortForwardKumaCP()
+	return c.FinalizeAddWithPortFwd(c.portFwd, c.madsFwd)
+}
+
+func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd, madsPortForward PortFwd) error {
 	c.portFwd = portFwd
+	c.madsFwd = madsPortForward
 	if !c.cluster.opts.setupKumactl {
 		return nil
 	}
