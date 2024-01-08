@@ -1,6 +1,9 @@
 package policies
 
 import (
+	"os"
+	"strings"
+
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection"
@@ -15,8 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission"
-	"os"
-	"strings"
 )
 
 var nameToModule = map[string]func(){

@@ -16,6 +16,9 @@ mappings=$(for i in "${@:2}"; do [[ -f pkg/plugins/policies/${i}/zz_generated.pl
 echo "package policies
 
 import (
+	\"os\"
+	\"strings\"
+
 $imports
 )
 
