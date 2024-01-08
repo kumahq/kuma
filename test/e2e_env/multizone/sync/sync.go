@@ -49,7 +49,7 @@ func Sync() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	PIt("show have insights in global and in zone", func() { // flaky test https://github.com/kumahq/kuma/issues/8756
+	It("show have insights in global and in zone", func() {
 		// Ensure each side of KDS has the respective values for Global and Zone instance info
 		globalName := ""
 		zoneInstance := ""
@@ -61,7 +61,9 @@ func Sync() {
 			sub := result.Spec.Subscriptions[0]
 			g.Expect(sub.GlobalInstanceId).ToNot(BeEmpty())
 			globalName = sub.GlobalInstanceId
-			g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+			if !Config.KumaLegacyKDS {
+				g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+			}
 			zoneInstance = sub.ZoneInstanceId
 		}, "30s", "1s").Should(Succeed())
 
@@ -71,9 +73,11 @@ func Sync() {
 
 			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
 			sub := result.Spec.Subscriptions[0]
-			// Check that this is the other side of the connection
-			g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
-			g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+			if !Config.KumaLegacyKDS {
+				// Check that this is the other side of the connection
+				g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
+				g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+			}
 		}, "30s", "1s").Should(Succeed())
 	})
 
