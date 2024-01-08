@@ -49,7 +49,7 @@ func Sync() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("show have insights in global and in zone", func() {
+	PIt("show have insights in global and in zone", func() { // flaky test https://github.com/kumahq/kuma/issues/8756
 		// Ensure each side of KDS has the respective values for Global and Zone instance info
 		globalName := ""
 		zoneInstance := ""

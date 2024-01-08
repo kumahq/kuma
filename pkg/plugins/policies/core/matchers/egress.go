@@ -35,11 +35,20 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 
 	var fr core_rules.FromRules
 	var err error
-	if isFrom {
+
+	// in case the policy support
+	switch {
+	case isFrom && isTo:
+		// we needed a strategy to choose what rules to apply on zone egress when a policy supports both "to" and "from".
+		// Picking "from" rules works for us today, because there is only MeshFaultInjection policy that has both "to"
+		// and "from" and is applied on zone egress. In the future, we might want to move the strategy down to the policy plugins.
 		fr, err = processFromRules(tags, policies)
-	} else {
+	case isFrom:
+		fr, err = processFromRules(tags, policies)
+	case isTo:
 		fr, err = processToRules(tags, policies)
 	}
+
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}

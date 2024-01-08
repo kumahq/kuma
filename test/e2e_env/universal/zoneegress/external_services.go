@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -160,6 +161,41 @@ conf:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(401))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshFaultInjection", func() {
+		AfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshName, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should inject faults for external service", func() {
+			Expect(YamlUniversal(`
+type: MeshFaultInjection
+mesh: ze-external-services
+name: mesh-fault-injecton-402
+spec:
+  targetRef:
+    kind: MeshService
+    name: external-service
+  from:
+    - targetRef:
+        kind: MeshService
+        name: demo-client
+      default:
+        http:
+          - abort:
+              httpStatus: 402
+              percentage: "100.0"`)(universal.Cluster)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithMaxTime(8),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(402))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
