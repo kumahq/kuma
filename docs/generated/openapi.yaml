@@ -3985,6 +3985,12 @@ components:
                                     type: string
                                   urlRewrite:
                                     properties:
+                                      hostToBackendHostname:
+                                        description: >-
+                                          HostToBackendHostname rewrites the
+                                          hostname to the hostname of the upstream
+                                          host.
+                                        type: boolean
                                       hostname:
                                         description: >-
                                           Hostname is the value to be used to
