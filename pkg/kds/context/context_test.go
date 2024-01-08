@@ -20,7 +20,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
-	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -85,10 +84,8 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.DataplaneInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "dpi-1", "zone"),
+						Name: "dpi-1",
 						Labels: map[string]string{
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
 							"kuma.io/display-name": "dpi-1",
 						},
 					},
@@ -130,11 +127,9 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneIngressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zii-1", "zone"),
+						Name: "zii-1",
 						Labels: map[string]string{
 							"kuma.io/display-name": "zii-1",
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
 						},
 					},
 					Spec: &mesh_proto.ZoneIngressInsight{
@@ -169,11 +164,9 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneEgressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "zei-1", "zone"),
+						Name: "zei-1",
 						Labels: map[string]string{
-							"kuma.io/zone":         "zone",
 							"kuma.io/display-name": "zei-1",
-							"kuma.io/origin":       "zone",
 						},
 					},
 					Spec: &mesh_proto.ZoneEgressInsight{
@@ -215,11 +208,9 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.CircuitBreakerResource{
 					Meta: &test_model.ResourceMeta{
-						Name: hash.HashedName("", "cb-1", "zone"),
+						Name: "cb-1",
 						Labels: map[string]string{
 							"kuma.io/display-name": "cb-1",
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
 						},
 					},
 					Spec: &mesh_proto.CircuitBreaker{
