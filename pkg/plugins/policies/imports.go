@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-var nameToModule = map[string]func(bool){
+var nameToModule = map[string]func(){
 	"meshaccesslog":             meshaccesslog.InitPlugin,
 	"meshcircuitbreaker":        meshcircuitbreaker.InitPlugin,
 	"meshfaultinjection":        meshfaultinjection.InitPlugin,
@@ -38,7 +38,7 @@ var nameToModule = map[string]func(bool){
 
 func initAllPolicies() {
 	for _, initializer := range nameToModule {
-		initializer(true)
+		initializer()
 	}
 }
 
@@ -52,7 +52,7 @@ func init() {
 		for _, policy := range enabledPluginPolicies {
 			initializer, ok := nameToModule[policy]
 			if ok {
-				initializer(true)
+				initializer()
 			}
 		}
 	}

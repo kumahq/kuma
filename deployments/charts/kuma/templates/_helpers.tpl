@@ -187,9 +187,7 @@ returns: formatted image string
 {{- define "kuma.pluginPoliciesEnabled" -}}
 {{- $list := list -}}
 {{- range $k, $v := .Values.plugins.policies -}}
-{{- if $v }}
-{{- $list = append $list (printf "%s=\"%s\"" $k $v) -}}
-{{- end -}}
+{{- $list = append $list (printf "%s" $k) -}}
 {{- end -}}
 {{ join "," $list }}
 {{- end -}}
@@ -298,7 +296,7 @@ env:
   value: "true"
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
-  value: {{- include "kuma.pluginPoliciesEnabled" . }}
+  value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
