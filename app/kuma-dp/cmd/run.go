@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
@@ -150,11 +151,16 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
+			meshMetricDynamicConfigSocketPath := core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir)
 			components := []component.Component{
 				tokenComp,
 				component.NewResilientComponent(
 					runLog.WithName("access-log-streamer"),
 					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
+				),
+				component.NewResilientComponent(
+					runLog.WithName("mesh-metric-config-fetcher"),
+					meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(1*time.Minute)),
 				),
 			}
 
