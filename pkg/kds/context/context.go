@@ -15,7 +15,6 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -63,21 +62,21 @@ func DefaultContext(
 
 	globalMappers := []reconcile.ResourceMapper{
 		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginGlobal)),
-		If(
-			And(
-				TypeIs(system.GlobalSecretType),
-				NameHasPrefix(zone_tokens.SigningKeyPrefix),
+		reconcile.If(
+			reconcile.And(
+				reconcile.TypeIs(system.GlobalSecretType),
+				reconcile.NameHasPrefix(zone_tokens.SigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
-		If(
-			IsKubernetes(cfg.Store.Type),
+		reconcile.If(
+			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
-		If(
-			And(
-				ScopeIs(core_model.ScopeMesh),
+		reconcile.If(
+			reconcile.And(
+				reconcile.ScopeIs(core_model.ScopeMesh),
 				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
 				// particular format to be able to reference them
-				Not(TypeIs(system.SecretType)),
+				reconcile.Not(reconcile.TypeIs(system.SecretType)),
 			),
 			HashSuffixMapper(true)),
 	}
@@ -88,8 +87,8 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 		),
 		MapInsightResourcesZeroGeneration,
-		If(
-			IsKubernetes(cfg.Store.Type),
+		reconcile.If(
+			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
@@ -184,56 +183,6 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		util.TrimSuffixFromName(r, k8sSystemNamespace)
-		return r, nil
-	}
-}
-
-func TypeIs(rtype core_model.ResourceType) func(core_model.Resource) bool {
-	return func(r core_model.Resource) bool {
-		return r.Descriptor().Name == rtype
-	}
-}
-
-func IsKubernetes(storeType config_store.StoreType) func(core_model.Resource) bool {
-	return func(_ core_model.Resource) bool {
-		return storeType == config_store.KubernetesStore
-	}
-}
-
-func ScopeIs(s core_model.ResourceScope) func(core_model.Resource) bool {
-	return func(r core_model.Resource) bool {
-		return r.Descriptor().Scope == s
-	}
-}
-
-func NameHasPrefix(prefix string) func(core_model.Resource) bool {
-	return func(r core_model.Resource) bool {
-		return strings.HasPrefix(r.GetMeta().GetName(), prefix)
-	}
-}
-
-func Not(f func(core_model.Resource) bool) func(core_model.Resource) bool {
-	return func(r core_model.Resource) bool {
-		return !f(r)
-	}
-}
-
-func And(fs ...func(core_model.Resource) bool) func(core_model.Resource) bool {
-	return func(r core_model.Resource) bool {
-		for _, f := range fs {
-			if !f(r) {
-				return false
-			}
-		}
-		return true
-	}
-}
-
-func If(condition func(core_model.Resource) bool, m reconcile.ResourceMapper) reconcile.ResourceMapper {
-	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		if condition(r) {
-			return m(features, r)
-		}
 		return r, nil
 	}
 }
