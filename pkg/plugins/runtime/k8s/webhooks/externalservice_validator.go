@@ -61,7 +61,7 @@ func (h *ExternalServiceValidator) ValidateCreate(ctx context.Context, req admis
 	}
 	if err := h.validator.ValidateCreate(ctx, k8sRes.Mesh, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}
@@ -89,7 +89,7 @@ func (h *ExternalServiceValidator) ValidateUpdate(ctx context.Context, req admis
 
 	if err := h.validator.ValidateUpdate(ctx, oldCoreRes, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}

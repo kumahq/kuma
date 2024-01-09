@@ -79,7 +79,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 			return nil, err
 		}
 
-		resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes)
+		resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, node.Id)
 		if err != nil {
 			return nil, err
 		}

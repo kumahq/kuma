@@ -79,6 +79,7 @@ jobs:
           sudo df -h
       # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
       - name: "GitHub Actions: download build artifacts with retry"
+        if: steps.eval-params.outputs.run-type == 'github'
         uses: Wandalen/wretry.action@master
         with:
           action: actions/download-artifact@v4
@@ -173,12 +174,11 @@ jobs:
             let circleCIBody = {
               "parameters": circleCIParams,
             };
-            // use pull/<number>/head if it's PR from a fork,
-            // otherwise, always use the current SHA to make sure all CircleCI e2e runnings are using the same commit SHA with this GH Action run
-            if ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}") {
-              circleCIBody["branch"] = '${{ github.ref_name}}'.replace(/^(refs\/)/,"");
+
+            if ( "${{ github.event_name }}" == "pull_request" ) {
+              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.id }}/merge';
             } else {
-              circleCIBody["tag"] = '${{ github.event.pull_request.head.sha || github.sha }}'
+              circleCIBody["tag"] = '${{ github.sha }}'
             }
 
             core.info(`created request object for circleCI ${JSON.stringify(circleCIBody)}`);

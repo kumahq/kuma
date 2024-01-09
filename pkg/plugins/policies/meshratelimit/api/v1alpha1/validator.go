@@ -11,11 +11,9 @@ import (
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path.Field("from"), "needs at least one item")
-	}
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateFrom(r.Spec.TargetRef, r.Spec.From))
+	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
 	return verr.OrNil()
 }
 
@@ -23,17 +21,26 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	supportedKinds := []common_api.TargetRefKind{
 		common_api.Mesh,
 		common_api.MeshSubset,
+		common_api.MeshGateway,
 		common_api.MeshService,
 		common_api.MeshServiceSubset,
 	}
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-		SupportedKinds: supportedKinds,
+		SupportedKinds:             supportedKinds,
+		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
 
-func validateFrom(from []From) validators.ValidationError {
+func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
+	if topTargetRef.Kind == common_api.MeshGateway && len(from) != 0 {
+		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		return verr
+	}
+	if topTargetRef.Kind != common_api.MeshGateway && len(from) == 0 {
+		verr.AddViolationAt(validators.RootedAt("from"), "needs at least one item")
+	}
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		defaultField := path.Field("default")
@@ -43,6 +50,28 @@ func validateFrom(from []From) validators.ValidationError {
 			},
 		}))
 		verr.Add(validateDefault(defaultField, fromItem.Default))
+	}
+	return verr
+}
+
+func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+	var verr validators.ValidationError
+	if topTargetRef.Kind != common_api.MeshGateway && len(to) != 0 {
+		verr.AddViolationAt(validators.RootedAt("to"), validators.MustNotBeDefined)
+		return verr
+	}
+	if topTargetRef.Kind == common_api.MeshGateway && len(to) == 0 {
+		verr.AddViolationAt(validators.RootedAt("to"), "needs at least one item")
+	}
+	for idx, toItem := range to {
+		path := validators.RootedAt("to").Index(idx)
+		defaultField := path.Field("default")
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		}))
+		verr.Add(validateDefault(defaultField, toItem.Default))
 	}
 	return verr
 }
