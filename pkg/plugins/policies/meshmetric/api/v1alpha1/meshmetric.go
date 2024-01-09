@@ -39,7 +39,7 @@ type Application struct {
 	// +kubebuilder:default="/metrics/prometheus"
 	Path *string `json:"path,omitempty"`
 	// Address on which an application listens.
-	Address *string `json:"address"`
+	Address *string `json:"address,omitempty"`
 	// Port on which an application expose HTTP endpoint with metrics.
 	Port uint32 `json:"port"`
 }

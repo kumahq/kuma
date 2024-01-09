@@ -69,7 +69,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 
-			logger.V(1).Info("updating hijacker configuration", "conf", conf)
+			logger.Info("updating hijacker configuration", "conf", conf)
 			cf.hijacker.SetApplicationsToScrape(cf.mapApplicationToApplicationToScrape(conf.Observability.Metrics.Applications))
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
