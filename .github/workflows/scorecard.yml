@@ -3,12 +3,11 @@ on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
   branch_protection_rule:
+  workflow_dispatch: {}
   # To guarantee Maintained check is occasionally updated. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
   schedule:
-    - cron: '35 3 * * 1'
-  push:
-    branches: ["master"]
+    - cron: '35 3 * * *'
 # Declare default permissions as read only.
 permissions: read-all
 jobs:
