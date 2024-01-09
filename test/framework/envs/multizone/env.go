@@ -169,11 +169,13 @@ func SetupAndGetState() []byte {
 			ZoneEgress:  KubeZone1.GetPortForward(Config.ZoneEgressApp),
 			ZoneIngress: KubeZone1.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone1.GetKuma().(*K8sControlPlane).PortFwd(),
+			MADS:        KubeZone1.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 		KubeZone2: K8sNetworkingState{
 			ZoneEgress:  KubeZone2.GetPortForward(Config.ZoneEgressApp),
 			ZoneIngress: KubeZone2.GetPortForward(Config.ZoneIngressApp),
 			KumaCp:      KubeZone2.GetKuma().(*K8sControlPlane).PortFwd(),
+			MADS:        KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 	}
 	bytes, err := json.Marshal(state)
@@ -214,7 +216,7 @@ func RestoreState(bytes []byte) {
 		1,
 		nil,
 	)
-	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone1.KumaCp)).To(Succeed())
+	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone1.KumaCp, state.KubeZone1.KumaCp)).To(Succeed())
 	KubeZone1.SetCP(kubeCp)
 	Expect(KubeZone1.AddPortForward(state.KubeZone1.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(KubeZone1.AddPortForward(state.KubeZone1.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
@@ -230,7 +232,7 @@ func RestoreState(bytes []byte) {
 		1,
 		nil, // headers were not configured in setup
 	)
-	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone2.KumaCp)).To(Succeed())
+	Expect(kubeCp.FinalizeAddWithPortFwd(state.KubeZone2.KumaCp, state.KubeZone2.MADS)).To(Succeed())
 	KubeZone2.SetCP(kubeCp)
 	Expect(KubeZone2.AddPortForward(state.KubeZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(KubeZone2.AddPortForward(state.KubeZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())

@@ -355,6 +355,12 @@ spec:
                                       type: string
                                     urlRewrite:
                                       properties:
+                                        hostToBackendHostname:
+                                          description: HostToBackendHostname rewrites
+                                            the hostname to the hostname of the upstream
+                                            host. This option is only available when
+                                            targeting MeshGateways.
+                                          type: boolean
                                         hostname:
                                           description: Hostname is the value to be
                                             used to replace the host header value

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
@@ -65,11 +66,18 @@ var _ = Describe("ZoneWatch", func() {
 			Timeout:      types.Duration{Duration: timeout},
 		}
 
+		rm = manager.NewResourceManager(memory.NewStore())
+		zoneRes := system.NewZoneResource()
+		zoneRes.Spec.Enabled = wrapperspb.Bool(true)
+		Expect(rm.Create(
+			context.Background(),
+			zoneRes,
+			store.CreateByKey(zone, core_model.NoMesh),
+		)).To(Succeed())
 		zoneInsight := system.NewZoneInsightResource()
 		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
 			Time: timestamppb.New(time.Now()),
 		}
-		rm = manager.NewResourceManager(memory.NewStore())
 		Expect(rm.Create(
 			context.Background(),
 			zoneInsight,

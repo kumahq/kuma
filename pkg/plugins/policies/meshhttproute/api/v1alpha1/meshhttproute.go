@@ -196,6 +196,9 @@ type URLRewrite struct {
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
+	// HostToBackendHostname rewrites the hostname to the hostname of the
+	// upstream host. This option is only available when targeting MeshGateways.
+	HostToBackendHostname bool `json:"hostToBackendHostname,omitempty"`
 }
 
 type RequestMirror struct {

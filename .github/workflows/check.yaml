@@ -6,6 +6,8 @@ on:
       - opened
       - reopened
       - synchronized
+permissions:
+  contents: read
 jobs:
   # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
@@ -21,10 +23,10 @@ jobs:
     name: "Check PR title"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
       - run: npm install -g @commitlint/cli @commitlint/config-conventional
       - name: "Check PR title"
         # Inject as env variable to escape properly

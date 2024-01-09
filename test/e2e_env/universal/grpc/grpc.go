@@ -62,7 +62,8 @@ func GRPC() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("MeshHTTPRoute DOES NOT split the traffic between two gRPC services", func() {
+	// todo switch to MeshGRPCRoute when https://github.com/kumahq/kuma/issues/3325 is implemented
+	It("MeshHTTPRoute does split the traffic between two gRPC services", func() {
 		yaml := `
 type: MeshHTTPRoute
 name: http-route-1
@@ -96,9 +97,9 @@ spec:
 				universal.Cluster, "second-test-server", "http://localhost:9901/stats?format=prometheus",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			// todo switch .ToNot to .To when https://github.com/kumahq/kuma/issues/3325 is implemented
-			g.Expect(stdout).ToNot(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
-			g.Expect(stdout).ToNot(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
+
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
+			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 	})
 }
