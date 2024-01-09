@@ -80,7 +80,7 @@ jobs:
       # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
       - name: "GitHub Actions: download build artifacts with retry"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: Wandalen/wretry.action@master
+        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # master
         with:
           action: actions/download-artifact@v4
           with: |
