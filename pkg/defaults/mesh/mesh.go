@@ -52,19 +52,48 @@ func EnsureDefaultMeshResources(
 	} else {
 		logger.Info("Dataplane Token Signing Key already exists")
 	}
-
+	if slices.Contains(skippedPolicies, "*") {
+		logger.Info("skipping all default policy creation")
+		return nil
+	}
 	if createMeshDefaultResources {
-		if slices.Contains(skippedPolicies, "*") {
-			logger.Info("skipping all default policy creation")
-			return nil
-		}
-
 		defaultResourceBuilders := map[string]func() model.Resource{
 			"allow-all":           defaultTrafficPermissionResource,
 			"route-all":           defaultTrafficRouteResource,
 			"timeout-all":         DefaultTimeoutResource,
 			"circuit-breaker-all": defaultCircuitBreakerResource,
 			"retry-all":           defaultRetryResource,
+		}
+
+		for prefix, resourceBuilder := range defaultResourceBuilders {
+			key := model.ResourceKey{
+				Mesh: meshName,
+				Name: fmt.Sprintf("%s-%s", prefix, meshName),
+			}
+			resource := resourceBuilder()
+
+			var msg string
+			if !slices.Contains(skippedPolicies, string(resource.Descriptor().Name)) {
+				err, created := ensureDefaultResource(ctx, resManager, resource, key)
+				if err != nil {
+					return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
+				}
+
+				msg = fmt.Sprintf("default %s already exists", resource.Descriptor().Name)
+				if created {
+					msg = fmt.Sprintf("default %s created", resource.Descriptor().Name)
+				}
+			} else {
+				msg = fmt.Sprintf("skipping default %s creation", resource.Descriptor().Name)
+			}
+
+			logger.Info(msg, "name", key.Name)
+		}
+	} else {
+		defaultResourceBuilders := map[string]func() model.Resource{
+			"timeout-all":         defaultMeshTimeoutResource,
+			"circuit-breaker-all": defaultMeshCircuitBreakerResource,
+			"retry-all":           defaultMeshRetryResource,
 		}
 
 		for prefix, resourceBuilder := range defaultResourceBuilders {

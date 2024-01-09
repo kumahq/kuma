@@ -13,6 +13,9 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
@@ -30,24 +33,98 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	Context("When creating default resources is disabled", func() {
-		It("should create only default secret resource", func() {
+		It("should create default resources in targetRef model", func() {
 			// when
 			err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then Dataplane Token Signing Key for the mesh exists
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default TrafficPermission for the mesh doesn't exists
+			err = resManager.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), core_store.GetByKey("allow-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default TrafficRoute for the mesh doesn't exists
+			err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default MeshRetry for the mesh exists
+			err = resManager.Get(context.Background(), meshretry.NewMeshRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default MeshTimeout for the mesh doesn't exists
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default MeshCircuitBreaker for the mesh doesn't exists
+			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ignore subsequent calls to EnsureDefaultMeshResources", func() {
+			// given already ensured default resources
+			err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false)
+			Expect(err).ToNot(HaveOccurred())
+			// when ensuring again
+			err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{}, context.Background(), false)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and all resources are in place
+			err = resManager.Get(context.Background(), meshretry.NewMeshRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should skip creating all default policies", func() {
+			// when
+			err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{"*"}, context.Background(), false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then default policies don't exist
+			err = resManager.Get(context.Background(), meshretry.NewMeshRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default MeshTimeout for the mesh doesn't exists
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default MeshCircuitBreaker for the mesh doesn't exists
+			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and Dataplane Token Signing Key for the mesh exists
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should skip creating selected default policies", func() {
+			// when
+			err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, defaultMesh, []string{"MeshTimeout", "MeshRetry"}, context.Background(), false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then default MeshRetry doesn't exist
+			err = resManager.Get(context.Background(), meshretry.NewMeshRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default MeshTimeout for the mesh doesn't exists
+			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+			// and default MeshCircuitBreaker for the mesh does exists
+			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
 			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
-			err = resManager.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), core_store.GetByKey("allow-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
-			err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
-			err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
-			err = resManager.Get(context.Background(), core_mesh.NewTimeoutResource(), core_store.GetByKey("timeout-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
-			err = resManager.Get(context.Background(), core_mesh.NewCircuitBreakerResource(), core_store.GetByKey("circuit-breaker-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
 

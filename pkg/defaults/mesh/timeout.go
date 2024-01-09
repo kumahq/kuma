@@ -1,10 +1,14 @@
 package mesh
 
 import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -26,6 +30,39 @@ var DefaultTimeoutResource = func() model.Resource {
 					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
 					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
 					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
+				},
+			},
+		},
+	}
+}
+
+var defaultMeshTimeoutResource = func() model.Resource {
+	return &v1alpha1.MeshTimeoutResource{
+		Spec: &v1alpha1.MeshTimeout{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.Mesh,
+			},
+			To: []v1alpha1.To{
+				{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.Mesh,
+					},
+					Default: v1alpha1.Conf{
+						ConnectionTimeout: &v1.Duration{
+							Duration: policies_defaults.DefaultConnectTimeout,
+						},
+						IdleTimeout: &v1.Duration{
+							Duration: policies_defaults.DefaultIdleTimeout,
+						},
+						Http: &v1alpha1.Http{
+							RequestTimeout: &v1.Duration{
+								Duration: policies_defaults.DefaultRequestTimeout,
+							},
+							StreamIdleTimeout: &v1.Duration{
+								Duration: policies_defaults.DefaultStreamIdleTimeout,
+							},
+						},
+					},
 				},
 			},
 		},

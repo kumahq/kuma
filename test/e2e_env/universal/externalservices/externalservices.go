@@ -90,11 +90,8 @@ networking:
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshName)).
-<<<<<<< HEAD
 			Install(TrafficPermissionUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
-=======
->>>>>>> master
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
