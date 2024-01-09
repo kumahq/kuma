@@ -90,6 +90,11 @@ func generateListeners(
 		filterChainBuilder.
 			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
 
+		// TODO: https://github.com/kumahq/kuma/issues/3325
+		switch protocol {
+		case core_mesh.ProtocolGRPC:
+			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
+		}
 		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		listener, err := listenerBuilder.Build()
 		if err != nil {
