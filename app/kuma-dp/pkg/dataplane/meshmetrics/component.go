@@ -105,21 +105,21 @@ type Configuration struct {
 }
 
 func (cf ConfigFetcher) mapApplicationToApplicationToScrape(applications []Application) []metrics.ApplicationToScrape {
-	applicationsToScrape := make([]metrics.ApplicationToScrape, 0, len(applications))
+	var applicationsToScrape []metrics.ApplicationToScrape
 
-	for i, application := range applications {
+	for _, application := range applications {
 		address := cf.defaultAddress
 		if application.Address != "" {
 			address = application.Address
 		}
-		applicationsToScrape[i] = metrics.ApplicationToScrape{
+		applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 			Name:          application.Name,
 			Address:       address,
 			Path:          application.Path,
 			Port:          application.Port,
 			IsIPv6:        utilnet.IsAddressIPv6(application.Address),
 			QueryModifier: metrics.RemoveQueryParameters,
-		}
+		})
 	}
 
 	return applicationsToScrape
