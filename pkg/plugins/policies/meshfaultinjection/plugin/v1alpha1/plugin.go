@@ -133,6 +133,12 @@ func applyToGateways(
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
+	if listeners.Egress == nil {
+		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
+			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+		)
+		return nil
+	}
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, es := range resource.ExternalServices {
 			meshName := resource.Mesh.GetMeta().GetName()
@@ -147,13 +153,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			mfi, ok := policies[api.MeshFaultInjectionType]
 			if !ok {
 				continue
-			}
-			if listeners.Egress == nil {
-				log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
-					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-					"mesh", resource.Mesh.GetMeta().GetName(),
-				)
-				return nil
 			}
 			protocol := util.GetExternalServiceProtocol(es)
 			for _, rule := range mfi.FromRules.Rules {
