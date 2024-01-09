@@ -129,7 +129,7 @@ networking:
 			It("should route to external-service", func() {
 				err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, meshName, false, nil)))
 				Expect(err).ToNot(HaveOccurred())
-				// time.Sleep(1*time.Hour)
+
 				checkSuccessfulRequest("ext-srv-1.mesh", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
