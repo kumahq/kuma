@@ -115,6 +115,13 @@ func (mc *MeshContext) GetServiceProtocol(serviceName string) core_mesh.Protocol
 	return core_mesh.ProtocolUnknown
 }
 
+func (mc *MeshContext) IsExternalService(serviceName string) bool {
+	if info, found := mc.ServicesInformation[serviceName]; found {
+		return info.IsExternalService
+	}
+	return false
+}
+
 func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 	tlsReady := map[string]bool{}
 	for serviceName, info := range mc.ServicesInformation {

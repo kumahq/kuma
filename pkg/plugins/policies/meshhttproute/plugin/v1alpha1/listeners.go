@@ -52,7 +52,7 @@ func generateListeners(
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+			split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
 			}
@@ -60,7 +60,7 @@ func generateListeners(
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
 					_ = meshroute_xds.MakeHTTPSplit(
-						proxy, clusterCache, servicesAcc,
+						clusterCache, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value

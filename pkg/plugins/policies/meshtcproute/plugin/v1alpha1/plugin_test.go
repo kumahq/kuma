@@ -266,10 +266,11 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).WithExternalServicesEndpointMap(externalServiceOutboundTargets).
 					AddServiceProtocol("backend", util_protocol.GetCommonProtocol(core_mesh.ProtocolTCP, core_mesh.ProtocolHTTP)).
 					AddServiceProtocol("other-backend", core_mesh.ProtocolHTTP).
 					AddServiceProtocol("externalservice", core_mesh.ProtocolHTTP2).
+					AddExternalService("externalservice").
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(

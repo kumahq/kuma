@@ -45,6 +45,12 @@ func (mc *ContextBuilder) WithEndpointMap(endpointMap *EndpointMapBuilder) *Cont
 	return mc
 }
 
+func (mc *ContextBuilder) WithExternalServicesEndpointMap(endpointMap *EndpointMapBuilder) *ContextBuilder {
+	mc.res.Mesh.ExternalServicesEndpointMap = endpointMap.Build()
+	mc.res.ControlPlane.CLACache.(*xds.DummyCLACache).OutboundTargets = endpointMap.Build()
+	return mc
+}
+
 func (mc *ContextBuilder) WithZone(zone string) *ContextBuilder {
 	mc.res.ControlPlane.Zone = zone
 	return mc
@@ -63,10 +69,20 @@ func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
 func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_mesh.Protocol) *ContextBuilder {
 	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
 		info.Protocol = protocol
-		mc.res.Mesh.ServicesInformation[serviceName] = info
 	} else {
 		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
 			Protocol: protocol,
+		}
+	}
+	return mc
+}
+
+func (mc *ContextBuilder) AddExternalService(serviceName string) *ContextBuilder {
+	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
+		info.IsExternalService = true
+	} else {
+		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
+			IsExternalService: true,
 		}
 	}
 	return mc
