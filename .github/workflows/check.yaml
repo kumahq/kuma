@@ -8,7 +8,6 @@ on:
       - synchronized
 permissions:
   contents: read
-
 jobs:
   # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
