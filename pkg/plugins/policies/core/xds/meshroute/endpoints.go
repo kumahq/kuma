@@ -13,8 +13,9 @@ import (
 )
 
 func GenerateEndpoints(
+	ctx context.Context,
 	proxy *core_xds.Proxy,
-	ctx xds_context.Context,
+	xdsCtx xds_context.Context,
 	services envoy_common.Services,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -24,9 +25,9 @@ func GenerateEndpoints(
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		service := services[serviceName]
-		meshCtx := ctx.Mesh
+		meshCtx := xdsCtx.Mesh
 
-		if !ctx.Mesh.IsExternalService(serviceName) || meshCtx.Resource.ZoneEgressEnabled() {
+		if !xdsCtx.Mesh.IsExternalService(serviceName) || meshCtx.Resource.ZoneEgressEnabled() {
 			for _, cluster := range service.Clusters() {
 				var endpoints core_xds.EndpointMap
 				if cluster.Mesh() != "" {
@@ -35,8 +36,8 @@ func GenerateEndpoints(
 					endpoints = meshCtx.EndpointMap
 				}
 
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
-					user.Ctx(context.TODO(), user.ControlPlane),
+				loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(
+					user.Ctx(ctx, user.ControlPlane),
 					proxy.Dataplane.GetMeta().GetMesh(),
 					meshCtx.Hash,
 					cluster,

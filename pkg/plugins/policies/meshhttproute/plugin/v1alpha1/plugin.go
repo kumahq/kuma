@@ -72,7 +72,7 @@ func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_
 		})
 	}
 
-	if err := ApplyToOutbounds(proxy, rs, xdsCtx, toRules); err != nil {
+	if err := ApplyToOutbounds(ctx, proxy, rs, xdsCtx, toRules); err != nil {
 		return err
 	}
 
@@ -84,6 +84,7 @@ func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_
 }
 
 func ApplyToOutbounds(
+	ctx context.Context,
 	proxy *core_xds.Proxy,
 	rs *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,
@@ -106,7 +107,7 @@ func ApplyToOutbounds(
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
+	endpoints, err := meshroute.GenerateEndpoints(ctx, proxy, xdsCtx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}

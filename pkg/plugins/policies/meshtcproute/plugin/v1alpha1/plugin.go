@@ -63,7 +63,7 @@ func (p plugin) Apply(
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
+	endpoints, err := meshroute.GenerateEndpoints(ctx, proxy, xdsCtx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}
