@@ -75,6 +75,8 @@ func DefaultContext(
 		If(
 			And(
 				ScopeIs(core_model.ScopeMesh),
+				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
+				// particular format to be able to reference them
 				Not(TypeIs(system.SecretType)),
 			),
 			HashSuffixMapper(true)),
