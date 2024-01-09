@@ -77,10 +77,11 @@ type ApplicationToScrape struct {
 }
 
 type Hijacker struct {
-	socketPath           string
-	httpClientIPv4       http.Client
-	httpClientIPv6       http.Client
-	applicationsToScrape []ApplicationToScrape
+	socketPath                string
+	httpClientIPv4            http.Client
+	httpClientIPv6            http.Client
+	applicationsToScrape      []ApplicationToScrape
+	applicationsToScrapeMutex *sync.Mutex
 }
 
 func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
@@ -100,11 +101,18 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 
 func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
 	return &Hijacker{
-		socketPath:           socketPath,
-		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
-		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
-		applicationsToScrape: applicationsToScrape,
+		socketPath:                socketPath,
+		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		applicationsToScrape:      applicationsToScrape,
+		applicationsToScrapeMutex: &sync.Mutex{},
 	}
+}
+
+func (s *Hijacker) SetApplicationsToScrape(applicationsToScrape []ApplicationToScrape) {
+	s.applicationsToScrapeMutex.Lock()
+	defer s.applicationsToScrapeMutex.Unlock()
+	s.applicationsToScrape = applicationsToScrape
 }
 
 func (s *Hijacker) Start(stop <-chan struct{}) error {
@@ -170,6 +178,8 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 }
 
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+	s.applicationsToScrapeMutex.Lock()
+	defer s.applicationsToScrapeMutex.Unlock()
 	ctx := req.Context()
 	out := make(chan []byte, len(s.applicationsToScrape))
 	contentTypes := make(chan expfmt.Format, len(s.applicationsToScrape))

@@ -158,10 +158,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.WithName("access-log-streamer"),
 					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
 				),
-				component.NewResilientComponent(
-					runLog.WithName("mesh-metric-config-fetcher"),
-					meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(1*time.Minute)),
-				),
 			}
 
 			opts := envoy.Opts{
@@ -247,7 +243,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
-			components = append(components, metricsServer)
+			meshMetricsConfigFetcher := component.NewResilientComponent(
+				runLog.WithName("mesh-metric-config-fetcher"),
+				meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(1*time.Minute), metricsServer),
+			)
+			components = append(components, metricsServer, meshMetricsConfigFetcher)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
