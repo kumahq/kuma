@@ -33,6 +33,7 @@ type configParameters struct {
 	XdsHost             string
 	XdsPort             uint32
 	XdsConnectTimeout   time.Duration
+	Workdir             string
 	AccessLogSocketPath string
 	MetricsSocketPath   string
 	MetricsCertPath     string

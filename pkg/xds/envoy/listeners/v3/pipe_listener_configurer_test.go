@@ -12,7 +12,7 @@ var _ = Describe("PipeListenerConfigurer", func() {
 	It("", func() {
 		// given
 		listener, err := NewListenerBuilder(envoy.APIV3, "").
-			Configure(PipeListener("file.sock")).Build()
+			Configure(AddListenerConfigurer(&PipeListenerConfigurer{SocketPath: "file.sock"})).Build()
 
 		// when
 		// listener, err := listenerBuilder.Build()

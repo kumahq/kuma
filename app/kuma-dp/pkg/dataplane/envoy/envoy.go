@@ -33,6 +33,7 @@ type BootstrapParams struct {
 	EmptyDNSPort        uint32
 	EnvoyVersion        EnvoyVersion
 	DynamicMetadata     map[string]string
+	Workdir             string
 	MetricsSocketPath   string
 	AccessLogSocketPath string
 	MetricsCertPath     string

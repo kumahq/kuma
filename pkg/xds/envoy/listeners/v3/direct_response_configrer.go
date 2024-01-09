@@ -5,10 +5,11 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"google.golang.org/protobuf/types/known/anypb"
+
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type DirectResponseConfigurer struct {

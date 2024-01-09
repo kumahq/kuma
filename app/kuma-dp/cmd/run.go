@@ -151,7 +151,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
-			meshMetricDynamicConfigSocketPath := core_xds.MeshMetricsDynamicConfigurationSocketName("/tmp")
+			meshMetricDynamicConfigSocketPath := core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir)
 			components := []component.Component{
 				tokenComp,
 				component.NewResilientComponent(
@@ -192,6 +192,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
 				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
+				Workdir:             cfg.DataplaneRuntime.SocketDir,
 				AccessLogSocketPath: accessLogSocketPath,
 				MetricsSocketPath:   metricsSocketPath,
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,

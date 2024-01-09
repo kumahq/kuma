@@ -29,6 +29,7 @@ const (
 	FieldVersion                    = "version"
 	FieldPrefixDependenciesVersion  = "version.dependencies"
 	FieldFeatures                   = "features"
+	WorkDir                         = "workDirPath"
 	FieldAccessLogSocketPath        = "accessLogSocketPath"
 	FieldMetricsSocketPath          = "metricsSocketPath"
 	FieldMetricsCertPath            = "metricsCertPath"
@@ -59,12 +60,11 @@ type DataplaneMetadata struct {
 	ProxyType           mesh_proto.ProxyType
 	Version             *mesh_proto.Version
 	Features            Features
-	SocketDir           string
+	WorkDir             string
 	AccessLogSocketPath string
-	// TODO add meshmetric config path
-	MetricsSocketPath string
-	MetricsCertPath   string
-	MetricsKeyPath    string
+	MetricsSocketPath   string
+	MetricsCertPath     string
+	MetricsKeyPath      string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -193,6 +193,8 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
 		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
 	}
+
+	metadata.WorkDir = xdsMetadata.Fields[WorkDir].GetStringValue()
 
 	if xdsMetadata.Fields[FieldMetricsCertPath] != nil {
 		metadata.MetricsCertPath = xdsMetadata.Fields[FieldMetricsCertPath].GetStringValue()
