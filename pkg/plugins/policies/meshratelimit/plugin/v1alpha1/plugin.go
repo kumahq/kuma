@@ -128,6 +128,12 @@ func applyToInbounds(
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := xds.GatherListeners(rs)
+	if listeners.Egress == nil {
+		log.V(1).Info("skip applying MeshRateLimit, Egress has no listener",
+			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+		)
+		return nil
+	}
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, es := range resource.ExternalServices {
 			meshName := resource.Mesh.GetMeta().GetName()
@@ -142,13 +148,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			mrl, ok := policies[api.MeshRateLimitType]
 			if !ok {
 				continue
-			}
-			if listeners.Egress == nil {
-				log.V(1).Info("skip applying MeshRateLimit, Egress has no listener",
-					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-					"mesh", resource.Mesh.GetMeta().GetName(),
-				)
-				return nil
 			}
 			for _, rule := range mrl.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
