@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"hash/fnv"
+
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/onsi/ginkgo/v2"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -23,7 +25,9 @@ func (i *TestingT) Name() string {
 }
 
 func (i *TestingT) Hash() string {
-	return rand.SafeEncodeString(i.Name())
+	hash := fnv.New32()
+	_, _ = hash.Write([]byte(i.Name()))
+	return rand.SafeEncodeString(string(hash.Sum(nil)))
 }
 
 // Logf logs a test progress message.
