@@ -70,10 +70,7 @@ func DefaultContext(
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		If(
-			And(
-				IsKubernetes(cfg.Store.Type),
-				Not(TypeIs(system.ConfigType)), Not(TypeIs(system.SecretType)), Not(TypeIs(system.GlobalSecretType)),
-			),
+			IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		If(
 			And(
