@@ -35,10 +35,10 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ matrix.branch }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
       - name: "Install tools"
@@ -63,7 +63,7 @@ jobs:
           echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
         with:
           commit-message: "chore(deps): security update"
           signoff: true
