@@ -245,7 +245,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			)
 			meshMetricsConfigFetcher := component.NewResilientComponent(
 				runLog.WithName("mesh-metric-config-fetcher"),
-				meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(1*time.Minute), metricsServer),
+				meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(1*time.Minute), metricsServer, kumaSidecarConfiguration.Networking.Address),
 			)
 			components = append(components, metricsServer, meshMetricsConfigFetcher)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

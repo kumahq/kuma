@@ -15,6 +15,7 @@ type KumaDpBootstrap struct {
 type NetworkingConfig struct {
 	IsUsingTransparentProxy bool
 	CorefileTemplate        []byte
+	Address                 string
 }
 
 type AggregateMetricsConfig struct {

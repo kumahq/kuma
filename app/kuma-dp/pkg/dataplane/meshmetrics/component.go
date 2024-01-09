@@ -16,20 +16,22 @@ import (
 )
 
 type ConfigFetcher struct {
-	socketPath string
-	ticker     *time.Ticker
-	hijacker   *metrics.Hijacker
+	socketPath     string
+	ticker         *time.Ticker
+	hijacker       *metrics.Hijacker
+	defaultAddress string
 }
 
 var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker) component.Component {
+func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, address string) component.Component {
 	return &ConfigFetcher{
-		socketPath: socketPath,
-		ticker:     ticker,
-		hijacker:   hijacker,
+		socketPath:     socketPath,
+		ticker:         ticker,
+		hijacker:       hijacker,
+		defaultAddress: address,
 	}
 }
 
@@ -68,7 +70,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			}
 
 			logger.V(1).Info("updating hijacker configuration", "conf", conf)
-			cf.hijacker.SetApplicationsToScrape(mapApplicationToApplicationToScrape(conf.Observability.Metrics.Applications))
+			cf.hijacker.SetApplicationsToScrape(cf.mapApplicationToApplicationToScrape(conf.Observability.Metrics.Applications))
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
 			return nil
@@ -102,13 +104,17 @@ type Configuration struct {
 	} `json:"observability"`
 }
 
-func mapApplicationToApplicationToScrape(applications []Application) []metrics.ApplicationToScrape {
+func (cf ConfigFetcher) mapApplicationToApplicationToScrape(applications []Application) []metrics.ApplicationToScrape {
 	applicationsToScrape := make([]metrics.ApplicationToScrape, 0, len(applications))
 
 	for i, application := range applications {
+		address := cf.defaultAddress
+		if application.Address != "" {
+			address = application.Address
+		}
 		applicationsToScrape[i] = metrics.ApplicationToScrape{
 			Name:          application.Name,
-			Address:       application.Address,
+			Address:       address,
 			Path:          application.Path,
 			Port:          application.Port,
 			IsIPv6:        utilnet.IsAddressIPv6(application.Address),
