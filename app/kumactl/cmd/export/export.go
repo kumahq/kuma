@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -27,13 +28,15 @@ type exportContext struct {
 }
 
 const (
-	profileFederation = "federation"
+	profileFederation             = "federation"
+	profileFederationWithPolicies = "federation-with-policies"
+	profileAll                    = "all"
 
 	formatUniversal  = "universal"
 	formatKubernetes = "kubernetes"
 )
 
-var profiles = map[string][]model.ResourceType{
+var staticProfiles = map[string][]model.ResourceType{
 	profileFederation: {
 		core_mesh.MeshType,
 		core_system.GlobalSecretType,
@@ -57,9 +60,13 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				cmd.PrintErrln(err)
 			}
 
-			resTypes, ok := profiles[ctx.args.profile]
-			if !ok {
+			if ctx.args.profile != profileAll && ctx.args.profile != profileFederation && ctx.args.profile != profileFederationWithPolicies {
 				return errors.New("invalid profile")
+			}
+
+			resTypes, err := resourcesTypesToDump(cmd.Context(), ctx)
+			if err != nil {
+				return err
 			}
 
 			if ctx.args.format != formatUniversal && ctx.args.format != formatKubernetes {
@@ -130,7 +137,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: %q`, profileFederation))
+	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: %q, %q, %q`, profileFederation, profileAll, profileFederationWithPolicies))
 	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: %q, %q`, formatUniversal, formatKubernetes))
 	return cmd
 }
@@ -143,4 +150,33 @@ func cleanKubeObject(obj map[string]interface{}) {
 	delete(meta, "uid")
 	delete(meta, "generation")
 	delete(meta, "managedFields")
+}
+
+func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.ResourceType, error) {
+	rt, ok := staticProfiles[ectx.args.profile]
+	if ok {
+		return rt, nil
+	}
+	client, err := ectx.CurrentResourcesListClient()
+	if err != nil {
+		return nil, err
+	}
+	list, err := client.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var resTypes []model.ResourceType
+	for _, res := range list.Resources {
+		switch ectx.args.profile {
+		case profileAll:
+			resTypes = append(resTypes, model.ResourceType(res.Name))
+		case profileFederationWithPolicies:
+			if res.IncludeInDump {
+				resTypes = append(resTypes, model.ResourceType(res.Name))
+			}
+		default:
+			return nil, errors.New("invalid profile")
+		}
+	}
+	return resTypes, nil
 }

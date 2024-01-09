@@ -1,7 +1,7 @@
 {
  "resources": [
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "CircuitBreaker",
    "path": "circuit-breakers",
    "pluralDisplayName": "Circuit Breakers",
@@ -33,7 +33,7 @@
    "singularDisplayName": "Dataplane Insight"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "ExternalService",
    "path": "external-services",
    "pluralDisplayName": "External Services",
@@ -42,7 +42,7 @@
    "singularDisplayName": "External Service"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "FaultInjection",
    "path": "fault-injections",
    "pluralDisplayName": "Fault Injections",
@@ -56,7 +56,7 @@
    "singularDisplayName": "Fault Injection"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "GlobalSecret",
    "path": "global-secrets",
    "pluralDisplayName": "",
@@ -65,7 +65,7 @@
    "singularDisplayName": ""
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "HealthCheck",
    "path": "health-checks",
    "pluralDisplayName": "Health Checks",
@@ -79,7 +79,7 @@
    "singularDisplayName": "Health Check"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "Mesh",
    "path": "meshes",
    "pluralDisplayName": "Meshes",
@@ -88,7 +88,7 @@
    "singularDisplayName": "Mesh"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshAccessLog",
    "path": "meshaccesslogs",
    "pluralDisplayName": "Mesh Access Logs",
@@ -102,7 +102,7 @@
    "singularDisplayName": "Mesh Access Log"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshCircuitBreaker",
    "path": "meshcircuitbreakers",
    "pluralDisplayName": "Mesh Circuit Breakers",
@@ -116,7 +116,7 @@
    "singularDisplayName": "Mesh Circuit Breaker"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshFaultInjection",
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",
@@ -130,7 +130,7 @@
    "singularDisplayName": "Mesh Fault Injection"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshGateway",
    "path": "meshgateways",
    "pluralDisplayName": "Mesh Gateways",
@@ -144,7 +144,7 @@
    "singularDisplayName": "Mesh Gateway"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshGatewayRoute",
    "path": "meshgatewayroutes",
    "pluralDisplayName": "Mesh Gateway Routes",
@@ -158,7 +158,7 @@
    "singularDisplayName": "Mesh Gateway Route"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshHTTPRoute",
    "path": "meshhttproutes",
    "pluralDisplayName": "Mesh HTTP Routes",
@@ -172,7 +172,7 @@
    "singularDisplayName": "Mesh HTTP Route"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshHealthCheck",
    "path": "meshhealthchecks",
    "pluralDisplayName": "Mesh Health Checks",
@@ -195,7 +195,7 @@
    "singularDisplayName": "Mesh Insight"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshLoadBalancingStrategy",
    "path": "meshloadbalancingstrategies",
    "pluralDisplayName": "Mesh Load Balancing Strategies",
@@ -209,7 +209,7 @@
    "singularDisplayName": "Mesh Load Balancing Strategy"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshMetric",
    "path": "meshmetrics",
    "pluralDisplayName": "Mesh Metrics",
@@ -223,7 +223,7 @@
    "singularDisplayName": "Mesh Metric"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshProxyPatch",
    "path": "meshproxypatches",
    "pluralDisplayName": "Mesh Proxy Patches",
@@ -237,7 +237,7 @@
    "singularDisplayName": "Mesh Proxy Patch"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshRateLimit",
    "path": "meshratelimits",
    "pluralDisplayName": "Mesh Rate Limits",
@@ -251,7 +251,7 @@
    "singularDisplayName": "Mesh Rate Limit"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshRetry",
    "path": "meshretries",
    "pluralDisplayName": "Mesh Retries",
@@ -265,7 +265,7 @@
    "singularDisplayName": "Mesh Retry"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshTCPRoute",
    "path": "meshtcproutes",
    "pluralDisplayName": "Mesh TCP Routes",
@@ -279,7 +279,7 @@
    "singularDisplayName": "Mesh TCP Route"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshTimeout",
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",
@@ -293,7 +293,7 @@
    "singularDisplayName": "Mesh Timeout"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshTrace",
    "path": "meshtraces",
    "pluralDisplayName": "Mesh Traces",
@@ -307,7 +307,7 @@
    "singularDisplayName": "Mesh Trace"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "MeshTrafficPermission",
    "path": "meshtrafficpermissions",
    "pluralDisplayName": "Mesh Traffic Permissions",
@@ -321,7 +321,7 @@
    "singularDisplayName": "Mesh Traffic Permission"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "ProxyTemplate",
    "path": "proxytemplates",
    "pluralDisplayName": "Proxy Templates",
@@ -335,7 +335,7 @@
    "singularDisplayName": "Proxy Template"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "RateLimit",
    "path": "rate-limits",
    "pluralDisplayName": "Rate Limits",
@@ -349,7 +349,7 @@
    "singularDisplayName": "Rate Limit"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "Retry",
    "path": "retries",
    "pluralDisplayName": "Retries",
@@ -363,7 +363,7 @@
    "singularDisplayName": "Retry"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "Secret",
    "path": "secrets",
    "pluralDisplayName": "Secrets",
@@ -372,7 +372,7 @@
    "singularDisplayName": "Secret"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "ServiceInsight",
    "path": "service-insights",
    "pluralDisplayName": "Service Insights",
@@ -381,7 +381,7 @@
    "singularDisplayName": "Service Insight"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "Timeout",
    "path": "timeouts",
    "pluralDisplayName": "Timeouts",
@@ -395,7 +395,7 @@
    "singularDisplayName": "Timeout"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "TrafficLog",
    "path": "traffic-logs",
    "pluralDisplayName": "Traffic Logs",
@@ -409,7 +409,7 @@
    "singularDisplayName": "Traffic Log"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "TrafficPermission",
    "path": "traffic-permissions",
    "pluralDisplayName": "Traffic Permissions",
@@ -423,7 +423,7 @@
    "singularDisplayName": "Traffic Permission"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "TrafficRoute",
    "path": "traffic-routes",
    "pluralDisplayName": "Traffic Routes",
@@ -437,7 +437,7 @@
    "singularDisplayName": "Traffic Route"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "TrafficTrace",
    "path": "traffic-traces",
    "pluralDisplayName": "Traffic Traces",
@@ -451,7 +451,7 @@
    "singularDisplayName": "Traffic Trace"
   },
   {
-   "includeInDump": false,
+   "includeInDump": true,
    "name": "VirtualOutbound",
    "path": "virtual-outbounds",
    "pluralDisplayName": "Virtual Outbounds",
