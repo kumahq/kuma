@@ -107,7 +107,7 @@ jobs:
           rm -rf ./build/oapitmp
           rm -rf ./build/ebpf/
       - name: Upload build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         with:
           name: build-output
           path: build
@@ -209,7 +209,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
       - name: Download artifacts with retry
-        uses: Wandalen/wretry.action@master
+        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # master
         with:
           action: actions/download-artifact@v4
           with: |

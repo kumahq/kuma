@@ -2,6 +2,8 @@ name: "CodeQL"
 on:
   push:
     branches: ["master"]
+permissions:
+  contents: read
 jobs:
   analyze:
     name: Analyze
