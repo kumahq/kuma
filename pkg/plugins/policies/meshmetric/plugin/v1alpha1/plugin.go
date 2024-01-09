@@ -117,7 +117,6 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, conf api.Conf) error {
 	configurer := &xds.DppConfigConfigurer{
 		ListenerName: DynamicConfigListenerName,
-		SocketPath:   core_xds.MeshMetricsDynamicConfigurationSocketName("/tmp"),
 		DpConfig:     createDynamicConfig(conf),
 	}
 

@@ -11,7 +11,6 @@ import (
 
 type DppConfigConfigurer struct {
 	ListenerName string
-	SocketPath   string
 	DpConfig     MeshMetricDpConfig
 }
 
@@ -21,8 +20,8 @@ func (dcc *DppConfigConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_
 		return nil, err
 	}
 
-	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, dcc.ListenerName).
-		Configure(envoy_listeners.PipeListener(dcc.SocketPath)).
+	return envoy_listeners.NewListenerBuilder(proxy.APIVersion, dcc.ListenerName).
+		Configure(envoy_listeners.PipeListener(core_xds.MeshMetricsDynamicConfigurationSocketName(proxy.Metadata.WorkDir))).
 		Configure(envoy_listeners.FilterChain(
 			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(
@@ -34,8 +33,6 @@ func (dcc *DppConfigConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_
 				),
 		)).
 		Build()
-
-	return listener, nil
 }
 
 type MeshMetricDpConfig struct {

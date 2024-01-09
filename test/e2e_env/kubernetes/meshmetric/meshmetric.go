@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -146,7 +145,6 @@ func MeshMetric() {
 		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		time.Sleep(2 * time.Hour)
 		// then
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
