@@ -26,6 +26,12 @@ var (
 	log                           = core.Log.WithName("MeshMetric")
 )
 
+const (
+	OriginDynamicConfig       = "dynamic-config"
+	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
+	DynamicConfigSocketPath   = "/tmp/meshmetric.sock"
+)
+
 type plugin struct{}
 
 func NewPlugin() core_plugins.Plugin {
@@ -58,6 +64,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		if err != nil {
 			return err
 		}
+	}
+
+	err := configureDynamicDPPConfig(rs, proxy, conf)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -103,6 +114,26 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 	return nil
 }
 
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, conf api.Conf) error {
+	configurer := &xds.DppConfigConfigurer{
+		ListenerName: DynamicConfigListenerName,
+		SocketPath:   core_xds.MeshMetricsDynamicConfigurationSocketName("/tmp"),
+		DpConfig:     createDynamicConfig(conf),
+	}
+
+	listener, err := configurer.ConfigureListener(proxy)
+	if err != nil {
+		return err
+	}
+	rs.Add(&core_xds.Resource{
+		Name:     listener.GetName(),
+		Origin:   OriginDynamicConfig,
+		Resource: listener,
+	})
+
+	return nil
+}
+
 func envoyMetricsFilter(conf api.Conf) string {
 	if conf.Sidecar == nil {
 		return ""
@@ -121,4 +152,22 @@ func envoyMetricsFilter(conf api.Conf) string {
 		return "?" + query
 	}
 	return ""
+}
+
+func createDynamicConfig(conf api.Conf) xds.MeshMetricDpConfig {
+	var applications []xds.Application
+	for _, app := range pointer.Deref(conf.Applications) {
+		applications = append(applications, xds.Application{
+			Port: app.Port,
+			Path: pointer.DerefOr(app.Path, "/metrics"),
+		})
+	}
+
+	return xds.MeshMetricDpConfig{
+		Observability: xds.Observability{
+			Metrics: xds.Metrics{
+				Applications: applications,
+			},
+		},
+	}
 }

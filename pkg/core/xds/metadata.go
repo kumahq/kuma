@@ -61,9 +61,10 @@ type DataplaneMetadata struct {
 	Features            Features
 	SocketDir           string
 	AccessLogSocketPath string
-	MetricsSocketPath   string
-	MetricsCertPath     string
-	MetricsKeyPath      string
+	// TODO add meshmetric config path
+	MetricsSocketPath string
+	MetricsCertPath   string
+	MetricsKeyPath    string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.

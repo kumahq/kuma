@@ -46,9 +46,10 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-cf.ticker.C:
-			configuration, err := httpc.Get("/meshmeetric")
+			configuration, err := httpc.Get("http://localhost/meshmeetric")
 			if err != nil {
 				logger.Info("failed to scrape /meshmetric endpoint", "err", err)
+				continue
 			}
 			defer configuration.Body.Close()
 			conf := Configuration{}
@@ -56,12 +57,15 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			respBytes, err := io.ReadAll(configuration.Body)
 			if err != nil {
 				logger.Info("failed to read bytes of the response", "err", err)
+				continue
 			}
 			if err = json.Unmarshal(respBytes, &conf); err != nil {
 				logger.Info("failed to unmarshall the response", "err", err)
+				continue
 			}
 
-			logger.V(1).Info("updating configuration", "conf", conf)
+			// TODO rvert to debug
+			logger.Info("updating configuration", "conf", conf)
 			cf.Configuration = conf
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
@@ -78,8 +82,8 @@ type Configuration struct {
 	Observability struct {
 		Metrics struct {
 			Applications []struct {
-				Path  string `json:"path,omitempty"`
-				Port  string `json:"port"`
+				Path  string `json:"path"`
+				Port  uint32 `json:"port"`
 				Regex string `json:"regex,omitempty"`
 			} `json:"applications"`
 			Backends []struct {
@@ -87,7 +91,7 @@ type Configuration struct {
 				OpenTelemetry struct {
 					Endpoint string `json:"endpoint"`
 				} `json:"openTelemetry,omitempty"`
-			} `json:"backends"`
+			} `json:"backends,omitempty"`
 		} `json:"metrics"`
 	} `json:"observability"`
 }
