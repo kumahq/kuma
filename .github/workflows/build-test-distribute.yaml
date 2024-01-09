@@ -30,9 +30,7 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
+          cache: false
       - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: |
@@ -42,6 +40,10 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
+      - uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3.7.0
+        with:
+          args: --fix=false --verbose
+          version: v1.54.1
       - run: |
           make clean
       - run: |
