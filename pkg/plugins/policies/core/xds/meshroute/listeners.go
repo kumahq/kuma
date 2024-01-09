@@ -23,6 +23,7 @@ func MakeTCPSplit(
 	return makeSplit(
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
+			core_mesh.ProtocolKafka:   {},
 			core_mesh.ProtocolTCP:     {},
 			core_mesh.ProtocolHTTP:    {},
 			core_mesh.ProtocolHTTP2:   {},
