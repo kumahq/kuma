@@ -36,13 +36,13 @@ The decision is to stop creating default policies and utilize plugin code in cas
 
 ### Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
 
-As of the 2.6 release, we have discontinued the creation of default policies when initializing a new mesh. This change in the plugin's code allows us to verify the existence of an older matching policy. In cases when there is no existing legacy policy, we generate the configuration using the code for targetRef policies.
+As of the 2.6 release, we have discontinued the creation of default policies for `MeshTrafficPermisson` and `Mesh*Route` when initializing a new mesh. This change allows plugin's code to verify the existence of an older matching policy. In cases when there is no existing legacy policy, we generate the configuration using the code for targetRef policies. We are going to create default `MeshTimeout`, `MeshRetry` and `MeshCircuitBreaker` as a replacement of legacy policies to provide basic defaults for the communication.
 
-To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with default policies.
+To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with legacy default policies.
 
 Why do we need need `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`?
 
-When global is newer than a zone, and a new mesh is created it won't have default policies. Without default policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and create the new mesh that will work with the old zone.
+When global is newer than a zone, and a new mesh is created it won't have default policies. Without default `TrafficPermission` and `TrafficRoute` policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and create the new mesh that will work with the old zone.
 
 #### Existing users behaviour
 
@@ -55,7 +55,7 @@ To maintain a consistent state during an upgrade, users must update their reposi
 
 #### New kuma users behaviour
 
-When the control-plane initiates a default Mesh during the initial installation, we no longer create default policies. This change enables the control-plane to utilize plugin code for generating configurations.
+When the control-plane initiates a default Mesh during the initial installation, we no longer create default policies for `MeshTrafficPermisson` and `Mesh*Route`. This change enables the control-plane to utilize plugin code for generating configurations.
 
 #### ExternalServices and new policies
 
@@ -71,7 +71,6 @@ This action would enable each dataplane to communicate with all `ExternalService
 
 #### Cons
 
-* Continuous Delivery (CD) users should incorporate default `Timeout`, `CircuitBreaker`, and `Retry` policies prior to performing an upgrade.
 * New env `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`
 
 ### Introduce a `policyEngine` field within the `Mesh` object, allowing the selection of the default policy version.
