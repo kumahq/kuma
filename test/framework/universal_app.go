@@ -376,7 +376,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
 		"wget",
-		fmt.Sprintf("https://download.konghq.com/mesh-alpine/kuma-%s-ubuntu-amd64.tar.gz", version),
+		fmt.Sprintf("https://download.konghq.com/kuma-binaries-release/kuma-%s-linux-amd64.tar.gz", version),
 		"-O",
 		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
 	}).Run()
