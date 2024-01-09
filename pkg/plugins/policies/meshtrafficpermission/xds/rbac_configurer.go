@@ -5,8 +5,10 @@ import (
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
-	rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
+	http_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
+	network_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -23,7 +25,16 @@ type RBACConfigurer struct {
 }
 
 func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	filter, err := c.createRBACFilter()
+	var isHTTP bool
+
+	for _, filter := range filterChain.Filters {
+		if filter.GetName() == "envoy.filters.network.http_connection_manager" {
+			isHTTP = true
+			break
+		}
+	}
+
+	filter, err := c.createRBACFilter(isHTTP)
 	if err != nil {
 		return err
 	}
@@ -53,26 +64,39 @@ func (c *RBACConfigurer) principalsByAction() PrincipalMap {
 	return pm
 }
 
-func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
-	principalByAction := c.principalsByAction()
-
-	rbacMarshalled, err := util_proto.MarshalAnyDeterministic(&rbac.RBAC{
-		// we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
-		StatPrefix:  fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
-		Rules:       createRules(principalByAction),
-		ShadowRules: createShadowRules(principalByAction),
-	})
+func createFilter(name string, pb proto.Message) (*envoy_listener.Filter, error) {
+	typedConfig, err := util_proto.MarshalAnyDeterministic(pb)
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoy_listener.Filter{
-		// todo(lobkovilya): use 'envoy.filters.http.rbac' for HTTP traffic to have proper stats
-		Name: "envoy.filters.network.rbac",
+		Name: name,
 		ConfigType: &envoy_listener.Filter_TypedConfig{
-			TypedConfig: rbacMarshalled,
+			TypedConfig: typedConfig,
 		},
 	}, nil
+}
+
+func (c *RBACConfigurer) createRBACFilter(isHTTP bool) (*envoy_listener.Filter, error) {
+	principalByAction := c.principalsByAction()
+	rules := createRules(principalByAction)
+	shadowRules := createShadowRules(principalByAction)
+
+	if isHTTP {
+		return createFilter("envoy.filters.http.rbac", &http_rbac.RBAC{
+			Rules:       rules,
+			ShadowRules: shadowRules,
+		})
+	}
+
+	return createFilter("envoy.filters.network.rbac", &network_rbac.RBAC{
+		// we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric
+		// to "inbound:127.0.0.1:21011.rbac.allowed"
+		StatPrefix:  fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
+		Rules:       rules,
+		ShadowRules: shadowRules,
+	})
 }
 
 // createRules always returns not-nil result regardless the number of principals

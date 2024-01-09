@@ -13,9 +13,9 @@ resources:
         - external-service-1{mesh=mesh-1}
         transportProtocol: tls
       filters:
-      - name: envoy.filters.network.rbac
+      - name: envoy.filters.http.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
           rules:
             policies:
               MeshTrafficPermission:
@@ -25,7 +25,6 @@ resources:
                 - authenticated:
                     principalName:
                       exact: spiffe://mesh-1/frontend
-          statPrefix: test_listener.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
