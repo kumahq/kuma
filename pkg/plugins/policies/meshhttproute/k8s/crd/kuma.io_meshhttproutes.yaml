@@ -358,7 +358,8 @@ spec:
                                         hostToBackendHostname:
                                           description: HostToBackendHostname rewrites
                                             the hostname to the hostname of the upstream
-                                            host.
+                                            host. This option is only available when
+                                            targeting MeshGateways.
                                           type: boolean
                                         hostname:
                                           description: Hostname is the value to be

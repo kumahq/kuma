@@ -197,7 +197,7 @@ type URLRewrite struct {
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
 	// HostToBackendHostname rewrites the hostname to the hostname of the
-	// upstream host.
+	// upstream host. This option is only available when targeting MeshGateways.
 	HostToBackendHostname bool `json:"hostToBackendHostname,omitempty"`
 }
 
