@@ -80,21 +80,31 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 	}
 }
 
-func YamlK8s(yaml string) InstallFunc {
+func YamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}
 }
 
-func DeleteYamlK8s(yaml string) InstallFunc {
+func DeleteYamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}

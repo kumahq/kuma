@@ -305,6 +305,40 @@ to:
               version: v1
 
 `),
+		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
+			[]validators.Violation{{
+				Field:   `spec.to[0].hostnames`,
+				Message: `must not be defined`,
+			}, {
+				Field:   "spec.to[0].rules[0].default.filters[0].urlRewrite.hostToBackendHostname",
+				Message: "can only be set with MeshGateway",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+  hostnames:
+    - backend.com
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              hostToBackendHostname: true
+        backendRefs:
+          - kind: MeshService
+            name: backend
+`),
 		ErrorCase("top level MeshGateway requires backendRefs",
 			validators.Violation{
 				Field:   `spec.to[0].rules[0].default.backendRefs`,
@@ -567,6 +601,32 @@ targetRef:
 to:
 - targetRef:
     kind: Mesh
+  rules:
+    - matches:
+      - path:
+          value: /
+          type: PathPrefix
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              hostToBackendHostname: true
+        backendRefs:
+          - kind: MeshService
+            name: backend
+`),
+		Entry("MeshGateway with hostnames allowed", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  hostnames:
+    - exammple.com
   rules:
     - matches:
       - path:

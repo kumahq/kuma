@@ -2,6 +2,8 @@ package v1alpha1
 
 import (
 	"context"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -27,15 +30,11 @@ type Route struct {
 	BackendRefs []common_api.BackendRef
 }
 
-type RuleAcc struct {
-	MatchKey  []api.Match
-	RuleConfs []api.RuleConf
-}
-
 type ToRouteRule struct {
-	Subset rules.Subset
-	Rules  []api.Rule
-	Origin []core_model.ResourceMeta
+	Subset    rules.Subset
+	Rules     []api.Rule
+	Hostnames []string
+	Origin    []core_model.ResourceMeta
 }
 
 type plugin struct{}
@@ -65,9 +64,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	var toRules []ToRouteRule
 	for _, policy := range policies.ToRules.Rules {
 		toRules = append(toRules, ToRouteRule{
-			Subset: policy.Subset,
-			Rules:  policy.Conf.(api.PolicyDefault).Rules,
-			Origin: policy.Origin,
+			Subset:    policy.Subset,
+			Rules:     policy.Conf.(api.PolicyDefault).Rules,
+			Hostnames: policy.Conf.(api.PolicyDefault).Hostnames,
+			Origin:    policy.Origin,
 		})
 	}
 
@@ -120,20 +120,57 @@ func ApplyToGateway(
 	proxy *core_xds.Proxy,
 	resources *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,
-	rules []ToRouteRule,
+	rawRules []ToRouteRule,
 ) error {
-	if len(rules) == 0 {
+	if len(rawRules) == 0 {
 		return nil
 	}
+
+	var keys []string
+	rulesByHostname := map[string][]ToRouteRule{}
+	for _, rule := range rawRules {
+		hostnames := rule.Hostnames
+		if len(rule.Hostnames) == 0 {
+			hostnames = []string{"*"}
+		}
+		for _, hostname := range hostnames {
+			accRule, ok := rulesByHostname[hostname]
+			if !ok {
+				keys = append(keys, hostname)
+			}
+			rulesByHostname[hostname] = append(accRule, rule)
+		}
+	}
+
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
-			hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
-				Host:    info.Host,
-				Entries: GenerateEnvoyRouteEntries(info.Host, rules),
-			})
+			listenerHostname := info.Host.Hostname
+			separateHostnames := map[string][]ToRouteRule{}
+			for _, routeHostname := range keys {
+				if !(listenerHostname == "*" || routeHostname == "*" || match.Hostnames(listenerHostname, routeHostname)) {
+					continue
+				}
+				// We need to take the most specific hostname
+				hostnameKey := listenerHostname
+				if strings.HasPrefix(listenerHostname, "*") && !strings.HasPrefix(routeHostname, "*") {
+					hostnameKey = routeHostname
+				}
+				separateHostnames[hostnameKey] = append(separateHostnames[hostnameKey], rulesByHostname[routeHostname]...)
+			}
+			for hostname, rules := range separateHostnames {
+				host := info.Host
+				host.Hostname = hostname
+				hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
+					Host:    host,
+					Entries: GenerateEnvoyRouteEntries(host, rules),
+				})
+			}
 		}
+		sort.Slice(hostInfos, func(i, j int) bool {
+			return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
+		})
 
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
 		if err != nil {

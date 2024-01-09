@@ -29,6 +29,11 @@ type MeshHTTPRoute struct {
 }
 
 type To struct {
+	// Hostnames is only valid when targeting MeshGateway and limits the
+	// effects of the rules to requests to this hostname.
+	// Given hostnames must intersect with the hostname of the listeners the
+	// route attaches to.
+	Hostnames []string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
@@ -191,6 +196,9 @@ type URLRewrite struct {
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
+	// HostToBackendHostname rewrites the hostname to the hostname of the
+	// upstream host. This option is only available when targeting MeshGateways.
+	HostToBackendHostname bool `json:"hostToBackendHostname,omitempty"`
 }
 
 type RequestMirror struct {

@@ -61,7 +61,9 @@ func Sync() {
 			sub := result.Spec.Subscriptions[0]
 			g.Expect(sub.GlobalInstanceId).ToNot(BeEmpty())
 			globalName = sub.GlobalInstanceId
-			g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+			if !Config.KumaLegacyKDS {
+				g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+			}
 			zoneInstance = sub.ZoneInstanceId
 		}, "30s", "1s").Should(Succeed())
 
@@ -71,9 +73,11 @@ func Sync() {
 
 			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
 			sub := result.Spec.Subscriptions[0]
-			// Check that this is the other side of the connection
-			g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
-			g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+			if !Config.KumaLegacyKDS {
+				// Check that this is the other side of the connection
+				g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
+				g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+			}
 		}, "30s", "1s").Should(Succeed())
 	})
 

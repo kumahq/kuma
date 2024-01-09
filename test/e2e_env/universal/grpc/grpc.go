@@ -97,6 +97,7 @@ spec:
 				universal.Cluster, "second-test-server", "http://localhost:9901/stats?format=prometheus",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
+
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_request_message_count{envoy_cluster_name="localhost_8080"}`))
 			g.Expect(stdout).To(ContainSubstring(`envoy_cluster_grpc_response_message_count{envoy_cluster_name="localhost_8080"}`))
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())

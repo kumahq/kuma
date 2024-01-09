@@ -69,7 +69,6 @@ func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
 func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_mesh.Protocol) *ContextBuilder {
 	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
 		info.Protocol = protocol
-		mc.res.Mesh.ServicesInformation[serviceName] = info
 	} else {
 		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
 			Protocol: protocol,
@@ -81,7 +80,6 @@ func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_m
 func (mc *ContextBuilder) AddExternalService(serviceName string) *ContextBuilder {
 	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
 		info.IsExternalService = true
-		mc.res.Mesh.ServicesInformation[serviceName] = info
 	} else {
 		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
 			IsExternalService: true,

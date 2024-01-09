@@ -85,7 +85,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		if err := core_model.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
-				return convertSpecValidationError(kumaErr, k8sObj)
+				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsTargetRefBased, k8sObj)
 			}
 			return admission.Denied(err.Error())
 		}
@@ -167,10 +167,14 @@ func (h *validatingHandler) Supports(admission.Request) bool {
 	return true
 }
 
-func convertSpecValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
-	verr := validators.ValidationError{}
+func convertSpecValidationError(kumaErr *validators.ValidationError, isTargetRef bool, obj k8s_model.KubernetesObject) admission.Response {
+	verr := validators.OK()
 	if kumaErr != nil {
-		verr.AddError("spec", *kumaErr)
+		if isTargetRef {
+			verr = *kumaErr
+		} else {
+			verr.AddError("spec", *kumaErr)
+		}
 	}
 	return convertValidationErrorOf(verr, obj, obj.GetObjectMeta())
 }

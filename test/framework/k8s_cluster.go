@@ -47,6 +47,7 @@ type K8sNetworkingState struct {
 	ZoneEgress  PortFwd `json:"zoneEgress"`
 	ZoneIngress PortFwd `json:"zoneIngress"`
 	KumaCp      PortFwd `json:"kumaCp"`
+	MADS        PortFwd `json:"mads"`
 }
 
 type K8sCluster struct {

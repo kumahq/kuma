@@ -33,9 +33,13 @@ func SetupAndGetState() []byte {
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
-	portFwd := Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd()
 
-	bytes, err := json.Marshal(portFwd)
+	state := framework.K8sNetworkingState{
+		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
+		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
+	}
+
+	bytes, err := json.Marshal(state)
 	Expect(err).ToNot(HaveOccurred())
 	// Deliberately do not delete Kuma to save execution time (30s).
 	// If everything is fine, K8S cluster will be deleted anyways
@@ -50,8 +54,8 @@ func RestoreState(bytes []byte) {
 	}
 	// Only one process should manage Kuma deployment
 	// Other parallel processes should just replicate CP with its port forwards
-	portFwd := framework.PortFwd{}
-	Expect(json.Unmarshal(bytes, &portFwd)).To(Succeed())
+	state := framework.K8sNetworkingState{}
+	Expect(json.Unmarshal(bytes, &state)).To(Succeed())
 
 	Cluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Verbose)
 	cp := framework.NewK8sControlPlane(
@@ -64,6 +68,6 @@ func RestoreState(bytes []byte) {
 		1,
 		nil, // headers were not configured in setup
 	)
-	Expect(cp.FinalizeAddWithPortFwd(portFwd)).To(Succeed())
+	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
 }

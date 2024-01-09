@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
@@ -164,6 +166,41 @@ conf:
 		})
 	})
 
+	Context("MeshFaultInjection", func() {
+		AfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshName, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should inject faults for external service", func() {
+			Expect(YamlUniversal(`
+type: MeshFaultInjection
+mesh: ze-external-services
+name: mesh-fault-injecton-402
+spec:
+  targetRef:
+    kind: MeshService
+    name: external-service
+  from:
+    - targetRef:
+        kind: MeshService
+        name: demo-client
+      default:
+        http:
+          - abort:
+              httpStatus: 402
+              percentage: "100.0"`)(universal.Cluster)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+					client.WithMaxTime(8),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(402))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
 	Context("Rate Limit", func() {
 		AfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
@@ -187,6 +224,47 @@ conf:
     requests: 1
     interval: 10s
 `
+			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "demo-client", "external-service.mesh",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(429))
+			}).Should(Succeed())
+		})
+	})
+
+	Context("MeshRateLimit", func() {
+		AfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshName, meshratelimit_api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should rate limit requests to external service", func() {
+			specificRateLimitPolicy := `
+type: MeshRateLimit
+mesh: ze-external-services
+name: rate-limit-demo-client
+spec:
+  targetRef:
+    kind: MeshService
+    name: external-service
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 1
+              interval: 10s
+            onRateLimit:
+              status: 429
+              headers:
+                add:
+                - name: "x-kuma-rate-limited"
+                  value: "true"`
 			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {

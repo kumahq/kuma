@@ -51,6 +51,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 		if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
 			isExternalService = route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
 		}
+
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
 		// If there is Mesh property ZoneEgress enabled we want always to
