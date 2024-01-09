@@ -57,7 +57,7 @@ func MeshTrafficPermissionUniversal() {
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.ResponseCode).To(Equal(403))
 		}).Should(Succeed())
 	}
 
