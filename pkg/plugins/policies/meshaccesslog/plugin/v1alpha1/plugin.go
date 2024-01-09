@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
@@ -33,7 +35,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
 	if !ok {
 		return nil
@@ -55,7 +57,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, xdsCtx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
 

@@ -49,7 +49,7 @@ var _ = Describe("MeshRetry", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := *xds_builders.Context().
+		xdsCtx := *xds_builders.Context().
 			WithMesh(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
 			AddServiceProtocol("http-service", core_mesh.ProtocolHTTP).
@@ -78,7 +78,7 @@ var _ = Describe("MeshRetry", func() {
 
 		// when
 		plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+		Expect(plugin.Apply(context.TODO(), resourceSet, xdsCtx, proxy)).To(Succeed())
 
 		// then
 		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).
@@ -320,7 +320,7 @@ var _ = Describe("MeshRetry", func() {
 
 			// when
 			plugin := plugin_v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// then
 			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).

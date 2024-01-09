@@ -93,9 +93,9 @@ type PolicyPlugin interface {
 	Plugin
 	// MatchedPolicies return all the policies of the plugins' type matching this dataplane. This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
 	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
-	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.
+	// Apply to `rs` using the `xdsCtx` and `proxy` the mutation for all policies of the type this plugin implements.
 	// You can access matching policies by using `proxy.Policies.Dynamic`.
-	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
+	Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error
 }
 
 type EgressPolicyPlugin interface {

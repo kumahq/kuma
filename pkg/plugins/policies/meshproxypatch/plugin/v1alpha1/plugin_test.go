@@ -1,6 +1,8 @@
 package v1alpha1_test
 
 import (
+	"context"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,14 +37,14 @@ var _ = Describe("MeshProxyPatch", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_samples.SampleContext()
+			xdsCtx := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshProxyPatchType, given.rules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resources, xdsCtx, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
 		Entry("add and patch a cluster", testCase{

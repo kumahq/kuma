@@ -47,7 +47,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshHTTPRouteType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		return nil
 	}
@@ -76,7 +76,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 		return err
 	}
 
-	ctx := context.TODO()
 	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, toRules); err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := *xds_builders.Context().
+		xdsCtx := *xds_builders.Context().
 			WithMesh(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
 			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
@@ -80,7 +80,7 @@ var _ = Describe("MeshTimeout", func() {
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+		Expect(plugin.Apply(context.TODO(), resourceSet, xdsCtx, proxy)).To(Succeed())
 
 		// then
 		for i, expectedListener := range given.expectedListeners {
@@ -447,7 +447,7 @@ var _ = Describe("MeshTimeout", func() {
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+		Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 		nameSplit := strings.Split(GinkgoT().Name(), " ")
 		name := nameSplit[len(nameSplit)-1]

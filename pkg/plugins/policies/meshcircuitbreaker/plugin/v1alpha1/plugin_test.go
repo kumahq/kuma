@@ -87,7 +87,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_samples.SampleContext()
+			xdsCtx := xds_samples.SampleContext()
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(
@@ -104,7 +104,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resourceSet, xdsCtx, proxy)).To(Succeed())
 
 			for idx, expected := range given.expectedCluster {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -422,7 +422,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -45,7 +46,7 @@ var _ = Describe("MeshMetric", func() {
 		resources := core_xds.NewResourceSet()
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
 
-		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
+		Expect(plugin.Apply(context.TODO(), resources, given.context, given.proxy)).To(Succeed())
 
 		name := testCaseName(GinkgoT())
 

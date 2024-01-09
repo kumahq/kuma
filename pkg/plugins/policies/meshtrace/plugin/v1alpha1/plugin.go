@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	net_url "net/url"
 	"strconv"
 	"strings"
@@ -36,7 +37,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTraceType]
 	if !ok {
 		return nil
@@ -52,7 +53,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.GatewayRules.SingleItemRules, listeners.Gateway, xdsCtx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
 		return err
 	}
 

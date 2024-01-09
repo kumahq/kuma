@@ -64,7 +64,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(err).NotTo(HaveOccurred())
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resourceSet, given.xdsContext, given.proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]

@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -33,8 +35,9 @@ func (p plugin) MatchedPolicies(
 }
 
 func (p plugin) Apply(
+	ctx context.Context,
 	rs *core_xds.ResourceSet,
-	ctx xds_context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]

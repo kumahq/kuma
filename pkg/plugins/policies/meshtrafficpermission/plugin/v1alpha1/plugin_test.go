@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -118,7 +119,7 @@ var _ = Describe("RBAC", func() {
 				Build()
 			// when
 			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			err = p.Apply(rs, *ctx, proxy)
+			err = p.Apply(context.TODO(), rs, *ctx, proxy)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -271,7 +272,7 @@ var _ = Describe("RBAC", func() {
 
 			// when
 			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			err = p.Apply(rs, *ctx, proxy)
+			err = p.Apply(context.TODO(), rs, *ctx, proxy)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

@@ -66,7 +66,7 @@ var _ = Describe("MeshTrace", func() {
 				resources.Add(&r)
 			}
 
-			context := xds_samples.SampleContext()
+			xdsCtx := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -84,7 +84,7 @@ var _ = Describe("MeshTrace", func() {
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resources, xdsCtx, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
@@ -634,7 +634,7 @@ var _ = Describe("MeshTrace", func() {
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]

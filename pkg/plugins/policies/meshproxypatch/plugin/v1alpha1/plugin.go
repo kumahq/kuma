@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -30,7 +32,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshProxyPatchType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, _ xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshProxyPatchType]
 	if !ok {
 		return nil

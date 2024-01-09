@@ -79,7 +79,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resourceSet, xdsCtx, proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
@@ -980,7 +980,7 @@ var _ = Describe("MeshAccessLog", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]

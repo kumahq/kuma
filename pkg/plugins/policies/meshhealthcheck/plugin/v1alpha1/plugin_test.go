@@ -81,7 +81,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				resources.Add(&r)
 			}
 
-			context := *xds_builders.Context().
+			xdsCtx := *xds_builders.Context().
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
 				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
@@ -137,7 +137,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
-			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resources, xdsCtx, proxy)).To(Succeed())
 
 			for idx, expected := range given.expectedClusters {
 				Expect(util_proto.ToYAML(resources.ListOf(envoy_resource.ClusterType)[idx].Resource)).
@@ -271,7 +271,7 @@ var _ = Describe("MeshHealthCheck", func() {
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

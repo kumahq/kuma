@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -32,7 +34,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshTimeoutType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshTimeoutType]
 	if !ok {
 		return nil
@@ -48,20 +50,20 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, xdsCtx.Mesh); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
+	if err := applyToGateway(policies.GatewayRules, clusters.Gateway, routes.Gateway, proxy, xdsCtx.Mesh); err != nil {
 		return err
 	}
 
 	for serviceName, cluster := range clusters.Outbound {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, xdsCtx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
 	for serviceName, clusters := range clusters.OutboundSplit {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, xdsCtx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
 			return err
 		}
 	}

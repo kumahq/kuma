@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -44,7 +46,7 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 	return matchers.EgressMatchedPolicies(api.MeshLoadBalancingStrategyType, tags, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
 		return p.configureEgress(rs, proxy)
 	}
@@ -59,11 +61,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
+	if err := p.configureGateway(proxy, policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, xdsCtx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled())
+	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 }
 
 func (p plugin) configureDPP(

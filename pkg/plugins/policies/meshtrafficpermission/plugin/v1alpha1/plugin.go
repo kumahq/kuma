@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -39,7 +41,7 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 	return matchers.EgressMatchedPolicies(api.MeshTrafficPermissionType, tags, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
 		return p.configureEgress(rs, proxy)
 	}
@@ -48,10 +50,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	if !ctx.Mesh.Resource.MTLSEnabled() {
+	if !xdsCtx.Mesh.Resource.MTLSEnabled() {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
-			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
+			"mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
 		return nil
 	}
 

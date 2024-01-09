@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -25,7 +27,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.DoNothingPolicyType, dataplane, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(context.Context, *core_xds.ResourceSet, xds_context.Context, *core_xds.Proxy) error {
 	log.Info("apply is not implemented")
 	return nil
 }

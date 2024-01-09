@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -29,8 +31,9 @@ func (p plugin) MatchedPolicies(
 }
 
 func (p plugin) Apply(
+	ctx context.Context,
 	rs *core_xds.ResourceSet,
-	ctx xds_context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
 	if proxy.Dataplane == nil {
@@ -39,14 +42,14 @@ func (p plugin) Apply(
 
 	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
 	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
-	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
 		return nil
 	}
 
-	tlsReady := ctx.Mesh.GetTLSReadiness()
+	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, policies.ToRules.Rules, servicesAccumulator, ctx.Mesh)
+	listeners, err := generateListeners(proxy, policies.ToRules.Rules, servicesAccumulator, xdsCtx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}
@@ -54,13 +57,13 @@ func (p plugin) Apply(
 
 	services := servicesAccumulator.Services()
 
-	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
+	clusters, err := meshroute.GenerateClusters(proxy, xdsCtx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")
 	}
 	rs.AddSet(clusters)
 
-	endpoints, err := meshroute.GenerateEndpoints(proxy, ctx, services)
+	endpoints, err := meshroute.GenerateEndpoints(proxy, xdsCtx, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}

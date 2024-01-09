@@ -20,7 +20,7 @@ type generator struct{}
 
 func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
 	for _, policy := range plugins.Plugins().PolicyPlugins(ordered.Policies) {
-		if err := policy.Plugin.Apply(rs, xdsCtx, proxy); err != nil {
+		if err := policy.Plugin.Apply(ctx, rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policy.Name)
 		}
 	}

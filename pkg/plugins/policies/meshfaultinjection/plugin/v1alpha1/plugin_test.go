@@ -49,7 +49,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_samples.SampleContext()
+			xdsCtx := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
 				WithDataplane(
 					builders.Dataplane().
@@ -76,7 +76,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			// when
-			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resourceSet, xdsCtx, proxy)).To(Succeed())
 
 			// then
 			for i, expected := range given.expectedListeners {
@@ -427,7 +427,7 @@ var _ = Describe("MeshFaultInjection", func() {
 
 		// when
 		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-		err = p.Apply(rs, *ctxMesh1, proxy)
+		err = p.Apply(context.TODO(), rs, *ctxMesh1, proxy)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -490,7 +490,7 @@ var _ = Describe("MeshFaultInjection", func() {
 		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 		// then
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+		Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
 	})
 })

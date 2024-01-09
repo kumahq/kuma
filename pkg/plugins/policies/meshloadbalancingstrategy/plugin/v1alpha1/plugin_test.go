@@ -59,7 +59,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			}
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), resources, given.context, given.proxy)).To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
 			name := nameSplit[len(nameSplit)-1]
@@ -1256,7 +1256,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(plugin.Apply(context.TODO(), generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			getResourceYaml := func(list core_xds.ResourceList) []byte {
 				actualResource, err := util_proto.ToYAML(list[0].Resource)

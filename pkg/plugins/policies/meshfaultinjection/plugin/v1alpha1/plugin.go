@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -39,7 +41,7 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 	return matchers.EgressMatchedPolicies(api.MeshFaultInjectionType, tags, resources)
 }
 
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (p plugin) Apply(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
 		return applyToEgress(rs, proxy)
 	}

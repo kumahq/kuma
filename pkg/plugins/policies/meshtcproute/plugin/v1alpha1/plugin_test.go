@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"time"
@@ -176,7 +177,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).
+			Expect(plugin.Apply(context.TODO(), resourceSet, given.xdsContext, given.proxy)).
 				To(Succeed())
 
 			nameSplit := strings.Split(GinkgoT().Name(), " ")
