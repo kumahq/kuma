@@ -18,8 +18,18 @@ func MeshTrafficPermissionUniversal() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-			Install(TestServerUniversal("test-server-tcp", meshName, WithArgs([]string{"echo", "--instance", "test-server-tcp"}), WithServiceName("test-server-tcp"), WithProtocol("tcp"))).
+			Install(TestServerUniversal(
+				"test-server",
+				meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+			)).
+			Install(TestServerUniversal(
+				"test-server-tcp",
+				meshName,
+				WithArgs([]string{"echo", "--instance", "test-server-tcp"}),
+				WithServiceName("test-server-tcp"),
+				WithProtocol("tcp"),
+			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 
