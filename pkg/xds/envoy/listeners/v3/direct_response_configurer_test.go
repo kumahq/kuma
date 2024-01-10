@@ -11,7 +11,7 @@ import (
 )
 
 var _ = Describe("DirectResponseConfigurer", func() {
-	It("", func() {
+	It("should correctly set up direct response", func() {
 		// when
 		filterChain, err := NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 			Configure(DirectResponse("test.host", []v3.DirectResponseEndpoints{{

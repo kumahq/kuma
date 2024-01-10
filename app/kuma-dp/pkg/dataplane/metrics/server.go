@@ -315,7 +315,7 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
 	var resp *http.Response
-	logger.Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
+	logger.V(1).Info("executing get stats request", "address", app.Address, "port", app.Port, "path", app.Path)
 	if app.IsIPv6 {
 		resp, err = s.httpClientIPv6.Do(req)
 		if err == nil {

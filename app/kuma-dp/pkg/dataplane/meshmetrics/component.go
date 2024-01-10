@@ -83,7 +83,7 @@ func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
 	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
 	if err != nil {
 		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to scrape /meshmetric endpoint")
 	}
 
 	defer configuration.Body.Close()
@@ -92,11 +92,11 @@ func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
 	respBytes, err := io.ReadAll(configuration.Body)
 	if err != nil {
 		logger.Info("failed to read bytes of the response", "err", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read bytes of the response")
 	}
 	if err = json.Unmarshal(respBytes, &conf); err != nil {
 		logger.Info("failed to unmarshall the response", "err", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to unmarshall the response")
 	}
 
 	return &conf, nil
