@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master", "release-*", "!*-merge-master", "reworkCI"]
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
