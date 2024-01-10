@@ -248,7 +248,7 @@ var _ = Describe("MeshRetry", func() {
 	)
 
 	type gatewayTestCase struct {
-		toRules          core_rules.ToRules
+		rules            core_rules.GatewayRules
 		goldenFilePrefix string
 		gateways         []*core_mesh.MeshGatewayResource
 		gatewayRoutes    []*core_mesh.MeshGatewayRouteResource
@@ -309,7 +309,7 @@ var _ = Describe("MeshRetry", func() {
 			xdsCtx := xds_samples.SampleContextWith(resources)
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshRetryType, given.rules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
@@ -330,86 +330,88 @@ var _ = Describe("MeshRetry", func() {
 		},
 		Entry("http retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.http",
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: api.Conf{
-							HTTP: &api.HTTP{
-								NumRetries:    pointer.To[uint32](1),
-								PerTryTimeout: test.ParseDuration("2s"),
-								BackOff: &api.BackOff{
-									BaseInterval: test.ParseDuration("3s"),
-									MaxInterval:  test.ParseDuration("4s"),
-								},
-								RateLimitedBackOff: &api.RateLimitedBackOff{
-									MaxInterval: test.ParseDuration("5s"),
-									ResetHeaders: &[]api.ResetHeader{
+			rules: core_rules.GatewayRules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: api.Conf{
+								HTTP: &api.HTTP{
+									NumRetries:    pointer.To[uint32](1),
+									PerTryTimeout: test.ParseDuration("2s"),
+									BackOff: &api.BackOff{
+										BaseInterval: test.ParseDuration("3s"),
+										MaxInterval:  test.ParseDuration("4s"),
+									},
+									RateLimitedBackOff: &api.RateLimitedBackOff{
+										MaxInterval: test.ParseDuration("5s"),
+										ResetHeaders: &[]api.ResetHeader{
+											{
+												Name:   "retry-after-http",
+												Format: "Seconds",
+											},
+											{
+												Name:   "x-retry-after-http",
+												Format: "UnixTimestamp",
+											},
+										},
+									},
+									RetryOn: &[]api.HTTPRetryOn{
+										api.All5xx,
+										api.GatewayError,
+										api.Reset,
+										api.Retriable4xx,
+										api.ConnectFailure,
+										api.EnvoyRatelimited,
+										api.RefusedStream,
+										api.Http3PostConnectFailure,
+										api.HttpMethodConnect,
+										api.HttpMethodDelete,
+										api.HttpMethodGet,
+										api.HttpMethodHead,
+										api.HttpMethodOptions,
+										api.HttpMethodPatch,
+										api.HttpMethodPost,
+										api.HttpMethodPut,
+										api.HttpMethodTrace,
+										"429",
+									},
+									RetriableResponseHeaders: &[]common_api.HeaderMatch{
 										{
-											Name:   "retry-after-http",
-											Format: "Seconds",
+											Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+											Name:  "x-retry-regex",
+											Value: ".*",
 										},
 										{
-											Name:   "x-retry-after-http",
-											Format: "UnixTimestamp",
+											Type:  pointer.To(common_api.HeaderMatchExact),
+											Name:  "x-retry-exact",
+											Value: "exact-value",
 										},
 									},
-								},
-								RetryOn: &[]api.HTTPRetryOn{
-									api.All5xx,
-									api.GatewayError,
-									api.Reset,
-									api.Retriable4xx,
-									api.ConnectFailure,
-									api.EnvoyRatelimited,
-									api.RefusedStream,
-									api.Http3PostConnectFailure,
-									api.HttpMethodConnect,
-									api.HttpMethodDelete,
-									api.HttpMethodGet,
-									api.HttpMethodHead,
-									api.HttpMethodOptions,
-									api.HttpMethodPatch,
-									api.HttpMethodPost,
-									api.HttpMethodPut,
-									api.HttpMethodTrace,
-									"429",
-								},
-								RetriableResponseHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-										Name:  "x-retry-regex",
-										Value: ".*",
-									},
-									{
-										Type:  pointer.To(common_api.HeaderMatchExact),
-										Name:  "x-retry-exact",
-										Value: "exact-value",
-									},
-								},
-								RetriableRequestHeaders: &[]common_api.HeaderMatch{
-									{
-										Type:  pointer.To(common_api.HeaderMatchPrefix),
-										Name:  "x-retry-prefix",
-										Value: "prefix-",
-									},
-								},
-								HostSelection: &[]api.Predicate{
-									{
-										PredicateType: "OmitPreviousHosts",
-									},
-									{
-										PredicateType:   "OmitPreviousPriorities",
-										UpdateFrequency: 2,
-									},
-									{
-										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
-											"test": "test",
+									RetriableRequestHeaders: &[]common_api.HeaderMatch{
+										{
+											Type:  pointer.To(common_api.HeaderMatchPrefix),
+											Name:  "x-retry-prefix",
+											Value: "prefix-",
 										},
 									},
+									HostSelection: &[]api.Predicate{
+										{
+											PredicateType: "OmitPreviousHosts",
+										},
+										{
+											PredicateType:   "OmitPreviousPriorities",
+											UpdateFrequency: 2,
+										},
+										{
+											PredicateType: "OmitHostsWithTags",
+											Tags: map[string]string{
+												"test": "test",
+											},
+										},
+									},
+									HostSelectionMaxAttempts: pointer.To(int64(2)),
 								},
-								HostSelectionMaxAttempts: pointer.To(int64(2)),
 							},
 						},
 					},
@@ -420,13 +422,15 @@ var _ = Describe("MeshRetry", func() {
 		}),
 		Entry("tcp retry", gatewayTestCase{
 			goldenFilePrefix: "gateway.tcp",
-			toRules: core_rules.ToRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: core_rules.Subset{},
-						Conf: api.Conf{
-							TCP: &api.TCP{
-								MaxConnectAttempt: pointer.To[uint32](21),
+			rules: core_rules.GatewayRules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: api.Conf{
+								TCP: &api.TCP{
+									MaxConnectAttempt: pointer.To[uint32](21),
+								},
 							},
 						},
 					},

@@ -112,6 +112,23 @@ from:
           disabled: true
         tcp:
           disabled: true`),
+			Entry("gateway example", `
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 		)
 		type testCase struct {
 			inputYaml string
@@ -316,6 +333,31 @@ from:
 violations:
   - field: spec.from[0].default.local.http
     message: 'must have at least one defined: disabled, requestRate, onRateLimit'`,
+			}),
+			Entry("invalid gateway example", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: edge
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.from
+    message: 'must not be defined'
+  - field: spec.to
+    message: needs at least one item`,
 			}),
 		)
 	})

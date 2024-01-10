@@ -52,7 +52,7 @@ func generateListeners(
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+			split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
 			}
@@ -60,7 +60,7 @@ func generateListeners(
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
 					_ = meshroute_xds.MakeHTTPSplit(
-						proxy, clusterCache, servicesAcc,
+						clusterCache, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
@@ -90,6 +90,11 @@ func generateListeners(
 		filterChainBuilder.
 			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
 
+		// TODO: https://github.com/kumahq/kuma/issues/3325
+		switch protocol {
+		case core_mesh.ProtocolGRPC:
+			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
+		}
 		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		listener, err := listenerBuilder.Build()
 		if err != nil {
@@ -129,7 +134,9 @@ func prepareRoutes(
 	}
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
-	catchAllMatch := []api.Match{{Path: pointer.To(catchAllPathMatch)}}
+	catchAllMatch := []api.Match{
+		{Path: pointer.To(catchAllPathMatch)},
+	}
 
 	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
 		return reflect.DeepEqual(rule.Matches, catchAllMatch)
@@ -165,19 +172,14 @@ func prepareRoutes(
 		if rule.Default.BackendRefs != nil {
 			route.BackendRefs = *rule.Default.BackendRefs
 		} else {
-			targetRef := common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-			}
-			if mesh, ok := tags[mesh_proto.MeshTag]; ok {
-				targetRef.Tags = map[string]string{
-					mesh_proto.MeshTag: mesh,
-				}
-			}
 			route.BackendRefs = []common_api.BackendRef{
 				{
-					TargetRef: targetRef,
-					Weight:    pointer.To(uint(100)),
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: serviceName,
+						Tags: tags,
+					},
+					Weight: pointer.To(uint(100)),
 				},
 			}
 		}

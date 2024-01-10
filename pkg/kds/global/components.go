@@ -44,7 +44,6 @@ var (
 )
 
 func Setup(rt runtime.Runtime) error {
-	var err error
 	if rt.Config().Mode != config_core.Global {
 		// Only run on global
 		return nil
@@ -58,7 +57,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
-		true,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -73,7 +71,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
 		rt.KDSContext().GlobalResourceMapper,
-		true,
 		rt.Config().Multizone.Global.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -140,7 +137,7 @@ func Setup(rt runtime.Runtime) error {
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, "")
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)),

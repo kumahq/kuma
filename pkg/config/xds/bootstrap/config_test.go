@@ -17,6 +17,9 @@ var _ = Describe("BootstrappServerConfig", func() {
 	It("should be loadable from configuration file", func() {
 		// given
 		cfg := BootstrapServerConfig{}
+		//nolint:gosec
+		fileError := os.WriteFile("/tmp/corefile", []byte("abc"), 0o600)
+		Expect(fileError).ToNot(HaveOccurred())
 
 		// when
 		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
@@ -31,6 +34,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
 		Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
+		Expect(cfg.Params.CorefileTemplatePath).To(Equal("/tmp/corefile"))
 	})
 
 	Context("with modified environment variables", func() {

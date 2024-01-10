@@ -943,13 +943,14 @@ var _ = Describe("Inspect WS", func() {
 					AddOutbound(builders.Outbound().WithService("backend").WithAddress("240.0.0.0").WithPort(80)).
 					Build(),
 				builders.MeshTrafficPermission().
+					WithName("mtp-1").
 					WithTargetRef(builders.TargetRefService("web")).
-					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east", "version", "2"), v1alpha1.Allow).
 					Build(),
 				builders.MeshTrafficPermission().
 					WithName("mtp-2").
 					WithTargetRef(builders.TargetRefService("web")).
-					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east", "version", "2"), v1alpha1.Allow).
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), v1alpha1.Deny).
 					Build(),
 				builders.MeshAccessLog().
 					WithTargetRef(builders.TargetRefService("web")).

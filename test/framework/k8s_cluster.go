@@ -47,6 +47,7 @@ type K8sNetworkingState struct {
 	ZoneEgress  PortFwd `json:"zoneEgress"`
 	ZoneIngress PortFwd `json:"zoneIngress"`
 	KumaCp      PortFwd `json:"kumaCp"`
+	MADS        PortFwd `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -297,12 +298,8 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	switch mode {
 	case core.Zone:
-		zoneName := c.opts.zoneName
-		if zoneName == "" {
-			zoneName = c.GetKumactlOptions().CPName
-		}
 		if c.opts.globalAddress != "" {
-			argsMap["--zone"] = zoneName
+			argsMap["--zone"] = c.ZoneName()
 			argsMap["--kds-global-address"] = c.opts.globalAddress
 		}
 	}
@@ -401,12 +398,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
 	case core.Zone:
-		zoneName := c.opts.zoneName
-		if zoneName == "" {
-			zoneName = c.GetKumactlOptions().CPName
-		}
 		if c.opts.globalAddress != "" {
-			values["controlPlane.zone"] = zoneName
+			values["controlPlane.zone"] = c.ZoneName()
 			values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
 			values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
 		}
@@ -510,49 +503,46 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 		err = c.deployKumaViaHelm(mode)
 	default:
-		return errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
+		err = errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
 	}
-
 	if err != nil {
 		return err
 	}
 
-	appsToInstall := make([]appInstallation, 0)
-	appsToInstall = append(appsToInstall, appInstallation{Config.KumaServiceName, Config.KumaNamespace, replicas})
-	if c.opts.cni {
-		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1})
-	}
-	if c.opts.zoneIngress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1})
-	}
-	if c.opts.zoneEgress {
-		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1})
+	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
+	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
+		return errors.Wrap(err, "Kuma control-plane failed to start")
 	}
 
 	var wg sync.WaitGroup
-	errCh := make(chan error, len(appsToInstall))
+	var appsToInstall []appInstallation
+	if c.opts.cni {
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1, nil})
+	}
+	if c.opts.zoneIngress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
+	}
+	if c.opts.zoneEgress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1, nil})
+	}
 
-	for _, app := range appsToInstall {
+	for i := range appsToInstall {
+		idx := i
 		wg.Add(1)
-		go func(installation appInstallation) {
+		go func() {
 			defer wg.Done()
-			if e := c.WaitApp(installation.Name, installation.Namespace, installation.Replicas); e != nil {
-				errCh <- e
-			}
-		}(app)
+			appsToInstall[idx].Outcome = c.WaitApp(appsToInstall[idx].Name, appsToInstall[idx].Namespace, appsToInstall[idx].Replicas)
+		}()
 	}
 
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
-
-	var allErrors []error
-	for err := range errCh {
-		allErrors = append(allErrors, err)
+	wg.Wait() // Because of the wait group we have a memory barrier which allows us to read Outcome in a thread safe manner.
+	for _, appInstall := range appsToInstall {
+		if appInstall.Outcome != nil {
+			err = multierr.Append(err, errors.Wrapf(appInstall.Outcome, "%s failed to start", appInstall.Name))
+		}
 	}
-	if len(allErrors) > 0 {
-		return multierr.Combine(allErrors...)
+	if err != nil {
+		return err
 	}
 
 	if c.opts.zoneEgressEnvoyAdminTunnel {
@@ -1251,8 +1241,16 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
 }
 
+func (c *K8sCluster) ZoneName() string {
+	if c.opts.zoneName != "" {
+		return c.opts.zoneName
+	}
+	return c.Name()
+}
+
 type appInstallation struct {
 	Name      string
 	Namespace string
 	Replicas  int
+	Outcome   error
 }

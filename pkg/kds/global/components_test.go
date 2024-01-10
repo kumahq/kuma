@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/global"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -161,7 +160,7 @@ var _ = Describe("Global Sync", func() {
 			zoneStores = []store.ResourceStore{}
 			for i := 0; i < numOfZones; i++ {
 				zoneStore := memory.NewStore()
-				srv, err := kds_setup.StartServer(zoneStore, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+				srv, err := kds_setup.NewKdsServerBuilder(zoneStore).AsZone(fmt.Sprintf(zoneName, i)).Sotw()
 				Expect(err).ToNot(HaveOccurred())
 				serverStream := grpc.NewMockServerStream()
 				wg.Add(1)
@@ -230,7 +229,7 @@ var _ = Describe("Global Sync", func() {
 			zoneStores = []store.ResourceStore{}
 			for i := 0; i < numOfZones; i++ {
 				zoneStore := memory.NewStore()
-				srv, err := kds_setup.StartDeltaServer(zoneStore, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+				srv, err := kds_setup.NewKdsServerBuilder(zoneStore).AsZone(fmt.Sprintf(zoneName, i)).Delta()
 				Expect(err).ToNot(HaveOccurred())
 				serverStream := grpc.NewMockDeltaServerStream()
 				wg.Add(1)

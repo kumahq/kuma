@@ -43,12 +43,12 @@ jobs:
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -56,7 +56,7 @@ jobs:
             go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -71,16 +71,23 @@ jobs:
         run: |
           echo "Disk usage before cleanup"
           sudo df -h
+          echo "Removing big directories"
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Pruning images"
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      - name: "GitHub Actions: download build artifacts"
+      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
+      - name: "GitHub Actions: download build artifacts with retry"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/download-artifact@v3
+        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # master
         with:
-          name: build-output
-          path: build
+          action: actions/download-artifact@v4
+          with: |
+            path: build
+            name: build-output
+          attempt_limit: 5
+          attempt_delay: 1000
       - name: "GitHub Actions: extract artifacts"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
@@ -141,13 +148,12 @@ jobs:
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             let circleCIParams = {
               'gh_action_build_artifact_name': 'build-output',
-              'gh_action_runtime_token': process.env['ACTIONS_RUNTIME_TOKEN'],
-              'gh_action_artifact_list_url': `${process.env['ACTIONS_RUNTIME_URL']}/_apis/pipelines/workflows/${{ github.run_id }}/artifacts?api-version=6.0-preview`
+              'gh_action_run_id': '${{ github.run_id }}'
             };
             let inputs = JSON.parse(${{ toJSON(inputs.matrix) }});
             Object.keys(inputs).forEach(function(key) {
@@ -156,12 +162,11 @@ jobs:
             let circleCIBody = {
               "parameters": circleCIParams,
             };
-            // use pull/<number>/head if it's PR from a fork,
-            // otherwise, always use the current SHA to make sure all CircleCI e2e runnings are using the same commit SHA with this GH Action run
-            if ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}") {
-              circleCIBody["branch"] = '${{ github.ref_name}}'.replace(/^(refs\/)/,"");
+
+            if ( "${{ github.event_name }}" == "pull_request" ) {
+              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.id }}/merge';
             } else {
-              circleCIBody["tag"] = '${{ github.event.pull_request.head.sha || github.sha }}'
+              circleCIBody["tag"] = '${{ github.sha }}'
             }
 
             core.info(`created request object for circleCI ${JSON.stringify(circleCIBody)}`);
@@ -196,6 +201,7 @@ jobs:
             fi
 
             OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            touch $OUTPUT_FILE
             STATUS_CODE=
             while [[ "$STATUS_CODE" == "" ]]; do
               STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
@@ -210,19 +216,19 @@ jobs:
               fi
             done
 
-            cat $OUTPUT_FILE
-            rm $OUTPUT_FILE
             if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
               echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
-              exit 1
+              cat $OUTPUT_FILE
             fi
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
           }
 
-          PIPELINE_ID=$(request POST $CIRCLE_CI_API_PATH '${{ steps.circleci-gen-params.outputs.result }}' | jq -r '.id')
+          PIPELINE_ID=$(request POST $CIRCLE_CI_API_PATH '${{ steps.circleci-gen-params.outputs.result }}' | tr '\n' ' ' | jq -Rrc 'fromjson | .id')
           sleep 3
-          WORKFLOW_DETAILS=$(request GET https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow | jq -cr '.items[] | select(.name == "manual-e2e")')
-          PIPELINE_NUMBER=$(echo $WORKFLOW_DETAILS | jq -r '.pipeline_number')
-          WORKFLOW_ID=$(echo $WORKFLOW_DETAILS | jq -r '.id')
+          WORKFLOW_DETAILS=$(request GET https://circleci.com/api/v2/pipeline/$PIPELINE_ID/workflow | tr '\n' ' ' | jq -Rrc 'fromjson | .items[] | select(.name == "manual-e2e")')
+          PIPELINE_NUMBER=$(echo $WORKFLOW_DETAILS | tr '\n' ' ' | jq -Rrc 'fromjson | .pipeline_number')
+          WORKFLOW_ID=$(echo $WORKFLOW_DETAILS | tr '\n' ' ' | jq -Rrc 'fromjson | .id')
 
           echo "pipeline_number=$PIPELINE_NUMBER" >> $GITHUB_OUTPUT
           echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
@@ -253,13 +259,12 @@ jobs:
             fi
 
             OUTPUT_FILE=/tmp/circleci-response-$RANDOM.json
+            touch $OUTPUT_FILE
             STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
               --header "content-type: application/json" --header "accept: application/json" \
               --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
               --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
 
-            cat $OUTPUT_FILE
-            rm $OUTPUT_FILE
             if [ "$STATUS_CODE" == "429" ]; then
               # we are exceeding rate limit, try again later
               echo '{"status": ""}'
@@ -267,8 +272,10 @@ jobs:
             fi
             if [ $STATUS_CODE -lt 200 ] || [ $STATUS_CODE -gt 399 ] ; then
               echo "Error requesting $METHOD $URL (status $STATUS_CODE)"
-              exit 1
+              cat $OUTPUT_FILE
             fi
+            cat $OUTPUT_FILE
+            rm $OUTPUT_FILE
           }
 
           function check_workflow(){
@@ -279,7 +286,7 @@ jobs:
             # status completed: "success" "not_run" "failed" "error" "failing" "canceled" "unauthorized"
             while [[ "$STATUS" == "" ]] || [[ "$STATUS" == "running" ]] || [[ "$STATUS" == "on_hold" ]]; do
               sleep $((RANDOM % 5 + 25))
-              STATUS=$(request GET https://circleci.com/api/v2/workflow/$WORKFLOW_ID | jq -r '.status')
+              STATUS=$(request GET https://circleci.com/api/v2/workflow/$WORKFLOW_ID | tr '\n' ' ' | jq -Rrc 'fromjson | .status')
               echo -n .
             done
 

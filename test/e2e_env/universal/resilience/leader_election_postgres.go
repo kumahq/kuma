@@ -58,7 +58,7 @@ func LeaderElectionPostgres() {
 		Expect(metrics).To(ContainSubstring(`leader{zone="kuma-leader2"} 0`))
 
 		// when CP 1 is killed
-		_, _, err = zone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		_, _, err = zone1.Exec("", "", AppModeCP, "pkill", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then CP 2 is leader

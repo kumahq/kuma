@@ -131,11 +131,9 @@ test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slowe
 .PHONY: test/e2e-kubernetes
 test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag
-	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
-	$(MAKE) test/e2e/k8s/wait/kuma-1
-	$(MAKE) test/e2e/k8s/load/images/kuma-1
+	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
+	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-universal
 test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues
@@ -146,5 +144,5 @@ test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/cr
 test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

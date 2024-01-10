@@ -504,7 +504,7 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
-    name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
+    name: "default" # ENV: KUMA_MULTIZONE_ZONE_NAME
     # GlobalAddress URL of Global Kuma CP
     globalAddress: # ENV KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
     kds:

@@ -129,7 +129,7 @@ var _ = Describe("KDS client", func() {
 			}, "10s", "100ms").Should(Succeed())
 
 			// then
-			Eventually(errCh).Should(Receive(MatchError("error response from Zone CP: failed")))
+			Eventually(errCh).Should(Receive(MatchError("could not send XDSConfigRequest: failed")))
 		})
 	})
 

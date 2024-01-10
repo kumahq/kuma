@@ -64,7 +64,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 	}
 
 	version := 0
-	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
+	statement := `INSERT INTO resources (name, mesh, type, version, spec, creation_time, modification_time, owner_name, owner_mesh, owner_type, labels) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
 
 	labels, err := prepareLabels(opts.Labels)
 	if err != nil {

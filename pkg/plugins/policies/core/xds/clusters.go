@@ -18,6 +18,7 @@ type Clusters struct {
 	OutboundSplit map[string][]*envoy_cluster.Cluster
 	Gateway       map[string]*envoy_cluster.Cluster
 	Egress        map[string]*envoy_cluster.Cluster
+	Prometheus    *envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
@@ -46,6 +47,8 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			clusters.Gateway[cluster.Name] = cluster
 		case egress.OriginEgress:
 			clusters.Egress[cluster.Name] = cluster
+		case generator.OriginPrometheus:
+			clusters.Prometheus = cluster
 		default:
 			continue
 		}
@@ -72,20 +75,4 @@ func GatherTargetedClusters(
 	}
 
 	return targetedClusters
-}
-
-func HasExternalService(routing core_xds.Routing, serviceName string) bool {
-	// We assume that all the targets are either ExternalServices or not
-	// therefore we check only the first one
-	if endpoints := routing.OutboundTargets[serviceName]; len(endpoints) > 0 {
-		if endpoints[0].IsExternalService() {
-			return true
-		}
-	}
-
-	if endpoints := routing.ExternalServiceOutboundTargets[serviceName]; len(endpoints) > 0 {
-		return true
-	}
-
-	return false
 }

@@ -15,7 +15,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -74,10 +73,6 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
-		if resp := h.validateResourceLocation(resType); !resp.Allowed {
-			return resp
-		}
-
 		coreRes, k8sObj, err := h.decode(req)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -90,7 +85,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		if err := core_model.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
-				return convertSpecValidationError(kumaErr, k8sObj)
+				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsTargetRefBased, k8sObj)
 			}
 			return admission.Denied(err.Error())
 		}
@@ -168,32 +163,18 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admi
 	}
 }
 
-// validateResourceLocation validates if resources that suppose to be applied on Global are applied on Global and other way around
-func (h *validatingHandler) validateResourceLocation(resType core_model.ResourceType) admission.Response {
-	if err := system.ValidateLocation(resType, h.mode); err != nil {
-		return admission.Response{
-			AdmissionResponse: v1.AdmissionResponse{
-				Allowed: false,
-				Result: &metav1.Status{
-					Status:  "Failure",
-					Message: err.Error(),
-					Reason:  "Forbidden",
-					Code:    403,
-				},
-			},
-		}
-	}
-	return admission.Allowed("")
-}
-
 func (h *validatingHandler) Supports(admission.Request) bool {
 	return true
 }
 
-func convertSpecValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
-	verr := validators.ValidationError{}
+func convertSpecValidationError(kumaErr *validators.ValidationError, isTargetRef bool, obj k8s_model.KubernetesObject) admission.Response {
+	verr := validators.OK()
 	if kumaErr != nil {
-		verr.AddError("spec", *kumaErr)
+		if isTargetRef {
+			verr = *kumaErr
+		} else {
+			verr.AddError("spec", *kumaErr)
+		}
 	}
 	return convertValidationErrorOf(verr, obj, obj.GetObjectMeta())
 }

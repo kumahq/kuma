@@ -72,11 +72,11 @@ func (r *ZoneConfig) PostProcess() error {
 }
 
 func (r *ZoneConfig) Validate() error {
-	if r.Name != "" && !govalidator.IsDNSName(r.Name) {
-		return errors.Errorf("Zone name %s has to be a valid DNS name", r.Name)
+	if r.Name == "" {
+		return errors.Errorf("Name is mandatory")
 	}
-	if r.Name == "" && r.GlobalAddress != "" {
-		return errors.Errorf("Name is mandatory when Zone is federated (.GlobalAddress is specified)")
+	if !govalidator.IsDNSName(r.Name) {
+		return errors.Errorf("Zone name %s has to be a valid DNS name", r.Name)
 	}
 	if r.GlobalAddress != "" {
 		u, err := url.Parse(r.GlobalAddress)
@@ -111,7 +111,7 @@ func (r *ZoneConfig) Validate() error {
 func DefaultZoneConfig() *ZoneConfig {
 	return &ZoneConfig{
 		GlobalAddress: "",
-		Name:          "",
+		Name:          "default",
 		KDS: &KdsClientConfig{
 			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			MaxMsgSize:      10 * 1024 * 1024,

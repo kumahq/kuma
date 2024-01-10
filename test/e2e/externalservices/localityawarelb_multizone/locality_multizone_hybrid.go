@@ -102,7 +102,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		).To(Succeed())
 
 		Expect(NewClusterSetup().
-			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1-zone"))).
+			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1"))).
 			Setup(global),
 		).To(Succeed())
 	})

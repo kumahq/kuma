@@ -39,5 +39,6 @@ spec:
     - default:
         action: Deny
       targetRef:
-        kind: Mesh
-
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-payment

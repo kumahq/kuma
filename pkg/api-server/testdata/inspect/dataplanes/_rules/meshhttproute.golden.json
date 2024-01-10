@@ -1,4 +1,17 @@
 {
+ "httpMatches": [
+  {
+   "hash": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU=",
+   "match": [
+    {
+     "path": {
+      "value": "/api",
+      "type": "PathPrefix"
+     }
+    }
+   ]
+  }
+ ],
  "resource": {
   "mesh": "default",
   "name": "dp-1",
@@ -10,7 +23,48 @@
    "toRules": [
     {
      "conf": {
-      "Rules": [
+      "rules": [
+       {
+        "matches": [
+         {
+          "path": {
+           "value": "/api",
+           "type": "PathPrefix"
+          }
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "1.0"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "the-http-route",
+       "type": "MeshHTTPRoute"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "rules": [
        {
         "matches": [
          {
@@ -52,47 +106,6 @@
       {
        "mesh": "default",
        "name": "the-other-http-route",
-       "type": "MeshHTTPRoute"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "Rules": [
-       {
-        "matches": [
-         {
-          "path": {
-           "value": "/api",
-           "type": "PathPrefix"
-          }
-         }
-        ],
-        "default": {
-         "backendRefs": [
-          {
-           "kind": "MeshServiceSubset",
-           "name": "backend_kuma-demo_svc_3001",
-           "tags": {
-            "version": "1.0"
-           }
-          }
-         ]
-        }
-       }
-      ]
-     },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
-      }
-     ],
-     "origin": [
-      {
-       "mesh": "default",
-       "name": "the-http-route",
        "type": "MeshHTTPRoute"
       }
      ]
