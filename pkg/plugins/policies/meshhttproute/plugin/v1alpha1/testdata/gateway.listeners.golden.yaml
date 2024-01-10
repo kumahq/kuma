@@ -117,20 +117,3 @@ resources:
     name: sample-gateway:HTTP:8081
     perConnectionBufferLimitBytes: 32768
     trafficDirection: INBOUND
-- name: sample-gateway:TCP:9080
-  resource:
-    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    address:
-      socketAddress:
-        address: 192.168.0.1
-        portValue: 9080
-    enableReusePort: true
-    filterChains:
-    - {}
-    listenerFilters:
-    - name: envoy.filters.listener.tls_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: sample-gateway:TCP:9080
-    perConnectionBufferLimitBytes: 32768
-    trafficDirection: INBOUND
