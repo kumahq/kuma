@@ -8,7 +8,6 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	"github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -43,13 +42,13 @@ func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly
 		response := api_types.ResourceTypeDescriptionList{}
 		for _, def := range defs {
 			td := api_common.ResourceTypeDescription{
-				Name:                string(def.Name),
-				ReadOnly:            readOnly || federatedZone || def.ReadOnly,
-				Path:                def.WsPath,
-				SingularDisplayName: def.SingularDisplayName,
-				PluralDisplayName:   def.PluralDisplayName,
-				Scope:               api_common.ResourceTypeDescriptionScope(def.Scope),
-				IncludeInDump:       (def.KDSFlags&model.ProvidedByGlobal) != 0 && def.Name != mesh.ZoneIngressType, // todo check with Charly what was the intention here. Wait until lobkovilya's changes with flags
+				Name:                            string(def.Name),
+				ReadOnly:                        readOnly || federatedZone || def.ReadOnly,
+				Path:                            def.WsPath,
+				SingularDisplayName:             def.SingularDisplayName,
+				PluralDisplayName:               def.PluralDisplayName,
+				Scope:                           api_common.ResourceTypeDescriptionScope(def.Scope),
+				IncludeInFederationWithPolicies: (def.KDSFlags & model.GlobalToAllZonesFlag) != 0,
 			}
 			if def.IsPolicy {
 				td.Policy = &api_common.PolicyDescription{
