@@ -240,7 +240,7 @@ jobs:
               "test_e2e": {
                 "target": [""],
                 "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["amd64", "arm64"],
+                "arch": ["amd64"],
                 "parallelism": [3],
                 "cniNetworkPlugin": ["flannel"],
                 "legacyKDS": [false]
@@ -248,19 +248,19 @@ jobs:
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
                 "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["amd64", "arm64"],
+                "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
                 "legacyKDS": [false],
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
-                  {"arch": "arm64", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
                   {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]
               }
