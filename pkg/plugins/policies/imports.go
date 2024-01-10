@@ -1,9 +1,6 @@
 package policies
 
 import (
-	"os"
-	"strings"
-
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection"
@@ -37,24 +34,13 @@ var nameToModule = map[string]func(){
 	"meshtrafficpermissions":      meshtrafficpermission.InitPlugin,
 }
 
-func initAllPolicies() {
-	for _, initializer := range nameToModule {
-		initializer()
-	}
-}
-
-func init() {
-	// we read this manually otherwise we would have to wire in enabling plugins in every test
-	rawEnabledPluginPolicies := os.Getenv("KUMA_PLUGIN_POLICIES_ENABLED")
-	if rawEnabledPluginPolicies == "" {
-		initAllPolicies()
-	} else {
-		enabledPluginPolicies := strings.Split(rawEnabledPluginPolicies, ",")
-		for _, policy := range enabledPluginPolicies {
-			initializer, ok := nameToModule[policy]
-			if ok {
-				initializer()
-			}
+func InitPolicies(enabledPluginPolicies []string) {
+	for _, policy := range enabledPluginPolicies {
+		initializer, ok := nameToModule[policy]
+		if ok {
+			initializer()
+		} else {
+			panic("policy " + policy + " not found")
 		}
 	}
 }

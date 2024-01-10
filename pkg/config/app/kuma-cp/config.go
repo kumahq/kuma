@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
+	"github.com/kumahq/kuma/pkg/config/plugins/policies"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/tracing"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -167,6 +168,8 @@ type Config struct {
 	Tracing tracing.Config `json:"tracing"`
 	// EventBus is a configuration of the event bus which is local to one instance of CP.
 	EventBus eventbus.Config `json:"eventBus"`
+	// Policies is a configuration of plugin policies like MeshAccessLog, MeshTrace etc.
+	Policies *policies.Config `json:"policies"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -190,6 +193,7 @@ func (c *Config) Sanitize() {
 	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
+	c.Policies.Sanitize()
 }
 
 func (c *Config) PostProcess() error {
@@ -206,6 +210,7 @@ func (c *Config) PostProcess() error {
 		c.DNSServer.PostProcess(),
 		c.Multizone.PostProcess(),
 		c.Diagnostics.PostProcess(),
+		c.Policies.PostProcess(),
 	)
 }
 
@@ -266,6 +271,7 @@ var DefaultConfig = func() Config {
 		Proxy:    xds.DefaultProxyConfig(),
 		InterCp:  intercp.DefaultInterCpConfig(),
 		EventBus: eventbus.Default(),
+		Policies: policies.DefaultPoliciesConfig(),
 	}
 }
 
@@ -324,6 +330,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Tracing.Validate(); err != nil {
 		return errors.Wrap(err, "Tracing validation failed")
+	}
+	if err := c.Policies.Validate(); err != nil {
+		return errors.Wrap(err, "Policies validation failed")
 	}
 	return nil
 }
