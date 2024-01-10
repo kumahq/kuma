@@ -227,12 +227,13 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			if isOldZone(rs) {
 				// todo: remove in 2 releases after 2.6.x
 				util.AddPrefixToNames(rs.GetItems(), clusterName)
-				for _, r := range rs.GetItems() {
-					r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
-						util.WithLabel(mesh_proto.ZoneTag, clusterName),
-						util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
-					))
-				}
+			}
+
+			for _, r := range rs.GetItems() {
+				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
+					util.WithLabel(mesh_proto.ZoneTag, clusterName),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				))
 			}
 
 			if k8sStore {
@@ -264,6 +265,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 	}
 }
 
+// isOldZone checks if zone is running not the latest version of Kuma CP and doesn't support hash suffixes
 func isOldZone(rs model.ResourceList) bool {
 	if len(rs.GetItems()) == 0 {
 		// if there are no resources it doesn't matter if it's old or new Zone

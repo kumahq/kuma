@@ -323,12 +323,13 @@ func GlobalSyncCallback(
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
 				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
-				for _, r := range upstream.AddedResources.GetItems() {
-					r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
-						util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
-						util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
-					))
-				}
+			}
+
+			for _, r := range upstream.AddedResources.GetItems() {
+				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
+					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				))
 			}
 
 			if k8sStore {
