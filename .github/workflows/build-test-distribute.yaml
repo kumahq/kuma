@@ -153,6 +153,7 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - run: |
           make -j images
+          make -j docker/save
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
