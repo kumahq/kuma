@@ -19,7 +19,7 @@ func MeshTrafficPermissionUniversal() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-			Install(TestServerUniversal("test-server-tcp", meshName, WithArgs([]string{"echo", "--instance", "test-server-tcp"}), WithProtocol("tcp"))).
+			Install(TestServerUniversal("test-server-tcp", meshName, WithArgs([]string{"echo", "--instance", "test-server-tcp"}), WithServiceName("test-server-tcp"), WithProtocol("tcp"))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 
@@ -44,6 +44,8 @@ func MeshTrafficPermissionUniversal() {
 	})
 
 	trafficAllowed := func(addr string) {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", addr,
@@ -53,6 +55,8 @@ func MeshTrafficPermissionUniversal() {
 	}
 
 	trafficBlocked := func(addr string, statusCode int) {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", addr,
@@ -96,7 +100,7 @@ spec:
 		// when mesh traffic permission with MeshService
 		yaml := `
 type: MeshTrafficPermission
-name: mtp-1
+name: mtp-2
 mesh: meshtrafficpermission
 spec:
  targetRef:
@@ -124,7 +128,7 @@ spec:
 		// when
 		yaml := `
 type: MeshTrafficPermission
-name: mtp-2
+name: mtp-3
 mesh: meshtrafficpermission
 spec:
   targetRef:
@@ -160,7 +164,7 @@ spec:
 		// when specific MTP is applied
 		yaml := `
 type: MeshTrafficPermission
-name: mtp-3
+name: mtp-4
 mesh: meshtrafficpermission
 spec:
  targetRef:
@@ -196,7 +200,7 @@ spec:
 		// when specific MTP is applied
 		yaml := `
 type: MeshTrafficPermission
-name: mtp-3
+name: mtp-5
 mesh: meshtrafficpermission
 spec:
  targetRef:
