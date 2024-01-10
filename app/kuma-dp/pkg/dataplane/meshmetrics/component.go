@@ -7,7 +7,10 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
@@ -54,6 +57,11 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-cf.ticker.C:
+			if _, err := os.Stat(cf.socketPath); errors.Is(err, os.ErrNotExist) {
+				logger.V(1).Info("skipping /meshmetric endpoint scrape since socket does not exist", "err", err)
+				continue
+			}
+
 			configuration, err := cf.scrapeConfig()
 			if err != nil {
 				continue
