@@ -156,8 +156,9 @@ func createDynamicConfig(conf api.Conf) xds.MeshMetricDpConfig {
 	var applications []xds.Application
 	for _, app := range pointer.Deref(conf.Applications) {
 		applications = append(applications, xds.Application{
-			Port: app.Port,
-			Path: pointer.DerefOr(app.Path, "/metrics"),
+			Address: pointer.Deref(app.Address),
+			Port:    app.Port,
+			Path:    pointer.DerefOr(app.Path, "/metrics"),
 		})
 	}
 
