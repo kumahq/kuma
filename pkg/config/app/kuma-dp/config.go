@@ -34,7 +34,6 @@ var DefaultConfig = func() Config {
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
-				// TODO pick proper default
 				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
 		},
@@ -220,7 +219,7 @@ type Metrics struct {
 }
 
 type DynamicConfiguration struct {
-	// RefreshInterval defines how often DPP should refresh dynamic config. Default: TODO
+	// RefreshInterval defines how often DPP should refresh dynamic config. Default: 10s
 	RefreshInterval config_types.Duration `json:"refreshInterval,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_configuration_refresh_interval"`
 }
 
