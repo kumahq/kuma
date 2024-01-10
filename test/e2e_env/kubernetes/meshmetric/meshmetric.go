@@ -205,6 +205,24 @@ func MeshMetric() {
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("path-stats"))
 		}).Should(Succeed())
+
+		// update policy config and check if changes was applied on DPP
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/app-stats"))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
+			g.Expect(stdout).To(ContainSubstring("app-stats"))
+		}).Should(Succeed())
 	})
 
 	It("MADS server response contains DPPs from all meshes when prometheus client id is empty", func() {
