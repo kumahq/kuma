@@ -429,6 +429,7 @@ jobs:
             make -j build/distributions
       - run:
           name: "Images"
+          command: |
             make -j images
             make -j docker/save
       - run:
