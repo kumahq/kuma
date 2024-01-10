@@ -19,6 +19,7 @@ func MeshTrafficPermissionUniversal() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+			Install(TestServerUniversal("test-server-tcp", meshName, WithArgs([]string{"echo", "--instance", "test-server-tcp"}), WithProtocol("tcp"))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 
@@ -51,19 +52,19 @@ func MeshTrafficPermissionUniversal() {
 		}).Should(Succeed())
 	}
 
-	trafficBlocked := func() {
+	trafficBlocked := func(addr string, statusCode int) {
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
+				universal.Cluster, "demo-client", addr,
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(403))
+			g.Expect(response.ResponseCode).To(Equal(statusCode))
 		}).Should(Succeed())
 	}
 
-	It("should allow the traffic with meshtrafficpermission based on MeshService", func() {
+	It("should allow the traffic with meshtrafficpermission based on MeshService (http)", func() {
 		// given no mesh traffic permissions
-		trafficBlocked()
+		trafficBlocked("test-server.mesh", 503)
 
 		// when mesh traffic permission with MeshService
 		yaml := `
@@ -88,9 +89,37 @@ spec:
 		trafficAllowed("test-server.mesh")
 	})
 
+	It("should allow the traffic with meshtrafficpermission based on MeshService (tcp)", func() {
+		// given no mesh traffic permissions
+		trafficBlocked("test-server-tcp.mesh", 503)
+
+		// when mesh traffic permission with MeshService
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-1
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server-tcp
+ from:
+   - targetRef:
+       kind: MeshService
+       name: demo-client
+     default:
+       action: Allow
+`
+		err := YamlUniversal(yaml)(universal.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed("test-server-tcp.mesh")
+	})
+
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
 		// given no mesh traffic permission
-		trafficBlocked()
+		trafficBlocked("test-server.mesh", 503)
+		trafficBlocked("test-server-tcp.mesh", 503)
 
 		// when
 		yaml := `
@@ -114,11 +143,12 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		trafficAllowed("test-server.mesh")
+		trafficAllowed("test-server-tcp.mesh")
 	})
 
-	It("should be able to allow the traffic with permissive mTLS", func() {
+	It("should be able to allow the traffic with permissive mTLS (http)", func() {
 		// given mesh traffic permission with permissive mTLS
-		trafficBlocked()
+		trafficBlocked("test-server.mesh", 503)
 		permissive := samples.MeshDefaultBuilder().
 			WithName(meshName).
 			WithEnabledMTLSBackend("ca-1").
@@ -145,10 +175,46 @@ spec:
 		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then
-		trafficBlocked()
+		trafficBlocked("test-server.mesh", 403)
 
 		// and it's still possible to access a service from outside the mesh
 		publicAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
+		trafficAllowed(publicAddress)
+	})
+
+	It("should be able to allow the traffic with permissive mTLS (tcp)", func() {
+		// given mesh traffic permission with permissive mTLS
+		trafficBlocked("test-server-tcp.mesh", 503)
+		permissive := samples.MeshDefaultBuilder().
+			WithName(meshName).
+			WithEnabledMTLSBackend("ca-1").
+			WithBuiltinMTLSBackend("ca-1").
+			WithPermissiveMTLSBackends().
+			Build()
+		Expect(universal.Cluster.Install(ResourceUniversal(permissive))).To(Succeed())
+
+		// when specific MTP is applied
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-3
+mesh: meshtrafficpermission
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server-tcp
+ from:
+   - targetRef:
+       kind: MeshService
+       name: demo-client
+     default:
+       action: Deny`
+		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+
+		// then
+		trafficBlocked("test-server-tcp.mesh", 503)
+
+		// and it's still possible to access a service from outside the mesh
+		publicAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-tcp").GetIP(), "80")
 		trafficAllowed(publicAddress)
 	})
 }
