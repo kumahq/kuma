@@ -1,14 +1,19 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -43,6 +48,23 @@ func (p plugin) Apply(
 		return nil
 	}
 
+	if err := ApplyToOutbounds(proxy, rs, ctx, policies); err != nil {
+		return err
+	}
+
+	if err := ApplyToGateway(context.TODO(), proxy, rs, ctx, policies); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ApplyToOutbounds(
+	proxy *core_xds.Proxy,
+	rs *core_xds.ResourceSet,
+	ctx xds_context.Context,
+	policies core_xds.TypedMatchingPolicies,
+) error {
 	tlsReady := ctx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
@@ -65,6 +87,65 @@ func (p plugin) Apply(
 		return errors.Wrap(err, "couldn't generate endpoint resources")
 	}
 	rs.AddSet(endpoints)
+
+	return nil
+}
+
+func ApplyToGateway(
+	ctx context.Context,
+	proxy *core_xds.Proxy,
+	resources *core_xds.ResourceSet,
+	xdsCtx xds_context.Context,
+	policies core_xds.TypedMatchingPolicies,
+) error {
+	if len(policies.GatewayRules.ToRules) == 0 {
+		return nil
+	}
+
+	var limits []plugin_gateway.RuntimeResoureLimitListener
+
+	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
+		if info.Listener.Protocol != mesh_proto.MeshGateway_Listener_TCP {
+			continue
+		}
+		address := proxy.Dataplane.Spec.GetNetworking().Address
+		port := info.Listener.Port
+		inboundListener := rules.InboundListener{
+			Address: address,
+			Port:    port,
+		}
+		routes, ok := policies.GatewayRules.ToRules[inboundListener]
+		if !ok {
+			continue
+		}
+
+		var hostInfos []plugin_gateway.GatewayHostInfo
+		for _, info := range info.HostInfos {
+			hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
+				Host:    info.Host,
+				Entries: GenerateEnvoyRouteEntries(info.Host, routes),
+			})
+		}
+		info.HostInfos = hostInfos
+
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
+		if err != nil {
+			return err
+		}
+		resources.AddSet(cdsResources)
+
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info, hostInfos)
+		if err != nil {
+			return err
+		}
+		resources.AddSet(ldsResources)
+
+		if limit != nil {
+			limits = append(limits, *limit)
+		}
+	}
+
+	resources.Add(plugin_gateway.GenerateRTDS(limits))
 
 	return nil
 }
