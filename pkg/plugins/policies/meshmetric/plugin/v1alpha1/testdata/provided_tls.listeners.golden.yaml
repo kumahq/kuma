@@ -4,7 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: /tmp/meshmetric.sock
+        path: kuma-mesh-metric-config.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

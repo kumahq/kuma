@@ -24,6 +24,7 @@
  "resources": {
   "maxHeapSizeBytes": 0
  },
+ "workdir": "",
  "accessLogSocketPath": "/tmp/access",
  "metricsResources": {
   "socketPath": "/tmp/metric",

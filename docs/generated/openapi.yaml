@@ -4760,6 +4760,9 @@ components:
                     will scrape
                   items:
                     properties:
+                      address:
+                        description: Address on which an application listens.
+                        type: string
                       path:
                         default: /metrics/prometheus
                         description: >-

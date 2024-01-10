@@ -246,8 +246,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			)
 			meshMetricsConfigFetcher := component.NewResilientComponent(
 				runLog.WithName("mesh-metric-config-fetcher"),
-				// TODO ticker from config
-				meshmetrics.NewMeshMetricConfigFetcher(meshMetricDynamicConfigSocketPath, time.NewTicker(5*time.Second), metricsServer, kumaSidecarConfiguration.Networking.Address, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
+				meshmetrics.NewMeshMetricConfigFetcher(
+					meshMetricDynamicConfigSocketPath,
+					time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+					metricsServer,
+					kumaSidecarConfiguration.Networking.Address,
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+				),
 			)
 			components = append(components, metricsServer, meshMetricsConfigFetcher)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

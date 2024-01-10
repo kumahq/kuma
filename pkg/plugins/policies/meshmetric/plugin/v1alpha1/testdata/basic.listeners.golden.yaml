@@ -4,7 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: /tmp/meshmetric.sock
+        path: kuma-mesh-metric-config.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -22,7 +22,7 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080}]}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}]}}}'
                   status: 200
                 match:
                   prefix: /

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	"io"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
