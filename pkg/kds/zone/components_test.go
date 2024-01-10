@@ -119,7 +119,7 @@ var _ = Describe("Zone Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
 	}
 
 	VerifySyncDoesntDeletePredefinedConfigMaps := func() {
@@ -166,7 +166,7 @@ var _ = Describe("Zone Sync", func() {
 		newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, configs map[string]bool) kds_client.KDSSink {
 			return kds_client.NewKDSSink(
 				core.Log.WithName("kds-sink"),
-				registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
+				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
 				kds_client.NewKDSStream(cs, zoneName, ""),
 				zone.Callbacks(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 			)
@@ -182,7 +182,7 @@ var _ = Describe("Zone Sync", func() {
 			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
 			srv, err := setup.NewKdsServerBuilder(globalStore).
 				WithKdsContext(kdsCtx).
-				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))).
+				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
 				Sotw()
 			Expect(err).ToNot(HaveOccurred())
 			serverStream := grpc.NewMockServerStream()
@@ -241,9 +241,9 @@ var _ = Describe("Zone Sync", func() {
 		newPolicySyncClient := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) kds_client_v2.KDSSyncClient {
 			return kds_client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
-				registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
+				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
 				kds_client_v2.NewDeltaKDSStream(cs, zoneName, &runtimeInfo, ""),
-				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, nil, "kuma-system"),
 				0,
 			)
 		}
@@ -257,7 +257,7 @@ var _ = Describe("Zone Sync", func() {
 
 			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
 			srv, err := setup.NewKdsServerBuilder(globalStore).
-				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))).
+				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
 				WithKdsContext(kdsCtx).
 				Delta()
 			Expect(err).ToNot(HaveOccurred())
