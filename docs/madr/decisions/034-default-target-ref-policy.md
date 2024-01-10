@@ -15,7 +15,7 @@ The legacy policies currently serve as the defaults. However, starting from rele
 
 ## Considered Options
 
-1. Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
+1. Prefer avoiding the creation of default routing policies and utilize plugin code in cases where there are no existing default legacy policy.
 2. Introduce a `policyEngine` field within the `Mesh` object, allowing the selection of the default policy version.
 
 ## Decision Outcome
@@ -36,13 +36,13 @@ The decision is to stop creating default policies and utilize plugin code in cas
 
 ### Prefer avoiding the creation of default policies and utilize plugin code in cases where there are no existing default legacy policy.
 
-As of the 2.6 release, we have discontinued the creation of default policies for `MeshTrafficPermisson` and `Mesh*Route` when initializing a new mesh. This change allows plugin's code to verify the existence of an older matching policy. In cases when there is no existing legacy policy, we generate the configuration using the code for targetRef policies. We are going to create default `MeshTimeout`, `MeshRetry` and `MeshCircuitBreaker` as a replacement of legacy policies to provide basic defaults for the communication.
+As of the 2.6 release, we have discontinued the creation of default policies for `MeshTrafficPermisson` and `Mesh*Route` when initializing a new mesh. This change allows plugins' code to verify the existence of an older matching policy. In cases when there is no existing legacy policy, we generate the configuration using the code for targetRef policies. We are going to create default `MeshTimeout`, `MeshRetry` and `MeshCircuitBreaker` as a replacement of legacy policies to provide basic defaults for the communication.
 
-To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and that allows new meshes to be created with legacy default policies.
+To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` which by default is disabled. The user can enable `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` and that allows new meshes to be created with legacy policies required for routing: `TrafficRoute` and `TrafficPermission`.
 
-Why do we need need `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`?
+Why do we need need `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`?
 
-When global is newer than a zone, and a new mesh is created it won't have default policies. Without default `TrafficPermission` and `TrafficRoute` policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` and create the new mesh that will work with the old zone.
+When global is newer than a zone, and a new mesh is created it won't have default policies. Without default `TrafficPermission` and `TrafficRoute` policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` and create the new mesh that will work with the old zone.
 
 #### Existing users behaviour
 
@@ -51,7 +51,7 @@ If a user already has a `Mesh` with default legacy policies, there will be no ch
 Problem:
 What if users update the mesh using CD/Terraform? 
 
-To maintain a consistent state during an upgrade, users must update their repository with default `Timeout`, `CircuitBreaker`, and `Retry` policies.
+To maintain a consistent state during an upgrade, users must update their repository with default `TrafficPermission` and `TrafficRoute` or enable `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`.
 
 #### New kuma users behaviour
 
@@ -71,7 +71,7 @@ This action would enable each dataplane to communicate with all `ExternalService
 
 #### Cons
 
-* New env `KUMA_DEFAULTS_CREATE_MESH_RESOURCES`
+* New env `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`
 
 ### Introduce a `policyEngine` field within the `Mesh` object, allowing the selection of the default policy version.
 
