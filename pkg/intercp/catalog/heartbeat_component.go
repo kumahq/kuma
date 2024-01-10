@@ -112,7 +112,7 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 		return false
 	}
 	if !resp.Leader {
-		heartbeatLog.Info("instance responded that it is no longer a leader")
+		heartbeatLog.V(1).Info("instance responded that it is no longer a leader")
 		h.leader = nil
 	}
 	return true
