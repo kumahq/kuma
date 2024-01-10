@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -14,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
+	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 type kdsEnvoyAdminClient struct {
@@ -35,13 +35,12 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 }
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
+
+	err := k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -73,13 +72,12 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 }
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
+
+	err := k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -111,13 +109,12 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 }
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
+
+	err := k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -148,22 +145,12 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 	}
 }
 
-func resNameInZone(nameInGlobal string, k8sStore bool) (string, string, error) {
-	parts := strings.Split(nameInGlobal, ".")
-	if len(parts) < 2 {
-		return "", "", errors.New("wrong name format. Expected {zone}.{name}")
+func resNameInZone(r core_model.Resource) string {
+	name := core_model.GetDisplayName(r)
+	if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
+		name = k8s.K8sNamespacedNameToCoreName(name, ns)
 	}
-	zone := parts[0] // zone is added by Global CP as a prefix for Dataplane/ZoneIngress/ZoneEgress
-	var nameInZone string
-	if k8sStore {
-		// if the type of store is Kubernetes then DPP resources are stored in namespaces. Kuma core model
-		// is not aware of namespaces and that's why the name in the core model is equal to 'name + .<namespace>'.
-		// Before sending the request we should trim the namespace suffix
-		nameInZone = strings.Join(parts[1:len(parts)-1], ".")
-	} else {
-		nameInZone = strings.Join(parts[1:], ".")
-	}
-	return zone, nameInZone, nil
+	return name
 }
 
 type KDSTransportError struct {
