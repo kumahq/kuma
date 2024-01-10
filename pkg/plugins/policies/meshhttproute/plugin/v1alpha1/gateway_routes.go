@@ -163,6 +163,10 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 				rewrite.ReplaceHostname = pointer.To(string(*r.Hostname))
 			}
 
+			if r.HostToBackendHostname {
+				rewrite.HostToBackendHostname = true
+			}
+
 			entry.Rewrite = &rewrite
 		}
 	}

@@ -12,14 +12,17 @@ import (
 )
 
 func ResilienceMultizoneUniversalPostgres() {
-	const clusterName1 = "kuma-respos1"
-	const clusterName2 = "kuma-respos2"
+	var clusterName1 string
+	var clusterName2 string
 
 	var global, zoneUniversal Cluster
 
 	BeforeEach(func() {
+		testingT := NewTestingT()
+		clusterName1 = "kuma1-" + testingT.Hash()
+		clusterName2 = "kuma2-" + testingT.Hash()
 		// Global
-		global = NewUniversalCluster(NewTestingT(), clusterName1, Verbose)
+		global = NewUniversalCluster(testingT, clusterName1, Verbose)
 
 		err := NewClusterSetup().
 			Install(postgres.Install(clusterName1)).
