@@ -47,6 +47,12 @@ const (
 	// On Kubernetes, Kuma resource name contains namespace. Display name is original name without namespace.
 	// The name contains hash when the resource is synced from global to zone. In this case, display name is original name from originated CP.
 	DisplayName = "kuma.io/display-name"
+
+	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
+	// It can be either "global" or "zone".
+	ResourceOriginLabel  = "kuma.io/origin"
+	ResourceOriginGlobal = "global"
+	ResourceOriginZone   = "zone"
 )
 
 type ProxyType string
