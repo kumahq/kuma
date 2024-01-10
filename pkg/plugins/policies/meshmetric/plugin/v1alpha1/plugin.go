@@ -29,7 +29,6 @@ var (
 const (
 	OriginDynamicConfig       = "dynamic-config"
 	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
-	DynamicConfigSocketPath   = "/tmp/meshmetric.sock"
 )
 
 type plugin struct{}

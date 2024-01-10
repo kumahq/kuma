@@ -186,9 +186,9 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	FIt("MeshMetric policy with dynamic configuration and application aggregation correctly exposes aggregated metrics", func() {
+	It("MeshMetric policy with dynamic configuration and application aggregation correctly exposes aggregated metrics", func() {
 		// given
-		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "path-stats"))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/path-stats"))).To(Succeed())
 		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
 		Expect(err).ToNot(HaveOccurred())
 

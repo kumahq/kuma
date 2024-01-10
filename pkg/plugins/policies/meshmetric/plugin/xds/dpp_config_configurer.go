@@ -48,6 +48,7 @@ type Metrics struct {
 }
 
 type Application struct {
-	Path string `json:"path"`
-	Port uint32 `json:"port"`
+	Path    string `json:"path"`
+	Port    uint32 `json:"port"`
+	Address string `json:"address"`
 }
