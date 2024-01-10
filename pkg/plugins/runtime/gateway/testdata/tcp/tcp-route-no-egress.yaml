@@ -7,7 +7,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 12s
+      connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: external-no-protocol-httpbin
@@ -67,6 +67,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:

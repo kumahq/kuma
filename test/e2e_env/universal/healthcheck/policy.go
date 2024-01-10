@@ -48,11 +48,8 @@ conf:
 					WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}))).
-				Install(TimeoutUniversal(meshName)).
-				Install(RetryUniversal(meshName)).
 				Install(TrafficRouteUniversal(meshName)).
 				Install(TrafficPermissionUniversal(meshName)).
-				Install(CircuitBreakerUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})

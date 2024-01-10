@@ -393,7 +393,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			builder.ResourceValidators().Mesh,
 			cfg.Store.UnsafeDelete,
 			builder.Extensions(),
-			cfg.Defaults.CreateMeshResources,
+			cfg.Defaults.CreateMeshRoutingResources,
+			cfg.Store.Type == store.KubernetesStore,
+			cfg.Store.Kubernetes.SystemNamespace,
 		),
 	)
 

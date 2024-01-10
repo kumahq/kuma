@@ -5,7 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("validator", func() {

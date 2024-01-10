@@ -20,6 +20,19 @@ func API() {
 			Install(MeshKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshretry policy
+		Eventually(func() error {
+			_, err := k8s.RunKubectlAndGetOutputE(
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
+				 "delete", "meshretry", fmt.Sprintf("mesh-retry-all-%s", meshName),
+			)
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
 	})
 
 	E2EAfterEach(func() {

@@ -26,7 +26,7 @@ func SetupAndGetState() []byte {
 			"--experimental-gatewayapi": "true",
 		}),
 		framework.WithEgress(),
-		framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_RESOURCES", "false"), // remove when default is to not create default policies
+		framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "false"), // remove when default is to not create default policies
 	},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
 

@@ -23,7 +23,7 @@ var _ = E2EBeforeSuite(func() {
 	})
 	Expect(Kuma(config_core.Zone,
 		WithEnv("KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS", "true"),
-		WithEnv("KUMA_DEFAULTS_CREATE_MESH_RESOURCES", "true"),
+		WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "true"),
 		WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 	)(k8sCluster)).To(Succeed())
 })

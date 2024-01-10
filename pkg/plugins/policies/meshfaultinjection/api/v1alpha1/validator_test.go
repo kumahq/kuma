@@ -5,7 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 	meshfaultinjection_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("MeshFaultInjection", func() {

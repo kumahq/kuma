@@ -42,10 +42,7 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "another-test-server"}),
 				WithServiceName("another-test-server"),
 			)).
-			Install(TimeoutUniversal(meshName)).
-			Install(RetryUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
 			Install(TestServerExternalServiceUniversal("route-es-http", 80, false)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())

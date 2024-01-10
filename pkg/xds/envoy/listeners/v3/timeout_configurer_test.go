@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -26,6 +27,28 @@ var _ = Describe("TimeoutConfigurer", func() {
 			IdleTimeout:       util_proto.Duration(103 * time.Second),
 			StreamIdleTimeout: util_proto.Duration(104 * time.Second),
 			MaxStreamDuration: util_proto.Duration(105 * time.Second),
+		},
+	}
+
+	defaultTimeoutResource := &core_mesh.TimeoutResource{
+		Spec: &mesh_proto.Timeout{
+			Sources: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Destinations: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Conf: &mesh_proto.Timeout_Conf{
+				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+				Tcp: &mesh_proto.Timeout_Conf_Tcp{
+					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+				},
+				Http: &mesh_proto.Timeout_Conf_Http{
+					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
+				},
+			},
 		},
 	}
 
@@ -86,7 +109,7 @@ trafficDirection: OUTBOUND
 `,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: defaultTimeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:
@@ -169,7 +192,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: defaultTimeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:
@@ -257,7 +280,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: defaultTimeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:

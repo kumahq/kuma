@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -28,6 +29,8 @@ func Inspect() {
 			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		// remove default
+		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

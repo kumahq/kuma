@@ -113,6 +113,10 @@ mtls:
 	It("enabling PERMISSIVE with no failed requests", func() {
 		Expect(universal.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 
+		// Disable retries so that we see every failed request
+		kumactl := universal.Cluster.GetKumactlOptions()
+		Expect(kumactl.KumactlDelete("meshretry", fmt.Sprintf("mesh-retry-all-%s", meshName), meshName)).To(Succeed())
+
 		// We must start client before server to test this properly. The client
 		// should get XDS refreshes first to trigger the race condition fixed by
 		// kumahq/kuma#3019

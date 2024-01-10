@@ -18,6 +18,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -149,13 +151,6 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: echo-service-9f149ed9e14091ca

@@ -66,6 +66,8 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 			ResourceManager: customizableManager,
 			Log:             logr.Discard(),
 			Extensions:      context.Background(),
+			K8sStore: 		 true,
+			SystemNamespace: "kuma-system",
 		}
 	})
 

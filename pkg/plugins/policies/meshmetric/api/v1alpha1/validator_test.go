@@ -4,11 +4,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
-	resources.DescribeValidCases(
+	DescribeValidCases(
 		NewMeshMetricResource,
 		Entry("full spec", `
 type: MeshMetric
@@ -36,9 +36,9 @@ default:
 `),
 	)
 
-	resources.DescribeErrorCases(
+	DescribeErrorCases(
 		NewMeshMetricResource,
-		resources.ErrorCase(
+		ErrorCase(
 			"missing Prometheus config",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].prometheus",
@@ -55,7 +55,7 @@ default:
   backends:
     - type: Prometheus
 `),
-		resources.ErrorCase(
+		ErrorCase(
 			"invalid port for prometheus listener",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].port",
@@ -74,7 +74,7 @@ default:
       prometheus:
         port: 95599
 `),
-		resources.ErrorCase(
+		ErrorCase(
 			"invalid port for application",
 			validators.Violation{
 				Field:   "spec.default.applications.application[0]",
@@ -91,7 +91,7 @@ default:
   applications:
     - port: 95599
 `),
-		resources.ErrorCase(
+		ErrorCase(
 			"invalid regex",
 			validators.Violation{
 				Field:   "spec.default.sidecar.regex",

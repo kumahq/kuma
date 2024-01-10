@@ -7,7 +7,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 10s
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
@@ -18,6 +18,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -25,7 +27,9 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 10s
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-11405a82852416ac:
@@ -35,7 +39,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 300s
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
@@ -46,6 +50,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -53,7 +59,9 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 30s
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-ff1f8bb571f3bfa4:
@@ -63,7 +71,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 20s
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
@@ -74,6 +82,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -81,7 +91,9 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 20s
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -210,7 +222,7 @@ Routes:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
+            idleTimeout: 1800s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -218,7 +230,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 20s
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-ff1f8bb571f3bfa4
@@ -235,7 +247,7 @@ Routes:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
+            idleTimeout: 1800s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -243,7 +255,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 30s
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-11405a82852416ac
@@ -260,7 +272,7 @@ Routes:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
+            idleTimeout: 1800s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -268,7 +280,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 10s
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-4d89cd662308223d

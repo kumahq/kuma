@@ -16,6 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -826,8 +829,12 @@ conf:
   detectors:
     localErrors:
       consecutive: 30
-`,
-		),
+`, WithoutResource{
+				Resource: meshcircuitbreaker_api.MeshCircuitBreakerType,
+				Mesh:     "default",
+				Name:     "mesh-circuit-breaker-all-default",
+			},
+    ),
 
 		Entry("match health check policy",
 			"17-gateway-route.yaml", `
@@ -1660,9 +1667,9 @@ conf:
       - destination:
           kuma.io/service: echo-service
 `, WithoutResource{
-				Resource: core_mesh.TimeoutType,
+				Resource: meshtimeout_api.MeshTimeoutType,
 				Mesh:     "default",
-				Name:     "timeout-all-default",
+				Name:     "mesh-timeout-all-default",
 			},
 		),
 
@@ -1731,7 +1738,11 @@ conf:
     idle_timeout: 115s
     stream_idle_timeout: 116s
     max_stream_duration: 117s
-`,
+`, WithoutResource{
+				Resource: meshtimeout_api.MeshTimeoutType,
+				Mesh:     "default",
+				Name:     "mesh-timeout-all-default",
+			},
 		),
 
 		Entry("doesn't create invalid config with tcp route",
@@ -1797,7 +1808,11 @@ conf:
     retryOn:
       - all_5xx
     numRetries: 20
-`,
+`, WithoutResource{
+				Resource: meshretry_api.MeshRetryType,
+				Mesh:     "default",
+				Name:     "mesh-retry-all-default",
+			},
 		),
 		Entry("handled unresolved-backend tag",
 			"unresolved-backend.yaml", `

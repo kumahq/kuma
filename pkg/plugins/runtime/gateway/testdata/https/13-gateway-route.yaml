@@ -18,6 +18,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -26,6 +28,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-prefix-1d3cd70bb04bf6e2:
@@ -46,6 +50,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -54,6 +60,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-regex-197ed2f99640f307:
@@ -74,6 +82,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -82,6 +92,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -236,14 +248,7 @@ Routes:
             path: /match/bar
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
+            idleTimeout: 1800s
             timeout: 15s
             weightedClusters:
               clusters:
@@ -257,14 +262,7 @@ Routes:
             path: /match/baz
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
+            idleTimeout: 1800s
             timeout: 15s
             weightedClusters:
               clusters:
@@ -278,14 +276,7 @@ Routes:
             prefix: /match/baz/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
+            idleTimeout: 1800s
             timeout: 15s
             weightedClusters:
               clusters:
@@ -300,14 +291,7 @@ Routes:
               regex: /match/foo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 5s
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
+            idleTimeout: 1800s
             timeout: 15s
             weightedClusters:
               clusters:

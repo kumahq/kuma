@@ -60,9 +60,6 @@ func Tracing() {
 			Install(democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
 			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
-			Install(CircuitBreakerKubernetes(mesh)).
-			Install(TimeoutKubernetes(mesh)).
-			Install(RetryKubernetes(mesh)).
 			Install(TrafficRouteKubernetes(mesh)).
 			Install(TrafficPermissionKubernetes(mesh)).
 			Setup(kubernetes.Cluster)

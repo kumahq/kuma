@@ -19,11 +19,8 @@ func ServiceProbes() {
 				ProxyOnly(),
 				ServiceProbe()),
 			).
-			Install(TimeoutUniversal(meshName)).
-			Install(RetryUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, ServiceProbe())).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

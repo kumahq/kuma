@@ -25,8 +25,8 @@ We encourage all users to review their configuration, but we do not anticipate t
 
 ### Default resources are not created when creating a new `Mesh`
 
-We decided to remove default polcies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
-If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_RESOURCES` to `true`.
+We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
+If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
 
 ## Upgrade to `2.5.x`
 

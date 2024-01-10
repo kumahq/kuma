@@ -19,12 +19,15 @@ func Policy() {
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
-			Install(TimeoutUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshretry policy
+		Eventually(func() error {
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
+		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {

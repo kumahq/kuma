@@ -15,10 +15,7 @@ func TrafficPermissionTestUniversal() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
-			Install(TimeoutUniversal(meshName)).
-			Install(RetryUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -27,6 +28,19 @@ func MeshTimeout() {
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshtimeout policy
+		Eventually(func() error {
+			_, err := k8s.RunKubectlAndGetOutputE(
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
+				 "delete", "meshtimeout", fmt.Sprintf("mesh-timeout-all-%s", mesh),
+			)
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
 	})
 
 	E2EAfterEach(func() {

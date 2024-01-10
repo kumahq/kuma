@@ -100,13 +100,6 @@ networking:
 			Install(DemoClientUniversal("demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// remove default traffic permission
-		err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshNameNoDefaults, meshNameNoDefaults)
-		Expect(err).ToNot(HaveOccurred())
-		// remove default traffic route
-		err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-route", "route-all-"+meshNameNoDefaults, meshNameNoDefaults)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {

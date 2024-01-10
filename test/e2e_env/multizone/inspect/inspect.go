@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -27,6 +28,8 @@ func Inspect() {
 			WithArgs([]string{"echo", "--instance", "echo"}),
 		))
 		Expect(err).ToNot(HaveOccurred())
+		// remove default
+		Expect(DeleteMeshResources(multizone.Global, meshName, v1alpha1.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -200,7 +203,7 @@ spec:
 					if rule.Type == "MeshTimeout" {
 						g.Expect(rule.ToRules).ToNot(BeNil())
 						g.Expect(*rule.ToRules).ToNot(BeEmpty())
-						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mt1"))
+						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mesh-timeout-all"))
 					}
 				}
 			}, "30s", "1s").Should(Succeed())

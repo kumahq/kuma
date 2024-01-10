@@ -48,11 +48,8 @@ func Tracing() {
 			Install(MeshUniversal(mesh)).
 			Install(TestServerUniversal("test-server", mesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
-			Install(TimeoutUniversal(mesh)).
-			Install(RetryUniversal(mesh)).
 			Install(TrafficRouteUniversal(mesh)).
 			Install(TrafficPermissionUniversal(mesh)).
-			Install(CircuitBreakerUniversal(mesh)).
 			Setup(universal.Cluster)
 		obsClient = obs.From(obsDeployment, universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

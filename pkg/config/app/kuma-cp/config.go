@@ -37,7 +37,7 @@ type Defaults struct {
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 	// If true, it creates the default routing (TrafficPermisson and TrafficRoute) resources for a new Mesh
-	CreateMeshRoutingResources bool `json:"createMeshResources" envconfig:"kuma_defaults_create_mesh_resources"`
+	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 }
 
 type Metrics struct {
@@ -382,8 +382,8 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
-		SkipMeshCreation:    false,
-		CreateMeshResources: true,
+		SkipMeshCreation:           false,
+		CreateMeshRoutingResources: true,
 	}
 }
 
