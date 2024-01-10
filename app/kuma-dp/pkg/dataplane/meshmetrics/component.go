@@ -9,11 +9,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
-
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	utilnet "github.com/kumahq/kuma/pkg/util/net"
 )
 
