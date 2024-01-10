@@ -42,7 +42,7 @@ To support older versions of zones we are going to introduce `KUMA_DEFAULTS_CREA
 
 Why do we need need `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES`?
 
-When global is newer than a zone, and a new mesh is created it won't have default policies. Without default `TrafficPermission` and `TrafficRoute` policies the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` and create the new mesh that will work with the old zone.
+When global is newer than a zone, and a new mesh is created it won't have default `TrafficPermission` and `TrafficRoute` policies, without which the older zone won't be able to generate configuration required to route between services. In this case the user can deploy global or federated zone with `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` and create the new mesh that will work with the old zone.
 
 #### Existing users behaviour
 
