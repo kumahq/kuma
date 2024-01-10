@@ -17,6 +17,7 @@ import (
 )
 
 type ConfigFetcher struct {
+	httpClient     http.Client
 	socketPath     string
 	ticker         *time.Ticker
 	hijacker       *metrics.Hijacker
@@ -30,6 +31,13 @@ var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
 func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, address string, envoyAdminPort uint32) component.Component {
 	return &ConfigFetcher{
+		httpClient: http.Client{
+			Transport: &http.Transport{
+				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+					return net.Dial("unix", socketPath)
+				},
+			},
+		},
 		socketPath:     socketPath,
 		ticker:         ticker,
 		hijacker:       hijacker,
@@ -39,14 +47,6 @@ func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker
 }
 
 func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
-	httpc := http.Client{
-		Transport: &http.Transport{
-			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", cf.socketPath)
-			},
-		},
-	}
-
 	logger.Info("starting Dynamic Mesh Metrics Configuration Scraper",
 		"socketPath", fmt.Sprintf("unix://%s", cf.socketPath),
 	)
@@ -54,27 +54,12 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-cf.ticker.C:
-			configuration, err := httpc.Get("http://localhost/meshmetric")
+			configuration, err := cf.scrapeConfig()
 			if err != nil {
-				logger.Info("failed to scrape /meshmetric endpoint", "err", err)
 				continue
 			}
-			// TODO this defer probably wont work as expected
-			defer configuration.Body.Close()
-			conf := xds.MeshMetricDpConfig{}
-
-			respBytes, err := io.ReadAll(configuration.Body)
-			if err != nil {
-				logger.Info("failed to read bytes of the response", "err", err)
-				continue
-			}
-			if err = json.Unmarshal(respBytes, &conf); err != nil {
-				logger.Info("failed to unmarshall the response", "err", err)
-				continue
-			}
-
-			logger.V(1).Info("updating hijacker configuration", "conf", conf)
-			cf.hijacker.SetApplicationsToScrape(cf.mapApplicationToApplicationToScrape(conf.Observability.Metrics.Applications))
+			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
+			cf.hijacker.SetApplicationsToScrape(cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications))
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
 			return nil
@@ -84,6 +69,29 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 
 func (cf *ConfigFetcher) NeedLeaderElection() bool {
 	return false
+}
+
+func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
+	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
+	if err != nil {
+		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
+		return nil, err
+	}
+
+	defer configuration.Body.Close()
+	conf := xds.MeshMetricDpConfig{}
+
+	respBytes, err := io.ReadAll(configuration.Body)
+	if err != nil {
+		logger.Info("failed to read bytes of the response", "err", err)
+		return nil, err
+	}
+	if err = json.Unmarshal(respBytes, &conf); err != nil {
+		logger.Info("failed to unmarshall the response", "err", err)
+		return nil, err
+	}
+
+	return &conf, nil
 }
 
 func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application) []metrics.ApplicationToScrape {
