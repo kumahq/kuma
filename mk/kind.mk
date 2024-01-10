@@ -1,4 +1,3 @@
-EXAMPLE_NAMESPACE ?= kuma-example
 KIND_CLUSTER_NAME ?= kuma
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
@@ -11,8 +10,6 @@ KIND_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/kind-$(KIND_CLUSTER_NAME)-config
 # Ensure Kubernetes tooling only gets the config we explicitly specify.
 unexport KUBECONFIG
 
-METRICS_SERVER_VERSION := 0.4.1
-
 ifdef IPV6
 KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
 else
@@ -24,13 +21,6 @@ ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
-
-define KIND_EXAMPLE_DATAPLANE_MESH
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) -n $(EXAMPLE_NAMESPACE) exec $$($(KUBECTL) -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
-endef
-define KIND_EXAMPLE_DATAPLANE_NAME
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) -n $(EXAMPLE_NAMESPACE) exec $$($(KUBECTL) -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
-endef
 
 CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb3529d9fba91b3951d461edfdb
 
@@ -129,19 +119,10 @@ kind/deploy/observability: build/kumactl
 
 .PHONY: kind/deploy/metrics-server
 kind/deploy/metrics-server:
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v$(METRICS_SERVER_VERSION)/components.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.4.1/components.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch -n kube-system deployment/metrics-server \
 		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=2m --for=condition=Available -n kube-system deployment/metrics-server
-
-.PHONY: kind/deploy/example-app
-kind/deploy/example-app:
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/meshes/no-passthrough.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/external-services/httpbin.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/external-services/mockbin.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(EXAMPLE_NAMESPACE) || true
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) annotate namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
 
 .PHONY: run/k8s
 run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
@@ -154,7 +135,3 @@ run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally i
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
 	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp --log-level=debug
-
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)
-run/example/envoy/k8s: run/example/envoy

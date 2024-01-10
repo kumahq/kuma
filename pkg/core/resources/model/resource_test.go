@@ -65,8 +65,8 @@ var _ = Describe("IsReferenced", func() {
 		meta := func(mesh, name string) *test_model.ResourceMeta {
 			return &test_model.ResourceMeta{
 				Mesh:           mesh,
-				Name:           fmt.Sprintf("%s.foo", hash.SyncedNameInZone(mesh, name)),
-				NameExtensions: k8s.ResourceNameExtensions("foo", hash.SyncedNameInZone(mesh, name)),
+				Name:           fmt.Sprintf("%s.foo", hash.HashedName(mesh, name)),
+				NameExtensions: k8s.ResourceNameExtensions("foo", hash.HashedName(mesh, name)),
 			}
 		}
 		It("should return true when t1 is referencing route-1", func() {
