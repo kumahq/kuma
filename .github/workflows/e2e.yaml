@@ -164,7 +164,7 @@ jobs:
             };
 
             if ( "${{ github.event_name }}" == "pull_request" ) {
-              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.id }}/merge';
+              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.number }}/merge';
             } else {
               circleCIBody["tag"] = '${{ github.sha }}'
             }
