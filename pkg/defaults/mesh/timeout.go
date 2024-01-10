@@ -37,10 +37,39 @@ var DefaultTimeoutResource = func() model.Resource {
 }
 
 var defaultMeshTimeoutResource = func() model.Resource {
+	const factor = 2
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.Mesh,
+			},
+			//The main idea around these values is to have them either
+			// bigger than outbound side timeouts or disabled.
+			From: []v1alpha1.From{
+				{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.Mesh,
+					},
+					Default: v1alpha1.Conf{
+						ConnectionTimeout: &v1.Duration{
+							Duration: factor * policies_defaults.DefaultConnectTimeout,
+						},
+						IdleTimeout: &v1.Duration{
+							Duration: factor * policies_defaults.DefaultIdleTimeout,
+						},
+						Http: &v1alpha1.Http{
+							RequestTimeout: &v1.Duration{
+								Duration: 0,
+							},
+							StreamIdleTimeout: &v1.Duration{
+								Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
+							},
+							MaxStreamDuration: &v1.Duration{
+								Duration: 0,
+							},
+						},
+					},
+				},
 			},
 			To: []v1alpha1.To{
 				{

@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	"github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -39,8 +38,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, localClusterName).
-			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
-			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort}))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
 		if proxy.Dataplane.IsUsingTransparentProxy() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() && endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
@@ -125,8 +123,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 				filterChainBuilder.
 					Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker))
 			}
-			return filterChainBuilder.
-				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			return filterChainBuilder
 		}
 
 		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
