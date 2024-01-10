@@ -97,3 +97,13 @@ func TagsMetadata(tags map[string]string) ListenerBuilderOpt {
 		Tags: tags,
 	})
 }
+
+func AdditionalAddresses(addresses []mesh_proto.OutboundInterface) ListenerBuilderOpt {
+	if len(addresses) < 1 {
+		return ListenerBuilderOptFunc(nil)
+	}
+
+	return AddListenerConfigurer(&v3.AdditionalAddressConfigurer{
+		Addresses: addresses,
+	})
+}

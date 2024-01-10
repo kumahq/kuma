@@ -102,6 +102,38 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		},
 	}
 
+	serviceVipCtx := xds_context.Context{
+		ControlPlane: &xds_context.ControlPlaneContext{
+			Secrets: &xds.TestSecrets{},
+		},
+		Mesh: xds_context.MeshContext{
+			Resource: &core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
+							},
+						},
+					},
+					Logging: logging,
+				},
+				Meta: meta,
+			},
+			VIPOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
+				{
+					Address: "240.0.0.3",
+					Port:    80,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+					},
+				},
+			},
+		},
+	}
+
 	crossMeshCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{
 			Secrets: &xds.TestSecrets{},
@@ -771,7 +803,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "08.envoy.golden.yaml",
 		}),
-		Entry("cross-mesh", testCase{
+		Entry("09. cross-mesh", testCase{
 			ctx: crossMeshCtx,
 			dataplane: `
             networking:
@@ -787,6 +819,29 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: api-http
 `,
 			expected: "09.envoy.golden.yaml",
+		}),
+		Entry("10. service vips", testCase{
+			ctx: serviceVipCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 18080
+                tags:
+                  kuma.io/service: backend
+              - port: 80
+                address: 240.0.0.3
+                tags:
+                  kuma.io/service: backend
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "10.envoy.golden.yaml",
 		}),
 	)
 
