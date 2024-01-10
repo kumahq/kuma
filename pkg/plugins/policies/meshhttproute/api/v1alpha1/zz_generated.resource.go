@@ -126,7 +126,7 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:            NewMeshHTTPRouteResource(),
 	ResourceList:        &MeshHTTPRouteResourceList{},
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshhttproutes",
 	KumactlArg:          "meshhttproute",
 	KumactlListArg:      "meshhttproutes",
