@@ -65,6 +65,7 @@ func buildOutboundListener(
 ) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
 	tags := outbound.GetTags()
+
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(

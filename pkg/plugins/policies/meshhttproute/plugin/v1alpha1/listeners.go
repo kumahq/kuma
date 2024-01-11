@@ -36,7 +36,6 @@ func generateListeners(
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetService()
-		protocol := meshCtx.GetServiceProtocol(serviceName)
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).
@@ -49,6 +48,8 @@ func generateListeners(
 				ForwardClientCertDetails: false,
 				NormalizePath:            true,
 			}))
+
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
 			split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
@@ -94,7 +95,6 @@ func generateListeners(
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
 		}
-
 		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		listener, err := listenerBuilder.Build()
 		if err != nil {
@@ -147,6 +147,7 @@ func prepareRoutes(
 			Matches: catchAllMatch,
 		})
 	}
+
 	var routes []Route
 	for _, rule := range rules {
 		var matches []api.Match

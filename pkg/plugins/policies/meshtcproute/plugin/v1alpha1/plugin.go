@@ -53,6 +53,7 @@ func (p plugin) Apply(
 	rs.AddSet(listeners)
 
 	services := servicesAccumulator.Services()
+
 	clusters, err := meshroute.GenerateClusters(proxy, ctx.Mesh, services)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate cluster resources")

@@ -41,7 +41,6 @@ func getBackendRefs(
 	if tcpConf != nil {
 		return tcpConf.Default.BackendRefs
 	}
-
 	return []common_api.BackendRef{
 		{
 			TargetRef: common_api.TargetRef{

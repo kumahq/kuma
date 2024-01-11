@@ -17,6 +17,7 @@ import (
 
 func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRouteRule) []route.Entry {
 	var entries []route.Entry
+
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
 	exactEntries := map[string][]route.Entry{}

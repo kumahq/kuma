@@ -51,6 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	if proxy.Dataplane == nil {
 		return nil
 	}
+
 	// These policies have already been merged using the custom `GetDefault`
 	// method and therefore are of the
 	// `ToRouteRule` type, where rules have been appended together.
@@ -143,6 +144,7 @@ func ApplyToGateway(
 	}
 
 	var limits []plugin_gateway.RuntimeResoureLimitListener
+
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
