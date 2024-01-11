@@ -17,6 +17,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
@@ -561,6 +562,89 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
+
+			commonRules := core_rules.Rules{
+				{
+					Subset: core_rules.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					},
+				},
+				{
+					Subset: core_rules.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"go.dev"},
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/go",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					},
+				},
+				{
+					Subset: core_rules.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"*.dev"},
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/wild",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					},
+				},
+				{
+					Subset: core_rules.MeshSubset(),
+					Conf: api.PolicyDefault{
+						Hostnames: []string{"other.dev"},
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/other",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					},
+				},
+			}
+
 			return outboundsTestCase{
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
@@ -568,9 +652,67 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
-							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								Rules: core_rules.Rules{
-									{
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: map[rules.InboundListener]rules.Rules{
+									{Address: "192.168.0.1", Port: 8080}: commonRules,
+									{Address: "192.168.0.1", Port: 8081}: commonRules,
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-listener-specific", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Hostname: "go.dev",
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: map[rules.InboundListener]rules.Rules{
+									{Address: "192.168.0.1", Port: 8080}: {{
 										Subset: core_rules.MeshSubset(),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
@@ -588,8 +730,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 										},
-									},
-									{
+									}},
+									{Address: "192.168.0.1", Port: 8081}: {{
 										Subset: core_rules.MeshSubset(),
 										Conf: api.PolicyDefault{
 											Hostnames: []string{"go.dev"},
@@ -608,47 +750,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 										},
-									},
-									{
-										Subset: core_rules.MeshSubset(),
-										Conf: api.PolicyDefault{
-											Hostnames: []string{"*.dev"},
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/wild",
-													},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											}},
-										},
-									},
-									{
-										Subset: core_rules.MeshSubset(),
-										Conf: api.PolicyDefault{
-											Hostnames: []string{"other.dev"},
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.PathPrefix,
-														Value: "/other",
-													},
-												}},
-												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
-														Weight:    pointer.To(uint(100)),
-													}},
-												},
-											}},
-										},
-									},
+									}},
 								},
 							}),
 					).
