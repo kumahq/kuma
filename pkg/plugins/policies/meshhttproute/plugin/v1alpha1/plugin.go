@@ -62,22 +62,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 		return nil
 	}
 
-	var toRules []ToRouteRule
-	for _, policy := range policies.ToRules.Rules {
-		toRules = append(toRules, ToRouteRule{
-			Subset:    policy.Subset,
-			Rules:     policy.Conf.(api.PolicyDefault).Rules,
-			Hostnames: policy.Conf.(api.PolicyDefault).Hostnames,
-			Origin:    policy.Origin,
-		})
-	}
-
-	if err := ApplyToOutbounds(proxy, rs, xdsCtx, toRules); err != nil {
+	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules.Rules); err != nil {
 		return err
 	}
 
 	ctx := context.TODO()
-	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, toRules); err != nil {
+	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, policies.ToRules.Rules); err != nil {
 		return err
 	}
 
@@ -88,7 +78,7 @@ func ApplyToOutbounds(
 	proxy *core_xds.Proxy,
 	rs *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,
-	rules []ToRouteRule,
+	rules rules.Rules,
 ) error {
 	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
 	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
