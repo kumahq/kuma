@@ -1,12 +1,12 @@
 package v3_test
 
 import (
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
