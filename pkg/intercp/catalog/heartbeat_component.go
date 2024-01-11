@@ -83,8 +83,13 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 }
 
 func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
+	heartbeatLog = heartbeatLog.WithValues(
+		"instanceId", h.request.InstanceId,
+		"ready", ready,
+	)
 	if h.leader == nil {
 		if err := h.connectToLeader(ctx); err != nil {
+			heartbeatLog.Error(err, "could not connect to leader")
 			return false
 		}
 	}
@@ -93,9 +98,7 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 		return true
 	}
 	heartbeatLog = heartbeatLog.WithValues(
-		"instanceId", h.request.InstanceId,
 		"leaderAddress", h.leader.Address,
-		"ready", ready,
 	)
 	heartbeatLog.V(1).Info("sending a heartbeat to a leader")
 	h.request.Ready = ready
