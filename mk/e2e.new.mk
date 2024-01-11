@@ -54,18 +54,22 @@ endif
 ifeq ($(K8S_CLUSTER_TOOL),kind)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
-ifdef IPV6
-	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!ipv6-not-supported)
-endif
 
 ifeq ($(shell uname -m | sed -e s/aarch.*/arm64/),arm64)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
 endif
 
+
+ifdef IPV6
+KIND_CONFIG_IPV6=-ipv6
+endif
+
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/start
+	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
+	KIND_CLUSTER_NAME=$1 \
+		$(MAKE) $(K8S_CLUSTER_TOOL)/start
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
@@ -77,7 +81,8 @@ test/e2e/k8s/wait/$1:
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/stop
+	KIND_CLUSTER_NAME=$1 \
+		$(MAKE) $(K8S_CLUSTER_TOOL)/stop
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
