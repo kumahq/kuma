@@ -112,18 +112,6 @@ jobs:
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/set-kuma-helm-repo
-      - name: "GitHub Actions: enable ipv6 for docker"
-        if: ${{ steps.eval-params.outputs.run-type == 'github' && env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
-        run: |
-          cat <<'EOF' | sudo tee /etc/docker/daemon.json
-          {
-            "ipv6": true,
-            "fixed-cidr-v6": "2001:db8:1::/64",
-            "dns": ["8.8.8.8"],
-            "dns-search": ["."]
-          }
-          EOF
-          sudo service docker restart
       - name: "GitHub Actions: run E2E tests"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
